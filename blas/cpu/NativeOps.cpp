@@ -4,6 +4,8 @@
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
+
+
 class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
 private:
     static DoubleNativeOpExecutioner *DOUBLE_INSTANCE;

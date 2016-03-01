@@ -7,7 +7,7 @@
 #include <stdlib.h>
 class JavaCppDoublePointer {
 private:
-    double *buffer;
+    double *buffer = NULL;
 
 public:
     void create(int length);
@@ -24,7 +24,7 @@ public:
 
 class JavaCppFloatPointer {
 private:
-    float *buffer;
+    float *buffer = NULL;
 public:
     void create(int length);
     ~JavaCppFloatPointer();
@@ -35,7 +35,7 @@ public:
 
 class JavaCppIntPointer {
 private:
-    int *buffer;
+    int *buffer = NULL;
 public:
     void create(int length);
 

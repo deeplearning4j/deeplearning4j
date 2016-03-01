@@ -9,7 +9,8 @@ void JavaCppDoublePointer::create(int length) {
 }
 
 JavaCppDoublePointer::~JavaCppDoublePointer() {
-    free(this->buffer);
+    if(this->buffer != NULL)
+        free(this->buffer);
 }
 
 long JavaCppDoublePointer::bufferAddress() {
@@ -34,7 +35,8 @@ void JavaCppFloatPointer::create(int length) {
     this->buffer = (float *) malloc(sizeof(float) * length);
 }
 JavaCppFloatPointer::~JavaCppFloatPointer() {
-    free(this->buffer);
+    if(this->buffer != NULL)
+        free(this->buffer);
 }
 
 long JavaCppFloatPointer::bufferAddress() {
@@ -54,7 +56,8 @@ void JavaCppIntPointer::create(int length) {
 }
 
 JavaCppIntPointer::~JavaCppIntPointer(){
-    free(this->buffer);
+    if(this->buffer != NULL)
+        free(this->buffer);
 }
 
 void JavaCppIntPointer::putInt(int i, int val) {

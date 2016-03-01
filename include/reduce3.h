@@ -619,34 +619,14 @@ namespace functions {
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
                 if(xOrder == yOrder) {
-
                     if (xElementWiseStride == 1) {
-                        int i;
-#pragma omp parallel private(i)
-                        {
-                            T local = this->startingValue(x);
-                            T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-                            for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
-                                localExtraParams[extraParamsIdx] = startingVal;
-                            }
-
-#pragma omp simd
-                            for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                                local = update(local, op(x[i], y[i], &localExtraParams),
-                                               &(localExtraParams));
-                            }
-
+#pragma omp parallel for shared(extraParamsVals)
+                        for(int i = 0; i < length; i++) {
 #pragma omp critical
                             {
+                                startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
 
-                                if(this->extraParamsLength() > 0)
-                                    this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
-                                startingVal = update(local,startingVal,&extraParamsVals);
                             }
-
-                            if(this->extraParamsLength() > 0)
-                                free(localExtraParams);
-
                         }
 
                         return postProcess(startingVal, length,&(extraParamsVals));
@@ -654,32 +634,16 @@ namespace functions {
                     }
 
                     else {
-                        int i;
-#pragma omp parallel private(i)
-                        {
-                            T local = this->startingValue(x);
-                            T *localExtraParams = this->extraParamsLength() > 0 ? (T *) malloc(sizeof(T) * this->extraParamsLength()) : NULL;
-#pragma omp simd
-                            for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                                local = update(local,
-                                               op(x[i * xElementWiseStride], y[i * yElementWiseStride],
-                                                  &localExtraParams), &(localExtraParams));
-                            }
-
+#pragma omp parallel for shared(extraParamsVals)
+                        for(int i = 0; i < length; i++) {
 #pragma omp critical
                             {
-                                if(this->extraParamsLength() > 0)
-                                    this->aggregateExtraParams(&extraParamsVals,&localExtraParams);
-                                startingVal = update(local,startingVal,&extraParamsVals);
-                            }
+                                startingVal = update(startingVal,op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
 
-                            if(this->extraParamsLength() > 0)
-                                free(localExtraParams);
+                            }
                         }
 
-
-                        return  postProcess(startingVal, length,&(extraParamsVals));
-
+                        return postProcess(startingVal, length,&(extraParamsVals));
                     }
 
                 }

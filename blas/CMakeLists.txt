@@ -73,7 +73,7 @@ if(CUDA_BLAS)
         endif()
         CUDA_ADD_LIBRARY(libnd4j SHARED cuda/NativeBlas.cu cuda/NativeOps.cu)
         target_link_libraries(nd4j cublas cuda cudadevrt)
-        install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
+        install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-cuda-7.5/src/main/resources)
 
     endif(CUDA_FOUND)
 
@@ -85,7 +85,7 @@ elseif(CPU_BLAS)
     add_library(nd4j SHARED cpu/NativeBlas.cpp cpu/NativeOps.cpp)
     target_link_libraries(nd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
    #install(TARGETS mySharedLib DESTINATION /some/full/path)
-    install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-cuda-7.5/src/main/resources)
+    install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
 endif()
 
 

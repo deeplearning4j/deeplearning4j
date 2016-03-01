@@ -21,49 +21,49 @@
 #include <jni.h>
 #endif
 namespace functions {
-	namespace broadcast {
+    namespace broadcast {
 
 /**
  * Broadcast operation
  * for broadcasting a smaller tensor
  * along a bigger one.
  */
-		template<typename T>
-		class Broadcast: public functions::ops::Op<T> {
-		public:
+        template<typename T>
+        class Broadcast: public functions::ops::Op<T> {
+        public:
 
-			/**
+            /**
              *
              * @param d1
              * @param d2
              * @return
              */
-			virtual
+            virtual
 #ifdef __CUDACC__
-			inline __device__  __host__
+            inline __device__  __host__
 
 #elif defined(__GNUC__)
-			
+
 
 #endif
-			T op(T d1, T d2) = 0;
-			/**
+            T op(T d1, T d2) = 0;
+            /**
              *
              * @param d1
              * @return
              */
-			virtual
+            virtual
 #ifdef __CUDACC__
-			inline __device__  __host__
+            inline __device__  __host__
 
 #elif defined(__GNUC__)
-			
+
 
 #endif
-			T op(T d1) = 0;
+            T op(T d1) = 0;
 
 #ifdef __CUDACC__
-			__inline__ __device__ void transform(
+            __inline__ __device__ void transform(
 			T *x,
 			int *xShapeInfo,
 			T *y,
@@ -94,7 +94,7 @@ namespace functions {
 	}
 #endif
 
-			/**
+            /**
              * CPU execution
              * @param x the input
              * @param xShapeInfo the x shape information
@@ -105,461 +105,465 @@ namespace functions {
              * @param dimension the dimension to broadcast along
              * @param dimensionLength the length of the dimension buffer
              */
-			virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
-							  int *resultShapeInfo, int *dimension, int dimensionLength) {
+            virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
+                              int *resultShapeInfo, int *dimension, int dimensionLength) {
 
-				int xElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
-				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                int xElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
+                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-				//length for the tad
-				int yLength = shape::length(yShapeInfo);
-				//length for the tad
-				int xLength = shape::length(xShapeInfo);
+                //length for the tad
+                int yLength = shape::length(yShapeInfo);
+                //length for the tad
+                int xLength = shape::length(xShapeInfo);
 
-				//optimized loop for vectorization
-				if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+                //optimized loop for vectorization
+                if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp parallel for
-					for (int i = 0; i < xLength; i++) {
-						int yOffset2 =  ((i / xElementWiseStride) % yLength)
-										 * yElementWiseStride;
-						result[i] = op(x[i], y[yOffset2]);
-					}
-				}
+                    for (int i = 0; i < xLength; i++) {
+                        int yOffset2 =  ((i / xElementWiseStride) % yLength)
+                                        * yElementWiseStride;
+                        result[i] = op(x[i], y[yOffset2]);
 
-				else {
+
+                    }
+                }
+
+                else {
 #pragma omp parallel for
-					for (int i = 0; i < xLength; i++) {
-						int yOffset2 =  ((i / xElementWiseStride) % yLength)
-										 * yElementWiseStride;
-						result[i] = op(x[i], y[yOffset2]);
+                    for (int i = 0; i < xLength; i++) {
+                        int yOffset2 =  ((i / xElementWiseStride) % yLength)
+                                        * yElementWiseStride;
+                        result[i] = op(x[i], y[yOffset2]);
 
-					}
-				}
 
-			}
 
-			virtual inline
+                    }
+                }
+
+            }
+
+            virtual inline
 #ifdef __CUDACC__
-			__host__ __device__
+            __host__ __device__
 #endif
-			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-				//no extra params aggregation needs to happen
-			}
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                //no extra params aggregation needs to happen
+            }
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
-			
+
 #endif
-			virtual ~Broadcast() {
-			}
+            virtual ~Broadcast() {
+            }
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
-			
+
 #endif
-			Broadcast() {
-			}
+            Broadcast() {
+            }
 
-		};
+        };
 
-		namespace ops {
-			template<typename T>
-			class Add: public  functions::broadcast::Broadcast<T> {
-			public:
-				virtual
+        namespace ops {
+            template<typename T>
+            class Add: public  functions::broadcast::Broadcast<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-				__host__
+                __host__
 
 #endif
-				std::string name() override {
-					return std::string("add");
-				}
+                std::string name() override {
+                    return std::string("add");
+                }
 
-				/**
+                /**
                  *
                  * @param d1
                  * @param d2
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1, T d2) {
-					return d1 + d2;
-				}
-				/**
+                T op(T d1, T d2) {
+                    return d1 + d2;
+                }
+                /**
                  *
                  * @param d1
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1) {
-					return d1;
-				}
+                T op(T d1) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
-				
-#endif
-				virtual ~Add() {
-				}
-			};
 
-			template<typename T>
-			class Copy: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
+#endif
+                virtual ~Add() {
+                }
+            };
+
+            template<typename T>
+            class Copy: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-				__host__
+                __host__
 
 #endif
-				std::string name() override {
-					return std::string("copy");
-				}
+                std::string name() override {
+                    return std::string("copy");
+                }
 
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1, T d2) {
-					return d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-				
-#endif
-				virtual ~Copy() {
-				}
-
-			};
-
-			template<typename T>
-			class Divide: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				inline __host__
-
-#endif
-				std::string name() override {
-					return std::string("div");
-				}
-
-				/**
+                /**
                  *
                  * @param d1
                  * @param d2
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1, T d2) {
-					return d1 / d2;
-				}
-				/**
+                T op(T d1, T d2) {
+                    return d2;
+                }
+                /**
                  *
                  * @param d1
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1) {
-					return d1;
-				}
+                T op(T d1) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
-				
+
 #endif
-				virtual ~Divide() {
-				}
+                virtual ~Copy() {
+                }
 
-			};
+            };
 
-			template<typename T>
-			class Multiply: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
+            template<typename T>
+            class Divide: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-				inline __host__
+                inline __host__
 
 #endif
-				std::string name() override {
-					return std::string("mul");
-				}
+                std::string name() override {
+                    return std::string("div");
+                }
 
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1, T d2) {
-					return d1 * d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-				
-#endif
-				virtual ~Multiply() {
-				}
-
-			};
-
-			template<typename T>
-			class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				inline __host__
-
-#endif
-				std::string name() override {
-					return std::string("rdiv");
-				}
-
-				/**
+                /**
                  *
                  * @param d1
                  * @param d2
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1, T d2) {
-					return d2 / d1;
-				}
-				/**
+                T op(T d1, T d2) {
+                    return d1 / d2;
+                }
+                /**
                  *
                  * @param d1
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1) {
-					return d1;
-				}
+                T op(T d1) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
-				
+
 #endif
-				virtual ~ReverseDivide() {
-				}
+                virtual ~Divide() {
+                }
 
-			};
+            };
 
-			template<typename T>
-			class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
+            template<typename T>
+            class Multiply: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
 #ifdef __CUDACC__
-				inline __host__
+                inline __host__
 
 #endif
-				std::string name() override {
-					return std::string("rsub");
-				}
+                std::string name() override {
+                    return std::string("mul");
+                }
 
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1, T d2) {
-					return d2 - d1;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				
-
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-				
-#endif
-				virtual ~ReverseSubtract() {
-				}
-
-			};
-
-			template<typename T>
-			class Subtract: public virtual functions::broadcast::Broadcast<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				inline __host__
-
-#endif
-				std::string name() override {
-					return std::string("sub");
-				}
-
-				/**
+                /**
                  *
                  * @param d1
                  * @param d2
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1, T d2) {
-					return d1 - d2;
-				}
-				/**
+                T op(T d1, T d2) {
+                    return d1 * d2;
+                }
+                /**
                  *
                  * @param d1
                  * @return
                  */
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
-				
+
 
 #endif
-				T op(T d1) {
-					return d1;
-				}
+                T op(T d1) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
-				
+
 #endif
-				virtual ~Subtract() {
-				}
+                virtual ~Multiply() {
+                }
 
-			};
-		}
+            };
 
-		template<typename T>
-		class BroadcastOpFactory {
-		public:
+            template<typename T>
+            class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
+#ifdef __CUDACC__
+                inline __host__
+
+#endif
+                std::string name() override {
+                    return std::string("rdiv");
+                }
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T d2) {
+                    return d2 / d1;
+                }
+                /**
+                 *
+                 * @param d1
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                virtual ~ReverseDivide() {
+                }
+
+            };
+
+            template<typename T>
+            class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
+#ifdef __CUDACC__
+                inline __host__
+
+#endif
+                std::string name() override {
+                    return std::string("rsub");
+                }
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T d2) {
+                    return d2 - d1;
+                }
+                /**
+                 *
+                 * @param d1
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                virtual ~ReverseSubtract() {
+                }
+
+            };
+
+            template<typename T>
+            class Subtract: public virtual functions::broadcast::Broadcast<T> {
+            public:
+                virtual
+#ifdef __CUDACC__
+                inline __host__
+
+#endif
+                std::string name() override {
+                    return std::string("sub");
+                }
+
+                /**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T d2) {
+                    return d1 - d2;
+                }
+                /**
+                 *
+                 * @param d1
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                virtual ~Subtract() {
+                }
+
+            };
+        }
+
+        template<typename T>
+        class BroadcastOpFactory {
+        public:
 
 #ifdef __CUDACC__
-			__host__ __device__
+            __host__ __device__
 #endif
-			BroadcastOpFactory() {
-			}
+            BroadcastOpFactory() {
+            }
 
 
-			/**
+            /**
              * creates an operation
              * @param op the op number to create:
              * 0: Add
@@ -572,32 +576,32 @@ namespace functions {
              * @return the broadcast operation
              */
 #ifdef __CUDACC__
-			__inline__ __host__ __device__
+            __inline__ __host__ __device__
 #endif
-			Broadcast<T> * getOp(int op) {
-				if (op == 0) {
-					return new functions::broadcast::ops::Add<T>();
-				} else if (op == 1) {
-					return new functions::broadcast::ops::Subtract<T>();
-				} else if (op == 2) {
-					return new  functions::broadcast::ops::Multiply<T>();
-				} else if (op == 3) {
-					return new functions::broadcast::ops::Divide<T>();
-				} else if (op == 4) {
-					return new functions::broadcast::ops::ReverseDivide<T>();
-				} else if (op == 5) {
-					return new functions::broadcast::ops::ReverseSubtract<T>();
-				} else if (op == 6) {
-					return new functions::broadcast::ops::Copy<T>();
-				}
+            Broadcast<T> * getOp(int op) {
+                if (op == 0) {
+                    return new functions::broadcast::ops::Add<T>();
+                } else if (op == 1) {
+                    return new functions::broadcast::ops::Subtract<T>();
+                } else if (op == 2) {
+                    return new  functions::broadcast::ops::Multiply<T>();
+                } else if (op == 3) {
+                    return new functions::broadcast::ops::Divide<T>();
+                } else if (op == 4) {
+                    return new functions::broadcast::ops::ReverseDivide<T>();
+                } else if (op == 5) {
+                    return new functions::broadcast::ops::ReverseSubtract<T>();
+                } else if (op == 6) {
+                    return new functions::broadcast::ops::Copy<T>();
+                }
 
-				return NULL;
+                return NULL;
 
-			}
+            }
 
-		};
+        };
 
-	}
+    }
 }
 
 #ifdef __CUDACC__
