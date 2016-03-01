@@ -119,3 +119,4 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA and Entropy](../eigenvector.html)
 * [A Glossary of Deep-Learning Terms](../glossary.html)
+* [Word2vec, Doc2vec & GloVe](../word2vec)
