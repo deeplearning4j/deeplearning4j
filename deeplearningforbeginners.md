@@ -64,10 +64,6 @@ Once you get those up and running, and you've understood the API, you're ready f
 
 * [Getting Started](../gettingstarted.html)
 
-After deep learning starts to feel familiar, then you're ready to tackle distributed deep learning on Hadoop and Spark. 
-
-* [Launching GPUs on AWS With Spark](../gpu_aws.html)
-
 ## Other Resources
 
 Most of what we know about deep learning is contained in academic papers.
