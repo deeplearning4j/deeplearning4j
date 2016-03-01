@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.NDArrayUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -55,7 +56,7 @@ public class ImageLoader {
     }
 
     public INDArray asRowVector(File f) throws Exception {
-        return ArrayUtil.toNDArray(flattenedImageFromFile(f));
+        return NDArrayUtil.toNDArray(flattenedImageFromFile(f));
     }
 
 
@@ -79,7 +80,7 @@ public class ImageLoader {
     }
 
     public INDArray asMatrix(File f) throws IOException {
-        return ArrayUtil.toNDArray(fromFile(f));
+        return NDArrayUtil.toNDArray(fromFile(f));
     }
 
     public int[] flattenedImageFromFile(File f) throws Exception {
