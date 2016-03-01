@@ -31,6 +31,7 @@ Content
 * TensorFlow is not commercially supported, and it’s unlikely that Google will go into the business of supporting open-source enterprise software. It's giving a new tool to researchers. 
 * Like Theano, TensforFlow generates a computational graph (e.g. a series of matrix operations such as z = simoid(x) where x and z are matrices) and performs automatic differentiation. Automatic differentiation is important because you don't want to have to hand-code a new variation of backpropagation every time you're experimenting with a new arrangement of neural networks. In Google's ecosystem, the computational graph is then used by Google Brain for the heavy lifting, but Google hasn’t open-sourced those tools yet. TensorFlow is one half of Google's in-house DL solution. 
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
+* [Benchmarks show TensorFlow is significantly slower](https://www.reddit.com/r/MachineLearning/comments/48gfop/tensorflow_speed_questions/) than Theano on multiple ops.
 
 ### <a name="theano">Theano, PyLearn2 and Ecosystem</a>
 
