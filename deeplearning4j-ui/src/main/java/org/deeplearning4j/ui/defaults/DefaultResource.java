@@ -22,17 +22,6 @@ public class DefaultResource {
     private SessionStorage storage = SessionStorage.getInstance();
 
 
-    /**
-     * This method produces default page, aka index page
-     *
-     * @return
-     */
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public DefaultView get() {
-        return new DefaultView();
-    }
-
     @GET
     @Path("/whatsup")
     @Produces(MediaType.APPLICATION_JSON)

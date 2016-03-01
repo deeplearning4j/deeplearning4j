@@ -63,12 +63,6 @@ public class NearestNeighborsResource extends FileResource {
 
     }
 
-    @GET
-    public View get() {
-        return new NearestNeighborsView();
-    }
-
-
     @POST
     @Path("/vocab")
     @Produces(MediaType.APPLICATION_JSON)
