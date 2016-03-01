@@ -124,6 +124,7 @@
           </execution>
         </executions>
       </plugin>
+      <!--
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>rpm-maven-plugin</artifactId>
@@ -140,7 +141,6 @@
           <name>deeplearning4j-cli</name>
           <group>Development/Libraries</group>
           <packager>SKYMIND</packager>
-          <!--<changelogFile>src/changelog</changelogFile>-->
           <defineStatements>
             <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
           </defineStatements>
@@ -166,6 +166,7 @@
           </mappings>
         </configuration>
       </plugin>
+      -->
     </plugins>
   </build>
 </project>

@@ -56,11 +56,6 @@ public class TsneResource extends FileResource {
 
     }
 
-    @GET
-    public View get() {
-        return new TsneView();
-    }
-
     @POST
     @Path("/vocab")
     @Produces(MediaType.APPLICATION_JSON)

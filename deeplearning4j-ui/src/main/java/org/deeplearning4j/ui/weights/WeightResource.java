@@ -48,12 +48,6 @@ public class WeightResource {
     private SessionStorage storage = SessionStorage.getInstance();
 
     @GET
-    @Produces(MediaType.TEXT_HTML)
-    public View get() {
-        return new WeightView(path);
-    }
-
-    @GET
     @Path("/updated")
     @Produces(MediaType.APPLICATION_JSON)
     public Response updated(@QueryParam("sid") String sessionId) {
