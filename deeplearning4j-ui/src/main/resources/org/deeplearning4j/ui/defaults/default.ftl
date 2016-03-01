@@ -45,15 +45,15 @@
         </style>
 
         <!-- Booststrap Notify plugin-->
-        <script src="/assets/bootstrap-notify.min.js"></script>
+        <script src="./assets/bootstrap-notify.min.js"></script>
 
-        <script src="/assets/default.js"></script>
+        <script src="./assets/default.js"></script>
     </head>
     <body>
     <table style="width: 100%; padding: 5px;" class="hd">
         <tbody>
             <tr>
-                <td style="width: 48px;"><img src="/assets/deeplearning4j.img"  border="0"/></td>
+                <td style="width: 48px;"><img src="./assets/deeplearning4j.img"  border="0"/></td>
                 <td>DeepLearning4j UI</td>
                 <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
             </tr>
@@ -73,7 +73,7 @@
     <div class="block">
         <!-- TSNE block. It's session-dependant. -->
         <b>T-SNE</b><br/><br/>
-        <a href="#"  onclick="trackSessionHandle('TSNE','tsne'); return false;"><img src="/assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('TSNE','tsne'); return false;"><img src="./assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
         </div>
@@ -82,7 +82,7 @@
     <div class="block">
         <!-- W2V block -->
         <b>WordVectors</b><br/><br/>
-        <a href="/word2vec"><img src="/assets/i_nearest.img" border="0" /></a><br/><br/>
+        <a href="/word2vec"><img src="./assets/i_nearest.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;wordsNearest UI for WordVectors (GloVe/Word2Vec compatible)
         </div>
@@ -90,7 +90,7 @@
 
     <div class="block">
         <b>Activations</b><br/><br/>
-        <a href="#"  onclick="trackSessionHandle('ACTIVATIONS','activations'); return false;"><img src="/assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('ACTIVATIONS','activations'); return false;"><img src="./assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Activations retrieved from Convolution Neural network.
         </div>
@@ -99,7 +99,7 @@
     <div class="block">
         <!-- Histogram block. It's session-dependant block -->
         <b>Histograms &amp; Score</b><br/><br/>
-        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights'); return false;"><img id="HISTOGRAM" src="/assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights'); return false;"><img id="HISTOGRAM" src="./assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>
@@ -108,7 +108,7 @@
     <div class="block">
         <!-- Flow  block. It's session-dependant block -->
         <b>Model flow</b><br/><br/>
-        <a href="#" onclick="trackSessionHandle('FLOW','flow'); return false;"><img id="FLOW" src="/assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <a href="#" onclick="trackSessionHandle('FLOW','flow'); return false;"><img id="FLOW" src="./assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;MultiLayerNetwork/ComputationalGraph model state rendered.
         </div>
@@ -117,7 +117,7 @@
     <div class="block">
         <!-- Arbiter block. It's session-dependant block -->
         <b>Arbiter </b><br/><br/>
-        <a href="#" onclick="trackSessionHandle('ARBITER','arbiter'); return false;"><img id="ARBITER" src="/assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <a href="#" onclick="trackSessionHandle('ARBITER','arbiter'); return false;"><img id="ARBITER" src="./assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;State &amp; management for Arbiter optimization processes.
         </div>
