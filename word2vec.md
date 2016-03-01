@@ -431,6 +431,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 ### Doc2vec & Other Resources
 
+* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 * [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 * [Doc2vec, or Paragraph Vectors, With Deeplearning4j](../doc2vec.html)
 * [Thought Vectors, Natural Language Processing & the Future of AI](../thoughtvectors.html)
