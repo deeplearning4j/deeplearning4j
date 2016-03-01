@@ -122,7 +122,7 @@ public abstract class BaseSparkTest  implements Serializable
                 .updater(Updater.NESTEROVS)
                 .learningRate(0.1)
                 .momentum(0.9)
-                .list(2)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(nIn).nOut(3)
                         .activation("tanh").build())

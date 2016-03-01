@@ -31,7 +31,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class PretrainParamInitializer extends DefaultParamInitializer {
-    public final static String VISIBLE_BIAS_KEY = "vb";
+    public final static String VISIBLE_BIAS_KEY = DefaultParamInitializer.BIAS_KEY + "B";
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {

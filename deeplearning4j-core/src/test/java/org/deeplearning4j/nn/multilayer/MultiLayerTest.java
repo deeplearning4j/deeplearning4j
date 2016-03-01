@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -32,11 +33,15 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.layers.normalization.*;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
@@ -127,12 +132,13 @@ public class MultiLayerTest {
                 .list(4)
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build())
                 .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation("tanh").build())
-                .layer(2, BatchNormalization.builder().shape(new int[]{1,2}).build())
+                .layer(2, new BatchNormalization.Builder().build())
                 .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .nIn(2).nOut(3).build())
-                .backprop(true).pretrain(false).inputPreProcessor(2,new FeedForwardToCnnPreProcessor(1,2,1))
+                .backprop(true).pretrain(false)
+                .inputPreProcessor(2,new FeedForwardToCnnPreProcessor(1,2,1))
                 .inputPreProcessor(3,new CnnToFeedForwardPreProcessor(1,2,1))
                 .build();
 
@@ -158,10 +164,7 @@ public class MultiLayerTest {
         int numParams = network.numParams();
         network.fit(trainTest.getTrain());
 
-
     }
-
-
 
     @Test
     public void testBackProp() {
@@ -555,18 +558,78 @@ public class MultiLayerTest {
         assertArrayEquals(new int[]{1,3},layer.getParam(DefaultParamInitializer.BIAS_KEY).shape());
         assertArrayEquals(new int[]{1,4},layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
 
-        assertArrayEquals(new int[]{3,4},transposed.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new int[]{1,4},transposed.getParam(DefaultParamInitializer.BIAS_KEY).shape());
-        assertArrayEquals(new int[]{1,3},transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
+        assertArrayEquals(new int[]{3, 4}, transposed.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
+        assertArrayEquals(new int[]{1, 4}, transposed.getParam(DefaultParamInitializer.BIAS_KEY).shape());
+        assertArrayEquals(new int[]{1, 3}, transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
 
 
         INDArray origWeights = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray transposedWeights = transposed.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(origWeights.transpose(), transposedWeights);
-        assertEquals(layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),transposed.getParam(DefaultParamInitializer.BIAS_KEY));
+        assertEquals(layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY), transposed.getParam(DefaultParamInitializer.BIAS_KEY));
         assertEquals(layer.getParam(DefaultParamInitializer.BIAS_KEY),transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY));
 
         assertEquals(3,((FeedForwardLayer)transposed.conf().getLayer()).getNIn());
         assertEquals(4,((FeedForwardLayer)transposed.conf().getLayer()).getNOut());
+    }
+
+
+    @Test
+    public void testScoreExamples(){
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 5;
+        int nOut = 6;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .regularization(true).l1(0.01).l2(0.01)
+                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                .build();
+
+        MultiLayerConfiguration confNoReg = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .regularization(false)
+                .learningRate(0.1).activation("tanh").weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                .build();
+
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        MultiLayerNetwork netNoReg = new MultiLayerNetwork(confNoReg);
+        netNoReg.init();
+        netNoReg.setParameters(net.params().dup());
+
+        //Score single example, and compare to scoreExamples:
+        INDArray input = Nd4j.rand(3,nIn);
+        INDArray output = Nd4j.rand(3,nOut);
+        DataSet ds = new DataSet(input,output);
+
+        INDArray scoresWithRegularization = net.scoreExamples(ds,true);
+        INDArray scoresNoRegularization = net.scoreExamples(ds,false);
+
+        assertArrayEquals(new int[]{3,1},scoresWithRegularization.shape());
+        assertArrayEquals(new int[]{3,1},scoresNoRegularization.shape());
+
+        for( int i=0; i<3; i++ ){
+            DataSet singleEx = new DataSet(input.getRow(i),output.getRow(i));
+            double score = net.score(singleEx);
+            double scoreNoReg = netNoReg.score(singleEx);
+
+            double scoreUsingScoreExamples = scoresWithRegularization.getDouble(i);
+            double scoreUsingScoreExamplesNoReg = scoresNoRegularization.getDouble(i);
+            assertEquals(score,scoreUsingScoreExamples,1e-4);
+            assertEquals(scoreNoReg,scoreUsingScoreExamplesNoReg,1e-4);
+            assertTrue(scoreUsingScoreExamples > scoreUsingScoreExamplesNoReg);     //Regularization term increases score
+
+//            System.out.println(score + "\t" + scoreUsingScoreExamples + "\t|\t" + scoreNoReg + "\t" + scoreUsingScoreExamplesNoReg);
+        }
     }
 }

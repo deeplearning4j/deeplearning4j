@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -e
+
+if [ -z "${ND4J_BACKEND}" ];
+    then export ND4J_BACKEND="x86" &&  echo "USING BACKEND $ND4J_BACKEND";
+    #TODO: set the classpath according; need the backends to do this
+fi
+
+# if no classpath provided first look for default rpm install dir
+if [ -z "$CLASSPATH" ]; then
+    test -d "/usr/local/lib/deeplearning4j" && CLASSPATH="/usr/local/lib/deeplearning4j/*:"
+fi
+
+# then look for ../lib dir
+if [ -z "$CLASSPATH" ]; then
+    DIR=`cd $(dirname "${BASH_SOURCE[0]}") && pwd`
+    test -d "$DIR/../lib" && CLASSPATH="`cd $DIR/../lib && pwd`/*:"
+fi
+
+CLASSPATH=${CLASSPATH:?"CANNOT FIND LIBRARIES"}
+
+MAIN="org.deeplearning4j.cli.driver.CommandLineInterfaceDriver"
+
+# echo the command so that people can see what is going on
+COMMAND="java -cp $CLASSPATH $MAIN $*"
+echo $COMMAND
+exec $COMMAND
+

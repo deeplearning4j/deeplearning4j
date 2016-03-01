@@ -335,14 +335,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(boolean training) {
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect() && training) {
-            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-        }
-
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
-                        input().mmul(W).addiRowVector(b)));
+        INDArray z = preOutput(training);
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                conf.getLayer().getActivationFunction(), z));
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);
@@ -385,13 +380,15 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
-        return 0.5 * conf.getLayer().getL2()  * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+        //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
+        double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
+        return 0.5 * conf.getLayer().getL2() * l2Norm * l2Norm;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
-        return conf.getLayer().getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        return conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
     }
 
     @Override
@@ -598,7 +595,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void applyLearningRateScoreDecay() {
-        conf.getLayer().setLearningRate(conf.getLayer().getLearningRate() * (conf.getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+        for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
+            conf.setLearningRateByParam(lrPair.getKey(), lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
     }
 
     @Override

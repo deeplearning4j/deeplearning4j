@@ -2,12 +2,21 @@ package org.deeplearning4j.earlystopping;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
+import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
+import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
@@ -20,17 +29,21 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Sin;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestEarlyStopping {
 
@@ -197,6 +210,63 @@ public class TestEarlyStopping {
         assertEquals(0, result.getBestModelEpoch());
         assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
         String expDetails = new ScoreImprovementEpochTerminationCondition(5).toString();
+        assertEquals(expDetails, result.getTerminationDetails());
+    }
+
+    @Test
+    public void testMinImprovementNEpochsTermination(){
+        //Idea: terminate training if score (test set loss) does not improve more than minImprovement for 5 consecutive epochs
+        //Simulate this by setting LR = 0.0
+        Random rng = new Random(123);
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(10)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .learningRate(0.001)
+                .updater(Updater.NESTEROVS).momentum(0.9)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("tanh")
+                        .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("identity").weightInit(WeightInit.XAVIER)
+                        .nIn(20).nOut(1).build())
+                .pretrain(false).backprop(true).build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+        int nSamples = 100;
+        //Generate the training data
+        INDArray x = Nd4j.linspace(-10,10,nSamples).reshape(nSamples, 1);
+        INDArray y = Nd4j.getExecutioner().execAndReturn(new Sin(x.dup()));
+        DataSet allData = new DataSet(x,y);
+
+        List<DataSet> list = allData.asList();
+        Collections.shuffle(list,rng);
+        DataSetIterator training = new ListDataSetIterator(list,nSamples);
+
+        double minImprovement = 0.0009;
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(1000),
+                        //Go on for max 5 epochs without any improvements that are greater than minImprovement
+                        new ScoreImprovementEpochTerminationCondition(5, minImprovement))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculator(training, true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,net,training);
+        EarlyStoppingResult result = trainer.fit();
+
+        //The test ends at 28 epochs (Nothing is random, so it will always end the same)
+        assertEquals(28, result.getTotalEpochs());
+        //The last epoch (27) has the best data so far
+        assertEquals(27, result.getBestModelEpoch());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+        String expDetails = new ScoreImprovementEpochTerminationCondition(5, minImprovement).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
 
