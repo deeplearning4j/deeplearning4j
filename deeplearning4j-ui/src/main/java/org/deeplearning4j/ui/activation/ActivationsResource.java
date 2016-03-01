@@ -43,10 +43,6 @@ public class ActivationsResource {
 
     private static Logger log = LoggerFactory.getLogger(ActivationsResource.class);
 
-    @GET
-    public RenderView get() {
-        return new RenderView();
-    }
 
     @POST
     @Path(("/update"))
@@ -93,11 +89,4 @@ public class ActivationsResource {
             }
         }).build();
     }
-
-
-
-
-
-
-
 }

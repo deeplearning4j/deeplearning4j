@@ -33,14 +33,21 @@ import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
 import org.canova.api.util.ClassPathResource;
+import org.deeplearning4j.ui.activation.ActivationsDropwiz;
 import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.api.ApiResource;
+import org.deeplearning4j.ui.defaults.DefaultDropwiz;
 import org.deeplearning4j.ui.defaults.DefaultResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
+import org.deeplearning4j.ui.flow.FlowDropwiz;
 import org.deeplearning4j.ui.flow.FlowResource;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
+import org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz;
+import org.deeplearning4j.ui.renders.RendersDropwiz;
 import org.deeplearning4j.ui.renders.RendersResource;
+import org.deeplearning4j.ui.tsne.TsneDropwiz;
 import org.deeplearning4j.ui.tsne.TsneResource;
+import org.deeplearning4j.ui.weights.WeightDropwiz;
 import org.deeplearning4j.ui.weights.WeightResource;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -130,16 +137,16 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new JsonProcessingExceptionMapper());
 
 
-        environment.jersey().register(new TsneResource(conf.getUploadPath()));
-        environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
-        environment.jersey().register(new DefaultResource());
-        environment.jersey().register(new WeightResource());
-        environment.jersey().register(new ActivationsResource());
-        environment.jersey().register(new RendersResource());
+        environment.jersey().register(new TsneDropwiz(conf.getUploadPath()));
+//        environment.jersey().register(new NearestNeighborsDropwiz());
+        environment.jersey().register(new DefaultDropwiz());
+        environment.jersey().register(new WeightDropwiz());
+        environment.jersey().register(new ActivationsDropwiz());
+        environment.jersey().register(new RendersDropwiz());
         environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
-        environment.jersey().register(new FlowResource());
-        environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
+        environment.jersey().register(new FlowDropwiz());
+        environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsDropwiz(conf.getUploadPath()));
 
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

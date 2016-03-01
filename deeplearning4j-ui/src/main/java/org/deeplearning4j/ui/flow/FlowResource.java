@@ -21,12 +21,6 @@ public class FlowResource {
     private SessionStorage storage = SessionStorage.getInstance();
 
     @GET
-    @Produces(MediaType.TEXT_HTML)
-    public FlowView getView() {
-        return new FlowView();
-    }
-
-    @GET
     @Path("/state")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getState(@QueryParam("sid") String sessionId) {
