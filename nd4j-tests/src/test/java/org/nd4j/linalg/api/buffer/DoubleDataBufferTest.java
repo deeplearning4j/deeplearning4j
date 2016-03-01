@@ -22,7 +22,10 @@ package org.nd4j.linalg.api.buffer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.Nd4jTestSuite;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -42,24 +45,13 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public  class DoubleDataBufferTest extends BaseNd4jTest {
-
     public DoubleDataBufferTest(Nd4jBackend backend) {
         super(backend);
     }
 
 
-
-    public DoubleDataBufferTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public DoubleDataBufferTest(String name) {
-        super(name);
-    }
-
-    public DoubleDataBufferTest() {
-    }
 
     @Before
     public void before() {
@@ -84,26 +76,29 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         rand.data().asBytes();
 
     }
+
     @Test
     public void testSerialization2() throws Exception {
-
         INDArray[] arr = new INDArray[]{
                 Nd4j.ones(1,10),
                 Nd4j.ones(5,10).getRow(2)
         };
 
-        for( INDArray a : arr ){
+        for(INDArray a : arr) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
                 oos.writeObject(a);
+                oos.flush();
             }
+
+
 
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bais);
 
-            INDArray aDeserialized = (INDArray)ois.readObject();
+            INDArray aDeserialized = (INDArray) ois.readObject();
 
             System.out.println(aDeserialized);
             assertEquals(Nd4j.ones(1,10),aDeserialized);
@@ -147,7 +142,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
         ByteBuf copy = buf.copy(0, buf.capacity());
         for(int i = 0; i < db.length(); i++) {
-            assertEquals(db.getDouble(i),copy.getDouble(i * 8));
+            assertEquals(db.getDouble(i),copy.getDouble(i * 8),1e-1);
         }
     }
 

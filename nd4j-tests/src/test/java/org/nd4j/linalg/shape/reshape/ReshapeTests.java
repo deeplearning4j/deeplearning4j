@@ -1,6 +1,8 @@
 package org.nd4j.linalg.shape.reshape;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,17 +14,8 @@ import static org.junit.Assume.*;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class ReshapeTests extends BaseNd4jTest {
-    public ReshapeTests() {
-    }
-
-    public ReshapeTests(String name) {
-        super(name);
-    }
-
-    public ReshapeTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public ReshapeTests(Nd4jBackend backend) {
         super(backend);

@@ -1,6 +1,9 @@
 package org.nd4j.linalg.api.blas;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,18 +12,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class Level1Test extends BaseNd4jTest {
-    public Level1Test() {
-    }
-
-    public Level1Test(String name) {
-        super(name);
-    }
-
-    public Level1Test(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
     public Level1Test(Nd4jBackend backend) {
         super(backend);
     }

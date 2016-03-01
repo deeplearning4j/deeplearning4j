@@ -11,155 +11,16 @@
     <packaging>jar</packaging>
 
     <name>nd4j-cuda-7.5</name>
-
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
-        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
-        <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
-        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
-        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
-        <platform.properties>${platform}</platform.properties>
-        <javacpp.version>1.1</javacpp.version>
-    </properties>
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
-                <version>${javacpp.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.nd4j</groupId>
-                        <artifactId>nd4j-native-api</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
-                    <properties>${platform.properties}</properties>
-                    <propertyKeysAndValues>
-                        <property>
-                            <name>platform.root</name>
-                            <value>${platform.root}</value>
-                        </property>
-                        <property>
-                            <name>platform.compiler</name>
-                            <value>${platform.compiler}</value>
-                        </property>
-                    </propertyKeysAndValues>
-                    <classPaths>
-                        <classPath>${project.build.outputDirectory}</classPath>
-                        <classPath>${project.parent.relativePath}/nd4j-native-api/target/classes</classPath>
-                    </classPaths>
-                    <includePath>${env.LIBND4J_HOME}/blas/</includePath>
-                    <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>generate-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${generate-sources.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
-                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
-                            </classOrPackageNames>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>process-classes</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${process-classes.skip}</skip>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
-                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
-                            </classOrPackageNames>
-                            <classPaths>
-                                <classPath>${project.build.outputDirectory}</classPath>
-                                <classPath>${{project.basedir}/nd4j-native-parent/nd4j-native-api/target/classes</classPath>
-                            </classPaths>
-                            <copyLibs>true</copyLibs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>default-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <addClasspath>true</addClasspath>
-                                </manifest>
-                                <manifestEntries>
-                                    <Name>org/nd4j/linalg/</Name>
-                                    <Implementation-Title>${project.name}</Implementation-Title>
-                                    <Implementation-Vendor>Skymind</Implementation-Vendor>
-                                    <Implementation-Version>${project.version}</Implementation-Version>
-                                    <Specification-Title>${project.name}</Specification-Title>
-                                    <Specification-Vendor>Skymind</Specification-Vendor>
-                                    <Specification-Version>${project.version}</Specification-Version>
-                                </manifestEntries>
-                            </archive>
-                            <includes>
-                                <include>META-INF/*</include>
-                                <include>META-INF/services/*</include>
-                                <include>org/nd4j/*</include>
-                                <include>org/nd4j/</include>
-                                <include>*.properties</include>
-                                <include>org/nd4j/*</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>${platform}</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>${platform}</classifier>
-                            <skipIfEmpty>true</skipIfEmpty>
-                            <includes>
-                                <include>META-INF/*</include>
-                                <include>META-INF/services/*</include>
-                                <include>org/nd4j/*</include>
-                                <include>org/nd4j/</include>
-                                <include>*.properties</include>
-                                <include>org/nd4j/*</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>2.3</version>
-                <configuration>
-                    <createChecksum>true</createChecksum>
-                </configuration>
             </plugin>
         </plugins>
-
-
     </build>
 
 

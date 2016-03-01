@@ -812,7 +812,7 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape, int startValue) {
-        if(shape.length == 2 && shape[0] == 1 || shape[1] == 1) {
+        if(shape.length == 2 && shape[0] == 1 && shape[1] == 1) {
             int[] ret = new int[2];
             Arrays.fill(ret,startValue);
             return ret;

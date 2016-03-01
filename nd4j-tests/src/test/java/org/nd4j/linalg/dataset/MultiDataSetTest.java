@@ -1,8 +1,12 @@
 package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -12,8 +16,11 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-public class MultiDataSetTest {
+@RunWith(Parameterized.class)
+public class MultiDataSetTest extends BaseNd4jTest {
+    public MultiDataSetTest(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Test
     public void testMerging2d() {
@@ -273,5 +280,10 @@ public class MultiDataSetTest {
         assertEquals(expectedMaskIn1, merged.getFeaturesMaskArray(1));
         assertEquals(expectedMaskOut0, merged.getLabelsMaskArray(0));
         assertEquals(expectedMaskOut1, merged.getLabelsMaskArray(1));
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
     }
 }

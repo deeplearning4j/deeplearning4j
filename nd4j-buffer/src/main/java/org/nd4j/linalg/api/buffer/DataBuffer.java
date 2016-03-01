@@ -25,9 +25,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
@@ -82,6 +80,10 @@ public interface DataBuffer extends Serializable {
      * underlying data SOURCE
      */
     boolean sameUnderlyingData(DataBuffer buffer);
+
+    void read(DataInputStream s);
+
+    void write(DataOutputStream out) throws IOException;
 
     /**
      * Returns the backing array

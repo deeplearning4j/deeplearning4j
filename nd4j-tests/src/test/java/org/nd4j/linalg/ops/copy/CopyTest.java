@@ -1,6 +1,9 @@
 package org.nd4j.linalg.ops.copy;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -10,21 +13,12 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 /**
  * Created by agibsonccc on 2/12/16.
  */
+@RunWith(Parameterized.class)
 public class CopyTest  extends BaseNd4jTest {
-    public CopyTest() {
-    }
-
-    public CopyTest(Nd4jBackend backend) {
+   public CopyTest(Nd4jBackend backend) {
         super(backend);
     }
 
-    public CopyTest(String name) {
-        super(name);
-    }
-
-    public CopyTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Test
     public void testCopy() {

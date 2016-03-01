@@ -19,11 +19,9 @@
 
 package org.nd4j.linalg;
 
-import junit.framework.TestSuite;
 import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
-import org.nd4j.linalg.factory.Nd4j;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
@@ -34,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.List;
 
 /**
  * Test suite for nd4j.
@@ -44,13 +43,34 @@ import java.util.*;
  * @author Adam Gibson
  */
 
-@RunWith(AllTests.class)
-public class Nd4jTestSuite {
+public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     //the system property for what backends should run
     public final static String CLASSES_TO_LOAD = "org.nd4j.linalg.tests.classestorun";
     public final static String BACKENDS_TO_LOAD = "org.nd4j.linalg.tests.backendstorun";
     public final static String METHODS_TO_RUN = "org.nd4j.linalg.tests.methods";
     private static Logger log = LoggerFactory.getLogger(Nd4jTestSuite.class);
+    private int curr;
+    private List<FrameworkMethod> methods;
+    private static List<Nd4jBackend> backends;
+    static {
+        ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
+        backends = new ArrayList<>();
+        while(backendIterator.hasNext())
+            backends.add(backendIterator.next());
+
+
+    }
+    /**
+     * Only called reflectively. Do not use programmatically.
+     *
+     * @param klass
+     */
+    public Nd4jTestSuite(Class<?> klass) throws Throwable {
+        super(klass);
+        methods = computeTestMethods();
+    }
+
 
     /**
      * Based on the jvm arguments, an empty list is returned
@@ -117,13 +137,77 @@ public class Nd4jTestSuite {
         return ret;
 
     }
-
-
-    public static TestSuite suite() throws Exception  {
-        TestSuite testSuite = new TestSuite();
-        //iterate over the backends
+    /**
+     * Isolated way of getting the tests to run
+     * @return
+     * @throws Exception
+     */
+    public static List<FrameworkMethod> testsToRunFramework() throws Exception {
         ServiceLoader<Nd4jBackend> backends = ServiceLoader.load(Nd4jBackend.class);
         Iterator<Nd4jBackend> backendIterator = backends.iterator();
+        List<FrameworkMethod> ret = new ArrayList<>();
+        //find all test classes on the class path
+        Reflections reflections = new Reflections("org.nd4j");
+        Set<Class<? extends BaseNd4jTest>> testClasses = reflections.getSubTypesOf(BaseNd4jTest.class);
+        List<Nd4jBackend> nd4jBackends = new ArrayList<>();
+
+        //an empty list if all backends should be run or a list of the backends to run
+        //this is relative to the jvm args as described above
+        List<String> classesToRun = testClassesToRun();
+        List<String> backendsToRun = backendsToRun();
+        List<String> methodsToRun = methodsToRun();
+
+        while(backendIterator.hasNext()) {
+            nd4jBackends.add(backendIterator.next());
+        }
+
+        for(Class<? extends BaseNd4jTest> clazz : testClasses) {
+            //skip unwanted backends
+            if(!classesToRun.isEmpty() && !classesToRun.contains(clazz.getName()) || Modifier.isAbstract(clazz.getModifiers()) || BaseComplexNDArrayTests.class.isAssignableFrom(clazz) || clazz.getAnnotation(Ignore.class) != null)
+                continue;
+
+            for(Nd4jBackend backend : nd4jBackends) {
+                if(!backendsToRun.isEmpty() && !backendsToRun.contains(backend.getClass().getName()))
+                    continue;
+                Properties  backendProps = backend.getProperties();
+                //only run if the hardware supports it: eg gpus
+                if(backend.canRun()) {
+                    //instantiate the method with the test
+                    Method[]  methods = clazz.getDeclaredMethods();
+                    for(Method method : methods) {
+                        Annotation[] annotations = method.getDeclaredAnnotations();
+                        if(annotations == null || annotations.length < 1)
+                            continue;
+                        if(!annotations[0].annotationType().equals(org.junit.Test.class))
+                            continue;
+                        if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
+                            continue;
+                        log.info("Constructing test for backend " + backend.getClass().getName());
+                        //backout if the test ordering and backend ordering dont line up
+                        //unless the ordering is a (the default) which means all
+                        ret.add(new FrameworkMethod(method));
+
+                    }
+
+                }
+
+
+            }
+        }
+
+        return ret;
+
+    }
+
+    /**
+     * Isolated way of getting the tests to run
+     * @return
+     * @throws Exception
+     */
+    public static List<BaseNd4jTest> testsToRun() throws Exception {
+        ServiceLoader<Nd4jBackend> backends = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = backends.iterator();
+        List<BaseNd4jTest> ret = new ArrayList<>();
         //find all test classes on the class path
         Reflections reflections = new Reflections("org.nd4j");
         Set<Class<? extends BaseNd4jTest>> testClasses = reflections.getSubTypesOf(BaseNd4jTest.class);
@@ -166,9 +250,7 @@ public class Nd4jTestSuite {
                             BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
                             //backout if the test ordering and backend ordering dont line up
                             //unless the ordering is a (the default) which means all
-                            char ordering = test.ordering();
-                            char backendOrdering = backendProps.getProperty(Nd4j.ORDER_KEY).charAt(0);
-                            testSuite.addTest(test);
+                            ret.add(test);
 
                         }catch(InstantiationException e) {
                             throw new RuntimeException("Failed to construct backend " + backend.getClass() + " with method " + method.getName() + " with class " + clazz.getName(),e);
@@ -182,9 +264,9 @@ public class Nd4jTestSuite {
             }
         }
 
-        return testSuite;
-
+        return ret;
 
     }
+
 
 }

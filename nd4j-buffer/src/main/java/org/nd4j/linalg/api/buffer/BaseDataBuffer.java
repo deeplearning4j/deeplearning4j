@@ -56,20 +56,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected int offset;
     protected int elementSize;
     protected transient ByteBuffer wrappedBuffer;
-    protected DataBuffer wrappedDataBuffer;
+    protected transient DataBuffer wrappedDataBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected boolean isPersist = false;
     protected AllocationMode allocationMode;
-    protected double[] doubleData;
-    protected int[] intData;
-    protected float[] floatData;
-    protected Pointer pointer;
+    protected transient  double[] doubleData;
+    protected transient  int[] intData;
+    protected transient float[] floatData;
+    protected transient Pointer pointer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
     // Allocator-related stuff. Moved down here to avoid type casting.
     protected transient DataBuffer originalBuffer;
     protected transient int originalOffset = 0;
     protected transient Long trackingPoint;
+
+    public BaseDataBuffer() {
+    }
 
     /**
      * Meant for creating another view of a buffer
@@ -102,10 +105,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 double[] underlyingArray = (double[]) underlyingBuffer.array();
-                this.doubleData = underlyingArray;
+                if(underlyingArray != null)
+                    this.doubleData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = new JavaCppDoublePointer(length());
+                pointer = underlyingBuffer.pointer();
                 this.wrappedBuffer = pointer.asByteBuffer();
             }
             else {
@@ -116,7 +122,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(underlyingBuffer.dataType() == Type.FLOAT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 float[] underlyingArray = (float[]) underlyingBuffer.array();
-                this.floatData = underlyingArray;
+                if(underlyingArray != null)
+                    this.floatData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
@@ -131,7 +140,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(underlyingBuffer.dataType() == Type.INT) {
             if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
                 int[] underlyingArray = (int[]) underlyingBuffer.array();
-                this.intData = underlyingArray;
+                if(underlyingArray != null)
+                    this.intData = underlyingArray;
+                else
+                    this.wrappedBuffer = underlyingBuffer.asNio();
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
@@ -206,7 +218,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
-            pointer = new JavaCppFloatPointer(ArrayUtil.copy(data));
+            pointer = new FloatPointer(ArrayUtil.copy(data));
             wrappedBuffer = pointer.asByteBuffer();
         }
         else {
@@ -253,7 +265,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new JavaCppDoublePointer(ArrayUtil.copy(data));
+                pointer = new DoublePointer(ArrayUtil.copy(data));
             }
             else {
                 pointer = new DoublePointer(data);
@@ -304,7 +316,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(copy) {
-                pointer = new JavaCppIntPointer(ArrayUtil.copy(data));
+                pointer = new IntPointer(ArrayUtil.copy(data));
                 wrappedBuffer = pointer.asByteBuffer();
             }
 
@@ -519,13 +531,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(dataType() == Type.DOUBLE) {
-                pointer = new JavaCppDoublePointer(length());
+                pointer = new DoublePointer(length());
+                pointer.fill(0);
+
             }
             else if(dataType() == Type.FLOAT) {
-                pointer = new JavaCppFloatPointer(length());
+                pointer = new FloatPointer(length());
+                pointer.fill(0);
+
             }
             else if(dataType() == Type.INT) {
-                pointer = new JavaCppIntPointer(length());
+                pointer = new IntPointer(length());
+                pointer.fill(0);
+
             }
             wrappedBuffer = pointer.asByteBuffer();
         }
@@ -565,11 +583,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public long address() {
         switch(allocationMode) {
-            case JAVACPP: return pointer.address();
+            case JAVACPP: return pointer.address() + getElementSize() * offset();
             case DIRECT:
                 if(wrappedBuffer.isDirect())
                     try {
-                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField());
+                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -594,7 +612,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
                 try {
                     //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
-                    int offset = UnsafeHolder.getUnsafe().arrayBaseOffset(array().getClass());
                     int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
                     switch (scale) {
                         case 4:
@@ -602,9 +619,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                             final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
                             return i1;
                         case 8:
-                            throw new AssertionError("Not supported");
+                            long addressOfObject	= UnsafeHolder.getUnsafe().getLong(array(), offset);
+                            return addressOfObject;
                     }
-                }catch(Exception e) {
+                }
+                catch(Exception e) {
                     throw new IllegalStateException("Unable to detect pointer");
 
                 }
@@ -1257,8 +1276,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
 
 
-
-    protected void read(DataInputStream s) {
+    @Override
+    public void read(DataInputStream s) {
         try {
             referencing = Collections.synchronizedSet(new HashSet<String>());
             dirty = new AtomicBoolean(false);
@@ -1267,19 +1286,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
             Type t = Type.valueOf(s.readUTF());
             if(t == Type.DOUBLE) {
                 if(allocationMode == AllocationMode.HEAP) {
-                    if (this.dataType() == Type.FLOAT) { //DataBuffer type
-                        // double -> float
-                        floatData = new float[length()];
-                    } else if (this.dataType() == Type.DOUBLE) {
-                        //double -> double
-                        doubleData = new double[length()];
-                    } else {
-                        //double -> int
-                        intData = new int[length()];
-                    }
+                    doubleData = new double[length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
+
                 }
                 else {
                     wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
@@ -1289,27 +1300,34 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
             }
-            else {
+            else if(t == Type.FLOAT) {
                 if(allocationMode == AllocationMode.HEAP) {
-                    if (this.dataType() == Type.FLOAT) { //DataBuffer type
-                        // float -> float
-                        floatData = new float[length()];
-                    } else if (this.dataType() == Type.DOUBLE) {
-                        //float -> double
-                        doubleData = new double[length()];
-                    } else {
-                        //float-> int
-                        intData = new int[length()];
-                    }
+                    floatData = new float[length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
+
                 }
                 else {
                     wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
                     wrappedBuffer.order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
+                    }
+                }
+            }
+            else {
+                if(allocationMode == AllocationMode.HEAP) {
+                    intData = new int[length()];
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readInt());
+                    }
+                }
+                else {
+                    wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
+                    wrappedBuffer.order(ByteOrder.nativeOrder());
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readInt());
                     }
                 }
             }
@@ -1321,14 +1339,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
-
-    protected void write(DataOutputStream out) throws IOException {
+    @Override
+    public void write(DataOutputStream out) throws IOException {
         out.writeUTF(allocationMode.name());
         out.writeInt(length());
         out.writeUTF(dataType().name());
         if(dataType() == Type.DOUBLE) {
             for(int i = 0; i < length(); i++)
                 out.writeDouble(getDouble(i));
+        }
+        else if(dataType() == Type.INT) {
+            for(int i = 0; i < length(); i++)
+                out.writeInt(getInt(i));
         }
         else {
             for(int i = 0; i < length(); i++)
@@ -1346,7 +1368,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return floatData;
         if(doubleData != null)
             return doubleData;
-        throw new UnsupportedOperationException();
+        else if (intData != null)
+            return intData;
+        return null;
     }
 
     @Override

@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.iterator;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -12,17 +14,8 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class NDIndexIteratorTest extends BaseNd4jTest {
-    public NDIndexIteratorTest() {
-    }
-
-    public NDIndexIteratorTest(String name) {
-        super(name);
-    }
-
-    public NDIndexIteratorTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public NDIndexIteratorTest(Nd4jBackend backend) {
         super(backend);

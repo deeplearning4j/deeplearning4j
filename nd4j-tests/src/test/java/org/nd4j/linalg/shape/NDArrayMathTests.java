@@ -1,6 +1,9 @@
 package org.nd4j.linalg.shape;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -11,22 +14,13 @@ import org.nd4j.linalg.util.NDArrayMath;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class NDArrayMathTests extends BaseNd4jTest {
-
-    public NDArrayMathTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public NDArrayMathTests() {
-    }
 
     public NDArrayMathTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public NDArrayMathTests(String name) {
-        super(name);
-    }
 
     @Test
     public void testVectorPerSlice() {

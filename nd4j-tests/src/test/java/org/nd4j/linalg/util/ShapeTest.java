@@ -1,6 +1,9 @@
 package org.nd4j.linalg.util;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -14,21 +17,13 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class ShapeTest extends BaseNd4jTest {
-    public ShapeTest() {
-    }
 
     public ShapeTest(Nd4jBackend backend) {
         super(backend);
     }
 
-    public ShapeTest(String name) {
-        super(name);
-    }
-
-    public ShapeTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Test
     public void testToOffsetZero() {

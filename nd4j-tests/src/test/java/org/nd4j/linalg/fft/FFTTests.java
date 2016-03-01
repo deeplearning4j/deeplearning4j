@@ -22,6 +22,8 @@ package org.nd4j.linalg.fft;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -30,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.*;
 
 /**
  * Base class for FFTs
@@ -37,23 +40,16 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  * @author Adam Gibson
  */
 @Ignore
+@RunWith(Parameterized.class)
 public  class FFTTests extends BaseNd4jTest {
 
 
-    public FFTTests(String name) {
-        super(name);
-    }
 
     public FFTTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public FFTTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
-    public FFTTests() {
-    }
 
     @Test
     public void testVectorFftOnes() {

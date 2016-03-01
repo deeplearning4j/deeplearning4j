@@ -21,6 +21,8 @@ package org.nd4j.linalg.fft;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,22 +38,11 @@ import static org.junit.Assert.assertTrue;
  * @author Adam Gibson
  */
 @Ignore
+@RunWith(Parameterized.class)
 public  class IFFTTests extends BaseNd4jTest {
 
     public IFFTTests(Nd4jBackend backend) {
         super(backend);
-    }
-
-    public IFFTTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public IFFTTests(String name) {
-        super(name);
-    }
-
-    public IFFTTests() {
-        super();
     }
 
     @Test

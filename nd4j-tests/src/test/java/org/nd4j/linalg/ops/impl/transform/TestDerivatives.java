@@ -7,6 +7,8 @@ import java.util.Random;
 
 import org.apache.commons.math3.util.FastMath;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,24 +17,16 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+@RunWith(Parameterized.class)
 public class TestDerivatives extends BaseNd4jTest {
 	
 	public static final double REL_ERROR_TOLERANCE = 1e-3;
 
-    public TestDerivatives() {
-    }
 
     public TestDerivatives(Nd4jBackend backend) {
         super(backend);
     }
 
-    public TestDerivatives(String name) {
-        super(name);
-    }
-
-    public TestDerivatives(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     static {
 		Nd4j.dtype = DataBuffer.Type.DOUBLE;

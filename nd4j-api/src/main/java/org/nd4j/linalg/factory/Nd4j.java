@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
+import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -54,6 +55,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.io.Resource;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
@@ -953,14 +955,10 @@ public class Nd4j {
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */
-    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset) {
-        int length = underlyingBuffer.underlyingLength() - offset;
+    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset,int length) {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
     }
 
-    public static DataBuffer createBuffer(IntBuffer intBuffer) {
-        return null;
-    }
 
     /**
      *
@@ -1939,23 +1937,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        int dimensions = dis.readInt();
-        int[] shape = new int[dimensions];
-        int[] stride = new int[dimensions];
-
-        for (int i = 0; i < dimensions; i++)
-            shape[i] = dis.readInt();
-        for (int i = 0; i < dimensions; i++)
-            stride[i] = dis.readInt();
-        String dataType = dis.readUTF();
-        String type = dis.readUTF();
-
-        if (!type.equals("real"))
-            throw new IllegalArgumentException("Trying to read in a complex ndarray");
-
-        DataBuffer buf = Nd4j.createBuffer(ArrayUtil.prod(shape));
-        buf.read(dis);
-        return create(buf,shape,stride,0);
+        return SerializationUtils.readObject(dis);
 
 
     }
@@ -1968,16 +1950,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(INDArray arr, DataOutputStream dataOutputStream) throws IOException {
-        dataOutputStream.writeInt(arr.shape().length);
-        for (int i = 0; i < arr.shape().length; i++)
-            dataOutputStream.writeInt(arr.size(i));
-        for (int i = 0; i < arr.stride().length; i++)
-            dataOutputStream.writeInt(arr.stride(i));
-
-        dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
-        dataOutputStream.writeUTF("real");
-        arr.data().write(dataOutputStream);
-
+        SerializationUtils.writeObject(arr,dataOutputStream);
     }
 
     /**
@@ -4682,20 +4655,12 @@ public class Nd4j {
      */
     public void initWithBackend(Nd4jBackend backend) {
         try {
-            Resource c = backend.getConfigurationResource();
-            props = new Properties();
-            props.load(c.getInputStream());
-            for (String key : props.stringPropertyNames())
-                System.setProperty(key, props.getProperty(key));
+            props = Nd4jContext.getInstance().getConf();
+            InputStream is = backend.getConfigurationResource().getInputStream();
+            Nd4jContext.getInstance().updateProperties(is);
+            is.close();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
-            if(otherAlloc.equals("heap"))
-                alloc = DataBuffer.AllocationMode.HEAP;
-            else if(otherAlloc.equals("direct"))
-                alloc = DataBuffer.AllocationMode.DIRECT;
-            else if(otherAlloc.equals("javacpp"))
-                alloc = DataBuffer.AllocationMode.JAVACPP;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));

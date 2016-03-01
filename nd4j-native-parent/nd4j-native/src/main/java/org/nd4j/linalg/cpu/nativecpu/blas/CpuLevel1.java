@@ -9,13 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.CBLAS;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
-
-
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
 
 
 
@@ -79,7 +73,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        return CBLAS.snrm2(N,X.data().asNioFloat(),incX);
+        return nd4jBlas.snrm2(DUMMY,N,X.data().address(),incX);
 
     }
 

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import static org.junit.Assert.*;
 
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
@@ -46,17 +47,6 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
 
     public FloatDataBufferTest(Nd4jBackend backend) {
         super(backend);
-    }
-
-    public FloatDataBufferTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public FloatDataBufferTest(String name) {
-        super(name);
-    }
-
-    public FloatDataBufferTest() {
     }
 
     @Before
@@ -179,7 +169,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
     }
 
     @Test
-    public void testReadWrite() {
+    public void testReadWrite() throws Exception {
         DataBuffer assertion = Nd4j.createBuffer(new double[]{1, 2, 3});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);

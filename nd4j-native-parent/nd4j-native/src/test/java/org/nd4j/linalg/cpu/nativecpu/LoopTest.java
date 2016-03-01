@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class LoopTest {
-    private static Logger log = LoggerFactory.getLogger(LoopTest.class);
 
     @Test
     public void testLoop() {
@@ -437,11 +436,10 @@ public class LoopTest {
 
     @Test
     public void testGemvApacheCommons() {
-
         int[] rowsArr = new int[]{4,4,4,8,8,8};
         int[] colsArr = new int[]{2,1,10,2,1,10};
 
-        for( int x = 0; x < rowsArr.length; x++ ) {
+        for( int x = 0; x < rowsArr.length; x++) {
             int rows = rowsArr[x];
             int cols = colsArr[x];
 
@@ -488,6 +486,8 @@ public class LoopTest {
             }
         }
     }
+
+
     private static String getTestWithOpsErrorMsg(int i, int j, String op, Pair<INDArray,String> first, Pair<INDArray,String> second) {
         return i + "," + j + " - " + first.getSecond() + "." + op + "(" + second.getSecond() + ")";
     }
@@ -869,8 +869,8 @@ public class LoopTest {
 
     @Test
     public void testLength() {
-        INDArray values = Nd4j.create(2, 2);
-        INDArray values2 = Nd4j.create(2, 2);
+        INDArray values = Nd4j.create(new int[] {2, 2},'c');
+        INDArray values2 = Nd4j.create(new int[] {2, 2},'c');
 
         values.put(0, 0, 0);
         values2.put(0, 0, 2);
@@ -1095,7 +1095,7 @@ public class LoopTest {
 
         //ReLU:
         //f(x) = max(0,x)
-        //Piecewise differentiable; choose f'(0) = 0
+        //Piecewise diffteserentiable; choose f'(0) = 0
         //f'(x) = 1 if x > 0
         //f'(x) = 0 if x <= 0
 

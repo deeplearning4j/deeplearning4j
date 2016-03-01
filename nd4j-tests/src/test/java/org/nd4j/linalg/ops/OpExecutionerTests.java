@@ -19,9 +19,12 @@
 
 
 package org.nd4j.linalg.ops;
+import static org.junit.Assert.*;
 
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -46,21 +49,14 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 /**
  * Created by agibsonccc on 2/22/15.
  */
+@RunWith(Parameterized.class)
 public  class OpExecutionerTests extends BaseNd4jTest {
-    public OpExecutionerTests() {
-    }
+
 
     public OpExecutionerTests(Nd4jBackend backend) {
         super(backend);
     }
 
-    public OpExecutionerTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
-
-    public OpExecutionerTests(String name) {
-        super(name);
-    }
 
 
 

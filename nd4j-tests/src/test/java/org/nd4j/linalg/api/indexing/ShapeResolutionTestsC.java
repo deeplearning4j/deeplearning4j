@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.indexing;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,21 +20,12 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class ShapeResolutionTestsC extends BaseNd4jTest {
 
-    public ShapeResolutionTestsC(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public ShapeResolutionTestsC(Nd4jBackend backend) {
         super(backend);
-    }
-
-    public ShapeResolutionTestsC() {
-    }
-
-    public ShapeResolutionTestsC(String name) {
-        super(name);
     }
 
 

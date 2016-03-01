@@ -19,6 +19,8 @@
 package org.nd4j.linalg.learning;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -31,24 +33,17 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
 
     private static final Logger log = LoggerFactory.getLogger(UpdaterTest.class);
 
-    public UpdaterTest(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
-    public UpdaterTest() {
-    }
 
     public UpdaterTest(Nd4jBackend backend) {
         super(backend);
     }
 
-    public UpdaterTest(String name) {
-        super(name);
-    }
 
     @Test
     public void testAdaGrad1() {

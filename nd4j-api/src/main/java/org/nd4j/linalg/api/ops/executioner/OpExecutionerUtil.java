@@ -16,7 +16,9 @@ public class OpExecutionerUtil {
      * In general, this is possible if the elements of X are contiguous in the buffer, OR if every element
      * of X is at position offset+i*elementWiseStride in the buffer
      * */
-    public static boolean canDoOpDirectly(INDArray x){
+    public static boolean canDoOpDirectly(INDArray x) {
+        if(x.elementWiseStride() < 1)
+            return false;
         if(x.isVector()) return true;
 
         //For a single NDArray all we require is that the elements are contiguous in the buffer or every nth element
@@ -24,7 +26,8 @@ public class OpExecutionerUtil {
         //Full buffer -> implies all elements are contiguous (and match)
         int l1 = x.length();
         int dl1 = x.data().length();
-        if(l1 == dl1) return true;
+        if(l1 == dl1)
+            return true;
 
         //Strides are same as a zero offset NDArray -> all elements are contiguous (even if not offset 0)
         int[] shape1 = x.shape();
@@ -37,7 +40,8 @@ public class OpExecutionerUtil {
     public static boolean canDoOpDirectly(INDArray x, INDArray y){
         if(x.isVector()) return true;
         if(x.ordering() != y.ordering()) return false; //other than vectors, elements in f vs. c NDArrays will never line up
-
+        if(x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
+            return false;
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         //Need strides to match, otherwise elements in buffer won't line up (i.e., c vs. f order arrays)
         int l1 = x.length();
@@ -47,10 +51,11 @@ public class OpExecutionerUtil {
         int[] strides1 = x.stride();
         int[] strides2 = y.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2);
-        if(l1==dl1 && l2==dl2 && equalStrides) return true;
+        if(l1 == dl1 && l2 == dl2 && equalStrides)
+            return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
-        if(equalStrides){
+        if(equalStrides) {
             int[] shape1 = x.shape();
             int[] stridesAsInit = (x.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
             boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
@@ -64,7 +69,8 @@ public class OpExecutionerUtil {
     public static boolean canDoOpDirectly(INDArray x, INDArray y, INDArray z){
         if(x.isVector()) return true;
         if(x.ordering() != y.ordering() || x.ordering() != z.ordering() ) return false; //other than vectors, elements in f vs. c NDArrays will never line up
-
+        if(x.elementWiseStride() < 1 || y.elementWiseStride() < 1)
+            return false;
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         int l1 = x.length();
         int dl1 = x.data().length();
@@ -76,7 +82,8 @@ public class OpExecutionerUtil {
         int[] strides2 = y.stride();
         int[] strides3 = z.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2) && Arrays.equals(strides1,strides3);
-        if(l1==dl1 && l2==dl2 && l3==dl3 && equalStrides) return true;
+        if(l1 == dl1 && l2 == dl2 && l3 == dl3 && equalStrides)
+            return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
         if(equalStrides) {

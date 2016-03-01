@@ -1,6 +1,9 @@
 package org.nd4j.linalg.slicing;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,17 +12,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class SlicingTests extends BaseNd4jTest  {
-    public SlicingTests() {
-    }
-
-    public SlicingTests(String name) {
-        super(name);
-    }
-
-    public SlicingTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public SlicingTests(Nd4jBackend backend) {
         super(backend);

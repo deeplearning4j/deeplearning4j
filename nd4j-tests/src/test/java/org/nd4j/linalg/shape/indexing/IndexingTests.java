@@ -1,7 +1,9 @@
 package org.nd4j.linalg.shape.indexing;
 
-import org.apache.commons.lang3.ArrayUtils;
+import static org.junit.Assert.*;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,18 +14,8 @@ import org.nd4j.linalg.indexing.SpecifiedIndex;
 /**
  * @author Adam Gibson
  */
+@RunWith(Parameterized.class)
 public class IndexingTests extends BaseNd4jTest  {
-
-    public IndexingTests() {
-    }
-
-    public IndexingTests(String name) {
-        super(name);
-    }
-
-    public IndexingTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     public IndexingTests(Nd4jBackend backend) {
         super(backend);

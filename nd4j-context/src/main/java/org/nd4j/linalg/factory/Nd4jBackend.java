@@ -179,7 +179,10 @@ public abstract class Nd4jBackend {
     public Nd4jContext getContext() throws IOException {
         return Nd4jContext.getInstance();
     }
-
+    @Override
+    public String toString() {
+        return getClass().getName();
+    }
     @SuppressWarnings("serial")
     public static class NoAvailableBackendException extends Exception {}
 }

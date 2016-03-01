@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg;
 
+import static org.junit.Assert.*;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -26,6 +27,8 @@ import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
@@ -40,27 +43,20 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**Tests comparing Nd4j ops to other libraries
+/**
+ * Tests comparing Nd4j ops to other libraries
  */
+@RunWith(Parameterized.class)
 public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);
 
     public static final int SEED = 123;
 
-    public Nd4jTestsComparisonFortran() {
-    }
-
-    public Nd4jTestsComparisonFortran(String name) {
-        super(name);
-    }
 
     public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
         super(backend);
     }
 
-    public Nd4jTestsComparisonFortran(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Before
     public void before() {
@@ -82,20 +78,20 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     public char ordering() {
         return 'f';
     }
-    
+
     @Test
     public void testMmulWithOpsCommonsMath(){
-    	List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
+        List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
 
-      	for( int i = 0; i < first.size(); i++ ){
-    		for( int j = 0; j < second.size(); j++ ){
-    			Pair<INDArray,String> p1 = first.get(i);
-    			Pair<INDArray,String> p2 = second.get(j);
-    			String errorMsg = getTestWithOpsErrorMsg(i,j,"mmul",p1,p2);
-    			assertTrue(errorMsg, CheckUtil.checkMmul(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
-    		}
-    	}
+        for( int i = 0; i < first.size(); i++ ){
+            for( int j = 0; j < second.size(); j++ ){
+                Pair<INDArray,String> p1 = first.get(i);
+                Pair<INDArray,String> p2 = second.get(j);
+                String errorMsg = getTestWithOpsErrorMsg(i,j,"mmul",p1,p2);
+                assertTrue(errorMsg, CheckUtil.checkMmul(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+            }
+        }
     }
 
     @Test
@@ -205,23 +201,23 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
             }
         }
     }
-    
+
     @Test
     public void testAddSubtractWithOpsCommonsMath() {
-    	List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	for( int i = 0; i< first.size(); i++) {
-    		for( int j = 0; j< second.size(); j++) {
-    			Pair<INDArray,String> p1 = first.get(i);
-    			Pair<INDArray,String> p2 = second.get(j);
-    			String errorMsg1 = getTestWithOpsErrorMsg(i, j, "add", p1, p2);
-    			String errorMsg2 = getTestWithOpsErrorMsg(i, j, "sub", p1, p2);
+        List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        for( int i = 0; i< first.size(); i++) {
+            for( int j = 0; j< second.size(); j++) {
+                Pair<INDArray,String> p1 = first.get(i);
+                Pair<INDArray,String> p2 = second.get(j);
+                String errorMsg1 = getTestWithOpsErrorMsg(i, j, "add", p1, p2);
+                String errorMsg2 = getTestWithOpsErrorMsg(i, j, "sub", p1, p2);
                 boolean addFail = CheckUtil.checkAdd(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
-    			assertTrue(errorMsg1,addFail);
+                assertTrue(errorMsg1,addFail);
                 boolean subFail = CheckUtil.checkSubtract(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
                 assertTrue(errorMsg2,subFail);
-    		}
-    	}
+            }
+        }
     }
 
     @Test
