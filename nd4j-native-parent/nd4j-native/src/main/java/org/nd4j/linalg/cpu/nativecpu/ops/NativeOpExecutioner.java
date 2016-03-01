@@ -205,7 +205,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
-                    loop.execReduce3Float(
+                    loop.execReduce3Double(
                             dummy,
                             op.opNum(),
                             op.x().data().address(),
@@ -229,11 +229,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getAddressForExtraArgs(op)));
                 }
                 else {
-                    loop.execReduceFloat(
+                    loop.execReduceDouble(
                             dummy,
                             op.opNum(),
                             op.x().data().address(),
-                            op.x().shapeInfoDataBuffer().address(),getAddressForExtraArgs(op),
+                            op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op),
                             op.z().data().address(),
                             op.z().shapeInfoDataBuffer().address(),
                             dimensionAddress, dimension.length);
@@ -557,22 +557,24 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), 0));
+                            ,op.x().shapeInfoDataBuffer().address(),  getAddressForExtraArgs(op)));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarFloat(
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), 0,
-                            op.y().data().address(), op.y().shapeInfoDataBuffer().address()));
+                            ,op.x().shapeInfoDataBuffer().address(),
+                            getAddressForExtraArgs(op),
+                            op.y().data().address(),
+                            op.y().shapeInfoDataBuffer().address()));
                 }
                 else {
                     op.setFinalResult(loop.execReduceScalarFloat(
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), 0));
+                            ,op.x().shapeInfoDataBuffer().address(),  getAddressForExtraArgs(op)));
                 }
             }
         }

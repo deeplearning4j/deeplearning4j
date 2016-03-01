@@ -55,6 +55,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.io.Resource;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
@@ -1936,23 +1937,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        int dimensions = dis.readInt();
-        int[] shape = new int[dimensions];
-        int[] stride = new int[dimensions];
-
-        for (int i = 0; i < dimensions; i++)
-            shape[i] = dis.readInt();
-        for (int i = 0; i < dimensions; i++)
-            stride[i] = dis.readInt();
-        String dataType = dis.readUTF();
-        String type = dis.readUTF();
-
-        if (!type.equals("real"))
-            throw new IllegalArgumentException("Trying to read in a complex ndarray");
-
-        DataBuffer buf = Nd4j.createBuffer(ArrayUtil.prod(shape));
-        buf.read(dis);
-        return create(buf,shape,stride,0);
+        return SerializationUtils.readObject(dis);
 
 
     }
@@ -1965,16 +1950,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(INDArray arr, DataOutputStream dataOutputStream) throws IOException {
-        dataOutputStream.writeInt(arr.shape().length);
-        for (int i = 0; i < arr.shape().length; i++)
-            dataOutputStream.writeInt(arr.size(i));
-        for (int i = 0; i < arr.stride().length; i++)
-            dataOutputStream.writeInt(arr.stride(i));
-
-        dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
-        dataOutputStream.writeUTF("real");
-        arr.data().write(dataOutputStream);
-
+        SerializationUtils.writeObject(arr,dataOutputStream);
     }
 
     /**

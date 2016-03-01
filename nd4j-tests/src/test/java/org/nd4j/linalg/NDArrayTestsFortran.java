@@ -350,7 +350,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testCosineSim() {
-
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
@@ -1272,28 +1271,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testAssignNumber(){
-        int nRows = 10;
-        int nCols = 20;
-        INDArray in = Nd4j.create(nRows, nCols);
 
-        INDArray subset1 = in.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(0,nCols/2));
-        subset1.assign(1.0);
-
-        INDArray subset2 = in.get(NDArrayIndex.interval(5,8), NDArrayIndex.interval(nCols/2,nCols));
-        subset2.assign(2.0);
-
-        for( int i=0; i<10; i++ ){
-            for( int j=0; j<20; j++ ){
-                double expected = 0.0;
-                if(i == 0 && j < nCols/2) expected = 1.0;
-                else if(i >= 5 && i < 8 && j >= nCols/2 && j < nCols ) expected = 2.0;
-                double actual = in.getDouble(i, j);
-                assertEquals(expected,actual,0.0);
-            }
-        }
-    }
 
     @Override
     public char ordering() {
