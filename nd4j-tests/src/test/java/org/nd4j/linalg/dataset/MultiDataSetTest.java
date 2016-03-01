@@ -281,4 +281,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(expectedMaskOut0, merged.getLabelsMaskArray(0));
         assertEquals(expectedMaskOut1, merged.getLabelsMaskArray(1));
     }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }
