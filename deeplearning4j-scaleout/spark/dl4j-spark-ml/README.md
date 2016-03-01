@@ -35,12 +35,8 @@ sbt publishM2
 ```
 
 ## Using DL4J with Spark ML
-### Examples
-Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples).  ML-related examples:
 
-- `ml.JavaIrisClassification`
-- `ml.JavaLfwClassification`
-- `ml.JavaMnistClassification`
+We currently encourage everyone to use versions of Spark that are not Spark ML. [Examples](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples).
 
 ### Data Sources
 

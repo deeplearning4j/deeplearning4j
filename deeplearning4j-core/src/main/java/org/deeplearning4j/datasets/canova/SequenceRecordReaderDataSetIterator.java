@@ -380,7 +380,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         recordReader.reset();
-        labelsReader.reset();
+        if(labelsReader != null) labelsReader.reset();  //May be null for single seqRR case
         cursor = 0;
         stored = null;
         useStored = false;

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -66,12 +67,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected StepFunction stepFunction;
     protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
+    @Deprecated
     protected boolean useSchedules = false;
     //minimize or maximize objective
     protected boolean minimize = true;
     // Graves LSTM & RNN
     @Deprecated
     private int timeSeriesLength = 1;
+    protected Map<String,Double> learningRateByParam = new HashMap<>();
+    protected Map<String,Double> l1ByParam = new HashMap<>();
+    protected Map<String,Double> l2ByParam = new HashMap<>();
+    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+    protected double lrPolicyDecayRate;
+    protected double lrPolicySteps;
+    protected double lrPolicyPower;
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -83,6 +92,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(clone.layer != null) clone.layer = clone.layer.clone();
             if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
             if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
+            if(clone.learningRateByParam != null ) clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
+            if(clone.l1ByParam != null ) clone.l1ByParam = new HashMap<>(clone.l1ByParam);
+            if(clone.l2ByParam != null ) clone.l2ByParam = new HashMap<>(clone.l2ByParam);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -94,13 +106,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public void addVariable(String variable) {
-        if(!variables.contains(variable))
+        if(!variables.contains(variable)) {
             variables.add(variable);
+            setLayerParamLR(variable);
+        }
     }
     
     public void clearVariables(){
     	variables.clear();
     }
+
+
+    public void setLayerParamLR(String variable){
+        double lr = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
+        double l1 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL1();
+        double l2 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL2();
+        learningRateByParam.put(variable, lr);
+        l1ByParam.put(variable, l1);
+        l2ByParam.put(variable, l2);
+
+    }
+
+    public double getLearningRateByParam(String variable){
+        return learningRateByParam.get(variable);
+    }
+
+    public void setLearningRateByParam(String variable, double rate){
+        learningRateByParam.put(variable, rate);
+    }
+    public double getL1ByParam(String variable ){
+        return l1ByParam.get(variable);
+    }
+
+    public double getL2ByParam(String variable ){
+        return l2ByParam.get(variable);
+    }
+
 
     /**
      * Fluent interface for building a list of configurations
@@ -287,38 +328,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
-        private double learningRate = 1e-1;
-        private Map<Integer, Double> learningRateAfter = new HashMap<>();
-        private double lrScoreBasedDecay;
-        private double momentum = 0.5;
-        private Map<Integer, Double> momentumAfter = new HashMap<>();
-        private double l1 = 0.0;
-        private double l2 = 0.0;
+        protected double learningRate = 1e-1;
+        protected double biasLearningRate;
+        protected Map<Integer, Double> learningRateSchedule = new HashMap<>();
+        protected double lrScoreBasedDecay;
+        protected double momentum = 0.5;
+        protected Map<Integer, Double> momentumSchedule = new HashMap<>();
+        protected double l1 = 0.0;
+        protected double l2 = 0.0;
         protected double dropOut = 0;
         protected Updater updater = Updater.SGD;
-        private double rho;
-        private double rmsDecay = 0.95;
-        private double adamMeanDecay = 0.9;
-        private double adamVarDecay = 0.999;
-        private Layer layer;
-        private boolean miniBatch = true;
-        private int numIterations = 5;
-        private int maxNumLineSearchIterations = 5;
-        private long seed = System.currentTimeMillis();
-        private boolean useRegularization = false;
-        private boolean useSchedules = false;
-        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        protected double rho;
+        protected double rmsDecay = 0.95;
+        protected double adamMeanDecay = 0.9;
+        protected double adamVarDecay = 0.999;
+        protected Layer layer;
+        protected boolean miniBatch = true;
+        protected int numIterations = 5;
+        protected int maxNumLineSearchIterations = 5;
+        protected long seed = System.currentTimeMillis();
+        protected boolean useRegularization = false;
         @Deprecated
-        private boolean constrainGradientToUnitNorm = false;
-        private StepFunction stepFunction = null;
-        private boolean useDropConnect = false;
-        private boolean minimize = true;
+        protected boolean useSchedules = false;
+        protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         @Deprecated
-        private int timeSeriesLength = 1;
-        private GradientNormalization gradientNormalization = GradientNormalization.None;
-        private double gradientNormalizationThreshold = 1.0;
-
-
+        protected boolean constrainGradientToUnitNorm = false;
+        protected StepFunction stepFunction = null;
+        protected boolean useDropConnect = false;
+        protected boolean minimize = true;
+        @Deprecated
+        protected int timeSeriesLength = 1;
+        protected GradientNormalization gradientNormalization = GradientNormalization.None;
+        protected double gradientNormalizationThreshold = 1.0;
+        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+        protected double lrPolicyDecayRate;
+        protected double lrPolicySteps;
+        protected double lrPolicyPower;
 
         /**Deprecated.
          +         * Time series length
@@ -474,7 +519,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Whether to use schedules, learningRateAfter and momentumAfter*/
+        /** Whether to use schedules, learningRateSchedule and momentumSchedule*/
+        @Deprecated
         public Builder schedules(boolean schedules) {
             this.useSchedules = schedules;
             return this;
@@ -531,9 +577,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
+        public Builder biasLearningRate(double biasLearningRate){
+            this.biasLearningRate = biasLearningRate;
+            return this;
+        }
+
         /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
-        public Builder learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
+        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
+            this.learningRateSchedule = learningRateSchedule;
             return this;
         }
 
@@ -569,7 +621,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration. */
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumAfter = momentumAfter;
+            this.momentumSchedule = momentumAfter;
             return this;
         }
 
@@ -630,6 +682,38 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /** Learning rate decay policy. Used to adapt learning rate based on policy.
+         * @param policy Type of policy to use. Defaults to None.
+         */
+        public Builder learningRateDecayPolicy(LearningRatePolicy policy){
+            this.learningRatePolicy = policy;
+            return this;
+        }
+
+        /** Set the decay rate for the learning rate decay policy.
+         * @param lrPolicyDecayRate rate.
+         */
+        public Builder lrPolicyDecayRate(double lrPolicyDecayRate){
+            this.lrPolicyDecayRate = lrPolicyDecayRate;
+            return this;
+        }
+
+        /** Set the number of steps used for learning decay rate steps policy.
+         * @param lrPolicySteps number of steps
+         */
+        public Builder lrPolicySteps(double lrPolicySteps){
+            this.lrPolicySteps = lrPolicySteps;
+            return this;
+        }
+
+        /** Set the power used for learning rate inverse policy.
+         * @param lrPolicyPower power
+         */
+        public Builder lrPolicyPower(double lrPolicyPower){
+            this.lrPolicyPower = lrPolicyPower;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -651,11 +735,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-
+            conf.learningRatePolicy = learningRatePolicy;
+            conf.lrPolicyDecayRate = lrPolicyDecayRate;
+            conf.lrPolicySteps = lrPolicySteps;
+            conf.lrPolicyPower = lrPolicyPower;
 
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-                if (layer.getLearningRateAfter() == null) layer.setLearningRateAfter(learningRateAfter);
+                if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
+                if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
@@ -666,7 +754,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null) layer.setUpdater(updater);
                 if (Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
-                if (layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+                if (layer.getMomentumSchedule() == null) layer.setMomentumSchedule(momentumSchedule);
                 if (Double.isNaN(layer.getRho())) layer.setRho(rho);
                 if (Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
                 if (Double.isNaN(layer.getAdamMeanDecay())) layer.setAdamMeanDecay(adamMeanDecay);
