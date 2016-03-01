@@ -43,32 +43,30 @@ Adagrad scales alpha for each parameter according to the history of gradients (p
 
 The only difference RMSProp has with Adagrad is that the gtgtterm is calculated by exponentially decaying average and not the sum of gradients.
 
-gt+1=γgt+(1−γ)δLgt+1=γgt+(1−γ)δL(θ)2(θ)2
+![Alt text](../img/udpater_math4.png)
+
 Here gtgt is called the second order moment of δLδL . Additionally, a first order moment mtmt can also be introduced.
-mt+1=γmt+(1−γ)δLmt+1=γmt+(1−γ)δL(θ)(θ)
-gt+1=γgt+(1−γ)δLgt+1=γgt+(1−γ)δL(θ)2(θ)2
+
+![Alt text](../img/udpater_math5.png)
+
 Adding momentum as in the first case,
-vt+1=μvt−αδL(θ)gt+1−m2t+1+ϵ‾‾‾‾‾‾‾‾‾‾‾‾‾‾√vt+1=μvt−αδL(θ)gt+1−mt+12+ϵ
+
+![Alt text](../img/udpater_math6.png)
+
 And finally collecting new theta as we have done in the first example,
-θt+1=θt+vt+1θt+1=θt+vt+1
+
+![Alt text](../img/udpater_math7.png)
 
 ## AdaDelta
 
 AdaDelta also uses exponentially decaying average of gtgt which was our 2nd moment of gradient. But without using alpha that we were traditionally using as learning rate, it introduces xtxt which is the 2nd moment of vtvt.
 
-gt+1=γgt+(1−γ)▽gt+1=γgt+(1−γ)▽L(θ)2(θ)2
-xt+1=γxt+(1−γ)v2t+1xt+1=γxt+(1−γ)vt+12
-vt+1=−xt+ϵ‾‾‾‾‾‾√δL(θt)gt+1+ϵ‾‾‾‾‾‾‾‾√vt+1=−xt+ϵδL(θt)gt+1+ϵ
-θt+1=θt+vt+1θt+1=θt+vt+1
+![Alt text](../img/udpater_math8.png)
 
 ## Adam
 
 Adam uses both first-order moment mtmt and second-order moment gtgt, but they are both decayed over time. Step size is approximately ±α±α. Step size will decrease as it approaches the minimum.
 
-mt+1=γ1mt+(1−γ1)▽mt+1=γ1mt+(1−γ1)▽L(θt)(θt)
-gt+1=γ2gt+(1−γ2)▽gt+1=γ2gt+(1−γ2)▽L(θt)2(θt)2
-m̂ t+1=mt+11−γt+11m^t+1=mt+11−γ1t+1
-ĝ t+1=gt+11−γt+12g^t+1=gt+11−γ2t+1
-θt+1=θt−αm̂ t+1ĝ t+1‾‾‾‾√+ϵ
+![Alt text](../img/udpater_math9.png)
 
 [From Quora](https://www.quora.com/What-are-differences-between-update-rules-like-AdaDelta-RMSProp-AdaGrad-and-AdaM/answer/Rajarshee-Mitra?srid=Xs23&share=bc33d009)
