@@ -23,8 +23,7 @@ import java.util.List;
  */
 @RunWith(Parameterized.class)
 public class TestInvertMatrices extends BaseNd4jTest {
-    public TestInvertMatrices() {
-    }
+
 
     public TestInvertMatrices(Nd4jBackend backend) {
         super(backend);

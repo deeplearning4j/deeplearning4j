@@ -29,4 +29,8 @@ public class StandardScalerTest extends BaseNd4jTest {
         System.out.println(mean);
     }
 
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

@@ -1,6 +1,5 @@
 package org.nd4j.linalg.indexing;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -227,5 +226,10 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
     }
 }

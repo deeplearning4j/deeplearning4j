@@ -91,13 +91,13 @@ public class ShapeTest extends BaseNd4jTest {
         for(int i = 0; i < arr.length(); i++) {
             double val = arr.getDouble(i);
             double middleVal = onesInMiddle.getDouble(i);
-            assertEquals(val,middleVal);
+            assertEquals(val,middleVal,1e-1);
         }
     }
 
 
     @Test
-    public void testSumLeadingTrailingZeros(){
+    public void testSumLeadingTrailingZeros() {
         testSumHelper(1,5,5);
         testSumHelper(5,5,1);
         testSumHelper(1,5,1);

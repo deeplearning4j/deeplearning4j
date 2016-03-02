@@ -1249,6 +1249,8 @@ public class Shape {
         DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);
         int count = 1;
         ret.put(0,shape.length);
+        if(shape.length != stride.length)
+            throw new IllegalStateException("Shape and stride must be the same length");
         for (int i = 0; i < shape.length; i++) {
             ret.put(count++,shape[i]);
         }

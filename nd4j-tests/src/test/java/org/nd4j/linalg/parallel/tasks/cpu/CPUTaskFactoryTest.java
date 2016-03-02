@@ -5,8 +5,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -29,6 +31,7 @@ import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -41,18 +44,18 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
 
     @Before
     public void before()  {
+        super.before();
         Nd4j nd4j = new Nd4j();
         Nd4jBackend backend = null;
         try {
             backend = (Nd4jBackend)Class.forName("org.nd4j.linalg.cpu.CpuBackend").newInstance();
             nd4j.initWithBackend(backend);
             Nd4j.factory().setOrder('c');
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            InputStream is = backend.getConfigurationResource().getInputStream();
+            Nd4jContext.getInstance().updateProperties(is);
+            this.backend = backend;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -118,6 +121,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
+                    AllocUtil.setAllocationModeForContext(mode);
 
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -223,7 +227,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
-
+                    AllocUtil.setAllocationModeForContext(mode);
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
                     List<Pair<INDArray, String>> list2 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -329,6 +333,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
 
+                    AllocUtil.setAllocationModeForContext(mode);
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
                     List<Pair<INDArray, String>> list2 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -426,6 +431,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
+                    AllocUtil.setAllocationModeForContext(mode);
 
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -548,6 +554,8 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
+                    AllocUtil.setAllocationModeForContext(mode);
+
 
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -646,6 +654,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
+                    AllocUtil.setAllocationModeForContext(mode);
 
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
@@ -691,6 +700,8 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
         DataBuffer.AllocationMode origMode = Nd4j.alloc;
         DataBuffer.Type origType = Nd4j.dataType();
         Nd4j.alloc = mode;
+        AllocUtil.setAllocationModeForContext(mode);
+
         Nd4j.dtype = type;
         Nd4j.factory().setDType(type);
         INDArray out = Nd4j.create(original.shape());
@@ -773,7 +784,7 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
                     DataBuffer.AllocationMode mode = allocModes[t];
                     taskFactory.setParallelThreshold(threshold);
                     Nd4j.alloc = mode;
-
+                    AllocUtil.setAllocationModeForContext(mode);
                     //Test combinations of different types of NDArrays (with different combinations of offsets, strides, etc)
                     List<Pair<INDArray, String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(shape[0], shape[1], 123);
                     List<Pair<INDArray, String>> list2_0 = NDArrayCreationUtil.getAllTestMatricesWithShape(colShape[0], colShape[1], 123);
@@ -837,6 +848,12 @@ public class CPUTaskFactoryTest extends BaseNd4jTest {
         }
 
         Nd4j.alloc = origAlloc;
+        AllocUtil.setAllocationModeForContext(origAlloc);
+
     }
 
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

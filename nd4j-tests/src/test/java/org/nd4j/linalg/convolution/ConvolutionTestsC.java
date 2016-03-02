@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -146,6 +147,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
             Nd4j.factory().setDType(type);
             Nd4j.dtype = type;
             Nd4j.alloc = mode;
+            AllocUtil.setAllocationModeForContext(mode);
 
 
             for (int m : miniBatches) {
@@ -217,6 +219,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
             Nd4j.factory().setDType(type);
             Nd4j.dtype = type;
             Nd4j.alloc = mode;
+            AllocUtil.setAllocationModeForContext(mode);
 
             for (int m : miniBatches) {
                 for (int d : depths) {

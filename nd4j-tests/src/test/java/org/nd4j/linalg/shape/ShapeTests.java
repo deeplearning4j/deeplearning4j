@@ -59,7 +59,7 @@ public class ShapeTests extends BaseNd4jTest {
         double[] data = new double[]{10, 26, 42};
         INDArray assertion = Nd4j.create(data);
         for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],assertion.getDouble(i));
+            assertEquals(data[i],assertion.getDouble(i),1e-1);
         }
 
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
@@ -81,7 +81,7 @@ public class ShapeTests extends BaseNd4jTest {
         INDArray firstTensor = Nd4j.create(dataInit);
         for(int i = 0; i < firstTensor.rows(); i++) {
             for(int j = 0; j < firstTensor.columns(); j++) {
-                assertEquals(dataInit[i][j],firstTensor.getDouble(i,j));
+                assertEquals(dataInit[i][j],firstTensor.getDouble(i,j),1e-1);
             }
         }
         INDArray firstTensorTest = twoTwoByThree.tensorAlongDimension(0, 0, 1);
