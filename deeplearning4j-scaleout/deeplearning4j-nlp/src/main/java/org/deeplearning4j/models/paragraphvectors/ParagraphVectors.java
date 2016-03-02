@@ -45,6 +45,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText
      * @return
      */
+    @Deprecated
     public String predict(String rawText) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -66,6 +67,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
+    @Deprecated
     public String predict(LabelledDocument document) {
         if (document.getReferencedContent() != null)
             return predict(document.getReferencedContent());
@@ -79,6 +81,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
+    @Deprecated
     public String predict(List<VocabWord> document) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
@@ -109,6 +112,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document raw text of the document
      * @return possible labels in descending order
      */
+    @Deprecated
     public Collection<String> predictSeveral(@NonNull LabelledDocument document, int limit) {
         if (document.getReferencedContent() != null) {
             return predictSeveral(document.getReferencedContent(), limit);
@@ -122,6 +126,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText raw text of the document
      * @return possible labels in descending order
      */
+    @Deprecated
     public Collection<String> predictSeveral(String rawText, int limit) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -143,6 +148,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return possible labels in descending order
      */
+    @Deprecated
     public Collection<String> predictSeveral(List<VocabWord> document, int limit) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested

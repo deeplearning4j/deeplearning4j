@@ -60,6 +60,7 @@ public class InMemoryLookupTableTest {
         InMemoryLookupTable<VocabWord> mem1 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                 .vectorLength(100)
                 .cache(cacheSource)
+                .seed(17)
                 .build();
 
         mem1.resetWeights(true);
@@ -67,6 +68,7 @@ public class InMemoryLookupTableTest {
         InMemoryLookupTable<VocabWord> mem2 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                 .vectorLength(100)
                 .cache(cacheSource)
+                .seed(15)
                 .build();
 
         mem2.resetWeights(true);
@@ -150,6 +152,7 @@ public class InMemoryLookupTableTest {
         InMemoryLookupTable<VocabWord> mem2 = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                 .vectorLength(100)
                 .cache(cacheTarget)
+                .seed(18)
                 .build();
 
         mem2.resetWeights(true);

@@ -693,7 +693,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            return new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
+            InMemoryLookupTable table = new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
+            table.seed = seed;
+
+            return table;
         }
     }
 
@@ -736,8 +739,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
-        //    this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
-       //     this.syn1.putRow(x, srcTable.syn1.getRow(x).dup());
+            this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
+            this.syn1.putRow(x, srcTable.syn1.getRow(x).dup());
         }
     }
 }
