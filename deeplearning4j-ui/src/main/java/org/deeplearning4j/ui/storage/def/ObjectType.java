@@ -7,5 +7,6 @@ public enum  ObjectType {
     TSNE,
     HISTOGRAM,
     ACTIVATIONS,
-    FLOW
+    FLOW,
+    WORD2VEC
 }

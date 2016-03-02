@@ -30,8 +30,12 @@ import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.deeplearning4j.util.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -49,7 +53,9 @@ import java.util.*;
  */
 @Path("/word2vec")
 public class NearestNeighborsResource extends FileResource {
-    private WordVectors vectors;
+    private SessionStorage storage = SessionStorage.getInstance();
+
+    private static final Logger logger = LoggerFactory.getLogger(NearestNeighborsResource.class);
      /**
      * The file path for uploads
      *y
@@ -67,8 +73,11 @@ public class NearestNeighborsResource extends FileResource {
     @Path("/vocab")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVocab() {
+        WordVectors vectors = (WordVectors) storage.getObject("UploadedFile", ObjectType.WORD2VEC);
+        if (vectors == null) return Response.noContent().build();
+
         List<String> words = new ArrayList<>();
-        VocabCache<VocabWord> vocabCache = vectors.vocab();
+        VocabCache<VocabWord> vocabCache = (VocabCache<VocabWord> ) vectors.vocab();
         for(VocabWord word : vocabCache.vocabWords())
             words.add(word.getWord());
         return Response.ok((new ArrayList<>(words))).build();
@@ -78,6 +87,9 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/words")
     public Response getWords(NearestNeighborsQuery query) {
+        WordVectors vectors = (WordVectors) storage.getObject("UploadedFile", ObjectType.WORD2VEC);
+        if (vectors == null) return Response.noContent().build();
+
         Collection<String> nearestNeighors = vectors.wordsNearest(query.getWord(),query.getNumWords());
         Map<String,Double> map = new LinkedHashMap<>();
         for(String s : nearestNeighors) {
@@ -90,13 +102,17 @@ public class NearestNeighborsResource extends FileResource {
 
     @Override
     public void handleUpload(File path) {
+        logger.info("handleUpload: " + path.getAbsolutePath());
+        WordVectors vectors;
         try {
             if(path.getAbsolutePath().endsWith(".ser"))
-                vectors = SerializationUtils.readObject(path);
+                 vectors = SerializationUtils.readObject(path);
             else {
                 vectors = WordVectorSerializer.fromPair(WordVectorSerializer.loadTxt(path));
             }
             vectors.setModelUtils(new BasicModelUtils());
+
+            storage.putObject("UploadedFile", ObjectType.WORD2VEC, vectors);
         } catch (Exception e) {
             e.printStackTrace();
         }
