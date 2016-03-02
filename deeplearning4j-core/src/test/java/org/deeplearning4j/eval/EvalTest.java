@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -128,7 +129,7 @@ public class EvalTest {
                 .iterations(1)
                 .seed(42)
                 .learningRate(1e-6)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(2)
                         .activation("tanh")
                         .weightInit(WeightInit.XAVIER)
@@ -180,6 +181,9 @@ public class EvalTest {
 
         //Assert the two implementations give same f1 and accuracy (since one batch)
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
+
+        Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator(Collections.singletonList(test)));
+        checkEvaluationEquality(eval,evalViaMethod);
     }
 
     @Test
