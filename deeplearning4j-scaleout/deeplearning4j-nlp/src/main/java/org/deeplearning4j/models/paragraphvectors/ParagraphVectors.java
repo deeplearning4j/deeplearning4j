@@ -339,6 +339,33 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
+         *
+         * @param element
+         * @return
+         */
+        @Override
+        public Builder unknownElement(VocabWord element) {
+            super.unknownElement(element);
+            return this;
+        }
+
+        /**
+         * This method allows you to specify, if UNK word should be used internally
+         *
+         * @param reallyUse
+         * @return
+         */
+        @Override
+        public Builder useUnknown(boolean reallyUse) {
+            super.useUnknown(reallyUse);
+            if (this.unknownElement == null) {
+                this.unknownElement(new VocabWord(1.0, ParagraphVectors.UNK));
+            }
+            return this;
+        }
+
         @Override
         public ParagraphVectors build() {
             presetTables();
@@ -396,6 +423,8 @@ public class ParagraphVectors extends Word2Vec {
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
+            ret.useUnknown = this.useUnknown;
+            ret.unknownElement = this.unknownElement;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;
