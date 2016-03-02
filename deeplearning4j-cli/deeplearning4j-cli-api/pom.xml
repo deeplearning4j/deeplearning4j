@@ -124,48 +124,57 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>rpm-maven-plugin</artifactId>
-        <version>2.1.5</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>rpm</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <name>deeplearning4j-cli</name>
-          <group>Development/Libraries</group>
-          <packager>SKYMIND</packager>
-          <!--<changelogFile>src/changelog</changelogFile>-->
-          <defineStatements>
-            <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
-          </defineStatements>
-          <requires>
-            <require>java &gt;= 1.7</require>
-          </requires>
-          <mappings>
-            <mapping>
-              <directory>/usr/local/lib/deeplearning4j/</directory>
-              <filemode>755</filemode>
-              <dependency/>
-              <artifact/>
-            </mapping>
-            <mapping>
-              <directory>/usr/local/bin/</directory>
-              <filemode>755</filemode>
-              <sources>
-                <source>
-                  <location>src/main/resources/dl4j</location>
-                </source>
-              </sources>
-            </mapping>
-          </mappings>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>release-sign-artifacts</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>rpm-maven-plugin</artifactId>
+            <version>2.1.5</version>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>rpm</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <name>deeplearning4j-cli</name>
+              <group>Development/Libraries</group>
+              <packager>SKYMIND</packager>
+              <!--<changelogFile>src/changelog</changelogFile>-->
+              <defineStatements>
+                <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
+              </defineStatements>
+              <requires>
+                <require>java &gt;= 1.7</require>
+              </requires>
+              <mappings>
+                <mapping>
+                  <directory>/usr/local/lib/deeplearning4j/</directory>
+                  <filemode>755</filemode>
+                  <dependency/>
+                  <artifact/>
+                </mapping>
+                <mapping>
+                  <directory>/usr/local/bin/</directory>
+                  <filemode>755</filemode>
+                  <sources>
+                    <source>
+                      <location>src/main/resources/dl4j</location>
+                    </source>
+                  </sources>
+                </mapping>
+              </mappings>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
