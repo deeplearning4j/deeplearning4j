@@ -145,18 +145,14 @@
     <modules>
         <module>nd4j-api</module>
         <module>nd4j-jdbc</module>
-        <module>nd4j-jcublas-parent</module>
         <module>nd4j-instrumentation</module>
-        <module>nd4j-jocl-parent</module>
-        <module>nd4j-tests</module>
         <module>nd4j-perf</module>
-        <module>nd4j-x86</module>
         <module>nd4j-serde</module>
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
         <module>nd4j-buffer</module>
-        <module>nd4j-native-parent</module>
         <module>nd4j-context</module>
+        <module>nd4j-backends</module>
     </modules>
 
     <properties>
