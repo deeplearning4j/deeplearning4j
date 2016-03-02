@@ -45,6 +45,7 @@ namespace functions {
             T M2;
             T M3;
             T M4;
+            T bias;
 #ifdef __CUDACC__
             inline __host__  __device__
 
@@ -66,7 +67,7 @@ namespace functions {
 
 #endif
             void initialize() {
-                n = mean = M2 = M3 = M4 = 0;
+                n = mean = M2 = M3 = M4 = bias =  0;
             }
 
 #ifdef __CUDACC__
@@ -84,6 +85,7 @@ namespace functions {
                 M2 = 0;
                 M3 = 0;
                 M4 = 0;
+                bias = 0;
             }
 #ifdef __CUDACC__
             inline __host__  __device__
@@ -100,6 +102,7 @@ namespace functions {
                 M2 = target->M2;
                 M3 = target->M3;
                 M4 = target->M4;
+                bias = target->bias;
             }
 
 #ifdef __CUDACC__
@@ -110,9 +113,23 @@ namespace functions {
 
 #endif
             T variance()   {
-                if(n <=1)
+                if(n <= 1)
                     return 0.0;
                 return M2 / (n - 1);
+            }
+#ifdef __CUDACC__
+            inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+            T varianceBiasCorrected()   {
+                if(n <= 1)
+                    return 0.0;
+                //  result = (accum - (FastMath.pow(bias, 2.0) / n())) / (n() - 1.0);
+
+                return (M2 - nd4j_pow<T>(skewness(),2.0) / n) / n - 1.0;
             }
 
 #ifdef __CUDACC__
@@ -348,8 +365,21 @@ struct SharedSummaryStatsData<double> {
  */
         template<typename T>
         class SummaryStatsReduce: public  functions::ops::Op<T> {
+        protected:
+            bool biasCorrected = true;
 
         public:
+            virtual
+#ifdef __CUDACC__
+            inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+            SummaryStatsReduce(bool biasCorrected) {
+                this->biasCorrected = biasCorrected;
+            }
             /**
              *
              * @param val
@@ -420,6 +450,7 @@ struct SharedSummaryStatsData<double> {
                 result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
                 result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
                 result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+
                 return result;
             }
 
