@@ -1,0 +1,22 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>0.4-rc3.9-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-backends</artifactId>
+    <packaging>pom</packaging>
+
+    <name>nd4j-backends</name>
+
+
+    <modules>
+        <module>nd4j-tests</module>
+        <module>nd4j-backend-impls</module>
+        <module>nd4j-api-parent</module>
+    </modules>
+
+</project>
