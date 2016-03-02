@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -2392,5 +2391,42 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (Layer layer : layers) {
             layer.setMaskArray(null);
         }
+    }
+
+
+    /** Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
+     * @param iterator Data to undertake evaluation on
+     * @return Evaluation object, summarizing returs of the evaluation
+     */
+    public Evaluation evaluate(DataSetIterator iterator){
+        if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
+            throw new IllegalStateException("Cannot evaluate network with no output layer");
+        }
+
+        Evaluation e = new Evaluation();
+        while(iterator.hasNext()){
+            DataSet ds = iterator.next();
+            INDArray features = ds.getFeatures();
+            INDArray labels = ds.getLabels();
+
+            INDArray out;
+            if(ds.hasMaskArrays()){
+                INDArray fMask = ds.getFeaturesMaskArray();
+                INDArray lMask = ds.getLabelsMaskArray();
+                out = this.output(features,false,fMask,lMask);
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                if(lMask != null){
+                    e.evalTimeSeries(labels,out,lMask);
+                } else {
+                    e.evalTimeSeries(labels,out);
+                }
+            } else {
+                out = this.output(features,false);
+                e.eval(labels,out);
+            }
+        }
+
+        return e;
     }
 }
