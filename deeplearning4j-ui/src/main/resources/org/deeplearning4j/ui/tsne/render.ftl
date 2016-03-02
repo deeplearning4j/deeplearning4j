@@ -156,7 +156,7 @@
             function updateFileName(name) {
             /*
                 $.ajax({
-                    url: '/api/update',
+                    url: './api/update',
                     type: 'POST',
                     dataType: 'json',
                     data: JSON.stringify({"url" : name}),

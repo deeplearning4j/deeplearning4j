@@ -82,7 +82,7 @@
     <div class="block">
         <!-- W2V block -->
         <b>WordVectors</b><br/><br/>
-        <a href="/word2vec"><img src="./assets/i_nearest.img" border="0" /></a><br/><br/>
+        <a href="./word2vec"><img src="./assets/i_nearest.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;wordsNearest UI for WordVectors (GloVe/Word2Vec compatible)
         </div>
