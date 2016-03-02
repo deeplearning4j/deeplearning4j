@@ -28,7 +28,7 @@ import javax.ws.rs.GET;
 public class WeightView extends View {
     protected String path;
     protected WeightView(String path){
-        super("render.ftl");
+        super("weights.ftl");
         this.path = path;
     }
 
