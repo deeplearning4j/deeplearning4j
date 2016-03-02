@@ -8,6 +8,6 @@ import io.dropwizard.views.View;
 public class FlowView extends View {
 
     public FlowView() {
-        super("render.ftl");
+        super("flow.ftl");
     }
 }
