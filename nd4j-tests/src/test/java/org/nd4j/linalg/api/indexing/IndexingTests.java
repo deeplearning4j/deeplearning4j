@@ -27,7 +27,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1,5,5);
         INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
-        assertEquals(2.0,d.getDouble(0));
+        assertEquals(2.0,d.getDouble(0),1e-1);
 
     }
 

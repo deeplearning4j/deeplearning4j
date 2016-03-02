@@ -38,7 +38,7 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
         assertEquals(2,fourD.length());
         for(int i = 0; i < fourD.length(); i++)
-            assertEquals(0.0,fourD.getDouble(i));
+            assertEquals(0.0,fourD.getDouble(i),1e-1);
 
     }
     @Test
