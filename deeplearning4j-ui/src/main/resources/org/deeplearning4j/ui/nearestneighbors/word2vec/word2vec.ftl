@@ -68,12 +68,12 @@
 <br />
 <br />
 <div id="container" style="width: 100%;">
-    <div id="wrapper" style="width: 100%;">
+    <div id="wrapper" class="wrapper" style="width: 100%;">
 
-        <div id="sidebar-wrapper">
+        <div id="sidebar-wrapper" class="sidebar-wrapper">
 
         </div>
-        <div id="page-content-wrapper" style="text-align: center; width: 100%;">
+        <div id="page-content-wrapper" class="page-content-wrapper" style="text-align: center; width: 100%;">
             <div class="container-fluid" style="text-align: center; width: 100%;">
                 <div id="instructions" style="text-align: left; display: inline-block;">
                 <h2>k Nearest Neighbors</h2>
@@ -93,7 +93,7 @@
                 </h4>
                 <br />
                 </div>
-                <div class="row" id="kform"  style="text-align: left; width: 500px; display: inline-block; position: fixed; top: 60px; left: 50%;  -webkit-transform: translate(-50%); transform: translate(-50%);">
+                <div class="row" id="kform">
                     Number of nearest words to be returned:
                     <select name="k" id="k">
                         <option selected="selected">5</option>
@@ -105,9 +105,9 @@
                         <option>50</option>
                     </select>
                     <!-- <input type="text" name="k" id="k" value="5" /> -->
-                    <div>
-                        <div id="neighbors"></div>
-                    </div>
+                </div>
+                <div>
+                    <div id="neighbors"  style="text-align: left; width: 500px; display: inline-block;"></div>
                 </div>
 
 
