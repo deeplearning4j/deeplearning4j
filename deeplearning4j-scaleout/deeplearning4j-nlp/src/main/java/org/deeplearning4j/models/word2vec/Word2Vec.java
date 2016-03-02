@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -381,6 +382,33 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
+         *
+         * @param element
+         * @return
+         */
+        @Override
+        public Builder unknownElement(VocabWord element) {
+            super.unknownElement(element);
+            return this;
+        }
+
+        /**
+         * This method allows you to specify, if UNK word should be used internally
+         *
+         * @param reallyUse
+         * @return
+         */
+        @Override
+        public Builder useUnknown(boolean reallyUse) {
+            super.useUnknown(reallyUse);
+            if (this.unknownElement == null) {
+                this.unknownElement(new VocabWord(1.0, Word2Vec.UNK));
+            }
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -412,6 +440,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
+            ret.useUnknown = this.useUnknown;
+            ret.unknownElement = this.unknownElement;
 
 
             ret.iterator = this.iterator;
