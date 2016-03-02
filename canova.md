@@ -59,7 +59,7 @@ Search for [canova](https://search.maven.org/#search%7Cga%7C1%7CCanova) on Maven
 
 Add the dependency information into your pom.xml.
 
-## Run Canova From the Command Line
+## <a name="cli">Run Canova From the Command Line</a>
 
 `canova-cli` can now be installed in two 'new' ways:
 
