@@ -40,8 +40,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class DataSetTest extends BaseNd4jTest {
-    public DataSetTest() {
-    }
+
 
 
     public DataSetTest(Nd4jBackend backend) {
@@ -67,16 +66,6 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
 
-
-    @Test
-    public void testPersist() {
-        DataSet iris = new IrisDataSetIterator(150,150).next();
-        iris.save(new File("iris.bin"));
-        DataSet load = new DataSet();
-        load.load(new File("iris.bin"));
-        new File("iris.bin").deleteOnExit();
-        assertEquals(iris, load);
-    }
 
     @Test
     public void testSplitTestAndTrain() throws Exception{
