@@ -37,12 +37,19 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -82,6 +89,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected Gradient gradient;
     protected INDArray epsilon;
     protected double score;
+    protected boolean initDone = false;
     private INDArray params;
     /*
       Binary drop connect mask
@@ -1017,6 +1025,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isBackprop()) {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
+            update(TaskUtils.buildTask(iter));
             while (iter.hasNext()) {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
@@ -1145,6 +1154,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
+        update(TaskUtils.buildTask(input, labels));
         int timeSeriesLength = input.size(2);
         int nSubsets = timeSeriesLength / fwdLen;
         if(fwdLen > timeSeriesLength) {
@@ -1361,6 +1371,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
         setLabels(labels.dup());
+        update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
@@ -1393,6 +1404,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data.dup());
+        update(TaskUtils.buildTask(data));
         pretrain(data);
     }
 
@@ -2239,5 +2251,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         return e;
+    }
+
+    private void update(Task task) {
+        if (!initDone) {
+            initDone = true;
+            Heartbeat heartbeat = Heartbeat.getInstance();
+            task = ModelSerializer.taskByModel(this);
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
+        }
     }
 }
