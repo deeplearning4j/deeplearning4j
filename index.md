@@ -13,7 +13,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 
 ### [Deep Learning Use Cases](../use_cases.html)
 
-* [Face/image recognition](../facial-reconstruction-tutorial.html)
+* Face/image recognition
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
