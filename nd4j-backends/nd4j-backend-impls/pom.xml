@@ -18,6 +18,7 @@
         <module>nd4j-cuda-7.5</module>
     </modules>
     <build>
+        <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -37,10 +38,6 @@
                             <exclude>**/*Test.java</exclude>
                             <exclude>**/*TestCase.java</exclude>
                         </excludes>
-                        <systemPropertyVariables>
-                            <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                            <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
                 <plugin>

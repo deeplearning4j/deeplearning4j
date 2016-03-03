@@ -6,9 +6,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.nativeblas.util.LibUtils;
 
-import java.io.File;
-import java.lang.annotation.Native;
-
 
 /**
  * Native interface for 
@@ -322,30 +319,30 @@ public class NativeOps extends Pointer {
                                         long xIndexes,
                                         long resultIndexes);
     /**
-     *
-     * @param opNum
+     *  @param opNum
      * @param x
      * @param xShapeInfo
      * @param extraParams
+     * @param biasCorrected
      */
-    public native double   execSummaryStatsScalarDouble(long[]extraPointers,int opNum,long x,
+    public native double   execSummaryStatsScalarDouble(long[] extraPointers, int opNum, long x,
                                                         long xShapeInfo,
-                                                        long extraParams);
+                                                        long extraParams, boolean biasCorrected);
     /**
-     *
-     * @param opNum
+     *  @param opNum
      * @param x
      * @param xShapeInfo
      * @param extraParams
      * @param result
      * @param resultShapeInfo
+     * @param biasCorrected
      */
-    public native void   execSummaryStatsDouble(long[]extraPointers,int opNum,
+    public native void   execSummaryStatsDouble(long[] extraPointers, int opNum,
                                                 long x,
                                                 long xShapeInfo,
                                                 long extraParams,
                                                 long result,
-                                                long resultShapeInfo);
+                                                long resultShapeInfo, boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -362,7 +359,7 @@ public class NativeOps extends Pointer {
                                                 long extraParams,
                                                 long result,
                                                 long resultShapeInfoBuffer,
-                                                long dimension, int dimensionLength);
+                                                long dimension, int dimensionLength,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -710,7 +707,7 @@ public class NativeOps extends Pointer {
      */
     public native float   execSummaryStatsScalarFloat(long[]extraPointers,int opNum,long x,
                                                       long xShapeInfo,
-                                                      long extraParams);
+                                                      long extraParams,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -725,7 +722,7 @@ public class NativeOps extends Pointer {
                                                long xShapeInfo,
                                                long extraParams,
                                                long result,
-                                               long resultShapeInfo);
+                                               long resultShapeInfo,boolean biasCorrected);
     /**
      *
      * @param opNum
@@ -742,7 +739,7 @@ public class NativeOps extends Pointer {
                                                long extraParams,
                                                long result,
                                                long resultShapeInfoBuffer,
-                                               long dimension, int dimensionLength);
+                                               long dimension, int dimensionLength,boolean biasCorrected);
     /**
      *
      * @param opNum

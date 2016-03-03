@@ -15,7 +15,7 @@ public class InvertMatrix {
      * @return the inverted matrix
      */
     public static INDArray invert(INDArray arr,boolean inPlace) {
-        if (arr.isSquare()) {
+        if (!arr.isSquare()) {
             throw new IllegalArgumentException("invalid array: must be square matrix");
         }
 

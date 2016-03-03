@@ -177,10 +177,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.opNum()
                             , op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            getAddressForExtraArgs(op)));
+                            getAddressForExtraArgs(op), true));
                 }
                 else {
-                    loop.execSummaryStatsDouble(
+                    loop.execReduceDouble(
                             dummy,
                             op.opNum(),
                             op.x().data().address(),
@@ -243,13 +243,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op instanceof Variance) {
+                Variance variance = (Variance) op;
                 if(ret.isScalar()) {
                     ret.putScalar(0,loop.execSummaryStatsScalarFloat(
                             dummy,
                             op.opNum()
                             , op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
-                            getAddressForExtraArgs(op)));
+                            getAddressForExtraArgs(op),variance.isBiasCorrected()));
                 }
                 else {
                     loop.execSummaryStatsFloat(
@@ -259,7 +260,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.x().shapeInfoDataBuffer().address(),getAddressForExtraArgs(op),
                             op.z().data().address(),
                             op.z().shapeInfoDataBuffer().address(),
-                            dimensionAddress, dimension.length);
+                            dimensionAddress, dimension.length,variance.isBiasCorrected());
                 }
 
             }
@@ -559,7 +560,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op)));
+                            ,op.x().shapeInfoDataBuffer().address(), getAddressForExtraArgs(op), true));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarDouble(
@@ -579,11 +580,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             else {
                 if(op instanceof Variance) {
+                    Variance variance = (Variance) op;
                     op.setFinalResult(loop.execSummaryStatsScalarFloat(
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(),  getAddressForExtraArgs(op)));
+                            ,op.x().shapeInfoDataBuffer().address(),  getAddressForExtraArgs(op),variance.isBiasCorrected()));
                 }
                 else if(op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarFloat(

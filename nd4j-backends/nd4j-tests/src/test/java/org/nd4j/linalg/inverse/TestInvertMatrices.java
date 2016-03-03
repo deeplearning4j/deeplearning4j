@@ -6,6 +6,7 @@ import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,6 +30,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
         super(backend);
     }
     @Test
+    @Ignore
     public void testInverse() {
         RealMatrix matrix = new Array2DRowRealMatrix(new double[][]{
                 {1,2},
@@ -45,6 +47,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testInverseComparison(){
 
         List<Pair<INDArray,String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape(10, 10, 12345);
