@@ -26,7 +26,7 @@ public class TestParamAndGradientIterationListener {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(1e-5)
                 .iterations(1)
-                .list(3)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(20).build())
                 .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(30).nOut(3).build())

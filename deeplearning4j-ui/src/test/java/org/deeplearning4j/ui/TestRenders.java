@@ -120,7 +120,7 @@ public class TestRenders extends BaseUiServerTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .iterations(1000)
                 .learningRate(1e-1f)
-                .list(2)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(784).nOut(100)
                         .weightInit(WeightInit.XAVIER).build())

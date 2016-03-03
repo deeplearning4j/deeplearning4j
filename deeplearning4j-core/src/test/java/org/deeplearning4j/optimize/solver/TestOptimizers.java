@@ -119,7 +119,7 @@ public class TestOptimizers {
                 .iterations(nIterations)
                 .learningRate(1e-1)
                 .seed(12345L)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
                         .updater(Updater.ADAGRAD)
