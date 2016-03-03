@@ -488,7 +488,7 @@ public class TextPipelineTest extends BaseSparkTest {
         FirstIterationFunction firstIterationFunction =
                 new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, pipeline.getBroadCastVocabCache());
 
-        Iterable<Map.Entry<Integer, INDArray>> ret = firstIterationFunction.call(iterator);
+        Iterable<Map.Entry<VocabWord, INDArray>> ret = firstIterationFunction.call(iterator);
         assertTrue(ret.iterator().hasNext());
     }
 
@@ -524,7 +524,7 @@ public class TextPipelineTest extends BaseSparkTest {
 
         FirstIterationFunction firstIterationFunction =
                 new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast,pipeline.getBroadCastVocabCache());
-        JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec =
+        JavaRDD< Pair<VocabWord, INDArray> > pointSyn0Vec =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterationFunction).map(new MapToPairFunction());
     }
 

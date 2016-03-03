@@ -25,10 +25,12 @@ import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -37,12 +39,19 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -80,9 +89,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
     protected Gradient gradient;
-    protected INDArray epsilon;
     protected double score;
     private INDArray params;
+    private boolean initDone = false;
     /*
       Binary drop connect mask
      */
@@ -719,10 +728,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return gradient;
     }
 
-    public INDArray epsilon() {
-        return epsilon;
-    }
-
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
@@ -955,6 +960,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+
     /**
      * Returns a 1 x m vector where the vector is composed of
      * a flattened vector of all of the weights for the
@@ -1066,7 +1072,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @return whether the training should converge or not
      */
-    @Deprecated
     protected List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> backPropGradient2() {
         //feedforward to compute activations
         //initial error
@@ -1149,6 +1154,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             while (iter.hasNext()) {
+                update(TaskUtils.buildTask(iter));
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
@@ -1180,7 +1186,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
-        this.epsilon = (pair == null ? null : pair.getSecond());
     }
 
     /** Calculate gradients and errors. Used in two places:
@@ -1492,6 +1497,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
         setLabels(labels.dup());
+        update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
@@ -1524,6 +1530,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data.dup());
+        update(TaskUtils.buildTask(data));
         pretrain(data);
     }
 
@@ -1541,9 +1548,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+            update(TaskUtils.buildTask(data));
             doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         } else {
             //Standard training
+            update(TaskUtils.buildTask(data));
             boolean hasMaskArrays = data.hasMaskArrays();
             if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
             fit(data.getFeatureMatrix(), data.getLabels());
@@ -1942,14 +1951,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
-            if (!layer.conf().getLearningRateByParam().isEmpty()) {
-                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
-                    layer.conf().setLearningRateByParam(lrPair.getKey(),
-                            lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
-                }
+            if(!(layer instanceof SubsamplingLayer)) {
+                layer.conf().getLayer().setLearningRate(
+                        layer.conf().getLayer().getLearningRate() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
             }
         }
     }
+
+
 
     /**
      * Feed forward with the r operator
@@ -1985,7 +1994,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param v the v in gaussian newton vector g * v
      * @return whether the training should converge or not
      */
-    @Deprecated
     protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
         //feedforward to compute activations
         //initial error
@@ -2393,40 +2401,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
-
-    /** Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
-     * @param iterator Data to undertake evaluation on
-     * @return Evaluation object, summarizing returs of the evaluation
-     */
-    public Evaluation evaluate(DataSetIterator iterator){
-        if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
-            throw new IllegalStateException("Cannot evaluate network with no output layer");
+    private void update(Task task) {
+        if (!initDone) {
+            initDone = true;
+            Heartbeat heartbeat = Heartbeat.getInstance();
+            task = ModelSerializer.taskByModel(this);
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
-
-        Evaluation e = new Evaluation();
-        while(iterator.hasNext()){
-            DataSet ds = iterator.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
-
-            INDArray out;
-            if(ds.hasMaskArrays()){
-                INDArray fMask = ds.getFeaturesMaskArray();
-                INDArray lMask = ds.getLabelsMaskArray();
-                out = this.output(features,false,fMask,lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if(lMask != null){
-                    e.evalTimeSeries(labels,out,lMask);
-                } else {
-                    e.evalTimeSeries(labels,out);
-                }
-            } else {
-                out = this.output(features,false);
-                e.eval(labels,out);
-            }
-        }
-
-        return e;
     }
 }

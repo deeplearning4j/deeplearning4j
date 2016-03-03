@@ -31,6 +31,11 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 
 import java.util.*;
 
@@ -46,6 +51,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected VocabCache<T> vocab;
     @Getter protected int layerSize = 100;
     @Getter protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
+    private boolean initDone = false;
 
     protected int numIterations = 1;
     protected int numEpochs = 1;
@@ -242,4 +248,22 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         this.vocab = vocab;
     }
 
+    protected void update() {
+        update(EnvironmentUtils.buildEnvironment(), Event.STANDALONE);
+    }
+
+    protected void update(Environment env, Event event) {
+        if (!initDone) {
+            initDone = true;
+
+            Heartbeat heartbeat = Heartbeat.getInstance();
+            Task task = new Task();
+            task.setNumFeatures(layerSize);
+            if (vocab != null) task.setNumSamples(vocab.numWords());
+            task.setNetworkType(Task.NetworkType.DenseNetwork);
+            task.setArchitectureType(Task.ArchitectureType.WORDVECTORS);
+
+            heartbeat.reportEvent(event, env, task);
+        }
+    }
 }
