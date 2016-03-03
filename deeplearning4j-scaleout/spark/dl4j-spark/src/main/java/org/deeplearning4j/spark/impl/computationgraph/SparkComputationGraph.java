@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.computationgraph;
 
+import lombok.NonNull;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -34,6 +35,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
@@ -59,7 +61,10 @@ import org.slf4j.LoggerFactory;
 import scala.Tuple3;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**Main class for training ComputationGraph networks using Spark
  *
@@ -82,6 +87,10 @@ public class SparkComputationGraph implements Serializable {
     private double lastScore;
 
     private static final Logger log = LoggerFactory.getLogger(SparkComputationGraph.class);
+
+    private transient AtomicInteger iterationsCount = new AtomicInteger(0);
+
+    private List<IterationListener> listeners = new ArrayList<>();
 
     /**
      * Instantiate a ComputationGraph instance with the given context and network.
@@ -339,12 +348,38 @@ public class SparkComputationGraph implements Serializable {
 
             log.info("Processed and set updater");
         }
+        if (listeners.size() > 0)
+            invokeListeners(network, iterationsCount.incrementAndGet());
         if (!initDone) {
             initDone = true;
             update(maxRep, 0);
         }
     }
 
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     *
+     * PLEASE NOTE:
+     * 1. These iteration listeners should be configured to use remote UiServer
+     * 2. Remote UiServer should be accessible via network from Spark master node.
+     *
+     * @param listeners
+     */
+    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+        this.listeners.clear();
+        this.listeners.addAll(listeners);
+    }
+
+    protected void invokeListeners(ComputationGraph network, int iteration) {
+        for (IterationListener listener: listeners) {
+            try {
+                listener.iterationDone(network, iteration);
+            } catch (Exception e) {
+                log.error("Exception caught at IterationListener invocation" + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
 
     /** Gets the last (average) minibatch score from calling fit */
     public double getScore(){

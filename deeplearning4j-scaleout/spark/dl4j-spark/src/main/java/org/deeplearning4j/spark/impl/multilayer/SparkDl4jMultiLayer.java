@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
+import lombok.NonNull;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
@@ -39,6 +40,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
@@ -69,7 +71,11 @@ import scala.Tuple2;
 import scala.Tuple3;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Master class for spark
@@ -93,6 +99,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     private Accumulator<Double> bestScoreAcc = null;
     private double lastScore;
     private transient boolean initDone = false;
+    private transient AtomicInteger iterationsCount = new AtomicInteger(0);
+
+    private List<IterationListener> listeners = new ArrayList<>();
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
@@ -442,6 +451,8 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             log.info("Processed and set updater");
         }
+        if (listeners.size() > 0)
+            invokeListeners(network, iterationsCount.incrementAndGet());
         if (!initDone) {
             initDone = true;
             update(maxRep, 0);
@@ -458,6 +469,31 @@ public class SparkDl4jMultiLayer implements Serializable {
 
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()), data);
+    }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     *
+     * PLEASE NOTE:
+     * 1. These iteration listeners should be configured to use remote UiServer
+     * 2. Remote UiServer should be accessible via network from Spark master node.
+     *
+     * @param listeners
+     */
+    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+        this.listeners.clear();
+        this.listeners.addAll(listeners);
+    }
+
+    protected void invokeListeners(MultiLayerNetwork network, int iteration) {
+        for (IterationListener listener: listeners) {
+            try {
+                listener.iterationDone(network, iteration);
+            } catch (Exception e) {
+                log.error("Exception caught at IterationListener invocation" + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     /** Gets the last (average) minibatch score from calling fit */
