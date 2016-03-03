@@ -93,7 +93,7 @@ public class GravesLSTMOutputTest {
                 .l2(0.0025)
                 .iterations(iterations)
                 .stepFunction(new NegativeDefaultStepFunction())
-                .list(2)
+                .list()
                 .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn).nOut(layerSize)
                         .updater(Updater.ADAGRAD)

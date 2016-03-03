@@ -32,7 +32,7 @@ public class TestSerialization {
         ObjectMapper mapper = getMapper();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(1000).constrainGradientToUnitNorm(true)
+                .iterations(1000)
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
                         .nIn(4).nOut(3)

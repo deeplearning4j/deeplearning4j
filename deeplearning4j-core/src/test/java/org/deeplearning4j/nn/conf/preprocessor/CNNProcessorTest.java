@@ -254,7 +254,7 @@ public class CNNProcessorTest {
                 .seed(123)
                 .iterations(5)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9},new int[]{1,1})
                         .nOut(20)
                         .weightInit(WeightInit.XAVIER)

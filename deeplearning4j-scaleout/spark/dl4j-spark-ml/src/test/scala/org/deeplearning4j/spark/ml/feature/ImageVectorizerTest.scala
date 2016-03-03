@@ -44,7 +44,6 @@ class ImageVectorizerTest
       Some(df.take(1)(0)).map { row =>
         row.length should be (3)
         row.get(0) shouldBe a [String]
-        row.get(1) shouldBe a [Array[Byte]]
         row.get(2) shouldBe a [Vector]
         row.getAs[Vector](2).size shouldBe 32 * 32 * 3
       }

@@ -57,7 +57,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
         VisibleUnit newVisible = VisibleUnit.BINARY;
 
         MultiLayerConfiguration multiConf1 = new NeuralNetConfiguration.Builder()
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).activation(act).build())
                 .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).activation(act).build())
                 .build();
@@ -74,9 +74,8 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .seed(123)
                 .iterations(5)
                 .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
-                .constrainGradientToUnitNorm(true)
                 .regularization(true)
-                .list(4)
+                .list()
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(784).nOut(1000).weightInit(WeightInit.XAVIER).activation("relu").build())
                 .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(1000).nOut(500).weightInit(WeightInit.XAVIER).activation("relu").build())
                 .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(500).nOut(250).weightInit(WeightInit.XAVIER).activation("relu").build())
