@@ -2197,17 +2197,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /**Evaluate the network (classification performance)
+     * @param iterator Iterator to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(DataSetIterator iterator) {
+        return evaluate(iterator, null);
+    }
 
     /** Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
      * @param iterator Data to undertake evaluation on
      * @return Evaluation object, summarizing returs of the evaluation
      */
-    public Evaluation evaluate(DataSetIterator iterator){
+    public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList){
         if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
-        Evaluation e = new Evaluation();
+        Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
         while(iterator.hasNext()){
             DataSet ds = iterator.next();
             INDArray features = ds.getFeatures();
