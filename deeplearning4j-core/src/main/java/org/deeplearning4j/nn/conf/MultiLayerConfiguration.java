@@ -29,7 +29,6 @@ import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -50,8 +49,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
     protected boolean pretrain = true;
-    @Deprecated
-    protected double dampingFactor = 100;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = false;
     protected BackpropType backpropType = BackpropType.Standard;
@@ -173,10 +170,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         protected boolean redistributeParams = false;
         protected int[] cnnInputSize = null;    //Order: height/width/depth
-        
-        @Deprecated
-        protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
-
 
         /**
          * Whether to redistribute parameters as a view or not
@@ -251,12 +244,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         	return this;
         }
 
-        @Deprecated
-        public Builder dampingFactor(double dampingFactor) {
-            this.dampingFactor = dampingFactor;
-            return this;
-        }
-        
         /**
          * Whether to do pre train or not
          * @param pretrain whether to do pre train or not
@@ -328,7 +315,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
-            conf.dampingFactor = dampingFactor;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;

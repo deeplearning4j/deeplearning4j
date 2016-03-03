@@ -20,10 +20,10 @@ package org.deeplearning4j.datasets.vectorizer;
 
 import java.io.File;
 
+import org.canova.image.loader.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.util.ImageLoader;
 
 /**
  * An image vectorizer takes an input image (RGB) and

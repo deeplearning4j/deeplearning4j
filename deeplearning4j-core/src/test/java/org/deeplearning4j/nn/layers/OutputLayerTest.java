@@ -119,7 +119,7 @@ public class OutputLayerTest {
 
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .constrainGradientToUnitNorm(true).miniBatch(false)
+                .miniBatch(false)
                 .seed(123)
                 .iterations(1000)
                 .learningRate(1e-1)
@@ -271,7 +271,7 @@ public class OutputLayerTest {
 
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 	        .seed(12345L)
-	        .list(2)
+	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 	        		.activation("tanh").updater(Updater.NONE).build())
@@ -301,7 +301,7 @@ public class OutputLayerTest {
 
 		MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder()
 	        .seed(12345L)
-	        .list(2)
+	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 	        		.activation("tanh").updater(Updater.NONE).build())
@@ -363,7 +363,7 @@ public class OutputLayerTest {
 
     		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     	        .seed(12345L)
-    	        .list(2)
+    	        .list()
     	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
     	        		.activation("tanh").updater(Updater.NONE).build())
@@ -383,7 +383,7 @@ public class OutputLayerTest {
 
     		MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder()
     	        .seed(12345L)
-    	        .list(2)
+    	        .list()
     	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
     	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
     	        		.activation("tanh").updater(Updater.NONE).build())

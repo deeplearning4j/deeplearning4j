@@ -20,14 +20,6 @@ import org.apache.spark.sql.{DataFrameReader, SQLContext, DataFrame}
 
 package object lfw {
 
-  /**
-   * Adds a method, `lfw`, to SQLContext that allows reading the LFW dataset.
-   */
-  implicit class LfwContext(sqlContext: SQLContext) {
-    @Deprecated
-    def lfw(rootImageDirectory: String) =
-      sqlContext.read.lfw(rootImageDirectory)
-  }
 
   /**
    * Adds a method, `lfw`, to DataFrameReader that allows reading the LFW dataset.

@@ -139,7 +139,7 @@ public class GRUTest {
 		
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 			.regularization(false)
-			.list(2)
+			.list()
 			.layer(0, new org.deeplearning4j.nn.conf.layers.GRU.Builder().activation("tanh")
 				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
             	.nIn(nIn).nOut(gruNUnits).build())
