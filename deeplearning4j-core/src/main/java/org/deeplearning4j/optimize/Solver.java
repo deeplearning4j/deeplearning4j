@@ -32,7 +32,6 @@ import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
-import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 
 /**
@@ -61,9 +60,6 @@ public class Solver {
                 break;
             case LINE_GRADIENT_DESCENT:
                 optimizer = new LineGradientDescent(conf,stepFunction,listeners,model);
-                break;
-            case HESSIAN_FREE:
-                optimizer = new StochasticHessianFree(conf,stepFunction,listeners,model);
                 break;
             case CONJUGATE_GRADIENT:
                 optimizer = new ConjugateGradient(conf,stepFunction,listeners,model);

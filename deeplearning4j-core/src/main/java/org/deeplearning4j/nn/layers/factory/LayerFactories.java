@@ -70,25 +70,4 @@ public class LayerFactories {
     }
 
 
-    /**
-     * Get the type for the layer factory
-     * @param conf the layer factory
-     * @return the type
-     */
-    @Deprecated
-    public static org.deeplearning4j.nn.api.Layer.Type typeForFactory(NeuralNetConfiguration conf) {
-        LayerFactory layerFactory = getFactory(conf);
-        if(layerFactory instanceof ConvolutionLayerFactory || layerFactory instanceof SubsampleLayerFactory)
-            return org.deeplearning4j.nn.api.Layer.Type.CONVOLUTIONAL;
-        else if(layerFactory instanceof ImageLSTMLayerFactory || layerFactory instanceof GravesLSTMLayerFactory
-        		|| layerFactory instanceof GRULayerFactory )
-            return org.deeplearning4j.nn.api.Layer.Type.RECURRENT;
-        else if(layerFactory instanceof RecursiveAutoEncoderLayerFactory)
-            return org.deeplearning4j.nn.api.Layer.Type.RECURSIVE;
-        else if(layerFactory instanceof DefaultLayerFactory || layerFactory instanceof PretrainLayerFactory)
-            return org.deeplearning4j.nn.api.Layer.Type.FEED_FORWARD;
-
-        throw new IllegalArgumentException("Unknown layer type");
-    }
-
 }

@@ -52,7 +52,7 @@ public class TestComputationGraphNetwork {
     private static MultiLayerConfiguration getIrisMLNConfiguration(){
         return new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).build())
                 .pretrain(false).backprop(true)

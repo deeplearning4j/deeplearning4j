@@ -70,8 +70,6 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasLearningRate;
     //learning rate after n iterations
     protected Map<Integer,Double> learningRateSchedule;
-    @Deprecated
-    protected double lrScoreBasedDecay;
     protected double momentum;
     //momentum after n iterations
     protected Map<Integer,Double> momentumSchedule;
@@ -99,7 +97,6 @@ public abstract class Layer implements Serializable, Cloneable {
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
         this.learningRateSchedule = builder.learningRateSchedule;
-        this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.momentum = builder.momentum;
         this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
@@ -137,7 +134,6 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double learningRate = Double.NaN;
         protected double biasLearningRate = Double.NaN;
         protected Map<Integer,Double> learningRateSchedule = null;
-        protected double lrScoreBasedDecay = Double.NaN;
         protected double momentum = Double.NaN;
         protected Map<Integer,Double> momentumAfter = null;
         protected double l1 = Double.NaN;
@@ -208,14 +204,6 @@ public abstract class Layer implements Serializable, Cloneable {
         /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
         public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
             this.learningRateSchedule = learningRateSchedule;
-            return (T) this;
-        }
-
-        /** Rate to decrease learningRate by when the score stops improving.
-         * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
-        @Deprecated
-        public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-            this.lrScoreBasedDecay = lrScoreBasedDecay;
             return (T) this;
         }
 

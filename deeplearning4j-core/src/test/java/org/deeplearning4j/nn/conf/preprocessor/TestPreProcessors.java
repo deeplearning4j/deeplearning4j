@@ -344,7 +344,7 @@ public class TestPreProcessors {
     public void testAutoAdditionOfPreprocessors(){
         //FF->RNN and RNN->FF
         MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                .list(4)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(5).nOut(6).build())
                 .layer(1, new GravesLSTM.Builder().nIn(6).nOut(7).build())
@@ -361,7 +361,7 @@ public class TestPreProcessors {
 
         //FF-> CNN, CNN-> FF, FF->RNN
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder()
                         .nOut(10).kernelSize(5, 5).stride(1, 1).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
@@ -376,7 +376,7 @@ public class TestPreProcessors {
 
         //FF->CNN and CNN->RNN:
         MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder()
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder()
                         .nOut(10).kernelSize(5, 5).stride(1, 1).build())
                 .layer(1, new GravesLSTM.Builder().nOut(6).build())
@@ -397,7 +397,7 @@ public class TestPreProcessors {
                 .learningRate(0.01) // default
                         //.momentum(0.9)
                 .regularization(true)
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(4, 4) // 28*28*1 => 15*15*10
                         .nIn(1)
                         .nOut(10)
