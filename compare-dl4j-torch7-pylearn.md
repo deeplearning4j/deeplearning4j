@@ -33,6 +33,18 @@ Content
 * From an enterprise perspective, the question some companies will need to answer is whether they want to depend upon Google for these tools. 
 * [Benchmarks show TensorFlow is significantly slower](https://www.reddit.com/r/MachineLearning/comments/48gfop/tensorflow_speed_questions/) than Theano on multiple ops.
 
+Pros and Cons
+
+* (+) Python + numpy
+* (+) Computational graph abstraction, like Theano
+* (+) Much faster compile times than Theano
+* (+) TensorBoard for visualization
+* (+) Data AND model parallelism
+* (-) Slower than other frameworks
+* (-) Much “fatter” than Torch; more magic
+* (-) Not many pretrained models
+* (-) Computational graph is pure Python, so slow
+
 ### <a name="theano">Theano, PyLearn2 and Ecosystem</a>
 
 Most academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving the large Python community. They are well suited to data exploration and explicitly state that they are intended for research. 
@@ -43,11 +55,33 @@ Numerous open-source deep-libraries have been built on top of Theano, including 
 
 In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](../spark.html). 
 
+Pros and Cons
+
+* (+) Python + numpy
+* (+) Computational graph is nice abstraction
+* (+) RNNs fit nicely in computational graph
+* (-) Raw Theano is somewhat low-level
+* (+) High level wrappers (Keras, Lasagne) ease the pain
+* (-) Error messages can be unhelpful
+* (-) Large models can have long compile times
+* (-) Much “fatter” than Torch; more magic
+* (-) Patchy support for pretrained mo
+
 ### <a name="torch">Torch</a>
 
 [**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google DeepMind and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
+
+Pros and Cons:
+
+* (-) Lua
+* You usually write your own training code (Less plug and play)
+* (+) Lots of modular pieces that are easy to combine
+* (+) Easy to write your own layer types and run on GPU
+* (+) Lua. ;) (Most of the library code is in Lua, easy to read)
+* (+) Lots of pretrained models!
+* (-) Not good for recurrent neural networks
 
 ### <a name="caffe">Caffe</a>
 
@@ -55,9 +89,19 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. Deeplearning4j is [building a parser](https://github.com/deeplearning4j/deeplearning4j/pull/480) to import Caffe models to Spark.
 
+Pros and Cons:
+
+* (+) Good for feedforward networks
+* (+) Good for finetuning existing networks
+* (+) Train models without writing any code
+* (+) Python interface is pretty useful
+* (-) Need to write C++ / CUDA for new GPU layers
+* (-) Not good for recurrent networks
+* (-) Cumbersome for big networks (GoogLeNet, ResNet)
+
 ### <a name="cntk">CNTK</a>
 
-[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. Python API over C++ code. 
+[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. 
 
 ### <a name="licensing">Licensing</a>
 
