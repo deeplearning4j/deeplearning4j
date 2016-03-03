@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -73,7 +74,7 @@ public class ComputationGraph implements Serializable, Model {
     protected transient Solver solver;	//Used to call optimizers during backprop
     protected Gradient gradient;
     protected double score;
-    private boolean initDone = false;
+    @Setter private boolean initDone = false;
 
     /** All GraphVertex objects in the network. */
     protected GraphVertex[] vertices;
@@ -1112,6 +1113,10 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public double score() {
         return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
     }
 
     @Override

@@ -70,6 +70,7 @@ public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiD
         MultiDataSet data = org.nd4j.linalg.dataset.MultiDataSet.merge(collect);
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
+        network.setInitDone(true);
         network.init();
         network.setListeners(new ScoreIterationListener(1));
 

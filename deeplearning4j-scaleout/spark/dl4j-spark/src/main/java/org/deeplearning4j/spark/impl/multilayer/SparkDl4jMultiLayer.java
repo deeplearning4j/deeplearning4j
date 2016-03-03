@@ -448,6 +448,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         if (listeners.size() > 0) {
             log.info("Invoking IterationListeners");
+            network.setScore(lastScore);
             invokeListeners(network, iterationsCount.incrementAndGet());
         }
         if (!initDone) {
