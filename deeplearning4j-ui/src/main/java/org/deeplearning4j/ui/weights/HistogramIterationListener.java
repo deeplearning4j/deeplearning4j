@@ -99,55 +99,60 @@ public class HistogramIterationListener implements IterationListener {
     @Override
     public void iterationDone(Model model, int iteration) {
         if(iteration % iterations == 0) {
-            Map<String,INDArray> grad = model.gradient().gradientForVariable();
+            Map<String, Map> newGrad = new LinkedHashMap<>();
+            try {
+                Map<String, INDArray> grad = model.gradient().gradientForVariable();
 
 //            log.warn("Starting report building...");
 
-            if(meanMagHistoryParams.size() == 0){
-                //Initialize:
-                int maxLayerIdx = -1;
-                for(String s : grad.keySet()){
-                    maxLayerIdx = Math.max(maxLayerIdx,indexFromString(s));
-                }
-                if(maxLayerIdx == -1 ) maxLayerIdx = 0;
-                for( int i = 0; i <= maxLayerIdx; i++ ){
-                    meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
-                    meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
-                }
-            }
-
-            //Process gradients: duplicate + calculate and store mean magnitudes
-            Map<String,Map> newGrad = new LinkedHashMap<>();
-            for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
-                String param = entry.getKey();
-                String newName;
-                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
-                else newName = param;
-                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                        .setBinCount(20)
-                        .setRounding(6)
-                        .build();
-                newGrad.put(newName,histogram.getData());
-                //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
-
-
-                int idx = indexFromString(newName);
-                if (idx >= meanMagHistoryUpdates.size()) {
-                    //log.info("Can't find idx for update ["+newName+"]");
-                    meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
-                    idx = indexFromString(newName);
+                if (meanMagHistoryParams.size() == 0) {
+                    //Initialize:
+                    int maxLayerIdx = -1;
+                    for (String s : grad.keySet()) {
+                        maxLayerIdx = Math.max(maxLayerIdx, indexFromString(s));
+                    }
+                    if (maxLayerIdx == -1) maxLayerIdx = 0;
+                    for (int i = 0; i <= maxLayerIdx; i++) {
+                        meanMagHistoryParams.add(new LinkedHashMap<String, List<Double>>());
+                        meanMagHistoryUpdates.add(new LinkedHashMap<String, List<Double>>());
+                    }
                 }
 
+                //Process gradients: duplicate + calculate and store mean magnitudes
 
-                //Work out layer index:
-                Map<String,List<Double>> map = meanMagHistoryUpdates.get(idx);
-                List<Double> list = map.get(newName);
-                if(list==null){
-                    list = new ArrayList<>();
-                    map.put(newName,list);
+                for (Map.Entry<String, INDArray> entry : grad.entrySet()) {
+                    String param = entry.getKey();
+                    String newName;
+                    if (Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                    else newName = param;
+                    HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                            .setBinCount(20)
+                            .setRounding(6)
+                            .build();
+                    newGrad.put(newName, histogram.getData());
+                    //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+
+
+                    int idx = indexFromString(newName);
+                    if (idx >= meanMagHistoryUpdates.size()) {
+                        //log.info("Can't find idx for update ["+newName+"]");
+                        meanMagHistoryUpdates.add(new LinkedHashMap<String, List<Double>>());
+                        idx = indexFromString(newName);
+                    }
+
+
+                    //Work out layer index:
+                    Map<String, List<Double>> map = meanMagHistoryUpdates.get(idx);
+                    List<Double> list = map.get(newName);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        map.put(newName, list);
+                    }
+                    double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
+                    list.add(meanMag);
                 }
-                double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
-                list.add(meanMag);
+            } catch (Exception e) {
+                log.warn("Skipping gradients update");
             }
 
             //Process parameters: duplicate + calculate and store mean magnitudes

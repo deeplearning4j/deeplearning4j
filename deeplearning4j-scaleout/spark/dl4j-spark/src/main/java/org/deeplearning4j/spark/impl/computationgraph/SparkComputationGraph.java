@@ -343,8 +343,10 @@ public class SparkComputationGraph implements Serializable {
 
             log.info("Processed and set updater");
         }
-        if (listeners.size() > 0)
+        if (listeners.size() > 0) {
+            network.setScore(lastScore);
             invokeListeners(network, iterationsCount.incrementAndGet());
+        }
         if (!initDone) {
             initDone = true;
             update(maxRep, 0);
