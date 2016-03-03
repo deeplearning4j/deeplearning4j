@@ -55,8 +55,14 @@ import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatM
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -86,6 +92,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     private Accumulator<Double> bestScoreAcc = null;
     private double lastScore;
+    private transient boolean initDone = false;
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
@@ -350,6 +357,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
+        int maxRep = 0;
         int paramsLength = network.numParams(false);
 
         log.info("Broadcasting initial parameters of length " + paramsLength);
@@ -376,8 +384,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsGradient.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
-            if(divideGrad)
-                accumulatedGradient.divi(results.partitions().size());
+            if(divideGrad) {
+                maxRep = results.partitions().size();
+                accumulatedGradient.divi(maxRep);
+            }
             log.info("Accumulated parameters");
             log.info("Summed gradients.");
             network.setParameters(network.params(false).addi(accumulatedGradient));
@@ -407,7 +417,9 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsParams.foreach(a);
 
             INDArray newParams = a.getAccumulator().value();
-            newParams.divi(a.getCounter().value());
+            maxRep = a.getCounter().value();
+            newParams.divi(maxRep);
+
 
             network.setParameters(newParams);
             log.info("Accumulated and set parameters");
@@ -429,7 +441,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             network.setUpdater(combinedUpdater);
 
             log.info("Processed and set updater");
-
+        }
+        if (!initDone) {
+            initDone = true;
+            update(maxRep, 0);
         }
     }
 
@@ -537,6 +552,14 @@ public class SparkDl4jMultiLayer implements Serializable {
         return evaluate(data,labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
+    private void update(int mr, long mg) {
+        Environment env = EnvironmentUtils.buildEnvironment();
+        env.setNumCores(mr);
+        env.setAvailableMemory(mg);
+        Task task = ModelSerializer.taskByModel(network);
+        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+    }
+
     /**Evaluate the network (classification performance) in a distributed manner, using specified batch size and a provided
      * list of labels
      * @param data Data to evaluate on
@@ -550,4 +573,6 @@ public class SparkDl4jMultiLayer implements Serializable {
                 sc.broadcast(network.params()), evalBatchSize, listBroadcast));
         return evaluations.reduce(new EvaluationReduceFunction());
     }
+
+
 }

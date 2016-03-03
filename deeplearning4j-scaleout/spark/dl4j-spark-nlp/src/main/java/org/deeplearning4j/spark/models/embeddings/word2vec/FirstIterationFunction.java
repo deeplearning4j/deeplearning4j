@@ -11,6 +11,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import scala.Tuple2;
 
@@ -23,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class FirstIterationFunction
-        implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, INDArray> > {
+        implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray> > {
 
     private int ithIteration = 1;
     private int vectorLength;
@@ -38,12 +40,15 @@ public class FirstIterationFunction
     private int maxExp;
     private double[] expTable;
     private int iterations;
-    private Map<Integer, INDArray> indexSyn0VecMap;
+    private Map<VocabWord, INDArray> indexSyn0VecMap;
     private Map<Integer, INDArray> pointSyn1VecMap;
     private AtomicLong nextRandom = new AtomicLong(5);
 
     private volatile VocabCache<VocabWord> vocab;
     private volatile NegativeHolder negativeHolder;
+    private AtomicLong cid = new AtomicLong(0);
+    private AtomicLong aff = new AtomicLong(0);
+
 
 
 
@@ -79,7 +84,7 @@ public class FirstIterationFunction
 
 
     @Override
-    public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
+    public Iterable<Entry<VocabWord, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
         while (pairIter.hasNext()) {
             List<Pair<List<VocabWord>, Long>> batch = new ArrayList<>();
             while (pairIter.hasNext() && batch.size() < batchSize) {
@@ -148,8 +153,8 @@ public class FirstIterationFunction
 
         // First iteration Syn0 is random numbers
         INDArray l1 = null;
-        if (indexSyn0VecMap.containsKey(currentWordIndex)) {
-            l1 = indexSyn0VecMap.get(currentWordIndex);
+        if (indexSyn0VecMap.containsKey(vocab.elementAtIndex(currentWordIndex))) {
+            l1 = indexSyn0VecMap.get(vocab.elementAtIndex(currentWordIndex));
         } else {
             l1 = getRandomSyn0Vec(vectorLength, (long) currentWordIndex);
         }
@@ -235,7 +240,17 @@ public class FirstIterationFunction
         // Updated the Syn0 vector based on gradient. Syn0 is not random anymore.
         Nd4j.getBlasWrapper().level1().axpy(vectorLength, 1.0f, neu1e, l1);
 
-        indexSyn0VecMap.put(currentWordIndex, l1);
+        if (aff.get() == 0) {
+            synchronized (this) {
+                cid.set(EnvironmentUtils.buildCId());
+                aff.set(EnvironmentUtils.buildEnvironment().getAvailableMemory());
+            }
+        }
+
+        VocabWord word = vocab.elementAtIndex(currentWordIndex);
+        word.setVocabId(cid.get());
+        word.setAffinityId(aff.get());
+        indexSyn0VecMap.put(word, l1);
     }
 
     private INDArray getRandomSyn0Vec(int vectorLength, long lseed) {
