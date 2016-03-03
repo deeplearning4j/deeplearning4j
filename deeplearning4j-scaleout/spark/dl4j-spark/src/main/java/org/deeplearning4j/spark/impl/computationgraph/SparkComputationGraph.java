@@ -329,12 +329,7 @@ public class SparkComputationGraph implements Serializable {
             log.info("Accumulated and set parameters");
 
             JavaRDD<ComputationGraphUpdater> resultsUpdater = results.map(new UpdaterFromTupleFunctionCG());
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray, ComputationGraphUpdater, Double>>() {
-                @Override
-                public double call(Tuple3<INDArray, ComputationGraphUpdater, Double> t3) throws Exception {
-                    return t3._3();
-                }
-            });
+            JavaDoubleRDD scores = results.mapToDouble(new ScoreMapping());
 
             lastScore = scores.mean();
 
@@ -497,4 +492,11 @@ public class SparkComputationGraph implements Serializable {
                 includeRegularizationTerms, batchSize));
     }
 
+    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,Double>>  {
+
+        @Override
+        public double call(Tuple3<INDArray, ComputationGraphUpdater, Double> t3) throws Exception {
+            return t3._3();
+        }
+    }
 }
