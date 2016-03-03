@@ -180,7 +180,7 @@ public class GravesLSTMTest {
 				.updater(Updater.SGD)
 				.learningRate(0.1)
 				.seed(12345)
-				.list(2)
+				.list()
 				.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation("tanh").nIn(2).nOut(2).build())
 				.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1).activation("tanh").build())
 				.build();

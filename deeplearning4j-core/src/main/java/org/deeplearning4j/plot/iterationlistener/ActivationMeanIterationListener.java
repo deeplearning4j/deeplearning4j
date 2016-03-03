@@ -1,20 +1,16 @@
 package org.deeplearning4j.plot.iterationlistener;
 
-import com.google.common.primitives.Ints;
+import org.canova.image.loader.ImageLoader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.plot.PlotFilters;
-import org.deeplearning4j.util.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Adam Gibson

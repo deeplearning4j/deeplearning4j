@@ -4,21 +4,14 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  */

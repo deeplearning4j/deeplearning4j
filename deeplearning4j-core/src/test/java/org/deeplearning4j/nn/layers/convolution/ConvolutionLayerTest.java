@@ -53,7 +53,7 @@ public class ConvolutionLayerTest {
                 .l2(2e-4)
                 .regularization(true)
                 .useDropConnect(true)
-                .list(4)
+                .list()
                 .layer(0, new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
                         .stride(4, 4)
                         .nOut(16)
@@ -411,7 +411,7 @@ public class ConvolutionLayerTest {
                 .seed(seed)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .list(3)
+                .list()
                 .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
                         .nOut(6)
                         .build())

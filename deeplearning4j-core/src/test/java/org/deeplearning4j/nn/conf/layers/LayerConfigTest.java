@@ -187,7 +187,7 @@ public class LayerConfigTest {
 
         conf = new NeuralNetConfiguration.Builder()
                 .dropOut(1.0)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).dropOut(2.0).build())
                 .build();
@@ -207,7 +207,7 @@ public class LayerConfigTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(1.0)
                 .momentumAfter(testMomentumAfter)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .build();
@@ -245,7 +245,7 @@ public class LayerConfigTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.ADADELTA)
                 .rho(0.5)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rho(0.01).build())
                 .build();
@@ -260,7 +260,7 @@ public class LayerConfigTest {
         conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.RMSPROP)
                 .rmsDecay(2.0)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
                 .build();
@@ -282,7 +282,7 @@ public class LayerConfigTest {
                 .updater(Updater.ADAM)
                 .adamMeanDecay(0.5)
                 .adamVarDecay(0.5)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2)
                         .adamMeanDecay(0.6).adamVarDecay(0.7).build())
@@ -301,7 +301,7 @@ public class LayerConfigTest {
                 .updater(Updater.ADAM)
                 .adamMeanDecay(0.5)
                 .adamVarDecay(0.5)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(1.0).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
                 .build();
@@ -322,7 +322,7 @@ public class LayerConfigTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(10)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
                 .build();

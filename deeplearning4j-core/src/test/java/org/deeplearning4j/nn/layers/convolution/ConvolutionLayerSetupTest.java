@@ -61,9 +61,9 @@ public class ConvolutionLayerSetupTest {
                 .seed(seed)
                 .iterations(iterations).regularization(true)
                 .l1(1e-1).l2(2e-4).useDropConnect(true)
-                .constrainGradientToUnitNorm(true).miniBatch(true)
+                .miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(6)
+                .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nOut(5).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
@@ -167,7 +167,7 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration.Builder incompleteLRN() {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(6)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
                         .build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder( new int[]{2, 2}).build())
@@ -183,7 +183,7 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration.Builder incompleteLFW() {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(5)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
                         .build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder( new int[]{2, 2}).build())
@@ -200,7 +200,7 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration.Builder incompleteMnistLenet() {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(6)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nIn(1).nOut(20)
                         .build())
                 .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{1,1},new int[]{2,2}).build())
@@ -217,7 +217,7 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration mnistLenet() {
         MultiLayerConfiguration builder = new NeuralNetConfiguration.Builder()
                 .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(5)
+                .list()
                 .layer(0,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
                         .build())
                 .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
@@ -238,7 +238,7 @@ public class ConvolutionLayerSetupTest {
                 .seed(seed)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{10, 10}, new int[]{2, 2})
                         .nIn(nChannels)
                         .nOut(6)
@@ -270,7 +270,7 @@ public class ConvolutionLayerSetupTest {
                 .seed(seed)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{10, 10}, new int[]{2, 2})
                         .nIn(nChannels)
                         .nOut(6)
@@ -296,7 +296,7 @@ public class ConvolutionLayerSetupTest {
     public void testSubSamplingWithPadding(){
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .list(3)
+                .list()
                 .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())    //(28-2+0)/2+1 = 14
                 .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())      //(14-2+2)/2+1 = 8 -> 8x8x3
                 .layer(2, new OutputLayer.Builder().nOut(3).build());
