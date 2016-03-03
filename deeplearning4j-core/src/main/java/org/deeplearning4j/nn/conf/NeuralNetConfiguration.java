@@ -67,13 +67,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected StepFunction stepFunction;
     protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
-    @Deprecated
-    protected boolean useSchedules = false;
     //minimize or maximize objective
     protected boolean minimize = true;
     // Graves LSTM & RNN
-    @Deprecated
-    private int timeSeriesLength = 1;
     protected Map<String,Double> learningRateByParam = new HashMap<>();
     protected Map<String,Double> l1ByParam = new HashMap<>();
     protected Map<String,Double> l2ByParam = new HashMap<>();
@@ -348,33 +344,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
         protected boolean useRegularization = false;
-        @Deprecated
-        protected boolean useSchedules = false;
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-        @Deprecated
-        protected boolean constrainGradientToUnitNorm = false;
         protected StepFunction stepFunction = null;
         protected boolean useDropConnect = false;
         protected boolean minimize = true;
-        @Deprecated
-        protected int timeSeriesLength = 1;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
         protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
         protected double lrPolicyDecayRate;
         protected double lrPolicySteps;
         protected double lrPolicyPower;
-
-        /**Deprecated.
-         +         * Time series length
-         +         * @param timeSeriesLength
-         +         * @return
-         +         */
-        @Deprecated
-        public Builder timeSeriesLength(int timeSeriesLength) {
-            this.timeSeriesLength = timeSeriesLength;
-            return this;
-        }
 
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
@@ -504,25 +483,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /** Deprecated. Use .gradientNormalization(GradientNormalization) instead
-         * @see org.deeplearning4j.nn.conf.GradientNormalization
-         */
-        @Deprecated
-        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
-            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-            return this;
-        }
-
         /** Whether to use regularization (l1, l2, dropout, etc */
         public Builder regularization(boolean useRegularization) {
             this.useRegularization = useRegularization;
-            return this;
-        }
-
-        /** Whether to use schedules, learningRateSchedule and momentumSchedule*/
-        @Deprecated
-        public Builder schedules(boolean schedules) {
-            this.useSchedules = schedules;
             return this;
         }
 
@@ -728,10 +691,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.layer = layer;
             conf.numIterations = numIterations;
             conf.useRegularization = useRegularization;
-            conf.useSchedules = useSchedules;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
-            conf.timeSeriesLength = timeSeriesLength;
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
@@ -744,7 +705,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
                 if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
                 if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
-                if (Double.isNaN(layer.getLrScoreBasedDecay())) layer.setLrScoreBasedDecay(lrScoreBasedDecay);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
                 if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);

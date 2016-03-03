@@ -20,14 +20,10 @@ package org.deeplearning4j.scaleout.perform;
 
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.DeepLearningConfigurable;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.scaleout.job.Job;
 import org.junit.Test;
@@ -45,7 +41,7 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
                 .momentum(9e-1f)
                 .iterations(10)
                 .learningRate(1e-1f)
-                .list(2)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1, 1))

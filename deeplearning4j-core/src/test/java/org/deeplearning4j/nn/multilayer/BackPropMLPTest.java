@@ -295,7 +295,7 @@ public class BackPropMLPTest {
                 .l2(0.0)
                 .momentum(0.0)
                 .seed(12345L)
-                .list(hiddenLayerSizes.length + 1);
+                .list();
 
         for( int i = 0; i < hiddenLayerSizes.length; i++) {
             int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
