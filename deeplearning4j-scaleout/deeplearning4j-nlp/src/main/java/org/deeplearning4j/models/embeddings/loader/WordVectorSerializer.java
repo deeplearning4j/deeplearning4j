@@ -155,7 +155,7 @@ public class WordVectorSerializer {
                     vector[i - 1] = Float.parseFloat(split[i]);
                 }
 
-                syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
+                syn0.putRow(currLine, Nd4j.create(vector));
 
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
