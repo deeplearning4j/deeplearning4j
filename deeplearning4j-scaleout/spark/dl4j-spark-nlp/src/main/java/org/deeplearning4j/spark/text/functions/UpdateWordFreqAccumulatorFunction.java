@@ -35,8 +35,7 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
     private Broadcast<List<String>> stopWords;
     private Accumulator<Counter<String>> wordFreqAcc;
 
-    public UpdateWordFreqAccumulatorFunction(Broadcast<List<String>> stopWords,
-                                             Accumulator<Counter<String>> wordFreqAcc) {
+    public UpdateWordFreqAccumulatorFunction(Broadcast<List<String>> stopWords, Accumulator<Counter<String>> wordFreqAcc) {
         this.wordFreqAcc = wordFreqAcc;
         this.stopWords = stopWords;
     }
