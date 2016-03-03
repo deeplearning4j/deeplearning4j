@@ -87,6 +87,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testTensorAlongDimension2() {
+        INDArray array = Nd4j.create( new float[100], new int[]{50,1,2});
+        assertArrayEquals(new int[]{1,2},array.slice(0,0).shape());
+
+    }
+
+
+    @Test
     public void testArgMax() {
         INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
         INDArray  argMax = Nd4j.argMax(toArgMax, 1);

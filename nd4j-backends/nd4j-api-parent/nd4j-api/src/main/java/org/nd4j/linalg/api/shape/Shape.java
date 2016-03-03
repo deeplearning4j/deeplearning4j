@@ -1133,7 +1133,16 @@ public class Shape {
         return ret.slice();
     }
 
-
+    /**
+     * Get the shape from
+     * the given int buffer
+     * @param buffer the buffer to get the shape information for
+     * @return
+     */
+    public static DataBuffer shapeOf(DataBuffer buffer) {
+        int rank = buffer.getInt(0);
+        return Nd4j.createBuffer(buffer,1,rank);
+    }
     /**
      * Get the shape from
      * the given int buffer

@@ -2849,7 +2849,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if(slice < 0)
-            slice += Shape.rank(shapeInformation.asNioInt());
+            slice += rank();
         INDArrayIndex[] indexes = new INDArrayIndex[rank()];
         indexes[0] = NDArrayIndex.point(slice);
         for(int i = 1; i < rank(); i++) {
@@ -2916,12 +2916,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray slice(int slice, int dimension) {
-        if(dimension < 0)
-            dimension += rank();
-        if(isMatrix())
-            return vectorAlongDimension(slice,dimension);
+        int slices = size(dimension);
+        if(slice >= slices)
+            throw new IllegalArgumentException("Illegal slice " + slice);
 
-        return tensorAlongDimension(slice,dimension);
+        if (Shape.rank(shapeInformation.asNioInt()) == 0) {
+            if(slice == 0)
+                return createScalarForIndex(slice,true);
+            else
+                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+
+        }
+
+
+        if(slice < 0)
+            slice += rank();
+        INDArrayIndex[] indexes = new INDArrayIndex[rank()];
+        indexes[dimension] = NDArrayIndex.point(slice);
+        for(int i = 0; i < rank(); i++) {
+            if(i != dimension)
+                indexes[i] = NDArrayIndex.all();
+        }
+        return get(indexes);
+
     }
 
     /**
