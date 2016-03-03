@@ -432,12 +432,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             network.setParameters(newParams);
             log.info("Accumulated and set parameters");
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
-                @Override
-                public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
-                    return t3._3();
-                }
-            });
+            JavaDoubleRDD scores = results.mapToDouble(new ScoreMapping());
             lastScore = scores.mean();
 
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
@@ -451,9 +446,12 @@ public class SparkDl4jMultiLayer implements Serializable {
 
             log.info("Processed and set updater");
         }
-        if (listeners.size() > 0)
+        if (listeners.size() > 0) {
+            log.info("Invoking IterationListeners");
             invokeListeners(network, iterationsCount.incrementAndGet());
+        }
         if (!initDone) {
+            log.info("Invoking Update");
             initDone = true;
             update(maxRep, 0);
         }
@@ -610,5 +608,11 @@ public class SparkDl4jMultiLayer implements Serializable {
         return evaluations.reduce(new EvaluationReduceFunction());
     }
 
+    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,Updater,Double>>  {
 
+        @Override
+        public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
+            return t3._3();
+        }
+    }
 }
