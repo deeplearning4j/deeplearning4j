@@ -25,12 +25,10 @@ import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -39,19 +37,12 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.heartbeat.Heartbeat;
-import org.nd4j.linalg.heartbeat.reports.Environment;
-import org.nd4j.linalg.heartbeat.reports.Event;
-import org.nd4j.linalg.heartbeat.reports.Task;
-import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
-import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -89,9 +80,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
     protected Gradient gradient;
+    protected INDArray epsilon;
     protected double score;
     private INDArray params;
-    private boolean initDone = false;
     /*
       Binary drop connect mask
      */
@@ -728,6 +719,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return gradient;
     }
 
+    public INDArray epsilon() {
+        return epsilon;
+    }
+
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
@@ -775,32 +770,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return deltaRet;
     }
 
-
-    //damping update after line search
-    public void dampingUpdate(double rho, double boost, double decrease) {
-        if (rho < 0.25 || Double.isNaN(rho))
-            layerWiseConfigurations.setDampingFactor(getLayerWiseConfigurations().getDampingFactor() * boost);
-
-
-        else if (rho > 0.75)
-            layerWiseConfigurations.setDampingFactor(getLayerWiseConfigurations().getDampingFactor() * decrease);
-    }
-
-    /* p and gradient are same length */
-    public double reductionRatio(INDArray p, double currScore, double score, INDArray gradient) {
-        double currentDamp = layerWiseConfigurations.getDampingFactor();
-        layerWiseConfigurations.setDampingFactor(0);
-        INDArray denom = getBackPropRGradient(p);
-        denom.muli(0.5).muli(p.mul(denom)).sum(0);
-        denom.subi(gradient.mul(p).sum(0));
-        double rho = (currScore - score) / (double) denom.getScalar(0).element();
-        layerWiseConfigurations.setDampingFactor(currentDamp);
-        if (score - currScore > 0)
-            return Float.NEGATIVE_INFINITY;
-        return rho;
-    }
-
-
     /* delta computation for back prop with precon for SFH */
     protected List<Pair<INDArray, INDArray>> computeDeltas2() {
         List<Pair<INDArray, INDArray>> deltaRet = new ArrayList<>();
@@ -843,39 +812,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         return deltaRet;
-    }
-
-
-    /**
-     * Gets the back prop gradient with the r operator (gauss vector)
-     * This is also called computeGV
-     *
-     * @param v the v in gaussian newton vector g * v
-     * @return the back prop with r gradient
-     */
-    public INDArray getBackPropRGradient(INDArray v) {
-        return pack(backPropGradientR(v));
-    }
-
-
-    /**
-     * Gets the back prop gradient with the r operator (gauss vector)
-     * and the associated precon matrix
-     * This is also called computeGV
-     *
-     * @return the back prop with r gradient
-     */
-    public Pair<INDArray, INDArray> getBackPropGradient2() {
-        List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> deltas = backPropGradient2();
-        List<Pair<INDArray, INDArray>> deltaNormal = new ArrayList<>();
-        List<Pair<INDArray, INDArray>> deltasPreCon = new ArrayList<>();
-        for (int i = 0; i < deltas.size(); i++) {
-            deltaNormal.add(deltas.get(i).getFirst());
-            deltasPreCon.add(deltas.get(i).getSecond());
-        }
-
-
-        return new Pair<>(pack(deltaNormal), pack(deltasPreCon));
     }
 
 
@@ -959,7 +895,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             idx += range;
         }
     }
-
 
     /**
      * Returns a 1 x m vector where the vector is composed of
@@ -1064,77 +999,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return ret;
     }
 
-    /**
-     * Do a back prop iteration.
-     * This involves computing the activations, tracking the last neuralNets weights
-     * to revert to in case of convergence, the learning rate being used to iterate
-     * and the current epoch
-     *
-     * @return whether the training should converge or not
-     */
-    protected List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> backPropGradient2() {
-        //feedforward to compute activations
-        //initial error
-
-        //precompute deltas
-        List<Pair<INDArray, INDArray>> deltas = computeDeltas2();
-
-
-        List<Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>>> list = new ArrayList<>();
-        List<Pair<INDArray, INDArray>> grad = new ArrayList<>();
-        List<Pair<INDArray, INDArray>> preCon = new ArrayList<>();
-
-        for (int l = 0; l < deltas.size(); l++) {
-            INDArray gradientChange = deltas.get(l).getFirst();
-            INDArray preConGradientChange = deltas.get(l).getSecond();
-
-
-            if (l < layers.length && gradientChange.length() != layers[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
-                throw new IllegalStateException("Gradient change not equal to weight change");
-
-            //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).getFirst().mean(0);
-            INDArray preConColumnSums = deltas.get(l).getSecond().mean(0);
-
-            grad.add(new Pair<>(gradientChange, deltaColumnSums));
-            preCon.add(new Pair<>(preConGradientChange, preConColumnSums));
-            if (l < layers.length && deltaColumnSums.length() != layers[l].getParam(DefaultParamInitializer.BIAS_KEY).length())
-                throw new IllegalStateException("Bias change not equal to weight change");
-            else if (l == getLayers().length && deltaColumnSums.length() != getOutputLayer().getParam(DefaultParamInitializer.BIAS_KEY).length())
-                throw new IllegalStateException("Bias change not equal to weight change");
-
-
-        }
-
-        INDArray g = pack(grad);
-        INDArray con = pack(preCon);
-        INDArray theta = params();
-
-
-
-
-        if(getOutputLayer().conf().isUseDropConnect() || getOutputLayer().conf().getLayer().getDropOut() > 0.0) {
-            if (mask == null)
-                initMask();
-            g.addi(theta.mul(defaultConfiguration.getLayer().getL2()).muli(mask));
-            INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getLayer().getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
-            con.addi(conAdd);
-
-        }
-
-        List<Pair<INDArray, INDArray>> gUnpacked = unPack(g);
-
-        List<Pair<INDArray, INDArray>> conUnpacked = unPack(con);
-
-        for (int i = 0; i < gUnpacked.size(); i++)
-            list.add(new Pair<>(gUnpacked.get(i), conUnpacked.get(i)));
-
-
-        return list;
-
-    }
-
-
     @Override
     public void fit(DataSetIterator iter) {
         if (layerWiseConfigurations.isPretrain()) {
@@ -1154,7 +1018,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             while (iter.hasNext()) {
-                update(TaskUtils.buildTask(iter));
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
@@ -1186,6 +1049,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
+        this.epsilon = (pair == null ? null : pair.getSecond());
     }
 
     /** Calculate gradients and errors. Used in two places:
@@ -1497,7 +1361,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
         setLabels(labels.dup());
-        update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
@@ -1530,7 +1393,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data.dup());
-        update(TaskUtils.buildTask(data));
         pretrain(data);
     }
 
@@ -1548,11 +1410,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
         if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            update(TaskUtils.buildTask(data));
             doTruncatedBPTT(data.getFeatureMatrix(),data.getLabels(),data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         } else {
             //Standard training
-            update(TaskUtils.buildTask(data));
             boolean hasMaskArrays = data.hasMaskArrays();
             if(hasMaskArrays) setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
             fit(data.getFeatureMatrix(), data.getLabels());
@@ -1849,22 +1709,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         solver = null;
     }
 
-    /**(Deprecated)
-     * Score of the model (relative to the objective function)
-     *
-     * @param param the current parameters
-     * @return the score of the model (relative to the objective function)
-     */
-    @Deprecated
-    public double score(INDArray param) {
-        INDArray params = params();
-        setParameters(param);
-        double ret = score();
-        double regCost = 0.5f * defaultConfiguration.getLayer().getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
-        setParameters(params);
-        return ret + regCost;
-    }
-
     /**
      * Averages the given logistic regression
      * from a mini batch in to this one
@@ -1951,14 +1795,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
-            if(!(layer instanceof SubsamplingLayer)) {
-                layer.conf().getLayer().setLearningRate(
-                        layer.conf().getLayer().getLearningRate() * (layer.conf().getLayer().getLrScoreBasedDecay() + Nd4j.EPS_THRESHOLD));
+            if (!layer.conf().getLearningRateByParam().isEmpty()) {
+                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
+                    layer.conf().setLearningRateByParam(lrPair.getKey(),
+                            lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+                }
             }
         }
     }
-
-
 
     /**
      * Feed forward with the r operator
@@ -1981,54 +1825,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         return R;
-    }
-
-
-
-    /**
-     * Do a back prop iteration.
-     * This involves computing the activations, tracking the last neuralNets weights
-     * to revert to in case of convergence, the learning rate being used to iterate
-     * and the current epoch
-     *
-     * @param v the v in gaussian newton vector g * v
-     * @return whether the training should converge or not
-     */
-    protected List<Pair<INDArray, INDArray>> backPropGradientR(INDArray v) {
-        //feedforward to compute activations
-        //initial error
-        //log.info("Back prop step " + epoch);
-        if (mask == null)
-            initMask();
-        //precompute deltas
-        List<INDArray> deltas = computeDeltasR(v);
-        //compute derivatives and gradients given activations
-
-
-        List<Pair<INDArray, INDArray>> list = new ArrayList<>();
-
-        for (int l = 0; l < getnLayers(); l++) {
-            INDArray gradientChange = deltas.get(l);
-
-            if (gradientChange.length() != getLayers()[l].getParam(DefaultParamInitializer.WEIGHT_KEY).length())
-                throw new IllegalStateException("Gradient change not equal to weight change");
-
-
-            //update hidden bias
-            INDArray deltaColumnSums = deltas.get(l).mean(0);
-            if (deltaColumnSums.length() != layers[l].getParam(DefaultParamInitializer.BIAS_KEY).length())
-                throw new IllegalStateException("Bias change not equal to weight change");
-
-
-            list.add(new Pair<>(gradientChange, deltaColumnSums));
-
-
-        }
-
-        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getLayer().getL2())
-                .muli(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
-        return unPack(pack);
-
     }
 
     public NeuralNetConfiguration getDefaultConfiguration() {
@@ -2443,15 +2239,5 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         return e;
-    }
-
-    private void update(Task task) {
-        if (!initDone) {
-            initDone = true;
-            Heartbeat heartbeat = Heartbeat.getInstance();
-            task = ModelSerializer.taskByModel(this);
-            Environment env = EnvironmentUtils.buildEnvironment();
-            heartbeat.reportEvent(Event.STANDALONE, env, task);
-        }
     }
 }

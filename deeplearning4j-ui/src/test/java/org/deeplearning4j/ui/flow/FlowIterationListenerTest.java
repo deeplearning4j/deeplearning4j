@@ -102,7 +102,7 @@ public class FlowIterationListenerTest {
                     .regularization(true)
                     .updater(Updater.ADAGRAD)
                     .useDropConnect(true)
-                    .list(9)
+                    .list()
                     .layer(0, new ConvolutionLayer.Builder(4, 4)
                             .name("cnn1")
                             .nIn(nChannels)

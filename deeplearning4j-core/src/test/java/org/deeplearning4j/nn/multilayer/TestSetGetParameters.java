@@ -26,7 +26,7 @@ public class TestSetGetParameters {
 	public void testSetParameters(){
 		//Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			.list(4)
+			.list()
 			.layer(0, new DenseLayer.Builder().nIn(9).nOut(10)
 					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
 			.layer(1, new RBM.Builder().nIn(10).nOut(11)
@@ -66,7 +66,7 @@ public class TestSetGetParameters {
 		//Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
 		
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			.list(3)
+			.list()
 			.layer(0, new GravesLSTM.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).build())
 			.layer(1, new GravesLSTM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)

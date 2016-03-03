@@ -23,8 +23,11 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
@@ -72,6 +75,7 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
     public Evaluation(Map<Integer, String> labels) {
         this.labelsMap = labels;
     }
+
 
     /**
      * Collects statistics on the real outcomes vs the

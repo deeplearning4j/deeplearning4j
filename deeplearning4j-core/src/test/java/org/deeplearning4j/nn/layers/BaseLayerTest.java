@@ -79,7 +79,7 @@ public class BaseLayerTest {
         int nOut = 2;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(nIn).nOut(nOut)
                         .build())
