@@ -534,7 +534,7 @@ void NativeOps::execScalarDouble(
  */
 double   NativeOps::execSummaryStatsScalarDouble(long *extraPointers,int opNum,long x,
                                                  long xShapeInfo,
-                                                 long extraParams) {
+                                                 long extraParams,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -542,7 +542,7 @@ double   NativeOps::execSummaryStatsScalarDouble(long *extraPointers,int opNum,l
             opNum,
             xPointer,
             xShapeInfoPointer,
-            extraParamsPointer);
+            extraParamsPointer,biasCorrected);
 }
 /**
  *
@@ -558,13 +558,20 @@ void   NativeOps::execSummaryStatsDouble(long *extraPointers,int opNum,
                                          long xShapeInfo,
                                          long extraParams,
                                          long result,
-                                         long resultShapeInfo) {
+                                         long resultShapeInfo,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer);
+    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            biasCorrected);
 }
 /**
  *
@@ -582,14 +589,22 @@ void   NativeOps::execSummaryStatsDouble(long *extraPointers,int opNum,long x,
                                          long extraParams,
                                          long result,
                                          long resultShapeInfoBuffer,
-                                         long dimension, int dimensionLength) {
+                                         long dimension, int dimensionLength,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            dimensionPointer,
+            dimensionLength,biasCorrected);
 
 }
 /**
@@ -1176,11 +1191,16 @@ float   NativeOps::execSummaryStatsScalarFloat(
         int opNum,
         long x,
         long xShapeInfo,
-        long extraParams) {
+        long extraParams,bool biasCorrected) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execSummaryStatsScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+    return FloatNativeOpExecutioner::getInstance()->execSummaryStatsScalar(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            biasCorrected);
 }
 /**
  *
@@ -1198,13 +1218,20 @@ void   NativeOps::execSummaryStatsFloat(
         long xShapeInfo,
         long extraParams,
         long result,
-        long resultShapeInfo) {
+        long resultShapeInfo,bool biasCorrected) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer);
+    FloatNativeOpExecutioner::getInstance()->execSummaryStats(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            biasCorrected);
 }
 /**
  *
@@ -1222,14 +1249,23 @@ void   NativeOps::execSummaryStatsFloat(long *extraPointers,int opNum,long x,
                                         long extraParams,
                                         long result,
                                         long resultShapeInfoBuffer,
-                                        long dimension, int dimensionLength) {
+                                        long dimension, int dimensionLength,bool biasCorrected) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execSummaryStats(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+    FloatNativeOpExecutioner::getInstance()->execSummaryStats(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            extraParamsPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            dimensionPointer,
+            dimensionLength,
+            biasCorrected);
 
 }
 /**

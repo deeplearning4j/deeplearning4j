@@ -439,8 +439,8 @@ public:
                           int *xShapeInfo,
                           T *extraParams,
                           T *result,
-                          int *resultShapeInfo) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
+                          int *resultShapeInfo,bool biasCorrected) {
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
         op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
         delete op;
     }
@@ -457,8 +457,8 @@ public:
     T execSummaryStatsScalar(int opNum,
                              T *x,
                              int *xShapeInfo,
-                             T *extraParams) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
+                             T *extraParams,bool biasCorrected) {
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
         T ret = op->execScalar(x,xShapeInfo,extraParams);
         delete op;
         return ret;
@@ -480,8 +480,8 @@ public:
                           T *extraParams,
                           T *result,
                           int *resultShapeInfoBuffer,
-                          int *dimension, int dimensionLength) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum);
+                          int *dimension, int dimensionLength, bool biasCorrected) {
+        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
         op->exec(x,
                  xShapeInfo,
                  extraParams,
@@ -492,6 +492,8 @@ public:
         delete op;
 
     }
+
+
 
     /**
      *

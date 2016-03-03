@@ -772,7 +772,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
         int opNum,
         long x,
         long xShapeInfo,
-        long extraParams){
+        long extraParams,bool biasCorrected){
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -786,7 +786,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
             scalarShapeInformation->getDeviceShapeInfo(),
             scalarShapeInformation->getDimensionDevicePointer(),
             1,
-            1);
+            1,biasCorrected);
     cudaDeviceSynchronize();
     double result = scalarShapeInformation->getFinalResultFromDevice();
     delete scalarShapeInformation;
@@ -809,7 +809,7 @@ void   NativeOps::execSummaryStatsDouble(
         long xShapeInfo,
         long extraParams,
         long result,
-        long resultShapeInfo) {
+        long resultShapeInfo,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -826,7 +826,7 @@ void   NativeOps::execSummaryStatsDouble(
                     resultShapeInfoPointer,
                     scalarShapeInformation->getDimensionDevicePointer(),
                     1,
-                    1);
+                    1,biasCorrected);
     delete scalarShapeInformation;
 }
 /**
@@ -848,7 +848,7 @@ void   NativeOps::execSummaryStatsDouble(
         long extraParams,
         long result,
         long resultShapeInfoBuffer,
-        long dimension, int dimensionLength){
+        long dimension, int dimensionLength,bool biasCorrected){
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -865,7 +865,7 @@ void   NativeOps::execSummaryStatsDouble(
                     resultShapeInfoPointer,
                     dimensionPointer,
                     dimensionLength,
-                    1);
+                    1,biasCorrected);
 
 }
 /**
@@ -1564,7 +1564,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
         int opNum,
         long x,
         long xShapeInfo,
-        long extraParams){
+        long extraParams,bool biasCorrected){
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
@@ -1578,7 +1578,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
             xShapeInfoPointer,
             scalarShapeInformation->getDimensionDevicePointer(),
             1,
-            1);
+            1,biasCorrected);
     cudaDeviceSynchronize();
     float result = scalarShapeInformation->getFinalResultFromDevice();
     delete scalarShapeInformation;
@@ -1600,7 +1600,7 @@ void   NativeOps::execSummaryStatsFloat(
         long xShapeInfo,
         long extraParams,
         long result,
-        long resultShapeInfo){
+        long resultShapeInfo,bool biasCorrected){
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
@@ -1617,7 +1617,7 @@ void   NativeOps::execSummaryStatsFloat(
                     resultShapeInfoPointer,
                     scalarShapeInformation->getDimensionDevicePointer(),
                     1,
-                    1);
+                    1,biasCorrected);
     delete scalarShapeInformation;
 }
 /**
@@ -1640,7 +1640,7 @@ void   NativeOps::execSummaryStatsFloat(
         long result,
         long resultShapeInfoBuffer,
         long dimension,
-        int dimensionLength){
+        int dimensionLength,bool biasCorrected){
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
@@ -1657,7 +1657,7 @@ void   NativeOps::execSummaryStatsFloat(
                     resultShapeInfoPointer,
                     dimensionPointer,
                     dimensionLength,
-                    1);
+                    1,biasCorrected);
 
 }
 /**

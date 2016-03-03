@@ -330,7 +330,7 @@ public:
      */
     double   execSummaryStatsScalarDouble(long *extraPointers,int opNum,long x,
                                           long xShapeInfo,
-                                          long extraParams);
+                                          long extraParams,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -345,7 +345,7 @@ public:
                                   long xShapeInfo,
                                   long extraParams,
                                   long result,
-                                  long resultShapeInfo);
+                                  long resultShapeInfo,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -362,7 +362,7 @@ public:
                                   long extraParams,
                                   long result,
                                   long resultShapeInfoBuffer,
-                                  long dimension, int dimensionLength);
+                                  long dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -713,7 +713,7 @@ public:
      */
     float   execSummaryStatsScalarFloat(long *extraPointers,int opNum,long x,
                                         long xShapeInfo,
-                                        long extraParams);
+                                        long extraParams,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -728,7 +728,7 @@ public:
                                  long xShapeInfo,
                                  long extraParams,
                                  long result,
-                                 long resultShapeInfo);
+                                 long resultShapeInfo,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -745,7 +745,7 @@ public:
                                  long extraParams,
                                  long result,
                                  long resultShapeInfoBuffer,
-                                 long dimension, int dimensionLength);
+                                 long dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum
