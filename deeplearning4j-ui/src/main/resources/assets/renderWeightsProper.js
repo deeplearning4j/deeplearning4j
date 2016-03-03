@@ -716,7 +716,7 @@ var timed = function() {
                                          if (gradient == undefined || grad.length == 0) {
                                                 // if gradient  isn't available, it just means we're in spark mode, without gradients
                                                 console.log("Calling noGrad");
-                                                var nograd = "<div style='position: absolute; top: 50%; left: 50%; width: 500px;  -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);  '><strong>Gradients are unavailable in Spark mode</strong></div>";
+                                                var nograd = "<div style='position: absolute; text-align: center; top: 50%; left: 50%; width: 500px;  -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);  '><strong>Gradients are unavailable in Spark mode</strong></div>";
                                                 $("#gradient").html(nograd);
                                           }
 
