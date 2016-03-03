@@ -586,7 +586,13 @@ var timed = function() {
                                         var updateMagnitudes = json['updateMagnitudes'];
                                         var paramMagnitudes = json['paramMagnitudes'];
 
-                                        if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes ) {
+                                        // !gradient was removed here, because for spark models it can be absen
+                                        // !updateMagnitudes
+                                        if(!model  || !score || !scores || !paramMagnitudes ) {
+                                            console.log("Model: " + model);
+                                            console.log("Score: " + score);
+                                            console.log("Scores: " + scores);
+                                            console.log("ParamMagnitudes: " + paramMagnitudes);
                                             setTimeout(timed, 10000);
                                             $.notify({
                                                     	title: '<strong>No data available!</strong>',
@@ -636,7 +642,7 @@ var timed = function() {
                                             }
 
                                             if (model[key] != undefined) appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
-                                            if (gradient[key] != undefined) appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
+                                            if (gradient != undefined && gradient[key] != undefined) appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
                                             /*
                                                 update selector box if needed
                                             */
@@ -652,32 +658,36 @@ var timed = function() {
 
                                         //Plot mean magnitudes: weights and params
                                         //$('#magnitudes .charts').html('');
-                                        console.log("Mag length: " + updateMagnitudes.length);
-                                        for(var i=0; i<updateMagnitudes.length; i++ ){
-                                            //Maps:
-                                            var mapParams = paramMagnitudes[i];
-                                            var mapUpdates = updateMagnitudes[i];
 
-                                            var selectorModel = '#magnitudes .charts'
 
-                                            // we create divs only once
-                                            if (gSVG["layer" + i + "param"] == undefined || gSVG["layer" + i + "param"] == null) {
-                                                var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                                $(selectorModel).append(div);
-                                                div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                                $(selectorModel).append(div);
-                                            }
+                                        if(updateMagnitudes != undefined) {
+                                            console.log("Mag length: " + updateMagnitudes.length);
+                                            for(var i=0; i<updateMagnitudes.length; i++ ){
+                                                //Maps:
+                                                var mapParams = paramMagnitudes[i];
+                                                var mapUpdates = updateMagnitudes[i];
 
-                                            var key = "layer" + i + "param";
-                                            appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
-                                            appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
+                                                var selectorModel = '#magnitudes .charts'
 
-                                            if (!contains.call(magnitudesSelector, key)) {
-                                           //     console.log("Adding magnitudes selector: " + key);
-                                                magnitudesSelector.push(key);
+                                                // we create divs only once
+                                                if (gSVG["layer" + i + "param"] == undefined || gSVG["layer" + i + "param"] == null) {
+                                                    var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                    $(selectorModel).append(div);
+                                                    div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                    $(selectorModel).append(div);
+                                                }
 
-                                                $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
-                                                $("#magnitudeSelector").append("<option value='layer" + i + "grad'>Layer " + i + " Update/Gradient Mean Magnitudes</option>");
+                                                var key = "layer" + i + "param";
+                                                appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
+                                                appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
+
+                                                if (!contains.call(magnitudesSelector, key)) {
+                                                    //  console.log("Adding magnitudes selector: " + key);
+                                                    magnitudesSelector.push(key);
+
+                                                    $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
+                                                    $("#magnitudeSelector").append("<option value='layer" + i + "grad'>Layer " + i + " Update/Gradient Mean Magnitudes</option>");
+                                                }
                                             }
                                         }
 

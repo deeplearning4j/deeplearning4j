@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 
+import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
@@ -89,7 +90,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected Gradient gradient;
     protected INDArray epsilon;
     protected double score;
-    protected boolean initDone = false;
+    @Setter protected boolean initDone = false;
     private INDArray params;
     /*
       Binary drop connect mask
