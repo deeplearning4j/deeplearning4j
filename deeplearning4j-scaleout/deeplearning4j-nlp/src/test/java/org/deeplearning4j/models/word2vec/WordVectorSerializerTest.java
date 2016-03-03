@@ -167,6 +167,43 @@ public class WordVectorSerializerTest {
     }
 
     @Test
+    public void testIndexPersistence() throws Exception {
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(1)
+                .epochs(1)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .useAdaGrad(false)
+                .negativeSample(5)
+                .seed(42)
+                .windowSize(5)
+                .iterate(iter).tokenizerFactory(t).build();
+
+        vec.fit();
+
+        File tempFile = File.createTempFile("temp", "w2v");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeWordVectors(vec, tempFile);
+
+        WordVectors vec2 = WordVectorSerializer.loadTxtVectors(tempFile);
+
+        for (VocabWord word: vec.getVocab().vocabWords()) {
+            INDArray array1 = vec.getWordVectorMatrix(word.getLabel());
+            INDArray array2 = vec2.getWordVectorMatrix(word.getLabel());
+
+            assertEquals(array1, array2);
+        }
+    }
+
+    @Test
     public void testFullModelSerialization() throws Exception {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());

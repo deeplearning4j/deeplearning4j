@@ -861,7 +861,25 @@ public class WordVectorSerializer {
 
         write.flush();
         write.close();
+    }
 
+    /**
+     * Writes the word vectors to the given path. Note that this assumes an in memory cache
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param file
+     *            the file to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file)
+            throws IOException {
+        BufferedWriter write = new BufferedWriter(new FileWriter(file));
+
+        writeWordVectors(vec, write);
+
+        write.flush();
+        write.close();
     }
 
     /**
