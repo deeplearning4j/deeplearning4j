@@ -25,8 +25,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -50,7 +48,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
-                .list(2).inputPreProcessor(1, new ReshapePreProcessor())
+                .list().inputPreProcessor(1, new ReshapePreProcessor())
                 .build();
 
         String json = conf.toJson();
@@ -93,9 +91,9 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .seed(seed)
                 .iterations(iterations).regularization(true)
                 .l1(1e-1).l2(2e-4).useDropConnect(true)
-                .constrainGradientToUnitNorm(true).miniBatch(true)
+                .miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list(6)
+                .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nOut(5).dropOut(0.5)
                         .weightInit(WeightInit.XAVIER)
@@ -135,7 +133,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
-                .list(2).inputPreProcessor(1, new ReshapePreProcessor())
+                .list().inputPreProcessor(1, new ReshapePreProcessor())
                 .build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
@@ -165,7 +163,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testClone() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list(2)
+                .list()
                 .layer(0, new RBM.Builder().build())
                 .layer(1, new OutputLayer.Builder().build())
                 .inputPreProcessor(1, new ReshapePreProcessor(new int[] {1,2}, new int[] {3,4}))
@@ -225,7 +223,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345l)
-                .list(2)
+                .list()
                 .layer(0, new RBM.Builder()
                         .nIn(2).nOut(2)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
@@ -302,7 +300,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(3).nOut(4).build())
                 .layer(1, new OutputLayer.Builder().nIn(4).nOut(5).build())
                 .pretrain(false).backprop(true)

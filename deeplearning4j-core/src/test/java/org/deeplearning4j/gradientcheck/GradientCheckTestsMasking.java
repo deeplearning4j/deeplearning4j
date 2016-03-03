@@ -79,7 +79,7 @@ public class GradientCheckTestsMasking {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .regularization(false)
                     .seed(12345L)
-                    .list(2)
+                    .list()
                     .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
                     .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)

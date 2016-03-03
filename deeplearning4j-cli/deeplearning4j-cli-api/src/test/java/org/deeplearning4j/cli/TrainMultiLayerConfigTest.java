@@ -47,7 +47,7 @@ public class TrainMultiLayerConfigTest {
                 .iterations(100)
                 .learningRate(1e-1f).momentum(0.9).regularization(true).l2(2e-4)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .list(2)
+                .list()
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .activation("tanh")

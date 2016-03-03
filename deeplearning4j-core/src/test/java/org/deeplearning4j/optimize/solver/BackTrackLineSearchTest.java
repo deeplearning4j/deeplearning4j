@@ -209,7 +209,7 @@ public class BackTrackLineSearchTest {
                 .miniBatch(false).momentum(0.9)
                 .learningRate(0.1).updater(Updater.NESTEROVS)
                 .seed(12345L)
-                .list(2)
+                .list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(4)
                         .nOut(100)

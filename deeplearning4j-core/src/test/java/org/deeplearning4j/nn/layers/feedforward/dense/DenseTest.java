@@ -120,7 +120,7 @@ public class DenseTest {
                 .learningRate(1e-3)
                 .l1(0.3)
                 .regularization(true).l2(1e-3)
-                .list(3)
+                .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
                         .nIn(numInputs)
                         .nOut(3)

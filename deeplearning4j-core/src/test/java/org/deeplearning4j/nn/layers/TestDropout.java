@@ -36,7 +36,7 @@ public class TestDropout {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.SGD).iterations(1)
                 .regularization(true).dropOut(0.5)
-                .list(1)
+                .list()
                 .layer(0, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                         .nIn(nIn).nOut(nOut).weightInit(WeightInit.XAVIER).build())
                 .backprop(true).pretrain(false)
@@ -140,7 +140,7 @@ public class TestDropout {
                 .regularization(true).dropOut(0.5)
                 .learningRate(1e-9)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10,11))   //Weight init to cause sigmoid saturation
-                .list(4)
+                .list()
                 .layer(0, new DenseLayer.Builder().activation("sigmoid").nIn(nIn).nOut(layerSize).build())
                 .layer(1, new DenseLayer.Builder().activation("sigmoid").nIn(layerSize).nOut(layerSize).build())
                 .layer(2, new DenseLayer.Builder().activation("sigmoid").nIn(layerSize).nOut(layerSize).build())
