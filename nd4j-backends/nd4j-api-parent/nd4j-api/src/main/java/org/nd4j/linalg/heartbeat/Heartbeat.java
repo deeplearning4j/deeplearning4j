@@ -35,14 +35,13 @@ public class Heartbeat {
         try {
             tracker = new GoogleAnalytics("UA-48811288-4", "nd4j", "rc3.9-SNAPSHOT");
         } catch (Exception e) {
-            ; // do nothing here
-            throw new RuntimeException(e);
+            ;
         }
 
         try {
             cId = EnvironmentUtils.buildCId();
         } catch (Exception e) {
-
+            ;
         }
     }
 
