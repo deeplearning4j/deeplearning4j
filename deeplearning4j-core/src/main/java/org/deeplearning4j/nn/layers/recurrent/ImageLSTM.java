@@ -105,7 +105,7 @@ public class ImageLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.Image
         // add column of zeros since not used in forward pass
         dHout = Nd4j.vstack(Nd4j.zeros(dHout.columns()), dHout);
 
-        if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
+        if(conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0)
             dHout.muli(u2);
 
         //backprop the LSTM
