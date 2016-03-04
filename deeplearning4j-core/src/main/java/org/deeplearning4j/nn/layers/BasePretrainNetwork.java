@@ -83,12 +83,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
             return super.numParams(backwards);
         int ret = 0;
         for(String s : paramTable().keySet()) {
-            if(backwards) {
-                if(!s.equals(PretrainParamInitializer.VISIBLE_BIAS_KEY)) {
-                    ret += getParam(s).length();
-                }
-            }
-            else {
+            if(!s.equals(PretrainParamInitializer.VISIBLE_BIAS_KEY)) {
                 ret += getParam(s).length();
             }
         }
