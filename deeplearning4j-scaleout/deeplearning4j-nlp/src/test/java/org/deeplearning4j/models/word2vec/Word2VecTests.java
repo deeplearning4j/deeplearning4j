@@ -116,12 +116,12 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(5)
-                .iterations(3)
+                .iterations(5)
                 .learningRate(0.025)
                 .layerSize(100)
                 .seed(42)
                 .sampling(0)
-                .negativeSample(0)
+                .negativeSample(5)
                 .windowSize(5)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .useAdaGrad(true)
@@ -139,6 +139,10 @@ public class Word2VecTests {
 
         double sim = vec.similarity("day", "night");
         log.info("Day/night similarity: " + sim);
+
+        assertTrue(lst.contains("week"));
+        assertTrue(lst.contains("night"));
+        assertTrue(lst.contains("year"));
     }
 
 

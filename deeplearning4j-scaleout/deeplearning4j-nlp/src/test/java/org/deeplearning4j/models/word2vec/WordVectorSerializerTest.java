@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
@@ -366,6 +367,14 @@ public class WordVectorSerializerTest {
         assertTrue(simN > 0.70);
 
         modelFile.delete();
+    }
+
+    @Test
+    @Ignore
+    public void testLoader() throws Exception {
+        WordVectors vec = WordVectorSerializer.loadTxtVectors(new File("/home/raver119/Downloads/_vectors.txt"));
+
+        logger.info("Rewinding: " + Arrays.toString(vec.getWordVector("rewinding")));
     }
 
 
