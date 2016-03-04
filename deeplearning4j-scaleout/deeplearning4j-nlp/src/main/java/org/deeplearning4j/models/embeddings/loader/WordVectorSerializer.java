@@ -66,6 +66,7 @@ public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
     private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
+    private static final String whitespaceReplacement = "_Az92_";
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
     /**
@@ -148,7 +149,7 @@ public class WordVectorSerializer {
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 assert split.length == layerSize + 1;
-                String word = split[0];
+                String word = split[0].replaceAll(whitespaceReplacement, " ");
 
                 float[] vector = new float[split.length - 1];
                 for (int i = 1; i < split.length; i++) {
@@ -355,7 +356,7 @@ public class WordVectorSerializer {
 
             StringBuilder builder = new StringBuilder();
 
-            builder.append(element.getLabel().replaceAll(" ", "_")).append(" ");
+            builder.append(element.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
             INDArray vec = lookupTable.vector(element.getLabel());
             for (int i = 0; i < vec.length(); i++) {
                 builder.append(vec.getDouble(i));
@@ -442,6 +443,7 @@ public class WordVectorSerializer {
             String line = "";
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
+                split[1] = split[1].replaceAll(whitespaceReplacement, " ");
                 VocabWord word = new VocabWord(1.0, split[1]);
                 if (split[0].equals("L")) {
                     // we have label element here
@@ -560,7 +562,7 @@ public class WordVectorSerializer {
                 StringBuilder builder = new StringBuilder();
 
                 builder.append(word.isLabel() ? "L" : "E").append(" ");
-                builder.append(word.getLabel().replaceAll(" ", "_")).append(" ");
+                builder.append(word.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
 
                 INDArray vector = vectors.getWordVectorMatrix(word.getLabel());
                 for (int j = 0; j < vector.length(); j++) {
@@ -600,7 +602,7 @@ public class WordVectorSerializer {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", "_"));
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
             INDArray wordVector = lookupTable.vector(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -917,7 +919,7 @@ public class WordVectorSerializer {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", "_"));
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
             INDArray wordVector = vec.getWordVectorMatrix(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -1034,7 +1036,7 @@ public class WordVectorSerializer {
         while (iter.hasNext()) {
             if (line.isEmpty()) line = iter.nextLine();
             String[] split = line.split(" ");
-            String word = split[0];
+            String word = split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
 
@@ -1102,7 +1104,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word);
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
 
             sb.append("\n");
@@ -1146,7 +1148,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word);
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
 
             sb.append("\n");
