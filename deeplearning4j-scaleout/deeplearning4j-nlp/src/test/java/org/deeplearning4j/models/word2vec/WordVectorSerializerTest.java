@@ -244,6 +244,7 @@ public class WordVectorSerializerTest {
         WordVectorSerializer.writeFullModel(vec, "tempModel.txt");
 
         File modelFile = new File("tempModel.txt");
+        modelFile.deleteOnExit();
 
         assertTrue(modelFile.exists());
         assertTrue(modelFile.length() > 0);
