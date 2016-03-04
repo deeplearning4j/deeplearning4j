@@ -1,18 +1,18 @@
 package org.deeplearning4j.text.documentiterator;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 
 import static org.junit.Assert.*;
 
 /**
- * Created by fartovii on 27.11.15.
+ * @author raver119@gmail.com
  */
 public class BasicLabelAwareIteratorTest {
 

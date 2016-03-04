@@ -19,6 +19,7 @@
 package org.deeplearning4j.scaleout.perform.models.word2vec;
 
 import org.canova.api.conf.Configuration;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -38,7 +39,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 

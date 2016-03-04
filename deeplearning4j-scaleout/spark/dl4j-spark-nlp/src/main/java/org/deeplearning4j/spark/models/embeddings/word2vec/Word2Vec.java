@@ -42,6 +42,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +146,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
         final VocabCache<VocabWord> vocabCache;
         final JavaRDD<Long> sentenceCumSumCountRDD;
+        int maxRep = 1;
 
         // Start Training //
         //////////////////////////////////////
@@ -192,39 +196,54 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
 
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
-        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
+        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast);
         @SuppressWarnings("unchecked")
-        JavaRDD< Pair<Integer, INDArray> > indexSyn0UpdateEntryRDD =
-                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc)
-                .map(new MapToPairFunction());
+        JavaRDD< Pair<VocabWord, INDArray> > indexSyn0UpdateEntryRDD =
+                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).map(new MapToPairFunction());
 
         // Get all the syn0 updates into a list in driver
-        List<Pair<Integer, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
+        List<Pair<VocabWord, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
 
         // Instantiate syn0
         INDArray syn0 = Nd4j.zeros(vocabCache.numWords(), layerSize);
 
         // Updating syn0 first pass: just add vectors obtained from different nodes
-        Map<Integer, AtomicInteger> updates = new HashMap<>();
-        for (Pair<Integer, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
-            syn0.getRow(syn0UpdateEntry.getFirst()).addi(syn0UpdateEntry.getSecond());
+        Map<VocabWord, AtomicInteger> updates = new HashMap<>();
+        Map<Long, Long> updaters = new HashMap<>();
+        for (Pair<VocabWord, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
+            syn0.getRow(syn0UpdateEntry.getFirst().getIndex()).addi(syn0UpdateEntry.getSecond());
 
             // for proper averaging we need to divide resulting sums later, by the number of additions
             if (updates.containsKey(syn0UpdateEntry.getFirst())) {
                 updates.get(syn0UpdateEntry.getFirst()).incrementAndGet();
             } else updates.put(syn0UpdateEntry.getFirst(), new AtomicInteger(1));
+
+            if (!updaters.containsKey(syn0UpdateEntry.getFirst().getVocabId())) {
+                updaters.put(syn0UpdateEntry.getFirst().getVocabId(), syn0UpdateEntry.getFirst().getAffinityId());
+            }
         }
 
         // Updating syn0 second pass: average obtained vectors
-        for (Map.Entry<Integer, AtomicInteger> entry: updates.entrySet()) {
+        for (Map.Entry<VocabWord, AtomicInteger> entry: updates.entrySet()) {
             if (entry.getValue().get() > 1) {
-                syn0.getRow(entry.getKey()).divi(entry.getValue().get());
+                if (entry.getValue().get() > maxRep) maxRep = entry.getValue().get();
+                syn0.getRow(entry.getKey().getIndex()).divi(entry.getValue().get());
             }
         }
+
+        long totals = 0;
+        for (Long up: updaters.values()) {
+            totals += up;
+        }
+
 
 
         vocab = vocabCache;
         InMemoryLookupTable<VocabWord> inMemoryLookupTable = new InMemoryLookupTable<VocabWord>();
+        Environment env = EnvironmentUtils.buildEnvironment();
+        env.setNumCores(maxRep);
+        env.setAvailableMemory(totals);
+        update(env, Event.SPARK);
         inMemoryLookupTable.setVocab(vocabCache);
         inMemoryLookupTable.setVectorLength(layerSize);
         inMemoryLookupTable.setSyn0(syn0);
@@ -277,6 +296,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.negative = configuration.getNegative();
             this.minWordFrequency = configuration.getMinWordFrequency();
             this.seed = configuration.getSeed();
+//            this.stopWords = configuration.get
 
             //  TODO: investigate this
             //this.hugeModelExpected = configuration.isHugeModelExpected();
@@ -287,6 +307,8 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
           //  this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.windowSize = configuration.getWindow();
+
+            if (configuration.getStopList() != null) this.stopWords.addAll(configuration.getStopList());
         }
 
         /**
@@ -410,11 +432,13 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
          * @return
          */
         public Builder tokenizerFactory(@NonNull TokenizerFactory factory) {
-            this.tokenizer = this.tokenizerFactory.getClass().getCanonicalName();
+            this.tokenizer = factory.getClass().getCanonicalName();
 
-            if (tokenizerFactory.getTokenPreProcessor() != null) {
-                this.tokenPreprocessor = this.tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName();
-            } else this.tokenPreprocessor = "";
+            if (factory.getTokenPreProcessor() != null) {
+                this.tokenPreprocessor = factory.getTokenPreProcessor().getClass().getCanonicalName();
+            } else {
+                this.tokenPreprocessor = "";
+            }
 
             return this;
         }
@@ -515,6 +539,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setBatchSize(this.batchSize);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 

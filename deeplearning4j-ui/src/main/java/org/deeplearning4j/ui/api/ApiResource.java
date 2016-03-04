@@ -21,9 +21,12 @@ package org.deeplearning4j.ui.api;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.math.stat.descriptive.rank.Percentile;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.storage.HistoryStorage;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,6 +57,7 @@ public class ApiResource extends FileResource {
     private static final Logger logger = LoggerFactory.getLogger(FileResource.class);
     private List<String> coords;
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+    private volatile SessionStorage storage = SessionStorage.getInstance();
 
     /**
      * The file path for uploads
@@ -76,19 +81,21 @@ public class ApiResource extends FileResource {
     @POST
     @Path("/update")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(UrlResource resource) throws IOException {
-        String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+    public Response update() throws IOException {
+        //String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
 
-        List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
+        //List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
 
-        HistoryStorage.getInstance().put("TSNE", Pair.makePair(1, 0), testLines);
+        //HistoryStorage.getInstance().put("TSNE", Pair.makePair(1, 0), testLines);
+
+        List<String> testLines = (List<String>) storage.getObject("UploadedFile", ObjectType.TSNE);
 
         return Response.ok(testLines).build();
     }
 
     @GET
     @Path("/coords")
-    public Response coords() {
+    public Response coords(@QueryParam("filter") boolean filterExtrems, @QueryParam("sid") String sessionId) {
         /*
             TODO: here we should have ad-hoc for HistoryStorage.
 
@@ -101,27 +108,91 @@ public class ApiResource extends FileResource {
         if(coords.isEmpty())
             throw new IllegalStateException("Unable to get coordinates; empty list");
         */
-        HistoryStorage storage = HistoryStorage.getInstance();
-        List<String> something = (List<String>) storage.getLatest("TSNE");
-        return Response.ok(something).build();
+
+        List<String> something = (List<String>) storage.getObject(sessionId, ObjectType.TSNE);
+        if (1>0 && something != null) {
+            List<String> filtered = new ArrayList<>();
+
+            Percentile percentile = new Percentile();
+            double[] axisX = new double[something.size()];
+            double[] axisY = new double[something.size()];
+            int cnt = 0;
+            for (String line: something) {
+                try {
+                    String split[] = line.split(",");
+                    // scan along X dimension
+                    axisX[cnt] = Double.valueOf(split[0]);
+
+                    // scan along Y dimension
+                    axisY[cnt] = Double.valueOf(split[1]);
+                } catch (Exception e) {
+                    ; //
+                }
+                cnt++;
+            }
+
+            double x85 = percentile.evaluate(axisX, 95);
+            double y85 = percentile.evaluate(axisY, 95);
+
+            double x15 = percentile.evaluate(axisX, 5);
+            double y15 = percentile.evaluate(axisY, 5);
+
+            /*
+                logger.info("X 85: " + x85);
+                logger.info("Y 85: " + y85);
+
+                logger.info("X 15: " + x15);
+                logger.info("Y 15: " + y15);
+            */
+
+            // filter out everything that doesn't fits into original 85 quantile
+            for (String line: something) {
+                try {
+                    String split[] = line.split(",");
+                    // scan along X dimension
+                    double x = Double.valueOf(split[0]);
+
+                    // scan along Y dimension
+                    double y = Double.valueOf(split[1]);
+
+                    if (x >= x15 && x <= x85 ) {
+                        if (y >= y15 && y <= y85) {
+                            filtered.add(line);
+                        }
+                    }
+                } catch (Exception e) {
+                    ; //
+                }
+            }
+
+            return Response.ok(filtered).build();
+        } else return Response.ok(something).build();
     }
 
     public void setPath(String path) throws IOException {
         coords = FileUtils.readLines(new File(path));
     }
 
+    @POST
+    @Path("coords")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postCoordinates(List<String> list, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.TSNE, list);
+
+        return Response.ok().build();
+    }
 
     @Override
     public void handleUpload(File path) {
         /*
             TODO: this code should put new coords into HistoryStorage
          */
-        HistoryStorage storage = HistoryStorage.getInstance();
 
+        //logger.info("Calling handleUpload");
         List<String> testLines = null;
         try {
             testLines = FileUtils.readLines(path);
-            storage.put("TSNE", Pair.makePair(1, 0), testLines);
+            storage.putObject("UploadedFile", ObjectType.TSNE, testLines);
         } catch (IOException e) {
             e.printStackTrace();
         }

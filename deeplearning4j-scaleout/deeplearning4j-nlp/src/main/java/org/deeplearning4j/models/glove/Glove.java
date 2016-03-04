@@ -313,6 +313,33 @@ public class Glove extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
+         *
+         * @param element
+         * @return
+         */
+        @Override
+        public Builder unknownElement(VocabWord element) {
+            super.unknownElement(element);
+            return this;
+        }
+
+        /**
+         * This method allows you to specify, if UNK word should be used internally
+         *
+         * @param reallyUse
+         * @return
+         */
+        @Override
+        public Builder useUnknown(boolean reallyUse) {
+            super.useUnknown(reallyUse);
+            if (this.unknownElement == null) {
+                this.unknownElement(new VocabWord(1.0, Glove.UNK));
+            }
+            return this;
+        }
+
         public Glove build() {
             presetTables();
 
@@ -342,6 +369,10 @@ public class Glove extends SequenceVectors<VocabWord> {
             ret.numEpochs = this.numEpochs;
             ret.numIterations = this.iterations;
             ret.layerSize = this.layerSize;
+
+            ret.useUnknown = this.useUnknown;
+            ret.unknownElement = this.unknownElement;
+
 
 
             this.configuration.setLearningRate(this.learningRate);

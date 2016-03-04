@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
+import lombok.NonNull;
 import org.apache.spark.Accumulator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
@@ -39,6 +40,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
@@ -55,15 +57,25 @@ import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatM
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 import scala.Tuple3;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Master class for spark
@@ -86,6 +98,10 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     private Accumulator<Double> bestScoreAcc = null;
     private double lastScore;
+    private transient boolean initDone = false;
+    private transient AtomicInteger iterationsCount = new AtomicInteger(0);
+
+    private List<IterationListener> listeners = new ArrayList<>();
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
@@ -350,6 +366,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
+        int maxRep = 0;
         int paramsLength = network.numParams(false);
 
         log.info("Broadcasting initial parameters of length " + paramsLength);
@@ -376,8 +393,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsGradient.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
             boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
-            if(divideGrad)
-                accumulatedGradient.divi(results.partitions().size());
+            if(divideGrad) {
+                maxRep = results.partitions().size();
+                accumulatedGradient.divi(maxRep);
+            }
             log.info("Accumulated parameters");
             log.info("Summed gradients.");
             network.setParameters(network.params(false).addi(accumulatedGradient));
@@ -407,16 +426,13 @@ public class SparkDl4jMultiLayer implements Serializable {
             resultsParams.foreach(a);
 
             INDArray newParams = a.getAccumulator().value();
-            newParams.divi(a.getCounter().value());
+            maxRep = a.getCounter().value();
+            newParams.divi(maxRep);
+
 
             network.setParameters(newParams);
             log.info("Accumulated and set parameters");
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<INDArray,Updater,Double>>(){
-                @Override
-                public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
-                    return t3._3();
-                }
-            });
+            JavaDoubleRDD scores = results.mapToDouble(new ScoreMapping());
             lastScore = scores.mean();
 
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
@@ -429,7 +445,16 @@ public class SparkDl4jMultiLayer implements Serializable {
             network.setUpdater(combinedUpdater);
 
             log.info("Processed and set updater");
-
+        }
+        if (listeners.size() > 0) {
+            log.info("Invoking IterationListeners");
+            network.setScore(lastScore);
+            invokeListeners(network, iterationsCount.incrementAndGet());
+        }
+        if (!initDone) {
+            log.info("Invoking Update");
+            initDone = true;
+            update(maxRep, 0);
         }
     }
 
@@ -443,6 +468,31 @@ public class SparkDl4jMultiLayer implements Serializable {
 
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()), data);
+    }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     *
+     * PLEASE NOTE:
+     * 1. These iteration listeners should be configured to use remote UiServer
+     * 2. Remote UiServer should be accessible via network from Spark master node.
+     *
+     * @param listeners
+     */
+    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+        this.listeners.clear();
+        this.listeners.addAll(listeners);
+    }
+
+    protected void invokeListeners(MultiLayerNetwork network, int iteration) {
+        for (IterationListener listener: listeners) {
+            try {
+                listener.iterationDone(network, iteration);
+            } catch (Exception e) {
+                log.error("Exception caught at IterationListener invocation" + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     /** Gets the last (average) minibatch score from calling fit */
@@ -537,6 +587,14 @@ public class SparkDl4jMultiLayer implements Serializable {
         return evaluate(data,labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
+    private void update(int mr, long mg) {
+        Environment env = EnvironmentUtils.buildEnvironment();
+        env.setNumCores(mr);
+        env.setAvailableMemory(mg);
+        Task task = ModelSerializer.taskByModel(network);
+        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+    }
+
     /**Evaluate the network (classification performance) in a distributed manner, using specified batch size and a provided
      * list of labels
      * @param data Data to evaluate on
@@ -549,5 +607,13 @@ public class SparkDl4jMultiLayer implements Serializable {
         JavaRDD<Evaluation> evaluations = data.mapPartitions(new EvaluateFlatMapFunction(sc.broadcast(conf.toJson()),
                 sc.broadcast(network.params()), evalBatchSize, listBroadcast));
         return evaluations.reduce(new EvaluationReduceFunction());
+    }
+
+    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,Updater,Double>>  {
+
+        @Override
+        public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
+            return t3._3();
+        }
     }
 }

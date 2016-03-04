@@ -91,6 +91,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         Updater upd = updater.getValue().clone();
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
+        network.setInitDone(true);
         network.init();
         network.setListeners(new ScoreIterationListener(1), new BestScoreIterationListener(best_score_acc));
         if (val.length() != network.numParams(false))

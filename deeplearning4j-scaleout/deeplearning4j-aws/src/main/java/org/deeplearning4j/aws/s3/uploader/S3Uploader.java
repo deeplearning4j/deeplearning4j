@@ -148,22 +148,26 @@ public class S3Uploader extends BaseS3 {
 		return formatted;
 	}
 	
-	public void upload(InputStream is,String name,String bucketName) {
+	public void upload(File file,String name,String bucketName) {
 		AmazonS3 client = getClient();
 		bucketName = ensureValidBucketName(bucketName);
 		List<Bucket> buckets = client.listBuckets();
-		ObjectMetadata med = new ObjectMetadata();
-		for(Bucket b : buckets) 
+	//	ObjectMetadata med = new ObjectMetadata();
+//		med.setContentLength(fileLength);
+		for(Bucket b : buckets)
 			if(b.getName().equals(bucketName)) {
-				client.putObject(bucketName, name, is, med);
+				//client.putObject(bucketName, name, is, med);
+				client.putObject(new PutObjectRequest(bucketName, name, file));
 				return;
 			}
 		
 		//bucket didn't exist: createComplex it
 		client.createBucket(bucketName);
-		client.putObject(bucketName, name, is, med);
+		//client.putObject(bucketName, name, is, med);
+		client.putObject(new PutObjectRequest(bucketName, name, file));
 
-		
+
+
 	}
 	
 	

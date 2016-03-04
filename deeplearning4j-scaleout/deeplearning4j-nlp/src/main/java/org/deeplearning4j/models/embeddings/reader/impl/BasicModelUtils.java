@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.embeddings.reader.impl;
 
 import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -26,8 +28,8 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
-    protected VocabCache<T> vocabCache;
-    protected WeightLookupTable<T> lookupTable;
+    protected volatile VocabCache<T> vocabCache;
+    protected volatile WeightLookupTable<T> lookupTable;
 
     protected boolean normalized  = false;
 
@@ -58,12 +60,19 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public double similarity( String label1, String label2) {
-        if (label1 == null || label2 == null) return Double.NaN;
+        if (label1 == null || label2 == null) {
+            System.out.println("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
+            return Double.NaN;
+        }
 
         INDArray vec1 = lookupTable.vector(label1);
         INDArray vec2 = lookupTable.vector(label2);
 
-        if (vec1 == null || vec2 == null) return Double.NaN;
+
+        if (vec1 == null || vec2 == null) {
+            System.out.println(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
+            return Double.NaN;
+        }
 
         if (label1.equals(label2)) return 1.0;
 
@@ -191,30 +200,31 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
 
             INDArray syn0 = l.getSyn0();
+
             if (!normalized) {
-                syn0.diviColumnVector(syn0.norm2(1));
+                syn0.diviColumnVector(syn0.norm1(1));
                 normalized = true;
             }
 
             INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
-            // We assume that syn0 is normalized.
-            // Hence, the following division is not needed anymore.
-            // distances.diviRowVector(distances.norm2(1));
-            //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+
             List<Double> highToLowSimList = getTopN(similarity, top + 20);
-            List<String> ret = new ArrayList<>();
+
+            List<WordSimilarity> result = new ArrayList<>();
 
             for (int i = 0; i < highToLowSimList.size(); i++) {
                 String word = vocabCache.wordAtIndex(highToLowSimList.get(i).intValue());
                 if (word != null && !word.equals("UNK") && !word.equals("STOP") ) {
-                    ret.add(word);
-                    if (ret.size() >= top) {
-                        break;
-                    }
+                    INDArray otherVec = lookupTable.vector(word);
+                    double sim = Transforms.cosineSim(words, otherVec);
+
+                    result.add(new WordSimilarity(word, sim));
                 }
             }
 
-            return ret;
+            Collections.sort(result, new SimilarityComparator());
+
+            return getLabels(result, top);
         }
 
         Counter<String> distances = new Counter<>();
@@ -332,10 +342,49 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     }
 
 
+    private static class SimilarityComparator implements Comparator<WordSimilarity> {
+        @Override
+        public int compare(WordSimilarity o1, WordSimilarity o2) {
+            if (Double.isNaN(o1.getSimilarity()) && Double.isNaN(o2.getSimilarity())) {
+                return 0;
+            } else if (Double.isNaN(o1.getSimilarity()) && !Double.isNaN(o2.getSimilarity())) {
+                return -1;
+            } else if (!Double.isNaN(o1.getSimilarity()) && Double.isNaN(o2.getSimilarity())) {
+                return 1;
+            }
+            return Double.compare(o2.getSimilarity(), o1.getSimilarity());
+        }
+    }
+
     private static class ArrayComparator implements Comparator<Double[]> {
         @Override
         public int compare(Double[] o1, Double[] o2) {
+            if (Double.isNaN(o1[0]) && Double.isNaN(o2[0])) {
+                return 0;
+            } else if (Double.isNaN(o1[0]) && !Double.isNaN(o2[0])) {
+                return -1;
+            } else if (!Double.isNaN(o1[0]) && Double.isNaN(o2[0])) {
+                return 1;
+            }
             return Double.compare(o1[0], o2[0]);
         }
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class WordSimilarity {
+        private String word;
+        private double similarity;
+    }
+
+    private List<String> getLabels(List<WordSimilarity> results, int limit) {
+        List<String> result = new ArrayList<>();
+        for (int x = 0; x < results.size(); x++) {
+            result.add(results.get(x).getWord());
+            if (result.size() >= limit)
+                break;
+        }
+
+        return result;
     }
 }

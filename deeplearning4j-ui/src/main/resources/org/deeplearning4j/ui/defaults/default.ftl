@@ -43,12 +43,17 @@
                     color: #FFFFFF;
                 }
         </style>
+
+        <!-- Booststrap Notify plugin-->
+        <script src="./assets/bootstrap-notify.min.js"></script>
+
+        <script src="./assets/default.js"></script>
     </head>
     <body>
     <table style="width: 100%; padding: 5px;" class="hd">
         <tbody>
             <tr>
-                <td style="width: 48px;"><img src="/assets/deeplearning4j.img"  border="0"/></td>
+                <td style="width: 48px;"><img src="./assets/deeplearning4j.img"  border="0"/></td>
                 <td>DeepLearning4j UI</td>
                 <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
             </tr>
@@ -66,9 +71,9 @@
  -->
 <div style="width: 100%; text-align: center">
     <div class="block">
-        <!-- TSNE block -->
+        <!-- TSNE block. It's session-dependant. -->
         <b>T-SNE</b><br/><br/>
-        <a href="/tsne"><img src="/assets/i_plot.img" border="0" /></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('TSNE','tsne'); return false;"><img src="./assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
         </div>
@@ -77,7 +82,7 @@
     <div class="block">
         <!-- W2V block -->
         <b>WordVectors</b><br/><br/>
-        <a href="/word2vec"><img src="/assets/i_nearest.img" border="0" /></a><br/><br/>
+        <a href="./word2vec"><img src="./assets/i_nearest.img" border="0" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;wordsNearest UI for WordVectors (GloVe/Word2Vec compatible)
         </div>
@@ -85,21 +90,58 @@
 
     <div class="block">
         <b>Activations</b><br/><br/>
-        <a href="/activations"><img src="/assets/i_ladder.img" border="0" /></a><br/><br/>
+        <a href="#"  onclick="trackSessionHandle('ACTIVATIONS','activations'); return false;"><img src="./assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Activations retrieved from Convolution Neural network.
         </div>
     </div>
 
     <div class="block">
-        <!-- Histogram block -->
-        <b>Histo</b><br/><br/>
-        <a href="/weights"><img src="/assets/i_histo.img" border="0" /></a><br/><br/>
+        <!-- Histogram block. It's session-dependant block -->
+        <b>Histograms &amp; Score</b><br/><br/>
+        <a href="#" onclick="trackSessionHandle('HISTOGRAM','weights'); return false;"><img id="HISTOGRAM" src="./assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
         <div style="text-align: left; margin: 5px;">
             &nbsp;Neural network scores retrieved from DL4j during training.
         </div>
     </div>
+
+    <div class="block">
+        <!-- Flow  block. It's session-dependant block -->
+        <b>Model flow</b><br/><br/>
+        <a href="#" onclick="trackSessionHandle('FLOW','flow'); return false;"><img id="FLOW" src="./assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <div style="text-align: left; margin: 5px;">
+            &nbsp;MultiLayerNetwork/ComputationalGraph model state rendered.
+        </div>
+    </div>
+
+    <div class="block">
+        <!-- Arbiter block. It's session-dependant block -->
+        <b>Arbiter </b><br/><br/>
+        <a href="#" onclick="trackSessionHandle('ARBITER','arbiter'); return false;"><img id="ARBITER" src="./assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+        <div style="text-align: left; margin: 5px;">
+            &nbsp;State &amp; management for Arbiter optimization processes.
+        </div>
+    </div>
 </div>
 
+    <div  id="sessionSelector" style="position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; z-index: 95; display: none;">
+        <div style="position: fixed; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); z-index: 100;   background-color: rgba(255, 255, 255,255); border: 1px solid #CECECE; height: 400px; width: 300px; -moz-box-shadow: 0 0 3px #ccc; -webkit-box-shadow: 0 0 3px #ccc; box-shadow: 0 0 3px #ccc;">
+
+                <table class="table table-hover" style="margin-left: 10px; margin-right: 10px; margin-top: 5px; margin-bottom: 5px;">
+                    <thead style="display: block; margin-bottom: 3px; width: 100%;">
+                        <tr style="width: 100%">
+                            <th style="width: 100%">Available sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionList" style="display: block; width: 95%; height: 300px; overflow-y: auto; overflow-x: hidden;">
+
+                    </tbody>
+                </table>
+
+            <div style="display: inline-block; position: fixed; bottom: 3px; left: 50%;  -webkit-transform: translate(-50%); transform: translate(-50%); ">
+                <input type="button" class="btn btn-default" style="" value=" Cancel " onclick="$('#sessionSelector').css('display','none');"/>
+            </div>
+        </div>
+    </div>
     </body>
 </html>

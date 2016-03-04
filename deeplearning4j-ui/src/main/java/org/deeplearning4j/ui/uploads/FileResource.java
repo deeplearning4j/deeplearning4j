@@ -23,6 +23,7 @@ package org.deeplearning4j.ui.uploads;
 
 
 import org.apache.commons.io.FileUtils;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.io.*;
 
 public abstract class FileResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileResource.class);
-    protected String filePath = ".";
+    protected static String filePath = System.getProperty("java.io.tmpdir");
 
     @GET
     @Path("/{path}")
@@ -62,6 +63,10 @@ public abstract class FileResource {
         }
     }
 
+    public FileResource() {
+
+    }
+
     /**
      * The file path for uploads
      * @param filePath the file path for uploads
@@ -78,7 +83,9 @@ public abstract class FileResource {
             @FormDataParam("0") InputStream uploadedInputStream,
             @FormDataParam("0") FormDataContentDisposition fileDetail) throws  IOException {
         if (fileDetail == null) throw new RuntimeException("fileDetails is null");
-        String uploadedFileLocation = new File(filePath,fileDetail.getFileName()).getAbsolutePath();
+        String tFile = System.getProperty("java.io.tmpdir");
+
+        String uploadedFileLocation = new File(tFile,fileDetail.getFileName()).getAbsolutePath();
         LOGGER.info(uploadedFileLocation);
         // save it
         writeToFile(uploadedInputStream, uploadedFileLocation);

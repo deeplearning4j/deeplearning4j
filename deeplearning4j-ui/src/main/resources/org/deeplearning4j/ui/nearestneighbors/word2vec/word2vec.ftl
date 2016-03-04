@@ -20,6 +20,10 @@
 
     <!-- Booststrap Notify plugin-->
     <script src="/assets/bootstrap-notify.min.js"></script>
+
+    <link rel="stylesheet" href="/assets/css/simple-sidebar.css" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+
     <style>
         body {
         font-family: 'Roboto', sans-serif;
@@ -45,12 +49,8 @@
         color: #FFFFFF;
         }
     </style>
-
-
-    <link rel="stylesheet" href="/assets/css/simple-sidebar.css" />
-    <link rel="stylesheet" href="/assets/css/style.css" />
     <script src="/assets/jquery-fileupload.js"></script>
-    <script src="/assets/js/nearestneighbors/word2vec/app.js"></script>
+    <script src="/assets/js/nearestneighbors/w2v/app.js"></script>
 </head>
 
 <body>
@@ -68,12 +68,12 @@
 <br />
 <br />
 <div id="container" style="width: 100%;">
-    <div id="wrapper" style="width: 100%;">
+    <div id="wrapper" class="wrapper" style="width: 100%;">
 
-        <div id="sidebar-wrapper">
+        <div id="sidebar-wrapper" class="sidebar-wrapper">
 
         </div>
-        <div id="page-content-wrapper" style="text-align: center; width: 100%;">
+        <div id="page-content-wrapper" class="page-content-wrapper" style="text-align: center; width: 100%;">
             <div class="container-fluid" style="text-align: center; width: 100%;">
                 <div id="instructions" style="text-align: left; display: inline-block;">
                 <h2>k Nearest Neighbors</h2>
@@ -107,8 +107,9 @@
                     <!-- <input type="text" name="k" id="k" value="5" /> -->
                 </div>
                 <div>
-                    <div id="neighbors" style="text-align: left; width: 500px; display: inline-block;"></div>
+                    <div id="neighbors"  style="text-align: left; width: 500px; display: inline-block;"></div>
                 </div>
+
 
                 <div style="text-align:center; width: 100%; position: fixed; bottom: 0px; left: 0px; margin-bottom: 15px;">
                      <div class="row" id="upload" style="display: inline-block; margin-right: 48px;">

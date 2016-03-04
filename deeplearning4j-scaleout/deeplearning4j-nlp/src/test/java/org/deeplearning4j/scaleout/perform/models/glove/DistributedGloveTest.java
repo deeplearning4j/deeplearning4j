@@ -19,6 +19,7 @@
 package org.deeplearning4j.scaleout.perform.models.glove;
 
 import org.canova.api.conf.Configuration;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.glove.CoOccurrences;
@@ -38,7 +39,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 

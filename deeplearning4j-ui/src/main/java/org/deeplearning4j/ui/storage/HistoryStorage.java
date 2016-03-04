@@ -18,11 +18,7 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class HistoryStorage {
-    public enum ObjectType {
-        TSNE,
-        SCORES,
-        ACTIVATIONS
-    }
+
 
     public enum TargetVersion {
         LATEST,

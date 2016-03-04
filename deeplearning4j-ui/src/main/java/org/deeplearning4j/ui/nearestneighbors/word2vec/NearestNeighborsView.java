@@ -25,7 +25,7 @@ import io.dropwizard.views.View;
  */
 public class NearestNeighborsView extends View {
     public NearestNeighborsView() {
-        super("index.ftl");
+        super("word2vec.ftl");
 
     }
 }
