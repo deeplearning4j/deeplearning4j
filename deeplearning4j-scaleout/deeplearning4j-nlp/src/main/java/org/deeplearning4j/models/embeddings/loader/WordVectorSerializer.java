@@ -496,6 +496,12 @@ public class WordVectorSerializer {
                     .modelUtils(new BasicModelUtils<VocabWord>())
                     .build();
 
+            try {
+                reader.close();
+            } catch (Exception e) {
+                ;
+            }
+
             return vectors;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -933,6 +939,11 @@ public class WordVectorSerializer {
             words++;
         }
 
+        try {
+            writer.flush();
+        } catch (Exception e) {
+            ;
+        }
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
     }
 
@@ -1018,6 +1029,12 @@ public class WordVectorSerializer {
                 } catch (Exception e) {
                     // if any conversion exception hits - that'll be considered header
                     hasHeader = true;
+                } finally {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        ;
+                    }
                 }
             }
 
@@ -1073,6 +1090,12 @@ public class WordVectorSerializer {
         lookupTable.setSyn0(syn);
 
         iter.close();
+
+        try {
+            reader.close();
+        } catch (Exception e) {
+            ;
+        }
 
         return new Pair<>(lookupTable, cache);
     }
