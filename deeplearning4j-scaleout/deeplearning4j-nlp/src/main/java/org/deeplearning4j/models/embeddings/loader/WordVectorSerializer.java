@@ -44,6 +44,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -55,6 +56,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -755,14 +757,14 @@ public class WordVectorSerializer {
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
      */
-    public static Word2Vec loadFullModel(@NonNull String path) {
+    public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
         /*
             // TODO: implementation is in process
             We need to restore:
                      1. WeightLookupTable, including syn0 and syn1 matrices
                      2. VocabCache + mark it as SPECIAL, to avoid accidental word removals
          */
-        LineSentenceIterator iterator = new LineSentenceIterator(new File(path));
+        BasicLineIterator iterator = new BasicLineIterator(new File(path));
 
         // first 3 lines should be processed separately
         String confJson  = iterator.nextSentence();
@@ -791,13 +793,25 @@ public class WordVectorSerializer {
                 .scavengerRetentionDelay(configuration.getScavengerRetentionDelay())
                 .build();
 
+        AtomicInteger counter = new AtomicInteger(0);
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
         while (iterator.hasNext()) {
             //    log.info("got line: " + iterator.nextSentence());
             String wordJson = iterator.nextSentence();
             VocabularyWord word = VocabularyWord.fromJson(wordJson);
             word.setSpecial(true);
 
-            holder.addWord(word);
+            VocabWord vw = new VocabWord(word.getCount(), word.getWord());
+            vw.setIndex(counter.getAndIncrement());
+
+            vw.setIndex(word.getHuffmanNode().getIdx());
+            vw.setCodeLength(word.getHuffmanNode().getLength());
+            vw.setPoints(arrayToList(word.getHuffmanNode().getPoint(), word.getHuffmanNode().getLength()));
+            vw.setCodes(arrayToList(word.getHuffmanNode().getCode(), word.getHuffmanNode().getLength()));
+
+            vocabCache.addToken(vw);
+            vocabCache.addWordToIndex(vw.getIndex(), vw.getLabel());
+            vocabCache.putVocabWord(vw.getWord());
         }
 
         // at this moment vocab is restored, and it's time to rebuild Huffman tree
@@ -805,9 +819,9 @@ public class WordVectorSerializer {
         //holder.updateHuffmanCodes();
 
         // we definitely don't need UNK word in this scenarion
-        InMemoryLookupCache vocabCache = new InMemoryLookupCache(false);
 
-        holder.transferBackToVocabCache(vocabCache, false);
+
+//        holder.transferBackToVocabCache(vocabCache, false);
 
         // now, it's time to transfer syn0/syn1/syn1 neg values
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
@@ -821,10 +835,18 @@ public class WordVectorSerializer {
         // we create all arrays
         lookupTable.resetWeights(true);
 
+        iterator.reset();
 
+        // we should skip 3 lines from file
+        iterator.nextSentence();
+        iterator.nextSentence();
+        iterator.nextSentence();
 
         // now, for each word from vocabHolder we'll just transfer actual values
-        for (VocabularyWord word: holder.getVocabulary()) {
+        while (iterator.hasNext()) {
+            String wordJson = iterator.nextSentence();
+            VocabularyWord word = VocabularyWord.fromJson(wordJson);
+
             // syn0 transfer
             INDArray syn0 = lookupTable.getSyn0().getRow(vocabCache.indexOf(word.getWord()));
             syn0.assign(Nd4j.create(word.getSyn0()));
@@ -1188,4 +1210,48 @@ public class WordVectorSerializer {
 
     }
 
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
+    private static List<Integer> arrayToList(byte[] array, int codeLen) {
+        List<Integer> result = new ArrayList<>();
+        for (int x = 0; x < codeLen; x++) {
+            result.add((int) array[x]);
+        }
+        return result;
+    }
+
+    private static byte[] listToArray(List<Integer> code) {
+        byte[] array = new byte[40];
+        for (int x = 0; x < code.size(); x++) {
+            array[x]  = code.get(x).byteValue();
+        }
+        return array;
+    }
+
+    private static int[] listToArray(List<Integer> points, int codeLen) {
+        int[] array = new int[points.size()];
+        for (int x = 0; x < points.size(); x++) {
+            array[x]  = points.get(x).intValue();
+        }
+        return array;
+    }
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
+    private static List<Integer> arrayToList(int[] array, int codeLen) {
+        List<Integer> result = new ArrayList<>();
+        for (int x = 0; x < codeLen; x++) {
+            result.add(array[x]);
+        }
+        return result;
+    }
 }
