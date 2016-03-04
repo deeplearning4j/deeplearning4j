@@ -136,7 +136,7 @@ public class WordVectorSerializer {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 GzipUtils.isCompressedFilename(modelFile.getName())
                         ? new GZIPInputStream(new FileInputStream(modelFile))
-                        : new FileInputStream(modelFile)))) {
+                        : new FileInputStream(modelFile), "UTF-8"))) {
             String line = reader.readLine();
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
@@ -349,7 +349,7 @@ public class WordVectorSerializer {
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, OutputStream stream) throws IOException {
         VocabCache<T> vocabCache = lookupTable.getVocabCache();
 
-        PrintWriter writer = new PrintWriter(stream);
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, "UTF-8"));
 
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
@@ -436,7 +436,7 @@ public class WordVectorSerializer {
      */
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
             ArrayList<String> labels = new ArrayList<>();
             ArrayList<INDArray> arrays = new ArrayList<>();
             VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
@@ -552,7 +552,7 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
 
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream))) {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"))) {
         /*
             This method acts similary to w2v csv serialization, except of additional tag for labels
          */
@@ -595,7 +595,7 @@ public class WordVectorSerializer {
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
                                         String path)
             throws IOException {
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
             if (word == null) {
@@ -645,7 +645,7 @@ public class WordVectorSerializer {
 
         PrintWriter printWriter = null;
         try {
-            printWriter = new PrintWriter(path);
+            printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path), "UTF-8"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -857,7 +857,7 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
 
         writeWordVectors(vec, write);
 
@@ -876,7 +876,7 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file)
             throws IOException {
-        BufferedWriter write = new BufferedWriter(new FileWriter(file));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
 
         writeWordVectors(vec, write);
 
@@ -894,7 +894,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
-        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream));
+        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
 
         writeWordVectors(vec, writer);
 
@@ -980,7 +980,7 @@ public class WordVectorSerializer {
      *             if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-            throws FileNotFoundException
+            throws FileNotFoundException, UnsupportedEncodingException
     {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
@@ -994,8 +994,8 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException if the input file does not exist
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-            throws FileNotFoundException {
-        BufferedReader reader = new BufferedReader(new FileReader(vectorsFile));
+            throws FileNotFoundException, UnsupportedEncodingException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(vectorsFile), "UTF-8"));
         VocabCache cache = new AbstractCache<>();
 
         LineIterator iter = IOUtils.lineIterator(reader);
@@ -1039,6 +1039,9 @@ public class WordVectorSerializer {
             String word = split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
+            if (cache.containsWord(word)) {
+                log.info("Word already exists: " + word);
+            }
 
             word1.setIndex(cache.numWords());
 
@@ -1088,7 +1091,7 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Glove vec, INDArray tsne, File csv)
             throws Exception
     {
-        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csv), "UTF-8"));
         int words = 0;
         InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
         for (String word : vec.vocab().words()) {
@@ -1132,7 +1135,7 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Word2Vec vec, INDArray tsne, File csv)
             throws Exception
     {
-        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csv), "UTF-8"));
         int words = 0;
         InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
         for (String word : vec.vocab().words()) {
