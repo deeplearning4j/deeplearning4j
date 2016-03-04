@@ -46,7 +46,7 @@ namespace functions {
         };
 
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
         template<>
@@ -57,7 +57,7 @@ namespace functions {
             }
         };
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
         template<>
@@ -274,7 +274,7 @@ namespace functions {
 
                 IndexValue <T> reduction = {startingVal, 0};
                 if (tid == 0) {
-                    tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
+                    tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
                     resultLength = shape::length(resultShapeInfo);
                     if (dimensionLength == 1) {
                         if (dimension[0] == shape::MAX_DIMENSION)
@@ -314,13 +314,13 @@ namespace functions {
                         return;
 
                     /**
-                     * The element wise stride belongs to a reduction index.
+                     * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
                      * specified for stride instead.
-                     * Say we take the sum(0,1) along arr
+                     * Say we take the sum(0,1) along long arr
                      * we can use arr.stride(1) as a representation
-                     * along which to iterate.
+                     * along long which to iterate.
                      */
                     int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
                     int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
@@ -532,7 +532,7 @@ namespace functions {
              *
              * in to equivalent expanded problems based on smaller tads
              * eg:
-             * multiple reductions for each dimension along dimension 3
+             * multiple reductions for each dimension along long dimension 3
              * followed by collapsing the problem in to an equivalent state
              * as if we had specified 2,3 for the dimensions instead.
              *
@@ -542,8 +542,8 @@ namespace functions {
              * For the GPU, we force each block to process a  tad
              * at the singular dimension level. Eg: dimension 3
              *
-             * So for example along dimension 3 of the 2,2,3,2
-             * array we have 12 tensors along dimension.
+             * So for example along long dimension 3 of the 2,2,3,2
+             * array we have 12 tensors along long dimension.
              *
              * We then map those 12 tads to a reduction index.
              *
@@ -581,7 +581,7 @@ namespace functions {
 
 
 
-             * Along dimension 3 we will have tads of length 2
+             * Along long dimension 3 we will have tads of length 2
              * and 4 reduction indexes we need to map for the
              * 2,3 dimension problem.
              *
@@ -652,7 +652,7 @@ namespace functions {
                 __syncthreads();
 
                 /**
-                 * Reverse engineer which tads belong to a particular
+                 * Reverse engineer which tads belong long to a particular
                  * reduction index.
                  *
                  * Each tad should be handled by a thread.
@@ -857,7 +857,7 @@ namespace functions {
              * @param extraParams the extra parameters for the reduce
              * @param result the result buffer
              * @param resultShapeInfoBuffer the shape information
-             * @param dimension the dimension to do reduce along
+             * @param dimension the dimension to do reduce along long
              * @param dimensionLength the length of the dimension
              * buffer
              */
@@ -896,13 +896,13 @@ namespace functions {
 
                 if(dimensionLength > 1) {
                     /**
-                     * The element wise stride belongs to a reduction index.
+                     * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
                      * specified for stride instead.
-                     * Say we take the sum(0,1) along arr
+                     * Say we take the sum(0,1) along long arr
                      * we can use arr.stride(1) as a representation
-                     * along which to iterate.
+                     * along long which to iterate.
                      */
 
 
@@ -1344,7 +1344,7 @@ namespace functions {
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
@@ -1385,7 +1385,7 @@ __device__ void indexReduceGeneric(
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
@@ -1423,7 +1423,7 @@ __global__ void indexReduceDouble(
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */

@@ -606,10 +606,10 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val +
-				__longlong_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val +
+				__long longlong long_as_double(assumed)));
 	} while (assumed != old);
-	return __longlong_as_double(old);
+	return __long longlong long_as_double(old);
 }
 
 template <>
@@ -619,10 +619,10 @@ __device__ double nd4j_atomicSub<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val -
-				__longlong_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val -
+				__long longlong long_as_double(assumed)));
 	} while (assumed != old);
-	return __longlong_as_double(old);
+	return __long longlong long_as_double(old);
 }
 
 template <>
@@ -632,10 +632,10 @@ __device__ double nd4j_atomicMul<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val *
-				__longlong_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val *
+				__long longlong long_as_double(assumed)));
 	} while (assumed != old);
-	return __longlong_as_double(old);
+	return __long longlong long_as_double(old);
 }
 
 template <>
@@ -645,10 +645,10 @@ __device__ double nd4j_atomicDiv<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val /
-				__longlong_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val /
+				__long longlong long_as_double(assumed)));
 	} while (assumed != old);
-	return __longlong_as_double(old);
+	return __long longlong long_as_double(old);
 }
 
 template <>

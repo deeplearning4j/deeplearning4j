@@ -302,7 +302,7 @@ namespace functions {
                     }
                     else
                         resultScalar = 0;
-                    tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
+                    tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
                     xLength = shape::length(xShapeInfo);
 
 
@@ -339,13 +339,13 @@ namespace functions {
 
 
                     /**
-                     * The element wise stride belongs to a reduction index.
+                     * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
                      * specified for stride instead.
-                     * Say we take the sum(0,1) along arr
+                     * Say we take the sum(0,1) along long arr
                      * we can use arr.stride(1) as a representation
-                     * along which to iterate.
+                     * along long which to iterate.
                      */
 
 
@@ -811,13 +811,13 @@ namespace functions {
                     shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
                     int resultLength = shape::length(resultShapeInfoBuffer);
                     /**
-                     * The element wise stride belongs to a reduction index.
+                     * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
                      * specified for stride instead.
-                     * Say we take the sum(0,1) along arr
+                     * Say we take the sum(0,1) along long arr
                      * we can use arr.stride(1) as a representation
-                     * along which to iterate.
+                     * along long which to iterate.
                      */
                     int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
                     int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
@@ -1549,7 +1549,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
  * @param result where to store the result
  * @param resultShapeInfo the shape information
  * @param gpuInformation the gpu information
- * @param dimension the dimension to reduce along
+ * @param dimension the dimension to reduce along long
  * @param dimensionLength the dimension length
  * @param postProcessOrNot whether to post
  */
@@ -1595,7 +1595,7 @@ __device__ void reduce3Generic(
  * @param extraParams the extra parameters in the operation
  * @param result where to store the result
  * @param resultShapeInfo the shape information
- * @param dimension the dimension to reduce along
+ * @param dimension the dimension to reduce along long
  * @param dimensionLength the dimension length
  * @param postProcessOrNot whether to post [
  */
@@ -1639,7 +1639,7 @@ __global__ void reduce3Double(
  * @param result where to store the result
  * @param resultShapeInfo the shape information
  * @param gpuInformation the gpu information
- * @param dimension the dimension to reduce along
+ * @param dimension the dimension to reduce along long
  * @param dimensionLength the dimension length
  * @param postProcessOrNot whether to post [
  */

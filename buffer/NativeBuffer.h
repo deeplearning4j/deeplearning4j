@@ -14,7 +14,7 @@ public:
 
     ~JavaCppDoublePointer();
 
-    long bufferAddress();
+    long long bufferAddress();
 
     void putDouble(int i,double vla);
 
@@ -28,7 +28,7 @@ private:
 public:
     void create(int length);
     ~JavaCppFloatPointer();
-    long bufferAddress();
+    long long bufferAddress();
     void putFloat(int i,float val);
     float *bufferRef();
 };
@@ -41,7 +41,7 @@ public:
 
     ~JavaCppIntPointer();
 
-    long bufferAddress();
+    long long bufferAddress();
 
     void putInt(int i,int val);
 

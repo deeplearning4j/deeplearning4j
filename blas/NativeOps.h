@@ -37,10 +37,10 @@ public:
        * @param xShapeInfo
        * @param extraParams
        */
-    double   execIndexReduceScalarDouble(long *extraPointers,int opNum,
-                                         long x,
-                                         long xShapeInfo,
-                                         long extraParams);
+    double   execIndexReduceScalarDouble(long long *extraPointers,int opNum,
+                                         long long x,
+                                         long long xShapeInfo,
+                                         long long extraParams);
 
     /**
      *
@@ -53,13 +53,13 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execIndexReduceDouble(long *extraPointers,int opNum,
-                                 long x,
-                                 long xShapeInfo,
-                                 long extraParams,
-                                 long result,
-                                 long resultShapeInfoBuffer,
-                                 long dimension, int dimensionLength);
+    void   execIndexReduceDouble(long long *extraPointers,int opNum,
+                                 long long x,
+                                 long long xShapeInfo,
+                                 long long extraParams,
+                                 long long result,
+                                 long long resultShapeInfoBuffer,
+                                 long long dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -72,14 +72,14 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execBroadcastDouble(long *extraPointers,int opNum,
-                               long x,
-                               long xShapeInfo,
-                               long y,
-                               long yShapeInfo,
-                               long result,
-                               long resultShapeInfo,
-                               long dimension, int dimensionLength);
+    void   execBroadcastDouble(long long *extraPointers,int opNum,
+                               long long x,
+                               long long xShapeInfo,
+                               long long y,
+                               long long yShapeInfo,
+                               long long result,
+                               long long resultShapeInfo,
+                               long long dimension, int dimensionLength);
 
 
 
@@ -95,14 +95,14 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execPairwiseTransformDouble(long *extraPointers,int opNum,
-                                       long dx,
+    void   execPairwiseTransformDouble(long long *extraPointers,int opNum,
+                                       long long dx,
                                        int xStride,
-                                       long y,
+                                       long long y,
                                        int yStride,
-                                       long result,
+                                       long long result,
                                        int resultStride,
-                                       long extraParams, int n);
+                                       long long extraParams, int n);
 
     /**
      *
@@ -119,18 +119,18 @@ public:
      * @param yIndexes
      * @param resultIndexes
      */
-    void execPairwiseTransformDouble(long *extraPointers,
+    void execPairwiseTransformDouble(long long *extraPointers,
                                      int opNum,
-                                     long dx,
-                                     long xShapeInfo,
-                                     long y,
-                                     long yShapeInfo,
-                                     long result,
-                                     long resultShapeInfo,
-                                     long extraParams,
-                                     long xIndexes,
-                                     long yIndexes,
-                                     long resultIndexes);
+                                     long long dx,
+                                     long long xShapeInfo,
+                                     long long y,
+                                     long long yShapeInfo,
+                                     long long result,
+                                     long long resultShapeInfo,
+                                     long long extraParams,
+                                     long long xIndexes,
+                                     long long yIndexes,
+                                     long long resultIndexes);
 
     /**
      *
@@ -145,15 +145,15 @@ public:
      * @param n
      */
     void execPairwiseTransformDouble(
-            long *extraPointers,
+            long long *extraPointers,
             int opNum,
-            long dx,
-            long  xShapeInfo,
-            long y,
-            long  yShapeInfo,
-            long result,
-            long  resultShapeInfo,
-            long extraParams);
+            long long dx,
+            long long  xShapeInfo,
+            long long y,
+            long long  yShapeInfo,
+            long long result,
+            long long  resultShapeInfo,
+            long long extraParams);
 
     /**
      *
@@ -164,12 +164,12 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduceDouble(long *extraPointers,int opNum,
-                            long x,
-                            long xShapeInfo,
-                            long extraParams,
-                            long result,
-                            long resultShapeInfo);
+    void   execReduceDouble(long long *extraPointers,int opNum,
+                            long long x,
+                            long long xShapeInfo,
+                            long long extraParams,
+                            long long result,
+                            long long resultShapeInfo);
 
     /**
      *
@@ -180,13 +180,13 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduceDouble(long *extraPointers,int opNum,
-                            long x,
-                            long xShapeInfo,
-                            long extraParams,
-                            long result,
-                            long resultShapeInfo,
-                            long dimension,int dimensionLength);
+    void   execReduceDouble(long long *extraPointers,int opNum,
+                            long long x,
+                            long long xShapeInfo,
+                            long long extraParams,
+                            long long result,
+                            long long resultShapeInfo,
+                            long long dimension,int dimensionLength);
 
     /**
      *
@@ -196,10 +196,10 @@ public:
      * @param extraParams
      * @return
      */
-    double execReduceScalarDouble(long *extraPointers,int opNum,
-                                  long x,
-                                  long xShapeInfo,
-                                  long extraParams);
+    double execReduceScalarDouble(long long *extraPointers,int opNum,
+                                  long long x,
+                                  long long xShapeInfo,
+                                  long long extraParams);
 
     /**
      *
@@ -212,14 +212,14 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduce3Double(long *extraPointers,int opNum,
-                             long x,
-                             long xShapeInfo,
-                             long extraParamsVals,
-                             long y,
-                             long yShapeInfo,
-                             long result,
-                             long resultShapeInfo);
+    void   execReduce3Double(long long *extraPointers,int opNum,
+                             long long x,
+                             long long xShapeInfo,
+                             long long extraParamsVals,
+                             long long y,
+                             long long yShapeInfo,
+                             long long result,
+                             long long resultShapeInfo);
 
     /**
      *
@@ -230,12 +230,12 @@ public:
      * @param y
      * @param yShapeInfo
      */
-    double   execReduce3ScalarDouble(long *extraPointers,int opNum,
-                                     long x,
-                                     long xShapeInfo,
-                                     long extraParamsVals,
-                                     long y,
-                                     long yShapeInfo);
+    double   execReduce3ScalarDouble(long long *extraPointers,int opNum,
+                                     long long x,
+                                     long long xShapeInfo,
+                                     long long extraParamsVals,
+                                     long long y,
+                                     long long yShapeInfo);
     /**
      *
      * @param opNum
@@ -249,15 +249,15 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execReduce3Double(long *extraPointers,int opNum,
-                             long x,
-                             long xShapeInfo,
-                             long extraParamsVals,
-                             long y,
-                             long yShapeInfo,
-                             long result,
-                             long resultShapeInfoBuffer,
-                             long dimension,
+    void   execReduce3Double(long long *extraPointers,int opNum,
+                             long long x,
+                             long long xShapeInfo,
+                             long long extraParamsVals,
+                             long long y,
+                             long long yShapeInfo,
+                             long long result,
+                             long long resultShapeInfoBuffer,
+                             long long dimension,
                              int dimensionLength);
     /**
      *
@@ -270,13 +270,13 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execScalarDouble(long *extraPointers,int opNum,
-                            long x,
+    void   execScalarDouble(long long *extraPointers,int opNum,
+                            long long x,
                             int xStride,
-                            long result,
+                            long long result,
                             int resultStride,
                             double scalar,
-                            long extraParams,
+                            long long extraParams,
                             int n);
 
     /**
@@ -290,13 +290,13 @@ public:
      * @param extraParams
      * @param n
      */
-    void execScalarDouble(long *extraPointers,int opNum,
-                          long x,
-                          long xShapeInfo,
-                          long result,
-                          long resultShapeInfo,
+    void execScalarDouble(long long *extraPointers,int opNum,
+                          long long x,
+                          long long xShapeInfo,
+                          long long result,
+                          long long resultShapeInfo,
                           double scalar,
-                          long extraParams);
+                          long long extraParams);
 
     /**
      *
@@ -311,16 +311,16 @@ public:
      * @param xIndexes
      * @param resultIndexes
      */
-    void execScalarDouble(long *extraPointers,int opNum,
-                          long x,
-                          long xShapeInfo,
-                          long result,
-                          long resultShapeInfo,
+    void execScalarDouble(long long *extraPointers,int opNum,
+                          long long x,
+                          long long xShapeInfo,
+                          long long result,
+                          long long resultShapeInfo,
                           double scalar,
-                          long extraParams,
+                          long long extraParams,
                           int n,
-                          long xIndexes,
-                          long resultIndexes);
+                          long long xIndexes,
+                          long long resultIndexes);
     /**
      *
      * @param opNum
@@ -328,9 +328,9 @@ public:
      * @param xShapeInfo
      * @param extraParams
      */
-    double   execSummaryStatsScalarDouble(long *extraPointers,int opNum,long x,
-                                          long xShapeInfo,
-                                          long extraParams,bool biasCorrected);
+    double   execSummaryStatsScalarDouble(long long *extraPointers,int opNum,long long x,
+                                          long long xShapeInfo,
+                                          long long extraParams,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -340,12 +340,12 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execSummaryStatsDouble(long *extraPointers,int opNum,
-                                  long x,
-                                  long xShapeInfo,
-                                  long extraParams,
-                                  long result,
-                                  long resultShapeInfo,bool biasCorrected);
+    void   execSummaryStatsDouble(long long *extraPointers,int opNum,
+                                  long long x,
+                                  long long xShapeInfo,
+                                  long long extraParams,
+                                  long long result,
+                                  long long resultShapeInfo,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -357,12 +357,12 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execSummaryStatsDouble(long *extraPointers,int opNum,long x,
-                                  long xShapeInfo,
-                                  long extraParams,
-                                  long result,
-                                  long resultShapeInfoBuffer,
-                                  long dimension, int dimensionLength,bool biasCorrected);
+    void   execSummaryStatsDouble(long long *extraPointers,int opNum,long long x,
+                                  long long xShapeInfo,
+                                  long long extraParams,
+                                  long long result,
+                                  long long resultShapeInfoBuffer,
+                                  long long dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -373,12 +373,12 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformDouble(long *extraPointers,int opNum,
-                               long dx,
+    void   execTransformDouble(long long *extraPointers,int opNum,
+                               long long dx,
                                int xStride,
-                               long result,
+                               long long result,
                                int resultStride,
-                               long extraParams, int n);
+                               long long extraParams, int n);
 
     /**
      *
@@ -390,12 +390,12 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformDouble(long *extraPointers,int opNum,
-                               long dx,
-                               long xShapeInfo,
-                               long result,
-                               long resultShapeInfo,
-                               long extraParams);
+    void   execTransformDouble(long long *extraPointers,int opNum,
+                               long long dx,
+                               long long xShapeInfo,
+                               long long result,
+                               long long resultShapeInfo,
+                               long long extraParams);
 
     /**
      *
@@ -407,14 +407,14 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformDouble(long *extraPointers,int opNum,
-                               long dx,
-                               long xShapeInfo,
-                               long result,
-                               long resultShapeInfo,
-                               long extraParams,
-                               long xIndexes,
-                               long resultIndexes);
+    void   execTransformDouble(long long *extraPointers,int opNum,
+                               long long dx,
+                               long long xShapeInfo,
+                               long long result,
+                               long long resultShapeInfo,
+                               long long extraParams,
+                               long long xIndexes,
+                               long long resultIndexes);
 
     /**
     *
@@ -423,11 +423,11 @@ public:
     * @param xShapeInfo
     * @param extraParams
     */
-    float   execIndexReduceScalarFloat(long *extraPointers,
+    float   execIndexReduceScalarFloat(long long *extraPointers,
                                        int opNum,
-                                       long x,
-                                       long xShapeInfo,
-                                       long extraParams);
+                                       long long x,
+                                       long long xShapeInfo,
+                                       long long extraParams);
 
     /**
      *
@@ -440,13 +440,13 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execIndexReduceFloat(long *extraPointers,int opNum,
-                                long x,
-                                long xShapeInfo,
-                                long extraParams,
-                                long result,
-                                long resultShapeInfoBuffer,
-                                long dimension, int dimensionLength);
+    void   execIndexReduceFloat(long long *extraPointers,int opNum,
+                                long long x,
+                                long long xShapeInfo,
+                                long long extraParams,
+                                long long result,
+                                long long resultShapeInfoBuffer,
+                                long long dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -459,14 +459,14 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execBroadcastFloat(long *extraPointers,int opNum,
-                              long x,
-                              long xShapeInfo,
-                              long y,
-                              long yShapeInfo,
-                              long result,
-                              long resultShapeInfo,
-                              long dimension, int dimensionLength);
+    void   execBroadcastFloat(long long *extraPointers,int opNum,
+                              long long x,
+                              long long xShapeInfo,
+                              long long y,
+                              long long yShapeInfo,
+                              long long result,
+                              long long resultShapeInfo,
+                              long long dimension, int dimensionLength);
 
 
 
@@ -482,14 +482,14 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execPairwiseTransformFloat(long *extraPointers,int opNum,
-                                      long dx,
+    void   execPairwiseTransformFloat(long long *extraPointers,int opNum,
+                                      long long dx,
                                       int xStride,
-                                      long y,
+                                      long long y,
                                       int yStride,
-                                      long result,
+                                      long long result,
                                       int resultStride,
-                                      long extraParams, int n);
+                                      long long extraParams, int n);
 
     /**
      *
@@ -506,17 +506,17 @@ public:
      * @param yIndexes
      * @param resultIndexes
      */
-    void execPairwiseTransformFloat(long *extraPointers,int opNum,
-                                    long dx,
-                                    long xShapeInfo,
-                                    long y,
-                                    long yShapeInfo,
-                                    long result,
-                                    long resultShapeInfo,
-                                    long extraParams,
-                                    long xIndexes,
-                                    long yIndexes,
-                                    long resultIndexes);
+    void execPairwiseTransformFloat(long long *extraPointers,int opNum,
+                                    long long dx,
+                                    long long xShapeInfo,
+                                    long long y,
+                                    long long yShapeInfo,
+                                    long long result,
+                                    long long resultShapeInfo,
+                                    long long extraParams,
+                                    long long xIndexes,
+                                    long long yIndexes,
+                                    long long resultIndexes);
 
     /**
      *
@@ -530,14 +530,14 @@ public:
      * @param extraParams
      * @param n
      */
-    void execPairwiseTransformFloat(long *extraPointers,int opNum,
-                                    long dx,
-                                    long  xShapeInfo,
-                                    long y,
-                                    long  yShapeInfo,
-                                    long result,
-                                    long  resultShapeInfo,
-                                    long extraParams);
+    void execPairwiseTransformFloat(long long *extraPointers,int opNum,
+                                    long long dx,
+                                    long long  xShapeInfo,
+                                    long long y,
+                                    long long  yShapeInfo,
+                                    long long result,
+                                    long long  resultShapeInfo,
+                                    long long extraParams);
 
     /**
      *
@@ -548,12 +548,12 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduceFloat(long *extraPointers,int opNum,
-                           long x,
-                           long xShapeInfo,
-                           long extraParams,
-                           long result,
-                           long resultShapeInfo);
+    void   execReduceFloat(long long *extraPointers,int opNum,
+                           long long x,
+                           long long xShapeInfo,
+                           long long extraParams,
+                           long long result,
+                           long long resultShapeInfo);
 
     /**
      *
@@ -564,13 +564,13 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduceFloat(long *extraPointers,int opNum,
-                           long x,
-                           long xShapeInfo,
-                           long extraParams,
-                           long result,
-                           long resultShapeInfo,
-                           long dimension,int dimensionLength);
+    void   execReduceFloat(long long *extraPointers,int opNum,
+                           long long x,
+                           long long xShapeInfo,
+                           long long extraParams,
+                           long long result,
+                           long long resultShapeInfo,
+                           long long dimension,int dimensionLength);
 
     /**
      *
@@ -580,10 +580,10 @@ public:
      * @param extraParams
      * @return
      */
-    float execReduceScalarFloat(long *extraPointers,int opNum,
-                                long x,
-                                long xShapeInfo,
-                                long extraParams);
+    float execReduceScalarFloat(long long *extraPointers,int opNum,
+                                long long x,
+                                long long xShapeInfo,
+                                long long extraParams);
 
     /**
      *
@@ -596,14 +596,14 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduce3Float(long *extraPointers,int opNum,
-                            long x,
-                            long xShapeInfo,
-                            long extraParamsVals,
-                            long y,
-                            long yShapeInfo,
-                            long result,
-                            long resultShapeInfo);
+    void   execReduce3Float(long long *extraPointers,int opNum,
+                            long long x,
+                            long long xShapeInfo,
+                            long long extraParamsVals,
+                            long long y,
+                            long long yShapeInfo,
+                            long long result,
+                            long long resultShapeInfo);
 
     /**
      *
@@ -614,12 +614,12 @@ public:
      * @param y
      * @param yShapeInfo
      */
-    float   execReduce3ScalarFloat(long *extraPointers,int opNum,
-                                   long x,
-                                   long xShapeInfo,
-                                   long extraParamsVals,
-                                   long y,
-                                   long yShapeInfo);
+    float   execReduce3ScalarFloat(long long *extraPointers,int opNum,
+                                   long long x,
+                                   long long xShapeInfo,
+                                   long long extraParamsVals,
+                                   long long y,
+                                   long long yShapeInfo);
     /**
      *
      * @param opNum
@@ -633,15 +633,15 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execReduce3Float(long *extraPointers,int opNum,
-                            long x,
-                            long xShapeInfo,
-                            long extraParamsVals,
-                            long y,
-                            long yShapeInfo,
-                            long result,
-                            long resultShapeInfoBuffer,
-                            long dimension,
+    void   execReduce3Float(long long *extraPointers,int opNum,
+                            long long x,
+                            long long xShapeInfo,
+                            long long extraParamsVals,
+                            long long y,
+                            long long yShapeInfo,
+                            long long result,
+                            long long resultShapeInfoBuffer,
+                            long long dimension,
                             int dimensionLength);
     /**
      *
@@ -654,13 +654,13 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execScalarFloat(long *extraPointers,int opNum,
-                           long x,
+    void   execScalarFloat(long long *extraPointers,int opNum,
+                           long long x,
                            int xStride,
-                           long result,
+                           long long result,
                            int resultStride,
                            double scalar,
-                           long extraParams,
+                           long long extraParams,
                            int n);
 
     /**
@@ -674,13 +674,13 @@ public:
      * @param extraParams
      * @param n
      */
-    void execScalarFloat(long *extraPointers,int opNum,
-                         long x,
-                         long xShapeInfo,
-                         long result,
-                         long resultShapeInfo,
+    void execScalarFloat(long long *extraPointers,int opNum,
+                         long long x,
+                         long long xShapeInfo,
+                         long long result,
+                         long long resultShapeInfo,
                          float scalar,
-                         long extraParams);
+                         long long extraParams);
 
     /**
      *
@@ -695,15 +695,15 @@ public:
      * @param xIndexes
      * @param resultIndexes
      */
-    void execScalarFloat(long *extraPointers,int opNum,
-                         long x,
-                         long xShapeInfo,
-                         long result,
-                         long resultShapeInfo,
+    void execScalarFloat(long long *extraPointers,int opNum,
+                         long long x,
+                         long long xShapeInfo,
+                         long long result,
+                         long long resultShapeInfo,
                          double scalar,
-                         long extraParams,
-                         long xIndexes,
-                         long resultIndexes);
+                         long long extraParams,
+                         long long xIndexes,
+                         long long resultIndexes);
     /**
      *
      * @param opNum
@@ -711,9 +711,9 @@ public:
      * @param xShapeInfo
      * @param extraParams
      */
-    float   execSummaryStatsScalarFloat(long *extraPointers,int opNum,long x,
-                                        long xShapeInfo,
-                                        long extraParams,bool biasCorrected);
+    float   execSummaryStatsScalarFloat(long long *extraPointers,int opNum,long long x,
+                                        long long xShapeInfo,
+                                        long long extraParams,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -723,12 +723,12 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execSummaryStatsFloat(long *extraPointers,int opNum,
-                                 long x,
-                                 long xShapeInfo,
-                                 long extraParams,
-                                 long result,
-                                 long resultShapeInfo,bool biasCorrected);
+    void   execSummaryStatsFloat(long long *extraPointers,int opNum,
+                                 long long x,
+                                 long long xShapeInfo,
+                                 long long extraParams,
+                                 long long result,
+                                 long long resultShapeInfo,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -740,12 +740,12 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void   execSummaryStatsFloat(long *extraPointers,int opNum,long x,
-                                 long xShapeInfo,
-                                 long extraParams,
-                                 long result,
-                                 long resultShapeInfoBuffer,
-                                 long dimension, int dimensionLength,bool biasCorrected);
+    void   execSummaryStatsFloat(long long *extraPointers,int opNum,long long x,
+                                 long long xShapeInfo,
+                                 long long extraParams,
+                                 long long result,
+                                 long long resultShapeInfoBuffer,
+                                 long long dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -756,12 +756,12 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformFloat(long *extraPointers,int opNum,
-                              long dx,
+    void   execTransformFloat(long long *extraPointers,int opNum,
+                              long long dx,
                               int xStride,
-                              long result,
+                              long long result,
                               int resultStride,
-                              long extraParams, int n);
+                              long long extraParams, int n);
 
     /**
      *
@@ -773,12 +773,12 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformFloat(long *extraPointers,int opNum,
-                              long dx,
-                              long xShapeInfo,
-                              long result,
-                              long resultShapeInfo,
-                              long extraParams);
+    void   execTransformFloat(long long *extraPointers,int opNum,
+                              long long dx,
+                              long long xShapeInfo,
+                              long long result,
+                              long long resultShapeInfo,
+                              long long extraParams);
 
     /**
      *
@@ -790,14 +790,14 @@ public:
      * @param extraParams
      * @param n
      */
-    void   execTransformFloat(long *extraPointers,int opNum,
-                              long dx,
-                              long xShapeInfo,
-                              long result,
-                              long resultShapeInfo,
-                              long extraParams,
-                              long xIndexes,
-                              long resultIndexes);
+    void   execTransformFloat(long long *extraPointers,int opNum,
+                              long long dx,
+                              long long xShapeInfo,
+                              long long result,
+                              long long resultShapeInfo,
+                              long long extraParams,
+                              long long xIndexes,
+                              long long resultIndexes);
 };
 
 

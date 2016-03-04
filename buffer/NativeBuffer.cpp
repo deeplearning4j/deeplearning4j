@@ -13,8 +13,8 @@ JavaCppDoublePointer::~JavaCppDoublePointer() {
         free(this->buffer);
 }
 
-long JavaCppDoublePointer::bufferAddress() {
-    return reinterpret_cast<long>(this->buffer);
+long long JavaCppDoublePointer::bufferAddress() {
+    return reinterpret_cast<long long>(this->buffer);
 }
 
 void JavaCppDoublePointer::putDouble(int i, double vla) {
@@ -39,8 +39,8 @@ JavaCppFloatPointer::~JavaCppFloatPointer() {
         free(this->buffer);
 }
 
-long JavaCppFloatPointer::bufferAddress() {
-    return reinterpret_cast<long>(this->buffer);
+long long JavaCppFloatPointer::bufferAddress() {
+    return reinterpret_cast<long long>(this->buffer);
 }
 
 float * JavaCppFloatPointer::bufferRef() {
@@ -65,8 +65,8 @@ void JavaCppIntPointer::putInt(int i, int val) {
 }
 
 
-long JavaCppIntPointer::bufferAddress() {
-    return reinterpret_cast<long>(this->buffer);
+long long JavaCppIntPointer::bufferAddress() {
+    return reinterpret_cast<long long>(this->buffer);
 }
 
 int * JavaCppIntPointer::bufferRef() {

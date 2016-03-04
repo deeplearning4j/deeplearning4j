@@ -25,21 +25,21 @@ public:
      * ------------------------------------------------------
      */
 
-    float sdsdot(long *extraParams,int N, float alpha,
-                 long X, int incX,
-                 long Y, int incY);
+    float sdsdot(long long *extraParams,int N, float alpha,
+                 long long X, int incX,
+                 long long Y, int incY);
 
-    double dsdot(long *extraParams,int N,
-                 long X, int incX,
-                 long Y, int incY);
+    double dsdot(long long *extraParams,int N,
+                 long long X, int incX,
+                 long long Y, int incY);
 
-    double ddot(long *extraParams,int N,
-                long X, int incX,
-                long Y, int incY);
+    double ddot(long long *extraParams,int N,
+                long long X, int incX,
+                long long Y, int incY);
 
-    float sdot(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY);
+    float sdot(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -47,9 +47,9 @@ public:
      * ------------------------------------------------------
      */
 
-    float snrm2(long *extraParams,int N, long X, int incX);
+    float snrm2(long long *extraParams,int N, long long X, int incX);
 
-    double dnrm2(long *extraParams,int N, long X, int incX);
+    double dnrm2(long long *extraParams,int N, long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -57,9 +57,9 @@ public:
      * ------------------------------------------------------
      */
 
-    float sasum(long *extraParams,int N, long X, int incX);
+    float sasum(long long *extraParams,int N, long long X, int incX);
 
-    double dasum(long *extraParams,int N, long X, int incX);
+    double dasum(long long *extraParams,int N, long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -67,9 +67,9 @@ public:
      * ------------------------------------------------------
      */
 
-    int isamax(long *extraParams,int N, long X, int incX);
+    int isamax(long long *extraParams,int N, long long X, int incX);
 
-    int idamax(long *extraParams,int N, long X, int incX);
+    int idamax(long long *extraParams,int N, long long X, int incX);
 
     /*
      * ======================================================
@@ -83,14 +83,14 @@ public:
      * ------------------------------------------------------
      */
 
-    void srot(long *extraParams,int N,
-              long X, int incX,
-              long Y, int incY,
+    void srot(long long *extraParams,int N,
+              long long X, int incX,
+              long long Y, int incY,
               float c, float s);
 
-    void drot(long *extraParams,int N,
-              long X, int incX,
-              long Y, int incY,
+    void drot(long long *extraParams,int N,
+              long long X, int incX,
+              long long Y, int incY,
               double c, double s);
 
     /*
@@ -99,9 +99,9 @@ public:
      * ------------------------------------------------------
      */
 
-    void srotg(long *extraParams,long args);
+    void srotg(long long *extraParams,long long args);
 
-    void drotg(long *extraParams,long args);
+    void drotg(long long *extraParams,long long args);
 
     /*
      * ------------------------------------------------------
@@ -109,11 +109,11 @@ public:
      * ------------------------------------------------------
      */
 
-    void srotmg(long *extraParams,long args,
-                long P);
+    void srotmg(long long *extraParams,long long args,
+                long long P);
 
-    void drotmg(long *extraParams,long args,
-                long P);
+    void drotmg(long long *extraParams,long long args,
+                long long P);
 
     /*
      * ------------------------------------------------------
@@ -121,15 +121,15 @@ public:
      * ------------------------------------------------------
      */
 
-    void srotm(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY,
-               long P);
+    void srotm(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY,
+               long long P);
 
-    void drotm(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY,
-               long P);
+    void drotm(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY,
+               long long P);
 
     /*
      * ------------------------------------------------------
@@ -137,13 +137,13 @@ public:
      * ------------------------------------------------------
      */
 
-    void sswap(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY);
+    void sswap(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY);
 
-    void dswap(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY);
+    void dswap(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -151,11 +151,11 @@ public:
      * ------------------------------------------------------
      */
 
-    void sscal(long *extraParams,int N, float alpha,
-               long X, int incX);
+    void sscal(long long *extraParams,int N, float alpha,
+               long long X, int incX);
 
-    void dscal(long *extraParams,int N, double alpha,
-               long X, int incX);
+    void dscal(long long *extraParams,int N, double alpha,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -163,13 +163,13 @@ public:
      * ------------------------------------------------------
      */
 
-    void scopy(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY);
+    void scopy(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY);
 
-    void dcopy(long *extraParams,int N,
-               long X, int incX,
-               long Y, int incY);
+    void dcopy(long long *extraParams,int N,
+               long long X, int incX,
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -177,13 +177,13 @@ public:
      * ------------------------------------------------------
      */
 
-    void saxpy(long *extraParams,int N, float alpha,
-               long X, int incX,
-               long Y, int incY);
+    void saxpy(long long *extraParams,int N, float alpha,
+               long long X, int incX,
+               long long Y, int incY);
 
-    void daxpy(long *extraParams,int N, double alpha,
-               long X, int incX,
-               long Y, int incY);
+    void daxpy(long long *extraParams,int N, double alpha,
+               long long X, int incX,
+               long long Y, int incY);
 
     /*
      * ======================================================
@@ -198,21 +198,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void sgemv(long *extraParams,int Order, int TransA,
+    void sgemv(long long *extraParams,int Order, int TransA,
                int M, int N,
                float alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                float beta,
-               long Y, int incY);
+               long long Y, int incY);
 
-    void dgemv(long *extraParams,int Order, int TransA,
+    void dgemv(long long *extraParams,int Order, int TransA,
                int M, int N,
                double alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                double beta,
-               long Y, int incY);
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -220,23 +220,23 @@ public:
      * ------------------------------------------------------
      */
 
-    void sgbmv(long *extraParams,int Order, int TransA,
+    void sgbmv(long long *extraParams,int Order, int TransA,
                int M, int N,
                int KL, int KU,
                float alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                float beta,
-               long Y, int incY);
+               long long Y, int incY);
 
-    void dgbmv(long *extraParams,int Order, int TransA,
+    void dgbmv(long long *extraParams,int Order, int TransA,
                int M, int N,
                int KL, int KU,
                double alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                double beta,
-               long Y, int incY);
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -244,21 +244,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssymv(long *extraParams,int Order, int Uplo,
+    void ssymv(long long *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                float beta,
-               long Y, int incY);
+               long long Y, int incY);
 
-    void dsymv(long *extraParams,int Order, int Uplo,
+    void dsymv(long long *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                double beta,
-               long Y, int incY);
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -266,21 +266,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssbmv(long *extraParams,int Order, int Uplo,
+    void ssbmv(long long *extraParams,int Order, int Uplo,
                int N, int K,
                float alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                float beta,
-               long Y, int incY);
+               long long Y, int incY);
 
-    void dsbmv(long *extraParams,int Order, int Uplo,
+    void dsbmv(long long *extraParams,int Order, int Uplo,
                int N, int K,
                double alpha,
-               long A, int lda,
-               long X, int incX,
+               long long A, int lda,
+               long long X, int incX,
                double beta,
-               long Y, int incY);
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -288,21 +288,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void sspmv(long *extraParams,int Order, int Uplo,
+    void sspmv(long long *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               long Ap,
-               long X, int incX,
+               long long Ap,
+               long long X, int incX,
                float beta,
-               long Y, int incY);
+               long long Y, int incY);
 
-    void dspmv(long *extraParams,int Order, int Uplo,
+    void dspmv(long long *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               long Ap,
-               long X, int incX,
+               long long Ap,
+               long long X, int incX,
                double beta,
-               long Y, int incY);
+               long long Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -310,16 +310,16 @@ public:
      * ------------------------------------------------------
      */
 
-    void strmv(long *extraParams,int Order, int Uplo, int TransA,
+    void strmv(long long *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, float alpha,
-               long A, int lda,
-               long X, int incX);
-    void dtrmv(long *extraParams,int Order, int Uplo, int TransA,
+               long long A, int lda,
+               long long X, int incX);
+    void dtrmv(long long *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, double alpha,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -327,17 +327,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void stbmv(long *extraParams,int Order, int Uplo,
+    void stbmv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
-    void dtbmv(long *extraParams,int Order, int Uplo,
+    void dtbmv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -345,17 +345,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void stpmv(long *extraParams,int Order, int Uplo,
+    void stpmv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long Ap,
-               long X, int incX);
+               long long Ap,
+               long long X, int incX);
 
-    void dtpmv(long *extraParams,int Order, int Uplo,
+    void dtpmv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long Ap,
-               long X, int incX);
+               long long Ap,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -363,17 +363,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void strsv(long *extraParams,int Order, int Uplo,
+    void strsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
-    void dtrsv(long *extraParams,int Order, int Uplo,
+    void dtrsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -381,17 +381,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void stbsv(long *extraParams,int Order, int Uplo,
+    void stbsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
-    void dtbsv(long *extraParams,int Order, int Uplo,
+    void dtbsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
-               long A, int lda,
-               long X, int incX);
+               long long A, int lda,
+               long long X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -399,36 +399,36 @@ public:
      * ------------------------------------------------------
      */
 
-    void stpsv(long *extraParams,int Order, int Uplo,
+    void stpsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long Ap,
-               long X, int incX);
+               long long Ap,
+               long long X, int incX);
 
-    void dtpsv(long *extraParams,int Order, int Uplo,
+    void dtpsv(long long *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
-               long Ap,
-               long X, int incX);
+               long long Ap,
+               long long X, int incX);
     /*
      * ------------------------------------------------------
      * GER
      * ------------------------------------------------------
      */
 
-    void sger(long *extraParams,int Order,
+    void sger(long long *extraParams,int Order,
               int M, int N,
               float alpha,
-              long X, int incX,
-              long Y, int incY,
-              long A, int lda);
+              long long X, int incX,
+              long long Y, int incY,
+              long long A, int lda);
 
-    void dger(long *extraParams,int Order,
+    void dger(long long *extraParams,int Order,
               int M, int N,
               double alpha,
-              long X, int incX,
-              long Y, int incY,
-              long A, int lda);
+              long long X, int incX,
+              long long Y, int incY,
+              long long A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -436,17 +436,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssyr(long *extraParams,int Order, int Uplo,
+    void ssyr(long long *extraParams,int Order, int Uplo,
               int N,
               float alpha,
-              long X, int incX,
-              long A, int lda);
+              long long X, int incX,
+              long long A, int lda);
 
-    void dsyr(long *extraParams,int Order, int Uplo,
+    void dsyr(long long *extraParams,int Order, int Uplo,
               int N,
               double alpha,
-              long X, int incX,
-              long A, int lda);
+              long long X, int incX,
+              long long A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -454,17 +454,17 @@ public:
      * ------------------------------------------------------
      */
 
-    void sspr(long *extraParams,int Order, int Uplo,
+    void sspr(long long *extraParams,int Order, int Uplo,
               int N,
               float alpha,
-              long X, int incX,
-              long Ap);
+              long long X, int incX,
+              long long Ap);
 
-    void dspr(long *extraParams,int Order, int Uplo,
+    void dspr(long long *extraParams,int Order, int Uplo,
               int N,
               double alpha,
-              long X, int incX,
-              long Ap);
+              long long X, int incX,
+              long long Ap);
 
     /*
      * ------------------------------------------------------
@@ -472,19 +472,19 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssyr2(long *extraParams,int Order, int Uplo,
+    void ssyr2(long long *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               long X, int incX,
-               long Y, int incY,
-               long A, int lda);
+               long long X, int incX,
+               long long Y, int incY,
+               long long A, int lda);
 
-    void dsyr2(long *extraParams,int Order, int Uplo,
+    void dsyr2(long long *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               long X, int incX,
-               long Y, int incY,
-               long A, int lda);
+               long long X, int incX,
+               long long Y, int incY,
+               long long A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -492,19 +492,19 @@ public:
      * ------------------------------------------------------
      */
 
-    void sspr2(long *extraParams,int Order, int Uplo,
+    void sspr2(long long *extraParams,int Order, int Uplo,
                int N,
                float alpha,
-               long X, int incX,
-               long Y, int incY,
-               long Ap);
+               long long X, int incX,
+               long long Y, int incY,
+               long long Ap);
 
-    void dspr2(long *extraParams,int Order, int Uplo,
+    void dspr2(long long *extraParams,int Order, int Uplo,
                int N,
                double alpha,
-               long X, int incX,
-               long Y, int incY,
-               long Ap);
+               long long X, int incX,
+               long long Y, int incY,
+               long long Ap);
 
     /*
      * ======================================================
@@ -519,21 +519,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void sgemm(long *extraParams,int Order, int TransA, int TransB,
+    void sgemm(long long *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
                float alpha,
-               long A, int lda,
-               long B, int ldb,
+               long long A, int lda,
+               long long B, int ldb,
                float beta,
-               long C, int ldc);
+               long long C, int ldc);
 
-    void dgemm(long *extraParams,int Order, int TransA, int TransB,
+    void dgemm(long long *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
                double alpha,
-               long A, int lda,
-               long B, int ldb,
+               long long A, int lda,
+               long long B, int ldb,
                double beta,
-               long C, int ldc);
+               long long C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -541,21 +541,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssymm(long *extraParams,int Order, int Side, int Uplo,
+    void ssymm(long long *extraParams,int Order, int Side, int Uplo,
                int M, int N,
                float alpha,
-               long A, int lda,
-               long B, int ldb,
+               long long A, int lda,
+               long long B, int ldb,
                float beta,
-               long C, int ldc);
+               long long C, int ldc);
 
-    void dsymm(long *extraParams,int Order, int Side, int Uplo,
+    void dsymm(long long *extraParams,int Order, int Side, int Uplo,
                int M, int N,
                double alpha,
-               long A, int lda,
-               long B, int ldb,
+               long long A, int lda,
+               long long B, int ldb,
                double beta,
-               long C, int ldc);
+               long long C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -563,19 +563,19 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssyrk(long *extraParams,int Order, int Uplo, int Trans,
+    void ssyrk(long long *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
                float alpha,
-               long A, int lda,
+               long long A, int lda,
                float beta,
-               long C, int ldc);
+               long long C, int ldc);
 
-    void dsyrk(long *extraParams,int Order, int Uplo, int Trans,
+    void dsyrk(long long *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
                double alpha,
-               long A, int lda,
+               long long A, int lda,
                double beta,
-               long C, int ldc);
+               long long C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -583,21 +583,21 @@ public:
      * ------------------------------------------------------
      */
 
-    void ssyr2k(long *extraParams,int Order, int Uplo, int Trans,
+    void ssyr2k(long long *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
                 float alpha,
-                long A, int lda,
-                long B, int ldb,
+                long long A, int lda,
+                long long B, int ldb,
                 float beta,
-                long C, int ldc);
+                long long C, int ldc);
 
-    void dsyr2k(long *extraParams,int Order, int Uplo, int Trans,
+    void dsyr2k(long long *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
                 double alpha,
-                long A, int lda,
-                long B, int ldb,
+                long long A, int lda,
+                long long B, int ldb,
                 double beta,
-                long C, int ldc);
+                long long C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -605,19 +605,19 @@ public:
      * ------------------------------------------------------
      */
 
-    void strmm(long *extraParams,int Order, int Side,
+    void strmm(long long *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                float alpha,
-               long A, int lda,
-               long B, int ldb);
+               long long A, int lda,
+               long long B, int ldb);
 
-    void dtrmm(long *extraParams,int Order, int Side,
+    void dtrmm(long long *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                double alpha,
-               long A, int lda,
-               long B, int ldb);
+               long long A, int lda,
+               long long B, int ldb);
 
     /*
      * ------------------------------------------------------
@@ -625,19 +625,19 @@ public:
      * ------------------------------------------------------
      */
 
-    void strsm(long *extraParams,int Order, int Side,
+    void strsm(long long *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                float alpha,
-               long A, int lda,
-               long B, int ldb);
+               long long A, int lda,
+               long long B, int ldb);
 
-    void dtrsm(long *extraParams,int Order, int Side,
+    void dtrsm(long long *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
                int M, int N,
                double alpha,
-               long A, int lda,
-               long B, int ldb);
+               long long A, int lda,
+               long long B, int ldb);
 
 };
 

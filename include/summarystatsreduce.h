@@ -115,7 +115,7 @@ namespace functions {
             T variance()   {
                 if(n <= 1)
                     return 0.0;
-                return M2 / (n - 1);
+                return M2 / (n);
             }
 #ifdef __CUDACC__
             inline __host__  __device__
@@ -336,7 +336,7 @@ struct SharedSummaryStatsData {
 };
 
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template<>
@@ -347,7 +347,7 @@ struct SharedSummaryStatsData<float> {
 	}
 };
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template<>
@@ -631,7 +631,7 @@ struct SharedSummaryStatsData<double> {
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
 		if (tid == 0) {
-			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
+			tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
 			resultLength = shape::length(resultShapeInfo);
 			if (dimensionLength == 1) {
 				if (dimension[0] == shape::MAX_DIMENSION)
@@ -669,13 +669,13 @@ struct SharedSummaryStatsData<double> {
 				return;
 
 			/**
-			 * The element wise stride belongs to a reduction index.
+			 * The element wise stride belong longs to a reduction index.
 			 * When used out of order, we can get rid of the data
 			 * dependencies and rely on using the max dimension
 			 * specified for stride instead.
-			 * Say we take the sum(0,1) along arr
+			 * Say we take the sum(0,1) along long arr
 			 * we can use arr.stride(1) as a representation
-			 * along which to iterate.
+			 * along long which to iterate.
 			 */
 			int tadElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
 			int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
@@ -870,7 +870,7 @@ struct SharedSummaryStatsData<double> {
 	 *
 	 * in to equivalent expanded problems based on smaller tads
 	 * eg:
-	 * multiple reductions for each dimension along dimension 3
+	 * multiple reductions for each dimension along long dimension 3
 	 * followed by collapsing the problem in to an equivalent state
 	 * as if we had specified 2,3 for the dimensions instead.
 	 *
@@ -880,8 +880,8 @@ struct SharedSummaryStatsData<double> {
 	 * For the GPU, we force each block to process a  tad
 	 * at the singular dimension level. Eg: dimension 3
 	 *
-	 * So for example along dimension 3 of the 2,2,3,2
-	 * array we have 12 tensors along dimension.
+	 * So for example along long dimension 3 of the 2,2,3,2
+	 * array we have 12 tensors along long dimension.
 	 *
 	 * We then map those 12 tads to a reduction index.
 	 *
@@ -919,7 +919,7 @@ struct SharedSummaryStatsData<double> {
 
 
 
-	 * Along dimension 3 we will have tads of length 2
+	 * Along long dimension 3 we will have tads of length 2
 	 * and 4 reduction indexes we need to map for the
 	 * 2,3 dimension problem.
 	 *
@@ -991,7 +991,7 @@ struct SharedSummaryStatsData<double> {
 		__syncthreads();
 
 		/**
-		 * Reverse engineer which tads belong to a particular
+		 * Reverse engineer which tads belong long to a particular
 		 * reduction index.
 		 *
 		 * Each tad should be handled by a thread.
@@ -1152,7 +1152,7 @@ struct SharedSummaryStatsData<double> {
              * @param extraParams the extra parameters
              * @param result the result buffer
              * @param resultShapeInfoBuffer the shape information
-             * @param dimension the dimension to execute along
+             * @param dimension the dimension to execute along long
              * @param dimensionLength the length of the dimension
              */
             virtual
@@ -1177,13 +1177,13 @@ struct SharedSummaryStatsData<double> {
                                                                       dimension, dimensionLength);
                 int resultLength = shape::length(resultShapeInfoBuffer);
                 /**
-                 * The element wise stride belongs to a reduction index.
+                 * The element wise stride belong longs to a reduction index.
                  * When used out of order, we can get rid of the data
                  * dependencies and rely on using the max dimension
                  * specified for stride instead.
-                 * Say we take the sum(0,1) along arr
+                 * Say we take the sum(0,1) along long arr
                  * we can use arr.stride(1) as a representation
-                 * along which to iterate.
+                 * along long which to iterate.
                  */
                 int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1]
                                                                : shape::computeElementWiseStride(
@@ -1202,13 +1202,13 @@ struct SharedSummaryStatsData<double> {
                     shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
                     const int resultLength = shape::length(resultShapeInfoBuffer);
                     /**
-                     * The element wise stride belongs to a reduction index.
+                     * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
                      * specified for stride instead.
-                     * Say we take the sum(0,1) along arr
+                     * Say we take the sum(0,1) along long arr
                      * we can use arr.stride(1) as a representation
-                     * along which to iterate.
+                     * along long which to iterate.
                      */
                     int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension,dimensionLength);
                     const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
@@ -1219,11 +1219,13 @@ struct SharedSummaryStatsData<double> {
                         int offset = i + tadElementWiseStride  * tadLength;
                         SummaryStatsData<T> comp;
                         comp.initWithValue(x[offset]);
+                        comp.n = elementsPerReductionIndex;
                         currStartingValue[i] = op(comp, extraParams);
 #pragma omp simd
                         for (int j = 1; j < elementsPerReductionIndex; j++) {
                             SummaryStatsData<T> comp2;
                             comp2.initWithValue(x[offset + tadElementWiseStride * j]);
+                            comp.n = elementsPerReductionIndex;
                             currStartingValue[i] = update(currStartingValue[i], comp2, extraParams);
                         }
 
@@ -1342,6 +1344,8 @@ struct SharedSummaryStatsData<double> {
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
+                    if(this->biasCorrected)
+                        return val.varianceBiasCorrected();
                     return val.variance();
                 }
 
@@ -1465,6 +1469,9 @@ struct SharedSummaryStatsData<double> {
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
+                    if(this->biasCorrected)
+                        return nd4j::math::nd4j_sqrt(val.varianceBiasCorrected());
+
                     return nd4j::math::nd4j_sqrt(val.variance());
                 }
 
@@ -1629,7 +1636,7 @@ struct SharedSummaryStatsData<double> {
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
- * @param dimension the dimension to execute along
+ * @param dimension the dimension to execute along long
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
@@ -1668,7 +1675,7 @@ __device__ void summaryStatsReduceGeneric(
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
- * @param dimension the dimension to execute along
+ * @param dimension the dimension to execute along long
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
@@ -1706,7 +1713,7 @@ __global__ void summaryStatsReduceDouble(
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
- * @param dimension the dimension to execute along
+ * @param dimension the dimension to execute along long
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */

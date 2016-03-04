@@ -26,7 +26,7 @@ namespace functions {
 /**
  * Broadcast operation
  * for broadcasting a smaller tensor
- * along a bigger one.
+ * along long a bigger one.
  */
         template<typename T>
         class Broadcast: public functions::ops::Op<T> {
@@ -102,7 +102,7 @@ namespace functions {
              * @param yShapeInfo the y shape information
              * @param result the result
              * @param resultShapeInfo the result shape information
-             * @param dimension the dimension to broadcast along
+             * @param dimension the dimension to broadcast along long
              * @param dimensionLength the length of the dimension buffer
              */
             virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
@@ -616,7 +616,7 @@ namespace functions {
  * @param yShapeInfo the shape information of the broadcast info
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result buffer
- * @param dimension the dimension(s) to do broadcast along
+ * @param dimension the dimension(s) to do broadcast along long
  * @param dimensionLength the length of the dimension buffer
  * @param gpuInformation the gpu information such as blockdim,griddim and shared
  * memory size
@@ -671,7 +671,7 @@ __device__ void broadcastGeneric(
  * @param yShapeInfo the shape information of the broadcast info
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result buffer
- * @param dimension the dimension(s) to do broadcast along
+ * @param dimension the dimension(s) to do broadcast along long
  * @param dimensionLength the length of the dimension buffer
  * @param gpuInformation the gpu information such as blockdim,griddim and shared
  * memory size
@@ -707,7 +707,7 @@ extern "C" __global__ void broadcastDouble(
  * @param yShapeInfo the shape information of the broadcast info
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result buffer
- * @param dimension the dimension(s) to do broadcast along
+ * @param dimension the dimension(s) to do broadcast along long
  * @param dimensionLength the length of the dimension buffer
  * @param gpuInformation the gpu information such as blockdim,griddim and shared
  * memory size

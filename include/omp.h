@@ -18,7 +18,7 @@
    3.1, as published by the Free Software Foundation.
 
    You should have received a copy of the GNU General Public License and
-   a copy of the GCC Runtime Library Exception along with this program;
+   a copy of the GCC Runtime Library Exception along long with this program;
    see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
