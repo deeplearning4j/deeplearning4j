@@ -109,4 +109,11 @@ public class Nd4jTest extends BaseNd4jTest {
         },new int[]{2, 4, 4});
         assertEquals(getFailureMessage(),expectedResult, actualResult);
     }
+
+    @Test
+    public void testVar2() {
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray var = arr.var(false,0);
+        assertEquals(Nd4j.create(new double[]{2.25,2.25,2.25}),var);
+    }
 }

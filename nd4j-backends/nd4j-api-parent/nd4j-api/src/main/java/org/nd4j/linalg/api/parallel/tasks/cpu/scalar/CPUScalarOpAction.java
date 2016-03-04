@@ -1,14 +1,12 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.scalar;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 
+import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.RecursiveTask;
 
 public class CPUScalarOpAction extends BaseCPUScalarOpAction {
 
@@ -74,7 +72,8 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
     @Override
     protected void compute() {
         //Fork join
-        if (doTensorFirst) doTensorFirst(op);
+        if (doTensorFirst)
+            doTensorFirst(op);
 
         if (n > threshold) {
             //Break into subtasks:
@@ -97,7 +96,8 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
     }
 
     private void execute() {
-        if (doTensorFirst) doTensorFirst(op);
+        if (doTensorFirst)
+            doTensorFirst(op);
 
         DataBuffer x = op.x().data();
         DataBuffer z = op.z().data();
@@ -162,57 +162,62 @@ public class CPUScalarOpAction extends BaseCPUScalarOpAction {
             }
         } else {
             //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
-            ByteBuf nbbx = x.asNetty();
-            ByteBuf nbbz = z.asNetty();
             if (x.dataType() == DataBuffer.Type.FLOAT) {
-                int byteOffsetX = 4 * offsetX;
-                int byteOffsetZ = 4 * offsetZ;
+                java.nio.FloatBuffer xFloatBuffer = x.asNioFloat();
+                java.nio.FloatBuffer zFloatBuffer = z.asNioFloat();
+                int byteOffsetX = 0;
+                int byteOffsetZ = 0;
                 if (incrX == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < 4 * n; i += 4) {
+                        for (int i = 0; i < n; i ++) {
                             int xbIdx = byteOffsetX + i;
-                            nbbx.setFloat(xbIdx, op.op(nbbx.getFloat(xbIdx)));
+                            xFloatBuffer.put(i,op.op(xFloatBuffer.get(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            nbbz.setFloat(byteOffsetZ + i, op.op(nbbx.getFloat(byteOffsetX + i)));
+                        for (int i = 0; i < n; i++) {
+                            zFloatBuffer.put(byteOffsetZ + i,op.op(xFloatBuffer.get(byteOffsetX + i)));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < 4 * n; i += 4) {
+                        for (int i = 0; i < n; i ++) {
                             int xbIdx = byteOffsetX + i * incrX;
-                            nbbx.setFloat(xbIdx, op.op(nbbx.getFloat(xbIdx)));
+                            xFloatBuffer.put(xbIdx,op.op(xFloatBuffer.get(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < 4 * n; i += 4) {
-                            nbbz.setFloat(byteOffsetZ + i * incrZ, op.op(nbbx.getFloat(byteOffsetX + i * incrX)));
+                        for (int i = 0; i < n; i ++) {
+                            zFloatBuffer.put(byteOffsetZ + i * incrZ,op.op(xFloatBuffer.get(byteOffsetX + i * incrX)));
                         }
                     }
                 }
-            } else {
-                int byteOffsetX = 8 * offsetX;
-                int byteOffsetZ = 8 * offsetZ;
+            }
+
+
+            else {
+                int byteOffsetX = offsetX;
+                int byteOffsetZ = offsetZ;
+                DoubleBuffer xDoubleBuffer = x.asNioDouble();
+                DoubleBuffer zDoubleBuffer = z.asNioDouble();
                 if (incrX == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            int xbIdx = byteOffsetX + i;
-                            nbbx.setDouble(xbIdx, op.op(nbbx.getDouble(xbIdx)));
+                        for (int i = 0; i < n; i ++) {
+                            int xbIdx = i;
+                            xDoubleBuffer.put(xbIdx,op.op(xDoubleBuffer.get(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            nbbz.setDouble(byteOffsetZ + i, op.op(nbbx.getDouble(byteOffsetX + i)));
+                        for (int i = 0; i < n; i ++) {
+                            zDoubleBuffer.put(i,op.op(xDoubleBuffer.get(i)));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            int xbIdx = byteOffsetX + i * incrX;
-                            nbbx.setDouble(xbIdx, op.op(nbbx.getDouble(xbIdx)));
+                        for (int i = 0; i < n; i++) {
+                            int xbIdx =  i * incrX;
+                            xDoubleBuffer.put(xbIdx,op.op(xDoubleBuffer.get(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < 8 * n; i += 8) {
-                            nbbz.setDouble(byteOffsetZ + i * incrZ, op.op(nbbx.getDouble(byteOffsetX + i * incrX)));
+                        for (int i = 0; i < n; i ++) {
+                            zDoubleBuffer.put(i * incrZ,op.op(xDoubleBuffer.get(i * incrX)));
                         }
                     }
                 }

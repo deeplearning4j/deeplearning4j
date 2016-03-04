@@ -26,6 +26,7 @@ import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -1212,7 +1213,7 @@ public class Nd4j {
      * @return the datatype used for the runtime
      */
     public static DataBuffer.Type dataType() {
-        return dtype;
+        return DataTypeUtil.getDtypeFromContext();
     }
 
     public static BlasWrapper getBlasWrapper() {

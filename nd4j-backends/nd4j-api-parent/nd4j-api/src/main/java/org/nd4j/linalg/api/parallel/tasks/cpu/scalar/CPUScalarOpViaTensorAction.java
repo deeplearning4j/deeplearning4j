@@ -43,8 +43,8 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
         INDArray z = op.z();
 
         int tensorDim;
-        if(y==null){
-            if(x==z){
+        if(y == null){
+            if(x == z){
                 //x=Op(x)
                 tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x);
             } else {
@@ -52,7 +52,7 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                 tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, z);
             }
         } else {
-            if(x==z){
+            if(x == z){
                 //x=Op(x,y)
                 tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y);
             } else {
@@ -81,10 +81,10 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                 OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
                 int n = tsx.getTensorLength();
                 int incrX = tsx.getElementWiseStride();
-                if(x==z){
+                if(x == z){
                     //x=Op(x)
-                    for( int i=0; i<nTensors; i++) {
-                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                    for( int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetX,incrX,incrX);
                         if(forkJoin){
                             task.fork();
@@ -98,9 +98,9 @@ public class CPUScalarOpViaTensorAction extends BaseCPUAction {
                     //z=Op(x)
                     OpExecutionerUtil.Tensor1DStats tsz = OpExecutionerUtil.get1DTensorStats(z, tensorDim);
                     int incrZ = tsz.getElementWiseStride();
-                    for( int i=0; i<nTensors; i++){
-                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
-                        int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
+                    for( int i = 0; i < nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
                         CPUScalarOpAction task = new CPUScalarOpAction(op,threshold,n,offsetX,offsetZ,incrX,incrZ);
                         if(forkJoin){
                             task.fork();
