@@ -37,8 +37,8 @@ public class Viterbi implements Serializable {
     private INDArray possibleLabels;
     private  int states;
 
-    private double logPCorrect = FastMath.log(pCorrect);
-    private double logPIncorrect = FastMath.log(1 - pCorrect / states - 1);
+    private double logPCorrect;
+    private double logPIncorrect;
     private double logMetaInstability = Math.log(metaStability);
     private  double logOfDiangnalTProb;
     private double logStates;
@@ -53,6 +53,8 @@ public class Viterbi implements Serializable {
     public Viterbi(INDArray possibleLabels) {
         this.possibleLabels = possibleLabels;
         this.states = possibleLabels.length();
+        this.logPCorrect = FastMath.log(pCorrect);
+        this.logPIncorrect = FastMath.log(1 - pCorrect / states - 1);
         logOfDiangnalTProb = FastMath.log(1 - metaStability / states - 1);
         this.logStates = FastMath.log(states);
     }

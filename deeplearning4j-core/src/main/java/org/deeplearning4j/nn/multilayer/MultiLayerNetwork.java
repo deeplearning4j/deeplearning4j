@@ -322,8 +322,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
 
         this.input = input;
-        if(input != null)
-            setInputMiniBatchSize(input.size(0));
+        setInputMiniBatchSize(input.size(0));
 
         if (!initCalled)
             init();
