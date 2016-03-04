@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -25,6 +26,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -39,12 +41,19 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +74,7 @@ public class ComputationGraph implements Serializable, Model {
     protected transient Solver solver;	//Used to call optimizers during backprop
     protected Gradient gradient;
     protected double score;
+    @Setter private boolean initDone = false;
 
     /** All GraphVertex objects in the network. */
     protected GraphVertex[] vertices;
@@ -463,6 +473,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if(configuration.isBackprop()){
+            update(TaskUtils.buildTask(dataSetIterator));
             while(dataSetIterator.hasNext()){
                 DataSet next = dataSetIterator.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
@@ -563,6 +574,7 @@ public class ComputationGraph implements Serializable, Model {
         setInputs(inputs);
         setLabels(labels);
         setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
+        update(TaskUtils.buildTask(inputs, labels));
 
         if(configuration.isPretrain()){
             throw new UnsupportedOperationException("Pretraining: Not yet implemented");
@@ -1088,9 +1100,23 @@ public class ComputationGraph implements Serializable, Model {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    private void update(Task task) {
+        if (!initDone) {
+            initDone = true;
+            Heartbeat heartbeat = Heartbeat.getInstance();
+            task = ModelSerializer.taskByModel(this);
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
+        }
+    }
+
     @Override
     public double score() {
         return score;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
     }
 
     @Override

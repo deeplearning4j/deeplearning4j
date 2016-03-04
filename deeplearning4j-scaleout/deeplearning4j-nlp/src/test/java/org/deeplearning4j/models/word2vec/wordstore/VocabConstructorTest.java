@@ -343,8 +343,8 @@ public class VocabConstructorTest {
 
         // we check that newly added labels have indexes beyond the VocabCache index space
         // please note, we need >= since the indexes are zero-based, and sourceSize is not
-        assertTrue(cacheTarget.indexOf("finance") > sourceSize - 1);
-        assertTrue(cacheTarget.indexOf("science") > sourceSize - 1);
-        assertTrue(cacheTarget.indexOf("health") > sourceSize - 1);
+        assertTrue(cacheTarget.indexOf("Zfinance") > sourceSize - 1);
+        assertTrue(cacheTarget.indexOf("Zscience") > sourceSize - 1);
+        assertTrue(cacheTarget.indexOf("Zhealth") > sourceSize - 1);
     }
 }

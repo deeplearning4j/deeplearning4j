@@ -2,10 +2,10 @@ package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.IOUtils;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.springframework.core.io.ClassPathResource;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;

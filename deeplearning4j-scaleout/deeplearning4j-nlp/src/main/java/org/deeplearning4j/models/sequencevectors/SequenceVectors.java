@@ -20,10 +20,16 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.nd4j.linalg.heartbeat.Heartbeat;
+import org.nd4j.linalg.heartbeat.reports.Environment;
+import org.nd4j.linalg.heartbeat.reports.Event;
+import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -49,6 +55,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
     protected transient WordVectors existingModel;
+    protected transient T unknownElement;
+
+
 
 
     /**
@@ -71,7 +80,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 the rest of vocabulary & weights should be transferred from existing model
              */
 
-            constructor.buildMergedVocabulary(existingModel, false);
+            constructor.buildMergedVocabulary(existingModel, true);
 
             /*
                 Now we have vocab transferred, and we should transfer syn0 values into lookup table
@@ -80,17 +89,31 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             log.info("Starting vocabulary building...");
             // if we don't have existing model defined, we just build vocabulary
+
+
             constructor.buildJointVocabulary(false, true);
+
+            if (useUnknown && unknownElement != null && !vocab.containsWord(unknownElement.getLabel())) {
+                log.info("Adding UNK element...");
+                unknownElement.setSpecial(true);
+                unknownElement.markAsLabel(false);
+                unknownElement.setIndex(vocab.numWords());
+                vocab.addToken(unknownElement);
+
+            }
+
+
+            // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
+            if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
+                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                log.warn("!                                                                                      !");
+                log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
+                log.warn("!                                                                                      !");
+                log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            }
         }
 
-        // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
-        if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
-            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            log.warn("!                                                                                      !");
-            log.warn("! Your input looks malformed: number of sentences is too low, model accuracy may suffer!");
-            log.warn("!                                                                                      !");
-            log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        }
+
     }
 
 
@@ -115,6 +138,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
             lookupTable.resetWeights(true);
+        }
+
+        if (trainSequenceVectors) {
+            log.info("Zfinance before fit(): " + this.getWordVectorMatrix("Zfinance"));
+            log.info("Zhealth before fit(): " + this.getWordVectorMatrix("Zhealth"));
+            log.info("Zscience before fit(): " + this.getWordVectorMatrix("Zscience"));
         }
 
         log.info("Building learning algorithms:");
@@ -220,6 +249,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean useAdaGrad = false;
         protected boolean resetModel = true;
         protected int workers = Runtime.getRuntime().availableProcessors();
+        protected boolean useUnknown = false;
 
         protected boolean trainSequenceVectors = false;
         protected boolean trainElementsVectors = true;
@@ -227,6 +257,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected List<String> stopWords = new ArrayList<>();
 
         protected VectorsConfiguration configuration = new VectorsConfiguration();
+
+        protected transient T unknownElement;
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
@@ -260,6 +292,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (configuration.getSequenceLearningAlgorithm() != null && !configuration.getSequenceLearningAlgorithm().isEmpty()) {
                 this.sequenceLearningAlgorithm(configuration.getSequenceLearningAlgorithm());
             }
+
+            if (configuration.getStopList() != null) this.stopWords.addAll(configuration.getStopList());
         }
 
         /**
@@ -272,7 +306,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param vec existing WordVectors model
          * @return
          */
-        public Builder<T> useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder<T> useExistingWordVectors(@NonNull WordVectors vec) {
             this.existingVectors = vec;
             return this;
         }
@@ -575,6 +609,27 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * This method allows you to specify, if UNK word should be used internally
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> useUnknown(boolean reallyUse) {
+            this.useUnknown = reallyUse;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
+         * @param element
+         * @return
+         */
+        public Builder<T> unknownElement(T element) {
+            this.unknownElement = element;
+            return this;
+        }
+
+
+        /**
          * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
          */
         protected void presetTables() {
@@ -650,6 +705,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.iterator = this.iterator;
             vectors.lookupTable = this.lookupTable;
             vectors.modelUtils = this.modelUtils;
+            vectors.useUnknown = this.useUnknown;
+            vectors.unknownElement = this.unknownElement;
 
 
             vectors.trainElementsVectors = this.trainElementsVectors;
@@ -674,6 +731,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             vectors.configuration = this.configuration;
 
@@ -716,6 +774,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                 // if buffered level is below limitLower, we're going to fetch limitUpper number of strings from fetcher
                 if (buffer.size() < limitLower) {
+                    update();
                     AtomicInteger linesLoaded = new AtomicInteger(0);
                     while (linesLoaded.getAndIncrement() < limitUpper && this.iterator.hasMoreSequences() ) {
                         Sequence<T> document = this.iterator.nextSequence();
@@ -738,6 +797,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
                             if (realElement != null) {
                                 newSequence.addElement(realElement);
+                            } else if (useUnknown && unknownElement != null) {
+                                newSequence.addElement(unknownElement);
                             }
                         }
 

@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.core.io.ClassPathResource;
+import org.canova.api.util.ClassPathResource;
+
 /**
  * Loads stop words from the class path
  * @author Adam Gibson

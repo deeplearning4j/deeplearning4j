@@ -93,7 +93,7 @@
         // A formatter for counts.
      //   if (id != "modelb") return;
 
-//        console.log("selector: " + selector + " id: " + id);
+      //  console.log("selector: " + selector + " id: " + id + " > " +values);
 
         var formatCount = d3.format(",.0f");
         var data = [];
@@ -547,8 +547,12 @@
     }
 
 var timed = function() {
+
+                    var sid = getParameterByName("sid");
+                    if (sid == undefined) sid = 0;
+
                     $.ajax({
-                        url:"/weights" + "/updated",
+                        url:"/weights" + "/updated?sid=" + sid,
                         async: true,
                         error: function (query, status, error) {
                             $.notify({
@@ -567,7 +571,7 @@ var timed = function() {
                                     /*
                                         /weights/data should be changed to /weights/data/{time} and only delta should be passed over network
                                     */
-                                    d3.json("/weights"+'/data',function(error,json) {
+                                    d3.json("/weights"+'/data?sid=' + sid,function(error,json) {
 
                                         //Get last update time; do nothing if not a new update
                                         var updateTime = json['lastUpdateTime'];
@@ -582,7 +586,14 @@ var timed = function() {
                                         var updateMagnitudes = json['updateMagnitudes'];
                                         var paramMagnitudes = json['paramMagnitudes'];
 
-                                        if(!model || !gradient || !score || !scores || !updateMagnitudes || !paramMagnitudes ) {
+
+                                        // !gradient was removed here, because for spark models it can be absen
+                                        // !updateMagnitudes
+                                        if(!model  || !score || !scores || !paramMagnitudes ) {
+                                            console.log("Model: " + model);
+                                            console.log("Score: " + score);
+                                            console.log("Scores: " + scores);
+                                            console.log("ParamMagnitudes: " + paramMagnitudes);
                                             setTimeout(timed, 10000);
                                             $.notify({
                                                     	title: '<strong>No data available!</strong>',
@@ -628,11 +639,11 @@ var timed = function() {
                                                 var divModel = '<div id="model'+ key+'" class="' + key + '" style="' +  ((visibleModel == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
                                                 var divGradient = '<div id="gradient'+ key+'" class="' + key + '" style="' +  ((visibleGradient == key) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
                                                 $(selectorModel).append(divModel);
-                                                $(selectorGradient).append(divGradient);
+                                                if (gradient != undefined  && gradient[key] != undefined) $(selectorGradient).append(divGradient);
                                             }
 
-                                            appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
-                                            appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
+                                            if (model[key] != undefined) appendHistogram(model[key],selectorModel + ' .' + key, "model"+ key );
+                                            if (gradient != undefined && gradient[key] != undefined) appendHistogram(gradient[key],selectorGradient + ' .' + key, "gradient"+ key );
                                             /*
                                                 update selector box if needed
                                             */
@@ -648,32 +659,36 @@ var timed = function() {
 
                                         //Plot mean magnitudes: weights and params
                                         //$('#magnitudes .charts').html('');
-                                        console.log("Mag length: " + updateMagnitudes.length);
-                                        for(var i=0; i<updateMagnitudes.length; i++ ){
-                                            //Maps:
-                                            var mapParams = paramMagnitudes[i];
-                                            var mapUpdates = updateMagnitudes[i];
 
-                                            var selectorModel = '#magnitudes .charts'
 
-                                            // we create divs only once
-                                            if (gSVG["layer" + i + "param"] == undefined || gSVG["layer" + i + "param"] == null) {
-                                                var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                                $(selectorModel).append(div);
-                                                div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
-                                                $(selectorModel).append(div);
-                                            }
+                                        if(paramMagnitudes  != undefined) {
+                                            console.log("ParamMag length: " + paramMagnitudes.length);
+                                            for(var i=0; i<paramMagnitudes.length; i++ ){
+                                                //Maps:
+                                                var mapParams = i < paramMagnitudes.length ? paramMagnitudes[i] : 0;
+                                                var mapUpdates = i < updateMagnitudes.length ? updateMagnitudes[i] : 0;
 
-                                            var key = "layer" + i + "param";
-                                            appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
-                                            appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
+                                                var selectorModel = '#magnitudes .charts'
 
-                                            if (!contains.call(magnitudesSelector, key)) {
-                                           //     console.log("Adding magnitudes selector: " + key);
-                                                magnitudesSelector.push(key);
+                                                // we create divs only once
+                                                if (gSVG["layer" + i + "param"] == undefined || gSVG["layer" + i + "param"] == null) {
+                                                    var div = '<div id="layer' + i + 'param" class="layer' + i + 'param" style="' +  ((visibleMagnitude == "layer" + i + "param" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                    if (i < paramMagnitudes.length) $(selectorModel).append(div);
+                                                    div = '<div id="layer' + i + 'grad" class="layer' + i + 'grad" style="' +  ((visibleMagnitude == "layer" + i + "grad" ) ? "visibility: visible; display: block;" : "visibility: hidden; display: none;") +';"></div>';
+                                                    if (i < updateMagnitudes.length) $(selectorModel).append(div);
+                                                }
 
-                                                $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
-                                                $("#magnitudeSelector").append("<option value='layer" + i + "grad'>Layer " + i + " Update/Gradient Mean Magnitudes</option>");
+                                                var key = "layer" + i + "param";
+                                                if (i < paramMagnitudes.length) appendMultiLineChart(mapParams,selectorModel + ' .layer' + i + 'param',"layer" + i + "param");
+                                                if (i < updateMagnitudes.length) appendMultiLineChart(mapUpdates,selectorModel + ' .layer' + i + 'grad',"layer" + i + "grad");
+
+                                                if (!contains.call(magnitudesSelector, key)) {
+                                                    //  console.log("Adding magnitudes selector: " + key);
+                                                    magnitudesSelector.push(key);
+
+                                                    if (i < paramMagnitudes.length) $("#magnitudeSelector").append("<option value='layer" + i + "param'>Layer " + i + " Parameter Mean Magnitudes</option>");
+                                                    if (i < updateMagnitudes.length) $("#magnitudeSelector").append("<option value='layer" + i + "grad'>Layer " + i + " Update/Gradient Mean Magnitudes</option>");
+                                                }
                                             }
                                         }
 
@@ -695,6 +710,15 @@ var timed = function() {
 
                                         var time = new Date(updateTime);
                                         $('#updatetime').html(time.customFormat("#DD#/#MM#/#YYYY# #hhh#:#mm#:#ss#"));
+
+                                        var grad = Object.keys(gradient);
+
+                                         if (gradient == undefined || grad.length == 0) {
+                                                // if gradient  isn't available, it just means we're in spark mode, without gradients
+                                                console.log("Calling noGrad");
+                                                var nograd = "<div style='position: absolute; text-align: center; top: 50%; left: 50%; width: 500px;  -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);  '><strong>Gradients are unavailable in Spark mode</strong></div>";
+                                                $("#gradient").html(nograd);
+                                          }
 
                                         // all subsequent refreshes are delayed by 2 seconds
                                         // TODO: make this configurable
@@ -747,3 +771,4 @@ setTimeout(timed,2000);
         $("#" + visibleMagnitude).css("display","block");
     //    console.log("Switching on magnitude view:" + visibleMagnitude);
     }
+

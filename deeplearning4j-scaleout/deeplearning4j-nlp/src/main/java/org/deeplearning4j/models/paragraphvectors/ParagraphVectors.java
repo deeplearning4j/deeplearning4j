@@ -45,6 +45,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText
      * @return
      */
+    @Deprecated
     public String predict(String rawText) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -66,8 +67,11 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
+    @Deprecated
     public String predict(LabelledDocument document) {
-        return predict(document.getReferencedContent());
+        if (document.getReferencedContent() != null)
+            return predict(document.getReferencedContent());
+        else return predict(document.getContent());
     }
 
     /**
@@ -77,6 +81,7 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
+    @Deprecated
     public String predict(List<VocabWord> document) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
@@ -107,8 +112,11 @@ public class ParagraphVectors extends Word2Vec {
      * @param document raw text of the document
      * @return possible labels in descending order
      */
-    public Collection<String> predictSeveral(LabelledDocument document) {
-        return predictSeveral(document.getReferencedContent());
+    @Deprecated
+    public Collection<String> predictSeveral(@NonNull LabelledDocument document, int limit) {
+        if (document.getReferencedContent() != null) {
+            return predictSeveral(document.getReferencedContent(), limit);
+        } else return predictSeveral(document.getContent(), limit);
     }
 
     /**
@@ -118,7 +126,8 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText raw text of the document
      * @return possible labels in descending order
      */
-    public Collection<String> predictSeveral(String rawText) {
+    @Deprecated
+    public Collection<String> predictSeveral(String rawText, int limit) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
         List<String> tokens = tokenizerFactory.create(rawText).getTokens();
@@ -129,7 +138,7 @@ public class ParagraphVectors extends Word2Vec {
             }
         }
 
-        return predictSeveral(document);
+        return predictSeveral(document, limit);
     }
 
     /**
@@ -139,7 +148,8 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return possible labels in descending order
      */
-    public Collection<String> predictSeveral(List<VocabWord> document) {
+    @Deprecated
+    public Collection<String> predictSeveral(List<VocabWord> document, int limit) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
          */
@@ -156,11 +166,48 @@ public class ParagraphVectors extends Word2Vec {
         for(String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
+            log.info("Similarity inside: ["+s+"] -> " + sim);
             distances.incrementCount(s, sim);
         }
 
-        return distances.getSortedKeys();
+        return distances.getSortedKeys().subList(0, limit);
     }
+
+
+    public double similarityToLabel(String rawText, String label) {
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
+
+        List<String> tokens = tokenizerFactory.create(rawText).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+        return similarityToLabel(document, label);
+    }
+
+    public double similarityToLabel(LabelledDocument document, String label) {
+        if (document.getReferencedContent() != null) {
+            return similarityToLabel(document.getReferencedContent(), label);
+        } else return similarityToLabel(document.getContent(), label);
+    }
+
+    public double similarityToLabel(List<VocabWord> document, String label) {
+        if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
+
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+
+        INDArray otherVec = getWordVectorMatrix(label);
+        double sim = Transforms.cosineSim(docMean, otherVec);
+        return sim;
+    }
+
 
 
     public static class Builder extends Word2Vec.Builder {
@@ -181,7 +228,7 @@ public class ParagraphVectors extends Word2Vec {
          * @return
          */
         @Override
-        public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+        protected Builder useExistingWordVectors(@NonNull WordVectors vec) {
             this.existingVectors = vec;
             return this;
         }
@@ -292,6 +339,33 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
+         *
+         * @param element
+         * @return
+         */
+        @Override
+        public Builder unknownElement(VocabWord element) {
+            super.unknownElement(element);
+            return this;
+        }
+
+        /**
+         * This method allows you to specify, if UNK word should be used internally
+         *
+         * @param reallyUse
+         * @return
+         */
+        @Override
+        public Builder useUnknown(boolean reallyUse) {
+            super.useUnknown(reallyUse);
+            if (this.unknownElement == null) {
+                this.unknownElement(new VocabWord(1.0, ParagraphVectors.UNK));
+            }
+            return this;
+        }
+
         @Override
         public ParagraphVectors build() {
             presetTables();
@@ -349,12 +423,16 @@ public class ParagraphVectors extends Word2Vec {
             ret.useAdeGrad = this.useAdaGrad;
             ret.stopWords = this.stopWords;
             ret.workers = this.workers;
+            ret.useUnknown = this.useUnknown;
+            ret.unknownElement = this.unknownElement;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;
 
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
+
+            ret.tokenizerFactory = this.tokenizerFactory;
 
             ret.existingModel = this.existingVectors;
 
@@ -375,6 +453,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setUseAdaGrad(useAdaGrad);
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
+            this.configuration.setStopList(this.stopWords);
 
             ret.configuration = this.configuration;
 

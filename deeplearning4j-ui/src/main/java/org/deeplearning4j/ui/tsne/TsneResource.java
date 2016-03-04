@@ -21,12 +21,12 @@ package org.deeplearning4j.ui.tsne;
 import io.dropwizard.views.View;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.ui.storage.HistoryStorage;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
@@ -42,6 +42,7 @@ import java.util.List;
 @Produces(MediaType.TEXT_HTML)
 public class TsneResource extends FileResource {
     private List<VocabWord> words;
+    private volatile SessionStorage storage = SessionStorage.getInstance();
     /**
      * The file path for uploads
      *
@@ -51,9 +52,8 @@ public class TsneResource extends FileResource {
         super(filePath);
     }
 
-    @GET
-    public View get() {
-        return new TsneView();
+    public TsneResource() {
+
     }
 
     @POST
@@ -64,6 +64,15 @@ public class TsneResource extends FileResource {
         for(VocabWord word : this.words)
             words.add(word.getWord());
         return Response.ok((new ArrayList<>(words))).build();
+    }
+
+    @POST
+    @Path("update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postCoordinates(List<String> list, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.TSNE, list);
+
+        return Response.ok().build();
     }
 
     @Override

@@ -42,11 +42,6 @@ import java.util.Map;
 public class RendersResource {
     private String imagePath = "render.png";
 
-    @GET
-    public RenderView get() {
-        return new RenderView();
-    }
-
     @POST
     @Path(("/update"))
     @Produces(MediaType.APPLICATION_JSON)

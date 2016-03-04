@@ -2,6 +2,8 @@ package org.deeplearning4j.ui.flow;
 
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.flow.beans.NodeReport;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -16,40 +18,25 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Path("/flow")
 public class FlowResource {
-    private volatile ModelInfo modelInfo;
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public FlowView getView() {
-        return new FlowView();
-    }
+    private SessionStorage storage = SessionStorage.getInstance();
 
     @GET
     @Path("/state")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getState() {
+    public Response getState(@QueryParam("sid") String sessionId) {
         // TODO: to be improved with HistoryStorage
-        try {
-            lock.readLock().lock();
-            return Response.ok(modelInfo).build();
-        } finally {
-            lock.readLock().unlock();
-        }
+        ModelInfo model = (ModelInfo) storage.getObject(sessionId, ObjectType.FLOW);
+        return Response.ok(model).build();
     }
 
     @POST
     @Path("/state")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response postState(ModelInfo info) {
-        try {
-            lock.writeLock().lock();
-            this.modelInfo = info;
-            return Response.ok(Collections.singletonMap("status","ok")).build();
-        } finally {
-            lock.writeLock().unlock();
-        }
+    public Response postState(ModelInfo info, @QueryParam("sid") String sessionId) {
+        storage.putObject(sessionId, ObjectType.FLOW, info);
+
+        return Response.ok(Collections.singletonMap("status","ok")).build();
     }
 
     @GET

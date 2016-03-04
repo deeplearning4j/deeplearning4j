@@ -8,8 +8,10 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.Tsne;
+import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class JointStorage<T extends SequenceElement> implements WeightLookupTable<T>, VocabCache<T> {
     private Map<Long, WeightLookupTable<T>> mapTables = new ConcurrentHashMap<>();
     private Map<Long, VocabCache<T>> mapVocabs = new ConcurrentHashMap<>();
@@ -231,15 +234,52 @@ public class JointStorage<T extends SequenceElement> implements WeightLookupTabl
 
     }
 
+    /**
+     * Render the words via TSNE
+     *
+     * @param tsne           the tsne to use
+     * @param numWords
+     * @param connectionInfo
+     */
     @Override
-    public void plotVocab(Tsne tsne) {
+    public void plotVocab(Tsne tsne, int numWords, UiConnectionInfo connectionInfo) {
 
     }
 
+    /**
+     * Render the words via TSNE
+     *
+     * @param tsne     the tsne to use
+     * @param numWords
+     * @param file
+     */
     @Override
-    public void plotVocab() {
+    public void plotVocab(Tsne tsne, int numWords, File file) {
 
     }
+
+    /**
+     * Render the words via tsne
+     *
+     * @param numWords
+     * @param connectionInfo
+     */
+    @Override
+    public void plotVocab(int numWords, UiConnectionInfo connectionInfo) {
+
+    }
+
+    /**
+     * Render the words via tsne
+     *
+     * @param numWords
+     * @param file
+     */
+    @Override
+    public void plotVocab(int numWords, File file) {
+
+    }
+
 
     @Override
     public void putCode(int codeIndex, INDArray code) {

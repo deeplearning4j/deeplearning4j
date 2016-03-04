@@ -53,7 +53,7 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
             BufferedReader reader = new BufferedReader(new FileReader(fileToRead));
             StringBuilder builder = new StringBuilder();
             String line = "";
-            while ((line = reader.readLine()) != null) builder.append(line);
+            while ((line = reader.readLine()) != null) builder.append(line).append(" ");
 
             document.setContent(builder.toString());
             document.setLabel(label);

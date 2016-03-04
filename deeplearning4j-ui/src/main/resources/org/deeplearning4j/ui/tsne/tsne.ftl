@@ -36,13 +36,18 @@
     <!-- d3 -->
     <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
-    <!-- dl4j plot setup -->
-    <script src="/assets/renderTsne.js"></script>
 
     <script src="/assets/jquery-fileupload.js"></script>
 
     <!-- Booststrap Notify plugin-->
     <script src="/assets/bootstrap-notify.min.js"></script>
+
+    <script src="/assets/common.js"></script>
+
+    <!-- dl4j plot setup -->
+    <script src="/assets/renderTsne.js"></script>
+
+
     <style>
         .hd {
         background-color: #000000;
@@ -147,9 +152,11 @@
                 console.log(err);
             }});
 
+
             function updateFileName(name) {
+            /*
                 $.ajax({
-                    url: '/api/update',
+                    url: './api/update',
                     type: 'POST',
                     dataType: 'json',
                     data: JSON.stringify({"url" : name}),
@@ -165,7 +172,11 @@
                     complete: function() {
                     }
                 });
+                */
             }
+
+
+            drawTsne();
 
         }) ;
 
@@ -179,7 +190,14 @@
     <tr>
         <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img"  border="0"/></a></td>
         <td>DeepLearning4j UI</td>
-        <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
+        <td style="width: 512px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select class="selectpicker" id="sessionSelector" onchange="window.location.href = 'tsne?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000; display: inline-block; width: 256px;">
+            <option value="0" selected="selected">Pick a session to track</option>
+        </select>&nbsp;&nbsp;
+            <script>
+                            buildSessionSelector("TSNE");
+                        </script>
+        </td>
+        <td style="width: 256px;">&nbsp; <!-- placeholder for future use --></td>
     </tr>
     </tbody>
 </table>

@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -29,12 +31,14 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Created by agibsonccc on 3/5/15.
@@ -49,21 +53,14 @@ public class Word2VecIteratorTest {
             File file = resource.getFile();
             SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
             new File("cache.ser").delete();
-            InMemoryLookupCache cache = new InMemoryLookupCache();
-
 
             TokenizerFactory t = new UimaTokenizerFactory();
 
-            WeightLookupTable table = new InMemoryLookupTable
-                    .Builder()
-                    .vectorLength(100).useAdaGrad(false).cache(cache)
-                    .lr(0.025f).build();
-
             vec = new Word2Vec.Builder()
                     .minWordFrequency(1).iterations(5)
-                    .layerSize(100).lookupTable(table)
+                    .layerSize(100)
                     .stopWords(new ArrayList<String>())
-                    .vocabCache(cache)
+                    .useUnknown(true)
                     .windowSize(5).iterate(iter).tokenizerFactory(t).build();
             vec.fit();
 
@@ -72,6 +69,13 @@ public class Word2VecIteratorTest {
 
     @Test
     public void testLabeledExample() throws Exception {
+
+        INDArray unk = vec.getWordVectorMatrix(Word2Vec.UNK);
+        assertNotEquals(null, unk);
+
+        unk = vec.getWordVectorMatrix("2131241sdasdas");
+        assertNotEquals(null, unk);
+
         Word2VecDataSetIterator iter = new Word2VecDataSetIterator(vec,new LabelAwareFileSentenceIterator(null, new ClassPathResource("labeled/").getFile()), Arrays.asList("negative","positive","neutral"));
         DataSet next = iter.next();
 
