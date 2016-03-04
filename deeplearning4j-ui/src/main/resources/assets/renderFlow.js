@@ -203,8 +203,11 @@ function renderLayers(container, layers) {
 
 function timedFunction() {
 
+     var sid = getParameterByName("sid");
+     if (sid == undefined) sid = 0;
+
      $.ajax({
-                            url:"/flow" + "/state",
+                            url:"/flow" + "/state?sid=" + sid,
                             async: true,
                             error: function (query, status, error) {
                                 $.notify({
@@ -222,6 +225,10 @@ function timedFunction() {
                             success: function( data ) {
                                 // parse & render ModelInfo
                                 //console.log("data received: " + data);
+
+                                var updateTime = data['time'];
+                                var time = new Date(updateTime);
+                                $('#updatetime').html(time.customFormat("#DD#/#MM#/#YYYY# #hhh#:#mm#:#ss#"));
 
                                 if (typeof data.layers == 'undefined') return;
 

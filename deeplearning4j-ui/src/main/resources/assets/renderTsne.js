@@ -40,6 +40,7 @@ var xAxis;
 var yAxis;
 
 function zoomHandler() {
+
   svg.select(".x.axis").call(xAxis);
   svg.select(".y.axis").call(yAxis);
 
@@ -59,6 +60,7 @@ function zoomHandler() {
                                               ((x[i]*20*ss + tx) + 400) + "," +
                                               ((y[i]*20*ss + ty) + 400) + ")";
                                               });
+
 }
 
 
@@ -141,7 +143,7 @@ function drawEmbedding() {
     var zoomListener = d3.behavior.zoom()
         .x(fx)
         .y(fy)
-        .scaleExtent([0.000001, 1000])
+        .scaleExtent([0.00000001, 100000])
         .center([0,0])
         .on("zoom", zoomHandler);
     zoomListener(svg);
@@ -150,8 +152,12 @@ function drawEmbedding() {
 
 
 function drawTsne() {
+    var sid = getParameterByName("sid");
+    if (sid == undefined) sid = "UploadedFile";
+
+
  $.ajax({
-    url: "/api/coords",
+    url: "/api/coords?sid=" + sid,
     cache: false
   })
     .done(function( data ) {
@@ -183,6 +189,11 @@ function drawTsne() {
         yMax = d3.max(y);
         yMin = d3.min(y);
 
+        console.log("xMin: " + xMin);
+        console.log("xMax: " + xMax);
+
+        console.log("yMin: " + yMin);
+        console.log("yMax: " + yMax);
 
         drawEmbedding();
       } else {

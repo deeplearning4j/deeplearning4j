@@ -21,6 +21,7 @@ package org.deeplearning4j.text.sentenceiterator;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.junit.After;
@@ -29,7 +30,6 @@ import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

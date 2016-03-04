@@ -22,6 +22,9 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import io.dropwizard.views.View;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.ui.storage.HistoryStorage;
+import org.deeplearning4j.ui.storage.SessionStorage;
+import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 
 
@@ -30,6 +33,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -40,37 +44,32 @@ import java.util.HashMap;
  */
 @Path("/weights")
 public class WeightResource {
-    private CompactModelAndGradient current;
     String path = "weights";
-    private boolean updated = true;
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    public View get() {
-        return new WeightView(path);
-    }
+    private SessionStorage storage = SessionStorage.getInstance();
 
     @GET
     @Path("/updated")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updated() {
-        return Response.ok(Collections.singletonMap("status",true)).build();
+    public Response updated(@QueryParam("sid") String sessionId) {
+        CompactModelAndGradient model = (CompactModelAndGradient) storage.getObject(sessionId, ObjectType.HISTOGRAM);
+        if (model == null) {
+            return Response.noContent().build();
+        } else return Response.ok(Collections.singletonMap("status",true)).build();
     }
 
     @GET
     @Path("/data")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response data() {
+    public Response data(@QueryParam("sid") String sessionId) {
         //initialized with empty data
-        if(current == null) {
-            //initialize with empty
-            updated = false;
-            return Response.ok(new HashMap<>()).build();
+        CompactModelAndGradient model = (CompactModelAndGradient) storage.getObject(sessionId, ObjectType.HISTOGRAM);
 
-        }
+            if (model == null) {
+                //initialize with empty
+                return Response.ok(new HashMap<>()).build();
+            }
 
-        //cache response; don't refetch data
-        updated = false;
-        return Response.ok(current).build();
+        return Response.ok(model).build();
     }
 
 
@@ -79,11 +78,11 @@ public class WeightResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @ExceptionMetered
-    public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path) {
-        this.current = modelAndGrad;
-        this.path = modelAndGrad.getPath();
-        updated = true;
-        return Response.ok(Collections.singletonMap("status","ok")).build();
+    public Response update(CompactModelAndGradient modelAndGrad, @PathParam("path") String path, @QueryParam("sid") String sessionId) {
+
+            storage.putObject(sessionId, ObjectType.HISTOGRAM, modelAndGrad);
+
+            return Response.ok(Collections.singletonMap("status","ok")).build();
     }
 
 

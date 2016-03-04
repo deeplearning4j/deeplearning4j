@@ -94,9 +94,10 @@ public class WindowConverter {
      */
 	public static INDArray asExampleMatrix(Window window,Word2Vec vec) {
         INDArray[] data = new INDArray[window.getWords().size()];
-        for(int i = 0; i < data.length; i++)
-              data[i] = vec.getWordVectorMatrix(window.getWord(i));
-		return Nd4j.concat(0,data);
+        for(int i = 0; i < data.length; i++) {
+            data[i] = vec.getWordVectorMatrix(window.getWord(i));
+        }
+		return Nd4j.hstack(data);
 	}
 
 }

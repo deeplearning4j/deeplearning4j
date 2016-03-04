@@ -21,6 +21,7 @@ package org.deeplearning4j.models.word2vec;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -40,12 +41,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
@@ -167,6 +168,43 @@ public class WordVectorSerializerTest {
     }
 
     @Test
+    public void testIndexPersistence() throws Exception {
+        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(5)
+                .iterations(1)
+                .epochs(1)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .useAdaGrad(false)
+                .negativeSample(5)
+                .seed(42)
+                .windowSize(5)
+                .iterate(iter).tokenizerFactory(t).build();
+
+        vec.fit();
+
+        File tempFile = File.createTempFile("temp", "w2v");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeWordVectors(vec, tempFile);
+
+        WordVectors vec2 = WordVectorSerializer.loadTxtVectors(tempFile);
+
+        for (VocabWord word: vec.getVocab().vocabWords()) {
+            INDArray array1 = vec.getWordVectorMatrix(word.getLabel());
+            INDArray array2 = vec2.getWordVectorMatrix(word.getLabel());
+
+            assertEquals(array1, array2);
+        }
+    }
+
+    @Test
     public void testFullModelSerialization() throws Exception {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
@@ -206,6 +244,7 @@ public class WordVectorSerializerTest {
         WordVectorSerializer.writeFullModel(vec, "tempModel.txt");
 
         File modelFile = new File("tempModel.txt");
+        modelFile.deleteOnExit();
 
         assertTrue(modelFile.exists());
         assertTrue(modelFile.length() > 0);
@@ -329,6 +368,14 @@ public class WordVectorSerializerTest {
         assertTrue(simN > 0.70);
 
         modelFile.delete();
+    }
+
+    @Test
+    @Ignore
+    public void testLoader() throws Exception {
+        WordVectors vec = WordVectorSerializer.loadTxtVectors(new File("/home/raver119/Downloads/_vectors.txt"));
+
+        logger.info("Rewinding: " + Arrays.toString(vec.getWordVector("rewinding")));
     }
 
 

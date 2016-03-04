@@ -2,6 +2,7 @@ package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
+import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.api.UrlResource;
 import org.junit.Ignore;
@@ -10,7 +11,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.springframework.core.io.ClassPathResource;
+
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;

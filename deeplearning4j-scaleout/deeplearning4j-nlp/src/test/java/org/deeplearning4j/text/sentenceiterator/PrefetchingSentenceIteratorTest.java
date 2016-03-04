@@ -1,16 +1,17 @@
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.canova.api.util.ClassPathResource;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
+
 
 import java.io.File;
 
 import static org.junit.Assert.*;
 
 /**
- * Created by fartovii on 28.11.15.
+ * @author raver119@gmail.com
  */
 public class PrefetchingSentenceIteratorTest {
 

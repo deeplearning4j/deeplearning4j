@@ -44,6 +44,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabularyWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -55,6 +56,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -66,6 +68,7 @@ public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
     private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
+    private static final String whitespaceReplacement = "_Az92_";
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
     /**
@@ -135,7 +138,7 @@ public class WordVectorSerializer {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 GzipUtils.isCompressedFilename(modelFile.getName())
                         ? new GZIPInputStream(new FileInputStream(modelFile))
-                        : new FileInputStream(modelFile)))) {
+                        : new FileInputStream(modelFile), "UTF-8"))) {
             String line = reader.readLine();
             String[] initial = line.split(" ");
             int words = Integer.parseInt(initial[0]);
@@ -148,14 +151,14 @@ public class WordVectorSerializer {
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 assert split.length == layerSize + 1;
-                String word = split[0];
+                String word = split[0].replaceAll(whitespaceReplacement, " ");
 
                 float[] vector = new float[split.length - 1];
                 for (int i = 1; i < split.length; i++) {
                     vector[i - 1] = Float.parseFloat(split[i]);
                 }
 
-                syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
+                syn0.putRow(currLine, Nd4j.create(vector));
 
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
@@ -348,14 +351,14 @@ public class WordVectorSerializer {
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable, OutputStream stream) throws IOException {
         VocabCache<T> vocabCache = lookupTable.getVocabCache();
 
-        PrintWriter writer = new PrintWriter(stream);
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, "UTF-8"));
 
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
 
             StringBuilder builder = new StringBuilder();
 
-            builder.append(element.getLabel().replaceAll(" ", "_")).append(" ");
+            builder.append(element.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
             INDArray vec = lookupTable.vector(element.getLabel());
             for (int i = 0; i < vec.length(); i++) {
                 builder.append(vec.getDouble(i));
@@ -435,13 +438,14 @@ public class WordVectorSerializer {
      */
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
             ArrayList<String> labels = new ArrayList<>();
             ArrayList<INDArray> arrays = new ArrayList<>();
             VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
             String line = "";
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
+                split[1] = split[1].replaceAll(whitespaceReplacement, " ");
                 VocabWord word = new VocabWord(1.0, split[1]);
                 if (split[0].equals("L")) {
                     // we have label element here
@@ -493,6 +497,12 @@ public class WordVectorSerializer {
                     .lookupTable(lookupTable)
                     .modelUtils(new BasicModelUtils<VocabWord>())
                     .build();
+
+            try {
+                reader.close();
+            } catch (Exception e) {
+                ;
+            }
 
             return vectors;
         } catch (Exception e) {
@@ -550,7 +560,7 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
 
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream))) {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"))) {
         /*
             This method acts similary to w2v csv serialization, except of additional tag for labels
          */
@@ -560,7 +570,7 @@ public class WordVectorSerializer {
                 StringBuilder builder = new StringBuilder();
 
                 builder.append(word.isLabel() ? "L" : "E").append(" ");
-                builder.append(word.getLabel().replaceAll(" ", "_")).append(" ");
+                builder.append(word.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
 
                 INDArray vector = vectors.getWordVectorMatrix(word.getLabel());
                 for (int j = 0; j < vector.length(); j++) {
@@ -593,14 +603,14 @@ public class WordVectorSerializer {
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
                                         String path)
             throws IOException {
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
             if (word == null) {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", "_"));
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
             INDArray wordVector = lookupTable.vector(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -643,7 +653,7 @@ public class WordVectorSerializer {
 
         PrintWriter printWriter = null;
         try {
-            printWriter = new PrintWriter(path);
+            printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(path), "UTF-8"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -747,14 +757,14 @@ public class WordVectorSerializer {
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
      */
-    public static Word2Vec loadFullModel(@NonNull String path) {
+    public static Word2Vec loadFullModel(@NonNull String path) throws FileNotFoundException {
         /*
             // TODO: implementation is in process
             We need to restore:
                      1. WeightLookupTable, including syn0 and syn1 matrices
                      2. VocabCache + mark it as SPECIAL, to avoid accidental word removals
          */
-        LineSentenceIterator iterator = new LineSentenceIterator(new File(path));
+        BasicLineIterator iterator = new BasicLineIterator(new File(path));
 
         // first 3 lines should be processed separately
         String confJson  = iterator.nextSentence();
@@ -783,13 +793,25 @@ public class WordVectorSerializer {
                 .scavengerRetentionDelay(configuration.getScavengerRetentionDelay())
                 .build();
 
+        AtomicInteger counter = new AtomicInteger(0);
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
         while (iterator.hasNext()) {
             //    log.info("got line: " + iterator.nextSentence());
             String wordJson = iterator.nextSentence();
             VocabularyWord word = VocabularyWord.fromJson(wordJson);
             word.setSpecial(true);
 
-            holder.addWord(word);
+            VocabWord vw = new VocabWord(word.getCount(), word.getWord());
+            vw.setIndex(counter.getAndIncrement());
+
+            vw.setIndex(word.getHuffmanNode().getIdx());
+            vw.setCodeLength(word.getHuffmanNode().getLength());
+            vw.setPoints(arrayToList(word.getHuffmanNode().getPoint(), word.getHuffmanNode().getLength()));
+            vw.setCodes(arrayToList(word.getHuffmanNode().getCode(), word.getHuffmanNode().getLength()));
+
+            vocabCache.addToken(vw);
+            vocabCache.addWordToIndex(vw.getIndex(), vw.getLabel());
+            vocabCache.putVocabWord(vw.getWord());
         }
 
         // at this moment vocab is restored, and it's time to rebuild Huffman tree
@@ -797,9 +819,9 @@ public class WordVectorSerializer {
         //holder.updateHuffmanCodes();
 
         // we definitely don't need UNK word in this scenarion
-        InMemoryLookupCache vocabCache = new InMemoryLookupCache(false);
 
-        holder.transferBackToVocabCache(vocabCache, false);
+
+//        holder.transferBackToVocabCache(vocabCache, false);
 
         // now, it's time to transfer syn0/syn1/syn1 neg values
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
@@ -813,10 +835,18 @@ public class WordVectorSerializer {
         // we create all arrays
         lookupTable.resetWeights(true);
 
+        iterator.reset();
 
+        // we should skip 3 lines from file
+        iterator.nextSentence();
+        iterator.nextSentence();
+        iterator.nextSentence();
 
         // now, for each word from vocabHolder we'll just transfer actual values
-        for (VocabularyWord word: holder.getVocabulary()) {
+        while (iterator.hasNext()) {
+            String wordJson = iterator.nextSentence();
+            VocabularyWord word = VocabularyWord.fromJson(wordJson);
+
             // syn0 transfer
             INDArray syn0 = lookupTable.getSyn0().getRow(vocabCache.indexOf(word.getWord()));
             syn0.assign(Nd4j.create(word.getSyn0()));
@@ -855,13 +885,31 @@ public class WordVectorSerializer {
      */
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path)
             throws IOException {
-        BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(path), false), "UTF-8"));
 
         writeWordVectors(vec, write);
 
         write.flush();
         write.close();
+    }
 
+    /**
+     * Writes the word vectors to the given path. Note that this assumes an in memory cache
+     *
+     * @param vec
+     *            the word2vec to write
+     * @param file
+     *            the file to write
+     * @throws IOException
+     */
+    public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file)
+            throws IOException {
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
+
+        writeWordVectors(vec, write);
+
+        write.flush();
+        write.close();
     }
 
     /**
@@ -874,7 +922,7 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
-        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream));
+        BufferedWriter writer =  new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
 
         writeWordVectors(vec, writer);
 
@@ -899,7 +947,7 @@ public class WordVectorSerializer {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", "_"));
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
             INDArray wordVector = vec.getWordVectorMatrix(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -913,6 +961,11 @@ public class WordVectorSerializer {
             words++;
         }
 
+        try {
+            writer.flush();
+        } catch (Exception e) {
+            ;
+        }
         log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
     }
 
@@ -960,7 +1013,7 @@ public class WordVectorSerializer {
      *             if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-            throws FileNotFoundException
+            throws FileNotFoundException, UnsupportedEncodingException
     {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
@@ -974,8 +1027,8 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException if the input file does not exist
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-            throws FileNotFoundException {
-        BufferedReader reader = new BufferedReader(new FileReader(vectorsFile));
+            throws FileNotFoundException, UnsupportedEncodingException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(vectorsFile), "UTF-8"));
         VocabCache cache = new AbstractCache<>();
 
         LineIterator iter = IOUtils.lineIterator(reader);
@@ -998,6 +1051,12 @@ public class WordVectorSerializer {
                 } catch (Exception e) {
                     // if any conversion exception hits - that'll be considered header
                     hasHeader = true;
+
+                    try {
+                        reader.close();
+                    } catch (Exception ex) {
+                        ;
+                    }
                 }
             }
 
@@ -1016,9 +1075,12 @@ public class WordVectorSerializer {
         while (iter.hasNext()) {
             if (line.isEmpty()) line = iter.nextLine();
             String[] split = line.split(" ");
-            String word = split[0];
+            String word = split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
+            if (cache.containsWord(word)) {
+                log.info("Word already exists: " + word);
+            }
 
             word1.setIndex(cache.numWords());
 
@@ -1051,6 +1113,12 @@ public class WordVectorSerializer {
 
         iter.close();
 
+        try {
+            reader.close();
+        } catch (Exception e) {
+            ;
+        }
+
         return new Pair<>(lookupTable, cache);
     }
 
@@ -1068,7 +1136,7 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Glove vec, INDArray tsne, File csv)
             throws Exception
     {
-        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csv), "UTF-8"));
         int words = 0;
         InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
         for (String word : vec.vocab().words()) {
@@ -1084,7 +1152,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word);
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
 
             sb.append("\n");
@@ -1112,7 +1180,7 @@ public class WordVectorSerializer {
     public static void writeTsneFormat(Word2Vec vec, INDArray tsne, File csv)
             throws Exception
     {
-        BufferedWriter write = new BufferedWriter(new FileWriter(csv));
+        BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csv), "UTF-8"));
         int words = 0;
         InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
         for (String word : vec.vocab().words()) {
@@ -1128,7 +1196,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word);
+            sb.append(word.replaceAll(" ", whitespaceReplacement));
             sb.append(" ");
 
             sb.append("\n");
@@ -1142,4 +1210,48 @@ public class WordVectorSerializer {
 
     }
 
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
+    private static List<Integer> arrayToList(byte[] array, int codeLen) {
+        List<Integer> result = new ArrayList<>();
+        for (int x = 0; x < codeLen; x++) {
+            result.add((int) array[x]);
+        }
+        return result;
+    }
+
+    private static byte[] listToArray(List<Integer> code) {
+        byte[] array = new byte[40];
+        for (int x = 0; x < code.size(); x++) {
+            array[x]  = code.get(x).byteValue();
+        }
+        return array;
+    }
+
+    private static int[] listToArray(List<Integer> points, int codeLen) {
+        int[] array = new int[points.size()];
+        for (int x = 0; x < points.size(); x++) {
+            array[x]  = points.get(x).intValue();
+        }
+        return array;
+    }
+
+    /**
+     *  This method is used only for VocabCache compatibility purposes
+     * @param array
+     * @param codeLen
+     * @return
+     */
+    private static List<Integer> arrayToList(int[] array, int codeLen) {
+        List<Integer> result = new ArrayList<>();
+        for (int x = 0; x < codeLen; x++) {
+            result.add(array[x]);
+        }
+        return result;
+    }
 }

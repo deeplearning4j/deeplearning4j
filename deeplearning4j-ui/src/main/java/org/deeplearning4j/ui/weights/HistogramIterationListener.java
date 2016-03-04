@@ -2,8 +2,10 @@ package org.deeplearning4j.ui.weights;
 
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
@@ -42,12 +44,21 @@ public class HistogramIterationListener implements IterationListener {
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
-    private String subPath;
+    private String subPath = "weights";
+    private UiConnectionInfo connectionInfo;
+
+    public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
+        target = client.target(connection.getFirstPart()).path(connection.getSecondPart(subPath)).path("update").queryParam("sid", connection.getSessionId());
+        this.connectionInfo = connection;
+
+        System.out.println("UI Histogram URL: " + connection.getFullAddress());
+    }
 
     public HistogramIterationListener(int iterations) {
-        this(iterations, true, "weights");
+        this(iterations, true);
     }
-    public HistogramIterationListener(int iterations, boolean openBrowser, String subPath){
+
+    public HistogramIterationListener(int iterations, boolean openBrowser){
         int port = -1;
         try{
             UiServer server = UiServer.getInstance();
@@ -58,12 +69,21 @@ public class HistogramIterationListener implements IterationListener {
         }
 
         this.iterations = iterations;
-        target = client.target("http://localhost:" + port ).path(subPath).path("update");
+        if (this.iterations  < 1) this.iterations = 1;
+
+        UiConnectionInfo connectionInfo = new UiConnectionInfo.Builder()
+                .enableHttps(false)
+                .setAddress("localhost")
+                .setPort(port)
+                .build();
+
+        this.connectionInfo = connectionInfo;
+
+        target = client.target(connectionInfo.getFirstPart()).path(subPath).path("update").queryParam("sid", connectionInfo.getSessionId());
         this.openBrowser = openBrowser;
         this.path = "http://localhost:" + port + "/" + subPath;
-        this.subPath = subPath;
 
-        System.out.println("UI Histogram: " + this.path);
+        System.out.println("UI Histogram URL: " + this.path + "?sid=" + connectionInfo.getSessionId());
     }
 
     @Override
@@ -79,44 +99,60 @@ public class HistogramIterationListener implements IterationListener {
     @Override
     public void iterationDone(Model model, int iteration) {
         if(iteration % iterations == 0) {
-            Map<String,INDArray> grad = model.gradient().gradientForVariable();
+            Map<String, Map> newGrad = new LinkedHashMap<>();
+            try {
+                Map<String, INDArray> grad = model.gradient().gradientForVariable();
 
-            if(meanMagHistoryParams.size() == 0){
-                //Initialize:
-                int maxLayerIdx = -1;
-                for(String s : grad.keySet()){
-                    maxLayerIdx = Math.max(maxLayerIdx,indexFromString(s));
-                }
-                if(maxLayerIdx == -1 ) maxLayerIdx = 0;
-                for( int i = 0; i <= maxLayerIdx; i++ ){
-                    meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
-                    meanMagHistoryUpdates.add(new LinkedHashMap<String,List<Double>>());
-                }
-            }
+//            log.warn("Starting report building...");
 
-            //Process gradients: duplicate + calculate and store mean magnitudes
-            Map<String,Map> newGrad = new LinkedHashMap<>();
-            for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
-                String param = entry.getKey();
-                String newName;
-                if(Character.isDigit(param.charAt(0))) newName = "param_" + param;
-                else newName = param;
-                HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                        .setBinCount(20)
-                        .setRounding(6)
-                        .build();
-                newGrad.put(newName,histogram.getData());
-                //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
-
-                //Work out layer index:
-                Map<String,List<Double>> map = meanMagHistoryUpdates.get(indexFromString(param));
-                List<Double> list = map.get(newName);
-                if(list==null){
-                    list = new ArrayList<>();
-                    map.put(newName,list);
+                if (meanMagHistoryParams.size() == 0) {
+                    //Initialize:
+                    int maxLayerIdx = -1;
+                    for (String s : grad.keySet()) {
+                        maxLayerIdx = Math.max(maxLayerIdx, indexFromString(s));
+                    }
+                    if (maxLayerIdx == -1) maxLayerIdx = 0;
+                    for (int i = 0; i <= maxLayerIdx; i++) {
+                        meanMagHistoryParams.add(new LinkedHashMap<String, List<Double>>());
+                        meanMagHistoryUpdates.add(new LinkedHashMap<String, List<Double>>());
+                    }
                 }
-                double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
-                list.add(meanMag);
+
+                //Process gradients: duplicate + calculate and store mean magnitudes
+
+                for (Map.Entry<String, INDArray> entry : grad.entrySet()) {
+                    String param = entry.getKey();
+                    String newName;
+                    if (Character.isDigit(param.charAt(0))) newName = "param_" + param;
+                    else newName = param;
+                    HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
+                            .setBinCount(20)
+                            .setRounding(6)
+                            .build();
+                    newGrad.put(newName, histogram.getData());
+                    //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+
+
+                    int idx = indexFromString(newName);
+                    if (idx >= meanMagHistoryUpdates.size()) {
+                        //log.info("Can't find idx for update ["+newName+"]");
+                        meanMagHistoryUpdates.add(new LinkedHashMap<String, List<Double>>());
+                        idx = indexFromString(newName);
+                    }
+
+
+                    //Work out layer index:
+                    Map<String, List<Double>> map = meanMagHistoryUpdates.get(idx);
+                    List<Double> list = map.get(newName);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        map.put(newName, list);
+                    }
+                    double meanMag = entry.getValue().norm1Number().doubleValue() / entry.getValue().length();
+                    list.add(meanMag);
+                }
+            } catch (Exception e) {
+                log.warn("Skipping gradients update");
             }
 
             //Process parameters: duplicate + calculate and store mean magnitudes
@@ -135,7 +171,14 @@ public class HistogramIterationListener implements IterationListener {
                 newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
 
-                Map<String,List<Double>> map = meanMagHistoryParams.get(indexFromString(param));
+                int idx = indexFromString(newName);
+                if (idx >= meanMagHistoryParams.size()) {
+                    //log.info("Can't find idx for param ["+newName+"]");
+                    meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
+                    idx = indexFromString(newName);
+                }
+
+                Map<String,List<Double>> map = meanMagHistoryParams.get(idx);
                 List<Double> list = map.get(newName);
                 if(list==null){
                     list = new ArrayList<>();
@@ -145,8 +188,10 @@ public class HistogramIterationListener implements IterationListener {
                 list.add(meanMag);
             }
 
+
             double score = model.score();
             scoreHistory.add(score);
+            //log.info("Saving score: " + score);
 
             CompactModelAndGradient g = new CompactModelAndGradient();
             g.setGradients(newGrad);
@@ -161,10 +206,12 @@ public class HistogramIterationListener implements IterationListener {
 
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            log.debug("{}",resp);
+            log.info("{}",resp);
 
             if(openBrowser && firstIteration){
-                UiUtils.tryOpenBrowser(path,log);
+                StringBuilder builder = new StringBuilder(connectionInfo.getFullAddress());
+                builder.append(subPath).append("?sid=").append(connectionInfo.getSessionId());
+                UiUtils.tryOpenBrowser(builder.toString(),log);
                 firstIteration = false;
             }
         }
