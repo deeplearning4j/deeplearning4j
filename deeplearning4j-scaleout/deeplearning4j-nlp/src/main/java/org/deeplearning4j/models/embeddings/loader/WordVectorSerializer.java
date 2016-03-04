@@ -1029,10 +1029,10 @@ public class WordVectorSerializer {
                 } catch (Exception e) {
                     // if any conversion exception hits - that'll be considered header
                     hasHeader = true;
-                } finally {
+
                     try {
                         reader.close();
-                    } catch (Exception e) {
+                    } catch (Exception ex) {
                         ;
                     }
                 }
