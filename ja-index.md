@@ -3,114 +3,80 @@ title: "Deeplearning 4 j のクイックスタートガイド"
 layout: ja-default
 ---
 
-クイック・スタート・ガイド
-=========================================
+# Deeplearning4jとは何か?
 
-## 必要なもの
+Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレードで、オープンソースの分散ディープラーニング・ライブラリです。Hadoopや [Spark](../spark.html)と連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。[Skymind](http://skymind.io)は、その商業的サポートを行っています。
 
-このクイックスタートガイドには、次のものがすでにインストールされていることを前提としています。
+DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定よりも非研究者でも手軽にプロトタイピングできるように作られています。DL4Jはスケーラブルでカスタマイズ可能です。Apache 2.0で配布されており、DL4Jの派生物はすべてその著者に帰属します。
 
-1. Java 7、またはそれ以降
-2.　IntelliJ （または別の種類のIDE）
-3.　Maven （自動ビルドツール）
-4.　Github
- 
-上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)をご参照ください。（ND4Jは、ディープラーニングを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
+弊社の[クイックスタート](../ja-quickstart.html)にある手順に従いさえすれば、初めてのニューラルネットワークのexampleを数分で使用することができます。
 
+### [Deep Learningのユースケース](../use_cases.html)
 
-質問やコメントなどございましたら、弊社の[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)に是非お問合せください。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、「ディープラーニング初心者ガイド」も[こちら](../deeplearningforbeginners.html)にご用意いたしました。 
+* 顔/画像認識
+* 音声検索
+* 音声の文字化
+* スパムフィルタ
+* 不正検出 
+* レコメンダーシステム（CRM、adtech、解約防止）
+* [回帰](../linear-regression.html)
 
-Deeplearning4jは、プロのJava開発者向けのオープンソースプロジェクトで、製品展開、Intellijなどの統合開発環境（IDE）、Mavenのような自動ビルドツールなどに精通した方々を対象としています。既にこれらのツールをお持ちの方には、弊社のツールは、非常に役に立ちます。
+### なぜDeeplearning4jなのか? 
 
-## DL4Jの簡単な使い方ステップ
+* JavaとScalaにとって汎用的な[n次元配列](http://nd4j.org/)クラス
+* [GPU](http://nd4j.org/gpu_native_backends.html)と連携
+* [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)や[Spark](../gpu_aws.html)で動作する[スケーラビリティ](../spark.html) 
+* [Canova](../canova.html): 機械学習に使用する一般的なベクトル化ツール
+* [ND4J: Numpyの2倍ほども迅速な線形代数ライブラリ](http://nd4j.org/benchmarking)
 
-上記をインストールした後、以下のステップを踏んでいただくと、すぐにお使いいただけます。（Windowsのユーザーの方は、このページ下方の[ステップごとの手順](#walk)をお読みください。）
+Deeplearning4jは、分散型で、マルチスレッドであるディープラーニングのフレームワークと通常のシングルスレッドであるディープラーニングのフレームワークの両方を持っています。学習はクラスタで行われるため、大量のデータを素早く処理することができます。ネットワークは、[iterative reduce](../iterativereduce.html)経由で学習させます。ネットワークはどれも等しく**Java**や**[Scala](http://nd4j.org/scala.html)**、**[Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)**と互換性があります。Deeplearning4jは、オープンスタックでモジュラーコンポーネントとしての役割を担いますが、これは、ディープラーニングのフレームワークとしては、初めて[micro-service architecture（マイクロサービスアーキテクチャ）](http://microservices.io/patterns/microservices.html)に適応したものです。
 
-* コマンドラインに`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`と入力します。（現在使用中のexampleバージョンは0.0.4です。）
-* IntelliJを開き、Mavenを使ってメニューツリーの`File/New/Project from Existing Sources`へ行き、新しいプロジェクトを作成します。上記のexampleのルートディレクトリを指定すると、統合開発環境でexampleが開きます。
-![Alt text](../img/IntelliJ_New_Project.png) 
-* 以下のコードをPOM.xmlにコピー＆ペーストし、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようにします。 
-* 追加の[Windowsユーザー向け手引きは、こちらをお読みください](../gettingstarted.html#windows)。 
-* 左側のファイルツリーから`DBNIrisExample.java`を選びます。
-* runを押すと、完了です！（ソースファイルを右クリックしたときに表示される緑色のボタンです。)
+### DL4Jのニューラルネットワーク
 
-### 管理された環境
+* [制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)
+* [畳込みネットワーク](../convolutionalnets.html) （画像）
+* [回帰ネットワーク](../usingrnns.html)/[LSTMs](../lstm.html) （時系列、センサーデータ）
+* [再帰的オートエンコーダー](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
+* [ディープ・ビリーフ・ネットワーク](../deepbeliefnetwork.html)
+* [Deepオートエンコーダー](http://deeplearning4j.org/deepautoencoder.html) （質問-回答/データ圧縮）
+* 再帰的ニューラルテンソルネットワーク （シーン、構文解析）
+* [Stacked Denoising Autoencoders (sdA)](../stackeddenoisingautoencoder.html)
+* 詳細については、[「How to Choose a Neural Net（ニューラルネットワークの選び方）」](../neuralnetworktable.html)をお読みください。
 
-Databricks、Domino、 Sense.ioなどの管理された環境で作業している場合、もう1つすべきことがあります。 上述のローカルセットアップに従った後、exampleのディレクトリ内から以下のコマンドを実行してください。 
+ディープ・ニューラル・ネットワークは、[驚異的な精確さ](../accuracy)を実現します。ニューラルネットワークの概要を簡単に知りたい方は、[こちら](../ja-neuralnet-overview)をお読みください。手短に言うと、Deeplearning4jにより、様々な浅いネットワークを使って「レイヤー（層）」と呼ばれるものを形成し、ディープ・ニューラル・ネットワークを構成することができます。このように柔軟性が高いため、分散型のCPU、GPU、そしてSparkやHadhoopと連携した分散型フレームワークが必要に応じて、制限付きボルツマン・マシン、その他のオートエンコーダー、畳込みネットワーク、または再帰ネットワークを組み合わせることができます。 
 
-		mvn clean package
+以下は、弊社が構築した様々なライブラリ、そして、それらのライブラリがそれらを取り巻くシステムのどこに位置するのかを図式化したものです。
 
-その後、ご使用の環境にJARファイルをアップロードします。 
+![Alt text](../img/schematic_overview.png)
 
-### 注意事項
+ディープラーニングで学習させるときには非常に多くのパラメタを調整することになります。Deeplearning4jをDIY（自助）ツールとして、Javaや[Scala](https://github.com/deeplearning4j/nd4s)、[Clojure](https://github.com/whilo/clj-nd4j)のプログラマーの方々がご利用できるよう、ご説明して参りました。
 
-* 他のレポジトリをローカルにクローンしないようにしてください。メインのdeeplearning4jレポジトリは、改善し続けているため、最新のものは様々なexampleを使って完全に検証し終えていない恐れがあります。
-* exampleのすべての依存関係は、ローカルでなくMavenからダウンロードするようにしてください。`(rm -rf  ls ~/.m2/repository/org/deeplearning4j)`
-* dl4j-0.4-exampleのディレクトリで`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`を実行し、正常にインストールされているか確認してください。
-* TSNEについては、`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`と実行し、TSNE、または他のexampleを実行します。実行に失敗し、 Mavenのデーモンスレッドが終了時に停止しない場合には、最後に引数が必要になる場合があります。
-* 1000回のイテレーションは、`dl4j-0.4-examples/target/archive-tmp/`に配置された`tsne-standard-coords.csv`に出力されるはずです。
+分からないことなど質問があれば、是非、[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)にご連絡ください。プレミアムサポートをご希望の方は、[Skymind](http://www.skymind.io/contact/)までご連絡ください。[ND4Jは、Javaベースの科学的計算エンジン](http://nd4j.org/)で、弊社の行列演算に使われています。弊社にて、大規模な行列で測定したところ、その処理速度は、[Numpyの約2倍の速さ](http://nd4j.org/benchmarking)でした。
 
-F１スコアは、約0.66と出るはずですが、Irisのような小さなデータベースでは問題ありません。exampleのステップごとの手順は、弊社の[Iris DBNチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。
+### Deeplearning4jのチュートリアル
 
-何か問題が発生したら、まずはPOM.xmlファイルが、[こちらの正しい例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようになっているか、確認してください。 
+* [ディープ・ニューラル・ネットワークのご紹介](../ja-neuralnet-overview.html)
+* [制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)
+* [固有ベクトル、PCA（主成分分析）、エントリピー](../ja-eigenvector.html)
+* [畳込みネットワークのチュートリアル](../convolutionalnets.html)
+* [LSTMと回帰ネットワークのチュートリアル](../lstm.html)
+* [回帰ネットワークをDL4Jに使用しましょう](../usingrnns.html)
+* [ディープ・ビリーフ・ネットワークとMNIST](../mnist-tutorial.html)
+* [IRIS Flower Dataset（アイリスの花のデータセット）のチュートリアル](../iris-flower-dataset-tutorial.html)
+* [Labeled Faces in the Wildを使った顔再構成](../facial-reconstruction-tutorial.html)
+* [Customizing Data Pipelines With Canovaを使った Data Pipelineのカスタマイズ](../image-data-pipeline.html)
+* [ディープラーニング用語集](../glossary.html)
 
-## 依存関係およびバックエンド
+### ユーザーの方々の声
 
-バックエンドとは、DL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはチップによって異なります。CPUはx86で、GPUはJcublasで最も高速に動作します。すべてのバックエンドを[Maven Central](https://search.maven.org)で見つけることができます。 「Latest Version」にある最新バージョン番号をクリックし、次の画面の左側にあるdependencyコードをコピーし、プロジェクトルートのpom.xmlにペーストします。 
+      「まるでフランケンシュタイン、あの医者になったような気分だ...」 - Steve D. 
+      
+      「deeplearning4jを使うことについて、こちら製造部門ではかなりの熱意を持っている。何十億ポンドの市場価値が期待できるからだ。」 -John M.
 
-nd4j-x86のバックエンドは、以下のようになります。
+### Deeplearning4jに貢献したい方々へ
 
-     <dependency>
-       <groupId>org.nd4j</groupId>
-       < artifactId > nd 4 j x 86 < / artifactId >
-       <version>${nd4j.version}</version>
-     </dependency>
+Deeplearning4jに貢献したい開発者の方々は、[Developer's Guide（開発者のガイド）](../devguide.html)をお読みになるといいでしょう。
 
-*nd4j-x86*はすべてのexampleで動作します。さらに依存関係をインストールするには、OpenBlas、Windows、Linuxのユーザーは[Deepelearining4jをはじめましょう](../gettingstarted.html#open)をお読みください。
+### Deeplearning4jの研究
 
-## 上級レベル： AWSでのコマンドラインの使用
-
-AWSサーバーでLinux OSにDeeplearningをインストールし、最初のexampleを実行させるためにIDEに頼らず、コマンドラインを使用したい場合は、 上述の指示に従って、*git clone*、*mvn clean install*を実行してください。インストールが完了すると、実際のexampleをコマンドラインに1行のコードで実行できます。コマンドラインは、レポジトリバージョンや特定のexmpleによって異なります。 
-
-以下はテンプレートです。
-
-    java -cp target/nameofjar.jar fully.qualified.class.name
-
-そして具体的にはコマンドは大体以下のようになります。
-
-    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
-
-つまり、更新すると変更するワイルドカードが2つあり、以下のようなexampleになります。
-
-    java -cp target/*.jar org.deeplearning4j.*
-
-コマンドラインのexampleを変更して、変更したファイルを実行するには、例えば、*src/main/java/org/deeplearning4j/multilayer*の*MLPBackpropIrisExample*を調整し、examplesを再びMavenで構築します。 
-
-## Scala 
-
-[Scalaバージョンでの例はこちら](https://github.com/kogecoo/dl4j-0.4-examples-scala)。
-
-## 次のステップ
-
-exampleを実行し終えた後は、 [フルインストール・ページ](../gettingstarted.html)をお読みいただくと詳細を知ることができます。 
-
-## <a name="walk">ステップごとの手順</a>
-
-* gitが既にインストールされている場合は、以下のコマンドを入力します。
-
-		git --version 
-
-* gitがまだインストールされていない場合は、[git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git)をインストールします。 
-* また、[Githubのアカウント]( https://github.com/join)を作成し、GitHubの[Mac版](https://mac.github.com/)、または[Windows版](https://windows.github.com/)をダウンロードします。 
-* Windowsをご使用の場合、スタートアップメニューで「Git Bash」を探して開きます。Git Bashターミナルは、cmd.exeのようなものです。
-* DL4Jのexampleを配置したいディレクトリに`cd`コマンドを実行します。新しいものを`mkdir dl4j-examples`で作成し、`cd`コマンドをそこに入力します。そして以下を実行します。
-
-    `git clone https://github.com/deeplearning4j/dl4j-0.4-examples`
-* `ls`コマンドを実行して必ずファイルをダウンロードするようにしてください。 
-* 次にIntelliJを開きます。 
-* 「File（ファイル）」メニューをクリックし、「Import Project（プロジェクトをインポート）」または「New Project from Existing Sources（既存のソースからの新規プロジェクト）」を選びます。これにより、ローカルのファイルメニューが提供されます。 
-* DL4Jのexampleが含まれているディレクトリを選択します。 
-* ビルドツールの選択画面が表示されます。Mavenを選択します。 
-* 「Search for projects recursively（再帰的にプロジェクトを検索）」と「Import Maven projects automatically（自動的にMavenのプロジェクトをインポート）」にあるチェックボックスにチェックを入れ、「Next（次へ）」をクリックします。 
-* JDK/SDKが設定されていることを確認します。これらが設定されていない場合、SDKウィンドウの下方にあるプラス記号（＋）をクリックします。 
-* それから、プロジェクト名を指定するよう指示があるまでクリックし続けます。デフォルトのプロジェクト名はそのままで問題ないはずなので、「Finish（終了）」ボタンを押すだけで完了です。
+* スタンフォード大学の自然言語処理（NLP）:"[Large-Scale Language Classification（大規模な言語分類）](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
