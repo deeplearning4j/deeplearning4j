@@ -114,9 +114,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
     public void setLayerParamLR(String variable){
-        double lr = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
-        double l1 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL1();
-        double l2 = (variable.substring(0, 1) == DefaultParamInitializer.BIAS_KEY)? 0.0: layer.getL2();
+        double lr = (variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) && !Double.isNaN(layer.getBiasLearningRate()))? layer.getBiasLearningRate(): layer.getLearningRate();
+        double l1 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL1();
+        double l2 = variable.substring(0, 1).equals(DefaultParamInitializer.BIAS_KEY) ? 0.0: layer.getL2();
         learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
