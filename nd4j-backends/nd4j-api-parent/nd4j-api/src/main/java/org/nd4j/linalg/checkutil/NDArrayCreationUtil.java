@@ -425,33 +425,37 @@ public class NDArrayCreationUtil {
             //This is not an exhausive list of possible 4d arrays from 5d via TAD
             Nd4j.getRandom().setSeed(seed);
             int[] shape4d1 = {3,shape[3],shape[2],shape[1],shape[0]};
-            INDArray orig1a = Nd4j.rand(shape4d1);
+            int len = ArrayUtil.prod(shape4d1);
+            INDArray orig1a = Nd4j.linspace(1,len,len).reshape(shape4d1);
             INDArray tad1a = orig1a.tensorAlongDimension(0, 1, 2, 3, 4);
-            INDArray orig1b = Nd4j.rand(shape4d1);
+            INDArray orig1b = Nd4j.linspace(1,len,len).reshape(shape4d1);
             INDArray tad1b = orig1b.tensorAlongDimension(2, 1, 2, 3, 4);
 
-            list.add(new Pair<>(tad1a,baseMsg+".get(0)"));
-            list.add(new Pair<>(tad1b,baseMsg+".get(1)"));
+            list.add(new Pair<>(tad1a,baseMsg + ".get(0)"));
+            list.add(new Pair<>(tad1b,baseMsg +".get(1)"));
 
             int[] shape4d2 = {3, shape[0], shape[1], shape[3], shape[2]};
-            INDArray orig2 = Nd4j.rand(shape4d2);
+            int len2 = ArrayUtil.prod(shape4d2);
+            INDArray orig2 = Nd4j.linspace(1,len2,len2).reshape(shape4d2);
             INDArray tad2 = orig2.tensorAlongDimension(1,3,4,2,1);
             list.add(new Pair<>(tad2,baseMsg+".get(2)"));
 
             int[] shape4d3 = {shape[0],shape[2],3,shape[1],shape[3]};
-            INDArray orig3 = Nd4j.rand(shape4d3);
+            int len3 = ArrayUtil.prod(shape4d3);
+            INDArray orig3 = Nd4j.linspace(1,len3,len3).reshape(shape4d3);
             INDArray tad3 = orig3.tensorAlongDimension(1,4,1,3,0);
             list.add(new Pair<>(tad3,baseMsg+".get(3)"));
 
             int[] shape4d4 = {shape[2],shape[0],shape[3],shape[1],3};
-            INDArray orig4 = Nd4j.rand(shape4d4);
+            int len4 = ArrayUtil.prod(shape4d4);
+            INDArray orig4 = Nd4j.linspace(1,len4,len4).reshape(shape4d4);
             INDArray tad4 = orig4.tensorAlongDimension(1,2,0,3,1);
             list.add(new Pair<>(tad4,baseMsg+".get(4)"));
 
             return list;
         }
 
-        public static List<Pair<INDArray,String>> get4dPermutedWithShape(int seed, int... shape){
+        public static List<Pair<INDArray,String>> get4dPermutedWithShape(int seed, int... shape) {
             Nd4j.getRandom().setSeed(seed);
             int[] createdShape = {shape[1],shape[3],shape[2],shape[0]};
             INDArray arr = Nd4j.rand(createdShape);

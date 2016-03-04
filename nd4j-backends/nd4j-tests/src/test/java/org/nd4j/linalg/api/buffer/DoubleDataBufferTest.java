@@ -133,18 +133,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         assertEquals(d, d2);
     }
 
-    @Test
-    public void testNettyCopy() {
-        DataBuffer db = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
-        if(db.allocationMode() == DataBuffer.AllocationMode.HEAP)
-            return;
-        ByteBuf buf = db.asNetty();
-
-        ByteBuf copy = buf.copy(0, buf.capacity());
-        for(int i = 0; i < db.length(); i++) {
-            assertEquals(db.getDouble(i),copy.getDouble(i * 8),1e-1);
-        }
-    }
+ 
 
 
     @Test

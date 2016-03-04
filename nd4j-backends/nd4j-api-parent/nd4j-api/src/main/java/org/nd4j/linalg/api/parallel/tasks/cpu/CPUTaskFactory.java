@@ -155,7 +155,7 @@ public class CPUTaskFactory implements TaskFactory {
             }
         }
 
-        if(canDoDirectly){
+        if(canDoDirectly) {
             return new CPUScalarOpAction(op, parallelThreshold);
         } else {
             //Need to break into tensors
