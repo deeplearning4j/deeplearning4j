@@ -1026,6 +1026,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             update(TaskUtils.buildTask(iter));
+            iter.reset(); 
             while (iter.hasNext()) {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
