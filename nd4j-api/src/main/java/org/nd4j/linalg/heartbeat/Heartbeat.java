@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,12 @@ public class Heartbeat {
         } catch (Exception e) {
             ; // do nothing here
             throw new RuntimeException(e);
+        }
+
+        try {
+            cId = EnvironmentUtils.buildCId();
+        } catch (Exception e) {
+
         }
     }
 
@@ -98,8 +105,7 @@ public class Heartbeat {
                  now we just should pack everything environment/task into single line
                  */
                 String lid = this.event.toString();
-                String argAction = serialVersionID != 0 ? String.valueOf(serialVersionID) : String.valueOf(environment.getSerialVersionID());
-//                String argLabel = buildEvent(environment, task);
+                String argAction = serialVersionID != 0 ? String.valueOf(serialVersionID) : String.valueOf(cId);
 
 
 
@@ -108,9 +114,6 @@ public class Heartbeat {
                 eventHit.userAgent(environment.toCompactString());
 
                 tracker.post(eventHit);
-
-
-                //System.out.println("Request sent");
             } catch (Exception e) {
                 // keep quiet on exceptions here
                 ;
