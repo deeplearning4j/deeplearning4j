@@ -5,7 +5,7 @@ set OMP_NUM_THREADS=1
 set num_args=0
 
 
-if numargs LSS 1 (
+if %num_args% LSS 1 (
     echo Please specify an argument
 )
 else (
