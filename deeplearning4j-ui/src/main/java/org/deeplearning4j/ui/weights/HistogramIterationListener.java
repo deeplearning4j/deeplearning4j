@@ -206,7 +206,7 @@ public class HistogramIterationListener implements IterationListener {
 
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            log.info("{}",resp);
+            log.debug("{}",resp);
 
             if(openBrowser && firstIteration){
                 StringBuilder builder = new StringBuilder(connectionInfo.getFullAddress());
