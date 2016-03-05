@@ -1,10 +1,8 @@
 lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
 
-def scalaTestDependency(v:String):ModuleID = "org.scalatest" %% "scalatest" % v
-
 lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.6", "2.11.7", "2.12.0-M3"),
+  crossScalaVersions := Seq("2.10.6", "2.11.7"),
   name := "nd4s",
   version := "0.4-rc3.9-SNAPSHOT",
   organization := "org.nd4j",
@@ -13,16 +11,16 @@ lazy val root = (project in file(".")).settings(
   libraryDependencies ++= Seq(
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
     "org.nd4j" % "nd4j-x86" % nd4jVersion.value % Test,
-    "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test
+    "org.scalatest" %% "scalatest" % "2.2.4" % Test,
+    "ch.qos.logback" % "logback-classic" % "1.1.3" % Test,
+    "org.scalacheck" %% "scalacheck" % "1.12.5" % Test,
+    "org.scalanlp" %% "breeze" % "0.12" % Test,
+    "com.github.julien-truffaut" %% "monocle-core" % "1.2.0" % Test
   ),
-  libraryDependencies <+= scalaVersion{
-    case x if x startsWith "2.12" => scalaTestDependency("2.2.5-M3")
-    case x => scalaTestDependency("2.2.4")
-  },
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions", "-language:higherKinds", "-language:postfixOps"),
   publishMavenStyle := true,
   publishArtifact in Test := false,
-  pomIncludeRepository := {_ => false},
+  pomIncludeRepository := { _ => false },
   publishTo <<= version {
     v =>
       val nexus = "https://oss.sonatype.org/"
