@@ -12,7 +12,7 @@ if [ "$(uname)" == "Darwin" ]; then
     elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
     # Do something under Windows NT platform
     echo "Running windows"
-    export GENERATOR="MSYS Makefiles"
+   # export GENERATOR="MSYS Makefiles"
 
 fi
 
