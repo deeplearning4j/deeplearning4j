@@ -23,9 +23,9 @@ import org.deeplearning4j.nn.api.Updater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple3;
 
-public class INDArrayFromTupleFunction implements Function<Tuple3<INDArray,Updater,Double>,INDArray> {
+public class INDArrayFromTupleFunction implements Function<Tuple3<INDArray,Updater,ScoreReport>,INDArray> {
     @Override
-    public INDArray call(Tuple3<INDArray, Updater, Double> indArrayTuple2) throws Exception {
+    public INDArray call(Tuple3<INDArray, Updater, ScoreReport> indArrayTuple2) throws Exception {
         return indArrayTuple2._1();
     }
 }

@@ -45,10 +45,7 @@ import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.impl.common.BestScoreAccumulator;
 import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
-import org.deeplearning4j.spark.impl.common.misc.GradientFromTupleFunction;
-import org.deeplearning4j.spark.impl.common.misc.INDArrayFromTupleFunction;
-import org.deeplearning4j.spark.impl.common.misc.UpdaterFromGradientTupleFunction;
-import org.deeplearning4j.spark.impl.common.misc.UpdaterFromTupleFunction;
+import org.deeplearning4j.spark.impl.common.misc.*;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterAggregatorCombiner;
 import org.deeplearning4j.spark.impl.common.updater.UpdaterElementCombiner;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
@@ -367,6 +364,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
         int maxRep = 0;
+        long maxSm = 0;
         int paramsLength = network.numParams(false);
 
         log.info("Broadcasting initial parameters of length " + paramsLength);
@@ -384,7 +382,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
         if(accumGrad) {
             //Learning via averaging gradients
-            JavaRDD<Tuple2<Gradient,Updater>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
+            JavaRDD<Tuple3<Gradient,Updater, ScoreReport>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
 
             JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunction());
             log.info("Ran iterative reduce... averaging results now.");
@@ -401,6 +399,12 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Summed gradients.");
             network.setParameters(network.params(false).addi(accumulatedGradient));
             log.info("Set parameters");
+            JavaDoubleRDD scores = results.mapToDouble(new ScoreMappingG());
+            lastScore = scores.mean();
+            if (!initDone) {
+                JavaDoubleRDD sm = results.mapToDouble(new SMappingG());
+                maxSm = sm.mean().longValue();
+            }
 
             log.info("Processing updaters");
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromGradientTupleFunction());
@@ -416,7 +420,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,Updater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMap(
+            JavaRDD<Tuple3<INDArray,Updater,ScoreReport>> results = rdd.mapPartitions(new IterativeReduceFlatMap(
                     conf.toJson(), this.params, this.updater, this.bestScoreAcc),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
@@ -434,6 +438,11 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Accumulated and set parameters");
             JavaDoubleRDD scores = results.mapToDouble(new ScoreMapping());
             lastScore = scores.mean();
+            if (!initDone) {
+                JavaDoubleRDD sm = results.mapToDouble(new SMapping());
+                maxSm = sm.mean().longValue();
+            }
+
 
             JavaRDD<Updater> resultsUpdater = results.map(new UpdaterFromTupleFunction());
             UpdaterAggregator aggregator = resultsUpdater.aggregate(
@@ -447,14 +456,13 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.info("Processed and set updater");
         }
         if (listeners.size() > 0) {
-            log.info("Invoking IterationListeners");
+            log.debug("Invoking IterationListeners");
             network.setScore(lastScore);
             invokeListeners(network, iterationsCount.incrementAndGet());
         }
         if (!initDone) {
-            log.info("Invoking Update");
             initDone = true;
-            update(maxRep, 0);
+            update(maxRep, maxSm);
         }
     }
 
@@ -609,11 +617,35 @@ public class SparkDl4jMultiLayer implements Serializable {
         return evaluations.reduce(new EvaluationReduceFunction());
     }
 
-    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,Updater,Double>>  {
+    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,Updater,ScoreReport>>  {
 
         @Override
-        public double call(Tuple3<INDArray, Updater, Double> t3) throws Exception {
-            return t3._3();
+        public double call(Tuple3<INDArray, Updater, ScoreReport> t3) throws Exception {
+            return t3._3().getS();
+        }
+    }
+
+    private static class ScoreMappingG implements DoubleFunction<Tuple3<Gradient,Updater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<Gradient, Updater, ScoreReport> t3) throws Exception {
+            return t3._3().getS();
+        }
+    }
+
+    private static class SMapping implements DoubleFunction<Tuple3<INDArray,Updater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<INDArray, Updater, ScoreReport> t3) throws Exception {
+            return t3._3().getM();
+        }
+    }
+
+    private static class SMappingG implements DoubleFunction<Tuple3<Gradient,Updater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<Gradient, Updater, ScoreReport> t3) throws Exception {
+            return t3._3().getM();
         }
     }
 }

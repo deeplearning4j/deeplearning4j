@@ -24,9 +24,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple3;
 
 
-public class UpdaterFromTupleFunction implements Function<Tuple3<INDArray,Updater,Double>,Updater> {
+public class UpdaterFromTupleFunction implements Function<Tuple3<INDArray,Updater,ScoreReport>,Updater> {
     @Override
-    public Updater call(Tuple3<INDArray, Updater, Double> indArrayTuple2) throws Exception {
+    public Updater call(Tuple3<INDArray, Updater, ScoreReport> indArrayTuple2) throws Exception {
         return indArrayTuple2._2();
     }
 }
