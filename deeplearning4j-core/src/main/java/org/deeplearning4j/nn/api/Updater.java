@@ -29,5 +29,4 @@ public interface Updater extends Serializable, Cloneable {
     UpdaterAggregator getAggregator(boolean addThis);
 
     Updater clone();
-
 }

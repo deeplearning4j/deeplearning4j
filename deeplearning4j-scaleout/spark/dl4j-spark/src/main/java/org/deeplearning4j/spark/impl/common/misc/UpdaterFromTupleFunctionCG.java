@@ -25,9 +25,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple3;
 
 
-public class UpdaterFromTupleFunctionCG implements Function<Tuple3<INDArray,ComputationGraphUpdater,Double>,ComputationGraphUpdater> {
+public class UpdaterFromTupleFunctionCG implements Function<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>,ComputationGraphUpdater> {
     @Override
-    public ComputationGraphUpdater call(Tuple3<INDArray, ComputationGraphUpdater, Double> indArrayTuple2) throws Exception {
+    public ComputationGraphUpdater call(Tuple3<INDArray, ComputationGraphUpdater, ScoreReport> indArrayTuple2) throws Exception {
         return indArrayTuple2._2();
     }
 }
