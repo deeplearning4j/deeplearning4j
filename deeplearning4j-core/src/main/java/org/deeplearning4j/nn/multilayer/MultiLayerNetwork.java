@@ -1026,10 +1026,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             update(TaskUtils.buildTask(iter));
-            iter.reset(); 
+            iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
@@ -2229,14 +2229,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
         while(iterator.hasNext()){
-            DataSet ds = iterator.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
+            DataSet next = iterator.next();
+
+            if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
 
             INDArray out;
-            if(ds.hasMaskArrays()){
-                INDArray fMask = ds.getFeaturesMaskArray();
-                INDArray lMask = ds.getLabelsMaskArray();
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
                 out = this.output(features,false,fMask,lMask);
 
                 //Assume this is time series data. Not much point having a mask array for non TS data
