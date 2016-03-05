@@ -164,7 +164,7 @@ TEST(Shape,Keep) {
     free(keep);
 }
 
-TEST(Shape,TensorsAlong longDimension) {
+TEST(Shape,tensorsAlongDimension) {
     int rank = 4;
     int *shape = (int *) malloc(sizeof(int) * rank);
     shape[0] = 2;
@@ -177,7 +177,7 @@ TEST(Shape,TensorsAlong longDimension) {
     dimension[1] = 2;
 
     int *shapeInfoBuffer = shapeBuffer(rank, shape);
-    int tads = shape::tensorsAlong longDimension(shapeInfoBuffer, dimension,
+    int tads = shape::tensorsAlongDimension(shapeInfoBuffer, dimension,
                                             dimensionLength);
     CHECK(4 == tads);
 
@@ -213,13 +213,13 @@ TEST(Shape,ReductionIndexForLinear) {
             shape::rank(shapeInfoBuffer), shape::shapeOf(shapeInfoBuffer),
             shape::stride(shapeInfoBuffer), 0, dimension, dimensionLength);
     CHECK(6 == elementWiseStride);
-    int tensorsAlong longDimension = shape::tensorsAlong longDimension(shapeInfoBuffer,
+    int tensorsAlongDimension = shape::tensorsAlongDimension(shapeInfoBuffer,
                                                              dimension, dimensionLength);
     int idx = shape::reductionIndexForLinear(1, elementWiseStride, tadLength,
-                                             tensorsAlong longDimension, tensorsAlong longDimension);
+                                             tensorsAlongDimension, tensorsAlongDimension);
     CHECK(idx == 0);
     int idx2 = shape::reductionIndexForLinear(4, 1, tadLength,
-                                              tensorsAlong longDimension, tensorsAlong longDimension);
+                                              tensorsAlongDimension, tensorsAlongDimension);
     CHECK(idx2 == 2);
     free(tadShapeInfo);
     free(shapeInfoBuffer);
@@ -352,7 +352,7 @@ TEST(Shape,TadOffset) {
     int shape[4]= {2,2,3,2};
     int dimension[1] = {1};
     int *shapeBuff = shapeBuffer(rank,shape);
-    int tads = shape::tensorsAlong longDimension(rank,24,shape,dimension,dimensionLength);
+    int tads = shape::tensorsAlongDimension(rank,24,shape,dimension,dimensionLength);
     CHECK_EQUAL(tads,12);
     int assertionsArr[4][12] = {
             {0,1,2,3,4,5,6,7,8,9,10,11},
@@ -406,7 +406,7 @@ TEST(Shape,TadOffsetMulti) {
     int shape[4]= {2,2,3,2};
     int dimension[2] = {0,1};
     int *shapeBuff = shapeBuffer(rank,shape);
-    int tads = shape::tensorsAlong longDimension(rank,24,shape,dimension,dimensionLength);
+    int tads = shape::tensorsAlongDimension(rank,24,shape,dimension,dimensionLength);
     CHECK_EQUAL(tads,6);
     int assertionsArr[1][6] = {
             {0,1,2,3,4,5}

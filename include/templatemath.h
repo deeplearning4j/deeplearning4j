@@ -101,24 +101,24 @@ namespace nd4j {
 		}
 
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_leakyrelu(T val,T alpha) {
-            return val < 0 ?  alpha * val : val;
-        }
+		inline T nd4j_leakyrelu(T val,T alpha) {
+			return val < 0 ?  alpha * val : val;
+		}
 
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_eluderivative(T val) {
-            return val >= 0.0 ? 1.0 : nd4j_exp(val);
-        }
+		inline T nd4j_eluderivative(T val) {
+			return val >= 0.0 ? 1.0 : nd4j_exp(val);
+		}
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -156,35 +156,35 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_tanh(T val);
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_tanhderivative(T val) {
-            T tanh = nd4j_tanh(val);
-            return 1.0 - tanh * tanh;
-        }
-        template<typename T>
+		inline T nd4j_tanhderivative(T val) {
+			T tanh = nd4j_tanh(val);
+			return 1.0 - tanh * tanh;
+		}
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_sigmoidderivative(T val) {
-            T sigmoid = nd4j_sigmoid(val);
-            T out = sigmoid * (1.0 - sigmoid);
-            return out;
-        }
+		inline T nd4j_sigmoidderivative(T val) {
+			T sigmoid = nd4j_sigmoid(val);
+			T out = sigmoid * (1.0 - sigmoid);
+			return out;
+		}
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_softsignderivative(T val) {
-            T y = 1 + nd4j_abs(val);
-            return 1.0 / (y * y);
-        }
+		inline T nd4j_softsignderivative(T val) {
+			T y = 1 + nd4j_abs(val);
+			return 1.0 / (y * y);
+		}
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -606,10 +606,10 @@ __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val +
-				__long longlong long_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val +
+				__longlong_as_double(assumed)));
 	} while (assumed != old);
-	return __long longlong long_as_double(old);
+	return __longlong_as_double(old);
 }
 
 template <>
@@ -619,10 +619,10 @@ __device__ double nd4j_atomicSub<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val -
-				__long longlong long_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val -
+				__longlong_as_double(assumed)));
 	} while (assumed != old);
-	return __long longlong long_as_double(old);
+	return __longlong_as_double(old);
 }
 
 template <>
@@ -632,10 +632,10 @@ __device__ double nd4j_atomicMul<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val *
-				__long longlong long_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val *
+				__longlong_as_double(assumed)));
 	} while (assumed != old);
-	return __long longlong long_as_double(old);
+	return __longlong_as_double(old);
 }
 
 template <>
@@ -645,10 +645,10 @@ __device__ double nd4j_atomicDiv<double>(double* address, double val)  {
 	unsigned long long int old = *address_as_ull, assumed;
 	do {
 		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_long longlong long(val /
-				__long longlong long_as_double(assumed)));
+		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val /
+				__longlong_as_double(assumed)));
 	} while (assumed != old);
-	return __long longlong long_as_double(old);
+	return __longlong_as_double(old);
 }
 
 template <>
