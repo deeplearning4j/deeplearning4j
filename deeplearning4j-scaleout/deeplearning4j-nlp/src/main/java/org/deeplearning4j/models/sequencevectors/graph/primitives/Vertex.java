@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.sequencevectors.graph.primitives;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 /** Vertex in a graph
@@ -11,15 +13,12 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 public class Vertex<T extends SequenceElement> {
 
     private final int idx;
-    private final T value;
+    @Getter @Setter private T value;
 
     public int vertexID() {
         return idx;
     }
 
-    public T getValue() {
-        return value;
-    }
 
     @Override
     public String toString() {
