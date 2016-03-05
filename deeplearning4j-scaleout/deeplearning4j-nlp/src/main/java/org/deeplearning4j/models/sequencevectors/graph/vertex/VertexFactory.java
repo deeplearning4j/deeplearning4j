@@ -10,7 +10,5 @@ public interface VertexFactory<T extends SequenceElement> {
 
     Vertex<T> create(int vertexIdx);
 
-    Vertex<T> create(T element);
-
     Vertex<T> create(int vertexIdx, T element);
 }

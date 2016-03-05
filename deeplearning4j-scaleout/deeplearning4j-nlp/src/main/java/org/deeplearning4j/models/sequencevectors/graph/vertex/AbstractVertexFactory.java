@@ -10,16 +10,13 @@ public class AbstractVertexFactory<T extends SequenceElement> implements VertexF
 
     @Override
     public Vertex<T> create(int vertexIdx) {
-        return null;
-    }
-
-    @Override
-    public Vertex<T> create(T element) {
-        return null;
+        Vertex<T> vertex = new Vertex<>(vertexIdx, null);
+        return vertex;
     }
 
     @Override
     public Vertex<T> create(int vertexIdx, T element) {
-        return null;
+        Vertex<T> vertex = new Vertex<>(vertexIdx, element);
+        return vertex;
     }
 }
