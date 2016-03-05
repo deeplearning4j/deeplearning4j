@@ -26,7 +26,7 @@ class BreezeCheck extends FlatSpec with Checkers {
               val columnRange = if (c1 > c2) c2 to c1 else c1 to c2
               val slicedByND4S = ndArray(rowRange, columnRange)
               val slicedByBreeze = prism.getOption(ndArray).map(dm => prism.reverseGet(dm(rowRange, columnRange)))
-              slicedByBreeze.contains(slicedByND4S)
+              slicedByBreeze.exists(_ == slicedByND4S)
           }
       }
     }
