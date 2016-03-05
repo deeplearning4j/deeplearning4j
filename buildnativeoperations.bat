@@ -4,7 +4,7 @@ SET OMP_NUM_THREADS=1
 if  "%#" LSS 1  (
     echo "Please specify an argument"
 ) else (
-    command="%1"
+    SET command="%1"
     echo "Running %1"
     if  "%1" == "clean"  (
        rd /s /qcmake_install.cmake
