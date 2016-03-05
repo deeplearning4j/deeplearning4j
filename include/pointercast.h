@@ -8,7 +8,7 @@
 #define Nd4jPointer long long
 #endif
 #ifdef _WIN32
-#define Nd4jPointer long
+#define Nd4jPointer long long
 #endif
 
 #ifdef __linux__
