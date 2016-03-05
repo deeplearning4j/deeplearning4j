@@ -1,11 +1,13 @@
 package org.deeplearning4j.text.labels;
 
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+
 /**
  * @author raver119@gmail.com
  */
-public interface LabelsProvider {
+public interface LabelsProvider<T extends SequenceElement> {
 
-    String nextLabel();
+    T nextLabel();
 
-    String getLabel(int index);
+    T getLabel(int index);
 }
