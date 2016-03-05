@@ -21,3 +21,9 @@ something in particular you are looking for.
 
 
 
+Finally, in that directory to build the dll:
+
+./buildnativeoperations.sh blas cpu
+
+For cuda:
+./buildnativeoperations.sh blas cuda
