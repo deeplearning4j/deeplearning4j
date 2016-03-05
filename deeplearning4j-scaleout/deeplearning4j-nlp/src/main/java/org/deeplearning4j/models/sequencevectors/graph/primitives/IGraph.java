@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.sequencevectors.graph;
+package org.deeplearning4j.models.sequencevectors.graph.primitives;
 
 
 import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
