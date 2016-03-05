@@ -116,7 +116,12 @@ public:
 template <typename T>
 class ScalarInfo {
     nd4j::buffer::Buffer<T> *scalarData;
+#ifdef R__WIN32
     static thread_local ScalarShapeInformation shapeInfo;
+#else
+    static  ScalarShapeInformation shapeInfo;
+
+#endif
     T finalResult;
 public:
     ScalarInfo() {
