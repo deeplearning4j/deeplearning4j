@@ -16,7 +16,10 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ *
  * @author raver119@gmail.com
+ *
+ * Based on Alex Black RandomWalkIterator implementation
  */
 public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int walkLength = 5;
@@ -31,9 +34,6 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
 
     }
 
-    public RandomWalker(int walkLength, NoEdgeHandling noEdgeHandling) {
-
-    }
 
     @Override
     public boolean hasNext() {
@@ -63,13 +63,13 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                     };
                     break;
                 case FORWARD_ONLY: {
-                        // here we remove only last
+                        // here we remove only last hop
                         int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), lastId);
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
                     };
                     break;
                 case FORWARD_UNIQUE: {
-                    // here we remove all previously visited hops, and we don't get to them
+                    // here we remove all previously visited hops, and we don't get  back to them ever
                     int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), visitedHops);
                     if (nextHops.length > 0) {
                         startPosition = nextHops[rng.nextInt(nextHops.length)];

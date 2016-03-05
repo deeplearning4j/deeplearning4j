@@ -13,21 +13,25 @@ import org.deeplearning4j.text.labels.LabelsProvider;
 import scala.collection.Seq;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
- * This class is used to build vocabulary out of graph, via abstract GraphWalkIterator
+ * This class is used to build vocabulary and sequences out of graph, via GraphWalkers
  *
  * WORK IS IN PROGRESS, DO NOT USE
  * @author raver119@gmail.com
  */
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
-    protected IGraph sourceGraph;
+    protected IGraph<T, ?> sourceGraph;
     protected int walkLength = 5;
     protected WalkMode walkMode = WalkMode.RANDOM;
     protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
     protected GraphWalker<T> walker;
     protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
+    protected LabelsProvider<T> labelsProvider;
+    protected AtomicInteger counter = new AtomicInteger(0);
+    protected boolean shuffle = true;
 
     protected GraphTransformer() {
         ;
@@ -35,16 +39,39 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
     @Override
     public Iterator<Sequence<T>> iterator() {
-        return null;
+        this.counter.set(0);
+        this.walker.reset();
+        return new Iterator<Sequence<T>>() {
+            private GraphWalker<T> walker = GraphTransformer.this.walker;
+
+            @Override
+            public boolean hasNext() {
+                return walker.hasNext();
+            }
+
+            @Override
+            public Sequence<T> next() {
+                Sequence<T> sequence = walker.next();
+                sequence.setSequenceId(counter.getAndIncrement());
+
+                if (labelsProvider != null) {
+                    // TODO: sequence labels to be implemented for graph walks
+                    sequence.setSequenceLabel(labelsProvider.getLabel(sequence.getSequenceId()));
+                }
+                return sequence;
+            }
+        };
     }
 
     public static class Builder<T extends SequenceElement> {
-        protected IGraph sourceGraph;
+        protected IGraph<T, ?> sourceGraph;
         protected int walkLength = 5;
         protected WalkMode walkMode = WalkMode.RANDOM;
         protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.CUTOFF_ON_DISCONNECTED;
         protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
-        protected LabelsProvider labelsProvider;
+        protected LabelsProvider<T> labelsProvider;
+        protected GraphWalker<T> walker;
+        protected boolean shuffle = true;
 
         public Builder(IGraph<T, ?> sourceGraph) {
             this.sourceGraph = sourceGraph;
@@ -65,8 +92,18 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             return this;
         }
 
-        public Builder<T> setLabelsProvider(@NonNull LabelsProvider provider) {
+        public Builder<T> setLabelsProvider(@NonNull LabelsProvider<T> provider) {
             this.labelsProvider = provider;
+            return this;
+        }
+
+        public Builder<T> setGraphWalker(@NonNull GraphWalker<T> walker) {
+            this.walker = walker;
+            return this;
+        }
+
+        public Builder<T> shuffleOnReset(boolean reallyShuffle) {
+            this.shuffle = reallyShuffle;
             return this;
         }
 
@@ -77,19 +114,24 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             transformer.walkLength = this.walkLength;
             transformer.walkMode = this.walkMode;
             transformer.walkDirection = this.walkDirection;
+            transformer.labelsProvider = this.labelsProvider;
+            transformer.shuffle = this.shuffle;
 
-            switch (this.walkMode) {
-                case RANDOM:
-                    transformer.walker = new RandomWalker.Builder<T>(this.sourceGraph)
-                            .setNoEdgeHandling(this.noEdgeHandling)
-                            .setWalkLength(this.walkLength)
-                            .setWalkDirection(this.walkDirection)
-                            .build();
-                    break;
-                case WEIGHTED:
-                default:
-                    throw new UnsupportedOperationException("WalkMode ["+ this.walkMode+"] isn't supported at this moment?");
-            }
+            if (this.walker == null)
+                switch (this.walkMode) {
+                    case RANDOM:
+                        transformer.walker = new RandomWalker.Builder<T>(this.sourceGraph)
+                                .setNoEdgeHandling(this.noEdgeHandling)
+                                .setWalkLength(this.walkLength)
+                                .setWalkDirection(this.walkDirection)
+                                .build();
+                        break;
+                    case WEIGHTED_MAX:
+                    case WEIGHTED_MIN:
+                    default:
+                        throw new UnsupportedOperationException("WalkMode ["+ this.walkMode+"] isn't supported at this moment?");
+                }
+            else transformer.walker = this.walker;
 
             return transformer;
         }
