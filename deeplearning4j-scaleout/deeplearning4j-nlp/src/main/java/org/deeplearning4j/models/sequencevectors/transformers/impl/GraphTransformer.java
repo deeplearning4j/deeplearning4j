@@ -2,6 +2,7 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
+import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
@@ -26,6 +27,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected WalkMode walkMode = WalkMode.RANDOM;
     protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
     protected GraphWalker<T> walker;
+    protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
 
     protected GraphTransformer() {
         ;
@@ -40,7 +42,8 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         protected IGraph sourceGraph;
         protected int walkLength = 5;
         protected WalkMode walkMode = WalkMode.RANDOM;
-        protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
+        protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.CUTOFF_ON_DISCONNECTED;
+        protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
         protected LabelsProvider labelsProvider;
 
         public Builder(IGraph<T, ?> sourceGraph) {
@@ -73,12 +76,14 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             transformer.sourceGraph = this.sourceGraph;
             transformer.walkLength = this.walkLength;
             transformer.walkMode = this.walkMode;
+            transformer.walkDirection = this.walkDirection;
 
             switch (this.walkMode) {
                 case RANDOM:
-                    transformer.walker = new RandomWalker.Builder<T>()
+                    transformer.walker = new RandomWalker.Builder<T>(this.sourceGraph)
                             .setNoEdgeHandling(this.noEdgeHandling)
                             .setWalkLength(this.walkLength)
+                            .setWalkDirection(this.walkDirection)
                             .build();
                     break;
                 case WEIGHTED:
