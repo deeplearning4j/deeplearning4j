@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 
-export OMP_NUM_THREADS=1
+#export OMP_NUM_THREADS=1
 
+export GENERATOR="Unix Makefiles"
 
 if [ "$(uname)" == "Darwin" ]; then
     echo "RUNNING OSX CLANG"
     # Do something under Mac OS X platform
     #export CC=clang-omp++
     export CXX=clang-omp++
-    elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
+    elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
     # Do something under Windows NT platform
     echo "Running windows"
+   # export GENERATOR="MSYS Makefiles"
+
 fi
+
+
 
 if [ "$#" -lt 1 ]; then
     echo "Please specify an argument"
@@ -30,7 +35,8 @@ else
        echo "Deleted build"
     elif [ "$1" ==  "eclipse" ]; then
             cd eclipse
-            cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
+            export GENERATOR="Eclipse CDT4 - Unix Makefiles"
+            cmake -G "$GENERATOR" -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
             mv eclipse/.cproject .
             mv eclipse/.project .
@@ -45,7 +51,7 @@ else
                 rm -rf testbuild
                 mkdir testbuild
                 cd testbuild
-                cmake -DRUN_TEST=TRUE ..
+                cmake -G "$GENERATOR" -DRUN_TEST=TRUE ..
                 make && cd ..
                 mv testbuild/test/libnd4jtests .
                ./libnd4jtests -n "$2"
@@ -53,7 +59,7 @@ else
                rm -rf testbuild
                mkdir testbuild
                cd testbuild
-               cmake -DRUN_TEST=TRUE ..
+               cmake -G "$GENERATOR" -DRUN_TEST=TRUE ..
                make && cd ..
                mv testbuild/test/libnd4jtests .
                ./libnd4jtests
@@ -64,7 +70,7 @@ else
             rm -rf cubinbuild
            mkdir cubinbuild
            cd cubinbuild
-           cmake -DCUBIN=TRUE ..
+           cmake -G "$GENERATOR" -DCUBIN=TRUE ..
            make && cd ..
            echo "FINISHING BUILD"
            mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
@@ -81,11 +87,11 @@ else
            cd blasbuild
            if [ "$#" -gt "1" ]; then
               if [ "$2" == "cuda" ]; then
-                   cmake -DCUDA_BLAS=true -DBLAS=TRUE ..
+                   cmake -G "$GENERATOR" -DCUDA_BLAS=true -DBLAS=TRUE ..
                    make && cd ..
                   echo "FINISHING BUILD"
               elif [ "$2" == "cpu" ]; then
-                   cmake -DCPU_BLAS=true -DBLAS=TRUE ..
+                   cmake -G "$GENERATOR" -DCPU_BLAS=true -DBLAS=TRUE ..
                    make && cd ..
                    echo "FINISHING BUILD"
               else
@@ -105,7 +111,7 @@ else
            rm -rf ptxbuild
            mkdir ptxbuild
            cd ptxbuild
-           cmake -DPTX=TRUE ..
+           cmake -G "$GENERATOR" -DPTX=TRUE ..
            make && cd ..
            echo "FINISHING BUILD"
            mv ptxbuild/ptx/cuda_compile_ptx_generated_all.cu.ptx all.ptx
@@ -113,7 +119,7 @@ else
            rm -rf fatbuild
            mkdir fatbuild
            cd fatbuild
-           cmake -DFATBIN=TRUE ..
+           cmake -G "$GENERATOR" -DFATBIN=TRUE ..
            make && cd ..
            echo "FINISHING BUILD"
            mv fatbuild/fatbin/cuda_compile_fatbin_generated_all.cu.fatbin all.fatbin

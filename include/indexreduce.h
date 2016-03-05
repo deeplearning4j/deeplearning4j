@@ -274,7 +274,7 @@ namespace functions {
 
                 IndexValue <T> reduction = {startingVal, 0};
                 if (tid == 0) {
-                    tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
+                    tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
                     resultLength = shape::length(resultShapeInfo);
                     if (dimensionLength == 1) {
                         if (dimension[0] == shape::MAX_DIMENSION)

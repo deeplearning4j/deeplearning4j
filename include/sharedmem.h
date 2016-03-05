@@ -75,7 +75,7 @@ struct SharedMemory {
 };
 
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template<>
@@ -132,18 +132,18 @@ struct SharedMemory<unsigned short> {
 };
 
 template<>
-struct SharedMemory<long long> {
-	__device__ long long *getPointer() {
-		extern __shared__ long long s_long long[];
-		return s_long long;
+struct SharedMemory<long> {
+	__device__ long *getPointer() {
+		extern __shared__ long s_long[];
+		return s_long;
 	}
 };
 
 template<>
-struct SharedMemory<unsigned long long> {
-	__device__ unsigned long long *getPointer() {
-		extern __shared__ unsigned long long s_ulong long[];
-		return s_ulong long;
+struct SharedMemory<unsigned long> {
+	__device__ unsigned long *getPointer() {
+		extern __shared__ unsigned long s_ulong[];
+		return s_ulong;
 	}
 };
 

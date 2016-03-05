@@ -459,7 +459,7 @@ __device__ virtual void collapseTad(
 		int dimensionLength) {
 	SharedMemory <T> val;
 	//number of tads for the reduced solution
-	int numTads = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
+	int numTads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 
 	volatile T *sPartials = val.getPointer();
 	int tid = threadIdx.x;

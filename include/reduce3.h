@@ -302,7 +302,7 @@ namespace functions {
                     }
                     else
                         resultScalar = 0;
-                    tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
+                    tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
                     xLength = shape::length(xShapeInfo);
 
 

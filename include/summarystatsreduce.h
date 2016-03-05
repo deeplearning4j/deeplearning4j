@@ -631,7 +631,7 @@ struct SharedSummaryStatsData<double> {
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
 		if (tid == 0) {
-			tensorsForDimension = shape::tensorsAlong longDimension(xShapeInfo, dimension, dimensionLength);
+			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 			resultLength = shape::length(resultShapeInfo);
 			if (dimensionLength == 1) {
 				if (dimension[0] == shape::MAX_DIMENSION)
