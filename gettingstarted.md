@@ -101,7 +101,7 @@ If OpenBlas is not working correctly, follow these steps:
 
 For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
 
-## <a name="walk">DL4J Examples: A More Details Step-by-Step Walkthrough</a>
+## <a name="walk">DL4J Examples: A Detailed Walkthrough</a>
 
 This section provides a more comprehensive version of the steps contained in the [quickstart guide](http://deeplearning4j.org/quickstart).
 
