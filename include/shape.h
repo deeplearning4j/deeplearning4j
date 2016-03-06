@@ -7,15 +7,12 @@
 
 #ifndef SHAPE_H_
 #define SHAPE_H_
+#include <dll.h>
 
 #include <templatemath.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <cstring>
 
 #include <stdlib.h>
-#include <dll.h>
 
 namespace shape {
     const int MAX_DIMENSION = 0x7fffffff;

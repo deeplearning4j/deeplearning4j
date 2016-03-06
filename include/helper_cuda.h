@@ -15,9 +15,8 @@
 #define HELPER_CUDA_H
 
 #pragma once
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <dll.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,7 +24,6 @@
 #include <cuda.h>
 #endif
 #include "helper_string.h"
-#include <dll.h>
 
 //#include <string>
 //#include <iostream>

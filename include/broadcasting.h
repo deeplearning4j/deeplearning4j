@@ -7,16 +7,13 @@
 
 #ifndef BROADCASTING_H_
 #define BROADCASTING_H_
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <dll.h>
 #include <stdio.h>
 #include <sharedmem.h>
 #include <shape.h>
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
-#include <dll.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

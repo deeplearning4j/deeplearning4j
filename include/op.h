@@ -7,11 +7,8 @@
 
 #ifndef OP_H_
 #define OP_H_
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <string>
 #include <dll.h>
+#include <string>
 
 #ifdef JNI
 #include <jni.h>

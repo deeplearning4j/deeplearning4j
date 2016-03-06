@@ -11,9 +11,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <dll.h>
+
 #include <helper_string.h>
 #include <helper_cuda.h>
 #include <stddef.h>

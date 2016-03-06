@@ -1,6 +1,4 @@
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <dll.h>
 #include <string>
 #include <sharedmem.h>
 #include <stdio.h>
@@ -9,7 +7,6 @@
 #include <omp.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
-#include <dll.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
