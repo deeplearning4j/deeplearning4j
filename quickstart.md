@@ -85,18 +85,17 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
 
 Optional dependencies you might want include:
 
-- deeplearning4j-ui: contains the browser-based user-interface ([details here](http://deeplearning4j.org/visualization))
-- deeplearning4j-nlp: contains the [Word2Vec](http://deeplearning4j.org/word2vec) implementation
-- dl4j-spark: contains code for distributed training of neural networks on Apache Spark
-- canova-nd4j-image: contains code for loading images
-- canova-nd4j-codec: contains code for loading video files
+- `deeplearning4j-ui`: contains the browser-based user-interface ([details here](http://deeplearning4j.org/visualization))
+- `deeplearning4j-nlp`: contains the [Word2Vec](http://deeplearning4j.org/word2vec) implementation
+- `dl4j-spark`: contains code for distributed training of neural networks on Apache Spark
+- `canova-nd4j-image`: contains code for loading images
+- `canova-nd4j-codec`: contains code for loading video files
 
 Additional links:
 
 - [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
 - [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
 - [Canova artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Ccanova)
-
 
 ## Next Steps
 
