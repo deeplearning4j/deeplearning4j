@@ -4,6 +4,8 @@
 
 #ifndef NATIVEOPERATIONS_LAPACKE_H
 #define NATIVEOPERATIONS_LAPACKE_H
+#include <dll.h>
+
 /*****************************************************************************
   Copyright (c) 2010, Intel Corp.
   All rights reserved.

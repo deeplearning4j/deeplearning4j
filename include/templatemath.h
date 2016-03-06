@@ -9,6 +9,7 @@
 #define TEMPLATEMATH_H_
 
 #include <math.h>
+#include <dll.h>
 
 namespace nd4j {
 	namespace math {

@@ -23,6 +23,7 @@
 #include <cuda.h>
 #endif
 #include "helper_string.h"
+#include <dll.h>
 
 //#include <string>
 //#include <iostream>

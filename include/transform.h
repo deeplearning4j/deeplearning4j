@@ -10,6 +10,8 @@
 #include <templatemath.h>
 #include <op.h>
 #include <omp.h>
+#include <dll.h>
+
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif

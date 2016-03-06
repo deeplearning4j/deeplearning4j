@@ -13,6 +13,8 @@
 #define _SHAREDMEM_H_
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <dll.h>
+
 //****************************************************************************
 // Because dynamically sized shared memory arrays are declared "extern",
 // we can't templatize them directly.  To get around this, we declare a

@@ -26,6 +26,8 @@
 #include <cuda_runtime_api.h>
 #include <helper_string.h>
 #include <helper_cuda.h>
+#include <dll.h>
+
 /*! Computes a block size in number of threads for a CUDA kernel using a occupancy-promoting heuristic.
  *  \param attributes The cudaFuncAttributes corresponding to a __global__ function of interest on a GPU of interest.
  *  \param properties The cudaDeviceProp corresponding to a GPU on which to launch the __global__ function of interest.
@@ -34,10 +36,6 @@
  *          the "CUDA Occupancy Calculator".
  *  \note The __global__ function of interest is presumed to use 0 bytes of dynamically-allocated __shared__ memory.
  */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
 inline
 #ifdef __CUDACC__
 __host__ __device__
@@ -56,10 +54,6 @@ std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes
  *          accomodate and which is intended to promote occupancy. The result is equivalent to the one performed by
  *          the "CUDA Occupancy Calculator".
  */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
 template<typename UnaryFunction>
 #ifdef __CUDACC__
 __host__ __device__
@@ -78,9 +72,6 @@ namespace __cuda_launch_config_detail
     namespace util
     {
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
         template<typename T>
 #ifdef __CUDACC__
@@ -102,9 +93,6 @@ namespace __cuda_launch_config_detail
             }
         };
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 // x/y rounding towards +infinity for integers, used to determine # of blocks/warps etc.
         template<typename L, typename R>
@@ -126,11 +114,7 @@ namespace __cuda_launch_config_detail
             return x / y;
         }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
-        // round x towards infinity to the next multiple of y
+// round x towards infinity to the next multiple of y
         template<typename L, typename R>
         inline
 #ifdef __CUDACC__
@@ -148,9 +132,6 @@ namespace __cuda_launch_config_detail
 
     } // end namespace util
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 
 // granularity of shared memory allocation
@@ -169,11 +150,6 @@ namespace __cuda_launch_config_detail
             default: return 256; // unknown GPU; have to guess
         }
     }
-
-
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 
 // granularity of register allocation
@@ -205,9 +181,6 @@ namespace __cuda_launch_config_detail
         }
     }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 // granularity of warp allocation
     inline
@@ -218,9 +191,6 @@ namespace __cuda_launch_config_detail
     {
         return (properties.major <= 1) ? 2 : 1;
     }
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 // number of "sides" into which the multiprocessor is partitioned
     inline
@@ -238,9 +208,6 @@ namespace __cuda_launch_config_detail
         }
     }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     inline
 #ifdef __CUDACC__
@@ -251,9 +218,6 @@ namespace __cuda_launch_config_detail
         return (properties.major <= 2) ? 8 : 16;
     }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     inline
 #ifdef __CUDACC__
@@ -319,9 +283,6 @@ namespace __cuda_launch_config_detail
         return util::min_(ctaLimitRegs, util::min_(ctaLimitSMem, util::min_(ctaLimitThreads, ctaLimitBlocks)));
     }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     template <typename UnaryFunction>
     inline
@@ -359,9 +320,6 @@ namespace __cuda_launch_config_detail
 
 } // end namespace __cuda_launch_config_detail
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 template<typename UnaryFunction>
 inline
@@ -376,9 +334,6 @@ std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes
     return __cuda_launch_config_detail::default_block_size(properties, attributes, block_size_to_dynamic_smem_size);
 }
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 inline
 #ifdef __CUDACC__
@@ -389,9 +344,6 @@ std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes
 {
     return block_size_with_maximum_potential_occupancy(attributes, properties, __cuda_launch_config_detail::util::zero_function<std::size_t>());
 }
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 template<typename T>
 inline

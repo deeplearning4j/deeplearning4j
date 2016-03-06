@@ -8,6 +8,7 @@
 #ifndef SUMMARYSTATSREDUCE_H_
 #define SUMMARYSTATSREDUCE_H_
 #include <templatemath.h>
+#include <dll.h>
 
 #include <shape.h>
 #include <op.h>

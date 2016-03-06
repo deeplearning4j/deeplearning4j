@@ -16,6 +16,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dll.h>
+
 
 namespace nd4j {
 	namespace buffer {
@@ -23,10 +25,6 @@ namespace nd4j {
  * Represents both a cpu and gpu
  * buffer - mainly used for testing
  */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
 		template<typename T>
 		struct Buffer {
 			int length = 0;

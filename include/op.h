@@ -8,6 +8,8 @@
 #ifndef OP_H_
 #define OP_H_
 #include <string>
+#include <dll.h>
+
 #ifdef JNI
 #include <jni.h>
 #endif

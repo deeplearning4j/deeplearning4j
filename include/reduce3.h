@@ -16,6 +16,7 @@
 #include <sharedmem.h>
 #include <omp.h>
 #include <pairwise_util.h>
+#include <dll.h>
 
 #ifdef __JNI__
 #include <jni.h>

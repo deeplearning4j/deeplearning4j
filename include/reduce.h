@@ -6,6 +6,8 @@
 #include <omp.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#include <dll.h>
+
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

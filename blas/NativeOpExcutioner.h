@@ -18,10 +18,6 @@
  * Native op executioner:
  *
  */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
 template <typename T>
 class NativeOpExcutioner {
 private:

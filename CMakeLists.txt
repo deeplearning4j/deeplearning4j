@@ -8,9 +8,11 @@ option(ECLIPSE "Generate eclipse files" OFF)
 option(BLAS "Compile blas shared library for either cuda or cpu" ON)
 option(BUFFER "Compiles a small buffer library" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
+#ensure we create lib files
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 find_path(STDIO_INCLUDE_PATH stdio.h)
 set(CMAKE_CXX_FLAGS "-Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native")
+
 
 
 

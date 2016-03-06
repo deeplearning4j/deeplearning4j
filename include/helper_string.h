@@ -43,6 +43,7 @@
 
 #include <string.h>
 #include <strings.h>
+#include <dll.h>
 
 #ifndef STRCASECMP
 #define STRCASECMP  strcasecmp

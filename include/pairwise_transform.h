@@ -16,6 +16,8 @@
 #include <helper_cuda.h>
 #include <shape.h>
 #include <pairwise_util.h>
+#include <dll.h>
+
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

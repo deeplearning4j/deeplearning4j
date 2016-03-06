@@ -8,9 +8,6 @@
 #include <pointercast.h>
 
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
 class Nd4jBlas {
 public:
@@ -27,30 +24,18 @@ public:
      * DOT
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     float sdsdot(Nd4jPointer *extraParams,int N, float alpha,
                  Nd4jPointer X, int incX,
                  Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     double dsdot(Nd4jPointer *extraParams,int N,
                  Nd4jPointer X, int incX,
                  Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     double ddot(Nd4jPointer *extraParams,int N,
                 Nd4jPointer X, int incX,
                 Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     float sdot(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
@@ -61,14 +46,8 @@ public:
      * NRM2
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     float snrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     double dnrm2(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
 
@@ -77,14 +56,8 @@ public:
      * ASUM
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     float sasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     double dasum(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
 
@@ -93,14 +66,8 @@ public:
      * IAMAX
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     int isamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     int idamax(Nd4jPointer *extraParams,int N, Nd4jPointer X, int incX);
 
@@ -115,17 +82,11 @@ public:
      * ROT
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void srot(Nd4jPointer *extraParams,int N,
               Nd4jPointer X, int incX,
               Nd4jPointer Y, int incY,
               float c, float s);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void drot(Nd4jPointer *extraParams,int N,
               Nd4jPointer X, int incX,
@@ -137,14 +98,8 @@ public:
      * ROTG
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void srotg(Nd4jPointer *extraParams,Nd4jPointer args);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void drotg(Nd4jPointer *extraParams,Nd4jPointer args);
 
@@ -153,15 +108,9 @@ public:
      * ROTMG
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void srotmg(Nd4jPointer *extraParams,Nd4jPointer args,
                 Nd4jPointer P);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void drotmg(Nd4jPointer *extraParams,Nd4jPointer args,
                 Nd4jPointer P);
@@ -171,17 +120,11 @@ public:
      * ROTM
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void srotm(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY,
                Nd4jPointer P);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void drotm(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
@@ -193,16 +136,10 @@ public:
      * SWAP
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sswap(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dswap(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
@@ -213,15 +150,9 @@ public:
      * SCAL
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sscal(Nd4jPointer *extraParams,int N, float alpha,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dscal(Nd4jPointer *extraParams,int N, double alpha,
                Nd4jPointer X, int incX);
@@ -231,16 +162,10 @@ public:
      * SCOPY
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void scopy(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dcopy(Nd4jPointer *extraParams,int N,
                Nd4jPointer X, int incX,
@@ -251,16 +176,10 @@ public:
      * AXPY
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void saxpy(Nd4jPointer *extraParams,int N, float alpha,
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void daxpy(Nd4jPointer *extraParams,int N, double alpha,
                Nd4jPointer X, int incX,
@@ -278,9 +197,6 @@ public:
      * GEMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sgemv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
@@ -289,9 +205,6 @@ public:
                Nd4jPointer X, int incX,
                float beta,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dgemv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
@@ -306,9 +219,6 @@ public:
      * GBMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sgbmv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
@@ -318,9 +228,6 @@ public:
                Nd4jPointer X, int incX,
                float beta,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dgbmv(Nd4jPointer *extraParams,int Order, int TransA,
                int M, int N,
@@ -336,9 +243,6 @@ public:
      * SYMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void ssymv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -347,9 +251,6 @@ public:
                Nd4jPointer X, int incX,
                float beta,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsymv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -364,9 +265,6 @@ public:
      * SBMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void ssbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N, int K,
@@ -375,9 +273,6 @@ public:
                Nd4jPointer X, int incX,
                float beta,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N, int K,
@@ -392,9 +287,6 @@ public:
      * SPMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -403,9 +295,6 @@ public:
                Nd4jPointer X, int incX,
                float beta,
                Nd4jPointer Y, int incY);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dspmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -420,19 +309,12 @@ public:
      * TRMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void strmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, float alpha,
                Nd4jPointer A, int lda,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
-
     void dtrmv(Nd4jPointer *extraParams,int Order, int Uplo, int TransA,
                int Diag,
                int N, double alpha,
@@ -444,18 +326,12 @@ public:
      * TBMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void stbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
                Nd4jPointer A, int lda,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtbmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
@@ -468,18 +344,12 @@ public:
      * TPMV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void stpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
                Nd4jPointer Ap,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtpmv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
@@ -492,18 +362,12 @@ public:
      * TRSV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void strsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
                Nd4jPointer A, int lda,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtrsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
@@ -516,18 +380,12 @@ public:
      * TBSV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void stbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N, int K,
                Nd4jPointer A, int lda,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtbsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
@@ -540,18 +398,12 @@ public:
      * TPSV
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void stpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
                int N,
                Nd4jPointer Ap,
                Nd4jPointer X, int incX);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtpsv(Nd4jPointer *extraParams,int Order, int Uplo,
                int TransA, int Diag,
@@ -563,9 +415,6 @@ public:
      * GER
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sger(Nd4jPointer *extraParams,int Order,
               int M, int N,
@@ -573,9 +422,6 @@ public:
               Nd4jPointer X, int incX,
               Nd4jPointer Y, int incY,
               Nd4jPointer A, int lda);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dger(Nd4jPointer *extraParams,int Order,
               int M, int N,
@@ -590,17 +436,11 @@ public:
      * ------------------------------------------------------
      */
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
     void ssyr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               float alpha,
               Nd4jPointer X, int incX,
               Nd4jPointer A, int lda);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsyr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
@@ -613,18 +453,12 @@ public:
      * SPR
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sspr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
               float alpha,
               Nd4jPointer X, int incX,
               Nd4jPointer Ap);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dspr(Nd4jPointer *extraParams,int Order, int Uplo,
               int N,
@@ -638,18 +472,12 @@ public:
      * ------------------------------------------------------
      */
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
     void ssyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
                float alpha,
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY,
                Nd4jPointer A, int lda);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsyr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -663,9 +491,6 @@ public:
      * SPR2
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -673,9 +498,6 @@ public:
                Nd4jPointer X, int incX,
                Nd4jPointer Y, int incY,
                Nd4jPointer Ap);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dspr2(Nd4jPointer *extraParams,int Order, int Uplo,
                int N,
@@ -696,9 +518,6 @@ public:
      * GEMM
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
@@ -707,9 +526,6 @@ public:
                Nd4jPointer B, int ldb,
                float beta,
                Nd4jPointer C, int ldc);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                int M, int N, int K,
@@ -725,9 +541,6 @@ public:
      * ------------------------------------------------------
      */
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
     void ssymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                int M, int N,
                float alpha,
@@ -735,9 +548,6 @@ public:
                Nd4jPointer B, int ldb,
                float beta,
                Nd4jPointer C, int ldc);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsymm(Nd4jPointer *extraParams,int Order, int Side, int Uplo,
                int M, int N,
@@ -752,9 +562,6 @@ public:
      * SYRK
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void ssyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
@@ -762,9 +569,6 @@ public:
                Nd4jPointer A, int lda,
                float beta,
                Nd4jPointer C, int ldc);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dsyrk(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                int N, int K,
@@ -778,9 +582,6 @@ public:
      * SYR2K
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void ssyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
@@ -790,9 +591,6 @@ public:
                 float beta,
                 Nd4jPointer C, int ldc);
 
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
     void dsyr2k(Nd4jPointer *extraParams,int Order, int Uplo, int Trans,
                 int N, int K,
                 double alpha,
@@ -806,9 +604,6 @@ public:
      * TRMM
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void strmm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
@@ -816,9 +611,6 @@ public:
                float alpha,
                Nd4jPointer A, int lda,
                Nd4jPointer B, int ldb);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtrmm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
@@ -832,9 +624,6 @@ public:
      * TRSM
      * ------------------------------------------------------
      */
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void strsm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,
@@ -842,9 +631,6 @@ public:
                float alpha,
                Nd4jPointer A, int lda,
                Nd4jPointer B, int ldb);
-#ifdef _WIN32
-#define __declspec(dllexport)
-#endif
 
     void dtrsm(Nd4jPointer *extraParams,int Order, int Side,
                int Uplo, int TransA, int Diag,

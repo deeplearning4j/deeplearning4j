@@ -7,6 +7,8 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
+#include <dll.h>
+
 #ifdef __JNI__
 #include <jni.h>
 #endif
