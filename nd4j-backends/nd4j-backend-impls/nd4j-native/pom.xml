@@ -40,6 +40,9 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <environmentVariables>
+                        <INCLUDE>${env.VISUAL_STUDIO_HOME}/include:${env.LIBND4J_HOME}/include:${env.LIBND4J_HOME}/blas</INCLUDE>
+                    </environmentVariables>
                     <copyLibs>true</copyLibs>
                     <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
