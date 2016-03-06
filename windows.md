@@ -23,10 +23,11 @@ something in particular you are looking for.
 
 Finally, in that directory to build the dll:
 
-./buildnativeoperations.sh blas cpu
+         ./buildnativeoperations.sh blas cpu
 
 For cuda:
-./buildnativeoperations.sh blas cuda
+
+        ./buildnativeoperations.sh blas cuda
 
 
 For building with javacpp, define a visual studio environment variable as follows:
@@ -38,8 +39,9 @@ Set LIBND4J_HOME to point to the root directory of where you cloned libnd4j.
 
 Then set the following environment variables:
 
-export INCLUDE="$VISUAL_STUDIO_HOME/include;$LIBND4J_HOME/include;$LIBND4J_HOME/blas"
-export LIB="$VISUAL_STUDIO_HOME/lib;$LIBND4J_HOME/blasbuild/blas"
+     export INCLUDE="$VISUAL_STUDIO_HOME/include;$LIBND4J_HOME/include;$LIBND4J_HOME/blas"
+     
+     export LIB="$VISUAL_STUDIO_HOME/lib;$LIBND4J_HOME/blasbuild/blas"
 
 In maven and java cpp you can also define:
                                    <environmentVariables>
