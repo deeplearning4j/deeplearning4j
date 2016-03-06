@@ -9,9 +9,11 @@
 #define SHAPE_H_
 
 #include <templatemath.h>
-#ifndef _WIN32
-#include <cstring>
+#ifdef _WIN32
+#include <windows.h>
 #endif
+#include <cstring>
+
 #include <stdlib.h>
 #include <dll.h>
 

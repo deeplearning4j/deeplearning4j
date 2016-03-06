@@ -7,6 +7,9 @@
 
 #ifndef BROADCASTING_H_
 #define BROADCASTING_H_
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <stdio.h>
 #include <sharedmem.h>
 #include <shape.h>
