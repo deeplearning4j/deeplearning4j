@@ -4,15 +4,18 @@ import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
+import org.deeplearning4j.models.sequencevectors.graph.huffman.GraphHuffman;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.text.labels.LabelsProvider;
-import scala.collection.Seq;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -33,8 +36,36 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected AtomicInteger counter = new AtomicInteger(0);
     protected boolean shuffle = true;
 
+    protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
+
     protected GraphTransformer() {
         ;
+    }
+
+    /**
+     * This method handles required initialization for GraphTransformer
+     */
+    protected void initialize() {
+        log.info("Building Huffman tree for source graph...");
+        int nVertices = sourceGraph.numVertices();
+        int[] degrees = new int[nVertices];
+        for( int i=0; i<nVertices; i++ )
+            degrees[i] = sourceGraph.getVertexDegree(i);
+
+        GraphHuffman huffman = new GraphHuffman(nVertices);
+        huffman.buildTree(degrees);
+
+        log.info("Transferring Huffman tree info to nodes...");
+        for (int i = 0; i < nVertices; i++) {
+            int codeLen = huffman.getCodeLength(i);
+            int[] path = huffman.getPathInnerNodes(i);
+            List<Integer> codes = huffman.getCodeList(i);
+
+            T element = sourceGraph.getVertex(i).getValue();
+            element.setCodeLength(codeLen);
+            element.setPoints(path);
+            element.setCodes(codes);
+        }
     }
 
     @Override
@@ -132,6 +163,8 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
                         throw new UnsupportedOperationException("WalkMode ["+ this.walkMode+"] isn't supported at this moment?");
                 }
             else transformer.walker = this.walker;
+
+            transformer.initialize();
 
             return transformer;
         }

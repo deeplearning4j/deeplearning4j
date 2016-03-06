@@ -172,6 +172,18 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     }
 
     /**
+     * Sets Huffman tree points
+     *
+     * @param points
+     */
+    public void setPoints(int[] points) {
+        this.points = new ArrayList<>();
+        for (int i = 0; i < points.length; i++) {
+            this.points.add(points[i]);
+        }
+    }
+
+    /**
      * Returns Huffman code length.
      *
      * Please note: maximum vocabulary/tree size depends on code length
