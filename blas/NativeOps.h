@@ -27,7 +27,9 @@
 #include <pointercast.h>
 
 
-
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 class NativeOps {
 
 

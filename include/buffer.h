@@ -23,6 +23,10 @@ namespace nd4j {
  * Represents both a cpu and gpu
  * buffer - mainly used for testing
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 		template<typename T>
 		struct Buffer {
 			int length = 0;

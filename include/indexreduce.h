@@ -48,6 +48,9 @@ namespace functions {
 // Following are the specializations for the following types.
 // int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<>
         struct SharedIndexValue<float> {
@@ -59,6 +62,9 @@ namespace functions {
 // Following are the specializations for the following types.
 // int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<>
         struct SharedIndexValue<double> {
@@ -67,6 +73,9 @@ namespace functions {
                 return s_int6;
             }
         };
+#endif
+#ifdef _WIN32
+#define __declspec(dllexport)
 #endif
 
         template<typename T>
@@ -991,6 +1000,10 @@ namespace functions {
 /**
  * Find the max index
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
             template<typename T>
             class IMax: public  functions::indexreduce::IndexReduce<T> {
             public:
@@ -1146,6 +1159,10 @@ namespace functions {
 /**
  * Find the min index
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
             template<typename T>
             class IMin: public  functions::indexreduce::IndexReduce<T> {
             public:
@@ -1300,6 +1317,10 @@ namespace functions {
                 }
             };
         }
+
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<typename T>
         class IndexReduceOpFactory {

@@ -28,6 +28,10 @@ namespace functions {
  * for broadcasting a smaller tensor
  * along long a bigger one.
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
         class Broadcast: public functions::ops::Op<T> {
         public:
@@ -167,6 +171,10 @@ namespace functions {
         };
 
         namespace ops {
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
             template<typename T>
             class Add: public  functions::broadcast::Broadcast<T> {
             public:
@@ -220,6 +228,9 @@ namespace functions {
                 virtual ~Add() {
                 }
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
             template<typename T>
             class Copy: public virtual functions::broadcast::Broadcast<T> {
@@ -275,6 +286,9 @@ namespace functions {
                 }
 
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
             template<typename T>
             class Divide: public virtual functions::broadcast::Broadcast<T> {
@@ -330,6 +344,9 @@ namespace functions {
                 }
 
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
             template<typename T>
             class Multiply: public virtual functions::broadcast::Broadcast<T> {
@@ -385,6 +402,10 @@ namespace functions {
                 }
 
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 
             template<typename T>
             class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
@@ -440,6 +461,9 @@ namespace functions {
                 }
 
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
             template<typename T>
             class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
@@ -495,6 +519,9 @@ namespace functions {
                 }
 
             };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
             template<typename T>
             class Subtract: public virtual functions::broadcast::Broadcast<T> {
@@ -551,6 +578,9 @@ namespace functions {
 
             };
         }
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<typename T>
         class BroadcastOpFactory {

@@ -16,3 +16,6 @@
 #endif
 
 #endif //NATIVEOPERATIONS_POINTERCAST_H
+
+//__declspec(dllexport)
+

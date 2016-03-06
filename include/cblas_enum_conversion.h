@@ -24,6 +24,10 @@ extern "C" {
  * for row (c) or column (f) ordering
  * default is row major
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 CBLAS_ORDER convertOrder(int from);
 /**
  * Converts a character to its proper enum
@@ -31,6 +35,10 @@ CBLAS_ORDER convertOrder(int from);
  * n -> no transpose
  * c -> conj
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 CBLAS_TRANSPOSE convertTranspose(int from);
 /**
  * Upper or lower
@@ -39,6 +47,10 @@ CBLAS_TRANSPOSE convertTranspose(int from);
  *
  * Default is upper
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 CBLAS_UPLO convertUplo(int from);
 
 /**
@@ -48,6 +60,10 @@ CBLAS_UPLO convertUplo(int from);
  *
  * Default: unit
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 CBLAS_DIAG convertDiag(int from);
 /**
  * Side of a matrix, left or right
@@ -55,6 +71,10 @@ CBLAS_DIAG convertDiag(int from);
  * r/R -> right
  * default: left
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 CBLAS_SIDE convertSide(int from);
 
 #ifdef __cplusplus

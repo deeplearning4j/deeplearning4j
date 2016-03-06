@@ -23,6 +23,9 @@ namespace nd4j {
 
 
 #define EPSILON 1e-6
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<typename T>
         struct NDArray {
@@ -58,6 +61,9 @@ namespace nd4j {
                 return 1;
             }
         };
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
         template<typename T>
         class NDArrays {
@@ -219,6 +225,11 @@ namespace nd4j {
 /**
  * Returns the length of this ndarray
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
+
         template<typename T>
 #ifdef __CUDACC__
         __host__ __device__
@@ -234,6 +245,10 @@ namespace nd4j {
  * this ndarray
  * in bytes
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
 #ifdef __CUDACC__
         __host__ __device__
@@ -252,6 +267,10 @@ namespace nd4j {
  * offset and fills the array
  * with the given default value
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
 
 #ifdef __CUDACC__
@@ -281,6 +300,10 @@ namespace nd4j {
  * offset and fills the array
  * with the given default value
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
 
 #ifdef __CUDACC__
@@ -313,6 +336,10 @@ namespace nd4j {
  * have already been initialized.
  *
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 #ifdef __CUDACC__
         template<typename T>
 
@@ -331,6 +358,10 @@ void NDArrays<T>::allocateNDArrayOnGpu(NDArray <T> **arr) {
  * given parameters
  * and then allocates it on the gpu
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 #ifdef __CUDACC__
         template<typename T>
 __host__
@@ -348,6 +379,10 @@ NDArray<T> * NDArrays<T>::createFromAndAllocateOnGpu(int rank, int *shape, int *
  * to the cpu
  * for the given ndarray
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
 #ifdef __CUDACC__
         template<typename T>
 
@@ -376,6 +411,9 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
  * Allocate the data based
  * on the shape information
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
         template<typename T>
 #ifdef __CUDACC__
         __host__ __device__
@@ -395,6 +433,10 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
  * for shape and stride
  * @return the shape information for the given array
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
 #ifdef __CUDACC__
         __host__ __device__
@@ -421,6 +463,10 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
  *
  *
  */
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
+
         template<typename T>
 #ifdef __CUDACC__
         __host__
@@ -431,6 +477,10 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
             return createFrom(info->rank, info->shape, info->stride, info->offset,
                               defaultValue);
         }
+
+#ifdef _WIN32
+#define __declspec(dllexport)
+#endif
 
 #ifdef __CUDACC__
         template<typename T>
