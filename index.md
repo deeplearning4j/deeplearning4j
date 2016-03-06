@@ -11,7 +11,7 @@ Deeplearning4j aims to be cutting-edge plug and play, more convention than confi
 
 By following the [instructions on our Quick Start page](../quickstart.html), you can run your first examples of trained neural nets in minutes.
 
-### [Deep Learning Use Cases](../use_cases.html)
+### [Deep Learning Use Cases](../use_cases)
 
 * Face/image recognition
 * Voice search
@@ -59,7 +59,6 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 * [LSTM and Recurrent Network Tutorial](../lstm)
 * [Using Recurrent Nets With DL4J](../usingrnns)
 * [Deep-Belief Networks With MNIST](../mnist-tutorial)
-* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial)
 * [Customizing Data Pipelines With Canova](../image-data-pipeline)
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine)
 * [Eigenvectors, PCA and Entropy](../eigenvector)
