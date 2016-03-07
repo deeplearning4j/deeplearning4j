@@ -140,12 +140,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             lookupTable.resetWeights(true);
         }
 
-        if (trainSequenceVectors) {
-            log.info("Zfinance before fit(): " + this.getWordVectorMatrix("Zfinance"));
-            log.info("Zhealth before fit(): " + this.getWordVectorMatrix("Zhealth"));
-            log.info("Zscience before fit(): " + this.getWordVectorMatrix("Zscience"));
-        }
-
         log.info("Building learning algorithms:");
         if (trainElementsVectors && elementsLearningAlgorithm != null) {
             log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
