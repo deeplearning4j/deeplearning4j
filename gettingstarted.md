@@ -23,7 +23,6 @@ After following the steps in the [Quick Start Guide](http://deeplearning4j.org/q
 6. <a href="#results">Reproducible Results</a>
 7. <a href="#next">Next Steps</a>
 
-
 ## Accelerating CPU Training Performance: Installing Native BLAS Libraries
 
 Neural network training is computationally expensive. In order to obtain high computational performance, ND4J makes use of native (c/fortran) basic linear algebra subpgropgams (BLAS) libraries, such as [OpenBLAS](http://www.openblas.net/). Though ND4J will operate correctly without it, training performance in DL4J will suffer.
@@ -167,7 +166,7 @@ On non-rpm systems, do:
       * Operating System (Windows, OSX, Linux) and version 
       * Java version (7, 8) : type java -version in your terminal/CMD
       * Maven version : type mvn --version in your terminal/CMD
-      * Stacktrace: Please past the error code on Gist and share the link with us: [https://gist.github.com/](https://gist.github.com/)
+      * Stacktrace: Please past the error code on Gist and share the link with us: https://gist.github.com/
 * If you have installed DL4J before and now see the examples throwing errors, please update your libraries. With Maven, just update the versions in your POM.xml file to match the latest versions on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With source, you can run a `git clone` on [ND4J](http://nd4j.org/getstarted.html), Canova and DL4J and a `mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true` within all three directories, in that order.
 * When you run an example, you may get a low [f1 score](../glossary.html#f1), which is the probability that the net's classification is accurate. In this case, a low f1 doesn't indicate poor performance, because the examples train on small data sets. We gave them small data sets so they would run quickly. Because small data sets are less representative than large ones, the results they produce will vary a great deal. For example, on the minuscule example data, our deep-belief net's f1 score currently varies between 0.32 and 1.0. 
 * Deeplearning4j includes an **autocomplete function**. If you are unsure which commands are available, press any letter and a drop-down list like this will appear:
