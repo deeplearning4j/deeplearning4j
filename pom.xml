@@ -244,7 +244,6 @@
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
         <javacpp.version>1.2-SNAPSHOT</javacpp.version>
-        <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->

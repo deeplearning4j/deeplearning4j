@@ -133,7 +133,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         assertEquals(d, d2);
     }
 
- 
+
 
 
     @Test

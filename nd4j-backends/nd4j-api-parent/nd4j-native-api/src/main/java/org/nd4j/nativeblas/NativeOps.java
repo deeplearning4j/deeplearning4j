@@ -12,7 +12,7 @@ import org.nd4j.nativeblas.util.LibUtils;
  * op execution on cpu
  * @author Adam Gibson
  */
-@Platform(include="NativeOps.h",preload = "nd4j",link = "nd4j")
+@Platform(include="NativeOps.h",preload = "libnd4j",link = "nd4j")
 public class NativeOps extends Pointer {
     static {
         try {
