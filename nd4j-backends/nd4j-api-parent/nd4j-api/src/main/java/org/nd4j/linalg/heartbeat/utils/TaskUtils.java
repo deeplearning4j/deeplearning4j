@@ -16,60 +16,22 @@ public class TaskUtils {
     }
 
     public static Task buildTask(INDArray array, INDArray labels) {
-        try {
-            Task task = new Task();
-            task.setNumFeatures(array.columns());
-
-            return task;
-        } catch (Exception e) {
-            return new Task();
-        }
+        return new Task();
     }
 
     public static Task buildTask(INDArray array) {
-        try {
-            Task task = new Task();
-            task.setNumFeatures(array.columns());
-
-            return task;
-        } catch (Exception e) {
-            return new Task();
-        }
+        return new Task();
     }
 
     public static Task buildTask(DataSet dataSet) {
-        try {
-            Task task = new Task();
-            task.setNumFeatures(dataSet.numInputs());
-            task.setNumLabels(dataSet.numOutcomes());
-
-            return task;
-        } catch (Exception e) {
-            return new Task();
-        }
+        return new Task();
     }
 
     public static Task buildTask(org.nd4j.linalg.dataset.api.DataSet dataSet) {
-        try {
-            Task task = new Task();
-            task.setNumFeatures(dataSet.numInputs());
-            task.setNumLabels(dataSet.numOutcomes());
-
-            return task;
-        } catch (Exception e) {
-            return new Task();
-        }
+        return new Task();
     }
 
     public static Task buildTask(DataSetIterator dataSetIterator) {
-        try {
-            Task task = new Task();
-            task.setNumFeatures(dataSetIterator.inputColumns());
-            task.setNumLabels(dataSetIterator.totalOutcomes());
-
-            return task;
-        } catch (Exception e) {
-            return new Task();
-        }
+        return new Task();
     }
 }
