@@ -15,7 +15,7 @@
 #define HELPER_CUDA_H
 
 #pragma once
-
+#include <dll.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

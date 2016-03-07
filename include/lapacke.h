@@ -52,7 +52,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
+#include <dll.h>
 #include <stdlib.h>
 
 #ifndef lapack_int

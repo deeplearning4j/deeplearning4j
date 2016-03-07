@@ -4,6 +4,7 @@
 
 #ifndef NATIVEOPERATIONS_NATIVEBUFFER_H
 #define NATIVEOPERATIONS_NATIVEBUFFER_H
+#include <dll.h>
 #include <stdlib.h>
 class JavaCppDoublePointer {
 private:

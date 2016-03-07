@@ -910,7 +910,6 @@ namespace functions {
 
                     int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
                     const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                    char order = shape::order(xShapeInfo);
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = i;

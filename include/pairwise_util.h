@@ -124,38 +124,7 @@ void quickSort(StridePermutation *arr, int elements);
 
 
 
-/*
- * Sorts items so stride is descending, because C-order
- * is the default in the face of ambiguity.
- */
-#ifdef __CUDACC__
-__host__
-#endif
-static int StridePermutationCompare(const StridePermutation *a, const StridePermutation *b)  {
-    int astride = a->stride, bstride = b->stride;
 
-    /* Sort the absolute value of the strides */
-    if (astride < 0) {
-        astride = -astride;
-    }
-    if (bstride < 0) {
-        bstride = -bstride;
-    }
-
-    if (astride == bstride) {
-        /*
-         * Make the qsort stable by next comparing the perm order.
-         * (Note that two perm entries will never be equal)
-         */
-        int aperm = a->perm, bperm = b->perm;
-        return (aperm < bperm) ? -1 : 1;
-    }
-
-    if (astride > bstride) {
-        return -1;
-    }
-    return 1;
-}
 
 /*NUMPY_API
  *

@@ -12,7 +12,7 @@
 // These are helper functions for the SDK samples (string parsing, timers, etc)
 #ifndef STRING_HELPER_H
 #define STRING_HELPER_H
-
+#include <dll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
