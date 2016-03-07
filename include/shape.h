@@ -7,13 +7,11 @@
 
 #ifndef SHAPE_H_
 #define SHAPE_H_
-#include <dll.h>
-
-#include <templatemath.h>
 #include <cstring>
-
-#include <stdlib.h>
-
+#include <cstdio>
+#include <dll.h>
+#include <nd4jmalloc.h>
+#include <templatemath.h>
 namespace shape {
     const int MAX_DIMENSION = 0x7fffffff;
     const int MAX_NUM_THREADS = 1024;

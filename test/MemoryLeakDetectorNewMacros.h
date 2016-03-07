@@ -35,19 +35,19 @@
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void* operator new(size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
+void* operator new(int size, const char* file, int line) UT_THROW (std::bad_alloc);
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void* operator new[](size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
+void* operator new[](int size, const char* file, int line) UT_THROW (std::bad_alloc);
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void* operator new(size_t size) UT_THROW(std::bad_alloc);
+void* operator new(int size) UT_THROW(std::bad_alloc);
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void* operator new[](size_t size) UT_THROW(std::bad_alloc);
+void* operator new[](int size) UT_THROW(std::bad_alloc);
 #ifdef __CUDACC__
 __host__ __device__
 #endif

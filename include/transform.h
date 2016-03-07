@@ -333,17 +333,6 @@ namespace functions {
                     return nd4j::math::nd4j_abs<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                __host__
-
-#endif
-                std::string name() {
-                    return std::string("abs_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -379,17 +368,7 @@ namespace functions {
                     return nd4j::math::nd4j_ceil<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("ceil_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -425,20 +404,7 @@ namespace functions {
                     return nd4j::math::nd4j_cos<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
 
-#ifdef __CUDACC__
-                inline __host__
-                virtual
-#elif defined(__GNUC__)
-
-                
-#endif
-                std::string name() {
-                    return std::string("cos_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -474,20 +440,7 @@ namespace functions {
                     return nd4j::math::nd4j_exp<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("exp_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -523,17 +476,7 @@ namespace functions {
                     return ((d1 >= -1.0 && d1 <= 1.0) ? 1.0 : 0.0);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("hardtanhderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -569,17 +512,7 @@ namespace functions {
                     return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("hardtanh_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -615,17 +548,6 @@ namespace functions {
                     return nd4j::math::nd4j_floor<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("floor_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -661,20 +583,7 @@ namespace functions {
                     return nd4j::math::nd4j_log<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("log_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -710,17 +619,7 @@ namespace functions {
                     return -d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("neg_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -756,17 +655,7 @@ namespace functions {
                     return nd4j::math::nd4j_pow<T>(d1, params[0]);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("pow_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -809,17 +698,7 @@ namespace functions {
                     return nd4j::math::nd4j_round<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("round_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -855,17 +734,6 @@ namespace functions {
                     return nd4j::math::nd4j_sigmoid<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("sigmoid_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -903,17 +771,7 @@ namespace functions {
                     return nd4j::math::nd4j_sigmoidderivative<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sigmoidderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -961,20 +819,7 @@ namespace functions {
                     return ret;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("setrange_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1010,17 +855,7 @@ namespace functions {
                     return nd4j::math::nd4j_sin<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sin_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1056,17 +891,7 @@ namespace functions {
                     return nd4j::math::nd4j_sqrt<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sqrt_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1102,17 +927,7 @@ namespace functions {
                     return nd4j::math::softplus<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("softplus_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1149,17 +964,7 @@ namespace functions {
                     return (d1 > 0) - (d1 < 0);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sign_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1196,17 +1001,6 @@ namespace functions {
                     return d1 * 1 - d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("tanh_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1243,17 +1037,7 @@ namespace functions {
                     return nd4j::math::nd4j_tanh<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("tanh_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1289,17 +1073,7 @@ namespace functions {
                     return nd4j::math::nd4j_tanhderivative<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("tanhderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1335,20 +1109,7 @@ namespace functions {
                     return nd4j::math::nd4j_acos<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("acos_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1386,20 +1147,7 @@ namespace functions {
                     return 1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("softsign_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1437,20 +1185,7 @@ namespace functions {
                     return nd4j::math::nd4j_softsign<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("softsign_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1488,20 +1223,7 @@ namespace functions {
                     return nd4j::math::nd4j_softsignderivative<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#elif defined(__GNUC__)
-                
-
-#endif
-                std::string name() {
-                    return std::string("softsignderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1537,17 +1259,7 @@ namespace functions {
                     return nd4j::math::nd4j_elu<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("elu_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1587,17 +1299,6 @@ namespace functions {
                     return nd4j::math::nd4j_eluderivative<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("eluderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1635,17 +1336,7 @@ namespace functions {
                     return d1 < params[0] ?  params[0] : d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("leakyrelu_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1683,17 +1374,7 @@ namespace functions {
                     return nd4j::math::nd4j_leakyrelu<T>(params[0],d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("leakyrelu_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1731,17 +1412,7 @@ namespace functions {
                     return (d1 >= 0 ? 1.0 : params[0]);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("leakyreluderivative_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1778,17 +1449,7 @@ namespace functions {
                     return nd4j::math::nd4j_asin<T>(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("asin_strided");
-                }
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -1823,17 +1484,7 @@ namespace functions {
                     return nd4j::math::nd4j_atan(d1);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("atan_strided");
-                }
 
 
 #ifdef __CUDACC__
@@ -1870,17 +1521,7 @@ namespace functions {
                     return d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("identity_strided");
-                }
 
 
 #ifdef __CUDACC__
@@ -1925,17 +1566,7 @@ namespace functions {
                     return d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("stabilize_strided");
-                }
 
 
 #ifdef __CUDACC__
@@ -1974,17 +1605,7 @@ namespace functions {
                     return (d1 > params[0] ? 1.0 : 0.0);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("step_strided");
-                }
 
 
 #ifdef __CUDACC__
@@ -2024,17 +1645,7 @@ namespace functions {
                     return 1.0 - d1;
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("oneminus_strided");
-                }
 
 
 #ifdef __CUDACC__

@@ -5,6 +5,6 @@
 #ifndef NATIVEOPERATIONS_DLL_H
 #define NATIVEOPERATIONS_DLL_H
 #ifdef _WIN32
-#include <windows.h>
+//#include <windows.h>
 #endif
 #endif //NATIVEOPERATIONS_DLL_H

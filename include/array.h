@@ -11,7 +11,7 @@
 #include <shape.h>
 #include <helper_string.h>
 #include <helper_cuda.h>
-#include <math.h>
+#include <templatemath.h>
 #include <buffer.h>
 #include <dll.h>
 
@@ -82,7 +82,7 @@ namespace nd4j {
             __device__  __host__
 
 #endif
-            size_t length(NDArray<T> *arr);
+            int length(NDArray<T> *arr);
 
             /**
              * Returns the length of
@@ -94,7 +94,7 @@ namespace nd4j {
             __device__  __host__
 
 #endif
-            size_t lengthInBytes(NDArray<T> *arr);
+            int lengthInBytes(NDArray<T> *arr);
 
             /**
              * Creates an ndarray
@@ -224,8 +224,8 @@ namespace nd4j {
         __host__ __device__
 #endif
 
-        size_t NDArrays<T>::length(NDArray<T> *arr) {
-            size_t size = shape::prod(arr->shape->data, arr->rank);
+        int NDArrays<T>::length(NDArray<T> *arr) {
+            int size = shape::prod(arr->shape->data, arr->rank);
             return size;
         }
 
@@ -239,8 +239,8 @@ namespace nd4j {
         __host__ __device__
 #endif
 
-        size_t NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
-            size_t size = shape::prod(arr->shape->data, arr->rank) * sizeof(T);
+        int NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
+            int size = shape::prod(arr->shape->data, arr->rank) * sizeof(T);
             return size;
         }
 
@@ -269,7 +269,7 @@ namespace nd4j {
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
             ret->offset = offset;
-            size_t size = lengthInBytes(ret);
+            int size = lengthInBytes(ret);
             int length = size / sizeof(T);
             ret->data = nd4j::buffer::createBuffer<T>(data, length);
             return ret;
@@ -294,7 +294,7 @@ namespace nd4j {
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
             ret->offset = offset;
-            size_t size = lengthInBytes(ret);
+            int size = lengthInBytes(ret);
             int length = size / sizeof(T);
             int realSize = shape::prod(shape,rank);
             if(realSize < 2)
@@ -320,7 +320,7 @@ __host__
 
 void NDArrays<T>::allocateNDArrayOnGpu(NDArray <T> **arr) {
 	NDArray <T> *arrRef = *arr;
-	size_t size = lengthInBytes(arrRef);
+	int size = lengthInBytes(arrRef);
 	nd4j::buffer::copyDataToGpu(&((*arr)->data));
 	nd4j::buffer::copyDataToGpu(&((*arr)->shape));
 	nd4j::buffer::copyDataToGpu(&((*arr)->stride));

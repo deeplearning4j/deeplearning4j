@@ -8,7 +8,7 @@
 #ifndef OP_H_
 #define OP_H_
 #include <dll.h>
-#include <string>
+//#include <string>
 
 #ifdef JNI
 #include <jni.h>
@@ -24,16 +24,7 @@ class Op {
 protected:
     int extraParamsLen = 0;
 public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	__host__
 
-#endif
-	std::string name() = 0;
 
 	virtual inline
 #ifdef __CUDACC__
