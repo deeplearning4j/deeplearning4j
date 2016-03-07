@@ -180,17 +180,21 @@ public class TestGraphNodes {
         INDArray inMask = Nd4j.zeros(3,6);
         inMask.putRow(0,Nd4j.create(new double[]{1,1,1,0,0,0}));
         inMask.putRow(1,Nd4j.create(new double[]{1,1,1,1,0,0}));
-        inMask.putRow(2,Nd4j.create(new double[]{1,1,1,1,1,0}));
+        inMask.putRow(2, Nd4j.create(new double[]{1, 1, 1, 1, 1, 0}));
         graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
 
         expOut = Nd4j.zeros(3,5);
         expOut.putRow(0,in.get(NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.point(2)));
         expOut.putRow(1,in.get(NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.point(3)));
-        expOut.putRow(2,in.get(NDArrayIndex.point(2),NDArrayIndex.all(),NDArrayIndex.point(4)));
+        expOut.putRow(2, in.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
         gv.setInputs(in);
         outFwd = gv.doForward(true);
-        assertEquals(expOut,outFwd);
+        assertEquals(expOut, outFwd);
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
     }
 
     @Test
@@ -220,11 +224,15 @@ public class TestGraphNodes {
         GraphVertex gv = graph.getVertex("duplicateTS");
         gv.setInputs(in2d);
         INDArray outFwd = gv.doForward(true);
-        assertEquals(expOut,outFwd);
+        assertEquals(expOut, outFwd);
 
         INDArray expOutBackward = expOut.sum(2);
-        gv.setError(0,expOut);
+        gv.setError(0, expOut);
         INDArray outBwd = gv.doBackward(false).getSecond()[0];
-        assertEquals(expOutBackward,outBwd);
+        assertEquals(expOutBackward, outBwd);
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
     }
 }
