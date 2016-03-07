@@ -105,7 +105,7 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 
 ![Alt text](../img/karpathy-convnet-labels.png) 
 
-그 동안 컨볼루션에 대해 자세히 다뤘습니다. 내용을 잘 이해했으면 컨볼루션을 복잡한 개념이 아니라 그저 두 행렬의 성분끼리 곱하는 것으로 편하게 생각하면 됩니다.
+그동안 컨볼루션에 대해 자세히 다뤘습니다. 내용을 잘 이해했으면 컨볼루션을 복잡한 개념이 아니라 그저 두 행렬의 성분끼리 곱하는 것으로 편하게 생각하면 됩니다.
 
 <iframe src="http://mathworld.wolfram.com//images/gifs/convgaus.gif" width="100%" height="250px;" style="border:none;"></iframe>
 
