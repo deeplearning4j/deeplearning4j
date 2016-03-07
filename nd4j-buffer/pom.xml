@@ -40,22 +40,6 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>generate-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${generate-sources.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer</classOrPackageName>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer</classOrPackageName>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer</classOrPackageName>
-                            </classOrPackageNames>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>process-classes</id>
                         <phase>process-classes</phase>
                         <goals>

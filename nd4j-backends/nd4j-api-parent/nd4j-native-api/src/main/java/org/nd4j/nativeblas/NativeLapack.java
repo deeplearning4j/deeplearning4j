@@ -7,7 +7,7 @@ import org.bytedeco.javacpp.annotation.Platform;
 /**
  * Created by agibsonccc on 2/20/16.
  */
-@Platform(include="NativeLapack.h",link = "libnd4j")
+@Platform(include="NativeLapack.h",preload = "libnd4j", link = "nd4j")
 public class NativeLapack extends Pointer {
     public NativeLapack() {
     }

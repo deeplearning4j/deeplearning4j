@@ -43,25 +43,13 @@
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
-                    <includePath>${env.LIBND4J_HOME}/blas</includePath>
+                    <includePaths>
+                        <includePath>${env.LIBND4J_HOME}/blas</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include</includePath>
+                    </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
                 </configuration>
                 <executions>
-                    <execution>
-                        <id>generate-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${generate-sources.skip}</skip>
-                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
-                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
-                            </classOrPackageNames>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>process-classes</id>
                         <phase>process-classes</phase>
@@ -69,8 +57,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                            <jarPrefix>lib/</jarPrefix>
+                            <outputDirectory>${project.build.outputDirectory}/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>
                                 <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
