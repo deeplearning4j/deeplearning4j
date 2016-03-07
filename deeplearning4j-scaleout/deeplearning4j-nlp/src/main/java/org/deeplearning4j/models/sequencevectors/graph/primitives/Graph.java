@@ -49,6 +49,19 @@ public class Graph<V extends SequenceElement, E> implements IGraph<V,E> {
         edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
     }
 
+    @SuppressWarnings("unchecked")
+    public Graph(Collection<V> elements, boolean allowMultipleEdges) {
+        this.vertices = new ArrayList<Vertex<V>>();
+        this.allowMultipleEdges = allowMultipleEdges;
+        int idx = 0;
+        for (V element: elements) {
+            Vertex<V> vertex = new Vertex<>(idx, element);
+            vertices.add(vertex);
+            idx++;
+        }
+        edges = (List<Edge<E>>[]) Array.newInstance(List.class,vertices.size());
+    }
+
     public Graph(List<Vertex<V>> vertices){
         this(vertices,false);
     }
