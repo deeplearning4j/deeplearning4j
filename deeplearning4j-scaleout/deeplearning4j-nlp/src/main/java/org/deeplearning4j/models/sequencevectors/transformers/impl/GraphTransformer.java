@@ -7,7 +7,7 @@ import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
 import org.deeplearning4j.models.sequencevectors.graph.huffman.GraphHuffman;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
-import org.deeplearning4j.models.sequencevectors.graph.walkers.RandomWalker;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -180,8 +180,8 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
                                 .setWalkDirection(this.walkDirection)
                                 .build();
                         break;
-                    case WEIGHTED_MAX:
-                    case WEIGHTED_MIN:
+                    case WEIGHTED:
+                    case POPULARITY:
                     default:
                         throw new UnsupportedOperationException("WalkMode ["+ this.walkMode+"] isn't supported at this moment?");
                 }

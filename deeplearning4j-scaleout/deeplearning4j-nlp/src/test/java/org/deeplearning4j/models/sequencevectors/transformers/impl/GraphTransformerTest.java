@@ -8,7 +8,7 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFactory;
-import org.deeplearning4j.models.sequencevectors.graph.walkers.RandomWalker;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
@@ -23,19 +23,19 @@ import static org.junit.Assert.*;
  */
 public class GraphTransformerTest {
 
-    private static IGraph<VocabWord, Void> graph;
+    private static IGraph<VocabWord, Double> graph;
 
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
-            graph = new Graph<VocabWord, Void>(10, false, new AbstractVertexFactory<VocabWord>());
+            graph = new Graph<VocabWord, Double>(10, false, new AbstractVertexFactory<VocabWord>());
 
             for (int i = 0; i < 10; i++) {
                 graph.getVertex(i).setValue(new VocabWord(i, String.valueOf(i)));
 
                 int x = i + 3;
                 if (x >= 10) x = 0;
-                graph.addEdge(i, x, null, true);
+                graph.addEdge(i, x, 1.0, false);
             }
         }
     }

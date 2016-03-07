@@ -32,6 +32,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,14 +319,17 @@ public class SequenceVectorsTest {
 
     @Test
     public void testDeepWalk() throws Exception {
+        Heartbeat.getInstance().disableHeartbeat();
+
         AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
-        Graph<Blogger, Void> graph =buildGraph();
+
+        Graph<Blogger, Double> graph =buildGraph();
 
         GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
                 .setWalkMode(WalkMode.RANDOM)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkLength(10)
-                .setWalkDirection(WalkDirection.FORWARD_ONLY)
+                .setWalkLength(40)
+                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
                 .shuffleOnReset(true)
                 .setVocabCache(vocabCache)
                 .build();
@@ -355,13 +359,13 @@ public class SequenceVectorsTest {
 
                 // batchSize is the number of sequences being processed by 1 thread at once
                 // this value actually matters if you have iterations > 1
-                .batchSize(250)
+                .batchSize(1000)
 
                 // number of iterations over batch
-                .iterations(1)
+                .iterations(2)
 
                 // number of iterations over whole training corpus
-                .epochs(5)
+                .epochs(10)
 
                 // if set to true, vocabulary will be built from scratches internally
                 // otherwise externally provided vocab will be used
@@ -378,13 +382,24 @@ public class SequenceVectorsTest {
                  */
                 .elementsLearningAlgorithm(new SkipGram<Blogger>())
 
+
+                .learningRate(0.025)
+
+                .layerSize(150)
+
+                .sampling(0)
+
+                .negativeSample(0)
+
                 .windowSize(10)
+
+                .workers(6)
 
                 .build();
 
         vectors.fit();
 
-        vectors.setModelUtils(new BasicModelUtils());
+        vectors.setModelUtils(new FlatModelUtils());
 
    //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
 
@@ -398,7 +413,7 @@ public class SequenceVectorsTest {
     }
 
 
-    private List<Blogger> getBloggersFromGraph(Graph<Blogger, Void> graph) {
+    private List<Blogger> getBloggersFromGraph(Graph<Blogger, Double> graph) {
         List<Blogger> result = new ArrayList<>();
 
         List<Vertex<Blogger>> bloggers = graph.getVertices(0, graph.numVertices()-1);
@@ -409,7 +424,7 @@ public class SequenceVectorsTest {
         return result;
     }
 
-    private static Graph<Blogger, Void> buildGraph() throws IOException, InterruptedException {
+    private static Graph<Blogger, Double> buildGraph() throws IOException, InterruptedException {
         File nodes = new File("/ext/Temp/BlogCatalog/nodes.csv");
 
         CSVRecordReader reader = new CSVRecordReader(0,",");
@@ -427,7 +442,7 @@ public class SequenceVectorsTest {
 
         reader.close();
 
-        Graph<Blogger, Void> graph = new Graph<Blogger, Void>(bloggers, true);
+        Graph<Blogger, Double> graph = new Graph<Blogger, Double>(bloggers, true);
 
         // load edges
         File edges = new File("/ext/Temp/BlogCatalog/edges.csv");
@@ -440,8 +455,7 @@ public class SequenceVectorsTest {
             int from = lines.get(0).toInt();
             int to = lines.get(1).toInt();
 
-            graph.addEdge(from-1, to-1, null, true);
-            graph.addEdge(to-1, from-1, null, true);
+            graph.addEdge(from-1, to-1, 1.0, false);
         }
         return graph;
     }
@@ -484,7 +498,7 @@ public class SequenceVectorsTest {
     }
 
     private static void printWords(String target, Collection<String> list, SequenceVectors vec) {
-        System.out.println("Words close to ["+target+"]: " + Arrays.toString(vec.getWordVector(target)));
+        System.out.println("Words close to ["+target+"]: ");
         for (String word: list) {
             double sim = vec.similarity(target, word);
             System.out.print("'"+ word+"': ["+ sim+"], ");
