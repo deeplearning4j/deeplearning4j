@@ -44,7 +44,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
      * @param inputName Name of the input in the ComputationGraph network to use, to determine how long the output time
      *                  series should be. This input should (a) exist, and (b) be a time series input
      */
-    public DuplicateToTimeSeriesVertex(@JsonProperty("maskArrayInputName") String inputName){
+    public DuplicateToTimeSeriesVertex(@JsonProperty("inputName") String inputName){
         this.inputName = inputName;
     }
 
