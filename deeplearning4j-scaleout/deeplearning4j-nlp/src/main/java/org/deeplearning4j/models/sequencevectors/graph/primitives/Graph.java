@@ -20,7 +20,7 @@ import java.util.*;
  * @param <E> Type parameter for edges (type of objects attached to each edge)
  * @author Alex Black
  */
-public class Graph<V extends SequenceElement, E> implements IGraph<V,E> {
+public class Graph<V extends SequenceElement, E extends Number> implements IGraph<V,E> {
     private boolean allowMultipleEdges;
     private List<Edge<E>>[] edges;  //edge[i].get(j).to = k, then edge from i -> k
     private List<Vertex<V>> vertices;
