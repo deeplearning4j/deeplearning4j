@@ -5,6 +5,6 @@ package org.deeplearning4j.models.sequencevectors.graph.enums;
  */
 public enum WalkMode {
     RANDOM,
-    WEIGHTED_MAX,
-    WEIGHTED_MIN,
+    WEIGHTED,
+    POPULARITY
 }

@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.sequencevectors.graph.walkers;
+package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
@@ -7,8 +7,11 @@ import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +34,8 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int[] order;
     protected WalkDirection walkDirection;
 
+    protected static final Logger logger = LoggerFactory.getLogger(RandomWalker.class);
+
     protected RandomWalker() {
 
     }
@@ -50,11 +55,17 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
 
         int startPosition = position.getAndIncrement();
         int lastId = -1;
+        int startPoint = order[startPosition];
+        //System.out.println("");
+        if (startPosition == 0)
+            System.out.print("Walk: ");
         for (int i = 0; i < walkLength; i++) {
             int currentPosition = startPosition;
             Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
+            if (startPoint == 0)
+                System.out.print("" + vertex.vertexID() + " -> ");
 
             // get next vertex
             switch (walkDirection) {
@@ -136,6 +147,8 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
             lastId = vertex.vertexID();
         }
 
+        if (startPoint == 0)
+            System.out.println("");
         return sequence;
     }
 
@@ -143,6 +156,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     public void reset(boolean shuffle) {
         this.position.set(0);
         if (shuffle) {
+            logger.debug("Calling shuffle() on entries...");
             // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
             for(int i=order.length-1; i>0; i-- ){
                 int j = rng.nextInt(i+1);
@@ -184,7 +198,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
             return this;
         }
 
-        public RandomWalker<T> build() {
+        public GraphWalker<T> build() {
             RandomWalker<T> walker = new RandomWalker<T>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;

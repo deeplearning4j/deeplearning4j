@@ -6,7 +6,7 @@ import lombok.Data;
  * Parameterized, and may store a value/object associated with the edge
  */
 @Data
-public class Edge<T> {
+public class Edge<T extends Number> {
 
     private final int from;
     private final int to;
