@@ -162,8 +162,6 @@ public:
     }
 };
 
-ScalarShapeInformation ScalarInfo<double>::shapeInfo;
-ScalarShapeInformation ScalarInfo<float>::shapeInfo;
 
 /**
  *
