@@ -1,0 +1,206 @@
+Running windows
+Running blas
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Try OpenMP C flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Try OpenMP CXX flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Found OpenMP: -fopenmp  
+-- A library with BLAS API not found. Please specify library location.
+-- A library with BLAS API not found. Please specify library location.
+-- LAPACK requires BLAS.
+-- Found OpenBLAS libraries: C:/msys64/mingw64/lib/libopenblas.dll.a
+-- Found OpenBLAS include: C:/msys64/home/Administrator/libnd4j/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/msys64/home/Administrator/libnd4j/blasbuild
+C:/msys64/mingw64/bin/cmake.exe -HC:/msys64/home/Administrator/libnd4j -BC:/msys64/home/Administrator/libnd4j/blasbuild --check-build-system CMakeFiles/Makefile.cmake 0
+C:/msys64/mingw64/bin/cmake.exe -E cmake_progress_start C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles/progress.marks
+make -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/depend
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+C:/msys64/mingw64/bin/cmake.exe -E cmake_depends "Unix Makefiles" C:/msys64/home/Administrator/libnd4j C:/msys64/home/Administrator/libnd4j/blas C:/msys64/home/Administrator/libnd4j/blasbuild C:/msys64/home/Administrator/libnd4j/blasbuild/blas C:/msys64/home/Administrator/libnd4j/blasbuild/blas/CMakeFiles/nd4j.dir/DependInfo.cmake --color=
+Scanning dependencies of target nd4j
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/build
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+[ 33%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeBlas.cpp
+[ 66%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeOps.cpp
+blas/CMakeFiles/nd4j.dir/build.make:91: recipe for target 'blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj' failed
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+CMakeFiles/Makefile2:106: recipe for target 'blas/CMakeFiles/nd4j.dir/all' failed
+make[1]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+Makefile:86: recipe for target 'all' failed
+FINISHING BUILD
+Running windows
+Running blas
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Try OpenMP C flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Try OpenMP CXX flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Found OpenMP: -fopenmp  
+-- A library with BLAS API not found. Please specify library location.
+-- A library with BLAS API not found. Please specify library location.
+-- LAPACK requires BLAS.
+-- Found OpenBLAS libraries: C:/msys64/mingw64/lib/libopenblas.dll.a
+-- Found OpenBLAS include: C:/msys64/home/Administrator/libnd4j/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/msys64/home/Administrator/libnd4j/blasbuild
+C:/msys64/mingw64/bin/cmake.exe -HC:/msys64/home/Administrator/libnd4j -BC:/msys64/home/Administrator/libnd4j/blasbuild --check-build-system CMakeFiles/Makefile.cmake 0
+C:/msys64/mingw64/bin/cmake.exe -E cmake_progress_start C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles/progress.marks
+make -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/depend
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+C:/msys64/mingw64/bin/cmake.exe -E cmake_depends "Unix Makefiles" C:/msys64/home/Administrator/libnd4j C:/msys64/home/Administrator/libnd4j/blas C:/msys64/home/Administrator/libnd4j/blasbuild C:/msys64/home/Administrator/libnd4j/blasbuild/blas C:/msys64/home/Administrator/libnd4j/blasbuild/blas/CMakeFiles/nd4j.dir/DependInfo.cmake --color=
+Scanning dependencies of target nd4j
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/build
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+[ 33%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeBlas.cpp
+[ 66%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeOps.cpp
+blas/CMakeFiles/nd4j.dir/build.make:91: recipe for target 'blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj' failed
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+CMakeFiles/Makefile2:106: recipe for target 'blas/CMakeFiles/nd4j.dir/all' failed
+make[1]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+Makefile:86: recipe for target 'all' failed
+FINISHING BUILD
+Running windows
+Running blas
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Try OpenMP C flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Try OpenMP CXX flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Found OpenMP: -fopenmp  
+-- A library with BLAS API not found. Please specify library location.
+-- A library with BLAS API not found. Please specify library location.
+-- LAPACK requires BLAS.
+-- Found OpenBLAS libraries: C:/msys64/mingw64/lib/libopenblas.dll.a
+-- Found OpenBLAS include: C:/msys64/home/Administrator/libnd4j/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/msys64/home/Administrator/libnd4j/blasbuild
+C:/msys64/mingw64/bin/cmake.exe -HC:/msys64/home/Administrator/libnd4j -BC:/msys64/home/Administrator/libnd4j/blasbuild --check-build-system CMakeFiles/Makefile.cmake 0
+C:/msys64/mingw64/bin/cmake.exe -E cmake_progress_start C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles/progress.marks
+make -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/depend
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+C:/msys64/mingw64/bin/cmake.exe -E cmake_depends "Unix Makefiles" C:/msys64/home/Administrator/libnd4j C:/msys64/home/Administrator/libnd4j/blas C:/msys64/home/Administrator/libnd4j/blasbuild C:/msys64/home/Administrator/libnd4j/blasbuild/blas C:/msys64/home/Administrator/libnd4j/blasbuild/blas/CMakeFiles/nd4j.dir/DependInfo.cmake --color=
+Scanning dependencies of target nd4j
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/build
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+[ 33%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeBlas.cpp
+[ 66%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeOps.cpp
+blas/CMakeFiles/nd4j.dir/build.make:91: recipe for target 'blas/CMakeFiles/nd4j.dir/cpu/NativeOps.cpp.obj' failed
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+CMakeFiles/Makefile2:106: recipe for target 'blas/CMakeFiles/nd4j.dir/all' failed
+make[1]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+Makefile:86: recipe for target 'all' failed
+FINISHING BUILD
+Running windows
+Running blas
+-- The C compiler identification is GNU 5.3.0
+-- The CXX compiler identification is GNU 5.3.0
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe
+-- Check for working C compiler: C:/msys64/mingw64/bin/gcc.exe -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe
+-- Check for working CXX compiler: C:/msys64/mingw64/bin/c++.exe -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Try OpenMP C flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Try OpenMP CXX flag = [-fopenmp]
+-- Performing Test OpenMP_FLAG_DETECTED
+-- Performing Test OpenMP_FLAG_DETECTED - Success
+-- Found OpenMP: -fopenmp  
+-- A library with BLAS API not found. Please specify library location.
+-- A library with BLAS API not found. Please specify library location.
+-- LAPACK requires BLAS.
+-- Found OpenBLAS libraries: C:/msys64/mingw64/lib/libopenblas.dll.a
+-- Found OpenBLAS include: C:/msys64/home/Administrator/libnd4j/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/msys64/home/Administrator/libnd4j/blasbuild
+C:/msys64/mingw64/bin/cmake.exe -HC:/msys64/home/Administrator/libnd4j -BC:/msys64/home/Administrator/libnd4j/blasbuild --check-build-system CMakeFiles/Makefile.cmake 0
+C:/msys64/mingw64/bin/cmake.exe -E cmake_progress_start C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles C:/msys64/home/Administrator/libnd4j/blasbuild/CMakeFiles/progress.marks
+make -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/depend
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+C:/msys64/mingw64/bin/cmake.exe -E cmake_depends "Unix Makefiles" C:/msys64/home/Administrator/libnd4j C:/msys64/home/Administrator/libnd4j/blas C:/msys64/home/Administrator/libnd4j/blasbuild C:/msys64/home/Administrator/libnd4j/blasbuild/blas C:/msys64/home/Administrator/libnd4j/blasbuild/blas/CMakeFiles/nd4j.dir/DependInfo.cmake --color=
+Scanning dependencies of target nd4j
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+make -f blas/CMakeFiles/nd4j.dir/build.make blas/CMakeFiles/nd4j.dir/build
+make[2]: Entering directory '/home/Administrator/libnd4j/blasbuild'
+[ 33%] Building CXX object blas/CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj
+cd C:/msys64/home/Administrator/libnd4j/blasbuild/blas && C:/msys64/mingw64/bin/c++.exe   -D__CPUBLAS__=true -Dnd4j_EXPORTS @CMakeFiles/nd4j.dir/includes_CXX.rsp -Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native -fopenmp -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed   -o CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj -c C:/msys64/home/Administrator/libnd4j/blas/cpu/NativeBlas.cpp
+blas/CMakeFiles/nd4j.dir/build.make:66: recipe for target 'blas/CMakeFiles/nd4j.dir/cpu/NativeBlas.cpp.obj' failed
+make[2]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+CMakeFiles/Makefile2:106: recipe for target 'blas/CMakeFiles/nd4j.dir/all' failed
+make[1]: Leaving directory '/home/Administrator/libnd4j/blasbuild'
+Makefile:86: recipe for target 'all' failed
+FINISHING BUILD

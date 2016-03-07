@@ -3,6 +3,7 @@
 //
 
 #include "../NativeBlas.h"
+#include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
 

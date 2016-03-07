@@ -40,7 +40,7 @@ inline
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties);
 
 /*! Computes a block size in number of threads for a CUDA kernel using a occupancy-promoting heuristic.
@@ -48,7 +48,7 @@ std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes
  *  vary with the size of the block.
  *  \param attributes The cudaFuncAttributes corresponding to a __global__ function of interest on a GPU of interest.
  *  \param properties The cudaDeviceProp corresponding to a GPU on which to launch the __global__ function of interest.
- *  \param block_size_to_dynamic_smem_bytes A unary function which maps an integer CUDA block size to the number of bytes
+ *  \param block_into_dynamic_smem_bytes A unary function which maps an integer CUDA block size to the number of bytes
  *         of dynamically-allocated __shared__ memory required by a CUDA block of that size.
  *  \return A CUDA block size, in number of threads, which the resources of the GPU's streaming multiprocessor can
  *          accomodate and which is intended to promote occupancy. The result is equivalent to the one performed by
@@ -58,16 +58,16 @@ template<typename UnaryFunction>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties,
-                                                        UnaryFunction block_size_to_dynamic_smem_size);
+                                                        UnaryFunction block_into_dynamic_smem_size);
 
 
 
 namespace __cuda_launch_config_detail
 {
 
-    using std::size_t;
+    using std::int;
 
     namespace util
     {
@@ -140,7 +140,7 @@ namespace __cuda_launch_config_detail
     __host__ __device__
 #endif
 
-    size_t smem_allocation_unit(const cudaDeviceProp &properties)
+    int smem_allocation_unit(const cudaDeviceProp &properties)
     {
         switch(properties.major)
         {
@@ -157,7 +157,7 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t reg_allocation_unit(const cudaDeviceProp &properties, const size_t regsPerThread)
+    int reg_allocation_unit(const cudaDeviceProp &properties, const int regsPerThread)
     {
         switch(properties.major)
         {
@@ -187,7 +187,7 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t warp_allocation_multiple(const cudaDeviceProp &properties)
+    int warp_allocation_multiple(const cudaDeviceProp &properties)
     {
         return (properties.major <= 1) ? 2 : 1;
     }
@@ -197,7 +197,7 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t num_sides_per_multiprocessor(const cudaDeviceProp &properties)
+    int num_sides_per_multiprocessor(const cudaDeviceProp &properties)
     {
         switch(properties.major)
         {
@@ -213,7 +213,7 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t max_blocks_per_multiprocessor(const cudaDeviceProp &properties)
+    int max_blocks_per_multiprocessor(const cudaDeviceProp &properties)
     {
         return (properties.major <= 2) ? 8 : 16;
     }
@@ -223,10 +223,10 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t max_active_blocks_per_multiprocessor(const cudaDeviceProp     &properties,
+    int max_active_blocks_per_multiprocessor(const cudaDeviceProp     &properties,
                                                 const cudaFuncAttributes &attributes,
-                                                size_t CTA_SIZE,
-                                                size_t dynamic_smem_bytes)
+                                                int CTA_SIZE,
+                                                int dynamic_smem_bytes)
     {
         // Determine the maximum number of CTAs that can be run simultaneously per SM
         // This is equivalent to the calculation done in the CUDA Occupancy Calculator spreadsheet
@@ -234,46 +234,46 @@ namespace __cuda_launch_config_detail
         //////////////////////////////////////////
         // Limits due to threads/SM or blocks/SM
         //////////////////////////////////////////
-        const size_t maxThreadsPerSM = properties.maxThreadsPerMultiProcessor;  // 768, 1024, 1536, etc.
-        const size_t maxBlocksPerSM  = max_blocks_per_multiprocessor(properties);
+        const int maxThreadsPerSM = properties.maxThreadsPerMultiProcessor;  // 768, 1024, 1536, etc.
+        const int maxBlocksPerSM  = max_blocks_per_multiprocessor(properties);
 
         // Calc limits
-        const size_t ctaLimitThreads = (CTA_SIZE <= properties.maxThreadsPerBlock) ? maxThreadsPerSM / CTA_SIZE : 0;
-        const size_t ctaLimitBlocks  = maxBlocksPerSM;
+        const int ctaLimitThreads = (CTA_SIZE <= properties.maxThreadsPerBlock) ? maxThreadsPerSM / CTA_SIZE : 0;
+        const int ctaLimitBlocks  = maxBlocksPerSM;
 
         //////////////////////////////////////////
         // Limits due to shared memory/SM
         //////////////////////////////////////////
-        const size_t smemAllocationUnit     = smem_allocation_unit(properties);
-        const size_t smemBytes  = attributes.sharedSizeBytes + dynamic_smem_bytes;
-        const size_t smemPerCTA = util::round_i(smemBytes, smemAllocationUnit);
+        const int smemAllocationUnit     = smem_allocation_unit(properties);
+        const int smemBytes  = attributes.sharedSizeBytes + dynamic_smem_bytes;
+        const int smemPerCTA = util::round_i(smemBytes, smemAllocationUnit);
 
         // Calc limit
-        const size_t ctaLimitSMem = smemPerCTA > 0 ? properties.sharedMemPerBlock / smemPerCTA : maxBlocksPerSM;
+        const int ctaLimitSMem = smemPerCTA > 0 ? properties.sharedMemPerBlock / smemPerCTA : maxBlocksPerSM;
 
         //////////////////////////////////////////
         // Limits due to registers/SM
         //////////////////////////////////////////
-        const size_t regAllocationUnit      = reg_allocation_unit(properties, attributes.numRegs);
-        const size_t warpAllocationMultiple = warp_allocation_multiple(properties);
-        const size_t numWarps = util::round_i(util::divide_ri(CTA_SIZE, properties.warpSize), warpAllocationMultiple);
+        const int regAllocationUnit      = reg_allocation_unit(properties, attributes.numRegs);
+        const int warpAllocationMultiple = warp_allocation_multiple(properties);
+        const int numWarps = util::round_i(util::divide_ri(CTA_SIZE, properties.warpSize), warpAllocationMultiple);
 
         // Calc limit
-        size_t ctaLimitRegs;
+        int ctaLimitRegs;
         if(properties.major <= 1)
         {
             // GPUs of compute capability 1.x allocate registers to CTAs
             // Number of regs per block is regs per thread times number of warps times warp size, rounded up to allocation unit
-            const size_t regsPerCTA = util::round_i(attributes.numRegs * properties.warpSize * numWarps, regAllocationUnit);
+            const int regsPerCTA = util::round_i(attributes.numRegs * properties.warpSize * numWarps, regAllocationUnit);
             ctaLimitRegs = regsPerCTA > 0 ? properties.regsPerBlock / regsPerCTA : maxBlocksPerSM;
         }
         else
         {
             // GPUs of compute capability 2.x and higher allocate registers to warps
             // Number of regs per warp is regs per thread times times warp size, rounded up to allocation unit
-            const size_t regsPerWarp = util::round_i(attributes.numRegs * properties.warpSize, regAllocationUnit);
-            const size_t numSides = num_sides_per_multiprocessor(properties);
-            const size_t numRegsPerSide = properties.regsPerBlock / numSides;
+            const int regsPerWarp = util::round_i(attributes.numRegs * properties.warpSize, regAllocationUnit);
+            const int numSides = num_sides_per_multiprocessor(properties);
+            const int numRegsPerSide = properties.regsPerBlock / numSides;
             ctaLimitRegs = regsPerWarp > 0 ? ((numRegsPerSide / regsPerWarp) * numSides) / numWarps : maxBlocksPerSM;
         }
 
@@ -289,19 +289,19 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    size_t default_block_size(const cudaDeviceProp     &properties,
+    int default_block_size(const cudaDeviceProp     &properties,
                               const cudaFuncAttributes &attributes,
-                              UnaryFunction block_size_to_smem_size)
+                              UnaryFunction block_into_smem_size)
     {
-        size_t max_occupancy      = properties.maxThreadsPerMultiProcessor;
-        size_t largest_blocksize  = util::min_(properties.maxThreadsPerBlock, attributes.maxThreadsPerBlock);
-        size_t granularity        = properties.warpSize;
-        size_t max_blocksize      = 0;
-        size_t highest_occupancy  = 0;
+        int max_occupancy      = properties.maxThreadsPerMultiProcessor;
+        int largest_blocksize  = util::min_(properties.maxThreadsPerBlock, attributes.maxThreadsPerBlock);
+        int granularity        = properties.warpSize;
+        int max_blocksize      = 0;
+        int highest_occupancy  = 0;
 
-        for(size_t blocksize = largest_blocksize; blocksize != 0; blocksize -= granularity)
+        for(int blocksize = largest_blocksize; blocksize != 0; blocksize -= granularity)
         {
-            size_t occupancy = blocksize * max_active_blocks_per_multiprocessor(properties, attributes, blocksize, block_size_to_smem_size(blocksize));
+            int occupancy = blocksize * max_active_blocks_per_multiprocessor(properties, attributes, blocksize, block_into_smem_size(blocksize));
 
             if(occupancy > highest_occupancy)
             {
@@ -327,11 +327,11 @@ inline
 __host__ __device__
 #endif
 
-std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties,
-                                                        UnaryFunction block_size_to_dynamic_smem_size)
+                                                        UnaryFunction block_into_dynamic_smem_size)
 {
-    return __cuda_launch_config_detail::default_block_size(properties, attributes, block_size_to_dynamic_smem_size);
+    return __cuda_launch_config_detail::default_block_size(properties, attributes, block_into_dynamic_smem_size);
 }
 
 
@@ -339,10 +339,10 @@ inline
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::size_t block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties)
 {
-    return block_size_with_maximum_potential_occupancy(attributes, properties, __cuda_launch_config_detail::util::zero_function<std::size_t>());
+    return block_size_with_maximum_potential_occupancy(attributes, properties, __cuda_launch_config_detail::util::zero_function<std::int>());
 }
 
 template<typename T>
@@ -350,7 +350,7 @@ inline
 #ifdef __CUDACC__
 __host__
 #endif
-std::size_t block_size_with_maximum_potential_occupancy(T t)
+std::int block_size_with_maximum_potential_occupancy(T t)
 {
     cudaFuncAttributes attributes;
     checkCudaErrors(cudaFuncGetAttributes(&attributes, t));

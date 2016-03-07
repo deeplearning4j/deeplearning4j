@@ -393,17 +393,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 + d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -439,17 +429,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("div_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -485,17 +465,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 == d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("eq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -530,17 +500,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 > d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("gt_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -575,17 +535,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 < d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -619,17 +569,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 <= d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("ltoreq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -665,17 +605,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 >= d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("gtoreq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -711,17 +641,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_max<T>(d1, d2);
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("max_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -755,17 +675,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_min<T>(d1, d2);
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("min_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -800,17 +710,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 * d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                __host__
 
-#endif
-                std::string name() {
-                    return std::string("mul_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -842,17 +742,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 != d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("noteq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -886,17 +776,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2 / d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rdiv_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -930,17 +810,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2 - d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rsib_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -970,17 +840,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("set_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1018,17 +878,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 - d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sub_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1065,17 +915,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return (int) d1 % (int) d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("mod_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1113,17 +953,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return (int) d2 % (int) d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rmod_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1161,17 +991,7 @@ namespace functions {
                     }
                     return d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("setvalorless_scalar");
-                }
 
 #ifdef __CUDACC__
                 __host__ __device__

@@ -6,7 +6,7 @@
 #define NATIVEOPERATIONS_PAIRWISE_UTIL_H
 #include <array.h>
 #include <dll.h>
-
+#include <nd4jmemset.h>
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 

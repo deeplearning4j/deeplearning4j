@@ -1,5 +1,5 @@
 #include <dll.h>
-#include <string>
+//#include <string>
 #include <sharedmem.h>
 #include <stdio.h>
 #include <shape.h>
@@ -7,7 +7,7 @@
 #include <omp.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
-
+#include <nd4jmalloc.h>
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -899,14 +899,7 @@ public:
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("sum");
-	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -980,14 +973,7 @@ public:
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("prod");
-	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -1076,14 +1062,7 @@ public:
 	T startingValue(T *input) {
 		return 0.0;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("mean");
-	}
 
 	virtual
 #ifdef __CUDACC__
@@ -1167,14 +1146,6 @@ public:
 		ret[0] = new Mean<T>();
 		return ret;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#endif
-	std::string name() override {
-		return std::string("bias");
-	}
 
 	virtual
 #ifdef __CUDACC__
@@ -1254,14 +1225,6 @@ public:
 #endif
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
-	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#endif
-	std::string name() override {
-		return std::string("max");
 	}
 
 	virtual
@@ -1348,14 +1311,7 @@ public:
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("min");
-	}
 
 	virtual
 #ifdef __CUDACC__
@@ -1447,14 +1403,7 @@ public:
 	T startingValue(T *input) {
 		return 0.0;
 	}
-	virtual
-#ifdef __CUDACC__
-	__host__
 
-#endif
-	std::string name() override {
-		return std::string("norm1");
-	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -1534,14 +1483,7 @@ public:
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("norm2");
-	}
 
 	virtual
 #ifdef __CUDACC__
@@ -1626,14 +1568,7 @@ public:
 	ReduceFunction<T> ** extraParamsFunctions() {
 		return NULL;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("normmax");
-	}
 
 	virtual
 #ifdef __CUDACC__
@@ -1722,14 +1657,7 @@ public:
 		ret[1] = bias;
 		return ret;
 	}
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("var");
-	}
 	virtual
 #ifdef __CUDACC__
 	inline __host__  __device__
@@ -1804,14 +1732,7 @@ public:
 template<typename T>
 class StandardDeviation: public virtual Variance<T> {
 public:
-	virtual
-#ifdef __CUDACC__
-	inline __host__
 
-#endif
-	std::string name() override {
-		return std::string("std");
-	}
 
 	virtual
 #ifdef __CUDACC__

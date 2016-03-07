@@ -577,18 +577,7 @@ namespace functions {
             class Add: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("add_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -634,18 +623,6 @@ namespace functions {
             class Copy: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("copy_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -691,19 +668,6 @@ namespace functions {
             class Divide: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                __host__
-
-#endif
-                std::string name() {
-
-                    return std::string("div_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -750,18 +714,7 @@ namespace functions {
             class Epsilon: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("eps_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -811,18 +764,7 @@ namespace functions {
             class EqualTo: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("eq_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -868,18 +810,7 @@ namespace functions {
             class NotEqualTo: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("noteq_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -927,18 +858,6 @@ namespace functions {
             class GreaterThanOrEqual: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("gt_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -985,18 +904,6 @@ namespace functions {
             class GreaterThan: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("gt_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1042,18 +949,6 @@ namespace functions {
             class LessThan: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("lt_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1099,18 +994,7 @@ namespace functions {
             class LessThanOrEqual: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("lteq_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1156,18 +1040,7 @@ namespace functions {
             class Multiply: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("mul_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1214,18 +1087,6 @@ namespace functions {
             class ReverseDivide: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("rdiv_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1271,18 +1132,7 @@ namespace functions {
             class ReverseSubtraction: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rsub_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1328,18 +1178,6 @@ namespace functions {
             class Subtract: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("sub_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1386,18 +1224,6 @@ namespace functions {
             class Max: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("max_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1445,18 +1271,6 @@ namespace functions {
             class Min: public virtual PairWiseTransform<T> {
             public:
 
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("min_strided");
-                }
 
                 virtual
 #ifdef __CUDACC__
