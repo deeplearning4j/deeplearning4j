@@ -130,7 +130,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
-                wrappedBuffer = pointer.asByteBuffer();
+                wrappedBuffer = underlyingBuffer.asNio();
             }
             else {
                 ByteBuffer underlyingBuff = underlyingBuffer.asNio();
@@ -148,7 +148,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
                 pointer = underlyingBuffer.pointer();
-                wrappedBuffer = pointer.asByteBuffer();
+                wrappedBuffer = underlyingBuffer.asNio();
             }
             else {
                 ByteBuffer underlyingBuff = underlyingBuffer.asNio();

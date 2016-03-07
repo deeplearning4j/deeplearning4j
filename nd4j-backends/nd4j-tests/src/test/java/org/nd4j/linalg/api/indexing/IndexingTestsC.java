@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -56,8 +57,16 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1,5,5);
         INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
-        assertEquals(2.0,d.getDouble(0));
+        assertEquals(2.0,d.getDouble(0),1e-1);
 
+    }
+
+    @Test
+    public void testVectorIndexing() {
+        INDArray arr = Nd4j.linspace(1,10,10);
+        INDArray assertion = Nd4j.create(new double[]{2,3,4,5});
+        INDArray viewTest = arr.get(NDArrayIndex.point(0),NDArrayIndex.interval(1,6));
+        assertEquals(assertion,viewTest);
     }
 
 
