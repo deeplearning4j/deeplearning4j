@@ -995,18 +995,7 @@ namespace functions {
             template<typename T>
             class IMax: public  functions::indexreduce::IndexReduce<T> {
             public:
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("imax");
-                }
                 /**
                  *
                  * @param val
@@ -1150,18 +1139,7 @@ namespace functions {
             template<typename T>
             class IMin: public  functions::indexreduce::IndexReduce<T> {
             public:
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("imin");
-                }
                 /**
                  *
                  * @param val

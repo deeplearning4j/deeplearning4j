@@ -1304,18 +1304,7 @@ struct SharedSummaryStatsData<double> {
             template<typename T>
             class Variance: public  functions::summarystats::SummaryStatsReduce<T> {
             public:
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("variance");
-                }
                 /**
                  *
                  * @param val
@@ -1448,18 +1437,7 @@ struct SharedSummaryStatsData<double> {
             template<typename T>
             class StandardDeviation: public  functions::summarystats::SummaryStatsReduce<T> {
             public:
-                /**
-                 * Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("std");
-                }
 
                 virtual
 #ifdef __CUDACC__

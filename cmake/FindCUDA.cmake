@@ -37,7 +37,7 @@
 #   CUDA_64_BIT_DEVICE_CODE (Default matches host bit size)
 #   -- Set to ON to compile for 64 bit device code, OFF for 32 bit device code.
 #      Note that making this different from the host code when generating object
-#      or C files from CUDA code just won't work, because size_t gets defined by
+#      or C files from CUDA code just won't work, because int gets defined by
 #      nvcc in the generated source.  If you compile to PTX and then load the
 #      file yourself, you can mix bit sizes between device and host.
 #

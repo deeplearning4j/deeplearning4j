@@ -31,10 +31,10 @@ dim3 getOptimalDimensions(int n,cudaFuncAttributes attributes) {
     cudaGetDeviceProperties(&properties, device);
 
     // we can combine the two to compute a block size
-    size_t num_threads = block_size_with_maximum_potential_occupancy(attributes, properties);
+    int num_threads = block_size_with_maximum_potential_occupancy(attributes, properties);
 
     // compute the number of blocks of size num_threads to launch
-    size_t num_blocks = n / num_threads;
+    int num_blocks = n / num_threads;
 
     // check for partial block at the end
     if(n % num_threads) ++num_blocks;
@@ -161,6 +161,9 @@ public:
         nd4j::buffer::freeBuffer(&scalarData);
     }
 };
+
+ScalarShapeInformation ScalarInfo<double>::shapeInfo;
+ScalarShapeInformation ScalarInfo<float>::shapeInfo;
 
 /**
  *

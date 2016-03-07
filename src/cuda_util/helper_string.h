@@ -323,7 +323,7 @@ inline char *sdkFindFilePath(const char *filename,
 
 #ifdef _WIN32
 		// Windows path delimiter
-		size_t delimiter_pos = executable_name.find_last_of('\\');
+		int delimiter_pos = executable_name.find_last_of('\\');
 		executable_name.erase(0, delimiter_pos + 1);
 
 		if (executable_name.rfind(".exe") != std::string::npos)
@@ -334,7 +334,7 @@ inline char *sdkFindFilePath(const char *filename,
 
 #else
 		// Linux & OSX path delimiter
-		size_t delimiter_pos = executable_name.find_last_of('/');
+		int delimiter_pos = executable_name.find_last_of('/');
 		executable_name.erase(0, delimiter_pos + 1);
 #endif
 	}
@@ -342,7 +342,7 @@ inline char *sdkFindFilePath(const char *filename,
 	// Loop over all search paths and return the first hit
 	for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i) {
 		std::string path(searchPath[i]);
-		size_t executable_name_pos = path.find("<executable_name>");
+		int executable_name_pos = path.find("<executable_name>");
 
 		// If there is executable_name variable in the searchPath
 		// replace it with the value

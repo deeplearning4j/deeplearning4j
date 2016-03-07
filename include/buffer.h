@@ -76,7 +76,7 @@ namespace nd4j {
 		__host__ __device__
 #endif
 
-		size_t bufferSize(Buffer<T> *buffer);
+		int bufferSize(Buffer<T> *buffer);
 
 /**
  * Copies data to the gpu
@@ -152,7 +152,7 @@ namespace nd4j {
 		__host__ __device__
 #endif
 
-		size_t bufferSize(Buffer<T> *buffer) {
+		int bufferSize(Buffer<T> *buffer) {
 			return sizeof(T) * buffer->length;
 		}
 

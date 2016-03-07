@@ -8,7 +8,6 @@
 #ifndef BROADCASTING_H_
 #define BROADCASTING_H_
 #include <dll.h>
-#include <stdio.h>
 #include <sharedmem.h>
 #include <shape.h>
 #include <op.h>
@@ -172,14 +171,7 @@ namespace functions {
             template<typename T>
             class Add: public  functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                __host__
 
-#endif
-                std::string name() override {
-                    return std::string("add");
-                }
 
                 /**
                  *
@@ -226,14 +218,7 @@ namespace functions {
             template<typename T>
             class Copy: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                __host__
 
-#endif
-                std::string name() override {
-                    return std::string("copy");
-                }
 
                 /**
                  *
@@ -281,14 +266,7 @@ namespace functions {
             template<typename T>
             class Divide: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() override {
-                    return std::string("div");
-                }
 
                 /**
                  *
@@ -336,14 +314,7 @@ namespace functions {
             template<typename T>
             class Multiply: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() override {
-                    return std::string("mul");
-                }
 
                 /**
                  *
@@ -391,14 +362,7 @@ namespace functions {
             template<typename T>
             class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() override {
-                    return std::string("rdiv");
-                }
 
                 /**
                  *
@@ -446,14 +410,7 @@ namespace functions {
             template<typename T>
             class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() override {
-                    return std::string("rsub");
-                }
 
                 /**
                  *
@@ -501,14 +458,6 @@ namespace functions {
             template<typename T>
             class Subtract: public virtual functions::broadcast::Broadcast<T> {
             public:
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() override {
-                    return std::string("sub");
-                }
 
                 /**
                  *

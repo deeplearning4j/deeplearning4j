@@ -991,17 +991,6 @@ namespace functions {
                     return update(old, opOutput, extraParamsRef);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("cosinesimilarity_strided");
-                }
 
 
 
@@ -1130,17 +1119,7 @@ namespace functions {
                     //no extra params aggregation needs to happen
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("euclidean_strided");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1266,17 +1245,7 @@ namespace functions {
                     //no extra params aggregation needs to happen
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("euclidean_strided");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1397,17 +1366,6 @@ namespace functions {
                     return update(old, opOutput, extraParamsRef);
                 }
 
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
-
-#endif
-                std::string name() {
-                    return std::string("manhattan_strided");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
