@@ -51,12 +51,24 @@ public class Environment implements Serializable {
     public String toCompactString() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append(numCores).append("cores/");
-        builder.append(availableMemory / 1024 / 1024 / 1024).append("GB/");
-        builder.append("jvm").append(javaVersion).append("/");
-        builder.append(osName).append("/");
-        builder.append(osArch).append("/");
-        builder.append(backendUsed).append(" ");
+        /*
+         new format is:
+         Backend ( cores, ram, jvm, Linux, arch)
+         */
+        /*
+            builder.append(numCores).append("cores/");
+            builder.append(availableMemory / 1024 / 1024 / 1024).append("GB/");
+            builder.append("jvm").append(javaVersion).append("/");
+            builder.append(osName).append("/");
+            builder.append(osArch).append("/");
+            builder.append(backendUsed).append(" ");
+        */
+
+        builder.append(backendUsed).append(" (")
+                .append(numCores).append(" cores ")
+                .append(Math.max(availableMemory / 1024 / 1024 / 1024,1 )).append("GB ")
+                .append(osName).append(" ")
+                .append(osArch).append(")");
 
         return builder.toString();
     }
