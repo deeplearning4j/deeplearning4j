@@ -17,7 +17,7 @@ public class NativeOps extends Pointer {
     static {
         try {
             LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile("jniNativeOps");
+            LibUtils.loadTempBinaryFile(NativeOps.class);
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }

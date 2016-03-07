@@ -167,22 +167,38 @@ public abstract class Nd4jBackend {
             return backend;
         }
 
-        throw new NoAvailableBackendException();
+        throw new NoAvailableBackendException("Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
     }
 
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Properties getProperties() throws IOException {
         return getContext().getConf();
     }
 
-
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Nd4jContext getContext() throws IOException {
         return Nd4jContext.getInstance();
     }
+
     @Override
     public String toString() {
         return getClass().getName();
     }
+
+
     @SuppressWarnings("serial")
-    public static class NoAvailableBackendException extends Exception {}
+    public static class NoAvailableBackendException extends Exception {
+        public NoAvailableBackendException(String s) {
+            super(s);
+        }
+    }
 }

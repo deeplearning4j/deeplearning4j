@@ -267,9 +267,28 @@
         </license>
     </licenses>
 
+
     <build>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <includes>
+                        <include>**/*.so</include>
+                        <include>META-INF/*</include>
+                        <include>META-INF/services/**</include>
+                        <include>org.*</include>
+                        <include>**/*.properties</include>
+                        <include>**/*.class</include>
+                        <include>**/*.dll</include>
+                        <include>**/*.dylib</include>
+
+                    </includes>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.4</version>

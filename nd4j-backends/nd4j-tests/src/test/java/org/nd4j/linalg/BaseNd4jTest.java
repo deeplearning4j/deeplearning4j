@@ -71,7 +71,7 @@ public abstract class BaseNd4jTest  {
         while(backendIterator.hasNext()) {
             Nd4jBackend backend = backendIterator.next();
             if(backend.canRun() && backendsToRun.contains(backend.getClass().getName()) || backendsToRun.isEmpty())
-                backends.add(backendIterator.next());
+                backends.add(backend);
         }
 
     }

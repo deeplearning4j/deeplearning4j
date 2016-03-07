@@ -19,7 +19,7 @@ public class Nd4jBlas extends Pointer {
     static {
         try {
             LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile("jniNd4jBlas");
+            LibUtils.loadTempBinaryFile(Nd4jBlas.class);
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
