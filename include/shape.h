@@ -7,6 +7,8 @@
 
 #ifndef SHAPE_H_
 #define SHAPE_H_
+#include <cstring>
+#include <cstdio>
 #include <dll.h>
 #include <nd4jmalloc.h>
 #include <templatemath.h>

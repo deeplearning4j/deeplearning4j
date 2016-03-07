@@ -40,7 +40,7 @@ inline
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties);
 
 /*! Computes a block size in number of threads for a CUDA kernel using a occupancy-promoting heuristic.
@@ -58,7 +58,7 @@ template<typename UnaryFunction>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties,
                                                         UnaryFunction block_into_dynamic_smem_size);
 
@@ -67,7 +67,6 @@ std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &a
 namespace __cuda_launch_config_detail
 {
 
-    using std::int;
 
     namespace util
     {
@@ -327,7 +326,7 @@ inline
 __host__ __device__
 #endif
 
-std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties,
                                                         UnaryFunction block_into_dynamic_smem_size)
 {
@@ -339,10 +338,10 @@ inline
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-std::int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
+int block_size_with_maximum_potential_occupancy(const cudaFuncAttributes &attributes,
                                                         const cudaDeviceProp &properties)
 {
-    return block_size_with_maximum_potential_occupancy(attributes, properties, __cuda_launch_config_detail::util::zero_function<std::int>());
+    return block_size_with_maximum_potential_occupancy(attributes, properties, __cuda_launch_config_detail::util::zero_function<int>());
 }
 
 template<typename T>
@@ -350,7 +349,7 @@ inline
 #ifdef __CUDACC__
 __host__
 #endif
-std::int block_size_with_maximum_potential_occupancy(T t)
+int block_size_with_maximum_potential_occupancy(T t)
 {
     cudaFuncAttributes attributes;
     checkCudaErrors(cudaFuncGetAttributes(&attributes, t));
