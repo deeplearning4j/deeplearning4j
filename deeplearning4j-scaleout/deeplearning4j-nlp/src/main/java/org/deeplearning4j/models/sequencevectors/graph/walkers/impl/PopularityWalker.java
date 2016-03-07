@@ -2,8 +2,10 @@ package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.PriorityQueue;
+import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
@@ -18,6 +20,9 @@ import java.util.Random;
  * @author raver119@gmail.com
  */
 public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
+    protected PopularityMode popularityMode = PopularityMode.MAXIMUM;
+    protected int spread = 10;
+
     @Override
     public boolean hasNext() {
         return super.hasNext();
@@ -87,11 +92,23 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
     }
 
     public static class Builder<T extends SequenceElement> extends RandomWalker.Builder<T> {
+        protected PopularityMode popularityMode = PopularityMode.MAXIMUM;
+        protected int spread = 10;
 
         public Builder(IGraph<T, ?> sourceGraph) {
             super(sourceGraph);
         }
 
+
+        public Builder<T> setPopularityMode(@NonNull PopularityMode popularityMode) {
+            this.popularityMode = popularityMode;
+            return this;
+        }
+
+        public Builder<T> setPopularitySpread(int topN) {
+            this.spread = topN;
+            return this;
+        }
 
         @Override
         public GraphWalker<T> build() {
@@ -101,6 +118,8 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
             walker.walkLength = this.walkLength;
             walker.seed = this.seed;
             walker.walkDirection = this.walkDirection;
+            walker.popularityMode = this.popularityMode;
+            walker.spread = this.spread;
 
             walker.order = new int[sourceGraph.numVertices()];
             for (int i =0; i <walker.order.length; i++) {
