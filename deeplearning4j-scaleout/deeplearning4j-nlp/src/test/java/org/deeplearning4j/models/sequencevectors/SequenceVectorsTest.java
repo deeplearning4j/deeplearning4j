@@ -1,8 +1,24 @@
 package org.deeplearning4j.models.sequencevectors;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.canova.api.records.reader.impl.CSVRecordReader;
+import org.canova.api.split.FileSplit;
 import org.canova.api.util.ClassPathResource;
+import org.canova.api.writable.Writable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
+import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
+import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
+import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
+import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
+import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.GraphTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -20,7 +36,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -293,5 +314,181 @@ public class SequenceVectorsTest {
 
         sim = vectors.similarity("day", "night");
         assertTrue(sim > 0.6d);
+    }
+
+    @Test
+    public void testDeepWalk() throws Exception {
+        AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
+        Graph<Blogger, Void> graph =buildGraph();
+
+        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
+                .setWalkMode(WalkMode.RANDOM)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
+                .setWalkLength(10)
+                .setWalkDirection(WalkDirection.FORWARD_ONLY)
+                .shuffleOnReset(true)
+                .setVocabCache(vocabCache)
+                .build();
+
+        AbstractSequenceIterator<Blogger> sequenceIterator = new AbstractSequenceIterator.Builder<Blogger>(graphTransformer)
+                .build();
+
+        WeightLookupTable<Blogger> lookupTable = new InMemoryLookupTable.Builder<Blogger>()
+                .lr(0.025)
+                .vectorLength(150)
+                .useAdaGrad(false)
+                .cache(vocabCache)
+                .build();
+
+
+        lookupTable.resetWeights(true);
+
+        SequenceVectors<Blogger> vectors = new SequenceVectors.Builder<Blogger>(new VectorsConfiguration())
+                // WeightLookupTable
+                .lookupTable(lookupTable)
+
+                // abstract iterator that covers training corpus
+                .iterate(sequenceIterator)
+
+                // vocabulary built prior to modelling
+                .vocabCache(vocabCache)
+
+                // batchSize is the number of sequences being processed by 1 thread at once
+                // this value actually matters if you have iterations > 1
+                .batchSize(250)
+
+                // number of iterations over batch
+                .iterations(1)
+
+                // number of iterations over whole training corpus
+                .epochs(5)
+
+                // if set to true, vocabulary will be built from scratches internally
+                // otherwise externally provided vocab will be used
+                .resetModel(false)
+
+                /*
+                    These two methods define our training goals. At least one goal should be set to TRUE.
+                 */
+                .trainElementsRepresentation(true)
+                .trainSequencesRepresentation(false)
+
+                /*
+                    Specifies elements learning algorithms. SkipGram, for example.
+                 */
+                .elementsLearningAlgorithm(new SkipGram<Blogger>())
+
+                .windowSize(10)
+
+                .build();
+
+        vectors.fit();
+
+        vectors.setModelUtils(new BasicModelUtils());
+
+   //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
+
+        double sim = vectors.similarity("12", "72");
+        Collection<String> list = vectors.wordsNearest("12", 10);
+        logger.info("12->72: " + sim);
+        printWords("12", list, vectors);
+
+        assertTrue(sim > 0.10);
+        assertFalse(Double.isNaN(sim));
+    }
+
+
+    private List<Blogger> getBloggersFromGraph(Graph<Blogger, Void> graph) {
+        List<Blogger> result = new ArrayList<>();
+
+        List<Vertex<Blogger>> bloggers = graph.getVertices(0, graph.numVertices()-1);
+        for (Vertex<Blogger> vertex: bloggers) {
+            result.add(vertex.getValue());
+        }
+
+        return result;
+    }
+
+    private static Graph<Blogger, Void> buildGraph() throws IOException, InterruptedException {
+        File nodes = new File("/ext/Temp/BlogCatalog/nodes.csv");
+
+        CSVRecordReader reader = new CSVRecordReader(0,",");
+        reader.initialize(new FileSplit(nodes));
+
+        List<Blogger> bloggers = new ArrayList<>();
+        int cnt = 0;
+        while (reader.hasNext()) {
+            List<Writable> lines = new ArrayList<>(reader.next());
+            Blogger blogger = new Blogger(lines.get(0).toInt());
+            blogger.setIndex(cnt);
+            bloggers.add(blogger);
+            cnt++;
+        }
+
+        reader.close();
+
+        Graph<Blogger, Void> graph = new Graph<Blogger, Void>(bloggers, true);
+
+        // load edges
+        File edges = new File("/ext/Temp/BlogCatalog/edges.csv");
+
+        reader = new CSVRecordReader(0,",");
+        reader.initialize(new FileSplit(edges));
+
+        while (reader.hasNext()) {
+            List<Writable> lines = new ArrayList<>(reader.next());
+            int from = lines.get(0).toInt();
+            int to = lines.get(1).toInt();
+
+            graph.addEdge(from-1, to-1, null, true);
+            graph.addEdge(to-1, from-1, null, true);
+        }
+        return graph;
+    }
+
+    @Data
+    private static class Blogger extends SequenceElement {
+        @Getter @Setter private int id;
+
+        public Blogger() {
+            super();
+        }
+
+        public Blogger(int id) {
+            super();
+            this.id = id;
+        }
+
+        /**
+         * This method should return string representation of this SequenceElement, so it can be used for
+         *
+         * @return
+         */
+        @Override
+        public String getLabel() {
+            return String.valueOf(id);
+        }
+
+        /**
+         * @return
+         */
+        @Override
+        public String toJSON() {
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return super.toString();
+        }
+    }
+
+    private static void printWords(String target, Collection<String> list, SequenceVectors vec) {
+        System.out.println("Words close to ["+target+"]: " + Arrays.toString(vec.getWordVector(target)));
+        for (String word: list) {
+            double sim = vec.similarity(target, word);
+            System.out.print("'"+ word+"': ["+ sim+"], ");
+        }
+        System.out.print("\n");
     }
 }

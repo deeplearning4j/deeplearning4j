@@ -12,5 +12,5 @@ public interface GraphWalker<T extends SequenceElement> {
 
     Sequence<T> next();
 
-    void reset();
+    void reset(boolean shuffle);
 }
