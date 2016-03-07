@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -33,6 +35,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
  * one of the input time series<br>
  * @author Alex Black
  */
+@Data
 public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     private String inputName;
@@ -41,7 +44,7 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
      * @param inputName Name of the input in the ComputationGraph network to use, to determine how long the output time
      *                  series should be. This input should (a) exist, and (b) be a time series input
      */
-    public DuplicateToTimeSeriesVertex(String inputName){
+    public DuplicateToTimeSeriesVertex(@JsonProperty("maskArrayInputName") String inputName){
         this.inputName = inputName;
     }
 
