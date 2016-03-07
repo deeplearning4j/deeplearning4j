@@ -259,7 +259,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     public String toString() {
         return "SequenceElement: {label: '"+ this.getLabel() +"'," +
                                                                   " freq: '"+ elementFrequency.get()+"'," +
-                                                                    "index: '"+this.index+"'}";
+                                                                   " codes: " + codes.toString() +
+                                                                    " points: " + points.toString() +
+                                                                    " index: '"+this.index+"'}";
     }
 
     /**

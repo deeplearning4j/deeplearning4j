@@ -10,10 +10,13 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.word2vec.Huffman;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.labels.LabelsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +38,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected LabelsProvider<T> labelsProvider;
     protected AtomicInteger counter = new AtomicInteger(0);
     protected boolean shuffle = true;
+    protected VocabCache<T> vocabCache;
 
     protected static final Logger log = LoggerFactory.getLogger(GraphTransformer.class);
 
@@ -48,30 +52,37 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
     protected void initialize() {
         log.info("Building Huffman tree for source graph...");
         int nVertices = sourceGraph.numVertices();
-        int[] degrees = new int[nVertices];
-        for( int i=0; i<nVertices; i++ )
-            degrees[i] = sourceGraph.getVertexDegree(i);
-
-        GraphHuffman huffman = new GraphHuffman(nVertices);
-        huffman.buildTree(degrees);
+        //int[] degrees = new int[nVertices];
+        //for( int i=0; i<nVertices; i++ )
+           // degrees[i] = sourceGraph.getVertexDegree(i);
+/*
+        for (int y = 0; y < nVertices; y+= 20) {
+            int[] copy = Arrays.copyOfRange(degrees, y, y+20);
+            System.out.println("D: " + Arrays.toString(copy));
+        }
+*/
+//        GraphHuffman huffman = new GraphHuffman(nVertices);
+//        huffman.buildTree(degrees);
 
         log.info("Transferring Huffman tree info to nodes...");
         for (int i = 0; i < nVertices; i++) {
-            int codeLen = huffman.getCodeLength(i);
-            int[] path = huffman.getPathInnerNodes(i);
-            List<Integer> codes = huffman.getCodeList(i);
-
             T element = sourceGraph.getVertex(i).getValue();
-            element.setCodeLength(codeLen);
-            element.setPoints(path);
-            element.setCodes(codes);
+            element.setElementFrequency(sourceGraph.getVertexDegree(i));
+
+            if (vocabCache != null) vocabCache.addToken(element);
+        }
+
+        if (vocabCache != null) {
+            Huffman huffman = new Huffman(vocabCache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(vocabCache);
         }
     }
 
     @Override
     public Iterator<Sequence<T>> iterator() {
         this.counter.set(0);
-        this.walker.reset();
+        this.walker.reset(shuffle);
         return new Iterator<Sequence<T>>() {
             private GraphWalker<T> walker = GraphTransformer.this.walker;
 
@@ -103,6 +114,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         protected LabelsProvider<T> labelsProvider;
         protected GraphWalker<T> walker;
         protected boolean shuffle = true;
+        protected VocabCache<T> vocabCache;
 
         public Builder(IGraph<T, ?> sourceGraph) {
             this.sourceGraph = sourceGraph;
@@ -110,6 +122,11 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
         public Builder<T> setNoEdgeHandling(@NonNull NoEdgeHandling handling) {
             this.noEdgeHandling = handling;
+            return this;
+        }
+
+        public Builder<T> setWalkDirection(@NonNull WalkDirection walkDirection) {
+            this.walkDirection = walkDirection;
             return this;
         }
 
@@ -133,6 +150,11 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             return this;
         }
 
+        public Builder<T> setVocabCache(@NonNull VocabCache<T> vocabCache) {
+            this.vocabCache = vocabCache;
+            return this;
+        }
+
         public Builder<T> shuffleOnReset(boolean reallyShuffle) {
             this.shuffle = reallyShuffle;
             return this;
@@ -147,6 +169,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             transformer.walkDirection = this.walkDirection;
             transformer.labelsProvider = this.labelsProvider;
             transformer.shuffle = this.shuffle;
+            transformer.vocabCache = this.vocabCache;
 
             if (this.walker == null)
                 switch (this.walkMode) {

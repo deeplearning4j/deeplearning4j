@@ -52,6 +52,7 @@ public class GraphTransformerTest {
         int cnt = 0;
         while (iterator.hasNext()) {
             Sequence<VocabWord> sequence = iterator.next();
+            System.out.println(sequence);
             cnt++;
         }
 

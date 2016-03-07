@@ -28,6 +28,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected AtomicInteger position = new AtomicInteger(0);
     protected Random rng = new Random(System.currentTimeMillis());
     protected long seed;
+    protected int[] order;
     protected WalkDirection walkDirection;
 
     protected RandomWalker() {
@@ -51,26 +52,47 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         int lastId = -1;
         for (int i = 0; i < walkLength; i++) {
             int currentPosition = startPosition;
-            Vertex<T> vertex = sourceGraph.getVertex(currentPosition);
+            Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
 
             // get next vertex
             switch (walkDirection) {
                 case RANDOM: {
-                        int[] nextHops = sourceGraph.getConnectedVertexIndices(startPosition);
+                        int[] nextHops = sourceGraph.getConnectedVertexIndices(order[currentPosition]);
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
                     };
                     break;
                 case FORWARD_ONLY: {
                         // here we remove only last hop
-                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), lastId);
-                        startPosition = nextHops[rng.nextInt(nextHops.length)];
+                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), lastId);
+                        if (nextHops.length > 0) {
+                            startPosition = nextHops[rng.nextInt(nextHops.length)];
+                        } else {
+                            switch (noEdgeHandling) {
+                                case CUTOFF_ON_DISCONNECTED: {
+                                    i = walkLength + 10;
+                                }
+                                break;
+                                case EXCEPTION_ON_DISCONNECTED: {
+                                    throw new NoEdgesException("No more edges at vertex ["+currentPosition +"]");
+                                }
+                                case SELF_LOOP_ON_DISCONNECTED: {
+                                    startPosition = currentPosition;
+                                }
+                                break;
+                                case PADDING_ON_DISCONNECTED: {
+                                    throw new UnsupportedOperationException("PADDING not implemented yet");
+                                }
+                                default:
+                                    throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
+                            }
+                        }
                     };
                     break;
                 case FORWARD_UNIQUE: {
                     // here we remove all previously visited hops, and we don't get  back to them ever
-                    int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), visitedHops);
+                    int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
                     if (nextHops.length > 0) {
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
                     } else {
@@ -98,9 +120,9 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                 break;
                 case FORWARD_PREFERRED: {
                         // here we remove all previously visited hops, and if there's no next unique hop available - we fallback to anything, but the last one
-                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), visitedHops);
+                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
                         if (nextHops.length == 0) {
-                            nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(startPosition), lastId);
+                            nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), lastId);
                             if (nextHops.length == 0) {
                                 // noEdge handling here
                             } else startPosition = nextHops[rng.nextInt(nextHops.length)];
@@ -118,8 +140,17 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     }
 
     @Override
-    public void reset() {
+    public void reset(boolean shuffle) {
         this.position.set(0);
+        if (shuffle) {
+            // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+            for(int i=order.length-1; i>0; i-- ){
+                int j = rng.nextInt(i+1);
+                int temp = order[j];
+                order[j] = order[i];
+                order[i] = temp;
+            }
+        }
     }
 
     public static class Builder<T extends SequenceElement> {
@@ -160,6 +191,11 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
             walker.walkLength = this.walkLength;
             walker.seed = this.seed;
             walker.walkDirection = this.walkDirection;
+
+            walker.order = new int[sourceGraph.numVertices()];
+            for (int i =0; i <walker.order.length; i++) {
+                walker.order[i] = i;
+            }
 
             if (this.seed != 0)
                 walker.rng = new Random(this.seed);
