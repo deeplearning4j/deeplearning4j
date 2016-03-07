@@ -14,7 +14,7 @@ import org.nd4j.nativeblas.util.LibUtils;
  *
  *
  */
-@Platform(include="NativeBlas.h",preload = "nd4j",link = "nd4j")
+@Platform(include="NativeBlas.h",preload = "libnd4j",link = "nd4j")
 public class Nd4jBlas extends Pointer {
     static {
         try {
