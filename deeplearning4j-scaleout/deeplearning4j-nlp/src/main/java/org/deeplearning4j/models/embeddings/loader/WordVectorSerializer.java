@@ -1078,10 +1078,6 @@ public class WordVectorSerializer {
             String word = split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
-            if (cache.containsWord(word)) {
-                log.info("Word already exists: " + word);
-            }
-
             word1.setIndex(cache.numWords());
 
             cache.addToken(word1);
@@ -1120,6 +1116,59 @@ public class WordVectorSerializer {
         }
 
         return new Pair<>(lookupTable, cache);
+    }
+
+    /**
+     * This method can be used to load previously saved model from InputStream (like a HDFS-stream)
+     *
+     * @param stream InputStream that contains previously serialized model
+     * @param skipFirstLine Set this TRUE if first line contains csv header, FALSE otherwise
+     * @return
+     * @throws IOException
+     */
+    public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        String line = "";
+        List<INDArray> arrays = new ArrayList<>();
+
+        if (skipFirstLine)
+            reader.readLine();
+
+        while((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            String word = split[0].replaceAll(whitespaceReplacement, " ");
+            VocabWord word1 = new VocabWord(1.0, word);
+
+            word1.setIndex(cache.numWords());
+
+            cache.addToken(word1);
+
+            cache.addWordToIndex(word1.getIndex(), word);
+
+            cache.putVocabWord(word);
+            INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
+            for (int i = 1; i < split.length; i++) {
+                row.putScalar(i - 1, Float.parseFloat(split[i]));
+            }
+            arrays.add(row);
+        }
+
+        InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                .vectorLength(arrays.get(0).columns())
+                .cache(cache)
+                .build();
+
+        INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
+        for (int i = 0; i < syn.rows(); i++) {
+            syn.putRow(i,arrays.get(i));
+        }
+
+        Nd4j.clearNans(syn);
+        lookupTable.setSyn0(syn);
+
+        return fromPair(Pair.makePair((InMemoryLookupTable) lookupTable, (VocabCache) cache));
     }
 
     /**
