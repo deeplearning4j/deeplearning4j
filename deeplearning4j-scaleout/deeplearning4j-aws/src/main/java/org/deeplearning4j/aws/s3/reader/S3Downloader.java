@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.MultipleFileDownload;
+import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.aws.s3.BaseS3;
 
@@ -175,5 +177,11 @@ public class S3Downloader extends BaseS3 {
 		is.close();
 		obj.close();
 	}
+
+	public MultipleFileDownload downloadFolder(String bucketName, String keyPrefix, File folderPath) {
+		TransferManager transfer = new TransferManager(getClient());
+		return transfer.downloadDirectory(bucketName, keyPrefix, folderPath);
+	}
+
 
 }
