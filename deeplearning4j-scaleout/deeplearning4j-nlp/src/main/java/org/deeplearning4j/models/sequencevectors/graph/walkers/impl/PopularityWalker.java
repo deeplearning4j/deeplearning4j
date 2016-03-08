@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.math3.util.MathArrays;
+import org.apache.commons.math3.util.MathUtils;
 import org.deeplearning4j.berkeley.PriorityQueue;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
@@ -16,7 +18,9 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -52,6 +56,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
             switch (walkDirection) {
                 case RANDOM:
                 case FORWARD_ONLY:
+                case FORWARD_UNIQUE:
                 case FORWARD_PREFERRED: {
                         // we get  popularity of each node connected to the current node.
                         PriorityQueue<Node<T>> queue = new PriorityQueue<Node<T>>();
@@ -60,7 +65,9 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                         int[] connections = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
                         int start = 0;
                         int stop = 0;
+                        int cnt = 0;
                         if (connections.length > 0) {
+
 
                             for (int connected : connections) {
                                 queue.add(new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size()), sourceGraph.getConnectedVertices(connected).size());
@@ -85,32 +92,55 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                             }
 
                             logger.info("Spread: ["+ spread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
-                            int cnt = 0;
+                            cnt = 0;
                             logger.info("Queue: " + queue);
                             logger.info("Queue size: " + queue.size());
 
+                            List<Node<T>> list = new ArrayList<Node<T>>();
+                            double[] weights = new double[spread];
+
+                            int fcnt = 0;
                             while (queue.hasNext()) {
-                                connections[cnt] = queue.next().getVertexId();
+                                Node<T> node = queue.next();
+                                if (cnt >= start && cnt <= stop) {
+                                    list.add(node);
+                                    weights[fcnt] = node.getWeight();
+                                    fcnt++;
+                                }
+                                connections[cnt] = node.getVertexId();
+
                                 cnt++;
                             }
 
 
-                            int con = 0;
+                            int con = -1;
 
                             switch (spectrum) {
-                                case PLAIN:
+                                case PLAIN: {
                                         con = RandomUtils.nextInt(start, stop + 1);
-                                    break;
-                                case PROPORTIONAL:
 
+                                        logger.info("Picked selection: " + con);
+
+                                        Vertex<T> nV = sourceGraph.getVertex(connections[con]);
+                                        startPosition = nV.vertexID();
+                                    }
+                                    break;
+                                case PROPORTIONAL: {
+                                        double norm[] = MathArrays.normalizeArray(weights, 1);
+                                        double prob = rng.nextDouble();
+                                        double floor = 0.0;
+                                        for (int b = 0; b < weights.length; b++) {
+                                            if (prob >= floor && prob < floor + norm[b]) {
+                                                startPosition = list.get(b).getVertexId();
+                                                break;
+                                            } else {
+                                                floor += norm[b];
+                                            }
+                                        }
+                                    }
                                     break;
                             }
 
-
-                            logger.info("Picked selection: " + con);
-
-                            Vertex<T> nV =  sourceGraph.getVertex(connections[con]);
-                            startPosition = nV.vertexID();
                         } else {
                             switch (noEdgeHandling) {
                                 case EXCEPTION_ON_DISCONNECTED:
@@ -191,13 +221,20 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
         }
 
         @Override
-        public GraphWalker<T> build() {
+        public Builder<T> setRestartProbability(double alpha) {
+            super.setRestartProbability(alpha);
+            return this;
+        }
+
+        @Override
+        public PopularityWalker<T> build() {
             PopularityWalker<T> walker = new PopularityWalker<T>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;
             walker.seed = this.seed;
             walker.walkDirection = this.walkDirection;
+            walker.alpha = this.alpha;
             walker.popularityMode = this.popularityMode;
             walker.spread = this.spread;
             walker.spectrum = this.spectrum;
