@@ -56,8 +56,8 @@ public abstract class BaseS3 {
 	protected AWSCredentials creds;
 	public final static String ACCESS_KEY = "org.deeplearning4j.aws.accessKey";
 	public final static String  ACCESS_SECRET = "org.deeplearning4j.aws.accessSecret";
-	public final static String AWS_ACCESS_KEY = "AWS_ACCESS_KEY_ID";
-	public final static String AWS_SECRET_KEY = "AWS_SECRET_ACCESS_KEY";
+	public final static String AWS_ACCESS_KEY = "AWS_ACCESS_KEY"; //"AWS_ACCESS_KEY_ID";
+	public final static String AWS_SECRET_KEY = "AWS_SECRET_KEY"; //"AWS_SECRET_ACCESS_KEY";
 	
 	
 	protected void findCreds() {
