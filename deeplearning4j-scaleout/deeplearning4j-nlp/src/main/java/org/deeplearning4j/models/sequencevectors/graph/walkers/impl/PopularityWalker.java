@@ -52,6 +52,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
             Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
+            int cSpread = 0;
 
             switch (walkDirection) {
                 case RANDOM:
@@ -73,31 +74,32 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                 queue.add(new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size()), sourceGraph.getConnectedVertices(connected).size());
                             }
 
-                            spread = spread > connections.length ? connections.length : spread;
+
+                            cSpread = spread > connections.length ? connections.length : spread;
 
                             switch (popularityMode) {
                                 case MAXIMUM:
                                     start = 0;
-                                    stop = start + spread - 1;
+                                    stop = start + cSpread - 1;
                                     break;
                                 case MINIMUM:
-                                    start = connections.length - spread;
+                                    start = connections.length - cSpread;
                                     stop = connections.length - 1;
                                     break;
                                 case AVERAGE:
                                     int mid = connections.length / 2;
-                                    start = mid - (spread/2);
-                                    stop = mid + (spread / 2);
+                                    start = mid - (cSpread/2);
+                                    stop = mid + (cSpread / 2);
                                     break;
                             }
 
-                            logger.info("Spread: ["+ spread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
+                            logger.info("Spread: ["+ cSpread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
                             cnt = 0;
                             logger.info("Queue: " + queue);
                             logger.info("Queue size: " + queue.size());
 
                             List<Node<T>> list = new ArrayList<Node<T>>();
-                            double[] weights = new double[spread];
+                            double[] weights = new double[cSpread];
 
                             int fcnt = 0;
                             while (queue.hasNext()) {
