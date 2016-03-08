@@ -12,6 +12,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.Assert.*;
 
 /**
@@ -112,13 +114,63 @@ public class PopularityWalkerTest {
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
         System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
 
+        AtomicBoolean got4 = new AtomicBoolean(false);
+        AtomicBoolean got7 = new AtomicBoolean(false);
+        AtomicBoolean got9 = new AtomicBoolean(false);
+
         for (int i = 0; i < 50; i++) {
             Sequence<VocabWord> sequence = walker.next();
             assertEquals("0", sequence.getElements().get(0).getLabel());
             System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
+
+            got4.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("4"));
+            got7.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("7"));
+            got9.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("9"));
+
             assertTrue(sequence.getElements().get(1).getLabel().equals("4") || sequence.getElements().get(1).getLabel().equals("7") || sequence.getElements().get(1).getLabel().equals("9"));
 
             walker.reset(false);
         }
+
+        assertTrue(got4.get());
+        assertTrue(got7.get());
+        assertTrue(got9.get());
+    }
+
+    @Test
+    public void testPopularityWalker4() throws Exception {
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+                .setWalkDirection(WalkDirection.FORWARD_ONLY)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
+                .setWalkLength(10)
+                .setPopularityMode(PopularityMode.MINIMUM)
+                .setPopularitySpread(3)
+                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
+                .build();
+
+        System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
+        System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
+
+        AtomicBoolean got3 = new AtomicBoolean(false);
+        AtomicBoolean got8 = new AtomicBoolean(false);
+        AtomicBoolean got9 = new AtomicBoolean(false);
+
+        for (int i = 0; i < 50; i++) {
+            Sequence<VocabWord> sequence = walker.next();
+            assertEquals("0", sequence.getElements().get(0).getLabel());
+            System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
+
+            got3.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("3"));
+            got8.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("8"));
+            got9.compareAndSet(false, sequence.getElements().get(1).getLabel().equals("9"));
+
+            assertTrue(sequence.getElements().get(1).getLabel().equals("8") || sequence.getElements().get(1).getLabel().equals("3") || sequence.getElements().get(1).getLabel().equals("9"));
+
+            walker.reset(false);
+        }
+
+        assertTrue(got3.get());
+        assertTrue(got8.get());
+        assertTrue(got9.get());
     }
 }
