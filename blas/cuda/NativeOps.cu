@@ -162,6 +162,10 @@ public:
     }
 };
 
+#ifdef _WIN32
+ScalarShapeInformation ScalarInfo<double>::shapeInfo;
+ScalarShapeInformation ScalarInfo<float>::shapeInfo;
+#endif
 
 /**
  *

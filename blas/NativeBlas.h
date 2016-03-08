@@ -5,11 +5,12 @@
 #ifndef NATIVEOPERATIONS_NATIVEBLAS_H
 #define NATIVEOPERATIONS_NATIVEBLAS_H
 
+#include <dll.h>
 #include <pointercast.h>
 
 
 
-class Nd4jBlas {
+class ND4J_EXPORT Nd4jBlas {
 public:
 
     /*
