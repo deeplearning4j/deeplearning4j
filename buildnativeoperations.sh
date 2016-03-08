@@ -19,6 +19,18 @@ elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
     fi
+    # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
+    if [ -z "$VCINSTALLDIR" ]; then
+        export VisualStudioVersion=12.0
+        export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
+        export VCINSTALLDIR="$VSINSTALLDIR\\VC"
+        export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
+        export Platform=X64
+        export INCLUDE="$VCINSTALLDIR\\INCLUDE;$WindowsSdkDir\\include\\shared;$WindowsSdkDir\\include\\um"
+        export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
+        export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
+        export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
+    fi
    CC=/mingw64/bin/gcc
     CXX=/mingw64/bin/g++
     echo "Running windows"
