@@ -2,6 +2,7 @@ package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
+import org.deeplearning4j.models.sequencevectors.graph.enums.SpreadSpectrum;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFactory;
@@ -62,6 +63,7 @@ public class PopularityWalkerTest {
                 .setWalkLength(10)
                 .setPopularityMode(PopularityMode.MAXIMUM)
                 .setPopularitySpread(3)
+                .setSpreadSpectrum(SpreadSpectrum.PLAIN)
                 .build();
 
         System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
@@ -94,5 +96,29 @@ public class PopularityWalkerTest {
         System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
 
         assertTrue(sequence.getElements().get(1).getLabel().equals("8") || sequence.getElements().get(1).getLabel().equals("3") || sequence.getElements().get(1).getLabel().equals("9")  || sequence.getElements().get(1).getLabel().equals("7"));
+    }
+
+    @Test
+    public void testPopularityWalker3() throws Exception {
+        GraphWalker<VocabWord> walker = new PopularityWalker.Builder<VocabWord>(graph)
+                .setWalkDirection(WalkDirection.FORWARD_ONLY)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
+                .setWalkLength(10)
+                .setPopularityMode(PopularityMode.MAXIMUM)
+                .setPopularitySpread(3)
+                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
+                .build();
+
+        System.out.println("Connected [3] size: " + graph.getConnectedVertices(3).size());
+        System.out.println("Connected [4] size: " + graph.getConnectedVertices(4).size());
+
+        for (int i = 0; i < 50; i++) {
+            Sequence<VocabWord> sequence = walker.next();
+            assertEquals("0", sequence.getElements().get(0).getLabel());
+            System.out.println("Position at 1: [" + sequence.getElements().get(1).getLabel() + "]");
+            assertTrue(sequence.getElements().get(1).getLabel().equals("4") || sequence.getElements().get(1).getLabel().equals("7") || sequence.getElements().get(1).getLabel().equals("9"));
+
+            walker.reset(false);
+        }
     }
 }
