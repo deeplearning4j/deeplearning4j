@@ -30,11 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
     protected IGraph<T, ?> sourceGraph;
-    protected int walkLength = 5;
-    protected WalkMode walkMode = WalkMode.RANDOM;
-    protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
     protected GraphWalker<T> walker;
-    protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
     protected LabelsProvider<T> labelsProvider;
     protected AtomicInteger counter = new AtomicInteger(0);
     protected boolean shuffle = true;
@@ -120,25 +116,6 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
             this.sourceGraph = sourceGraph;
         }
 
-        public Builder<T> setNoEdgeHandling(@NonNull NoEdgeHandling handling) {
-            this.noEdgeHandling = handling;
-            return this;
-        }
-
-        public Builder<T> setWalkDirection(@NonNull WalkDirection walkDirection) {
-            this.walkDirection = walkDirection;
-            return this;
-        }
-
-        public Builder<T> setWalkMode(@NonNull WalkMode walkMode) {
-            this.walkMode = walkMode;
-            return this;
-        }
-
-        public Builder<T> setWalkLength(int walkLength) {
-            this.walkLength = walkLength;
-            return this;
-        }
 
         public Builder<T> setLabelsProvider(@NonNull LabelsProvider<T> provider) {
             this.labelsProvider = provider;
@@ -162,29 +139,13 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
         public GraphTransformer<T> build() {
             GraphTransformer<T> transformer = new GraphTransformer<T>();
-            transformer.noEdgeHandling = this.noEdgeHandling;
             transformer.sourceGraph = this.sourceGraph;
-            transformer.walkLength = this.walkLength;
-            transformer.walkMode = this.walkMode;
-            transformer.walkDirection = this.walkDirection;
             transformer.labelsProvider = this.labelsProvider;
             transformer.shuffle = this.shuffle;
             transformer.vocabCache = this.vocabCache;
 
             if (this.walker == null)
-                switch (this.walkMode) {
-                    case RANDOM:
-                        transformer.walker = new RandomWalker.Builder<T>(this.sourceGraph)
-                                .setNoEdgeHandling(this.noEdgeHandling)
-                                .setWalkLength(this.walkLength)
-                                .setWalkDirection(this.walkDirection)
-                                .build();
-                        break;
-                    case WEIGHTED:
-                    case POPULARITY:
-                    default:
-                        throw new UnsupportedOperationException("WalkMode ["+ this.walkMode+"] isn't supported at this moment?");
-                }
+                throw new IllegalStateException("Please provide GraphWalker instance.");
             else transformer.walker = this.walker;
 
             transformer.initialize();

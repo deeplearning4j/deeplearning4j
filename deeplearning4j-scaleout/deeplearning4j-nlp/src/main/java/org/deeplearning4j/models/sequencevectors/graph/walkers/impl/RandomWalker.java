@@ -35,7 +35,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected WalkDirection walkDirection;
     protected double alpha;
 
-    protected static final Logger logger = LoggerFactory.getLogger(RandomWalker.class);
+    private static final Logger logger = LoggerFactory.getLogger(RandomWalker.class);
 
     protected RandomWalker() {
 
@@ -58,15 +58,20 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         int lastId = -1;
         int startPoint = order[startPosition];
         //System.out.println("");
-        if (startPosition == 0)
-            System.out.print("Walk: ");
+       // if (startPosition == 0)
+       //     logger.debug("Walk: ");
         for (int i = 0; i < walkLength; i++) {
             int currentPosition = startPosition;
             Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
-            if (startPoint == 0)
-                System.out.print("" + vertex.vertexID() + " -> ");
+            //if (startPoint == 0)
+            //    logger.debug("" + vertex.vertexID() + " -> ");
+
+            if (alpha > 0 && alpha < rng.nextDouble()) {
+                startPosition = startPoint;
+                continue;
+            }
 
             // get next vertex
             switch (walkDirection) {
@@ -83,19 +88,23 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                         } else {
                             switch (noEdgeHandling) {
                                 case CUTOFF_ON_DISCONNECTED: {
-                                    i = walkLength + 10;
-                                }
-                                break;
+                                        i += walkLength;
+                                    }
+                                    break;
                                 case EXCEPTION_ON_DISCONNECTED: {
-                                    throw new NoEdgesException("No more edges at vertex ["+currentPosition +"]");
-                                }
+                                        throw new NoEdgesException("No more edges at vertex ["+currentPosition +"]");
+                                    }
                                 case SELF_LOOP_ON_DISCONNECTED: {
                                     startPosition = currentPosition;
-                                }
-                                break;
+                                    }
+                                    break;
                                 case PADDING_ON_DISCONNECTED: {
                                     throw new UnsupportedOperationException("PADDING not implemented yet");
-                                }
+                                    }
+                                case RESTART_ON_DISCONNECTED: {
+                                        startPosition = startPoint;
+                                    }
+                                    break;
                                 default:
                                     throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                             }
@@ -111,7 +120,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                         // if we don't have any more unique hops within this path - break out.
                         switch (noEdgeHandling) {
                             case CUTOFF_ON_DISCONNECTED: {
-                                    i = walkLength + 10;
+                                    i += walkLength;
                                 }
                                 break;
                             case EXCEPTION_ON_DISCONNECTED: {
@@ -124,6 +133,10 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                             case PADDING_ON_DISCONNECTED: {
                                     throw new UnsupportedOperationException("PADDING not implemented yet");
                                 }
+                            case RESTART_ON_DISCONNECTED: {
+                                    startPosition = startPoint;
+                                }
+                                break;
                             default:
                                 throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
                         }
@@ -136,7 +149,28 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                         if (nextHops.length == 0) {
                             nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), lastId);
                             if (nextHops.length == 0) {
-                                // noEdge handling here
+                                switch (noEdgeHandling) {
+                                    case CUTOFF_ON_DISCONNECTED: {
+                                            i += walkLength;
+                                        }
+                                        break;
+                                    case EXCEPTION_ON_DISCONNECTED: {
+                                            throw new NoEdgesException("No more edges at vertex ["+currentPosition +"]");
+                                        }
+                                    case SELF_LOOP_ON_DISCONNECTED: {
+                                            startPosition = currentPosition;
+                                        }
+                                        break;
+                                    case PADDING_ON_DISCONNECTED: {
+                                            throw new UnsupportedOperationException("PADDING not implemented yet");
+                                        }
+                                    case RESTART_ON_DISCONNECTED: {
+                                            startPosition = startPoint;
+                                        }
+                                        break;
+                                    default:
+                                        throw new UnsupportedOperationException("NoEdgeHandling mode ["+noEdgeHandling+"] not implemented yet.");
+                                }
                             } else startPosition = nextHops[rng.nextInt(nextHops.length)];
                         }
                     }

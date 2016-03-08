@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.vertex.AbstractVertexFactory;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -42,10 +43,12 @@ public class GraphTransformerTest {
 
     @Test
     public void testGraphTransformer1() throws Exception {
-        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<VocabWord>(graph)
-                .setWalkLength(5)
+        GraphWalker<VocabWord> walker = new RandomWalker.Builder<VocabWord>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
-                .setWalkMode(WalkMode.RANDOM)
+                .build();
+
+        GraphTransformer<VocabWord> transformer = new GraphTransformer.Builder<VocabWord>(graph)
+                .setGraphWalker(walker)
                 .build();
 
         Iterator<Sequence<VocabWord>> iterator = transformer.iterator();

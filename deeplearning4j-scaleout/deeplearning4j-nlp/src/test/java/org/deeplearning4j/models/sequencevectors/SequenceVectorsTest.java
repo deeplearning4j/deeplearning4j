@@ -16,6 +16,8 @@ import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.GraphTransformer;
@@ -31,6 +33,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.slf4j.Logger;
@@ -318,6 +321,7 @@ public class SequenceVectorsTest {
     }
 
     @Test
+    @Ignore
     public void testDeepWalk() throws Exception {
         Heartbeat.getInstance().disableHeartbeat();
 
@@ -325,11 +329,14 @@ public class SequenceVectorsTest {
 
         Graph<Blogger, Double> graph =buildGraph();
 
-        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
-                .setWalkMode(WalkMode.RANDOM)
+        GraphWalker<Blogger> walker = new RandomWalker.Builder<Blogger>(graph)
                 .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
                 .setWalkLength(40)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .build();
+
+        GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
+                .setGraphWalker(walker)
                 .shuffleOnReset(true)
                 .setVocabCache(vocabCache)
                 .build();
