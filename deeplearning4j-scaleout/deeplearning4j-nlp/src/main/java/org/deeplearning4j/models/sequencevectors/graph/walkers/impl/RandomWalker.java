@@ -33,6 +33,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected long seed;
     protected int[] order;
     protected WalkDirection walkDirection;
+    protected double alpha;
 
     protected static final Logger logger = LoggerFactory.getLogger(RandomWalker.class);
 
@@ -173,6 +174,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         protected IGraph<T, ?> sourceGraph;
         protected long seed = 0;
         protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
+        protected double alpha;
 
         public Builder(@NonNull IGraph<T, ?> graph) {
             this.sourceGraph = graph;
@@ -198,13 +200,19 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
             return this;
         }
 
-        public GraphWalker<T> build() {
+        public Builder<T> setRestartProbability(double alpha) {
+            this.alpha = alpha;
+            return this;
+        }
+
+        public RandomWalker<T> build() {
             RandomWalker<T> walker = new RandomWalker<T>();
             walker.noEdgeHandling = this.noEdgeHandling;
             walker.sourceGraph = this.sourceGraph;
             walker.walkLength = this.walkLength;
             walker.seed = this.seed;
             walker.walkDirection = this.walkDirection;
+            walker.alpha = this.alpha;
 
             walker.order = new int[sourceGraph.numVertices()];
             for (int i =0; i <walker.order.length; i++) {
