@@ -1025,7 +1025,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isBackprop()) {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
-            update(TaskUtils.buildTask(iter));
+//            update(TaskUtils.buildTask(iter));
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
@@ -1372,7 +1372,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
         setLabels(labels.dup());
-        update(TaskUtils.buildTask(data, labels));
+//        update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
@@ -1405,7 +1405,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data.dup());
-        update(TaskUtils.buildTask(data));
+//        update(TaskUtils.buildTask(data));
         pretrain(data);
     }
 
