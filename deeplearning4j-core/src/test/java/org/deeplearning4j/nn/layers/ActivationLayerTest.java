@@ -1,17 +1,12 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -21,7 +16,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +26,7 @@ public class ActivationLayerTest {
 
     @Test
     public void testDenseActivationLayer() throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSetIterator iter = new TestMnistIterator();
         DataSet next = iter.next();
 
         // Run without separate activation layer
@@ -153,7 +147,7 @@ public class ActivationLayerTest {
     }
     @Test
     public void testCNNActivationLayer() throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSetIterator iter = new TestMnistIterator();
         DataSet next = iter.next();
 
         // Run without separate activation layer

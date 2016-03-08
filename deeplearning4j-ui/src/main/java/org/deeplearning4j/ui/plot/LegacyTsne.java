@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.plot;
+package org.deeplearning4j.ui.plot;
 
 
 import com.google.common.primitives.Ints;
@@ -43,7 +43,6 @@ import java.util.List;
 
 import static org.nd4j.linalg.factory.Nd4j.*;
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
-
 
 
 /**

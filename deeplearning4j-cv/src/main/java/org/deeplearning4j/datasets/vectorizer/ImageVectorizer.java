@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.datasets.vectorizer;
 
-import java.io.File;
-
 import org.canova.image.loader.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.util.FeatureUtil;
+
+import java.io.File;
 
 /**
  * An image vectorizer takes an input image (RGB) and
@@ -46,7 +46,7 @@ public class ImageVectorizer implements Vectorizer {
 	 * @param numLabels the number of labels
 	 * @param label the label of this image
 	 */
-	public ImageVectorizer(File image,int numLabels,int label) {
+	public ImageVectorizer(File image, int numLabels, int label) {
 		super();
 		this.image = image;
 		this.numLabels = numLabels;

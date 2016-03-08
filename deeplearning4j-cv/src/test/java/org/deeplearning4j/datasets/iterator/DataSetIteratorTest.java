@@ -1,9 +1,5 @@
 package org.deeplearning4j.datasets.iterator;
 
-import static org.junit.Assert.*;
-
-import java.util.*;
-
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.image.loader.CifarLoader;
@@ -32,6 +28,11 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.Random;
+
+import static org.junit.Assert.*;
+
 public class DataSetIteratorTest {
 	
 	@Test
@@ -58,7 +59,7 @@ public class DataSetIteratorTest {
 			DataSet ds = mnist.next();
 			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
 		}
-		assertTrue(mnistC==5);
+		assertTrue(mnistC == 5);
 		
 		//LFW:
 		DataSetIterator lfw = new LFWDataSetIterator(1, 5);
@@ -172,7 +173,7 @@ public class DataSetIteratorTest {
 		assertTrue(iter.hasNext());
 		DataSet data = iter.next();
 		assertEquals(numExamples, data.getLabels().size(0));
-		assertEquals(row*col*channels, data.getFeatureMatrix().size(1));
+		assertEquals(row * col * channels, data.getFeatureMatrix().size(1));
 	}
 
 

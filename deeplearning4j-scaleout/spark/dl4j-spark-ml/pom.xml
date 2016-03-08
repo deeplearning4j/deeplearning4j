@@ -141,5 +141,10 @@
             <version>2.2.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-cv</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

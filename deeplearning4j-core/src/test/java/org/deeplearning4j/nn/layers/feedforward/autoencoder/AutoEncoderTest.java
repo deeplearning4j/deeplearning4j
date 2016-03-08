@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
 import java.util.Arrays;
 
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -61,7 +61,6 @@ public class AutoEncoderTest {
     @Test
     public void testAutoEncoder() throws Exception {
 
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(1)
@@ -73,8 +72,7 @@ public class AutoEncoderTest {
                 .build();
 
 
-        fetcher.fetch(100);
-        DataSet d2 = fetcher.next();
+        DataSet d2 = new TestMnistIterator().next();
 
         INDArray input = d2.getFeatureMatrix();
         AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
@@ -90,7 +88,6 @@ public class AutoEncoderTest {
 
     @Test
     public void testBackProp() throws Exception {
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
         LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -102,8 +99,7 @@ public class AutoEncoderTest {
                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .build();
 
-        fetcher.fetch(100);
-        DataSet d2 = fetcher.next();
+        DataSet d2 = new TestMnistIterator().next();
 
         INDArray input = d2.getFeatureMatrix();
         AutoEncoder da = layerFactory.create(conf);

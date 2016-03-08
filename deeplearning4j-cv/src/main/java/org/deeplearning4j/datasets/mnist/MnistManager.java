@@ -24,9 +24,6 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 
 /**

@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -12,13 +12,9 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -81,7 +77,7 @@ public class ConvolutionLayerTest {
                         .build())
                 .backprop(true).pretrain(false);
         new ConvolutionLayerSetup(builder,28,28,1);
-        DataSetIterator iter = new MnistDataSetIterator(10,10);
+        DataSetIterator iter = new TestMnistIterator();
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -286,8 +282,8 @@ public class ConvolutionLayerTest {
         int nChannelsIn = 1;
         int nExamples = 5;
 
-        DataSetIterator data = new MnistDataSetIterator(nExamples, nExamples);
-        DataSet mnist = data.next();
+        DataSetIterator data = new TestMnistIterator();
+        DataSet mnist = data.next(nExamples);
         nExamples = mnist.numExamples();
         return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
     }
@@ -338,7 +334,7 @@ public class ConvolutionLayerTest {
         // Note CNN does not do pretrain
         int numSamples = 10;
         int batchSize = 10;
-        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize,numSamples, true);
+        DataSetIterator mnistIter = new TestMnistIterator();
 
         MultiLayerNetwork model = getCNNMLNConfig(false, true);
         model.fit(mnistIter);
@@ -371,7 +367,7 @@ public class ConvolutionLayerTest {
     public void testCNNMLNBackprop() throws Exception {
         int numSamples = 10;
         int batchSize = 10;
-        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize, numSamples, true);
+        DataSetIterator mnistIter = new TestMnistIterator();
 
         MultiLayerNetwork model = getCNNMLNConfig(true, false);
         model.fit(mnistIter);

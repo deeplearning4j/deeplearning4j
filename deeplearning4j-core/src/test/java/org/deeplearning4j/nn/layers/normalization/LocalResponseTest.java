@@ -2,7 +2,7 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -180,7 +180,7 @@ public class LocalResponseTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        DataSetIterator iter = new MnistDataSetIterator(2, 2);
+        DataSetIterator iter = new TestMnistIterator();
         DataSet next = iter.next();
 
         network.fit(next);

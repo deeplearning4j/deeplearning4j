@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -17,8 +17,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-
-import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
@@ -210,7 +208,7 @@ public class SubsamplingLayerTest {
     }
 
     public INDArray getData() throws Exception {
-        DataSetIterator data = new MnistDataSetIterator(5,5);
+        DataSetIterator data = new TestMnistIterator();
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
         return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputWidth, inputHeight);

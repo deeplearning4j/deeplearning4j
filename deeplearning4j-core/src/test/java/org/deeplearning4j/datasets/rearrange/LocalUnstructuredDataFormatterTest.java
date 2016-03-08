@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.rearrange;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -16,9 +16,9 @@ import static org.junit.Assert.*;
 public class LocalUnstructuredDataFormatterTest {
 
     @Test
+    @Ignore
     public void testRearrange() throws Exception {
         //ensure exists
-        new LFWDataSetIterator(10,28,28).next();
         File destinationDir = new File(System.getProperty("user.home"),"rearrangedlfw");
         if(destinationDir.exists())
             FileUtils.deleteDirectory(destinationDir);

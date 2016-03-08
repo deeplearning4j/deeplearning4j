@@ -4,7 +4,6 @@ import org.canova.api.records.reader.RecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -118,10 +117,9 @@ public class ConvolutionLayerSetupTest {
         MultiLayerConfiguration testConf = incomplete.build();
 
         //test instantiation
-        DataSetIterator iter = new MnistDataSetIterator(10,10);
         MultiLayerNetwork network = new MultiLayerNetwork(testConf);
         network.init();
-        network.fit(iter.next());
+        network.fit(new DataSet(Nd4j.create(10,784),FeatureUtil.toOutcomeMatrix(new int[]{1,1,1,1,1,1,1,1,1,1},10)));
     }
 
     @Test

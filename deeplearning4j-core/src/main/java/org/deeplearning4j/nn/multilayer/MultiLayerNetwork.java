@@ -893,15 +893,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void setParams(INDArray params) {
         if(this.params != null) this.params = params;  //not null if isRedistributeParams
-        int idx = 0;
-        for (int i = 0; i < getLayers().length; i++) {
-            Layer layer = getLayer(i);
-            int range = (layer instanceof BasePretrainNetwork ?
-                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
-            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-            layer.setParams(get);
-            idx += range;
+        else {
+            int idx = 0;
+            for (int i = 0; i < getLayers().length; i++) {
+                Layer layer = getLayer(i);
+                int range = (layer instanceof BasePretrainNetwork ?
+                        ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+                layer.setParams(get);
+                idx += range;
+            }
         }
+
     }
 
     /**
@@ -1178,7 +1181,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             INDArray featuresMaskSubset = null;
             INDArray labelsMaskSubset = null;
             if(featuresMaskArray != null){
-                 featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+                featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
             }
             if(labelsMaskArray != null){
                 labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
