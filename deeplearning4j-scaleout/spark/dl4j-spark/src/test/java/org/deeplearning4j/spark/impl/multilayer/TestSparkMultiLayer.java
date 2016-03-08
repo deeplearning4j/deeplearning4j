@@ -295,13 +295,20 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
         assertEquals(evalExpected.getNumRowCounter(), evalActual.getNumRowCounter(), 1e-3);
-        assertEquals(evalExpected.falseNegatives(),evalActual.falseNegatives(),1e-3);
-        assertEquals(evalExpected.falsePositives(), evalActual.falsePositives(), 1e-3);
-        assertEquals(evalExpected.trueNegatives(), evalActual.trueNegatives(), 1e-3);
-        assertEquals(evalExpected.truePositives(),evalActual.truePositives(),1e-3);
+        assertMapEquals(evalExpected.falseNegatives(),evalActual.falseNegatives());
+        assertMapEquals(evalExpected.falsePositives(), evalActual.falsePositives());
+        assertMapEquals(evalExpected.trueNegatives(), evalActual.trueNegatives());
+        assertMapEquals(evalExpected.truePositives(),evalActual.truePositives());
         assertEquals(evalExpected.precision(), evalActual.precision(), 1e-3);
         assertEquals(evalExpected.recall(), evalActual.recall(), 1e-3);
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
+    }
+
+    private static void assertMapEquals(Map<Integer,Integer> first, Map<Integer,Integer> second){
+        assertEquals(first.keySet(),second.keySet());
+        for( Integer i : first.keySet()){
+            assertEquals(first.get(i),second.get(i));
+        }
     }
 
     @Test

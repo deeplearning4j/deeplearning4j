@@ -58,15 +58,15 @@ public class EvalTest {
         Evaluation eval = new Evaluation(classNum);
 
         // Testing the edge case when some classes do not have true positive
-        INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5);
-        INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 5);
+        INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5);       //[1,0,0,0,0]
+        INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 5);  //[1,0,0,0,0]
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
         assertEquals(1.0, eval.f1(), 1e-1);
 
         // Testing more than one sample. eval() does not reset the Evaluation instance
-        INDArray trueOutcome2 = FeatureUtil.toOutcomeVector(1, 5);
-        INDArray predictedOutcome2 = FeatureUtil.toOutcomeVector(0, 5);
+        INDArray trueOutcome2 = FeatureUtil.toOutcomeVector(1, 5);      //[0,1,0,0,0]
+        INDArray predictedOutcome2 = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
         eval.eval(trueOutcome2, predictedOutcome2);
         // Verified with sklearn in Python
         // from sklearn.metrics import classification_report
@@ -76,12 +76,55 @@ public class EvalTest {
         assertEquals(1, eval.classCount(0));
         // The first entry is 1 label
         assertEquals(1, eval.classCount(1));
-        // Two positives since two entries
-        assertEquals(2, eval.positive(), 0);
+        // Class 0: one positive, one negative -> (one true positive, one false positive); no true/false negatives
+        assertEquals(1, eval.positive().get(0), 0);
+        assertEquals(1, eval.negative().get(0), 0);
+        assertEquals(1, eval.truePositives().get(0), 0);
+        assertEquals(1, eval.falsePositives().get(0), 0);
+        assertEquals(0, eval.trueNegatives().get(0), 0);
+        assertEquals(0, eval.falseNegatives().get(0), 0);
+
+
         // The rest are negative
-        assertEquals(8, eval.negative(), 0);
+        assertEquals(1, eval.negative().get(0), 0);
         // 2 rows and only the first is correct
         assertEquals(eval.accuracy(), 0.5, 0);
+    }
+
+    @Test
+    public void testEval2(){
+
+        //Confusion matrix:
+        //actual 0      20      3
+        //actual 1      10      5
+
+        Evaluation evaluation = new Evaluation(Arrays.asList("class0","class1"));
+        INDArray predicted0 = Nd4j.create(new double[]{1,0});
+        INDArray predicted1 = Nd4j.create(new double[]{0,1});
+        INDArray actual0 = Nd4j.create(new double[]{1,0});
+        INDArray actual1 = Nd4j.create(new double[]{0,1});
+        for( int i=0; i<20; i++ ){
+            evaluation.eval(actual0,predicted0);
+        }
+
+        for( int i=0; i<3; i++ ){
+            evaluation.eval(actual0,predicted1);
+        }
+
+        for( int i=0; i<10; i++ ){
+            evaluation.eval(actual1,predicted0);
+        }
+
+        for( int i=0; i<5; i++ ){
+            evaluation.eval(actual1,predicted1);
+        }
+
+        assertEquals(20,evaluation.truePositives().get(0),0);
+        assertEquals(3,evaluation.falseNegatives().get(0),0);
+        assertEquals(10,evaluation.falsePositives().get(0),0);
+        assertEquals(5,evaluation.trueNegatives().get(0),0);
+
+        System.out.println(evaluation.confusionToString());
     }
 
     @Test
@@ -183,7 +226,13 @@ public class EvalTest {
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
 
         Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator(Collections.singletonList(test)));
-        checkEvaluationEquality(eval,evalViaMethod);
+        checkEvaluationEquality(eval, evalViaMethod);
+
+        System.out.println(eval.getConfusionMatrix().toString());
+        System.out.println(eval.getConfusionMatrix().toCSV());
+        System.out.println(eval.getConfusionMatrix().toHTML());
+
+        System.out.println(eval.confusionToString());
     }
 
     @Test
@@ -231,11 +280,20 @@ public class EvalTest {
 
         assertEquals(evaluation.accuracy(), evaluation2.accuracy(), 1e-12);
         assertEquals(evaluation.f1(), evaluation2.f1(), 1e-12);
-        assertEquals(evaluation.falsePositives(), evaluation2.falsePositives(), 1e-12);
-        assertEquals(evaluation.falseNegatives(),evaluation2.falseNegatives(),1e-12);
-        assertEquals(evaluation.truePositives(),evaluation2.truePositives(),1e-12);
-        assertEquals(evaluation.trueNegatives(), evaluation2.trueNegatives(), 1e-12);
+
+        assertMapEquals(evaluation.falsePositives(), evaluation2.falsePositives());
+        assertMapEquals(evaluation.falseNegatives(), evaluation2.falseNegatives());
+        assertMapEquals(evaluation.truePositives(), evaluation2.truePositives());
+        assertMapEquals(evaluation.trueNegatives(), evaluation2.trueNegatives());
+
         for( int i=0; i<nOut; i++) assertEquals(evaluation.classCount(i),evaluation2.classCount(i));
+    }
+
+    private static void assertMapEquals(Map<Integer,Integer> first, Map<Integer,Integer> second){
+        assertEquals(first.keySet(),second.keySet());
+        for( Integer i : first.keySet()){
+            assertEquals(first.get(i),second.get(i));
+        }
     }
 
     @Test
@@ -328,10 +386,10 @@ public class EvalTest {
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
         assertEquals(evalExpected.getNumRowCounter(),evalActual.getNumRowCounter(), 1e-3);
-        assertEquals(evalExpected.falseNegatives(),evalActual.falseNegatives(),1e-3);
-        assertEquals(evalExpected.falsePositives(),evalActual.falsePositives(),1e-3);
-        assertEquals(evalExpected.trueNegatives(),evalActual.trueNegatives(),1e-3);
-        assertEquals(evalExpected.truePositives(),evalActual.truePositives(),1e-3);
+        assertMapEquals(evalExpected.falseNegatives(),evalActual.falseNegatives());
+        assertMapEquals(evalExpected.falsePositives(),evalActual.falsePositives());
+        assertMapEquals(evalExpected.trueNegatives(),evalActual.trueNegatives());
+        assertMapEquals(evalExpected.truePositives(),evalActual.truePositives());
         assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
         assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
