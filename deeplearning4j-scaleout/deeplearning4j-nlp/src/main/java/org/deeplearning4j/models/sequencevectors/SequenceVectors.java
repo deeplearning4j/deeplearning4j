@@ -747,7 +747,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
    //     private final AtomicLong linesCounter;
         private final int limitUpper = 10000;
         private final int limitLower = 5000;
-        private AtomicBoolean isRunning = new AtomicBoolean(false);
+        private AtomicBoolean isRunning = new AtomicBoolean(true);
         private AtomicLong nextRandom;
         private List<String> stopList;
 
