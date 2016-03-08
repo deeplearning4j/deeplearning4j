@@ -19,6 +19,8 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +34,8 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
     protected PopularityMode popularityMode = PopularityMode.MAXIMUM;
     protected int spread = 10;
     protected SpreadSpectrum spectrum;
+
+    private static final Logger logger = LoggerFactory.getLogger(PopularityWalker.class);
 
     @Override
     public boolean hasNext() {
@@ -53,6 +57,11 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
             int cSpread = 0;
+
+            if (alpha > 0 && alpha < rng.nextDouble()) {
+                    startPosition = startPoint;
+                    continue;
+            }
 
             switch (walkDirection) {
                 case RANDOM:
@@ -93,10 +102,10 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                     break;
                             }
 
-                            logger.info("Spread: ["+ cSpread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
+                           // logger.info("Spread: ["+ cSpread+ "], Connections: ["+ connections.length+"], Start: ["+start+"], Stop: ["+stop+"]");
                             cnt = 0;
-                            logger.info("Queue: " + queue);
-                            logger.info("Queue size: " + queue.size());
+                            //logger.info("Queue: " + queue);
+                            //logger.info("Queue size: " + queue.size());
 
                             List<Node<T>> list = new ArrayList<Node<T>>();
                             double[] weights = new double[cSpread];
@@ -121,7 +130,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                 case PLAIN: {
                                         con = RandomUtils.nextInt(start, stop + 1);
 
-                                        logger.info("Picked selection: " + con);
+                                    //    logger.info("Picked selection: " + con);
 
                                         Vertex<T> nV = sourceGraph.getVertex(connections[con]);
                                         startPosition = nV.vertexID();
@@ -152,6 +161,9 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                                     break;
                                 case SELF_LOOP_ON_DISCONNECTED:
                                     startPosition = currentPosition;
+                                    break;
+                                case RESTART_ON_DISCONNECTED:
+                                    startPosition = startPoint;
                                     break;
                                 default:
                                     throw new UnsupportedOperationException("Unsupported noEdgeHandling: ["+ noEdgeHandling+"]");
