@@ -679,13 +679,13 @@ public class AtomicAllocator implements Allocator {
      */
     protected void synchronizeHostData(DataBuffer buffer, AllocationShape shape) {
         AllocationPoint point = getAllocationPoint(buffer, shape, true);
-        log.info("Synchronize called on buffer with shape: " + shape);
+        //log.info("Synchronize called on buffer with shape: " + shape);
 
         /*
             We set memory state to Toe, and issue copyback if required
          */
 
-        log.info("Current state: " + point.getAccessState().getCurrentState());
+        //log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
             point.getAccessState().requestToe();
@@ -696,10 +696,10 @@ public class AtomicAllocator implements Allocator {
 
                 // update the timer for hostRead
                 point.tickHostRead();
-            } else log.info("Data is actual 2 , skipping sync");
+            }// else log.info("Data is actual 2 , skipping sync");
 
             point.getAccessState().releaseToe();
-        } else log.info("Data is actual 1, skipping sync");
+        } //else log.info("Data is actual 1, skipping sync");
     }
 
     /**

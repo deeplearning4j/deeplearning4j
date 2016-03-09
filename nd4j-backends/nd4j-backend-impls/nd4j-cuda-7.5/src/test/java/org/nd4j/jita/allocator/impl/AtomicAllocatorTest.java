@@ -94,14 +94,14 @@ public class AtomicAllocatorTest {
         long time1 = 0;
         long time2 = 0;
         long exec[] = new long[100];
-        for (int x = 0; x < 100; x++) {
+        for (int x = 0; x < 10000; x++) {
             time1 = System.nanoTime();
             dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
             time2 = System.nanoTime();
 
 
             assertEquals(879.2554931640625, dotWrapped, 0.001d);
-            if (x % 50000 == 0) log.info("Execution time: [" + (time2 - time1) + "] ns");
+            if (x % 500 == 0) log.info("Execution time: [" + (time2 - time1) + "] ns");
             //      exec[x] = time2 - time1;
         }
 
@@ -119,7 +119,7 @@ public class AtomicAllocatorTest {
 
         // we could use that just to warm up arrays :)
         for (int x = 0; x < 1; x++) {
-     //       Nd4j.getBlasWrapper().dot(array1, array2);
+            Nd4j.getBlasWrapper().dot(array1, array2);
         }
 
         log.warn("A: " + array2.getClass().getSimpleName());
