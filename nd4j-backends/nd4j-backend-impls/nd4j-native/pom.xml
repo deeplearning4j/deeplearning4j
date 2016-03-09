@@ -34,8 +34,14 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
+                    <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
+                    <includes>
+                        <include>*.java</include>
+                    </includes>
                     <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
