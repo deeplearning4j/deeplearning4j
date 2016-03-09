@@ -409,6 +409,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             }
             else {
+                if(dimension == null)
+                    dimension = new int[] {Integer.MAX_VALUE};
                 long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
                 long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
                 long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
