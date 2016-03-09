@@ -41,15 +41,15 @@ public class AllocationUtils {
     /**
      * This method returns AllocationShape for the whole DataBuffer.
      *
-     * @param array
+     * @param buffer
      * @return
      */
-    public static AllocationShape buildAllocationShape(DataBuffer array) {
+    public static AllocationShape buildAllocationShape(DataBuffer buffer) {
         AllocationShape shape = new AllocationShape();
         shape.setStride(1);
-        shape.setOffset(0);
-        shape.setDataType(array.dataType());
-        shape.setLength(array.length());
+        shape.setOffset(buffer.originalOffset());
+        shape.setDataType(buffer.dataType());
+        shape.setLength(buffer.length());
 
         return shape;
     }

@@ -1800,10 +1800,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testElementWiseOps() {
+        System.out.println("WAHAZ");
         INDArray n1 = Nd4j.scalar(1);
         INDArray n2 = Nd4j.scalar(2);
         INDArray nClone = n1.add(n2);
-        assertEquals(Nd4j.scalar(3), nClone);
+        assertEquals(Nd4j.scalar(4), nClone);
         assertFalse(n1.add(n2).equals(n1));
 
         INDArray n3 = Nd4j.scalar(3);
