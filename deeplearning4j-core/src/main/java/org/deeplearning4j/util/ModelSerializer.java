@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -14,6 +15,8 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.util.*;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
 import java.util.zip.ZipEntry;
@@ -57,7 +60,7 @@ public class ModelSerializer {
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(model.params(), dos);
+        org.nd4j.linalg.util.SerializationUtils.writeObject(model.params(),dos);
         dos.flush();
         dos.close();
 
@@ -110,18 +113,10 @@ public class ModelSerializer {
 
         ZipEntry config = zipFile.getEntry("configuration.json");
         if (config != null) {
-        //restoring configuration
+            //restoring configuration
 
             InputStream stream = zipFile.getInputStream(config);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-            String line = "";
-            StringBuilder js = new StringBuilder();
-            while ((line = reader.readLine()) != null) {
-                js.append(line).append("\n");
-            }
-            json = js.toString();
-
-            reader.close();
+            json = new String(IOUtils.toByteArray(stream));
             stream.close();
             gotConfig = true;
         }
@@ -131,24 +126,18 @@ public class ModelSerializer {
         if (coefficients != null) {
             InputStream stream = zipFile.getInputStream(coefficients);
             DataInputStream dis = new DataInputStream(stream);
-            params = Nd4j.read(dis);
+            params = SerializationUtils.readObject(stream);
 
             dis.close();
             gotCoefficients = true;
-         }
+        }
 
 
         ZipEntry updaters = zipFile.getEntry("updater.bin");
         if (updaters != null) {
             InputStream stream = zipFile.getInputStream(updaters);
-            ObjectInputStream ois = new ObjectInputStream(stream);
-
-            try {
-                updater = (Updater) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-
+            updater = SerializationUtils.readObject(stream);
+            stream.close();
             gotUpdater = true;
         }
 
@@ -212,7 +201,7 @@ public class ModelSerializer {
         if (coefficients != null) {
             InputStream stream = zipFile.getInputStream(coefficients);
             DataInputStream dis = new DataInputStream(stream);
-            params = Nd4j.read(dis);
+            params = SerializationUtils.readObject(dis);
 
             dis.close();
             gotCoefficients = true;

@@ -16,39 +16,25 @@
  *
  */
 
-package org.deeplearning4j.datasets;
+package org.deeplearning4j.datasets.creator;
 
-import java.io.IOException;
-
-import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.util.SerializationUtils;
 import org.nd4j.linalg.dataset.DataSet;
 
-public class DataSets {
+import java.io.File;
 
-	public static DataSet mnist() {
-		return mnist(60000);
-	}
-	
-	public static DataSet mnist(int num) {
-		try {
-			MnistDataFetcher fetcher = new MnistDataFetcher();
-			fetcher.fetch(num);
-			return fetcher.next();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+public class MnistDataSetCreator {
 
-	
-	public static DataSet iris() {
-		return iris(150);
-	}
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws Exception {
+		MnistDataFetcher fetcher = new MnistDataFetcher();
+		fetcher.fetch(60000);
+		DataSet save = fetcher.next();
+        SerializationUtils.saveObject(save,new File(args[0]));
 
-	public static DataSet iris(int num) {
-		IrisDataFetcher fetcher = new IrisDataFetcher();
-		fetcher.fetch(num);
-		return fetcher.next();
 	}
 
 }

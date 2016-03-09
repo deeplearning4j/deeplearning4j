@@ -1,9 +1,8 @@
 package org.deeplearning4j.nn.conf;
 
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -87,7 +86,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(multiLayerConfiguration);
         network.init();
-        DataSet d = new MnistDataSetIterator(2,2).next();
+        DataSet d = new TestMnistIterator().next();
         org.deeplearning4j.nn.api.Layer firstRbm = network.getLayer(0);
         org.deeplearning4j.nn.api.Layer secondRbm = network.getLayer(1);
         org.deeplearning4j.nn.api.Layer thirdRbm = network.getLayer(2);

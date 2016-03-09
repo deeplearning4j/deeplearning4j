@@ -16,25 +16,30 @@
  *
  */
 
-package org.deeplearning4j.datasets.creator;
+package org.deeplearning4j.ui.plot;
 
-import java.io.File;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.nd4j.linalg.dataset.DataSet;
-import org.deeplearning4j.util.SerializationUtils;
+public class FilterPanel extends JPanel {
 
-public class MnistDataSetCreator {
+	private BufferedImage image;
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(60000);
-		DataSet save = fetcher.next();
-        SerializationUtils.saveObject(save,new File(args[0]));
+	public FilterPanel(BufferedImage image) {
+		this.image = image;
+		setVisible(true);
+		validate();
+		
+	}
+
+	@Override
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		g.drawImage(image, 0, 0, null); // see javadoc for more info on the parameters            
 
 	}
+
+
 
 }

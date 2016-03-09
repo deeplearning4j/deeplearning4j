@@ -1,4 +1,4 @@
-package org.deeplearning4j.plot.iterationlistener;
+package org.deeplearning4j.ui.plot.iterationlistener;
 
 import org.canova.image.loader.ImageLoader;
 import org.deeplearning4j.nn.api.Layer;

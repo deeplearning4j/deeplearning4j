@@ -1,4 +1,4 @@
-package org.deeplearning4j.plot;
+package org.deeplearning4j.ui.plot;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

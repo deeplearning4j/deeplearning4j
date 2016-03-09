@@ -18,12 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,9 +26,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -70,31 +62,7 @@ public class RBMTests {
         assertEquals(1, layer.getParam("b").size(0));
     }
 
-    @Test
-    public void testLfw() {
-        LFWDataSetIterator iter = new LFWDataSetIterator(10,10,new int[] {28,28,1});
-        DataSet d = iter.next();
 
-        d.normalizeZeroMeanZeroUnitVariance();
-
-        int nOut = 600;
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(d.numInputs()).nOut(nOut)
-                        .weightInit(WeightInit.VI)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                        .build())
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(1e-3f)
-                .build();
-
-        RBM rbm = LayerFactories.getFactory(conf)
-                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-
-        rbm.fit(d.getFeatureMatrix());
-
-    }
 
     @Test
     public void testIrisGaussianHidden() {
@@ -164,37 +132,7 @@ public class RBMTests {
         assertEquals(24, rbm.gradient().getGradientFor("W").length());
     }
 
-    @Test
-    public void testMnist() throws Exception {
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(30)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(784).nOut(600)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                        .build())
-                .build();
-
-        org.deeplearning4j.nn.conf.layers.RBM layerConf =
-                ( org.deeplearning4j.nn.conf.layers.RBM) conf.getLayer();
-
-        fetcher.fetch(10);
-        DataSet d2 = fetcher.next();
-        
-        org.nd4j.linalg.api.rng.distribution.Distribution dist = Nd4j.getDistributions().createNormal(1, 1e-5);
-        System.out.println(dist.sample(new int[]{layerConf.getNIn(), layerConf.getNOut()}));
-
-        INDArray input = d2.getFeatureMatrix();
-
-        RBM rbm = LayerFactories.getFactory(conf).create(conf);
-        rbm.fit(input);
-
-    }
 
     @Test
     public void testSetGetParams() {

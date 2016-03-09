@@ -1,9 +1,9 @@
-package org.deeplearning4j.plot.iterationlistener;
+package org.deeplearning4j.ui.plot.iterationlistener;
 
 import org.canova.image.loader.ImageLoader;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.plot.PlotFilters;
+import org.deeplearning4j.ui.plot.PlotFilters;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import javax.imageio.ImageIO;
@@ -18,11 +18,11 @@ import java.util.List;
 public class PlotFiltersIterationListener implements IterationListener {
     private List<String> variables;
     private int iteration = 1;
-    private  PlotFilters filters;
+    private PlotFilters filters;
     private File outputFile = new File("render.png");
 
 
-    public PlotFiltersIterationListener(PlotFilters plotFilters,List<String> variables, int iteration) {
+    public PlotFiltersIterationListener(PlotFilters plotFilters, List<String> variables, int iteration) {
         this.filters = plotFilters;
         this.variables = variables;
         this.iteration = iteration;

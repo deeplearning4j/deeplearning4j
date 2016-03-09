@@ -2,10 +2,11 @@ package org.deeplearning4j.ui.renders;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.plot.PlotFilters;
-import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
+
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
+import org.deeplearning4j.ui.plot.PlotFilters;
+import org.deeplearning4j.ui.plot.iterationlistener.PlotFiltersIterationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class UpdateFilterIterationListener implements IterationListener {
     public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations) {
         this(filters,variables,iterations,true,"filters");
     }
-    public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations, boolean openBrowser,
+    public UpdateFilterIterationListener(PlotFilters filters, List<String> variables, int iterations, boolean openBrowser,
                                          String subPath ) {
         int port = -1;
         try{

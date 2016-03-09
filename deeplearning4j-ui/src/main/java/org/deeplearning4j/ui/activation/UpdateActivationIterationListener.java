@@ -2,9 +2,9 @@ package org.deeplearning4j.ui.activation;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.plot.iterationlistener.ActivationMeanIterationListener;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
+import org.deeplearning4j.ui.plot.iterationlistener.ActivationMeanIterationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
 
 /**
  * @author Adam Gibson

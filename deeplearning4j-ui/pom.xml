@@ -102,5 +102,10 @@
             <artifactId>nd4j-jackson</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-cv</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

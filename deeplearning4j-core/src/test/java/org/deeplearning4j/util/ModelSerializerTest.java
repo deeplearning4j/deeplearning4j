@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -38,6 +39,7 @@ public class ModelSerializerTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
+        INDArray originalNetParams = net.params();
 
         File tempFile = File.createTempFile("tsfs", "fdfsdf");
         tempFile.deleteOnExit();
@@ -47,7 +49,8 @@ public class ModelSerializerTest {
         MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(tempFile);
 
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
-        assertEquals(net.params(), network.params());
+        INDArray savedNetworkParams = network.params();
+        assertEquals(originalNetParams, savedNetworkParams);
         assertEquals(net.getUpdater(), network.getUpdater());
     }
 

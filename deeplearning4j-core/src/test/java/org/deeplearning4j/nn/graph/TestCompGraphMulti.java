@@ -2,27 +2,22 @@ package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.TestMnistIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.api.Layer;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -60,7 +55,7 @@ public class TestCompGraphMulti {
     }
 
     protected static DataSetIterator getDS() {
-        return new CifarDataSetIterator(5,5);
+        return new TestMnistIterator();
     }
 
     protected static int getNumParams(){

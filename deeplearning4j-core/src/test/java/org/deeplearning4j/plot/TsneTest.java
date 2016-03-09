@@ -35,28 +35,6 @@ import java.util.List;
  */
 public class TsneTest {
 
-    @Test
-    public void testTsne() throws Exception {
-        LegacyTsne calculation = new LegacyTsne.Builder()
-                .setMaxIter(10)
-                .usePca(false)
-                .setSwitchMomentumIteration(20)
-                .normalize(false)
-                .useAdaGrad(false)
-                .learningRate(500)
-                .perplexity(20)
-                .minGain(1e-1f)
-                .build();
-        //ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
-        File f = new File("/ext/mnist2500_X.txt");
-        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(),"   ");//.get(NDArrayIndex.interval(0,600));
-        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
-        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0,3);
-
-        calculation.calculate(data, 2, 20);
-
-
-    }
 
     @Test
     @Ignore
