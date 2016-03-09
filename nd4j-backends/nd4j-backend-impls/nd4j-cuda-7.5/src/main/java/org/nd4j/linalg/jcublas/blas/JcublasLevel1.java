@@ -43,6 +43,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
         CudaContext ctx = CudaContext.getBlasContext();
+        System.out.println("SADSDASDASDASD");
         if (ctx == null)
             throw new IllegalStateException("CudaContext is NULL");
         Pointer result;
@@ -51,13 +52,23 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xCPointer = new CublasPointer(X,ctx);
             CublasPointer yCPointer = new CublasPointer(Y,ctx)) {
-            ret[0] = nd4jBlas.sdot(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()},
+            System.out.println("APX");
+            /*long[] p = new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()};
+            System.out.println("P[0]: " + p[0]);
+            System.out.println("P[1]: " + p[1]);
+            System.out.println("X: " + xCPointer.getDevicePointer().getNativePointer());
+            System.out.println("Y: " + yCPointer.getDevicePointer().getNativePointer());
+            */
+            ret[0] = nd4jBlas.sdot(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
                     N,
                     xCPointer.getDevicePointer().getNativePointer(),
                     incX,
                     yCPointer.getDevicePointer().getNativePointer(),
                     incY);
+            System.out.println("TDF");
             ctx.syncOldStream();
+
+            System.out.println("FPO");
 
             allocator.tackDevice(X);
             allocator.tackDevice(Y);
@@ -86,11 +97,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
         CudaContext ctx = CudaContext.getBlasContext();
-
+        System.out.println("KAHX");
         try(CublasPointer xCPointer = new CublasPointer(X,ctx);
             CublasPointer yCPointer = new CublasPointer(Y,ctx)) {
             ret[0] = nd4jBlas.ddot(new long[]{
-                            pointerConverter.toPointer(X.shapeInfo()),
+                            AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),
                             ctx.getHandle().getNativePointer()},
                     N,
                     xCPointer.getDevicePointer().getNativePointer(),
@@ -145,7 +156,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CudaContext ctx = CudaContext.getBlasContext();
         float[] ret = new float[1];
         try(CublasPointer cAPointer = new CublasPointer(X,ctx)) {
-            ret[0] = nd4jBlas.snrm2(new long[]{pointerConverter.toPointer(X.shapeInfo()),
+            ret[0] = nd4jBlas.snrm2(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),
                             ctx.getHandle().getNativePointer()}
                     ,N,
                     cAPointer.getDevicePointer().getNativePointer(),
@@ -169,7 +180,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
         try(CublasPointer xCPointer = new CublasPointer(X,ctx)) {
-            ret[0] = nd4jBlas.sasum(new long[]{pointerConverter.toPointer(X.shapeInfo()),
+            ret[0] = nd4jBlas.sasum(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),
                             ctx.getHandle().getNativePointer()},
                     N,xCPointer.getDevicePointer().getNativePointer(),
                     incX);

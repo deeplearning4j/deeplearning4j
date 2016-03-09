@@ -62,7 +62,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
-        //log.info("Alloc called for shape: " + shape);
+        log.info("Alloc called for shape: " + shape);
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
             case ZERO: {
