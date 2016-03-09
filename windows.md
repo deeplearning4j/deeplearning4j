@@ -76,3 +76,37 @@ For this you first change the version of all your ND4J dependencies to "0.4-rc3.
 If your application continues to run, then you are just seeing an artefact of one way we try to load the native library, but your application should run just fine.
 
 If your application crashes (and you see that error more than once) then you probably have a problem with your PATH environment variable. Please make sure that you have your msys2 bin directory on the PATH and that you restarted your IDE. Maybe even try to restart the system.
+
+### I'm having trouble downloading or updating packages using pacman
+There are a number of things that can potentially go wrong.
+First, try updating packman using the following commands:
+
+	pacman -Syy
+	pacman -Syu
+	pacman -S pacman-mirrors
+
+Note that you might need to restart the msys2 shell between/after these steps.
+
+One user has reported issues downloading packages using the default downloader (timeouts and "error: failed retrieving file" messages). If you are experiencing these issues, it may help to switch to using the wget downloader. To do this, install wget using
+
+	pacman -S wget
+
+then uncomment (remove the # symbol) the following line in the /etc/pacman.conf configuration file:
+
+	XferCommand = /usr/bin/wget --passive-ftp -c -O %o %u
+
+### "buildnativeoperations.sh blas cpu" can't find BLAS libraries
+
+First, make sure you have BLAS libraries intalled. Typically, this involves building OpenBLAS by downloading OpenBLAS and running the commands 'make', 'make install' in msys2.
+
+Running the buildnativeoperations.sh script in the MinGW-w64 Win64 Shell instead of the standard msys2 shell may resolve this issue.
+
+### I'm getting other errors not listed here
+
+Depending on how your build environment and PATH environment variable is set up, you might experience some other issues.
+Some situations that may be problematic include:
+
+- Having older (or multiple) MinGW installs on your PATH (check: type "where c++" or "where gcc" into msys2)
+- Having older (or multiple) cmake installs on your PATH (check: "where cmake" and "cmake --version")
+- Having multiple BLAS libraries on your PATH (check: "where libopenblas.dll", "where libblas.dll" and "where liblapack.dll")
+
