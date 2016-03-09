@@ -54,6 +54,18 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(34, next.numExamples());
     }
 
+
+    @Test
+    public void testRecordReaderMaxBatchLimit() throws Exception {
+        RecordReader recordReader = new CSVRecordReader();
+        FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getFile());
+        recordReader.initialize(csv);
+        DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 10, -1, -1, 2);
+        iter.next();
+        iter.next();
+        assertEquals(false, iter.hasNext());
+    }
+
     @Test
     public void testSequenceRecordReader() throws Exception {
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");

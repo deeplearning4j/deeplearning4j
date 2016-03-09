@@ -454,7 +454,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         if (!initDone) {
             log.info("Invoking Update");
             initDone = true;
-//            update(maxRep, 0);
+            update(maxRep, 0);
         }
     }
 
