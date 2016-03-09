@@ -464,7 +464,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xAPointer = new CublasPointer(X,ctx);
             CublasPointer xBPointer = new CublasPointer(Y,ctx)) {
-          nd4jBlas.saxpy(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()},
+          nd4jBlas.saxpy(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
                   N,
                   alpha,
                   xAPointer.getDevicePointer().getNativePointer(),
@@ -499,7 +499,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xCPointer = new CublasPointer(X,ctx);
             CublasPointer yCPointer = new CublasPointer(Y,ctx)) {
-          nd4jBlas.dswap(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()},
+          nd4jBlas.dswap(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
                   N,
                   xCPointer.getDevicePointer().getNativePointer(),
                   incX,
@@ -528,7 +528,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xCPointer = new CublasPointer(X,ctx);
             CublasPointer yCPointer = new CublasPointer(Y,ctx)) {
-            nd4jBlas.dcopy(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()}
+            nd4jBlas.dcopy(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()}
             ,N,xCPointer.getDevicePointer().getNativePointer(),
                     incX,
                     yCPointer.getDevicePointer().getNativePointer(),
@@ -560,7 +560,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xAPointer = new CublasPointer(X,ctx);
             CublasPointer xBPointer = new CublasPointer(Y,ctx)) {
-            nd4jBlas.daxpy(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()}
+            nd4jBlas.daxpy(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()}
             ,N,alpha,xAPointer.getDevicePointer().getNativePointer(),
                     incX,xBPointer.getDevicePointer().getNativePointer(),
                     incY);
@@ -670,7 +670,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void sscal(int N, float alpha, INDArray X, int incX) {
         CudaContext ctx = CudaContext.getBlasContext();
         try (CublasPointer xCPointer = new CublasPointer(X, ctx)) {
-         nd4jBlas.sscal(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()},
+         nd4jBlas.sscal(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
                  N,
                  alpha,
                  xCPointer.getDevicePointer().getNativePointer(),
@@ -691,7 +691,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dscal(int N, double alpha, INDArray X, int incX) {
         CudaContext ctx = CudaContext.getBlasContext();
         try(CublasPointer xCPointer = new CublasPointer(X,ctx)) {
-            nd4jBlas.dscal(new long[]{pointerConverter.toPointer(X.shapeInfo()),ctx.getHandle().getNativePointer()},
+            nd4jBlas.dscal(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
                     N,
                     alpha,
                     xCPointer.getDevicePointer().getNativePointer(),

@@ -29,7 +29,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         try(CublasPointer cAPointer = new CublasPointer(A,ctx);
             CublasPointer cBPointer = new CublasPointer(X,ctx);
             CublasPointer cCPointer = new CublasPointer(Y,ctx)) {
-        nd4jBlas.sgemv(new long[]{pointerConverter.toPointer(A.shapeInfo()),ctx.getHandle().getNativePointer()},order,TransA,M,N,alpha,cAPointer.getDevicePointer().getNativePointer(),
+        nd4jBlas.sgemv(new long[]{AtomicAllocator.getInstance().getDevicePointer(A.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},order,TransA,M,N,alpha,cAPointer.getDevicePointer().getNativePointer(),
                 lda,cBPointer.getDevicePointer().getNativePointer(),
                 incX,
                 beta,
@@ -117,7 +117,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         try(CublasPointer cAPointer = new CublasPointer(A,ctx);
             CublasPointer cBPointer = new CublasPointer(X,ctx);
             CublasPointer cCPointer = new CublasPointer(Y,ctx)) {
-            nd4jBlas.dgemv(new long[]{pointerConverter.toPointer(A.shapeInfo()), ctx.getHandle().getNativePointer()},
+            nd4jBlas.dgemv(new long[]{AtomicAllocator.getInstance().getDevicePointer(A.shapeInfoDataBuffer()).getNativePointer(), ctx.getHandle().getNativePointer()},
                     order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
                     lda, cBPointer.getDevicePointer().getNativePointer(),
                     incX,
