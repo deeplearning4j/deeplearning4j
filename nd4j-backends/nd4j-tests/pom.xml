@@ -55,12 +55,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-    <!--    <dependency>
+        <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcublas-7.5</artifactId>
+            <artifactId>nd4j-cuda-7.5</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>-->
+        </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>

@@ -2079,6 +2079,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void largeInstantiation() {
+        Nd4j.ones((1024 * 1024 * 511) + (1024*1024 - 1)); // Still works; this can even be called as often as I want, allowing me even to spill over on disk
+        Nd4j.ones((1024 * 1024 * 511) + (1024*1024)); // Crashes
+    }
+
+    @Test
     public void testAssignNumber() {
         int nRows = 10;
         int nCols = 20;

@@ -30,7 +30,6 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaStream_t;
 import lombok.Data;
-import lombok.NonNull;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -44,10 +43,8 @@ import org.nd4j.linalg.jcublas.context.pool.factory.CublasHandlePooledItemFactor
 import org.nd4j.linalg.jcublas.context.pool.factory.OldStreamItemFactory;
 import org.nd4j.linalg.jcublas.context.pool.factory.StreamItemFactory;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
-import org.nd4j.linalg.jcublas.util.CudaArgs;
+
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -259,11 +256,7 @@ public class ContextHolder {
 
         setContext();
 
-        try {
-            KernelFunctionLoader.getInstance().load();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
 
         // Check if the device supports mapped host memory
         cudaDeviceProp deviceProperties = new cudaDeviceProp();

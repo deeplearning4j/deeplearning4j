@@ -27,6 +27,8 @@
 
 package jcuda;
 
+import org.nd4j.linalg.io.ClassPathResource;
+
 import java.io.*;
 import java.util.Locale;
 
@@ -111,21 +113,21 @@ public final class LibUtils
             if (throwable != null)
             {
                 pw.println(
-                    "Stack trace from the attempt to " +
-                    "load the library as a resource:");
+                        "Stack trace from the attempt to " +
+                                "load the library as a resource:");
                 throwable.printStackTrace(pw);
             }
 
             pw.println(
-                "Stack trace from the attempt to " +
-                "load the library as a file:");
+                    "Stack trace from the attempt to " +
+                            "load the library as a file:");
             t.printStackTrace(pw);
 
             pw.flush();
             pw.close();
             throw new UnsatisfiedLinkError(
-                "Could not load the native library.\n"+
-                sw.toString());
+                    "Could not load the native library.\n"+
+                            sw.toString());
         }
     }
 
@@ -141,9 +143,8 @@ public final class LibUtils
         String libPrefix = createLibPrefix();
         String libExtension = createLibExtension();
         String fullName = libPrefix + libName;
-        String resourceName = "/lib/" + fullName + "" + libExtension;
-        InputStream inputStream =
-            LibUtils.class.getResourceAsStream(resourceName);
+        String resourceName = "/lib/" + fullName + "." + libExtension;
+        InputStream inputStream =new ClassPathResource(resourceName).getInputStream();
         if (inputStream == null)
         {
             throw new NullPointerException(
@@ -288,8 +289,8 @@ public final class LibUtils
         String osArch = System.getProperty("os.arch");
         osArch = osArch.toLowerCase(Locale.ENGLISH);
         if (osArch.equals("i386") ||
-            osArch.equals("x86")  ||
-            osArch.equals("i686"))
+                osArch.equals("x86")  ||
+                osArch.equals("i686"))
         {
             return ARCHType.X86;
         }

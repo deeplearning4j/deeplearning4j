@@ -499,6 +499,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         isPersist = false;
     }
 
+    private void fillPointerWithZero() {
+        for(int i = 0; i < length(); i++)
+            put(i,0.0);
+    }
+
     /**
      * Instantiate a buffer with the given length
      *
@@ -522,20 +527,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(allocationMode == AllocationMode.JAVACPP) {
             if(dataType() == Type.DOUBLE) {
                 pointer = new DoublePointer(length());
-                pointer.fill(0);
+                wrappedBuffer = pointer.asByteBuffer();
+                fillPointerWithZero();
 
             }
             else if(dataType() == Type.FLOAT) {
                 pointer = new FloatPointer(length());
-                pointer.fill(0);
+                wrappedBuffer = pointer.asByteBuffer();
+                fillPointerWithZero();
 
             }
             else if(dataType() == Type.INT) {
                 pointer = new IntPointer(length());
-                pointer.fill(0);
-
+                wrappedBuffer = pointer.asByteBuffer();
+                fillPointerWithZero();
             }
-            wrappedBuffer = pointer.asByteBuffer();
         }
         else {
             if(length * getElementSize() < 0)
