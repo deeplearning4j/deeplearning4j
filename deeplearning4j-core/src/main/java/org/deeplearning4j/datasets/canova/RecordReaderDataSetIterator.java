@@ -149,9 +149,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labels.add(data.getLabels());
         }
 
-        if(inputs.isEmpty() || (maxNumBatches > -1 && batchNum >= maxNumBatches)) {
+
+        if(inputs.isEmpty()) {
             notOvershot = false;
             return last;
+        } else if (maxNumBatches > -1 && batchNum >= maxNumBatches){
+            notOvershot = false;
         }
 
         DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
