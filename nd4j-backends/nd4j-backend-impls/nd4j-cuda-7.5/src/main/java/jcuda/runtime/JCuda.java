@@ -28,6 +28,7 @@
 package jcuda.runtime;
 
 import jcuda.*;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 
 /**

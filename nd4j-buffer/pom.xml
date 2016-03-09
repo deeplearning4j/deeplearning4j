@@ -12,59 +12,6 @@
 
     <name>nd4j-buffer</name>
 
-<!--
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.bytedeco</groupId>
-                <artifactId>javacpp</artifactId>
-                <version>${javacpp.version}</version>
-                <configuration>
-                    <properties>${javacpp.platform.properties}</properties>
-                    <propertyKeysAndValues>
-                        <property>
-                            <name>javacpp.platform.root</name>
-                            <value>${javacpp.platform.root}</value>
-                        </property>
-                        <property>
-                            <name>javacpp.platform.compiler</name>
-                            <value>${javacpp.platform.compiler}</value>
-                        </property>
-                    </propertyKeysAndValues>
-                    <classPaths>
-                        <classPath>${project.build.outputDirectory}</classPath>
-                    </classPaths>
-                    <includePath>${env.LIBND4J_HOME}/buffer/</includePath>
-                    <linkPath>${env.LIBND4J_HOME}/bufferbuild/buffer</linkPath>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>process-classes</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                            <jarPrefix>lib/</jarPrefix>
-                            <skip>${process-classes.skip}</skip>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer</classOrPackageName>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer</classOrPackageName>
-                                <classOrPackageName>org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer</classOrPackageName>
-                            </classOrPackageNames>
-                            <copyLibs>true</copyLibs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-        </plugins>
-    </build>
-
--->
 
     <profiles>
         <!-- If someone knows a better way to do this, please do let me know! -->

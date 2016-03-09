@@ -28,6 +28,7 @@
 package jcuda.driver;
 
 import jcuda.*;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 /**
  * Java bindings for the NVidia CUDA driver API.<br />

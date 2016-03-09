@@ -27,7 +27,6 @@
 
 package org.nd4j.linalg.api.buffer.util;
 
-import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
@@ -83,8 +82,7 @@ public final class LibUtils
      * @throws UnsatisfiedLinkError if the native library
      * could not be loaded.
      */
-    public static void loadLibrary(String baseName)
-    {
+    public static void loadLibrary(String baseName) {
         String libName = LibUtils.createLibName(baseName);
 
         Throwable throwable = null;
@@ -165,15 +163,94 @@ public final class LibUtils
 
         File tempFile = new File(System.getProperty("java.io.tmpdir"),fullName+ "." + libExtension);
         tempFile.deleteOnExit();
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile));
-        IOUtils.copy(inputStream,bos);
-        bos.flush();
-        inputStream.close();
-        bos.close();
-        System.load(tempFile.getAbsolutePath());
+        OutputStream outputStream = null;
+        try
+        {
+            outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[8192];
+            while (true)
+            {
+                int read = inputStream.read(buffer);
+                if (read < 0)
+                {
+                    break;
+                }
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            outputStream = null;
 
+            System.load(tempFile.getAbsolutePath());
+        }
+        finally
+        {
+            if (outputStream != null)
+            {
+                outputStream.close();
+            }
+        }
     }
 
+    /**
+     * Load the library with the given name from a resource.
+     * The extension for the current OS will be appended.
+     *
+     * @param libName The library name
+     * @throws Throwable If the library could not be loaded
+     */
+    public static void loadTempBinaryFile(Class<?> libName) throws Exception {
+        String os = getOsName();
+        String arch = getArchName();
+        String resourceFolder = os + "-" + arch;
+        String libPrefix = createLibPrefix();
+        String libExtension = createLibExtension();
+        StringBuffer sb = new StringBuffer()
+                .append(libName.getPackage().getName().replace(".","/") + "/")
+                .append(resourceFolder).append("/").append(libPrefix).append("jni" + libName.getSimpleName() + ".")
+                .append(libExtension);
+        String resourceName = sb.toString();
+        ClassPathResource resource = new ClassPathResource(resourceName);
+        InputStream inputStream = resource.getInputStream();
+        if (inputStream == null)
+        {
+            throw new NullPointerException(
+                    "No resource found with name '" + resourceName + "'");
+        }
+
+        String fullName = libPrefix + "jni" + libName.getSimpleName() + "." + libExtension;
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), fullName );
+        tempFile.deleteOnExit();
+        OutputStream outputStream = null;
+        try
+        {
+            outputStream = new FileOutputStream(tempFile);
+            byte[] buffer = new byte[8192];
+            while (true)
+            {
+                int read = inputStream.read(buffer);
+                if (read < 0)
+                {
+                    break;
+                }
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+            outputStream.close();
+            outputStream = null;
+
+            System.load(tempFile.getAbsolutePath());
+        }
+        finally
+        {
+            if (outputStream != null)
+            {
+                outputStream.close();
+            }
+        }
+
+
+    }
 
     /**
      * Load the library with the given name from a resource.
@@ -302,6 +379,40 @@ public final class LibUtils
         }
     }
 
+    /**
+     * Get the name of the os
+     * for libary discovery on the classpath
+     * @return
+     */
+    public static String getOsName() {
+        OSType osType = calculateOS();
+        switch (osType)
+        {
+            case APPLE:
+                return "macosx";
+            case LINUX:
+                return "linux";
+            case SUN:
+                return "sun";
+            case WINDOWS:
+                return "windows";
+        }
+        return "";
+    }
+
+    public static String getArchName() {
+        ARCHType archType = calculateArch();
+        switch (archType) {
+            case X86: return "x86";
+            case X86_64: return "x86_64";
+            case ARM: return "arm";
+            case PPC: return "ppc";
+            case PPC_64: return "ppc64";
+            case RISC: return "risc";
+            default: return "unknown";
+
+        }
+    }
 
     /**
      * Returns the extension for dynamically linked libraries on the
