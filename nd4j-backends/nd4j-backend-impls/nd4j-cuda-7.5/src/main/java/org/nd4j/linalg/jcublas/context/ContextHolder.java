@@ -256,7 +256,7 @@ public class ContextHolder {
 
         setContext();
 
-      
+
 
         // Check if the device supports mapped host memory
         cudaDeviceProp deviceProperties = new cudaDeviceProp();
