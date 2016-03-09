@@ -4046,22 +4046,7 @@ public class Nd4j {
     ////////////////////// OTHER ///////////////////////////////
 
 
-    /**
-     * Returns true if the given ndarray has either
-     * an infinite or nan
-     *
-     * @param num the ndarray to test
-     * @return true if the given ndarray has either infinite or nan
-     * false otherwise
-     */
-    public static boolean hasInvalidNumber(INDArray num) {
-        INDArray linear = num.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            if (Double.isInfinite(linear.getDouble(i)) || Double.isNaN(linear.getDouble(i)))
-                return true;
-        }
-        return false;
-    }
+
 
     /**
      * Creates a row vector with the specified number of columns
@@ -4276,6 +4261,9 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
+
+
 
     /**
      * Reshapes an ndarray to remove leading 1s
