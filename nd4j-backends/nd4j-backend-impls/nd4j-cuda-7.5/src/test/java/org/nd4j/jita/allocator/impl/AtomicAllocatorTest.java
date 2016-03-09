@@ -119,8 +119,10 @@ public class AtomicAllocatorTest {
 
         // we could use that just to warm up arrays :)
         for (int x = 0; x < 1; x++) {
-            Nd4j.getBlasWrapper().dot(array1, array2);
+     //       Nd4j.getBlasWrapper().dot(array1, array2);
         }
+
+        log.warn("A: " + array2.getClass().getSimpleName());
 
         long time1 = System.nanoTime();
         Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);

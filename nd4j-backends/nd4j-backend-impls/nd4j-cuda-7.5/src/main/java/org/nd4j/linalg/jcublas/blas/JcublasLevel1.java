@@ -461,16 +461,23 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
-
         try(CublasPointer xAPointer = new CublasPointer(X,ctx);
             CublasPointer xBPointer = new CublasPointer(Y,ctx)) {
-          nd4jBlas.saxpy(new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()},
+            long[] p =  new long[]{ctx.getHandle().getNativePointer(), AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer()};
+            System.out.println("P[0]: " + p[0]);
+            System.out.println("P[1]: " + p[1]);
+            System.out.println("X: " + xAPointer.getDevicePointer().getNativePointer());
+            System.out.println("Y: " + xBPointer.getDevicePointer().getNativePointer());
+          nd4jBlas.saxpy(p,
                   N,
                   alpha,
                   xAPointer.getDevicePointer().getNativePointer(),
                   incX,
                   xBPointer.getDevicePointer().getNativePointer(),
                   incY);
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {}
             ctx.syncOldStream();
 
             allocator.tickDeviceWrite(Y);
