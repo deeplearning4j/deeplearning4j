@@ -104,10 +104,9 @@ else
            eval $MAKE_COMMAND && cd ..
            echo "FINISHING BUILD"
      elif [ "$1" == "blas" ]; then
-            rm -rf blasbuild
-
            if [ "$#" -gt "1" ]; then
               if [ "$2" == "cuda" ]; then
+              rm -rf blasbuild/cuda
                    mkdir -p blasbuild/cuda
                    cd blasbuild/cuda
                     eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE ../..
@@ -116,6 +115,8 @@ else
                   echo "FINISHING BUILD"
               elif [ "$2" == "cpu" ]; then
                     echo "RUNNING COMMAND $CMAKE_COMMAND"
+                        rm -rf blasbuild/cpu
+
                         mkdir -p blasbuild/cpu
                     cd blasbuild/cpu
                     eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE ../..
