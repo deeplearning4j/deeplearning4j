@@ -76,7 +76,7 @@
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
-                    <linkPath>${env.LIBND4J_HOME}/blasbuild/blas</linkPath>
+                    <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
                 </configuration>
                 <executions>
                     <execution>
