@@ -21,6 +21,9 @@
 #include <cuda_device_runtime_api.h>
 #include <pointercast.h>
 
+
+
+
 template <typename T>
 dim3 getOptimalDimensions(int n,cudaFuncAttributes attributes) {
     // next, get the cudaDeviceProp object corresponding to the current device
@@ -116,16 +119,12 @@ public:
 template <typename T>
 class ScalarInfo {
     nd4j::buffer::Buffer<T> *scalarData;
-#ifdef R__WIN32
-    static thread_local ScalarShapeInformation shapeInfo;
-#else
-    static  ScalarShapeInformation shapeInfo;
-
-#endif
+    ScalarShapeInformation *shapeInfo;
     T finalResult;
 public:
     ScalarInfo() {
         T *scalarResult = (T*)malloc(sizeof(T));
+        shapeInfo = new ScalarShapeInformation();
         scalarData = nd4j::buffer::createBuffer(scalarResult,1);
         nd4j::buffer::copyDataToGpu(&scalarData);
     }
@@ -140,7 +139,7 @@ public:
      * representing a scalar
      */
     int *getDeviceShapeInfo() {
-        return shapeInfo.getShapeInfoGpuPointer();
+        return shapeInfo->getShapeInfoGpuPointer();
     }
 
     /**
@@ -154,14 +153,19 @@ public:
      * Get the infinite dimension device pointer
      */
     int *getDimensionDevicePointer() {
-        return shapeInfo.getDimensionGpuPointer();
+        return shapeInfo->getDimensionGpuPointer();
     }
 
     ~ScalarInfo() {
         nd4j::buffer::freeBuffer(&scalarData);
+        delete shapeInfo;
     }
 };
 
+#ifdef _WIN32
+ScalarShapeInformation ScalarInfo<double>::shapeInfo;
+ScalarShapeInformation ScalarInfo<float>::shapeInfo;
+#endif
 
 /**
  *
