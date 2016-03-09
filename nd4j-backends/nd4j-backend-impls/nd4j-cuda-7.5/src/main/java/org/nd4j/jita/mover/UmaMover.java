@@ -63,6 +63,7 @@ public class UmaMover implements Mover {
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
         //log.info("Alloc called for shape: " + shape);
+        //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
             case ZERO: {
                     /*
@@ -187,8 +188,10 @@ public class UmaMover implements Mover {
 
             // FIXME: remove allocator initialization
             if (allocator == null) {
-                log.warn("Allocator is NULL");
-                this.allocator = AtomicAllocator.getInstance();
+                //log.warn("Allocator is NULL");
+                synchronized (this) {
+                    this.allocator = AtomicAllocator.getInstance();
+                }
             }
 
             CudaContext context = allocator.getCudaContext();

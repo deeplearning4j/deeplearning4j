@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  * for a data buffer (both on host and device)
  */
 public class AddressRetriever {
+    private static final AtomicAllocator allocator = AtomicAllocator.getInstance();
     /**
      * Retrieves the device pointer
      * for the given data buffer
@@ -19,7 +20,7 @@ public class AddressRetriever {
      * data buffer
      */
     public static long retrieveDeviceAddress(DataBuffer buffer) {
-        return AtomicAllocator.getInstance().getDevicePointer(buffer, new AllocationShape(),false).getNativePointer();
+        return allocator.getDevicePointer(buffer).getNativePointer();
     }
 
 
