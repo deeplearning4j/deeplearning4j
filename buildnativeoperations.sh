@@ -105,17 +105,22 @@ else
            echo "FINISHING BUILD"
      elif [ "$1" == "blas" ]; then
             rm -rf blasbuild
-           mkdir blasbuild
-           cd blasbuild
+
            if [ "$#" -gt "1" ]; then
               if [ "$2" == "cuda" ]; then
-                    eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE ..
-                   eval $MAKE_COMMAND && cd ..
+                   mkdir -p blasbuild/cuda
+                   cd blasbuild/cuda
+                    eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE ../..
+                   eval $MAKE_COMMAND && cd ../..
+
                   echo "FINISHING BUILD"
               elif [ "$2" == "cpu" ]; then
                     echo "RUNNING COMMAND $CMAKE_COMMAND"
-                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE ..
-                   eval $MAKE_COMMAND && cd ..
+                        mkdir -p blasbuild/cpu
+                    cd blasbuild/cpu
+                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE ../..
+                   eval $MAKE_COMMAND && cd ../..
+
                    echo "FINISHING BUILD"
               else
                    echo "Please specify cpu or gpu"
