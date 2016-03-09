@@ -10,10 +10,10 @@ if [ "$(uname)" == "Darwin" ]; then
     # Do something under Mac OS X platform
     #export CC=clang-omp++
     export CXX=clang-omp++
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     # Do something under Windows NT platform
     if [ "$2" == "cuda" ]; then
-        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
+        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release"
         export MAKE_COMMAND="nmake"
     else
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
@@ -31,6 +31,8 @@ elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $
         export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
         export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
     fi
+    # Make sure we are using 64-bit MinGW-w64
+    export PATH=/mingw64/bin/:$PATH
    CC=/mingw64/bin/gcc
     CXX=/mingw64/bin/g++
     echo "Running windows"
