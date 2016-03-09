@@ -240,7 +240,6 @@ namespace functions {
                     int coord[MAX_RANK];
                     int dim;
                     int xStridesIter[MAX_RANK];
-                    int yStridesIter[MAX_RANK];
                     int resultStridesIter[MAX_RANK];
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *xStride = shape::stride(xShapeInfo);
@@ -261,7 +260,6 @@ namespace functions {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
-                                T *yIter = result;
                                 T *resultIter = result;
                                 resultIter[0] = op(xIter[0],scalar,extraParams);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
@@ -296,10 +294,6 @@ namespace functions {
 
                         int xOffset = shape::offset(xShapeInfo);
                         int resultOffset = shape::offset(resultShapeInfo);
-
-                        char xOrder = shape::order(xShapeInfo);
-                        char resultOrder = shape::order(xShapeInfo);
-
 
 #pragma omp parallel for
                         for (int i = 0; i < n; i++) {

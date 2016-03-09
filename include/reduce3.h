@@ -652,7 +652,6 @@ namespace functions {
 
                 else {
                     int *xShape = shape::shapeOf(xShapeInfo);
-                    int *yShape = shape::shapeOf(yShapeInfo);
                     int *xStride = shape::stride(xShapeInfo);
                     int *yStride = shape::stride(yShapeInfo);
                     T startingVal = this->startingValue(x);
@@ -662,7 +661,6 @@ namespace functions {
                     int dim;
                     int xStridesIter[MAX_RANK];
                     int yStridesIter[MAX_RANK];
-                    int resultStridesIter[MAX_RANK];
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
                                                  xShape,
@@ -757,11 +755,9 @@ namespace functions {
                     int yStridesIter[MAX_RANK];
 
                     int *xShape = shape::shapeOf(xShapeInfo);
-                    int *yShape = shape::shapeOf(yShapeInfo);
 
                     int *xStride = shape::stride(xShapeInfo);
                     int *yStride = shape::stride(yShapeInfo);
-                    int *resultStride = shape::stride(resultShapeInfoBuffer);
 
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
@@ -784,7 +780,6 @@ namespace functions {
                                 T *xIter = x;
                                 T *yIter = y;
                                 int xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
-                                int yOffset = shape::getOffset(0,yShape,yStride,coord,rank);
                                 int reductionIndex = xOffset / resultLength;
                                 result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
