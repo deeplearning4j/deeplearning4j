@@ -1789,8 +1789,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
-
-
+    @Test
+    public void testJvmCrash() {
+        for( int i = 0;  i < 10000; i++ ){
+            Nd4j.create(new int[]{2,10},'f').sum(0);      //jvm crash
+            //Nd4j.create(new int[]{2,10},'c').sum(0);        //ok
+        }
+    }
 
 
     @Test
