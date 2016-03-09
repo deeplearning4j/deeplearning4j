@@ -242,8 +242,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
-        if (recordReader instanceof RecordReader)
+        if (recordReader instanceof RecordReader){
+            batchNum = 0;
+            notOvershot = true;
             recordReader.reset();
+        }
         else if (recordReader instanceof SequenceRecordReader)
             throw new UnsupportedOperationException("Reset not supported for SequenceRecordReader type.");
     }
