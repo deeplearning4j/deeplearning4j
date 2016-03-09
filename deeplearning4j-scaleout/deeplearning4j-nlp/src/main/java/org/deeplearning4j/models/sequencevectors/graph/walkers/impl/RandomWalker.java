@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  *
+ * WORK IS IN PROGRESS, DO NOT USE THIS
+ *
  * Based on Alex Black RandomWalkIterator implementation
  */
 public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
@@ -58,31 +60,40 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         int lastId = -1;
         int startPoint = order[startPosition];
         //System.out.println("");
-       // if (startPosition == 0)
-       //     logger.debug("Walk: ");
+
+
+        startPosition = startPoint;
+
+        //if (startPosition == 0 || startPoint % 1000 == 0)
+         //   System.out.println("ATZ Walk: ");
+
         for (int i = 0; i < walkLength; i++) {
+            Vertex<T> vertex = sourceGraph.getVertex(startPosition);
+
             int currentPosition = startPosition;
-            Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
+
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
-            //if (startPoint == 0)
-            //    logger.debug("" + vertex.vertexID() + " -> ");
+            //if (startPoint == 0 || startPoint % 1000 == 0)
+              // System.out.print("" + vertex.vertexID() + " -> ");
 
-            if (alpha > 0 && alpha < rng.nextDouble()) {
+
+            if (alpha > 0 && lastId != startPoint && lastId != -1 && alpha > rng.nextDouble()) {
                 startPosition = startPoint;
                 continue;
             }
 
+
             // get next vertex
             switch (walkDirection) {
                 case RANDOM: {
-                        int[] nextHops = sourceGraph.getConnectedVertexIndices(order[currentPosition]);
+                        int[] nextHops = sourceGraph.getConnectedVertexIndices(currentPosition);
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
                     };
                     break;
                 case FORWARD_ONLY: {
                         // here we remove only last hop
-                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), lastId);
+                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(currentPosition), lastId);
                         if (nextHops.length > 0) {
                             startPosition = nextHops[rng.nextInt(nextHops.length)];
                         } else {
@@ -113,7 +124,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                     break;
                 case FORWARD_UNIQUE: {
                     // here we remove all previously visited hops, and we don't get  back to them ever
-                    int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
+                    int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(currentPosition), visitedHops);
                     if (nextHops.length > 0) {
                         startPosition = nextHops[rng.nextInt(nextHops.length)];
                     } else {
@@ -145,9 +156,9 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
                 break;
                 case FORWARD_PREFERRED: {
                         // here we remove all previously visited hops, and if there's no next unique hop available - we fallback to anything, but the last one
-                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
+                        int[] nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(currentPosition), visitedHops);
                         if (nextHops.length == 0) {
-                            nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), lastId);
+                            nextHops = ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(currentPosition), lastId);
                             if (nextHops.length == 0) {
                                 switch (noEdgeHandling) {
                                     case CUTOFF_ON_DISCONNECTED: {
@@ -182,8 +193,8 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
             lastId = vertex.vertexID();
         }
 
-        if (startPoint == 0)
-            System.out.println("");
+        //if (startPoint == 0 || startPoint % 1000 == 0)
+            //System.out.println("");
         return sequence;
     }
 

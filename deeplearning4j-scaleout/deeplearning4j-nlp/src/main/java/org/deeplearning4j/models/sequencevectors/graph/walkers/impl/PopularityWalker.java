@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
+ * WORK IS IN PROGRESS, DO NOT USE THIS
+ *
  * @author raver119@gmail.com
  */
 public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
@@ -51,16 +53,20 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
         int startPosition = position.getAndIncrement();
         int lastId = -1;
         int startPoint = order[startPosition];
+        startPosition = startPoint;
         for (int i = 0; i < walkLength; i++) {
+
+            Vertex<T> vertex = sourceGraph.getVertex(startPosition);
+
             int currentPosition = startPosition;
-            Vertex<T> vertex = sourceGraph.getVertex(order[currentPosition]);
+
             sequence.addElement(vertex.getValue());
             visitedHops[i] = vertex.vertexID();
             int cSpread = 0;
 
-            if (alpha > 0 && alpha < rng.nextDouble()) {
-                    startPosition = startPoint;
-                    continue;
+            if (alpha > 0 && lastId != startPoint && lastId != -1 && alpha > rng.nextDouble()) {
+                startPosition = startPoint;
+                continue;
             }
 
             switch (walkDirection) {
