@@ -30,6 +30,7 @@ package jcuda.jcublas;
 
 import jcuda.*;
 import jcuda.runtime.cudaStream_t;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 /**
  * Java bindings for CUBLAS, the NVIDIA CUDA BLAS library.

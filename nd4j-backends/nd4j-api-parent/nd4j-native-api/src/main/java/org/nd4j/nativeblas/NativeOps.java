@@ -4,7 +4,7 @@ package org.nd4j.nativeblas;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
-import org.nd4j.nativeblas.util.LibUtils;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 
 /**

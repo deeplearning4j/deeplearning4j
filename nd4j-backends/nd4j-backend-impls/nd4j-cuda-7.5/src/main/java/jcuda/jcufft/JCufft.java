@@ -30,6 +30,7 @@ package jcuda.jcufft;
 
 import jcuda.*;
 import jcuda.runtime.*;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 /**
  * Java bindings for CUFFT, the NVIDIA CUDA FFT library.<br />

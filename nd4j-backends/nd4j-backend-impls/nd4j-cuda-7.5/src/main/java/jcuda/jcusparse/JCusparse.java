@@ -30,6 +30,7 @@ package jcuda.jcusparse;
 
 import jcuda.*;
 import jcuda.runtime.cudaStream_t;
+import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 /**
  * Java bindings for CUSPARSE, the NVIDIA CUDA sparse matrix
