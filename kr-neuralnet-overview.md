@@ -7,7 +7,7 @@ layout: kr-default
 
 차례
 
-* <a href="#define">뉴럴 네트워크 정의하기</a>
+* <a href="#define">뉴럴 네트워크의 정의</a>
 * <a href="#element">뉴럴 네트워크의 구성 요소</a>
 * <a href="#concept">딥 뉴럴 네트워크의 기본 개념</a>
 * <a href="#forward">예제: 뉴럴 네트워크와 backprop</a>
@@ -16,7 +16,7 @@ layout: kr-default
 * <a href="#ai">뉴럴 네트워크와 인공 지능</a>
 * <a href="#intro">학습 자료</a>
 
-## <a name="define">뉴럴 네트워크 정의하기</a>
+## <a name="define">뉴럴 네트워크의 정의</a>
 
 뉴럴 네트워크는 인간의 뇌가 패턴을 인식하는 방식을 모사한 알고리즘입니다. 뉴럴 네트워크는 시각, 청각 입력 데이터를 퍼셉트론이나 분류, 군집을 이용하여 해석하는데, 이렇게 해석한 결과 이용하면 이미지, 소리, 문자, 시계열 데이터에서 특정 패턴을 인식할 수 있습니다.
 
