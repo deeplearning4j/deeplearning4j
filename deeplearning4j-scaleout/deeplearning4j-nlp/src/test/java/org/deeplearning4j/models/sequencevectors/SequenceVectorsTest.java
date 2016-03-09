@@ -11,12 +11,11 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
-import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
-import org.deeplearning4j.models.sequencevectors.graph.enums.WalkMode;
+import org.deeplearning4j.models.sequencevectors.graph.enums.*;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
+import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.PopularityWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.RandomWalker;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -110,6 +109,9 @@ public class SequenceVectorsTest {
 
         assertEquals(634303, vocabCache.totalWordOccurrences());
 
+        VocabWord wordz = vocabCache.wordFor("day");
+
+        logger.info("Wordz: " + wordz);
 
         /*
             Time to build WeightLookupTable instance for our new model
@@ -329,17 +331,37 @@ public class SequenceVectorsTest {
 
         Graph<Blogger, Double> graph =buildGraph();
 
-        GraphWalker<Blogger> walker = new RandomWalker.Builder<Blogger>(graph)
-                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED)
+
+        GraphWalker<Blogger> walker = new PopularityWalker.Builder<>(graph)
+                .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
                 .setWalkLength(40)
                 .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setRestartProbability(0.05)
+                .setPopularitySpread(10)
+                .setPopularityMode(PopularityMode.MAXIMUM)
+                .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL)
                 .build();
+
+/*
+        GraphWalker<Blogger> walker = new RandomWalker.Builder<Blogger>(graph)
+                .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
+                .setWalkLength(40)
+                .setWalkDirection(WalkDirection.RANDOM)
+                .setRestartProbability(0.05)
+                .build();
+*/
 
         GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<Blogger>(graph)
                 .setGraphWalker(walker)
                 .shuffleOnReset(true)
                 .setVocabCache(vocabCache)
                 .build();
+
+        Blogger blogger = graph.getVertex(0).getValue();
+        assertEquals(119, blogger.getElementFrequency(), 0.001);
+
+        logger.info("Blogger: " + blogger);
+
 
         AbstractSequenceIterator<Blogger> sequenceIterator = new AbstractSequenceIterator.Builder<Blogger>(graphTransformer)
                 .build();
@@ -349,6 +371,7 @@ public class SequenceVectorsTest {
                 .vectorLength(150)
                 .useAdaGrad(false)
                 .cache(vocabCache)
+                .seed(42)
                 .build();
 
 
@@ -369,7 +392,7 @@ public class SequenceVectorsTest {
                 .batchSize(1000)
 
                 // number of iterations over batch
-                .iterations(2)
+                .iterations(1)
 
                 // number of iterations over whole training corpus
                 .epochs(10)
@@ -398,9 +421,11 @@ public class SequenceVectorsTest {
 
                 .negativeSample(0)
 
-                .windowSize(10)
+                .windowSize(4)
 
                 .workers(6)
+
+                .seed(42)
 
                 .build();
 
@@ -411,7 +436,7 @@ public class SequenceVectorsTest {
    //     logger.info("12: " + Arrays.toString(vectors.getWordVector("12")));
 
         double sim = vectors.similarity("12", "72");
-        Collection<String> list = vectors.wordsNearest("12", 10);
+        Collection<String> list = vectors.wordsNearest("12", 20);
         logger.info("12->72: " + sim);
         printWords("12", list, vectors);
 
@@ -442,7 +467,6 @@ public class SequenceVectorsTest {
         while (reader.hasNext()) {
             List<Writable> lines = new ArrayList<>(reader.next());
             Blogger blogger = new Blogger(lines.get(0).toInt());
-            blogger.setIndex(cnt);
             bloggers.add(blogger);
             cnt++;
         }
@@ -464,6 +488,14 @@ public class SequenceVectorsTest {
 
             graph.addEdge(from-1, to-1, 1.0, false);
         }
+
+        logger.info("Connected on 0: ["+graph.getConnectedVertices(0).size()+"]");
+        logger.info("Connected on 1: ["+graph.getConnectedVertices(1).size()+"]");
+        logger.info("Connected on 3: ["+graph.getConnectedVertices(3).size()+"]");
+        assertEquals(119, graph.getConnectedVertices(0).size());
+        assertEquals(9, graph.getConnectedVertices(1).size());
+        assertEquals(6, graph.getConnectedVertices(3).size());
+
         return graph;
     }
 
@@ -500,7 +532,15 @@ public class SequenceVectorsTest {
 
         @Override
         public String toString() {
-            return super.toString();
+            return "VocabWord{" +
+                    "wordFrequency=" + this.elementFrequency +
+                    ", index=" + index +
+                    ", codes=" + codes +
+                    ", word='" + String.valueOf(id) + '\'' +
+                    ", historicalGradient=" + historicalGradient +
+                    ", points=" + points +
+                    ", codeLength=" + codeLength +
+                    '}';
         }
     }
 
