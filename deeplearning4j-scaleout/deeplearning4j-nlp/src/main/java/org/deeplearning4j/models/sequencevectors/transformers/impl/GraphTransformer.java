@@ -63,7 +63,7 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         log.info("Transferring Huffman tree info to nodes...");
         for (int i = 0; i < nVertices; i++) {
             T element = sourceGraph.getVertex(i).getValue();
-            element.setElementFrequency(sourceGraph.getVertexDegree(i));
+            element.setElementFrequency(sourceGraph.getConnectedVertices(i).size());
 
             if (vocabCache != null) vocabCache.addToken(element);
         }
@@ -103,10 +103,6 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
 
     public static class Builder<T extends SequenceElement> {
         protected IGraph<T, ?> sourceGraph;
-        protected int walkLength = 5;
-        protected WalkMode walkMode = WalkMode.RANDOM;
-        protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.CUTOFF_ON_DISCONNECTED;
-        protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
         protected LabelsProvider<T> labelsProvider;
         protected GraphWalker<T> walker;
         protected boolean shuffle = true;

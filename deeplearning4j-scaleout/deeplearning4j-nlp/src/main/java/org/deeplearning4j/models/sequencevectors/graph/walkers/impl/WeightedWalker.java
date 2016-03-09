@@ -6,6 +6,9 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 /**
+ *
+ * WORK IS IN PROGRESS, DO NOT USE THIS
+ *
  * @author raver119@gmail.com
  */
 public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
