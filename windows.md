@@ -82,8 +82,9 @@ There are a number of things that can potentially go wrong.
 First, try updating packman using the following commands:
 
 	pacman -Syy
-    pacman -Syu
+	pacman -Syu
 	pacman -S pacman-mirrors
+
 Note that you might need to restart the msys2 shell between/after these steps.
 
 One user has reported issues downloading packages using the default downloader (timeouts and "error: failed retrieving file" messages). If you are experiencing these issues, it may help to switch to using the wget downloader. To do this, install wget using
@@ -98,7 +99,7 @@ then uncomment (remove the # symbol) the following line in the /etc/pacman.conf 
 
 First, make sure you have BLAS libraries intalled. Typically, this involves building OpenBLAS by downloading OpenBLAS and running the commands 'make', 'make install' in msys2.
 
-Running this command in the MinGW-w64 Win64 Shell instead of the standard msys2 shell may resolve this issue.
+Running the buildnativeoperations.sh script in the MinGW-w64 Win64 Shell instead of the standard msys2 shell may resolve this issue.
 
 ### I'm getting other errors not listed here
 
@@ -108,6 +109,4 @@ Some situations that may be problematic include:
 - Having older (or multiple) MinGW installs on your PATH (check: type "where c++" or "where gcc" into msys2)
 - Having older (or multiple) cmake installs on your PATH (check: "where cmake" and "cmake --version")
 - Having multiple BLAS libraries on your PATH (check: "where libopenblas.dll", "where libblas.dll" and "where liblapack.dll")
-
-
 
