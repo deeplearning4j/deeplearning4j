@@ -24,11 +24,12 @@
 # endif
 #endif
 
+#include <dll.h>
 #include <pointercast.h>
 
 
 
-class NativeOps {
+class ND4J_EXPORT NativeOps {
 
 
 public:
