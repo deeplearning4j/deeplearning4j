@@ -1712,6 +1712,66 @@ namespace functions {
                 int xOutFrom;
                 int xOutTo;
                 bool coverAll;
+                /**
+                                                                * CPU operation execution
+                                                                * @param dx the input data
+                                                                * @param xStride the stride to iterate over
+                                                                * the x input
+                                                                * @param y the y data
+                                                                * @param yStride the stride to iterate
+                                                                * over the y buffer
+                                                                * @param result the buffer
+                                                                * to store the result in
+                                                                * @param resultStride the stride for the buffer
+                                                                * @param extraParams the extra parameters for the transform
+                                                                * @param n the length of the input
+                                                                */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T d2, T *params) {
+                    return nd4j::math::nd4j_min(d1,d2);
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Im2col() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Im2col() {
+                }
+
 
                 int opSize() {
                     return (exampleTo - exampleFrom) * (depthTo - depthFrom) * (xOutTo - xOutFrom) * (yOutTo - yOutFrom) * kernelHeight * kernelWidth;
@@ -1861,7 +1921,66 @@ namespace functions {
                 int exampleTo;
                 int depthFrom;
                 int depthTo;
+            public:
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T d2, T *params) {
+                    return nd4j::math::nd4j_min(d1,d2);
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Col2Im() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Col2Im() {
+                }
 
                 void exec() {
                     T * dbCol = col;
