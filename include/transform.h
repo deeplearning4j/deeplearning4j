@@ -2667,7 +2667,7 @@ namespace functions {
 
 #endif
                 Im2col() {
-                    requiresSpecial = true;
+                    this->requiresSpecial = true;
                 }
 
 
@@ -2882,7 +2882,7 @@ namespace functions {
 
 #endif
                 Col2Im() {
-                    requiresSpecial = true;
+                    this->requiresSpecial = true;
                 }
 
 
