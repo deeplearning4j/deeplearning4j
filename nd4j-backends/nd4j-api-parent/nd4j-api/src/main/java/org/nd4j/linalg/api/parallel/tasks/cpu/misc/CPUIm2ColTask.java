@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.parallel.tasks.cpu.misc;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.parallel.tasks.Task;
@@ -8,7 +7,6 @@ import org.nd4j.linalg.api.parallel.tasks.TaskExecutorProvider;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -124,11 +122,10 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
             int temp;
             if ((temp = exampleTo - exampleFrom) > 1) { //exampleTo is exclusive -> single example has to-from=1
                 int countFirst = temp / 2;
-
                 first = new CPUIm2ColTask(img, out, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth,
                         exampleFrom, exampleFrom + countFirst,   //If countFirst=1, then want want to=from+1 exclusive, i.e., to=from inclusive
                         depthFrom, depthTo, yOutFrom, yOutTo, xOutFrom, xOutTo, coverAll, parallelThreshold);
-                if( forkJoin ) first.fork();
+                if(forkJoin) first.fork();
                 else{
                     first.invokeAsync();
                     subTasks.add(first);
@@ -143,7 +140,8 @@ public class CPUIm2ColTask extends RecursiveTask<INDArray> implements Task<INDAr
                     subTasks.add(second);
                 }
 
-            } else if ((temp = depthTo - depthFrom) > 1) {
+            }
+            else if ((temp = depthTo - depthFrom) > 1) {
                 //Split on depth
                 int countFirst = temp / 2;
                 first = new CPUIm2ColTask(img, out, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth,

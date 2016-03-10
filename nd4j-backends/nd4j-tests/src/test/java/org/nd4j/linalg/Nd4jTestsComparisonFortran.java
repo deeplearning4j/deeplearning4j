@@ -154,7 +154,7 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
         int[] rowsArr = new int[]{4,4,4,8,8,8};
         int[] colsArr = new int[]{2,1,10,2,1,10};
 
-        for( int x=0; x<rowsArr.length; x++ ) {
+        for( int x = 0; x < rowsArr.length; x++) {
             int rows = rowsArr[x];
             int cols = colsArr[x];
 

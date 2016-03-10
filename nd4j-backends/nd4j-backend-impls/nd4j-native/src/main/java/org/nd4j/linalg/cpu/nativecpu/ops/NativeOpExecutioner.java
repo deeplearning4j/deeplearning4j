@@ -43,7 +43,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Accumulation ac = (Accumulation) op;
             exec(ac);
         }
-        else if(op instanceof IndexAccumulation){
+        else if(op instanceof IndexAccumulation) {
             IndexAccumulation iac = (IndexAccumulation) op;
             exec(iac);  //Currently using DefaultOpExecutioner
         }

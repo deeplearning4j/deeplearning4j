@@ -82,6 +82,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param offset the offset for the view
      */
     protected BaseDataBuffer(DataBuffer underlyingBuffer,int length,int offset) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
         this.length = length;
         this.offset = offset;
         this.allocationMode = underlyingBuffer.allocationMode();
@@ -185,6 +187,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     protected BaseDataBuffer(ByteBuf buf,int length) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
@@ -377,6 +381,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param elementSize
      */
     public BaseDataBuffer(int length, int elementSize) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.length = length;
         this.underlyingLength = length;
@@ -417,6 +423,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      */
     public BaseDataBuffer(ByteBuffer buffer,int length) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.length = length;
         this.underlyingLength = length;
@@ -510,6 +518,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length the length of the buffer
      */
     protected BaseDataBuffer(int length) {
+        if(length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
         this.length = length;
         this.underlyingLength = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
