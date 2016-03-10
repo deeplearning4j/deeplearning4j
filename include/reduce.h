@@ -803,19 +803,40 @@ void exec(T *x, int *xShapeInfo,
 		 * we can use arr.stride(1) as a representation
 		 * along long which to iterate.
 		 */
-		int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
-		const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+
+		if(shape::order(xShapeInfo) == 'f') {
+            //    int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
+            const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 #pragma omp  parallel  for
-		for(int i = 0; i < resultLength; i++) {
-			int offset = i;
-			result[i] = op(x[offset], extraParams);
-			for(int j = 1; j < elementsPerReductionIndex; j++) {
-				result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+			for(int i = 0; i < resultLength; i++) {
+				int offset = i * shape::stride(xShapeInfo)[shape::rank(xShapeInfo) - 1];
+				result[i] = op(x[offset], extraParams);
+				for(int j = 1; j < elementsPerReductionIndex; j++) {
+					result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+				}
+
+				result[i] = postProcess(result[i],elementsPerReductionIndex,extraParams);
+
 			}
-
-			result[i] = postProcess(result[i],elementsPerReductionIndex,extraParams);
-
 		}
+		else {
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
+            const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+
+#pragma omp  parallel  for
+            for(int i = 0; i < resultLength; i++) {
+                int offset = i;
+                result[i] = op(x[offset], extraParams);
+                for(int j = 1; j < elementsPerReductionIndex; j++) {
+                    result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+                }
+
+                result[i] = postProcess(result[i],elementsPerReductionIndex,extraParams);
+
+            }
+		}
+
 	}
 
 	else {
