@@ -12,6 +12,9 @@ import org.nd4j.linalg.factory.Nd4j;
 public class Col2Im extends BaseTransformOp {
     private int sy = 0,sx = 0,ph = 0,pw = 0,  h = 0,  w = 0;
 
+    public Col2Im() {
+    }
+
     public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w) {
         super(x);
         this.sy = sy;
@@ -21,6 +24,7 @@ public class Col2Im extends BaseTransformOp {
         this.h = h;
         this.w = w;
         this.z = getNewOutputArray(h,w);
+        extraArgs = this.extraArgs();
     }
 
     @Override

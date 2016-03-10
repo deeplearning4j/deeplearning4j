@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.ops.impl.transforms.convolution;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -8,7 +7,6 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.nio.Buffer;
 
 /**
  * Im 2 col operation
@@ -17,6 +15,9 @@ public class Im2col extends BaseTransformOp {
 
     private int kh,  kw,  sy,  sx,  ph,  pw;
     boolean coverAll;
+
+    public Im2col() {
+    }
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll) {
         super(x);
@@ -28,6 +29,8 @@ public class Im2col extends BaseTransformOp {
         this.pw = pw;
         this.coverAll = coverAll;
         this.z = getNewOutputArray(x,kh,kw,sy,sx,ph,pw,coverAll);
+        extraArgs = this.extraArgs();
+
     }
 
     @Override
