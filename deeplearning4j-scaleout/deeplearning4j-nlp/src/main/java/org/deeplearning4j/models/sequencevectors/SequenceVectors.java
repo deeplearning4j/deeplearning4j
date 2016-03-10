@@ -57,8 +57,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
 
+    public interface EpochListener {
+        void epochCompleted(int epoch, WordVectors wordVectors);
+    }
 
-
+    @Setter protected EpochListener epochListener;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -202,6 +205,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 }
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
+
+            if (epochListener != null) {
+                epochListener.epochCompleted(currentEpoch, this);
+            }
         }
     }
 
