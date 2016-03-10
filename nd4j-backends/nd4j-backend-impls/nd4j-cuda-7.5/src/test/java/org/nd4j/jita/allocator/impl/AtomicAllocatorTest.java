@@ -28,8 +28,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.*;
 
 /**
+ * PLEASE NOTE: THIS TEST SHOULD BE USED ONLY MANUALLY WITH EXISTENT GPU/GPUS
+ *
  * @author raver119@gmail.com
  */
+@Ignore
 public class AtomicAllocatorTest {
     private static AtomicAllocator allocator;
     private static CudaEnvironment singleDevice4GBcc52;
