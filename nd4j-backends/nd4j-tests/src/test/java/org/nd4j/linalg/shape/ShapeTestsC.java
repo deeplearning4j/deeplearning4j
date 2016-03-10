@@ -183,11 +183,11 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         INDArray slice = nd.slice(1, 0);
 
-        INDArray vector = slice.reshape(1, 2);
+        INDArray vector = slice.reshape(1, 3);
         for(int i = 0; i < vector.length(); i++) {
             System.out.println(vector.getDouble(i));
         }
-        assertEquals(Nd4j.create(new double[]{2, 5}),vector);
+        assertEquals(Nd4j.create(new double[]{4, 5,6}),vector);
     }
 
     @Test
@@ -310,8 +310,8 @@ public class ShapeTestsC extends BaseNd4jTest {
     @Test
     public void testColumnVariance() {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray columnVar = twoByThree.var(0);
-        INDArray assertion = Nd4j.create(new float[]{2f, 2f});
+        INDArray columnVar = twoByThree.var(true,0);
+        INDArray assertion = Nd4j.create(new double[]{2, 2});
         assertEquals(assertion, columnVar);
 
     }

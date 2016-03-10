@@ -45,7 +45,7 @@ public class ShapeTestC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
         INDArray onesInMiddle = Nd4j.linspace(1,6,6).reshape(2,1,3);
         for(int i = 0; i < arr.length(); i++)
-            assertEquals(arr.getDouble(i),onesInMiddle.getDouble(i));
+            assertEquals(arr.getDouble(i),onesInMiddle.getDouble(i),1e-3);
     }
 
     @Override
