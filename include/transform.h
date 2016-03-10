@@ -28,8 +28,20 @@ namespace functions {
 
         template<typename T>
         class Transform : public functions::ops::Op<T> {
+        protected:
+            bool requiresSpecial = false;
+
         public:
 
+            /**
+             *
+             */
+            virtual void execSpecial(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) = 0;
             /**
              * The op for transforms
              * @param d1
@@ -212,6 +224,11 @@ namespace functions {
                     int *resultShapeInfo,
                     T *extraParams) {
 
+                if(this->requiresSpecial) {
+                    this->execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
+                    return;
+                }
+
                 int n = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
@@ -316,6 +333,28 @@ namespace functions {
             class Abs : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -350,6 +389,28 @@ namespace functions {
             template<typename T>
             class Ceiling : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -387,6 +448,27 @@ namespace functions {
             class Cosine : public Transform<T> {
             public:
                 /**
+                                        * CPU operation execution
+                                        * @param dx the input data
+                                        * @param xStride the stride to iterate over
+                                        * the x input
+                                        * @param y the y data
+                                        * @param yStride the stride to iterate
+                                        * over the y buffer
+                                        * @param result the buffer
+                                        * to store the result in
+                                        * @param resultStride the stride for the buffer
+                                        * @param extraParams the extra parameters for the transform
+                                        * @param n the length of the input
+                                        */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -422,6 +504,29 @@ namespace functions {
             template<typename T>
             class Exp : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -459,6 +564,28 @@ namespace functions {
             class HardTanhDerivative : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -495,6 +622,28 @@ namespace functions {
             class HardTanh : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -529,7 +678,30 @@ namespace functions {
  */
             template<typename T>
             class Floor : public Transform<T> {
+
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -565,6 +737,28 @@ namespace functions {
             template<typename T>
             class Log : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -602,6 +796,28 @@ namespace functions {
             class Neg : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -637,6 +853,28 @@ namespace functions {
             template<typename T>
             class Pow : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -681,6 +919,28 @@ namespace functions {
             class Round : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -716,6 +976,28 @@ namespace functions {
             template<typename T>
             class Sigmoid : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -754,6 +1036,27 @@ namespace functions {
             class SigmoidDerivative : public Transform<T> {
             public:
                 /**
+                                        * CPU operation execution
+                                        * @param dx the input data
+                                        * @param xStride the stride to iterate over
+                                        * the x input
+                                        * @param y the y data
+                                        * @param yStride the stride to iterate
+                                        * over the y buffer
+                                        * @param result the buffer
+                                        * to store the result in
+                                        * @param resultStride the stride for the buffer
+                                        * @param extraParams the extra parameters for the transform
+                                        * @param n the length of the input
+                                        */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -791,6 +1094,28 @@ namespace functions {
             template<typename T>
             class SetRange : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -838,6 +1163,28 @@ namespace functions {
             class Sin : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -874,6 +1221,28 @@ namespace functions {
             class Sqrt : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -909,6 +1278,27 @@ namespace functions {
             template<typename T>
             class SoftPlus : public Transform<T> {
             public:
+                /**
+                                        * CPU operation execution
+                                        * @param dx the input data
+                                        * @param xStride the stride to iterate over
+                                        * the x input
+                                        * @param y the y data
+                                        * @param yStride the stride to iterate
+                                        * over the y buffer
+                                        * @param result the buffer
+                                        * to store the result in
+                                        * @param resultStride the stride for the buffer
+                                        * @param extraParams the extra parameters for the transform
+                                        * @param n the length of the input
+                                        */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
                 /**
                  * The op for transforms
                  * @param d1
@@ -947,6 +1337,28 @@ namespace functions {
             class Sign : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -984,6 +1396,28 @@ namespace functions {
             class TimesOneMinus : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1019,6 +1453,28 @@ namespace functions {
             template<typename T>
             class Tanh : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1056,6 +1512,28 @@ namespace functions {
             class TanhDerivative : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1091,6 +1569,28 @@ namespace functions {
             template<typename T>
             class ACos : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1128,6 +1628,28 @@ namespace functions {
             template<typename T>
             class Ones : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1167,6 +1689,28 @@ namespace functions {
             class SoftSign : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1205,6 +1749,28 @@ namespace functions {
             class SoftSignDerivative : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1241,6 +1807,28 @@ namespace functions {
             template<typename T>
             class ELU : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1282,6 +1870,28 @@ namespace functions {
             class ELUDerivative : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1318,6 +1928,28 @@ namespace functions {
             template<typename T>
             class RELU : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1357,6 +1989,28 @@ namespace functions {
             class LeakyRELU : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1395,6 +2049,28 @@ namespace functions {
             class LeakyRELUDerivative : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1432,6 +2108,28 @@ namespace functions {
             class ASin : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1466,6 +2164,28 @@ namespace functions {
             template<typename T>
             class ATan : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1503,6 +2223,28 @@ namespace functions {
             template<typename T>
             class Identity : public Transform<T> {
             public:
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1543,6 +2285,28 @@ namespace functions {
             public:
                 double realMin = 1.1755e-38f;
                 double cutOff = nd4j::math::nd4j_log(realMin);
+                /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1588,6 +2352,28 @@ namespace functions {
             class Step : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1628,6 +2414,28 @@ namespace functions {
             class OneMinus : public Transform<T> {
             public:
                 /**
+                                                 * CPU operation execution
+                                                 * @param dx the input data
+                                                 * @param xStride the stride to iterate over
+                                                 * the x input
+                                                 * @param y the y data
+                                                 * @param yStride the stride to iterate
+                                                 * over the y buffer
+                                                 * @param result the buffer
+                                                 * to store the result in
+                                                 * @param resultStride the stride for the buffer
+                                                 * @param extraParams the extra parameters for the transform
+                                                 * @param n the length of the input
+                                                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                /**
                  * The op for transforms
                  * @param d1
                  * @param params
@@ -1659,6 +2467,453 @@ namespace functions {
 
             };
 
+
+
+            template <typename T>
+            class Im2col : public Transform<T> {
+            public:
+                int outSize(int size,int k,int s,int p, bool coverAll) {
+                    if (coverAll)
+                        return (size + p * 2 - k + s - 1) / s + 1;
+                    else
+                        return (size + p * 2 - k) / s + 1;
+                }
+
+                /**
+                                                                * CPU operation execution
+                                                                * @param dx the input data
+                                                                * @param xStride the stride to iterate over
+                                                                * the x input
+                                                                * @param y the y data
+                                                                * @param yStride the stride to iterate
+                                                                * over the y buffer
+                                                                * @param result the buffer
+                                                                * to store the result in
+                                                                * @param resultStride the stride for the buffer
+                                                                * @param extraParams the extra parameters for the transform
+                                                                * @param n the length of the input
+                                                                */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    /*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
+                    int kernelWidth = (int) extraParams[0];
+                    int kernelHeight = (int) extraParams[1];
+                    int strideX = (int) extraParams[2];
+                    int strideY = (int) extraParams[3];
+                    int padWidth = (int) extraParams[4];
+                    int padHeight = (int) extraParams[5];
+                    bool coverAll =  extraParams[6] > 0.0;
+                     T *dbIn = dx;
+                    T *dbOut = result;
+
+                    int outArrayOffset = shape::offset(resultShapeBuffer);
+                    int *outShape = shape::shapeOf(resultShapeBuffer);
+                    int *outStride = shape::stride(resultShapeBuffer);
+
+                    int inArrayOffset = shape::offset(xShapeBuffer);
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
+
+
+                    int exampleFrom = 0;
+                    int exampleTo = inShape[0];
+                    int depthFrom = 0;
+                    int depthTo = inShape[1];
+                    int yOutFrom = 0;
+                    int yOutTo = this->outSize(inShape[2],kernelHeight,strideY,padHeight,coverAll);
+                    int xOutFrom = 0;
+                    int xOutTo = this->outSize(inShape[3],kernelWidth,strideX,padWidth,coverAll);
+
+
+
+                    int *outIndices = new int[6];
+                    int *inIndices = new int[4];
+
+                    const int inStride2 = inStride[2];
+                    const int inStride3 = inStride[3];
+                    const int outStride2 = outStride[2];
+                    const int outStride3 = outStride[3];
+                    const int inShape2 = inShape[2];
+                    const int inShape3 = inShape[3];
+
+                    const bool padding = padHeight > 0 || padWidth > 0;
+
+                    T *dIn = dbIn;
+                    T *dOut = dbOut;
+#pragma omp parallel for collapse(2)
+                    for (int ex = exampleFrom; ex < exampleTo; ex++) {
+                        for (int d = depthFrom; d < depthTo; d++) {
+                            inIndices[0] = ex;
+                            inIndices[1] = d;
+                            outIndices[0] = ex;
+                            outIndices[1] = d;
+
+                            for (int x = xOutFrom; x < xOutTo; x++) {  //Along width
+                                for (int y = yOutFrom; y < yOutTo; y++) {  //along height
+                                    outIndices[4] = y;
+                                    outIndices[5] = x;
+                                    int baseOffsetOut = this->getOffsetUnsafe6(outArrayOffset, outShape, outStride,
+                                                                         outIndices);
+
+                                    if (padding) {
+                                        int i = y * strideY - padHeight;    //index along height of first element of patch in original img
+                                        int j = x * strideX - padWidth;     //index along width of first element in patch in original img
+                                        inIndices[2] = i;   //along height
+                                        inIndices[3] = j;   //along width
+
+                                        int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
+                                                                            inIndices);
+                                        if (outStride2 <= outStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache reasons
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                                int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 ||
+                                                        j + patchX >= inShape3)
+                                                        dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
+                                                    else {
+                                                        dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
+                                                                                                        patchY *
+                                                                                                        inStride2];
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 in inner loop for cache reasons
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                                int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
+                                                        j + patchX >= inShape[3])
+                                                        dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
+                                                    else {
+                                                        dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
+                                                                                                        patchX *
+                                                                                                        inStride3];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        //No padding
+                                        int i = y * strideY;    //index along height of first element of patch in original img
+                                        int j = x * strideX;     //index along width of first element in patch in original img
+                                        inIndices[2] = i;   //along height
+                                        inIndices[3] = j;   //along width
+
+                                        int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
+                                                                            inIndices);
+                                        if (outStride2 <= outStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache reasons
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+                                                int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
+                                                                                                    patchY * inStride2];
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 in inner loop for cache reasons
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+                                                int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
+                                                                                                    patchX * inStride3];
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    delete[] inIndices;
+                    delete[] outIndices;
+
+                }
+
+
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Im2col() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Im2col() {
+                    requiresSpecial = true;
+                }
+
+
+                /** Calculate buffer offset (like Shape.getOffset) without checking on input for negative indices etc
+                         *  normally negative indices are bad, OK here because of other checks on input indices
+                         *  Uses unrolled loop specifically for length 4
+                         */
+                int  getOffsetUnsafe4(int baseOffset, int* shape, int* stride, int* indices) {
+                    int offset = baseOffset;
+                    if(shape[0] != 1) offset += indices[0] * stride[0];
+                    if(shape[1] != 1) offset += indices[1] * stride[1];
+                    if(shape[2] != 1) offset += indices[2] * stride[2];
+                    if(shape[3] != 1) offset += indices[3] * stride[3];
+                    return offset;
+                }
+
+
+                /**
+                  * A version of Shape.getOffset without checking on input for negative indices etc
+                  * normally negative indices are bad, OK here because of other checks on input indices
+                  * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
+                  */
+                int getOffsetUnsafe6(int baseOffset,  int* shape,  int* stride,  int* indices) {
+                    int offset = baseOffset;
+                    if(shape[0] != 1) offset += indices[0] * stride[0];
+                    if(shape[1] != 1) offset += indices[1] * stride[1];
+                    if(shape[4] != 1) offset += indices[4] * stride[4];
+                    if(shape[5] != 1) offset += indices[5] * stride[5];
+                    return offset;
+                }
+
+            };
+
+            template <typename  T>
+            class Col2Im : public Transform<T> {
+
+            public:
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    T * dbCol = dx;
+                    T * dbOut = result;
+
+                    int inOffset = 0;
+                    int* inShape = shape::shapeOf(xShapeBuffer);
+                    int* inStride = shape::stride(xShapeBuffer);
+
+                    int kernelHeight = inShape[2];
+                    int kernelWidth = inShape[3];
+                    /* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
+                    int strideX = (int) extraParams[0];
+                    int strideY = (int) extraParams[1];
+                    int padWidth = (int) extraParams[2];
+                    int padHeight = (int) extraParams[3];
+                    int imgHeight = (int) extraParams[4];
+                    int imgWidth = (int) extraParams[5];
+
+
+                    int exampleFrom = 0;
+                    int exampleTo = 0;
+                    int depthFrom = inShape[0];
+                    int depthTo = inShape[1];
+
+                    int outArrayOffset = 0;
+                    int* outShape = shape::shapeOf(resultShapeBuffer);
+                    int* outStride = shape::stride(resultShapeBuffer);
+
+
+                    int* outIndices = new int[4];
+                    int* inIndices = new int[6];
+
+                    const int inStride2 = inStride[2];
+                    const int inStride3 = inStride[3];
+                    const int outStride2 = outStride[2];
+                    const int outStride3 = outStride[3];
+                    const int outShape2 = outShape[2];
+                    const int outShape3 = outShape[3];
+
+                    const int yOutTo = inShape[4];
+                    const int xOutTo = inShape[5];
+
+
+                    const bool padding = padHeight > 0 || padWidth > 0;
+
+                    T * fIn = dbCol;
+                    T * fOut = dbOut;
+#pragma omp parallel for
+                    for (int ex = exampleFrom; ex < exampleTo; ex++) {
+                        for (int d = depthFrom; d < depthTo; d++) {
+                            inIndices[0] = ex;
+                            inIndices[1] = d;
+                            outIndices[0] = ex;
+                            outIndices[1] = d;
+
+                            for (int x = 0; x < xOutTo; x++) {  //Patch number along width
+                                for (int y = 0; y < yOutTo; y++) {  //Patch number along height
+                                    inIndices[4] = y;   //patch number (along height)
+                                    inIndices[5] = x;   //patch number (along width)
+                                    int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
+
+                                    if(padding){
+                                        int i = y * strideY - padHeight;    //index along height of first element of patch in original img
+                                        int j = x * strideX - padWidth;     //index along width of first element in patch in original img
+                                        outIndices[2] = i;  //along height
+                                        outIndices[3] = j;  //along width
+
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride, outIndices);
+
+                                        if (inStride2 <= inStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache efficiency
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                if( j + patchX < 0 || j + patchX >= outShape3)
+                                                    continue;
+
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    if (i + patchY < 0 || i + patchY >= outShape2)
+                                                        continue;
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 (along width) in inner loop for cache efficiency
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                if(i + patchY < 0 || i + patchY >= outShape2)
+                                                    continue;
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    if (j + patchX < 0 || j + patchX >= outShape3)
+                                                        continue;
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        //No padding
+                                        int i = y * strideY;    //index along height of first element of patch in output img
+                                        int j = x * strideX;     //index along width of first element in patch in output img
+
+                                        outIndices[2] = i;
+                                        outIndices[3] = j;
+
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride, outIndices);
+
+                                        if (inStride2 <= inStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache efficiency
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 (along width) in inner loop for cache efficiency
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    delete[] outIndices;
+                    delete[] inIndices;
+                }
+
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Col2Im() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Col2Im() {
+                    requiresSpecial = true;
+                }
+
+
+
+                /** Calculate buffer offset (like Shape.getOffset) without checking on input for negative indices etc
+             *  normally negative indices are bad, OK here because of other checks on input indices
+             *  Uses unrolled loop specifically for length 4
+             */
+               int  getOffsetUnsafe4(int baseOffset, int* shape, int* stride, int* indices) {
+                    int offset = baseOffset;
+                    if(shape[0] != 1) offset += indices[0] * stride[0];
+                    if(shape[1] != 1) offset += indices[1] * stride[1];
+                    if(shape[2] != 1) offset += indices[2] * stride[2];
+                    if(shape[3] != 1) offset += indices[3] * stride[3];
+                    return offset;
+                }
+
+                /** A version of Shape.getOffset without checking on input for negative indices etc
+                 * normally negative indices are bad, OK here because of other checks on input indices
+                 * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
+                 */
+                int getOffsetUnsafe6(int baseOffset, int* shape, int* stride, int* indices) {
+                    int offset = baseOffset;
+                    if(shape[0] != 1) offset += indices[0] * stride[0];
+                    if(shape[1] != 1) offset += indices[1] * stride[1];
+                    if(shape[4] != 1) offset += indices[4] * stride[4];
+                    if(shape[5] != 1) offset += indices[5] * stride[5];
+                    return offset;
+                }
+
+            };
 
 
         }
@@ -1818,8 +3073,12 @@ namespace functions {
                 else if(op == 35) {
                     return new transform::ops::OneMinus<T>();
                 }
-
-
+                else if(op == 36) {
+                    return new transform::ops::Col2Im<T>();
+                }
+                else if(op == 37) {
+                    return new transform::ops::Im2col<T>();
+                }
                 return ret;
             }
 
