@@ -464,9 +464,6 @@ public class JcublasLevel1 extends BaseLevel1 {
                   incX,
                   xBPointer.getDevicePointer().getNativePointer(),
                   incY);
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e) {}
             ctx.syncOldStream();
 
             allocator.tickDeviceWrite(Y);
