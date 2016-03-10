@@ -340,7 +340,7 @@ public class CudaContext {
      * and destroys this context
      */
     public void finishBlasOperation() {
-        destroy();
+        //destroy();
     }
 
     /**
