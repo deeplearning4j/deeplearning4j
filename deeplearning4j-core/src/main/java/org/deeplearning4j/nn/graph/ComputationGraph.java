@@ -481,8 +481,8 @@ public class ComputationGraph implements Serializable, Model {
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if(hasMaskArrays){
-                    INDArray[] lMask = (next.getFeaturesMaskArray() != null ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                    INDArray[] fMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()} : null);
+                    INDArray[] fMask = (next.getFeaturesMaskArray() != null ? new INDArray[]{next.getFeaturesMaskArray()} : null);
+                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()} : null);
                     setLayerMaskArrays(fMask,lMask);
                 }
 
