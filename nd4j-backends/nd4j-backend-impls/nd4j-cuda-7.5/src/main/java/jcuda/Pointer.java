@@ -38,7 +38,7 @@ public class Pointer extends NativePointerObject
     /**
      * The offset from the nativePointer, in bytes
      */
-    private long byteOffset;
+    private long byteOffset = 0;
 
     /**
      * The buffer the pointer points to
@@ -551,6 +551,17 @@ public class Pointer extends NativePointerObject
         byteBuffer.limit((int)(byteOffset + byteSize));
         byteBuffer.position((int)byteOffset);
         return byteBuffer.slice();
+    }
+
+
+    /**
+     * Obtain the native pointer value.
+     *
+     * @return The native pointer value
+     */
+    @Override
+    public long getNativePointer() {
+        return super.getNativePointer() + byteOffset;
     }
 
     /**

@@ -68,6 +68,11 @@ public class AtomicAllocatorTest {
 
 
     @Test
+    public void testOnes() throws Exception {
+        //INDArray array = Nd4j.ones(10);
+    }
+
+    @Test
     public void testScalar1() throws Exception {
         INDArray array = Nd4j.scalar(17f);
 

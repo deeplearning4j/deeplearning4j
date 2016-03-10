@@ -63,6 +63,7 @@ public class UmaMover implements Mover {
     @Override
     public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
         //log.info("Alloc called for shape: " + shape);
+        //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
             case ZERO: {
@@ -208,11 +209,17 @@ public class UmaMover implements Mover {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
+/*
 
-
+            log.info("AllocationPoint shape: " + point.getShape());
+            log.info("Allocation shape: " + shape);
+            log.info("Target offset/length: " + targetBuffer.offset() + "/" + targetBuffer.length());
+            log.info("Target shape: " + AllocationUtils.buildAllocationShape(targetBuffer));
+*/
             // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocationsi
             ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getElementSize(shape) * targetBuffer.length()).order(ByteOrder.nativeOrder());
             ByteBuffer bufferNio = targetBuffer.asNio();
+
 
             NioUtil.copyAtStride(shape.getLength(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,shape.getOffset(),1);
 

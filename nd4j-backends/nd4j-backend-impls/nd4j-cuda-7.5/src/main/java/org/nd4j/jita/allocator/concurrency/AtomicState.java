@@ -148,7 +148,8 @@ public class AtomicState {
      */
     public void releaseToe() {
         if (getCurrentState() == AccessState.TOE) {
-            if (toeThread.get() == Thread.currentThread().getId()) {
+            if (1>0) {
+            //if (toeThread.get() == Thread.currentThread().getId()) {
                 if (toeRequests.decrementAndGet() == 0) {
                     tickRequests.set(0);
                     tackRequests.set(0);

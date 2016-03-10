@@ -1713,7 +1713,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isView() {
-        return Shape.offset(shapeInfo()) > 0 || length() < data().length();
+        return Shape.offset(shapeInfo()) > 0 || length() < data().length() || data().originalDataBuffer() != null;
     }
 
     @Override
