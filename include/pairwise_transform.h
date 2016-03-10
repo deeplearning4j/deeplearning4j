@@ -31,6 +31,8 @@ namespace functions {
  */
         template<typename T>
         class PairWiseTransform : public virtual functions::ops::Op<T> {
+        protected:
+            bool requiresSpecial = false;
         public:
             virtual
 #ifdef __CUDACC__
@@ -376,6 +378,28 @@ namespace functions {
             }
 
             /**
+            * CPU operation execution
+            * @param dx the input data
+            * @param xStride the stride to iterate over
+            * the x input
+            * @param y the y data
+            * @param yStride the stride to iterate
+            * over the y buffer
+            * @param result the buffer
+            * to store the result in
+            * @param resultStride the stride for the buffer
+            * @param extraParams the extra parameters for the transform
+            * @param n the length of the input
+            */
+            virtual void execSpecial(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) = 0;
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -402,6 +426,14 @@ namespace functions {
                 int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
+
+                //ignore everything else
+                if(this->requiresSpecial) {
+                    this->execSpecial(dx,xShapeBuffer,y,yShapeBuffer,result,resultShapeBuffer,extraParams);
+                    return;
+                }
+
+
                 if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
                     exec(dx,
                          xElementWiseStride,
@@ -498,11 +530,7 @@ namespace functions {
 
                     }
 
-
-
-
                 }
-
 
             }
 
@@ -577,6 +605,30 @@ namespace functions {
             class Add: public virtual PairWiseTransform<T> {
             public:
 
+                /**
+                         * CPU operation execution
+                         * @param dx the input data
+                         * @param xStride the stride to iterate over
+                         * the x input
+                         * @param y the y data
+                         * @param yStride the stride to iterate
+                         * over the y buffer
+                         * @param result the buffer
+                         * to store the result in
+                         * @param resultStride the stride for the buffer
+                         * @param extraParams the extra parameters for the transform
+                         * @param n the length of the input
+                         */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    //no-op
+                }
 
 
                 virtual
@@ -622,7 +674,29 @@ namespace functions {
             template<typename T>
             class Copy: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                      * CPU operation execution
+                                      * @param dx the input data
+                                      * @param xStride the stride to iterate over
+                                      * the x input
+                                      * @param y the y data
+                                      * @param yStride the stride to iterate
+                                      * over the y buffer
+                                      * @param result the buffer
+                                      * to store the result in
+                                      * @param resultStride the stride for the buffer
+                                      * @param extraParams the extra parameters for the transform
+                                      * @param n the length of the input
+                                      */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                     }
 
                 virtual
 #ifdef __CUDACC__
@@ -667,7 +741,29 @@ namespace functions {
             template<typename T>
             class Divide: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                      * CPU operation execution
+                                      * @param dx the input data
+                                      * @param xStride the stride to iterate over
+                                      * the x input
+                                      * @param y the y data
+                                      * @param yStride the stride to iterate
+                                      * over the y buffer
+                                      * @param result the buffer
+                                      * to store the result in
+                                      * @param resultStride the stride for the buffer
+                                      * @param extraParams the extra parameters for the transform
+                                      * @param n the length of the input
+                                      */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                     }
 
                 virtual
 #ifdef __CUDACC__
@@ -713,7 +809,29 @@ namespace functions {
             template<typename T>
             class Epsilon: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                      * CPU operation execution
+                                      * @param dx the input data
+                                      * @param xStride the stride to iterate over
+                                      * the x input
+                                      * @param y the y data
+                                      * @param yStride the stride to iterate
+                                      * over the y buffer
+                                      * @param result the buffer
+                                      * to store the result in
+                                      * @param resultStride the stride for the buffer
+                                      * @param extraParams the extra parameters for the transform
+                                      * @param n the length of the input
+                                      */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                     }
 
 
                 virtual
@@ -763,7 +881,29 @@ namespace functions {
             template<typename T>
             class EqualTo: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
                 virtual
@@ -810,7 +950,29 @@ namespace functions {
             class NotEqualTo: public virtual PairWiseTransform<T> {
             public:
 
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -857,7 +1019,29 @@ namespace functions {
             template<typename T>
             class GreaterThanOrEqual: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -903,7 +1087,29 @@ namespace functions {
             template<typename T>
             class GreaterThan: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -948,7 +1154,29 @@ namespace functions {
             template<typename T>
             class LessThan: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -993,7 +1221,29 @@ namespace functions {
             template<typename T>
             class LessThanOrEqual: public virtual PairWiseTransform<T> {
             public:
-
+  /**
+                                      * CPU operation execution
+                                      * @param dx the input data
+                                      * @param xStride the stride to iterate over
+                                      * the x input
+                                      * @param y the y data
+                                      * @param yStride the stride to iterate
+                                      * over the y buffer
+                                      * @param result the buffer
+                                      * to store the result in
+                                      * @param resultStride the stride for the buffer
+                                      * @param extraParams the extra parameters for the transform
+                                      * @param n the length of the input
+                                      */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                     }
 
 
                 virtual
@@ -1039,7 +1289,29 @@ namespace functions {
             template<typename T>
             class Multiply: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
                 virtual
@@ -1086,7 +1358,29 @@ namespace functions {
             template<typename T>
             class ReverseDivide: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1131,7 +1425,29 @@ namespace functions {
             template<typename T>
             class ReverseSubtraction: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
                 virtual
@@ -1177,7 +1493,29 @@ namespace functions {
             template<typename T>
             class Subtract: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1223,7 +1561,29 @@ namespace functions {
             template<typename T>
             class Max: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1270,7 +1630,29 @@ namespace functions {
             template<typename T>
             class Min: public virtual PairWiseTransform<T> {
             public:
-
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
                 virtual
 #ifdef __CUDACC__
@@ -1308,6 +1690,7 @@ namespace functions {
                 Min() {
                 }
             };
+
 
         }
 
