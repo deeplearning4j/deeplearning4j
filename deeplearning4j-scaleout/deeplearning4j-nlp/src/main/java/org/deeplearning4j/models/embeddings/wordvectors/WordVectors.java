@@ -37,6 +37,9 @@ import java.util.Map;
  */
 public interface WordVectors extends Serializable {
 
+    String getUNK();
+
+    void setUNK(String newUNK);
 
     /**
      * Returns true if the model has this word in the vocab

@@ -361,7 +361,7 @@ public class ParagraphVectors extends Word2Vec {
         public Builder useUnknown(boolean reallyUse) {
             super.useUnknown(reallyUse);
             if (this.unknownElement == null) {
-                this.unknownElement(new VocabWord(1.0, ParagraphVectors.UNK));
+                this.unknownElement(new VocabWord(1.0, ParagraphVectors.DEFAULT_UNK));
             }
             return this;
         }
