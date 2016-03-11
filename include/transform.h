@@ -2507,14 +2507,12 @@ namespace functions {
                     int padWidth = (int) extraParams[4];
                     int padHeight = (int) extraParams[5];
                     bool coverAll =  extraParams[6] > 0.0;
-                     T *dbIn = dx;
-                    T *dbOut = result;
 
-                    int outArrayOffset = shape::offset(resultShapeBuffer);
+                    int outArrayOffset = 0;
                     int *outShape = shape::shapeOf(resultShapeBuffer);
                     int *outStride = shape::stride(resultShapeBuffer);
 
-                    int inArrayOffset = shape::offset(xShapeBuffer);
+                    int inArrayOffset = 0;
                     int *inShape = shape::shapeOf(xShapeBuffer);
                     int *inStride = shape::stride(xShapeBuffer);
 
@@ -2542,8 +2540,8 @@ namespace functions {
 
                     const bool padding = padHeight > 0 || padWidth > 0;
 
-                    T *dIn = dbIn;
-                    T *dOut = dbOut;
+                    T *dIn = dx;
+                    T *dOut = result;
 #pragma omp parallel for collapse(2)
                     for (int ex = exampleFrom; ex < exampleTo; ex++) {
                         for (int d = depthFrom; d < depthTo; d++) {
@@ -2725,8 +2723,6 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    T * dbCol = dx;
-                    T * dbOut = result;
 
                     int inOffset = 0;
                     int* inShape = shape::shapeOf(xShapeBuffer);
@@ -2744,8 +2740,8 @@ namespace functions {
 
 
                     int exampleFrom = 0;
-                    int exampleTo = 0;
-                    int depthFrom = inShape[0];
+                    int exampleTo = inShape[0];
+                    int depthFrom = 0;
                     int depthTo = inShape[1];
 
                     int outArrayOffset = 0;
@@ -2769,9 +2765,9 @@ namespace functions {
 
                     const bool padding = padHeight > 0 || padWidth > 0;
 
-                    T * fIn = dbCol;
-                    T * fOut = dbOut;
-#pragma omp parallel for
+                    T * fIn = dx;
+                    T * fOut = result;
+#pragma omp parallel for collapse(2)
                     for (int ex = exampleFrom; ex < exampleTo; ex++) {
                         for (int d = depthFrom; d < depthTo; d++) {
                             inIndices[0] = ex;
@@ -2785,7 +2781,7 @@ namespace functions {
                                     inIndices[5] = x;   //patch number (along width)
                                     int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
 
-                                    if(padding){
+                                    if(padding) {
                                         int i = y * strideY - padHeight;    //index along height of first element of patch in original img
                                         int j = x * strideX - padWidth;     //index along width of first element in patch in original img
                                         outIndices[2] = i;  //along height
