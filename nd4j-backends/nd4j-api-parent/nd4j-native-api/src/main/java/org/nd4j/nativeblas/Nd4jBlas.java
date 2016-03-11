@@ -17,12 +17,6 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
 @Platform(include="NativeBlas.h",preload = "libnd4j",link = "nd4j")
 public class Nd4jBlas extends Pointer {
     static {
-        try {
-            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile(Nd4jBlas.class);
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
         Loader.load();
     }
 

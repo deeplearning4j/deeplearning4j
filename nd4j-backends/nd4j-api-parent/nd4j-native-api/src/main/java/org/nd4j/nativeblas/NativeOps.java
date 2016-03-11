@@ -15,12 +15,6 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
 @Platform(include="NativeOps.h",preload = "libnd4j",link = "nd4j")
 public class NativeOps extends Pointer {
     static {
-        try {
-            LibUtils.addLibraryPath(System.getProperty("java.io.tmpdir"));
-            LibUtils.loadTempBinaryFile(NativeOps.class);
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-        }
         Loader.load();
     }
 
