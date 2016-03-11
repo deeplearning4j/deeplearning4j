@@ -74,7 +74,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
     private int batchSize = 1000;
     private int minWordFrequency = 5;
     private double maxCount = 100;
-    public final static String UNK = Word2Vec.UNK;
+    public final static String UNK = Word2Vec.DEFAULT_UNK;
     private int iterations = 5;
     private static final Logger log = LoggerFactory.getLogger(Glove.class);
     private boolean symmetric = true;

@@ -404,7 +404,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         public Builder useUnknown(boolean reallyUse) {
             super.useUnknown(reallyUse);
             if (this.unknownElement == null) {
-                this.unknownElement(new VocabWord(1.0, Word2Vec.UNK));
+                this.unknownElement(new VocabWord(1.0, Word2Vec.DEFAULT_UNK));
             }
             return this;
         }
