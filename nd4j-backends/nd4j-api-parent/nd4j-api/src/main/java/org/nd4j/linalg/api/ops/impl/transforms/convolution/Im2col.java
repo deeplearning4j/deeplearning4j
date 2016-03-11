@@ -34,6 +34,11 @@ public class Im2col extends BaseTransformOp {
     }
 
     @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
     public int opNum() {
         return 37;
     }

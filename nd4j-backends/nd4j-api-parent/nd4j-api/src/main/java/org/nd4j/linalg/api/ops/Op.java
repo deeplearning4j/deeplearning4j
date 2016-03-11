@@ -46,6 +46,14 @@ import java.nio.Buffer;
 public interface Op {
 
     /**
+     * Whether the executioner
+     * needs to do a special call or not
+     * @return true if the executioner needs to do a special
+     * call or not false otherwise
+     */
+    boolean isExecSpecial();
+
+    /**
      * Returns the extra args as a data buffer
      * @return
      */

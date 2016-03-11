@@ -28,6 +28,11 @@ public class Col2Im extends BaseTransformOp {
     }
 
     @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
     public Object[] extraArgs() {
         return new Object[] {sx,sy,pw,ph,h,w};
     }
