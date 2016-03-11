@@ -118,7 +118,7 @@ public class TextPipeline {
     }
 
     private String filterMinWord(String stringToken, double tokenCount) {
-        return (tokenCount < numWords) ? org.deeplearning4j.models.word2vec.Word2Vec.UNK : stringToken;
+        return (tokenCount < numWords) ? org.deeplearning4j.models.word2vec.Word2Vec.DEFAULT_UNK : stringToken;
     }
 
     private void addTokenToVocabCache(String stringToken, Double tokenCount) {

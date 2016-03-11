@@ -56,13 +56,13 @@ public class CoOccurrenceCalculator implements Function<Pair<List<String>,Atomic
             int wordIdx = vocab.indexOf(sentence.get(i));
             String w1 = ((VocabWord) vocab.wordFor(sentence.get(i))).getWord();
 
-            if(wordIdx < 0 || w1.equals(Glove.UNK))
+            if(wordIdx < 0 || w1.equals(Glove.DEFAULT_UNK))
                 continue;
             int windowStop = Math.min(i + windowSize + 1,sentence.size());
             for(int j = i; j < windowStop; j++) {
                 int otherWord = vocab.indexOf(sentence.get(j));
                 String w2 = ((VocabWord) vocab.wordFor(sentence.get(j))).getWord();
-                if(vocab.indexOf(sentence.get(j)) < 0 || w2.equals(Glove.UNK))
+                if(vocab.indexOf(sentence.get(j)) < 0 || w2.equals(Glove.DEFAULT_UNK))
                     continue;
 
                 if(otherWord == wordIdx)
