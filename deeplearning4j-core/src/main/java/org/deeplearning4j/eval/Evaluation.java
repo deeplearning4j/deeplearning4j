@@ -412,6 +412,107 @@ public class Evaluation implements Serializable {
         return recallAcc / (double) classCount;
     }
 
+
+    /**
+     * Returns the false positive rate for a given label
+     * @param classLabel the label
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(Integer classLabel) {
+        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(Integer classLabel, double edgeCase) {
+        double fpCount = falsePositives.getCount(classLabel);
+        double tnCount = trueNegatives.getCount(classLabel);
+
+        //Edge case
+        if (fpCount == 0 && tnCount == 0) {
+            return edgeCase;
+        }
+
+        return fpCount / (fpCount + tnCount);
+    }
+
+    /**
+     * False positive rate based on guesses so far
+     * Takes into account all known classes and outputs average fpr across all of them
+     * @return the fpr for the outcomes
+     */
+    public double falsePositiveRate(){
+        double fprAlloc = 0.0;
+        int classCount = 0;
+        for(Integer classLabel : confusion.getClasses()) {
+            double fpr = falsePositiveRate(classLabel, -1.0);
+            if (fpr != -1.0) {
+                fprAlloc += falsePositiveRate(classLabel);
+                classCount++;
+            }
+        }
+        return fprAlloc / (double) classCount;
+
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     * @param classLabel the label
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel) {
+        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel, double edgeCase) {
+        double fnCount = falseNegatives.getCount(classLabel);
+        double tpCount = truePositives.getCount(classLabel);
+
+        //Edge case
+        if (fnCount == 0 && tpCount == 0) {
+            return edgeCase;
+        }
+
+        return fnCount / (fnCount + tpCount);
+    }
+
+    /**
+     * False negative rate based on guesses so far
+     * Takes into account all known classes and outputs average fnr across all of them
+     * @return the fnr for the outcomes
+     */
+    public double falseNegativeRate() {
+        double fnrAlloc = 0.0;
+        int classCount = 0;
+        for (Integer classLabel : confusion.getClasses()) {
+            double fnr = falseNegativeRate(classLabel, -1.0);
+            if (fnr != -1.0) {
+                fnrAlloc += falseNegativeRate(classLabel);
+                classCount++;
+            }
+        }
+        return fnrAlloc / (double) classCount;
+    }
+
+    /**
+     * False Alarm Rate (FAR) reflects rate of misclassified to classified records
+     * http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw
+     * @return the fpr for the outcomes
+     */
+    public double falseAlarmRate(){
+        return (falsePositiveRate() + falseNegativeRate()) / 2.0;
+    }
+
     /**
      * Calculate f1 score for a given class
      * @param classLabel the label to calculate f1 for

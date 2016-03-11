@@ -392,6 +392,9 @@ public class EvalTest {
         assertMapEquals(evalExpected.truePositives(),evalActual.truePositives());
         assertEquals(evalExpected.precision(),evalActual.precision(),1e-3);
         assertEquals(evalExpected.recall(),evalActual.recall(),1e-3);
+        assertEquals(evalExpected.falsePositiveRate(),evalActual.falsePositiveRate(), 1e-3);
+        assertEquals(evalExpected.falseNegativeRate(),evalActual.falseNegativeRate(), 1e-3);
+        assertEquals(evalExpected.falseAlarmRate(),evalActual.falseAlarmRate(), 1e-3);
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 }
