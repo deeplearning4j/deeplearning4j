@@ -9,11 +9,11 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 세계 �
 
 Deeplearning4j는 최신 기술을 간편하게 사용하는데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
 
-지금 바로 Deeplearning4j 예제 코드를 실행해보세요. [빠른 설치 페이지의 안내](http://deeplearning4j.org/quickstart.html)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
+지금 바로 Deeplearning4j 예제 코드를 실행해보세요. [빠른 설치 페이지의 안내](http://deeplearning4j.org/kr-quickstart.html)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
 
 ### [딥 러닝 활용 사례](http://deeplearning4j.org/use_cases.html)
 
-* [얼굴/이미지 인식](../facial-reconstruction-tutorial.html)
+* 얼굴/이미지 인식
 * 음성 검색
 * 음성 인식 및 음성-문자 변환
 * 스팸 메일 필터링 (비정상 행위 탐지)
@@ -34,9 +34,9 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 
 ### DL4J의 인공 신경망(Neural Networks)
 
-* RBM ([Restricted Boltzmann machines](../restrictedboltzmannmachine.html))
-* 컨볼루션 네트워크([CNNs, Convolutional Networks](../convolutionalnets.html)) (이미지에 적용)
-* [RNNs/LSTMs](../recurrentnetwork.html) (시계열 데이터, 센서 데이터에 적용)
+* RBM ([Restricted Boltzmann machines](../kr-restrictedboltzmannmachine.html))
+* 컨볼루션 네트워크([CNNs, Convolutional Networks](../kr-convolutionalnets.html)) (이미지에 적용)
+* [RNNs/LSTMs](../kr-usingrnns.html) (시계열 데이터, 센서 데이터에 적용)
 * 재귀 오토인코더([Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java))
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * 딥 오토인코더([Deep autoencoders](http://deeplearning4j.org/deepautoencoder.html)) (자동 질의응답, 데이터 압축에 적용)
