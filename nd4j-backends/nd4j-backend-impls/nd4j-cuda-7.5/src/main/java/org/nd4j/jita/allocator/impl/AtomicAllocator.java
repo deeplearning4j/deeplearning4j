@@ -697,15 +697,15 @@ public class AtomicAllocator implements Allocator {
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {
-//                log.info("Data isn't actual on host side, copyback() started");
+                log.info("Data isn't actual on host side, copyback() started");
                 mover.copyback(point, shape);
 
                 // update the timer for hostRead
                 point.tickHostRead();
-            }// else log.info("Data is actual 2 , skipping sync");
+            } else log.info("Data is actual 2 , skipping sync");
 
             point.getAccessState().releaseToe();
-        } //else log.info("Data is actual 1, skipping sync");
+        } else log.info("Data is actual 1, skipping sync");
     }
 
     /**
