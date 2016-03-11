@@ -1187,6 +1187,7 @@ public class AtomicAllocator implements Allocator {
             this.terminate = terminate;
 
             this.setName("zero gc thread " + threadId);
+            this.setDaemon(true);
         }
 
         @Override
@@ -1241,6 +1242,7 @@ public class AtomicAllocator implements Allocator {
             this.deviceId = deviceId;
             this.terminate = terminate;
             this.setName("device gc thread " + threadId + "/" + deviceId);
+            this.setDaemon(true);
         }
 
         @Override
