@@ -3,9 +3,12 @@ package org.deeplearning4j.nn.graph.graphnodes;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
@@ -230,6 +233,27 @@ public class TestGraphNodes {
         gv.setError(0, expOut);
         INDArray outBwd = gv.doBackward(false).getSecond()[0];
         assertEquals(expOutBackward, outBwd);
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
+    }
+
+    @Test
+    public void testJSON(){
+        //The config here is non-sense, but that doesn't matter for config -> json -> config test
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addVertex("v1",new ElementWiseVertex(ElementWiseVertex.Op.Add),"in")
+                .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in","in")
+                .addVertex("v3", new PreprocessorVertex(new CnnToFeedForwardPreProcessor(1,2,1)), "in")
+                .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0,1),"in")
+                .addVertex("v5", new DuplicateToTimeSeriesVertex("in"),"in")
+                .addVertex("v6", new LastTimeStepVertex("in"), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .setOutputs("out")
+                .build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
