@@ -16,25 +16,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class CudaAccumTests {
 
-    /**
-     * Norm2 + cuBlas dot call
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testPinnedCosineSim() throws Exception {
-        // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
-        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
-
-
-        double similarity = Transforms.cosineSim(array1, array2);
-
-        System.out.println("Cosine similarity: " + similarity);
-        assertEquals(0.95f, similarity, 0.01f);
-    }
 
     /**
      * Sum call
@@ -49,7 +31,7 @@ public class CudaAccumTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 
-        INDArray result = Nd4j.getExecutioner().exec(new Sum(array1), 0);
+        INDArray result = Nd4j.getExecutioner().exec(new Sum(array1), 1);
 
         assertEquals(17.15f, result.getFloat(0), 0.01f);
     }
@@ -67,8 +49,11 @@ public class CudaAccumTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 
+
         INDArray result = Nd4j.getExecutioner().exec(new Mean(array1), 1);
 
+        System.out.println("Array1: " + array1);
+        System.out.println("Result: " + result);
         assertEquals(1.14f, result.getFloat(0), 0.01f);
     }
 }

@@ -37,10 +37,11 @@ public class CudaPairwiseTrainformsTests {
         INDArray array1 = Nd4j.create(new float[]{1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f});
         INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
 
-        array1.diviRowVector(array2);
+        INDArray result = array1.diviRowVector(array2);
 
         System.out.println("Array1: " + array1);
         System.out.println("Array2: " + array2);
+        System.out.println("Array3: " + result);
 
         assertEquals(0.75f, array1.getRow(0).getFloat(0), 0.01);
     }
