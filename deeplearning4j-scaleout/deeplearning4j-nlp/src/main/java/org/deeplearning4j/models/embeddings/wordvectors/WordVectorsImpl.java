@@ -170,16 +170,29 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      */
     public INDArray getWordVectorMatrixNormalized(String word) {
         int i = vocab().indexOf(word);
+        INDArray r;
 
-        if(i < 0)
-            return lookupTable().vector(UNK);
-        INDArray r =  lookupTable().vector(word);
+        if (i < 0) {
+            r = lookupTable().vector(UNK);
+        } else {
+            r =  lookupTable().vector(word);
+        }
+
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
 
     @Override
     public INDArray getWordVectorMatrix(String word) {
-        return lookupTable().vector(word);
+        int i = vocab().indexOf(word);
+        INDArray r;
+
+        if (i < 0) {
+            r = lookupTable().vector(UNK);
+        } else {
+            r =  lookupTable().vector(word);
+        }
+
+        return r;
     }
 
 
