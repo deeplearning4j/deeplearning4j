@@ -72,7 +72,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
         if(syn0 == null || syn0 != null && reset) {
             syn0 = Nd4j.rand(new int[]{vocab.numWords() + 1, vectorLength}, rng).subi(0.5).divi((double) vectorLength);
             INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
-            putVector(Word2Vec.UNK, randUnk);
+            putVector(Word2Vec.DEFAULT_UNK, randUnk);
         }
         if(weightAdaGrad == null || weightAdaGrad != null && reset) {
             weightAdaGrad = new AdaGrad(new int[]{vocab.numWords() + 1, vectorLength}, lr.get());

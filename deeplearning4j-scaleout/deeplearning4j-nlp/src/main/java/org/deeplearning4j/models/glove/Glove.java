@@ -335,7 +335,7 @@ public class Glove extends SequenceVectors<VocabWord> {
         public Builder useUnknown(boolean reallyUse) {
             super.useUnknown(reallyUse);
             if (this.unknownElement == null) {
-                this.unknownElement(new VocabWord(1.0, Glove.UNK));
+                this.unknownElement(new VocabWord(1.0, Glove.DEFAULT_UNK));
             }
             return this;
         }
