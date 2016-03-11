@@ -75,12 +75,18 @@ public class GraphTransformer<T extends SequenceElement> implements Iterable<Seq
         }
     }
 
+
     @Override
     public Iterator<Sequence<T>> iterator() {
         this.counter.set(0);
         this.walker.reset(shuffle);
         return new Iterator<Sequence<T>>() {
             private GraphWalker<T> walker = GraphTransformer.this.walker;
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("This is not supported on read-only iterator");
+            }
 
             @Override
             public boolean hasNext() {
