@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -36,6 +37,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.PointerConverter;
+
+import java.util.Arrays;
 
 
 /**
@@ -285,6 +288,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+        System.out.println("OPZF Broadcast");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
@@ -331,6 +335,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
         else {
+            if (dimension == null) dimension = new int[] {0};
             long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
             long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
             long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
@@ -339,9 +344,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
             else {
                 nativeOps.execIndexReduceFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, z, zShapeInfo, dimensionPointer, dimension.length);
-
             }
         }
+
+        if (op.x() != null)
+            allocator.tackDevice(op.x());
+        if (op.y() != null)
+            allocator.tackDevice(op.y());
+        if (op.z() != null)
+            allocator.tackDevice(op.z());
+
+        // we notify allocator that op.Z was modified on device side
+         //if (op.x() != null) allocator.tickDeviceWrite(op.x());
 
         return null;
 
@@ -349,6 +363,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
+        if (dimension == null) dimension = new int[] {Integer.MAX_VALUE};
         CudaContext ctx = null;
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
         if(op.y() != null) {
@@ -368,7 +383,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             y,
                             yShapeInfo);
                     op.setFinalResult(result);
-
                 }
                 else {
                     float result = nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer,
@@ -389,9 +403,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
                 else {
                     nativeOps.execReduce3Float(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,extraArgs,y,yShapeInfo,z,zShapeInfo);
-
                 }
-
             }
         }
         else {
@@ -482,14 +494,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo, extraArgs);
             } else {
-                nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,extraArgs);
-
+                nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer,op.opNum(),x, xShapeInfo,y, yShapeInfo,z,zShapeInfo,extraArgs);
             }
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, z, zShapeInfo, extraArgs);
-
             }
             else {
                 nativeOps.execTransformFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,z,zShapeInfo,extraArgs);

@@ -21,16 +21,13 @@ public class CudaIndexReduceTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.0f, 0.1f, 2.0f, 3.0f, 4.0f, 5.0f});
 
 
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+
+        System.out.println("Array1: " + array1);
 
         assertEquals(5, idx);
     }
@@ -40,16 +37,11 @@ public class CudaIndexReduceTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{6.0f, 0.1f, 2.0f, 3.0f, 4.0f, 5.0f});
 
-
-
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+
+        System.out.println("Array1: " + array1);
 
         assertEquals(0, idx);
     }
@@ -59,16 +51,11 @@ public class CudaIndexReduceTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{1.0f, 0.1f, 2.0f, 3.0f, 4.0f, 5.0f});
 
-
-
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMin(array1))).getFinalResult();
+
+        System.out.println("Array1: " + array1);
 
         assertEquals(1, idx);
     }
@@ -78,17 +65,11 @@ public class CudaIndexReduceTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        // reset to default MemoryStrategy, most probable is Pinned
-        ContextHolder.getInstance().forceMemoryStrategyForThread(new PinnedMemoryStrategy());
-
-        assertEquals("PinnedMemoryStrategy", ContextHolder.getInstance().getMemoryStrategy().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{0.1f, 1.1f, 2.0f, 3.0f, 4.0f, 5.0f});
-
-
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMin(array1))).getFinalResult();
 
+        System.out.println("Array1: " + array1);
         assertEquals(0, idx);
     }
 }

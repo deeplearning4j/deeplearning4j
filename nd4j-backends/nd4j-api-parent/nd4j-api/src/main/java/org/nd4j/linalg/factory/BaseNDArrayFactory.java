@@ -1247,7 +1247,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         INDArray ret = create(shape);
-        System.out.println("AZAZA1");
         ret.assign(1);
         return ret;
 
