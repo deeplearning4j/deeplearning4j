@@ -71,7 +71,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean useUnknown = false;
 
 
-    public final static String UNK = "UNK";
+    public final static String DEFAULT_UNK = "UNK";
+    @Getter @Setter private String UNK = DEFAULT_UNK;
+
     @Getter protected List<String> stopWords = new ArrayList<>(); //StopWords.getStopWords();
     /**
      * Returns true if the model has this word in the vocab
@@ -159,7 +161,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public double[] getWordVector(String word) {
         int i = vocab().indexOf(word);
         if(i < 0)
-            return lookupTable.vector(UNK).dup().data().asDouble();
+            return null;
         return lookupTable.vector(word).dup().data().asDouble();
     }
 
@@ -172,7 +174,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         int i = vocab().indexOf(word);
 
         if(i < 0)
-            return lookupTable().vector(UNK);
+            return null;
         INDArray r =  lookupTable().vector(word);
         return r.div(Nd4j.getBlasWrapper().nrm2(r));
     }
