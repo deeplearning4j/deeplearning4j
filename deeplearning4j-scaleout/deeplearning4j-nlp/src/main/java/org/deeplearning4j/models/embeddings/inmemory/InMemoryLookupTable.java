@@ -534,7 +534,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             return null;
         int idx = vocab.indexOf(word);
         if(idx < 0) {
-            idx = vocab.indexOf(Word2Vec.UNK);
+            idx = vocab.indexOf(Word2Vec.DEFAULT_UNK);
             if (idx < 0)
                 return null;
         }
