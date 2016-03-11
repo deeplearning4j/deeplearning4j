@@ -44,6 +44,9 @@ public class VectorsConfiguration implements Serializable {
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
 
+    private String UNK = "UNK";
+    private String STOP = "STOP";
+
     private List<String> stopList = new ArrayList<>();
 
     // overall model info

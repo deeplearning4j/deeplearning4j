@@ -253,6 +253,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
         protected transient T unknownElement;
+        protected String UNK = configuration.getUNK();
+        protected String STOP = configuration.getSTOP();
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
@@ -278,6 +280,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.window = configuration.getWindow();
+            this.UNK = configuration.getUNK();
+            this.STOP = configuration.getSTOP();
 
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
@@ -617,8 +621,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param element
          * @return
          */
-        public Builder<T> unknownElement(T element) {
+        public Builder<T> unknownElement(@NonNull T element) {
             this.unknownElement = element;
+            this.UNK = element.getLabel();
             return this;
         }
 
@@ -711,6 +716,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.existingModel = this.existingVectors;
 
+            vectors.setUNK(this.UNK);
+
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
             this.configuration.setHugeModelExpected(hugeModelExpected);
@@ -726,6 +733,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setUNK(this.UNK);
 
             vectors.configuration = this.configuration;
 
