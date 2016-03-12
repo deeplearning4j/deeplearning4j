@@ -18,7 +18,7 @@ layout: kr-default
 
 ## <a name="define">정의 & 구조</a>
 
-Geoff Hinton에 의해 발명된, 제한된 볼츠만 머신(Restricted Boltzmann machine)은 차원 감소, 분류, [회귀 분석](../linear-regression.html), 협업 필터링, 속성 학습 및 주제 모델링에 유용한 알고리즘 입니다. (RBMs과 같은 [신경망](../neuralnet-overview.html)이 이용될 수 있는 방법의 보다 구체적인 예제들을 위해서는 저희의 페이지 [이용 사례들](../use_cases.html)을 참조하십시오).
+Geoff Hinton에 의해 발명된, 제한된 볼츠만 머신(Restricted Boltzmann machine)은 차원 감소, 분류, [회귀 분석](../linear-regression.html), 협업 필터링, 속성 학습 및 주제 모델링에 유용한 알고리즘 입니다. (RBMs과 같은 [신경망](../kr-neuralnet-overview.html)이 이용될 수 있는 방법의 보다 구체적인 예제들을 위해서는 저희의 페이지 [이용 사례들](../use_cases.html)을 참조하십시오).
 
 그들의 상대적인 단순성으로 인해 제한된 볼츠만 머신이 저희가 시도할 첫번째 신경망 입니다. 아래의 단락에서 저희는 어떻게 그들이 작동하는지를 다이어그램과 쉬운 언어로 설명할 것 입니다. 
 
@@ -215,31 +215,31 @@ RBM이 어떻게 단순히 더 많은 일반적인 클래스들로 공급된 파
 
 위의 예제에서, 여러분께서는 RBMs가 더 일반적인 `MultiLayerConfiguration`로 어떻게 레이어들로 생성될 수 있는지를 볼 수 있습니다. 각각의 점(dot) 뒤에서 여러분은 deep neural net의 구조 및 성능에 영향을 미치는 추가적인 파라미터를 찾으실 것 입니다. 대부분의 그 파라미터들은 이 사이트에 정의되어 있습니다. 
 
-**weightInit**, 또는 `weightInitialization`는 represents the starting value of the coefficients that 각 노드로 들어오는 입력 신호를 증폭하거나 소거하는 상관계수의 시작값을 표현합니다. 적절한 가중치 초기화는 여러분께서 많은 학습 시간을 절약할 수 있게 합니다. 왜냐하면 망을 학습하는 것은 망이 정확하게 분류하도록 하는 최상의 신호들을 전송하는 상관계수들을 조정하는 것에 지나지 않기 때문입니다.
+**weightInit**, 또는 `weightInitialization`는 represents the starting value of the coefficients that 각 노드로 들어오는 입력 신호를 증폭하거나 소거하는 가중치의 시작값을 표현합니다. 적절한 가중치 초기화는 여러분께서 많은 학습 시간을 절약할 수 있게 합니다. 왜냐하면 망을 학습하는 것은 망이 정확하게 분류하도록 하는 최상의 신호들을 전송하는 가중치들을 조정하는 것에 지나지 않기 때문입니다.
 
 **activationFunction**은 한 신호가 그 노드를 통과하는 각 노드의 위와, 그것이 차단된 아래에서 임계를 결정하는 함수의 세트 중 하나를 의미 합니다. 한 노드가 신호를 통과하는 경우, 그것은 “활성화 되었습니다.”
 
-**optimizationAlgo**는 한 신경망이 그의 상관계수들을 단계별로 조정할 때, 에러를 최소화 하거나 최소의 에러 로커스를 찾는 방식을 의미합니다. 각 문자들이 각각 그 발명자들의 성을 의미하는 약어 LBFGS는 상관계수들이 조정됨에 따라 기울기의 각도를 계산하는 2차 유도체를 사용하는 최적화 알고리즘 입니다.
+**optimizationAlgo**는 한 신경망이 그의 가중치들을 단계별로 조정할 때, 에러를 최소화 하거나 최소의 에러 로커스를 찾는 방식을 의미합니다. 각 문자들이 각각 그 발명자들의 성을 의미하는 약어 LBFGS는 가중치들이 조정됨에 따라 기울기의 각도를 계산하는 2차 유도체를 사용하는 최적화 알고리즘 입니다.
 
-**regularization** 방식들은, **l2**와 같은, 신경망에서 과한 적용을 막는 것을 돕습니다. Regularization은 정의에 의한 큰 상관계수들이 그 망이 그의 결과들을 몇몇 강하게 가중치가 적용된 입력들에 고정시키는 것을 학습해왔다는 것을 의미하기 때문에 본질적으로 큰 상관계수들을 징계합니다. 지나치게 강한 가중치는 새로운 데이터에 노출될 때 망의 모델을 일반화하는 것을 어렵게 할 수 있습니다.
+**regularization** 방식들은, **l2**와 같은, 신경망에서 과한 적용을 막는 것을 돕습니다. Regularization은 정의에 의한 큰 가중치들이 그 망이 그의 결과들을 몇몇 강하게 가중치가 적용된 입력들에 고정시키는 것을 학습해왔다는 것을 의미하기 때문에 본질적으로 큰 가중치들을 징계합니다. 지나치게 강한 가중치는 새로운 데이터에 노출될 때 망의 모델을 일반화하는 것을 어렵게 할 수 있습니다.
 
 **VisibleUnit/HiddenUnit**은 한 신경망의 레이어들을 의미합니다. `VisibleUnit`는, 또는 layer, 입력이 들어가는 노드들의 레이어고, `HiddenUnit`는 그 입력들이 더 복잡합 속성들과 재결합하는 레이어 입니다. 둘 모두의 단위는 그들 자신의 말하자면 transforms를 가집니다. 이 경우, visible을 위해서는 Gaussian, hidden을 위해서는 Rectified Linear 입니다. 이는 그들 각각의 레이어들로부터 나온 신호는 새로운 공간으로 매핑합니다. 
 
 **lossFunction**는 여러분께서 에러를 측정하시는 방법, 또는 여러분의 망의 예상들과 그 테스트 세트에 포함된 올바른 레이블들 간의 차이 입니다. 여기에서 저희는 모든 에러를 positive로 만들어 그들이 더해지고 backpropagated 될 수 있도록 하는`SQUARED_ERROR`를 사용합니다.
 
-**learningRate**는, **momentum**과 같은, 신경망이 에러를 위해 수정 시, 각각의 반복 상에서 얼마나 상관계수들을 조정하는지에 영향을 줍니다. 이 두개의 파라미터들은 망이 로컬 최적화를 향해 기울기를 줄이는 단계들의 크기를 결정하는 것을 돕습니다. 큰 learning rate은 망이 빠르게 학습하게 하고, 아마 최적화를 지나치게 겨냥할 것 입니다. 작은 learning rate은 학습을 느리게 해 비효율적 일 수 있습니다. 
+**learningRate**는, **momentum**과 같은, 신경망이 에러를 위해 수정 시, 각각의 반복 상에서 얼마나 가중치들을 조정하는지에 영향을 줍니다. 이 두개의 파라미터들은 망이 로컬 최적화를 향해 기울기를 줄이는 단계들의 크기를 결정하는 것을 돕습니다. 큰 learning rate은 망이 빠르게 학습하게 하고, 아마 최적화를 지나치게 겨냥할 것 입니다. 작은 learning rate은 학습을 느리게 해 비효율적 일 수 있습니다. 
 
 ### <a name="CRBM">연속 RBMs</a>
 
 연속적인 제한된 볼츠만 머신은 contrastive divergence sampling의 한 다른 유형을 통해 연속적인 입력 (즉, integers보다 더 정밀하게 잘려진 숫자들)을 수용하는 RBM의 한 형태 입니다. 이는 CRBM이 이미지 픽셀 또는 0과 1 사이의 소수로 정규화하는 단어-수 벡터와 같은 것들을 처리할 수 있게 합니다.
 
-deep-learning net의 각 레이어는 네가지 요소들: 입력, 상관계수, 바이어스 및 transform (활성화 알고리즘)을 요구한다는 것을 기억하시기 바랍니다. 
+deep-learning net의 각 레이어는 네가지 요소들: 입력, 가중치, 바이어스 및 transform (활성화 알고리즘)을 요구한다는 것을 기억하시기 바랍니다. 
 
-입력은 그 이전의 레이어로부터 (또는 오리지널 데이터로서) 그것에 공급된 숫자적인 데이터, 벡터, 입니다. 상관계수들은 각 노드 레이어를 통과하는 다양한 속성들에 주어진 가중치들 입니다. 바이어스는 한 레이어에서 무슨 일이 있든 일부 노드들이 활성화될 것을 보장합니다. Transformation은 기울기들을 더 쉽게 계산할 수 있게 만드는 한 방법으로 (그리고 기울기들은 망이 학습하는데 필요합니다) 각각의 레이어를 통화한 후 데이터를 부서뜨리는 추가적인 알고리즘 입니다. 
+입력은 그 이전의 레이어로부터 (또는 오리지널 데이터로서) 그것에 공급된 숫자적인 데이터, 벡터, 입니다. 가중치들은 각 노드 레이어를 통과하는 다양한 속성들에 주어진 가중치들 입니다. 바이어스는 한 레이어에서 무슨 일이 있든 일부 노드들이 활성화될 것을 보장합니다. Transformation은 기울기들을 더 쉽게 계산할 수 있게 만드는 한 방법으로 (그리고 기울기들은 망이 학습하는데 필요합니다) 각각의 레이어를 통화한 후 데이터를 부서뜨리는 추가적인 알고리즘 입니다. 
 
 그 추가적인 알고리즘들과 그의 조합들은 레이어마다 다양할 수 있습니다. 
 
-효과적인 제한된 볼츠만 머신은 보여지는 (또는 입력) 레이어 상의 Gaussian transformation과 숨겨진 레이어 상의 rectified-linear-unit transformation을 구축합니다. 그것은 특히 [얼굴 재구성](../facial-reconstruction-tutorial.html)에 유용합니다. 이진법 데이터를 다루는 RBMs은 단순히 두 개의 transformations을 이진법의 것들로 만듭니다. 
+효과적인 제한된 볼츠만 머신은 보여지는 (또는 입력) 레이어 상의 Gaussian transformation과 숨겨진 레이어 상의 rectified-linear-unit transformation을 구축합니다. 그것은 특히 얼굴 재구성에 유용합니다. 이진법 데이터를 다루는 RBMs은 단순히 두 개의 transformations을 이진법의 것들로 만듭니다. 
 
 Gaussian transformations은 RBMs의 숨겨진 레이어에서 잘 작동하지 않습니다. 대신 사용되는 rectified-linear-unit transformations은 이진법의 transformations보다 더 많은 속성들을 표현할 수 있고, 저희는 이를 [deep-belief nets](../deepbeliefnetwork.html) 상에서 구축합니다.
 
@@ -257,8 +257,8 @@ Gaussian transformations은 RBMs의 숨겨진 레이어에서 잘 작동하지 �
 
 ### 다른 초보자 가이드
 
-* [Recurrent Networks/LSTMs](../lstm.html)
-* [Neural Networks](../neuralnet-overview.html)
-* [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [Recurrent Networks/LSTMs](../kr-usingrnns.html)
+* [Neural Networks](../kr-neuralnet-overview.html)
+* [Eigenvectors, PCA and Entropy](../kr-eigenvector.html)
 * [Neural Networks & Regression](../linear-regression.html)
-* [Convolutional Networks](../convolutionalnets.html)
+* [Convolutional Networks](../kr-convolutionalnets.html)
