@@ -138,6 +138,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
+    public void setListeners(Collection<IterationListener> listeners){
+        if(listeners == null) this.iterationListeners = Collections.emptyList();
+        else this.iterationListeners = listeners;
+    }
+
+    @Override
     public NeuralNetConfiguration getConf() { return conf; }
 
     @Override
