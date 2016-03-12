@@ -892,6 +892,10 @@ public class ComputationGraph implements Serializable, Model {
         for( Layer l : layers){
             l.setListeners(listeners);
         }
+
+        if(solver != null){
+            solver.setListeners(listeners);
+        }
     }
 
     /** Set the IterationListeners for the ComputationGraph (and all layers in the network) */
