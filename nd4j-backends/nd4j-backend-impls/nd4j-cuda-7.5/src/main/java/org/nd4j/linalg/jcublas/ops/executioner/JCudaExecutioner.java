@@ -463,7 +463,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-//        System.out.println("OpName: ["+op.getClass().getSimpleName()+"]; OpCode: ["+op.opNum()+"]");
+        System.out.println("OpName: ["+op.getClass().getSimpleName()+"]; OpCode: ["+op.opNum()+"]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -476,6 +476,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+
+            System.out.println("X: " + x);
+            System.out.println("Y: " + y);
+            System.out.println("Z: " + z);
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,y,yShapeInfo,z,zShapeInfo, extraArgs);
             } else {
@@ -485,8 +490,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, z, zShapeInfo, extraArgs);
-            }
-            else {
+            } else {
                 nativeOps.execTransformFloat(xShapeInfoHostPointer,op.opNum(),x,xShapeInfo,z,zShapeInfo,extraArgs);
             }
         }
@@ -496,6 +500,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         // we notify allocator that op.Z was modified on device side
         if (op.z() != null) allocator.tickDeviceWrite(op.z());
+
         return null;
     }
 }
