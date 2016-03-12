@@ -1295,14 +1295,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (Layer layer : layers) {
             layer.setListeners(listeners);
         }
+
+        if(solver != null){
+            solver.setListeners(listeners);
+        }
     }
 
 
     @Override
     public void setListeners(IterationListener... listeners) {
         Collection<IterationListener> cListeners = new ArrayList<>();
-        for(IterationListener listener : listeners)
-            cListeners.add(listener);
+        Collections.addAll(cListeners, listeners);
         setListeners(cListeners);
     }
 

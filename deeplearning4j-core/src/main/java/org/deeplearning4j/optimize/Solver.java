@@ -73,6 +73,11 @@ public class Solver {
         return optimizer;
     }
 
+    public void setListeners(Collection<IterationListener> listeners){
+        this.listeners = listeners;
+        if(optimizer != null ) optimizer.setListeners(listeners);
+    }
+
     public static class Builder {
         private NeuralNetConfiguration conf;
         private Model model;
