@@ -84,8 +84,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
-        //special case: softmax
-        if (layerConf().getActivationFunction().equals("softmax")) {
+        LossFunctions.LossFunction lf = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)conf.getLayer()).getLossFunction();
+        if ( (lf == LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD || lf == LossFunctions.LossFunction.MCXENT) && layerConf().getActivationFunction().equals("softmax")) {
+            //special case: softmax + NLL or MCXENT: use log softmax to avoid numerical underflow
             setScore(null,preOut);
         } else {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut));
