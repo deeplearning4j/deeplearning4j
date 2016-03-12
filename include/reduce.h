@@ -780,7 +780,8 @@ virtual
 #ifdef __CUDACC__
 __host__
 #endif
-void exec(T *x, int *xShapeInfo,
+void exec(T *x,
+          int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfoBuffer,
@@ -805,12 +806,12 @@ void exec(T *x, int *xShapeInfo,
 		 */
 
 		if(shape::order(xShapeInfo) == 'f') {
-            //    int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
             int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
             const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+
 #pragma omp  parallel  for
 			for(int i = 0; i < resultLength; i++) {
-				int offset = i * shape::stride(xShapeInfo)[shape::rank(xShapeInfo) - 1];
+                int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
 				result[i] = op(x[offset], extraParams);
 				for(int j = 1; j < elementsPerReductionIndex; j++) {
 					result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
@@ -842,19 +843,19 @@ void exec(T *x, int *xShapeInfo,
 	else {
 		int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
 		int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-		const int resultLength = shape::length(resultShapeInfoBuffer);
+        int resultLength = shape::length(resultShapeInfoBuffer);
 #pragma omp parallel for
-for(int i = 0;  i < resultLength; i++) {
-	int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-	T currResult = op(x[baseOffset],extraParams);
-	result[i] = currResult;
-	for(int j = 1; j < tadLength; j++) {
-		currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
-		result[i] = update(result[i],currResult,extraParams);
-	}
+            for(int i = 0;  i < resultLength; i++) {
+                int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                T currResult = op(x[baseOffset],extraParams);
+                result[i] = currResult;
+                for(int j = 1; j < tadLength; j++) {
+                    currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
+                    result[i] = update(result[i],currResult,extraParams);
+                }
 
-	result[i] = postProcess(result[i],tadLength,extraParams);
-}
+                result[i] = postProcess(result[i],tadLength,extraParams);
+            }
 
 
 

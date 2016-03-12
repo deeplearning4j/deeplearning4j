@@ -1103,7 +1103,7 @@ namespace shape {
         }
         else {
             int innerMostStride = stride[dimension[0]];
-            int elementWiseStrideParent = stride[dimension[1]];
+            int elementWiseStrideParent = dimensionLength > 1 ?  stride[dimension[1]] : 1;
             if(index >= innerMostStride) {
                 //represents the jump
                 //the offset represents how many jumps of the element wise stride to do after identifying
