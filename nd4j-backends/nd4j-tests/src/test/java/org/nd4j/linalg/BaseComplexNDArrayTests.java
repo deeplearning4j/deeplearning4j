@@ -3,6 +3,7 @@ package org.nd4j.linalg;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -22,6 +23,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@Ignore
 public abstract class BaseComplexNDArrayTests extends BaseNd4jTest {
     public BaseComplexNDArrayTests() {
     }

@@ -62,8 +62,7 @@ public class ShapeTests extends BaseNd4jTest {
             assertEquals(data[i],assertion.getDouble(i),1e-1);
         }
 
-        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
-        INDArray tensor = twoTwoByThree.tensorAlongDimension(2, 0, 1);
+        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape('f',2, 2, 3);
         INDArray multiSum = twoTwoByThree.sum(0, 1);
         assertEquals(assertion,multiSum);
     }

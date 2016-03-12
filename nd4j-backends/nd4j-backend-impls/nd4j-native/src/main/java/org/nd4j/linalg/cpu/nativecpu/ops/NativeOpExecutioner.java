@@ -43,7 +43,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Accumulation ac = (Accumulation) op;
             exec(ac);
         }
-        else if(op instanceof IndexAccumulation){
+        else if(op instanceof IndexAccumulation) {
             IndexAccumulation iac = (IndexAccumulation) op;
             exec(iac);  //Currently using DefaultOpExecutioner
         }
@@ -324,7 +324,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.x().elementWiseStride() >= 1 && op.z().elementWiseStride() >= 1) {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial()) {
                     loop.execScalarDouble(
                             dummy,
                             op.opNum(),
@@ -348,7 +348,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getAddressForExtraArgs(op));
             }
             else {
-                if(op.x().elementWiseStride() >= 1 && op.z().elementWiseStride() >= 1) {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
                     loop.execScalarFloat(
                             dummy,
                             op.opNum(),
@@ -389,7 +389,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
-                    if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                         loop.execPairwiseTransformDouble(
                                 dummy,
                                 op.opNum(),
@@ -418,7 +418,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-                    if(op.x().elementWiseStride() >= 1) {
+                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
                         loop.execTransformDouble(
                                 dummy,
                                 op.opNum(),
@@ -443,7 +443,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             else {
                 if(op.y() != null) {
-                    if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().ordering() == op.y().ordering()) {
+                    if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering()) {
                         loop.execPairwiseTransformFloat
                                 (dummy,op.opNum(),
                                         op.x().data().address(),
@@ -471,7 +471,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-                    if(op.x().elementWiseStride() >= 1) {
+                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
                         loop.execTransformFloat(dummy,op.opNum(),
                                 op.x().data().address(),
                                 op.x().elementWiseStride(),

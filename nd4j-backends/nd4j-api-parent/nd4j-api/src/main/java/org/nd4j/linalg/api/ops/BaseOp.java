@@ -43,6 +43,10 @@ public abstract class BaseOp implements Op {
     public BaseOp() {
     }
 
+    @Override
+    public boolean isExecSpecial() {
+        return false;
+    }
 
     @Override
     public DataBuffer extraArgsDataBuff() {

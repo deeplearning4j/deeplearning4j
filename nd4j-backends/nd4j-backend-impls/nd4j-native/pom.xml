@@ -103,4 +103,17 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>mingw</id>
+            <activation><os><family>windows</family></os></activation>
+            <build><plugins><plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <configuration><properties>${javacpp.platform}-mingw</properties></configuration>
+            </plugin></plugins></build>
+        </profile>
+    </profiles>
+
 </project>
