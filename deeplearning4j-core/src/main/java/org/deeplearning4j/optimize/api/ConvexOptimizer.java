@@ -29,6 +29,7 @@ import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.learning.GradientUpdater;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -49,6 +50,8 @@ public interface ConvexOptimizer extends Serializable {
     void setUpdater(Updater updater);
 
     void setUpdaterComputationGraph(ComputationGraphUpdater updater);
+
+    void setListeners(Collection<IterationListener> listeners);
 
     NeuralNetConfiguration getConf();
 
