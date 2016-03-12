@@ -3376,6 +3376,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new StandardDeviation(this),dimension);
     }
 
+    @Override
+    public INDArray std(boolean biasCorrected, int... dimension) {
+        return Nd4j.getExecutioner().exec(new StandardDeviation(this,biasCorrected),dimension);
+    }
+
+    @Override
+    public Number stdNumber(boolean biasCorrected) {
+        return Nd4j.getExecutioner().exec(new StandardDeviation(this,biasCorrected),new int[]{Integer.MAX_VALUE}).getDouble(0);
+    }
 
     /**
      * Returns the norm2 along the specified dimension

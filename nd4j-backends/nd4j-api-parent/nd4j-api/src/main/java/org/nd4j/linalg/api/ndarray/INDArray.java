@@ -1374,8 +1374,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray normmax(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number normmaxNumber();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber normmaxComplex();
 
     /**
@@ -1386,8 +1394,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray norm2(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number norm2Number();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber norm2Complex();
 
     /**
@@ -1398,8 +1414,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray norm1(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number norm1Number();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber norm1Complex();
 
     /**
@@ -1410,8 +1434,30 @@ public interface INDArray extends Serializable  {
      */
     INDArray std(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number stdNumber();
 
+    /**
+     * Standard deviation of an ndarray along a dimension
+     *
+     * @param dimension the dimension to getScalar the std along
+     * @return the standard deviation along a particular dimension
+     */
+    INDArray std(boolean biasCorrected,int...dimension);
+
+    /**
+     *
+     * @return
+     */
+    Number stdNumber(boolean biasCorrected);
+
+    /**
+     *
+     * @return
+     */
     IComplexNumber stdComplex();
 
     /**
@@ -1422,8 +1468,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray prod(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number prodNumber();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber prodComplex();
 
     /**
@@ -1455,8 +1509,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray var(boolean biasCorrected, int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number varNumber();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber varComplex();
 
     /**
@@ -1467,8 +1529,16 @@ public interface INDArray extends Serializable  {
      */
     INDArray max(int...dimension);
 
+    /**
+     *
+     * @return
+     */
     Number maxNumber();
 
+    /**
+     *
+     * @return
+     */
     IComplexNumber maxComplex();
 
     /**
