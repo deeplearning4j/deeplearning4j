@@ -32,6 +32,9 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 public class StandardDeviation extends Variance {
+    public StandardDeviation(INDArray x, boolean biasCorrected) {
+        super(x, biasCorrected);
+    }
 
     public StandardDeviation() {
     }

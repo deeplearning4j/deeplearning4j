@@ -530,7 +530,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         double stdev2 = arr.std(1).getDouble(0);
         assertEquals(stdev,stdev2,1e-3);
 
-        double exp = 0.397842772f;
+        double exp = 0.37003588676452637;
         assertEquals(exp,stdev,1e-7f);
     }
 
@@ -543,7 +543,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         double var2 = arr.var(1).getDouble(0);
         assertEquals(var,var2,1e-1);
 
-        double exp = 0.158278871f;
+        double exp = 0.1369265615940094;
         assertEquals(exp,var,1e-7f);
     }
 

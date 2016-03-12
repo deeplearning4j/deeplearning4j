@@ -20,6 +20,7 @@
 package org.nd4j.linalg.convolution;
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -115,6 +116,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testCompareIm2ColImpl() {
 
         int[] miniBatches = {1, 3, 5};
@@ -188,6 +190,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testCompareIm2Col() throws Exception {
 
         int[] miniBatches = {1, 3, 5};

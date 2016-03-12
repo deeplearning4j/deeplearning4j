@@ -1229,14 +1229,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
          * slice(0,axis)
          * should be consistent with this behavior
          */
-        for( int i = 0; i < 5; i++ ){
+        for( int i = 0; i < 7; i++) {
             INDArray slice = array2D.slice(i,1);
-            assertTrue(Arrays.equals(slice.shape(), new int[]{1, 7}));
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5,1}));
         }
 
-        for( int i = 0; i < 7; i++ ){
+        for( int i = 0; i < 5; i++ ){
             INDArray slice = array2D.slice(i, 0);
-            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 1}));
+            assertTrue(Arrays.equals(slice.shape(), new int[]{1,7}));
         }
     }
 
@@ -1521,14 +1521,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray slice0 = test.slice(0, 1);
         INDArray slice02 = test.slice(1, 1);
 
-        INDArray assertSlice0 = Nd4j.create(new float[]{1, 2});
-        INDArray assertSlice02 = Nd4j.create(new float[]{3, 4});
+        INDArray assertSlice0 = Nd4j.create(new float[]{1, 3});
+        INDArray assertSlice02 = Nd4j.create(new float[]{2, 4});
         assertEquals(assertSlice0, slice0);
         assertEquals(assertSlice02, slice02);
 
         //column
-        INDArray assertSlice1 = Nd4j.create(new float[]{1, 3});
-        INDArray assertSlice12 = Nd4j.create(new float[]{2, 4});
+        INDArray assertSlice1 = Nd4j.create(new float[]{1, 2});
+        INDArray assertSlice12 = Nd4j.create(new float[]{3, 4});
 
 
         INDArray slice1 = test.slice(0, 0);
@@ -1800,11 +1800,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testElementWiseOps() {
-        System.out.println("WAHAZ");
         INDArray n1 = Nd4j.scalar(1);
         INDArray n2 = Nd4j.scalar(2);
         INDArray nClone = n1.add(n2);
-        assertEquals(Nd4j.scalar(4), nClone);
+        assertEquals(Nd4j.scalar(3), nClone);
         assertFalse(n1.add(n2).equals(n1));
 
         INDArray n3 = Nd4j.scalar(3);
