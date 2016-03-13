@@ -22,7 +22,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,6 +34,8 @@ import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -1302,5 +1308,147 @@ public class WordVectorSerializer {
             result.add(array[x]);
         }
         return result;
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  file path
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param path Target output file path
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory, @NonNull String path) throws IOException {
+        writeSequenceVectors(vectors, factory, new FileOutputStream(path));
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  file
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param file Target output file
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory,@NonNull  File file) throws IOException {
+        writeSequenceVectors(vectors, factory, new FileOutputStream(file));
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  OutputStream
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param stream Target output stream
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory, @NonNull OutputStream stream) throws IOException {
+        WeightLookupTable<T> lookupTable = vectors.getLookupTable();
+        VocabCache<T> vocabCache = vectors.getVocab();
+
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"));
+
+        // at first line we save VectorsConfiguration
+        writer.write(vectors.getConfiguration().toEncodedJson());
+
+        // now we have elements one by one
+        for (int x = 0; x < vocabCache.numWords();  x++) {
+            T element = vocabCache.elementAtIndex(x);
+            String json = factory.serialize(element);
+            double[] vector = lookupTable.vector(element.getLabel()).data().asDouble();
+
+            ElementPair pair = new ElementPair(json, vector);
+            writer.write(pair.toEncodedJson());
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    /**
+     * This method loads previously saved SequenceVectors model from File
+     *
+     * @param factory
+     * @param file
+     * @param <T>
+     * @return
+     */
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull SequenceElementFactory<T> factory, @NonNull File file) throws IOException {
+        return readSequenceVectors(factory, new FileInputStream(file));
+    }
+
+    /**
+     * This method loads previously saved SequenceVectors model from InputStream
+     *
+     * @param factory
+     * @param stream
+     * @param <T>
+     * @return
+     */
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull SequenceElementFactory<T> factory, @NonNull InputStream stream) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+
+        // at first we load vectors configuration
+        String line = reader.readLine();
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(new String(Base64.decodeBase64(line),"UTF-8"));
+
+        AbstractCache<T> vocabCache = new AbstractCache.Builder<T>().build();
+
+
+        List<INDArray> rows = new ArrayList<>();
+        while((line = reader.readLine()) != null) {
+            ElementPair pair = ElementPair.fromEncodedJson(line);
+            T element = factory.deserialize(pair.getObject());
+            rows.add(Nd4j.create(pair.getVector()));
+
+            vocabCache.addToken(element);
+            vocabCache.addWordToIndex(element.getIndex(), element.getLabel());
+        }
+
+        reader.close();
+
+        InMemoryLookupTable<T> lookupTable = (InMemoryLookupTable<T>)new InMemoryLookupTable.Builder<T>()
+                .vectorLength(rows.get(0).columns())
+                .build();
+
+        INDArray syn0 = Nd4j.create(rows.size(), rows.get(0).columns());
+        for (int x = 0; x < rows.size(); x++) {
+            syn0.putRow(x, rows.get(x));
+        }
+
+        lookupTable.setSyn0(syn0);
+
+        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>(configuration)
+                .vocabCache(vocabCache)
+                .lookupTable(lookupTable)
+                .resetModel(false)
+                .build();
+
+        return vectors;
+    }
+
+    /**
+     * This is simple holder class
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class ElementPair {
+        private String object;
+        private double[] vector;
+
+        protected String toEncodedJson() {
+            ObjectMapper mapper = SequenceElement.mapper();
+            try {
+                String json = mapper.writeValueAsString(this);
+                String output = Base64.encodeBase64String(json.getBytes("UTF-8"));
+                return output;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        protected static ElementPair fromEncodedJson(String encoded) {
+            return null;
+        }
     }
 }

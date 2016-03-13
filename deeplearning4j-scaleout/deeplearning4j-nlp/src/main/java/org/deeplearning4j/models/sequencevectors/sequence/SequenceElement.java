@@ -1,5 +1,10 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
@@ -176,6 +181,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      *
      * @param points
      */
+    @JsonIgnore
     public void setPoints(int[] points) {
         this.points = new ArrayList<>();
         for (int i = 0; i < points.length; i++) {
@@ -269,4 +275,16 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return
      */
     public abstract String toJSON();
+
+    public static ObjectMapper mapper() {
+        /*
+              DO NOT ENABLE INDENT_OUTPUT FEATURE
+              we need THIS json to be single-line
+          */
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        return ret;
+    }
 }
