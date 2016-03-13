@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors;
 
+import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -9,6 +10,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -28,10 +30,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,11 +56,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
 
-    public interface EpochListener {
-        void epochCompleted(int epoch, WordVectors wordVectors);
-    }
 
-    @Setter protected EpochListener epochListener;
+    @Setter protected Set<VectorsListener> eventListeners;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -200,8 +196,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
 
-            if (epochListener != null) {
-                epochListener.epochCompleted(currentEpoch, this);
+            if (eventListeners != null && eventListeners.size() > 0) {
+                for (VectorsListener listener: eventListeners) {
+                    listener.processEvent(currentEpoch, null);
+                }
             }
         }
     }
