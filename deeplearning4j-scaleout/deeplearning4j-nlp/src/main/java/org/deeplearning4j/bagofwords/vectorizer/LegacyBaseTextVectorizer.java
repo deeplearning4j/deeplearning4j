@@ -25,6 +25,7 @@ import akka.routing.RoundRobinPool;
 import org.apache.commons.io.FileUtils;
 
 import org.deeplearning4j.models.word2vec.StreamWork;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.VocabWork;
 import org.deeplearning4j.models.word2vec.actor.VocabActor;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -95,12 +96,12 @@ public abstract class LegacyBaseTextVectorizer implements TextVectorizer {
         }
     }
 
-    @Override
+
     public int batchSize() {
         return batchSize;
     }
 
-    @Override
+
     public double sample() {
         return sample;
     }
@@ -220,7 +221,7 @@ public abstract class LegacyBaseTextVectorizer implements TextVectorizer {
     }
 
     @Override
-    public VocabCache vocab() {
+    public VocabCache<VocabWord> getVocabCache() {
         return cache;
     }
 
@@ -279,7 +280,7 @@ public abstract class LegacyBaseTextVectorizer implements TextVectorizer {
         return index.totalWords();
     }
 
-    @Override
+
     public InvertedIndex index() {
         return index;
     }
