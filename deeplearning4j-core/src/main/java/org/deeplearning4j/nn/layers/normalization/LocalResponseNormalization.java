@@ -202,5 +202,20 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public INDArray params() {
+        return null;
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        return params();
+    }
+
+    @Override
+    public void setParams(INDArray params) {
+
+    }
+
 
 }
