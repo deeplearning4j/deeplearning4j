@@ -949,11 +949,13 @@ public class ComputationGraph implements Serializable, Model {
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
             Layer l = vertices[topologicalOrder[i]].getLayer();
+            INDArray layerParams;
             if(backwardOnly && l instanceof BasePretrainNetwork ){
-                list.add(((BasePretrainNetwork)l).paramsBackprop());
+                layerParams = ((BasePretrainNetwork)l).paramsBackprop();
             } else {
-                list.add(l.params());
+                layerParams = l.params();
             }
+            if(layerParams != null) list.add(layerParams);    //may be null: subsampling etc layers
         }
 
         return Nd4j.toFlattened('f', list);
@@ -1156,6 +1158,7 @@ public class ComputationGraph implements Serializable, Model {
             Layer layer = vertices[topologicalOrder[i]].getLayer();
             int range = (layer instanceof BasePretrainNetwork ?
                     ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+            if(range <= 0) continue;    //Some layers: no parameters (subsampling etc)
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
