@@ -2,6 +2,7 @@ package org.deeplearning4j.models.sequencevectors;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
@@ -61,7 +62,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         void epochCompleted(int epoch, WordVectors wordVectors);
     }
 
-    @Setter protected EpochListener epochListener;
+    @Setter
+    protected EpochListener epochListener;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
