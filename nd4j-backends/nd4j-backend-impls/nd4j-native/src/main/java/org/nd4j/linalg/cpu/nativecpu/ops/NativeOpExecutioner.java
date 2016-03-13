@@ -69,6 +69,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.x();
+
+
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -164,6 +168,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else if (retShape.length == 0) {
             retShape = new int[]{1, 1};
         }
+
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.x();
 
         INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
         op.setZ(ret);
