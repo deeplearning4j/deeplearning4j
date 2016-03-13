@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -183,11 +185,11 @@ public class VocabConstructor<T extends SequenceElement> {
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
                 seqCount.incrementAndGet();
+
+                tempHolder.incrementTotalDocCount();
+
+                Map<String, AtomicLong> seqMap = new HashMap<>();
               //  log.info("Sequence length: ["+ document.getElements().size()+"]");
-             //   Tokenizer tokenizer = tokenizerFactory.create(document.getContent());
-
-
-
 
                 if (fetchLabels) {
                     T labelWord = document.getSequenceLabel();
@@ -209,17 +211,20 @@ public class VocabConstructor<T extends SequenceElement> {
                         tempHolder.addToken(element);
                         elementsCounter.incrementAndGet();
                         counter++;
-                        // TODO: this line should be uncommented only after AdaGrad is fixed, so the size of AdaGrad array is known
-                        /*
-                        if (useAdaGrad) {
-                            VocabularyWord word = tempHolder.getVocabularyWordByString(token);
 
-                            word.setHistoricalGradient(new double[layerSize]);
-                        }
-                        */
+                        // if there's no such element in tempHolder, it's safe to set seqCount to 1
+                        element.setSequencesCount(1);
+                        seqMap.put(token, new AtomicLong(0));
                     } else {
                         counter++;
                         tempHolder.incrementWordCount(token);
+
+                        // if element exists in tempHolder, we should update it seqCount, but only once per sequence
+                        if (!seqMap.containsKey(token)) {
+                            seqMap.put(token, new AtomicLong(1));
+                            T element = tempHolder.wordFor(token);
+                            element.incrementSequencesCount();
+                        }
                     }
                 }
 

@@ -42,6 +42,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.glove.Glove;
+import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -1346,7 +1347,7 @@ public class WordVectorSerializer {
         WeightLookupTable<T> lookupTable = vectors.getLookupTable();
         VocabCache<T> vocabCache = vectors.getVocab();
 
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"));
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
 
         // at first line we save VectorsConfiguration
         writer.write(vectors.getConfiguration().toEncodedJson());
@@ -1358,7 +1359,7 @@ public class WordVectorSerializer {
             double[] vector = lookupTable.vector(element.getLabel()).data().asDouble();
 
             ElementPair pair = new ElementPair(json, vector);
-            writer.write(pair.toEncodedJson());
+            writer.println(pair.toEncodedJson());
         }
         writer.flush();
         writer.close();
@@ -1424,6 +1425,43 @@ public class WordVectorSerializer {
                 .build();
 
         return vectors;
+    }
+
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull File file) throws FileNotFoundException, UnsupportedEncodingException {
+        writeVocabCache(vocabCache, new FileOutputStream(file));
+    }
+
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream) throws UnsupportedEncodingException {
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
+
+        for (int x = 0; x < vocabCache.numWords(); x++) {
+            VocabWord word = vocabCache.elementAtIndex(x);
+            writer.println(word.toJSON());
+        }
+
+        writer.flush();
+        writer.close();
+    }
+
+    public static VocabCache<VocabWord> readVocabCache(@NonNull File file) throws IOException {
+        return readVocabCache(new FileInputStream(file));
+    }
+
+    public static VocabCache<VocabWord> readVocabCache(@NonNull InputStream stream) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+        VocabWordFactory factory = new VocabWordFactory();
+
+        String line = "";
+        while((line = reader.readLine()) != null) {
+            VocabWord word = factory.deserialize(line);
+
+            vocabCache.addToken(word);
+            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+        }
+
+        return vocabCache;
     }
 
     /**

@@ -8,14 +8,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *  SequenceElement is basic building block for SequenceVectors. Any data sequence can be represented as ordered set of SequenceElements,
@@ -43,6 +42,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     // this var defines that we have label here
     protected boolean isLabel;
 
+    // this var defines how many documents/sequences contain this word
+    protected AtomicLong sequencesCount = new AtomicLong(0);
+
     protected AdaGrad adaGrad;
 
     /*
@@ -57,6 +59,38 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      */
     abstract public String getLabel();
 
+    /**
+     * This method returns number of documents/sequences where this element was evidenced
+     *
+     * @return
+     */
+    public long getSequencesCount() {
+        return sequencesCount.get();
+    }
+
+    /**
+     * This method sets documents count to specified value
+     *
+     * @param count
+     */
+    public void setSequencesCount(long count) {
+        this.sequencesCount.set(count);
+    }
+
+    /**
+     * Increments document count by one
+     */
+    public void incrementSequencesCount() {
+        this.sequencesCount.incrementAndGet();
+    }
+
+    /**
+     * Increments document count by specified value
+     * @param count
+     */
+    public void incrementSequencesCount(long count) {
+        this.sequencesCount.addAndGet(count);
+    }
 
     /**
      * Returns whether this element was defined as label, or no
