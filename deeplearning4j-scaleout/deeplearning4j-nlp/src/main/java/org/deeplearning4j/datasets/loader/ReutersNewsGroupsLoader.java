@@ -26,7 +26,7 @@ import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.LegacyBagOfWordsVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.slf4j.Logger;
@@ -65,7 +65,7 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
                     .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
         else
-            this.textVectorizer = new BagOfWordsVectorizer.Builder()
+            this.textVectorizer = new LegacyBagOfWordsVectorizer.Builder()
                     .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
         load = this.textVectorizer.vectorize();

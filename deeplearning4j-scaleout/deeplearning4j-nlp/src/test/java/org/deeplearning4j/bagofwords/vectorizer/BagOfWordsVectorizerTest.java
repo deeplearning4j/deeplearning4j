@@ -76,7 +76,7 @@ public class BagOfWordsVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
-        TextVectorizer vectorizer = new BagOfWordsVectorizer.Builder().index(index)
+        TextVectorizer vectorizer = new LegacyBagOfWordsVectorizer.Builder().index(index)
                 .cache(cache)
                 .minWords(1).stopWords(new ArrayList<String>()).cleanup(true)
                 .tokenize(tokenizerFactory).iterate(iter).labels(labels).build();
