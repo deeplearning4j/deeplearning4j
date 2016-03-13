@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * The max absolute value
@@ -49,6 +50,11 @@ public class NormMax extends BaseAccumulation {
 
     public NormMax(INDArray x, INDArray y) {
         super(x, y);
+    }
+
+    @Override
+    public INDArray noOp() {
+        return Transforms.abs(x());
     }
 
     @Override

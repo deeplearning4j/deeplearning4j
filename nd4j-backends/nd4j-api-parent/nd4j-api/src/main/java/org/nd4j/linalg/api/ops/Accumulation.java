@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * An accumulation is an op that given:<br>
@@ -50,6 +51,19 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  * @author Adam Gibson
  */
 public interface Accumulation extends Op {
+
+    /**
+     * Returns the no op version
+     * of the input
+     * Basically when a reduce can't happen (eg: sum(0) on a row vector)
+     * you have a no op state for a given reduction.
+     * For most accumulations, this should return x
+     * but certain transformations should return say: the absolute value
+     *
+     *
+     * @return the no op version of the input
+     */
+    INDArray noOp();
 
     /**
      * Setter for final transform

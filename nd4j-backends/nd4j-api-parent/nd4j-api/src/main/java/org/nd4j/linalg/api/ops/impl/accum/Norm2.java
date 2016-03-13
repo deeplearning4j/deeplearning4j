@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Sum of squared values (real)
@@ -50,6 +51,11 @@ public class Norm2 extends BaseAccumulation {
 
     public Norm2(INDArray x, INDArray y) {
         super(x, y);
+    }
+
+    @Override
+    public INDArray noOp() {
+        return Transforms.abs(x());
     }
 
     @Override
