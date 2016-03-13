@@ -103,4 +103,9 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public INDArray params(){
+        return null;
+    }
+
 }
