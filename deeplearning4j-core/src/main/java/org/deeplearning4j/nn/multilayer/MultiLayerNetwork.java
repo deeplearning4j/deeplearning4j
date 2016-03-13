@@ -875,9 +875,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
-            if( layer instanceof BasePretrainNetwork)
-                params.add(((BasePretrainNetwork) layer).paramsBackprop());
-            else params.add(layer.params());
+            INDArray layerParams;
+            if( layer instanceof BasePretrainNetwork){
+                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
+            }
+            else layerParams = layer.params();
+            if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
         }
         return Nd4j.toFlattened('f',params);
     }
@@ -898,6 +901,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Layer layer = getLayer(i);
             int range = (layer instanceof BasePretrainNetwork ?
                     ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+            if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
@@ -1026,9 +1030,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             update(TaskUtils.buildTask(iter));
+            iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
@@ -1294,14 +1299,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (Layer layer : layers) {
             layer.setListeners(listeners);
         }
+
+        if(solver != null){
+            solver.setListeners(listeners);
+        }
     }
 
 
     @Override
     public void setListeners(IterationListener... listeners) {
         Collection<IterationListener> cListeners = new ArrayList<>();
-        for(IterationListener listener : listeners)
-            cListeners.add(listener);
+        Collections.addAll(cListeners, listeners);
         setListeners(cListeners);
     }
 
@@ -2228,14 +2236,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
         while(iterator.hasNext()){
-            DataSet ds = iterator.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
+            DataSet next = iterator.next();
+
+            if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
 
             INDArray out;
-            if(ds.hasMaskArrays()){
-                INDArray fMask = ds.getFeaturesMaskArray();
-                INDArray lMask = ds.getLabelsMaskArray();
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
                 out = this.output(features,false,fMask,lMask);
 
                 //Assume this is time series data. Not much point having a mask array for non TS data

@@ -19,11 +19,13 @@
 package org.deeplearning4j.aws.s3.uploader;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.MultipleFileUpload;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
 import org.deeplearning4j.aws.s3.BaseS3;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -165,19 +167,18 @@ public class S3Uploader extends BaseS3 {
 		client.createBucket(bucketName);
 		//client.putObject(bucketName, name, is, med);
 		client.putObject(new PutObjectRequest(bucketName, name, file));
-
-
-
 	}
 	
-	
-	
 
-	
+	public MultipleFileUpload uploadFolder(String bucketName, String keyPrefix,  File folderPath, boolean includeSubDir) {
+		TransferManager transfer = new TransferManager(getClient());
+		return transfer.uploadDirectory(bucketName, keyPrefix, folderPath, includeSubDir);
+	}
 
-	
-	
-	
-	
+	public MultipleFileUpload uploadFileList(String bucketName, File folderPath, List<File> fileList, String keyPrefix){
+		TransferManager transfer = new TransferManager(getClient());
+		return transfer.uploadFileList(bucketName, keyPrefix, folderPath, fileList);
+	}
+
 
 }
