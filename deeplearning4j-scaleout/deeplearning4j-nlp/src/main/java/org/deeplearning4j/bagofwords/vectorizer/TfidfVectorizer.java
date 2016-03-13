@@ -43,7 +43,8 @@ import java.util.List;
  * Turns a applyTransformToDestination of documents in to a tfidf bag of words
  * @author Adam Gibson
  */
-public class TfidfVectorizer extends BaseTextVectorizer implements Serializable {
+@Deprecated
+public class TfidfVectorizer extends LegacyBaseTextVectorizer implements Serializable {
 
     public TfidfVectorizer(){}
 
