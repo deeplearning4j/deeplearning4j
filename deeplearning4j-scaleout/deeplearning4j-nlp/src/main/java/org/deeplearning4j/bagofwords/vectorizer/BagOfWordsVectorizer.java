@@ -2,13 +2,18 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
+import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,6 +21,10 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 
 /**
@@ -23,6 +32,31 @@ import java.util.List;
  */
 public class BagOfWordsVectorizer extends  BaseTextVectorizer {
 
+    protected BagOfWordsVectorizer() {
+
+    }
+
+    /**
+     * Text coming from an input stream considered as one document
+     *
+     * @param is    the input stream to read from
+     * @param label the label to assign
+     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
+     */
+    @Override
+    public DataSet vectorize(InputStream is, String label) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            String line = "";
+            StringBuilder builder = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            return vectorize(builder.toString(), label);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public DataSet vectorize(String text, String label) {
@@ -45,15 +79,53 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         return input;
     }
 
-    protected BagOfWordsVectorizer() {
+    /**
+     * Returns the number of words encountered so far
+     *
+     * @return the number of words encountered so far
+     */
+    @Override
+    public long numWordsEncountered() {
+        return 0;
+    }
 
+    @Override
+    public void fit() {
+
+    }
+
+    /**
+     * @param input the text to vectorize
+     * @param label the label of the text
+     * @return {@link DataSet} with a applyTransformToDestination of
+     * weights(relative to impl; could be word counts or tfidf scores)
+     */
+    @Override
+    public DataSet vectorize(File input, String label) {
+        try {
+            String string = FileUtils.readFileToString(input);
+            return vectorize(string, label);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Vectorizes the input source in to a dataset
+     *
+     * @return Adam Gibson
+     */
+    @Override
+    public DataSet vectorize() {
+        throw new UnsupportedOperationException("Can't vectorize empty input");
     }
 
     public static class Builder {
         protected TokenizerFactory tokenizerFactory;
-        protected SentenceIterator iterator;
+        protected LabelAwareIterator iterator;
         protected int minWordFrequency;
         protected VocabCache<VocabWord> vocabCache;
+        protected LabelsSource labelsSource;
 
         public Builder() {
             ;
@@ -65,14 +137,12 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         }
 
         public Builder setIterator(@NonNull DocumentIterator iterator) {
-            this.iterator = new StreamLineIterator.Builder(iterator)
-                    .setFetchSize(100)
-                    .build();
+            this.iterator = new DocumentIteratorConverter(iterator, labelsSource);
             return this;
         }
 
         public Builder setIterator(@NonNull SentenceIterator iterator) {
-            this.iterator = iterator;
+            this.iterator = new SentenceIteratorConverter(iterator);
             return this;
         }
 
