@@ -3,9 +3,12 @@ package org.deeplearning4j.nn.graph.graphnodes;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
@@ -180,17 +183,21 @@ public class TestGraphNodes {
         INDArray inMask = Nd4j.zeros(3,6);
         inMask.putRow(0,Nd4j.create(new double[]{1,1,1,0,0,0}));
         inMask.putRow(1,Nd4j.create(new double[]{1,1,1,1,0,0}));
-        inMask.putRow(2,Nd4j.create(new double[]{1,1,1,1,1,0}));
+        inMask.putRow(2, Nd4j.create(new double[]{1, 1, 1, 1, 1, 0}));
         graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
 
         expOut = Nd4j.zeros(3,5);
         expOut.putRow(0,in.get(NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.point(2)));
         expOut.putRow(1,in.get(NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.point(3)));
-        expOut.putRow(2,in.get(NDArrayIndex.point(2),NDArrayIndex.all(),NDArrayIndex.point(4)));
+        expOut.putRow(2, in.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
         gv.setInputs(in);
         outFwd = gv.doForward(true);
-        assertEquals(expOut,outFwd);
+        assertEquals(expOut, outFwd);
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
     }
 
     @Test
@@ -220,11 +227,36 @@ public class TestGraphNodes {
         GraphVertex gv = graph.getVertex("duplicateTS");
         gv.setInputs(in2d);
         INDArray outFwd = gv.doForward(true);
-        assertEquals(expOut,outFwd);
+        assertEquals(expOut, outFwd);
 
         INDArray expOutBackward = expOut.sum(2);
-        gv.setError(0,expOut);
+        gv.setError(0, expOut);
         INDArray outBwd = gv.doBackward(false).getSecond()[0];
-        assertEquals(expOutBackward,outBwd);
+        assertEquals(expOutBackward, outBwd);
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
+    }
+
+    @Test
+    public void testJSON(){
+        //The config here is non-sense, but that doesn't matter for config -> json -> config test
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addVertex("v1",new ElementWiseVertex(ElementWiseVertex.Op.Add),"in")
+                .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in","in")
+                .addVertex("v3", new PreprocessorVertex(new CnnToFeedForwardPreProcessor(1,2,1)), "in")
+                .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0,1),"in")
+                .addVertex("v5", new DuplicateToTimeSeriesVertex("in"),"in")
+                .addVertex("v6", new LastTimeStepVertex("in"), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .setOutputs("out")
+                .build();
+
+        String json = conf.toJson();
+        ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
+        assertEquals(conf,conf2);
     }
 }

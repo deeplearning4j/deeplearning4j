@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -29,6 +31,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
  * GraphVertex, without it being associated with a layer.
  * @author Alex Black
  */
+@NoArgsConstructor
+@Data
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;

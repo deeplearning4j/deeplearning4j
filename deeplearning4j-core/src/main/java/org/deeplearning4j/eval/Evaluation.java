@@ -23,11 +23,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
@@ -38,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Evaluation<T extends Comparable<? super T>> implements Serializable {
+public class Evaluation implements Serializable {
 
     protected Counter<Integer> truePositives = new Counter<>();
     protected Counter<Integer> falsePositives = new Counter<>();
@@ -415,6 +412,107 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         return recallAcc / (double) classCount;
     }
 
+
+    /**
+     * Returns the false positive rate for a given label
+     * @param classLabel the label
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(Integer classLabel) {
+        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(Integer classLabel, double edgeCase) {
+        double fpCount = falsePositives.getCount(classLabel);
+        double tnCount = trueNegatives.getCount(classLabel);
+
+        //Edge case
+        if (fpCount == 0 && tnCount == 0) {
+            return edgeCase;
+        }
+
+        return fpCount / (fpCount + tnCount);
+    }
+
+    /**
+     * False positive rate based on guesses so far
+     * Takes into account all known classes and outputs average fpr across all of them
+     * @return the fpr for the outcomes
+     */
+    public double falsePositiveRate(){
+        double fprAlloc = 0.0;
+        int classCount = 0;
+        for(Integer classLabel : confusion.getClasses()) {
+            double fpr = falsePositiveRate(classLabel, -1.0);
+            if (fpr != -1.0) {
+                fprAlloc += falsePositiveRate(classLabel);
+                classCount++;
+            }
+        }
+        return fprAlloc / (double) classCount;
+
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     * @param classLabel the label
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel) {
+        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     * @param classLabel the label
+     * @param edgeCase What to output in case of 0/0
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel, double edgeCase) {
+        double fnCount = falseNegatives.getCount(classLabel);
+        double tpCount = truePositives.getCount(classLabel);
+
+        //Edge case
+        if (fnCount == 0 && tpCount == 0) {
+            return edgeCase;
+        }
+
+        return fnCount / (fnCount + tpCount);
+    }
+
+    /**
+     * False negative rate based on guesses so far
+     * Takes into account all known classes and outputs average fnr across all of them
+     * @return the fnr for the outcomes
+     */
+    public double falseNegativeRate() {
+        double fnrAlloc = 0.0;
+        int classCount = 0;
+        for (Integer classLabel : confusion.getClasses()) {
+            double fnr = falseNegativeRate(classLabel, -1.0);
+            if (fnr != -1.0) {
+                fnrAlloc += falseNegativeRate(classLabel);
+                classCount++;
+            }
+        }
+        return fnrAlloc / (double) classCount;
+    }
+
+    /**
+     * False Alarm Rate (FAR) reflects rate of misclassified to classified records
+     * http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw
+     * @return the fpr for the outcomes
+     */
+    public double falseAlarmRate(){
+        return (falsePositiveRate() + falseNegativeRate()) / 2.0;
+    }
+
     /**
      * Calculate f1 score for a given class
      * @param classLabel the label to calculate f1 for
@@ -449,7 +547,14 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      * @return the accuracy of the guesses so far
      */
     public double accuracy() {
-        return truePositives() / getNumRowCounter();
+        //Accuracy: sum the counts on the diagonal of the confusion matrix, divide by total
+        int nClasses = confusion.getClasses().size();
+        int countCorrect = 0;
+        for( int i=0; i<nClasses; i++ ){
+            countCorrect += confusion.getCount(i,i);
+        }
+
+        return countCorrect / getNumRowCounter();
     }
 
 
@@ -458,44 +563,68 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
      * True positives: correctly rejected
      * @return the total true positives so far
      */
-    public double truePositives() {
-        return truePositives.totalCount();
+    public Map<Integer,Integer> truePositives() {
+        return convertToMap(truePositives, confusion.getClasses().size());
     }
     /**
      * True negatives: correctly rejected
      * @return the total true negatives so far
      */
-    public double trueNegatives() {
-        return trueNegatives.totalCount();
+    public Map<Integer,Integer> trueNegatives() {
+        return convertToMap(trueNegatives, confusion.getClasses().size());
     }
     /**
      * False positive: wrong guess
      * @return the count of the false positives
      */
-    public double falsePositives() {
-        return falsePositives.totalCount();
+    public Map<Integer,Integer> falsePositives() {
+        return convertToMap(falsePositives, confusion.getClasses().size());
     }
     /**
      * False negatives: correctly rejected
      * @return the total false negatives so far
      */
-    public double falseNegatives() {
-        return falseNegatives.totalCount();
+    public Map<Integer,Integer> falseNegatives() {
+        return convertToMap(falseNegatives, confusion.getClasses().size());
     }
     /**
-     * Total negatives true negatives + false positives
+     * Total negatives true negatives + false negatives
      * @return the overall negative count
      */
-    public double negative() {
-        return trueNegatives() + falsePositives();
+    public Map<Integer,Integer> negative() {
+        return addMapsByKey(trueNegatives(), falsePositives());
     }
     /**
      * Returns all of the positive guesses:
      * true positive + false negative
-     * @return
      */
-    public double positive() {
-        return truePositives() + falseNegatives();
+    public Map<Integer,Integer> positive() {
+        return addMapsByKey(truePositives(), falseNegatives());
+    }
+
+    private Map<Integer,Integer> convertToMap(Counter<Integer> counter, int maxCount){
+        Map<Integer,Integer> map = new HashMap<>();
+        for( int i=0; i<maxCount; i++ ){
+            map.put(i, (int)counter.getCount(i));
+        }
+        return map;
+    }
+
+    private Map<Integer,Integer> addMapsByKey(Map<Integer,Integer> first, Map<Integer,Integer> second){
+        Map<Integer,Integer> out = new HashMap<>();
+        Set<Integer> keys = new HashSet<>(first.keySet());
+        keys.addAll(second.keySet());
+
+        for( Integer i : keys ){
+            Integer f = first.get(i);
+            Integer s = second.get(i);
+            if(f == null) f = 0;
+            if(s == null) s = 0;
+
+            out.put(i,f+s);
+        }
+
+        return out;
     }
 
 
@@ -569,4 +698,74 @@ public class Evaluation<T extends Comparable<? super T>> implements Serializable
         if(labelsList.isEmpty()) labelsList.addAll(other.labelsList);
         if(labelsMap.isEmpty()) labelsMap.putAll(other.labelsMap);
     }
+
+    /** Get a String representation of the confusion matrix */
+    public String confusionToString(){
+
+        int nClasses = confusion.getClasses().size();
+
+        List<String> labels = new ArrayList<>();
+        boolean hasLabels = false;
+        if(labelsMap != null && labelsMap.size() == nClasses){
+            for( int i=0; i<nClasses; i++ ){
+                labels.add(labelsMap.get(i));
+            }
+            hasLabels = true;
+        } else {
+            for( int i=0; i<nClasses; i++ ){
+                labels.add(String.valueOf(i));
+            }
+        }
+
+        //First: work out the longest label size
+        int maxLabelSize = 0;
+        for( String s : labels ){
+            maxLabelSize = Math.max(maxLabelSize,s.length());
+        }
+
+        //Build the formatting for the rows:
+        int labelSize = Math.max(maxLabelSize+5,10);
+        StringBuilder sb = new StringBuilder();
+        sb.append("%-3d");
+        sb.append("%-");
+        sb.append(labelSize);
+        sb.append("s | ");
+
+        StringBuilder headerFormat = new StringBuilder();
+        headerFormat.append("   %-").append(labelSize).append("s   ");
+
+        for( int i=0; i<nClasses; i++ ){
+            sb.append("%7d");
+            headerFormat.append("%7d");
+        }
+        String rowFormat = sb.toString();
+
+
+
+        StringBuilder out = new StringBuilder();
+        //First: header row
+        Object[] headerArgs = new Object[nClasses+1];
+        headerArgs[0] = "Predicted:";
+        for( int i=0; i<nClasses; i++ ) headerArgs[i+1] = i;
+        out.append(String.format(headerFormat.toString(),headerArgs)).append("\n");
+
+        //Second: divider rows
+        out.append("   Actual:\n");
+
+        //Finally: data rows
+        for( int i=0; i<nClasses; i++ ){
+
+            Object[] args = new Object[nClasses+2];
+            args[0] = i;
+            args[1] = labels.get(i);
+            for( int j=0; j<nClasses; j++ ){
+                args[j+2] = confusion.getCount(i,j);
+            }
+            out.append(String.format(rowFormat,args));
+            out.append("\n");
+        }
+
+        return out.toString();
+    }
+
 }
