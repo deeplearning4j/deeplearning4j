@@ -183,7 +183,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray activationMean() {
-        return Nd4j.create(0);
+        return null;
     }
 
     @Override
@@ -230,7 +230,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray params() {
-        return Nd4j.create(0);
+        return null;
     }
 
     @Override
