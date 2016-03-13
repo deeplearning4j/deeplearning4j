@@ -1022,17 +1022,13 @@ struct SharedSummaryStatsData<double> {
                         int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
                         SummaryStatsData<T> comp;
                         comp.initWithValue(x[offset]);
-                        printf("Starting value for %f\n",x[offset]);
                         for (int j = 1; j < tadLength; j++) {
                             SummaryStatsData<T> comp2;
                             comp2.initWithValue(x[offset + tadElementWiseStride * j]);
-                            printf("In j %d x at value %f\n",offset + tadElementWiseStride * j,x[offset + tadElementWiseStride * j]);
                             comp = update(comp, comp2, extraParams);
-                            printf("Curr value for %d is %f\n",i,comp.variance());
                         }
 
                         result[i] = getValue(comp);
-                        printf("Value %d is %f\n",i,result[i]);
                     }
 
 
