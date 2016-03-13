@@ -875,9 +875,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
-            if( layer instanceof BasePretrainNetwork)
-                params.add(((BasePretrainNetwork) layer).paramsBackprop());
-            else params.add(layer.params());
+            INDArray layerParams;
+            if( layer instanceof BasePretrainNetwork){
+                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
+            }
+            else layerParams = layer.params();
+            if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
         }
         return Nd4j.toFlattened('f',params);
     }
@@ -898,6 +901,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Layer layer = getLayer(i);
             int range = (layer instanceof BasePretrainNetwork ?
                     ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+            if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
