@@ -21,7 +21,7 @@ package org.deeplearning4j.scaleout.perform.models.glove;
 import org.canova.api.conf.Configuration;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.LegacyTfidfVectorizer;
 import org.deeplearning4j.models.glove.CoOccurrences;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -82,7 +82,7 @@ public class DistributedGloveTest extends BaseTestDistributed {
                     .cache(cache)
                     .build();
 
-        vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
+        vectorizer = new LegacyTfidfVectorizer.Builder().index(invertedIndex)
                 .cache(cache).iterate(iter).minWords(1)
                 .tokenize(t).build();
 
