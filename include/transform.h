@@ -365,7 +365,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -376,8 +376,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Abs() {
                 }
 
@@ -422,7 +423,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -434,8 +435,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Ceiling() {
                 }
 
@@ -468,6 +470,7 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -479,7 +482,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -491,8 +494,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Cosine() {
                 }
 
@@ -538,7 +542,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -550,8 +554,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Exp() {
                 }
 
@@ -596,7 +601,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -608,8 +613,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~HardTanhDerivative() {
                 }
 
@@ -654,7 +660,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -666,8 +672,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~HardTanh() {
                 }
 
@@ -713,7 +720,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -724,8 +731,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Floor() {
                 }
 
@@ -770,7 +778,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -782,8 +790,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Log() {
                 }
 
@@ -828,7 +837,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -840,8 +849,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Neg() {
                 }
 
@@ -886,7 +896,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -898,16 +908,19 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Pow() {
                 }
+
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 Pow() {
                 }
             };
@@ -951,7 +964,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -963,8 +976,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Round() {
                 }
 
@@ -1009,7 +1023,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1020,13 +1034,13 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Sigmoid() {
                 }
 
             };
-
 
 
 /**
@@ -1056,6 +1070,7 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1067,7 +1082,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1079,8 +1094,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~SigmoidDerivative() {
                 }
 
@@ -1127,7 +1143,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1149,8 +1165,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~SetRange() {
                 }
 
@@ -1195,7 +1212,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1207,8 +1224,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Sin() {
                 }
 
@@ -1253,7 +1271,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1265,8 +1283,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Sqrt() {
                 }
 
@@ -1299,6 +1318,7 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1310,7 +1330,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1322,8 +1342,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~SoftPlus() {
                 }
 
@@ -1369,7 +1390,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1381,12 +1402,12 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Sign() {
                 }
             };
-
 
 
 /**
@@ -1428,7 +1449,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1439,8 +1460,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~TimesOneMinus() {
                 }
 
@@ -1486,7 +1508,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1498,8 +1520,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Tanh() {
                 }
 
@@ -1544,7 +1567,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1556,8 +1579,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~TanhDerivative() {
                 }
 
@@ -1602,7 +1626,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1614,8 +1638,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~ACos() {
                 }
 
@@ -1661,7 +1686,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1674,8 +1699,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Ones() {
                 }
 
@@ -1721,7 +1747,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1734,8 +1760,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~SoftSign() {
                 }
 
@@ -1781,7 +1808,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1794,8 +1821,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~SoftSignDerivative() {
                 }
 
@@ -1840,7 +1868,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1852,15 +1880,13 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~ELU() {
                 }
 
             };
-
-
-
 
 
 /**
@@ -1902,7 +1928,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -1913,13 +1939,13 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~ELUDerivative() {
                 }
 
             };
-
 
 
 /**
@@ -1961,11 +1987,11 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
-                    return d1 < params[0] ?  params[0] : d1;
+                    return d1 < params[0] ? params[0] : d1;
                 }
 
 
@@ -1973,13 +1999,13 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~RELU() {
                 }
 
             };
-
 
 
 /**
@@ -2021,11 +2047,11 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
-                    return nd4j::math::nd4j_leakyrelu<T>(params[0],d1);
+                    return nd4j::math::nd4j_leakyrelu<T>(params[0], d1);
                 }
 
 
@@ -2033,13 +2059,13 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~LeakyRELU() {
                 }
 
             };
-
 
 
 /**
@@ -2081,7 +2107,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2093,8 +2119,9 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~LeakyRELUDerivative() {
                 }
 
@@ -2140,7 +2167,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2152,12 +2179,14 @@ namespace functions {
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~ASin() {
                 }
 
             };
+
 /**
  * atan(x)
  */
@@ -2197,7 +2226,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2205,18 +2234,18 @@ namespace functions {
                 }
 
 
-
-
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~ATan() {
                 }
 
             };
+
 /**
  * atan(x)
  */
@@ -2256,7 +2285,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2264,14 +2293,13 @@ namespace functions {
                 }
 
 
-
-
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Identity() {
                 }
 
@@ -2285,6 +2313,7 @@ namespace functions {
             public:
                 double realMin = 1.1755e-38f;
                 double cutOff = nd4j::math::nd4j_log(realMin);
+
                 /**
                                                  * CPU operation execution
                                                  * @param dx the input data
@@ -2318,7 +2347,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2331,14 +2360,13 @@ namespace functions {
                 }
 
 
-
-
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Stabilize() {
                 }
 
@@ -2384,7 +2412,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2392,19 +2420,17 @@ namespace functions {
                 }
 
 
-
-
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~Step() {
                 }
 
             };
-
 
 
 /**
@@ -2446,7 +2472,7 @@ namespace functions {
                 __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T op(T d1, T *params) {
@@ -2454,25 +2480,23 @@ namespace functions {
                 }
 
 
-
-
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
-                
+
 #endif
+
                 virtual ~OneMinus() {
                 }
 
             };
 
 
-
-            template <typename T>
+            template<typename T>
             class Im2col : public Transform<T> {
             public:
-                int outSize(int size,int k,int s,int p, bool coverAll) {
+                int outSize(int size, int k, int s, int p, bool coverAll) {
                     if (coverAll)
                         return (size + p * 2 - k + s - 1) / s + 1;
                     else
@@ -2506,7 +2530,7 @@ namespace functions {
                     int strideY = (int) extraParams[3];
                     int padWidth = (int) extraParams[4];
                     int padHeight = (int) extraParams[5];
-                    bool coverAll =  extraParams[6] > 0.0;
+                    bool coverAll = extraParams[6] > 0.0;
 
                     int outArrayOffset = 0;
                     int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -2522,10 +2546,9 @@ namespace functions {
                     int depthFrom = 0;
                     int depthTo = inShape[1];
                     int yOutFrom = 0;
-                    int yOutTo = this->outSize(inShape[2],kernelHeight,strideY,padHeight,coverAll);
+                    int yOutTo = this->outSize(inShape[2], kernelHeight, strideY, padHeight, coverAll);
                     int xOutFrom = 0;
-                    int xOutTo = this->outSize(inShape[3],kernelWidth,strideX,padWidth,coverAll);
-
+                    int xOutTo = this->outSize(inShape[3], kernelWidth, strideX, padWidth, coverAll);
 
 
                     int *outIndices = new int[6];
@@ -2555,16 +2578,18 @@ namespace functions {
                                     outIndices[4] = y;
                                     outIndices[5] = x;
                                     int baseOffsetOut = this->getOffsetUnsafe6(outArrayOffset, outShape, outStride,
-                                                                         outIndices);
+                                                                               outIndices);
 
                                     if (padding) {
-                                        int i = y * strideY - padHeight;    //index along height of first element of patch in original img
-                                        int j = x * strideX - padWidth;     //index along width of first element in patch in original img
+                                        int i = y * strideY -
+                                                padHeight;    //index along height of first element of patch in original img
+                                        int j = x * strideX -
+                                                padWidth;     //index along width of first element in patch in original img
                                         inIndices[2] = i;   //along height
                                         inIndices[3] = j;   //along width
 
                                         int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-                                                                            inIndices);
+                                                                                  inIndices);
                                         if (outStride2 <= outStride3) {
                                             //Want dimension 2 (along height) in inner loop for cache reasons
                                             for (int patchX = 0; patchX < kernelWidth; patchX++) {
@@ -2600,13 +2625,15 @@ namespace functions {
                                         }
                                     } else {
                                         //No padding
-                                        int i = y * strideY;    //index along height of first element of patch in original img
-                                        int j = x * strideX;     //index along width of first element in patch in original img
+                                        int i = y *
+                                                strideY;    //index along height of first element of patch in original img
+                                        int j = x *
+                                                strideX;     //index along width of first element in patch in original img
                                         inIndices[2] = i;   //along height
                                         inIndices[3] = j;   //along width
 
                                         int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-                                                                            inIndices);
+                                                                                  inIndices);
                                         if (outStride2 <= outStride3) {
                                             //Want dimension 2 (along height) in inner loop for cache reasons
                                             for (int patchX = 0; patchX < kernelWidth; patchX++) {
@@ -2640,7 +2667,6 @@ namespace functions {
                 }
 
 
-
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
@@ -2650,20 +2676,24 @@ namespace functions {
                 T op(T d1, T *params) {
                     return d1;
                 }
+
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
+
                 virtual ~Im2col() {
                 }
+
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
+
                 Im2col() {
                     this->requiresSpecial = true;
                 }
@@ -2673,12 +2703,12 @@ namespace functions {
                          *  normally negative indices are bad, OK here because of other checks on input indices
                          *  Uses unrolled loop specifically for length 4
                          */
-                int  getOffsetUnsafe4(int baseOffset, int* shape, int* stride, int* indices) {
+                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
-                    if(shape[0] != 1) offset += indices[0] * stride[0];
-                    if(shape[1] != 1) offset += indices[1] * stride[1];
-                    if(shape[2] != 1) offset += indices[2] * stride[2];
-                    if(shape[3] != 1) offset += indices[3] * stride[3];
+                    if (shape[0] != 1) offset += indices[0] * stride[0];
+                    if (shape[1] != 1) offset += indices[1] * stride[1];
+                    if (shape[2] != 1) offset += indices[2] * stride[2];
+                    if (shape[3] != 1) offset += indices[3] * stride[3];
                     return offset;
                 }
 
@@ -2688,18 +2718,18 @@ namespace functions {
                   * normally negative indices are bad, OK here because of other checks on input indices
                   * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
                   */
-                int getOffsetUnsafe6(int baseOffset,  int* shape,  int* stride,  int* indices) {
+                int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
-                    if(shape[0] != 1) offset += indices[0] * stride[0];
-                    if(shape[1] != 1) offset += indices[1] * stride[1];
-                    if(shape[4] != 1) offset += indices[4] * stride[4];
-                    if(shape[5] != 1) offset += indices[5] * stride[5];
+                    if (shape[0] != 1) offset += indices[0] * stride[0];
+                    if (shape[1] != 1) offset += indices[1] * stride[1];
+                    if (shape[4] != 1) offset += indices[4] * stride[4];
+                    if (shape[5] != 1) offset += indices[5] * stride[5];
                     return offset;
                 }
 
             };
 
-            template <typename  T>
+            template<typename T>
             class Col2Im : public Transform<T> {
 
             public:
@@ -2725,8 +2755,8 @@ namespace functions {
                         T *extraParams) {
 
                     int inOffset = 0;
-                    int* inShape = shape::shapeOf(xShapeBuffer);
-                    int* inStride = shape::stride(xShapeBuffer);
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
 
                     int kernelHeight = inShape[2];
                     int kernelWidth = inShape[3];
@@ -2745,12 +2775,12 @@ namespace functions {
                     int depthTo = inShape[1];
 
                     int outArrayOffset = 0;
-                    int* outShape = shape::shapeOf(resultShapeBuffer);
-                    int* outStride = shape::stride(resultShapeBuffer);
+                    int *outShape = shape::shapeOf(resultShapeBuffer);
+                    int *outStride = shape::stride(resultShapeBuffer);
 
 
-                    int* outIndices = new int[4];
-                    int* inIndices = new int[6];
+                    int *outIndices = new int[4];
+                    int *inIndices = new int[6];
 
                     const int inStride2 = inStride[2];
                     const int inStride3 = inStride[3];
@@ -2765,8 +2795,8 @@ namespace functions {
 
                     const bool padding = padHeight > 0 || padWidth > 0;
 
-                    T * fIn = dx;
-                    T * fOut = result;
+                    T *fIn = dx;
+                    T *fOut = result;
 #pragma omp parallel for collapse(2)
                     for (int ex = exampleFrom; ex < exampleTo; ex++) {
                         for (int d = depthFrom; d < depthTo; d++) {
@@ -2781,18 +2811,21 @@ namespace functions {
                                     inIndices[5] = x;   //patch number (along width)
                                     int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
 
-                                    if(padding) {
-                                        int i = y * strideY - padHeight;    //index along height of first element of patch in original img
-                                        int j = x * strideX - padWidth;     //index along width of first element in patch in original img
+                                    if (padding) {
+                                        int i = y * strideY -
+                                                padHeight;    //index along height of first element of patch in original img
+                                        int j = x * strideX -
+                                                padWidth;     //index along width of first element in patch in original img
                                         outIndices[2] = i;  //along height
                                         outIndices[3] = j;  //along width
 
-                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride, outIndices);
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+                                                                                   outIndices);
 
                                         if (inStride2 <= inStride3) {
                                             //Want dimension 2 (along height) in inner loop for cache efficiency
                                             for (int patchX = 0; patchX < kernelWidth; patchX++) {
-                                                if( j + patchX < 0 || j + patchX >= outShape3)
+                                                if (j + patchX < 0 || j + patchX >= outShape3)
                                                     continue;
 
                                                 for (int patchY = 0; patchY < kernelHeight; patchY++) {
@@ -2805,7 +2838,7 @@ namespace functions {
                                         } else {
                                             //Want dimension 3 (along width) in inner loop for cache efficiency
                                             for (int patchY = 0; patchY < kernelHeight; patchY++) {
-                                                if(i + patchY < 0 || i + patchY >= outShape2)
+                                                if (i + patchY < 0 || i + patchY >= outShape2)
                                                     continue;
                                                 for (int patchX = 0; patchX < kernelWidth; patchX++) {
                                                     if (j + patchX < 0 || j + patchX >= outShape3)
@@ -2817,13 +2850,16 @@ namespace functions {
                                         }
                                     } else {
                                         //No padding
-                                        int i = y * strideY;    //index along height of first element of patch in output img
-                                        int j = x * strideX;     //index along width of first element in patch in output img
+                                        int i = y *
+                                                strideY;    //index along height of first element of patch in output img
+                                        int j = x *
+                                                strideX;     //index along width of first element in patch in output img
 
                                         outIndices[2] = i;
                                         outIndices[3] = j;
 
-                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride, outIndices);
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+                                                                                   outIndices);
 
                                         if (inStride2 <= inStride3) {
                                             //Want dimension 2 (along height) in inner loop for cache efficiency
@@ -2863,36 +2899,39 @@ namespace functions {
                 T op(T d1, T *params) {
                     return d1;
                 }
+
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
+
                 virtual ~Col2Im() {
                 }
+
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
+
                 Col2Im() {
                     this->requiresSpecial = true;
                 }
-
 
 
                 /** Calculate buffer offset (like Shape.getOffset) without checking on input for negative indices etc
              *  normally negative indices are bad, OK here because of other checks on input indices
              *  Uses unrolled loop specifically for length 4
              */
-               int  getOffsetUnsafe4(int baseOffset, int* shape, int* stride, int* indices) {
+                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
-                    if(shape[0] != 1) offset += indices[0] * stride[0];
-                    if(shape[1] != 1) offset += indices[1] * stride[1];
-                    if(shape[2] != 1) offset += indices[2] * stride[2];
-                    if(shape[3] != 1) offset += indices[3] * stride[3];
+                    if (shape[0] != 1) offset += indices[0] * stride[0];
+                    if (shape[1] != 1) offset += indices[1] * stride[1];
+                    if (shape[2] != 1) offset += indices[2] * stride[2];
+                    if (shape[3] != 1) offset += indices[3] * stride[3];
                     return offset;
                 }
 
@@ -2900,12 +2939,12 @@ namespace functions {
                  * normally negative indices are bad, OK here because of other checks on input indices
                  * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
                  */
-                int getOffsetUnsafe6(int baseOffset, int* shape, int* stride, int* indices) {
+                int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
-                    if(shape[0] != 1) offset += indices[0] * stride[0];
-                    if(shape[1] != 1) offset += indices[1] * stride[1];
-                    if(shape[4] != 1) offset += indices[4] * stride[4];
-                    if(shape[5] != 1) offset += indices[5] * stride[5];
+                    if (shape[0] != 1) offset += indices[0] * stride[0];
+                    if (shape[1] != 1) offset += indices[1] * stride[1];
+                    if (shape[4] != 1) offset += indices[4] * stride[4];
+                    if (shape[5] != 1) offset += indices[5] * stride[5];
                     return offset;
                 }
 
@@ -2938,34 +2977,35 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if(shape::isMatrix(xShapeBuffer)) {
+                    if (shape::isMatrix(xShapeBuffer)) {
+                        printf("In matrix softmax\n");
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
-                         //max for each row: assuming max along dimension 1
-                         T tmp[shape[0]];
+                        //max for each row: assuming max along dimension 1
+                        T tmp[shape[0]];
 #pragma omp parallel for
-                        for(int i = 0; i < shape[0]; i++) {
-                           tmp[i] = 0.0;
+                        for (int i = 0; i < shape[0]; i++) {
+                            tmp[i] = 0.0;
                         }
 
                         //max for each column
 #pragma omp parallel for collapse(2)
-                        for(int i = 0; i < shape[0]; i++) {
-                            for(int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i,j};
-                                int offset =  shape::getOffset(0,shape,stride,indexes,2);
-                                 tmp[i] = nd4j::math::nd4j_max<T>(tmp[i],dx[offset]);
+                        for (int i = 0; i < shape[0]; i++) {
+                            for (int j = 0; j < shape[1]; j++) {
+                                int indexes[2] = {i, j};
+                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
+                                tmp[i] = nd4j::math::nd4j_max<T>(tmp[i], dx[offset]);
                                 result[offset] = dx[offset];
-                                }
+                            }
                         }
 
 
                         //subtract max for each column
 #pragma omp parallel for collapse(2)
-                        for(int i = 0; i < shape[0]; i++) {
-                            for(int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i,j};
-                                int offset =  shape::getOffset(0,shape,stride,indexes,2);
+                        for (int i = 0; i < shape[0]; i++) {
+                            for (int j = 0; j < shape[1]; j++) {
+                                int indexes[2] = {i, j};
+                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
                                 result[offset] = nd4j::math::nd4j_exp<T>(result[i] - tmp[i]);
                             }
                         }
@@ -2973,96 +3013,95 @@ namespace functions {
 
                         //now collect sums for each column to normalize to 1
 #pragma omp parallel for
-                        for(int i = 0; i < shape[0]; i++) {
+                        for (int i = 0; i < shape[0]; i++) {
                             tmp[i] = 0.0;
                         }
 
                         //sum for each column
 #pragma omp parallel for collapse(2)
-                        for(int i = 0; i < shape[0]; i++) {
-                            for(int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i,j};
-                                int offset =  shape::getOffset(0,shape,stride,indexes,2);
-                               tmp[i] += result[offset];
+                        for (int i = 0; i < shape[0]; i++) {
+                            for (int j = 0; j < shape[1]; j++) {
+                                int indexes[2] = {i, j};
+                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
+                                tmp[i] += result[offset];
 
                             }
                         }
 
                         //divide by the sum for each column
 #pragma omp parallel for collapse(2)
-                        for(int i = 0; i < shape[0]; i++) {
-                            for(int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i,j};
-                                int offset =  shape::getOffset(0,shape,stride,indexes,2);
+                        for (int i = 0; i < shape[0]; i++) {
+                            for (int j = 0; j < shape[1]; j++) {
+                                int indexes[2] = {i, j};
+                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
                                 result[offset] /= tmp[i];
                             }
                         }
 
 
-
                     }
-                    else if(shape::isVector(xShapeBuffer)) {
+                    else if (shape::isVector(xShapeBuffer)) {
                         T max = 0;
                         T sum = 0;
 
                         int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                         int length = shape::length(xShapeBuffer);
-                        if(elementWiseStride == 1) {
+                        if (elementWiseStride == 1) {
 #pragma omp parallel for shared(max)
-                            for(int i = 0; i < length; i++) {
-                                max = nd4j::math::nd4j_max<T>(max,result[i]);
+                            for (int i = 0; i < length; i++) {
+                                max = nd4j::math::nd4j_max<T>(max, result[i]);
                             }
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 result[i] -= max;
                             }
 
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 result[i] = nd4j::math::nd4j_exp<T>(result[i]);
                             }
 
 #pragma omp parallel for shared(sum)
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 sum += result[i];
                             }
 
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
-                                 result[i] /= sum;
+                            for (int i = 0; i < length; i++) {
+                                result[i] /= sum;
                             }
 
                         }
                         else {
 
 #pragma omp parallel for shared(max)
-                            for(int i = 0; i < length; i++) {
-                                max = nd4j::math::nd4j_max<T>(max,result[i * elementWiseStride]);
+                            for (int i = 0; i < length; i++) {
+                                max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] -= max;
                             }
 
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
 #pragma omp parallel for shared(sum)
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 sum += result[i * elementWiseStride];
                             }
 
 #pragma omp parallel for
-                            for(int i = 0; i < length; i++) {
+                            for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] /= sum;
                             }
 
                         }
                     }
                 }
-            }
+            
                 /**
                  * The op for transforms
                  * @param d1
