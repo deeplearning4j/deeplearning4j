@@ -28,7 +28,7 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.bagofwords.vectorizer.LegacyBagOfWordsVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.LegacyTfidfVectorizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
         if(tfidf)
-            this.textVectorizer = new TfidfVectorizer.Builder()
+            this.textVectorizer = new LegacyTfidfVectorizer.Builder()
                     .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
         else

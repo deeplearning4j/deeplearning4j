@@ -87,7 +87,7 @@ public class TfIdfVectorizerTest {
 
         List<String> labels = Arrays.asList("label1","label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizer = new TfidfVectorizer.Builder()
+        TextVectorizer vectorizer = new LegacyTfidfVectorizer.Builder()
                 .minWords(1).index(index).cache(cache)
                 .stopWords(new ArrayList<String>())
                 .tokenize(tokenizerFactory).labels(labels)

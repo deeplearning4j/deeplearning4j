@@ -40,4 +40,9 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
 
         constructor.buildJointVocabulary(false, false);
     }
+
+    @Override
+    public void fit() {
+        buildVocab();
+    }
 }

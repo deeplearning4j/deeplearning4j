@@ -89,10 +89,6 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         return 0;
     }
 
-    @Override
-    public void fit() {
-
-    }
 
     /**
      * @param input the text to vectorize

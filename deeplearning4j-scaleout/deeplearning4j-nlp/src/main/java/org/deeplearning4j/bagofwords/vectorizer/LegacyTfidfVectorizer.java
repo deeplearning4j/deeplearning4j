@@ -44,22 +44,22 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Deprecated
-public class TfidfVectorizer extends LegacyBaseTextVectorizer implements Serializable {
+public class LegacyTfidfVectorizer extends LegacyBaseTextVectorizer implements Serializable {
 
-    public TfidfVectorizer(){}
+    public LegacyTfidfVectorizer(){}
 
-    protected TfidfVectorizer(VocabCache cache,
-                              TokenizerFactory tokenizerFactory,
-                              List<String> stopWords,
-                              int minWordFrequency,
-                              DocumentIterator docIter,
-                              SentenceIterator sentenceIterator,
-                              List<String> labels,
-                              InvertedIndex index,
-                              int batchSize,
-                              double sample,
-                              boolean stem,
-                              boolean cleanup) {
+    protected LegacyTfidfVectorizer(VocabCache cache,
+                                    TokenizerFactory tokenizerFactory,
+                                    List<String> stopWords,
+                                    int minWordFrequency,
+                                    DocumentIterator docIter,
+                                    SentenceIterator sentenceIterator,
+                                    List<String> labels,
+                                    InvertedIndex index,
+                                    int batchSize,
+                                    double sample,
+                                    boolean stem,
+                                    boolean cleanup) {
         super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator, labels,index,batchSize,sample,stem,cleanup);
     }
 
@@ -145,7 +145,7 @@ public class TfidfVectorizer extends LegacyBaseTextVectorizer implements Seriali
 
         public TextVectorizer build() {
 
-            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
+            return new LegacyTfidfVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
 
         }
 
