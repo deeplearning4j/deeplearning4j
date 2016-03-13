@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -32,6 +34,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
  * step of the last non-zero entry in the mask array (for each example separately) will be used.
  * @author Alex Black
  */
+@Data
 public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;
@@ -42,7 +45,7 @@ public class LastTimeStepVertex extends GraphVertex {
      *                           mask array of this time series input is used when determining which time step to extract
      *                           and return.
      */
-    public LastTimeStepVertex(String maskArrayInputName){
+    public LastTimeStepVertex(@JsonProperty("maskArrayInputName") String maskArrayInputName){
         this.maskArrayInputName = maskArrayInputName;
     }
 

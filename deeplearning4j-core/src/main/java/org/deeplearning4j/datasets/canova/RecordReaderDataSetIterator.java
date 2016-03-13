@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.canova;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.io.converters.SelfWritableConverter;
 import org.canova.api.io.converters.WritableConverterException;
@@ -43,84 +44,72 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected RecordReader recordReader;
     protected WritableConverter converter;
     protected int batchSize = 10;
+    protected int maxNumBatches = -1;
+    protected int batchNum = 0;
     protected int labelIndex = -1;
     protected int numPossibleLabels = -1;
-    protected boolean overshot = false;
+    protected boolean notOvershot = true;
     protected Iterator<Collection<Writable>> sequenceIter;
     protected DataSet last;
     protected boolean useCurrent = false;
     protected boolean regression = false;
     protected DataSetPreProcessor preProcessor;
 
-    /**
-     * Use the record reader and batch size; no labels
-     * @param recordReader the record reader to use
-     * @param batchSize the batch size of the data
-     */
+
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
     }
 
-    /**
-     * Main constructor
-     * @param recordReader the recorder to use for the dataset
-     * @param batchSize the batch size
-     * @param labelIndex the index of the label to use
-     * @param numPossibleLabels the number of posible
-     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
     }
 
-    /**
-     *
-     * @param recordReader
-     */
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels, int maxNumBatches) {
+        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, maxNumBatches, false);
+    }
+
     public RecordReaderDataSetIterator(RecordReader recordReader) {
         this(recordReader, new SelfWritableConverter());
     }
 
-
-    /**
-     * Invoke the recordreaderdatasetiterator with a batch size of 10
-     * @param recordReader the recordreader to use
-     * @param labelIndex the index of the label
-     * @param numPossibleLabels the number of possible labels for classification
-     *
-     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
     }
 
-
-    /**
-     *
-     * @param recordReader
-     * @param converter
-     * @param batchSize
-     * @param labelIndex
-     * @param numPossibleLabels
-     * @param regression
-     */
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels,boolean regression) {
-        this.recordReader = recordReader;
-        this.converter = converter;
-        this.batchSize = batchSize;
-        this.labelIndex = labelIndex;
-        this.numPossibleLabels = numPossibleLabels;
-        this.regression = regression;
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels, boolean regression) {
+        this(recordReader,converter,batchSize,labelIndex,numPossibleLabels, -1, regression);
     }
+
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels) {
-        this(recordReader,converter,batchSize,labelIndex,numPossibleLabels,false);
+        this(recordReader,converter,batchSize,labelIndex,numPossibleLabels, -1, false);
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter) {
         this(recordReader, converter, 10, -1, -1);
     }
 
-
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int labelIndex, int numPossibleLabels) {
         this(recordReader, converter, 10, labelIndex, numPossibleLabels);
+    }
+
+
+    /**
+     * Main constructor
+     * @param recordReader the recordreader to use
+     * @param converter the batch size
+     * @param maxNumBatches
+     * @param labelIndex the index of the label
+     * @param numPossibleLabels the number of possible labels for classification
+     * @param regression
+     */
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression) {
+        this.recordReader = recordReader;
+        this.converter = converter;
+        this.batchSize = batchSize;
+        this.maxNumBatches = maxNumBatches;
+        this.labelIndex = labelIndex;
+        this.numPossibleLabels = numPossibleLabels;
+        this.regression = regression;
     }
 
 
@@ -150,6 +139,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 dataSets.add(getDataSet(record));
             }
         }
+        batchNum++;
+
         List<INDArray> inputs = new ArrayList<>();
         List<INDArray> labels = new ArrayList<>();
 
@@ -158,9 +149,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             labels.add(data.getLabels());
         }
 
+
         if(inputs.isEmpty()) {
-            overshot = true;
+            notOvershot = false;
             return last;
+        } else if (maxNumBatches > -1 && batchNum >= maxNumBatches){
+            notOvershot = false;
         }
 
         DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
@@ -248,8 +242,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
-        if (recordReader instanceof RecordReader)
+        if (recordReader instanceof RecordReader){
+            batchNum = 0;
+            notOvershot = true;
             recordReader.reset();
+        }
         else if (recordReader instanceof SequenceRecordReader)
             throw new UnsupportedOperationException("Reset not supported for SequenceRecordReader type.");
     }
@@ -268,7 +265,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public int numExamples() {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -276,11 +272,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.preProcessor = preProcessor;
     }
 
-
-
     @Override
     public boolean hasNext() {
-        return recordReader.hasNext() || overshot;
+        return (recordReader.hasNext() && notOvershot);
     }
 
     @Override
@@ -297,4 +291,5 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public List<String> getLabels(){
         return recordReader.getLabels();
     }
+
 }
