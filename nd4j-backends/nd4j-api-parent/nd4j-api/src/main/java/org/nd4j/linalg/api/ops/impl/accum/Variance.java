@@ -84,6 +84,11 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
+    public INDArray noOp() {
+        return Nd4j.zerosLike(x());
+    }
+
+    @Override
     public double op(double origin) {
         return origin - mean;
     }

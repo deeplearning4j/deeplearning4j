@@ -170,7 +170,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-            return op.x();
+            return op.noOp();
 
         INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
         op.setZ(ret);

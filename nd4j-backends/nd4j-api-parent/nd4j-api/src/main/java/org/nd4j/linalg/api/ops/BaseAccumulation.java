@@ -37,6 +37,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation() {
     }
 
+
     /**
      * Initialize with the given
      * input, pairwise transform, result, and number
@@ -66,6 +67,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     private void init() {
         init(x, y, x, x.length());
+    }
+
+    @Override
+    public INDArray noOp() {
+        return x();
     }
 
     @Override
