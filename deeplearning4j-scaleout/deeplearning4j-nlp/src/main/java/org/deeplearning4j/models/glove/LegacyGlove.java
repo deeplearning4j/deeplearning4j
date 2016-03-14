@@ -138,7 +138,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
         if(lookupTable == null) {
             lookupTable = new GloveWeightLookupTable.Builder()
-                    .cache(textVectorizer.vocab()).lr(learningRate)
+                    .cache(textVectorizer.getVocabCache()).lr(learningRate)
                     .vectorLength(layerSize).maxCount(maxCount)
                    .build();
         }

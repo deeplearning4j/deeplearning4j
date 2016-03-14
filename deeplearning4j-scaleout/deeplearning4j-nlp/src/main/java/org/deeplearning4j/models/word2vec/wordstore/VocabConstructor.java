@@ -10,6 +10,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private boolean fetchLabels = false;
     private int limit;
     private AtomicLong seqCount = new AtomicLong(0);
+    private InvertedIndex<T> index;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -225,6 +227,14 @@ public class VocabConstructor<T extends SequenceElement> {
                             T element = tempHolder.wordFor(token);
                             element.incrementSequencesCount();
                         }
+
+                        if (index != null) {
+                            if (document.getSequenceLabel() != null) {
+                                index.addWordsToDoc(index.numDocuments(), document.getElements(), document.getSequenceLabel());
+                            } else {
+                                index.addWordsToDoc(index.numDocuments(),document.getElements());
+                            }
+                        }
                     }
                 }
 
@@ -295,6 +305,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private List<String> stopWords = new ArrayList<>();
         private boolean useAdaGrad = false;
         private boolean fetchLabels = false;
+        private InvertedIndex<T> index;
         private int limit;
 
         public Builder() {
@@ -381,6 +392,11 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 
+        public Builder<T> setIndex(InvertedIndex<T> index) {
+            this.index = index;
+            return this;
+        }
+
         public VocabConstructor<T> build() {
             VocabConstructor<T> constructor = new VocabConstructor<T>();
             constructor.sources = this.sources;
@@ -389,6 +405,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.useAdaGrad = this.useAdaGrad;
             constructor.fetchLabels = this.fetchLabels;
             constructor.limit = this.limit;
+            constructor.index = this.index;
 
             return constructor;
         }
