@@ -13,7 +13,6 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
-
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -111,33 +110,59 @@ namespace functions {
 
                 int xElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
                 int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-
                 //length for the tad
                 int yLength = shape::length(yShapeInfo);
                 //length for the tad
                 int xLength = shape::length(xShapeInfo);
+               char xOrder = shape::order(xShapeInfo);
+                if(xOrder == 'c') {
+                    int lenMod = shape::stride(xShapeInfo)[dimension[0]];
+                    int *xStride = shape::stride(xShapeInfo);
+                    int rank = shape::rank(xShapeInfo);
 
-                //optimized loop for vectorization
-                if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+                    //optimized loop for vectorization
+                    if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp parallel for
-                    for (int i = 0; i < xLength; i++) {
-                        int yOffset2 =  ((i / xElementWiseStride) % yLength)
-                                        * yElementWiseStride;
-                        result[i] = op(x[i], y[yOffset2]);
+                        for (int i = 0; i < xLength; i++) {
+                            int yOffset2 =  (i / lenMod);
+                            printf("Mapping x %d to y %d with lenmod %d as result %f with input %f\n",i,yOffset2,lenMod,result[i],x[i]);
+                            result[i] = op(x[i], y[yOffset2]);
 
 
+                        }
                     }
+
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < xLength; i++) {
+                            int yOffset2 =  (i / lenMod) * yElementWiseStride;
+                            result[i] = op(x[i], y[yOffset2]);
+
+                        }
+                    }
+
                 }
 
-                else {
+                else if(xOrder == 'f') {
+                    if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp parallel for
-                    for (int i = 0; i < xLength; i++) {
-                        int yOffset2 =  ((i / xElementWiseStride) % yLength)
-                                        * yElementWiseStride;
-                        result[i] = op(x[i], y[yOffset2]);
+                        for (int i = 0; i < xLength; i++) {
+                            int yOffset2 =  (i % yLength) * yElementWiseStride;
+                            result[i] = op(x[i], y[yOffset2]);
+
+
+                        }
+                    }
+
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < xLength; i++) {
+                            int yOffset2 =  (i % yLength) * yElementWiseStride;
+                            result[i] = op(x[i], y[yOffset2]);
 
 
 
+                        }
                     }
                 }
 

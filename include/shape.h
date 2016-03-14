@@ -254,6 +254,18 @@ namespace shape {
 
     int isVector(int *shape, int rank);
 
+
+    /**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of the shape
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shape, int rank);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -1745,6 +1757,26 @@ namespace shape {
                 return 1;
         }
         return 0;
+    }
+
+    /**
+ * Returns whether the
+ * given shape is a vector or not
+ * @param shape the shape of the array
+ * @param rank the rank of the shape
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shape, int rank) {
+        if (rank > 2)
+            return 0;
+        else if (rank <= 2) {
+            if (shape[0] == 1 || shape[1] == 1)
+                return 0;
+        }
+        return 1;
     }
 
 /**
