@@ -281,7 +281,7 @@ public abstract class LegacyBaseTextVectorizer implements TextVectorizer {
     }
 
 
-    public InvertedIndex index() {
+    public InvertedIndex getIndex() {
         return index;
     }
 }
