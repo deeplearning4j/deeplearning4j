@@ -21,7 +21,7 @@ DL4J provides the HistogramIterationListener as a method of visualizing in your 
 
     MultiLayerNetwork model = new MultiLayerNetwork(conf);
     model.init();
-    model.setListeners(new HistogramIterationListener(1)));
+    model.setListeners(new HistogramIterationListener(1));
 
 Once network training starts (specifically, after the first parameter update) your browser should automatically open to display the network. (If the browser does not open: check the console output for an address, and go to that address manually.)
 
