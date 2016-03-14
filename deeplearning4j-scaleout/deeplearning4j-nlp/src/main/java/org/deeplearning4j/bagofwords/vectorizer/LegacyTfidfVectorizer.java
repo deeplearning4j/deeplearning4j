@@ -69,7 +69,8 @@ public class LegacyTfidfVectorizer extends LegacyBaseTextVectorizer implements S
 
 
     private double tfForWord(String word) {
-        return MathUtils.tf(cache.wordFrequency(word));
+        //return MathUtils.tf(cache.wordFrequency(word));
+        return 0;
     }
 
     private double idfForWord(String word) {

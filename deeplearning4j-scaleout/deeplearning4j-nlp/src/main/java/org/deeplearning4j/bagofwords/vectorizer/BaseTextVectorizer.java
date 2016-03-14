@@ -56,4 +56,14 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     public void fit() {
         buildVocab();
     }
+
+    /**
+     * Returns the number of words encountered so far
+     *
+     * @return the number of words encountered so far
+     */
+    @Override
+    public long numWordsEncountered() {
+        return vocabCache.totalWordOccurrences();
+    }
 }
