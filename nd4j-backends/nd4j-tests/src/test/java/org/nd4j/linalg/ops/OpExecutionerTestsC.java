@@ -523,6 +523,25 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testSubColumnVector() {
+        INDArray vec = Nd4j.linspace(1,18,18);
+        INDArray matrix = vec.dup().reshape(3,6);
+        INDArray vector = Nd4j.create(new double[]{6,12,18}).reshape(3,1);
+        INDArray assertion = Nd4j.create(new double[]{-5.0,-4.0,-3.0,-2.0,-1.0,0.0,-5.0,-4.0,-3.0,-2.0,-1.0,0.0,-5.0,-4.0,-3.0,-2.0,-1.0,0.0},new int[]{3,6});
+        INDArray test = matrix.subColumnVector(vector);
+        assertEquals(assertion,test);
+    }
+
+    @Test
+    public void testSoftmax() {
+        INDArray vec = Nd4j.linspace(1,18,18);
+        INDArray matrix = vec.dup().reshape(3,6);
+        Nd4j.getExecutioner().exec(new SoftMax(matrix));
+        INDArray assertion = Nd4j.create(new double[]{0.0042697787,0.011606461,0.031549633,0.085760795,0.23312202,0.6336913,0.0042697787,0.011606461,0.031549633,0.085760795,0.23312202,0.6336913,0.0042697787,0.011606461,0.031549633,0.085760795,0.23312202,0.6336913},new int[]{3,6},'c');
+       assertEquals(assertion,matrix);
+    }
+
+    @Test
     public void testStdev() {
 
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f}, new int[]{1, 3}, ordering());

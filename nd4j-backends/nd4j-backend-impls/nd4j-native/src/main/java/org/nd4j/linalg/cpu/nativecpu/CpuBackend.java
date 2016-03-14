@@ -26,8 +26,9 @@ import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
 
 /**
- * Jblas backend
+ * Cpu backend
  *
+ * @author Adam Gibson
  */
 public class CpuBackend extends Nd4jBackend {
 

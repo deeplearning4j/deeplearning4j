@@ -66,7 +66,12 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        throw new UnsupportedOperationException();
+        return 38;
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
     }
 
     @Override
@@ -189,6 +194,7 @@ public class SoftMax extends BaseTransformOp {
             } else {
                 exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
             }
+
             INDArray sum = exp.sum(dimensions);
             exp.diviColumnVector(sum);
 
