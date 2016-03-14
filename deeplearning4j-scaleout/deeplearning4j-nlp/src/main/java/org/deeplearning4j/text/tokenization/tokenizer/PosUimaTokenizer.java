@@ -56,7 +56,7 @@ public class PosUimaTokenizer  implements Tokenizer {
     }
 
     public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags, boolean stripNones) {
-        if(this.engine == null)
+        if(PosUimaTokenizer.engine == null)
             PosUimaTokenizer.engine = engine;
         this.allowedPosTags = allowedPosTags;
         this.tokens = new ArrayList<String>();
