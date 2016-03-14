@@ -25,6 +25,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -121,7 +123,8 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         protected LabelAwareIterator iterator;
         protected int minWordFrequency;
         protected VocabCache<VocabWord> vocabCache;
-        protected LabelsSource labelsSource;
+        protected LabelsSource labelsSource = new LabelsSource();
+        protected List<String> stopWords = new ArrayList<>();
 
         public Builder() {
             ;
@@ -138,12 +141,22 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         }
 
         public Builder setIterator(@NonNull SentenceIterator iterator) {
-            this.iterator = new SentenceIteratorConverter(iterator);
+            this.iterator = new SentenceIteratorConverter(iterator, labelsSource);
             return this;
         }
 
         public Builder setVocab(@NonNull VocabCache<VocabWord> vocab) {
             this.vocabCache = vocab;
+            return this;
+        }
+
+        public Builder setMinWordFrequency(int minWordFrequency) {
+            this.minWordFrequency = minWordFrequency;
+            return this;
+        }
+
+        public Builder setStopWords(Collection<String> stopWords) {
+
             return this;
         }
 
@@ -153,6 +166,7 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
             vectorizer.tokenizerFactory = this.tokenizerFactory;
             vectorizer.iterator = this.iterator;
             vectorizer.minWordFrequency = this.minWordFrequency;
+            vectorizer.labelsSource = this.labelsSource;
 
             if (this.vocabCache == null) {
                 this.vocabCache = new AbstractCache.Builder<VocabWord>().build();
