@@ -253,8 +253,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int docAppearedIn(String word) {
-        // TODO: to be implemented
-        return 0;
+        if (vocabulary.containsKey(word)) {
+            return (int) vocabulary.get(word).getSequencesCount();
+        } else return -1;
     }
 
     /**

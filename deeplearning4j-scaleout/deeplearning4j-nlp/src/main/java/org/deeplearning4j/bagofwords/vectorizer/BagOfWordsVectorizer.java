@@ -81,16 +81,6 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
         return input;
     }
 
-    /**
-     * Returns the number of words encountered so far
-     *
-     * @return the number of words encountered so far
-     */
-    @Override
-    public long numWordsEncountered() {
-        return 0;
-    }
-
 
     /**
      * @param input the text to vectorize
@@ -132,6 +122,11 @@ public class BagOfWordsVectorizer extends  BaseTextVectorizer {
 
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
+            return this;
+        }
+
+        public Builder setIterator(@NonNull LabelAwareIterator iterator) {
+            this.iterator = iterator;
             return this;
         }
 

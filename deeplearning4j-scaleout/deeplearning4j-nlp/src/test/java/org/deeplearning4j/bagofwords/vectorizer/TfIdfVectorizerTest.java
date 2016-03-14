@@ -26,16 +26,21 @@ import org.apache.commons.io.FileUtils;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,33 +55,66 @@ public class TfIdfVectorizerTest {
 
     private static final Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
 
-    private InvertedIndex<VocabWord> index;
-    private  VocabCache<VocabWord> cache;
-
-    @Before
-    public void before() throws Exception {
-        FileUtils.deleteDirectory(new File("tfidf"));
-
-        cache = new InMemoryLookupCache();
-        index = new LuceneInvertedIndex.Builder<VocabWord>().cache(cache)
-                .indexDir(new File("tfidf"))
-                .batchSize(5)
-                .cacheInRam(false)
-                .build();
-
-    }
-
-    @After
-    public void after() throws Exception {
-        if(index != null)
-            index.cleanup();
-
-        FileUtils.deleteDirectory(new File("tfidf"));
-    }
 
     @Test
     public void testTfIdfVectorizer() throws Exception {
-   /*     File rootDir = new ClassPathResource("rootdir").getFile();
+        File rootDir = new ClassPathResource("tripledir").getFile();
+        LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
+        TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+
+        TfIdfVectorizer vectorizer = new TfIdfVectorizer.Builder()
+                .setMinWordFrequency(1)
+                .setStopWords(new ArrayList<String>())
+                .setTokenizerFactory(tokenizerFactory)
+                .setIterator(iter)
+//                .labels(labels)
+//                .cleanup(true)
+                .build();
+
+        vectorizer.fit();
+        VocabWord word =vectorizer.getVocabCache().wordFor("file.");
+        assumeNotNull(word);
+        assertEquals(word,vectorizer.getVocabCache().tokenFor("file."));
+        assertEquals(3,vectorizer.getVocabCache().totalNumberOfDocs());
+
+        assertEquals(3, word.getSequencesCount());
+        assertEquals(3, word.getElementFrequency(), 0.1);
+
+        VocabWord word1 =vectorizer.getVocabCache().wordFor("1");
+
+        assertEquals(1, word1.getSequencesCount());
+        assertEquals(1, word1.getElementFrequency(), 0.1);
+
+        log.info("Labels used: " + vectorizer.getLabelsSource().getLabels());
+        assertEquals(3, vectorizer.getLabelsSource().getNumberOfLabelsUsed());
+
+        assertEquals(3, vectorizer.getVocabCache().totalNumberOfDocs());
+
+        assertEquals(11, vectorizer.numWordsEncountered());
+
+        INDArray vector = vectorizer.transform("This is 3 file.");
+        log.info("TF-IDF vector: " + Arrays.toString(vector.data().asDouble()));
+
+        assertEquals(0, vector.getDouble(0), 0.001);
+        assertEquals(0.088, vector.getDouble(1), 0.001);
+        assertEquals(0.088, vector.getDouble(2), 0.001);
+        assertEquals(0, vector.getDouble(3), 0.001);
+        assertEquals(0.119, vector.getDouble(4), 0.001);
+        assertEquals(0, vector.getDouble(5), 0.001);
+        assertEquals(0, vector.getDouble(6), 0.001);
+
+
+        DataSet dataSet = vectorizer.vectorize("This is 3 file.", "label3");
+        assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
+        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
+        assertEquals(1.0, dataSet.getLabels().getDouble(2), 0.1);
+
+    }
+
+    @Test
+    @Ignore
+    public void testLegacyTFIDF() throws Exception{
+        File rootDir = new ClassPathResource("rootdir").getFile();
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> docStrings = new ArrayList<>();
 
@@ -85,13 +123,19 @@ public class TfIdfVectorizerTest {
 
         iter.reset();
 
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
         List<String> labels = Arrays.asList("label1","label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         TextVectorizer vectorizer = new LegacyTfidfVectorizer.Builder()
-                .minWords(1).index(index).cache(cache)
+                .minWords(1)
+//                .index(index)
+                .cache(cache)
                 .stopWords(new ArrayList<String>())
-                .tokenize(tokenizerFactory).labels(labels)
-                .iterate(iter).build();
+                .tokenize(tokenizerFactory)
+                .labels(labels)
+                .iterate(iter)
+                .build();
 
         vectorizer.fit();
         try {
@@ -101,23 +145,9 @@ public class TfIdfVectorizerTest {
             ;
         }
 
-        VocabWord word = (VocabWord) vectorizer.vocab().wordFor("file");
-        assumeNotNull(word);
-        assertEquals(word,vectorizer.vocab().tokenFor("file"));
+        INDArray vector = vectorizer.transform("This is 1 file.");
+        log.info("Vector: " + vector);
 
 
-        int[] docs = vectorizer.index().allDocs();
-        InvertedIndex<VocabWord> localIndex  =  vectorizer.index();
-        for(int i : docs) {
-            StringBuilder sb = new StringBuilder();
-            List<VocabWord> doc = localIndex.document(i);
-            for(VocabWord w : doc)
-                sb.append(" " + w.getWord());
-            log.info("Doc " + sb.toString());
-        }
-
-        assertEquals(docStrings.size(),docs.length);
-        assertEquals(docStrings.size(), localIndex.documents(word).length);
-*/
     }
 }
