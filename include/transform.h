@@ -11,6 +11,8 @@
 #include <op.h>
 #include <omp.h>
 #include <dll.h>
+#include "reduce.h"
+#include "broadcasting.h"
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
@@ -2977,70 +2979,48 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if (shape::isMatrix(xShapeBuffer)) {
-                        printf("In matrix softmax\n");
+                    if (shape::isMatrix(xShapeBuffer,2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
-                        //max for each row: assuming max along dimension 1
-                        T tmp[shape[0]];
-#pragma omp parallel for
-                        for (int i = 0; i < shape[0]; i++) {
-                            tmp[i] = 0.0;
-                        }
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                       int len = shape::length(xShapeBuffer);
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        T maxResult[shape[0]];
+                        for(int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
+                        int maxShape[2] = {shape[0],1};
+                        int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
+                        max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
 
-                        //max for each column
-#pragma omp parallel for collapse(2)
-                        for (int i = 0; i < shape[0]; i++) {
-                            for (int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i, j};
-                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
-                                tmp[i] = nd4j::math::nd4j_max<T>(tmp[i], dx[offset]);
-                                result[offset] = dx[offset];
-                            }
-                        }
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        sub->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
 
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result,resultShapeBuffer,result,resultShapeBuffer,extraParams);
 
-                        //subtract max for each column
-#pragma omp parallel for collapse(2)
-                        for (int i = 0; i < shape[0]; i++) {
-                            for (int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i, j};
-                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
-                                result[offset] = nd4j::math::nd4j_exp<T>(result[i] - tmp[i]);
-                            }
-                        }
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result,resultShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
 
-
-                        //now collect sums for each column to normalize to 1
-#pragma omp parallel for
-                        for (int i = 0; i < shape[0]; i++) {
-                            tmp[i] = 0.0;
-                        }
-
-                        //sum for each column
-#pragma omp parallel for collapse(2)
-                        for (int i = 0; i < shape[0]; i++) {
-                            for (int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i, j};
-                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
-                                tmp[i] += result[offset];
-
-                            }
-                        }
-
-                        //divide by the sum for each column
-#pragma omp parallel for collapse(2)
-                        for (int i = 0; i < shape[0]; i++) {
-                            for (int j = 0; j < shape[1]; j++) {
-                                int indexes[2] = {i, j};
-                                int offset = shape::getOffset(0, shape, stride, indexes, 2);
-                                result[offset] /= tmp[i];
-                            }
-                        }
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        div->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
 
 
+                        delete exp;
+                        delete sub;
+                        delete sum;
+                        delete max;
+                        delete div;
+
+                        delete[] maxResultShapeBuffer;
                     }
-                    else if (shape::isVector(xShapeBuffer)) {
+                    else if (shape::isVector(xShapeBuffer,2)) {
                         T max = 0;
                         T sum = 0;
 
@@ -3076,7 +3056,11 @@ namespace functions {
 
 #pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-                                max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
+#pragma omp critical
+                                {
+                                    max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
+
+                                }
                             }
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
@@ -3090,7 +3074,10 @@ namespace functions {
 
 #pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-                                sum += result[i * elementWiseStride];
+#pragma omp critical
+                                {
+                                    sum += result[i * elementWiseStride];
+                                }
                             }
 
 #pragma omp parallel for
@@ -3101,7 +3088,7 @@ namespace functions {
                         }
                     }
                 }
-            
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -3128,6 +3115,10 @@ namespace functions {
 
 #endif
                 virtual ~SoftMax() {
+                }
+
+                SoftMax() {
+                    this->requiresSpecial = true;
                 }
 
 

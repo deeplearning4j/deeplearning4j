@@ -8,6 +8,7 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <nd4jmalloc.h>
+#pragma once
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
