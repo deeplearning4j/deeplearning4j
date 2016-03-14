@@ -46,10 +46,15 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
     private AnalysisEngine tokenizer;
     private Collection<String> allowedPoSTags;
     private TokenPreProcess tokenPreProcess;
+    private boolean stripNones = false;
 
+    public PosUimaTokenizerFactory(Collection<String> allowedPoSTags, boolean stripNones) {
+        this(defaultAnalysisEngine(),allowedPoSTags);
+        this.stripNones = stripNones;
+    }
 
     public PosUimaTokenizerFactory(Collection<String> allowedPoSTags) {
-        this(defaultAnalysisEngine(),allowedPoSTags);
+        this(allowedPoSTags, false);
     }
 
     public PosUimaTokenizerFactory(AnalysisEngine tokenizer,Collection<String> allowedPosTags) {
@@ -73,8 +78,8 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        PosUimaTokenizer t =  new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags);
-        t.setTokenPreProcessor(tokenPreProcess);
+        PosUimaTokenizer t =  new PosUimaTokenizer(toTokenize,tokenizer,allowedPoSTags, stripNones);
+        if (tokenPreProcess!= null) t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
 
