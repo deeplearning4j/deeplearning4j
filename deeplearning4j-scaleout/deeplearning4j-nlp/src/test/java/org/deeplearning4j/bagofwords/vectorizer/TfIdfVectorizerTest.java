@@ -35,6 +35,7 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -109,6 +110,17 @@ public class TfIdfVectorizerTest {
         assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
         assertEquals(1.0, dataSet.getLabels().getDouble(2), 0.1);
 
+
+        File tempFile = File.createTempFile("somefile","Dsdas");
+        tempFile.deleteOnExit();
+
+        SerializationUtils.saveObject(vectorizer, tempFile);
+
+        TfIdfVectorizer vectorizer2 = SerializationUtils.readObject(tempFile);
+        vectorizer2.setTokenizerFactory(tokenizerFactory);
+
+        dataSet = vectorizer2.vectorize("This is 3 file.", "label2");
+        assertEquals(vector, dataSet.getFeatureMatrix());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -20,7 +21,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public abstract class BaseTextVectorizer implements TextVectorizer {
-    protected transient TokenizerFactory tokenizerFactory;
+    @Setter protected transient TokenizerFactory tokenizerFactory;
     protected transient LabelAwareIterator iterator;
     protected int minWordFrequency;
     @Getter protected VocabCache<VocabWord> vocabCache;

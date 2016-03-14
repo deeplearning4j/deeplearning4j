@@ -32,6 +32,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -120,6 +121,18 @@ public class BagOfWordsVectorizerTest {
 
         assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
         assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);
+
+        // Serialization check
+        File tempFile = File.createTempFile("fdsf", "fdfsdf");
+        tempFile.deleteOnExit();
+
+        SerializationUtils.saveObject(vectorizer, tempFile);
+
+        BagOfWordsVectorizer vectorizer2 = SerializationUtils.readObject(tempFile);
+        vectorizer2.setTokenizerFactory(tokenizerFactory);
+
+        dataSet = vectorizer2.vectorize("This is 2 file.", "label2");
+        assertEquals(array, dataSet.getFeatureMatrix());
     }
 
 
