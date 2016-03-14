@@ -103,5 +103,5 @@ public interface TextVectorizer extends Vectorizer {
      * Inverted index
      * @return the inverted index for this vectorizer
      */
-    //InvertedIndex<VocabWord> index();
+    InvertedIndex<VocabWord> getIndex();
 }
