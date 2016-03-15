@@ -3,7 +3,7 @@ title:
 layout: kr-default
 ---
 
-# DL4J의 순환 신경망 (Recurrent Neural Networks in DL4J)
+# DL4J의 RNNs (순환 신경망,Recurrent Neural Networks in DL4J)
 
 이 문서는 구체적인 교육 특징들과 그들을 DeepLearning4J에서 사​​용하는 방법의 실용성을 설명합니다. 이 문서는 순환 신경망과 그의 사용에 익숙함을 가정합니다 - 이는 순환 신경망을 소개하는 곳이 아니며, 그 사용과 용어 모두에 어느 정도 익숙함을 가정합니다. 만약 여러분께서 RNNs을 처음 사용하신다면, 이 페이지를 진행하기 전에 [순환 신경망 및 LSTMs로의 초보자 가이드를 참조](http://deeplearning4j.org/lstm.html)하십시오.
 
