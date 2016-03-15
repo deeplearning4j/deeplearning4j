@@ -8,6 +8,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
+import org.deeplearning4j.ui.WebReporter;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -205,8 +206,9 @@ public class HistogramIterationListener implements IterationListener {
             g.setLastUpdateTime(System.currentTimeMillis());
 
 
-            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            log.debug("{}",resp);
+            WebReporter.getInstance().queueReport(target, Entity.entity(g,MediaType.APPLICATION_JSON) );
+        //    Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
+       //     log.debug("{}",resp);
 
             if(openBrowser && firstIteration){
                 StringBuilder builder = new StringBuilder(connectionInfo.getFullAddress());
