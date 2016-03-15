@@ -409,7 +409,7 @@ GloVe는 아래의 코드를 참고하십시오.
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
 
-### <a name="sequence"SequenceVectors</a>
+### <a name="sequence">SequenceVectors</a>
 
 Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearning4j/blob/b6d1cdd2445b9aa36a7e8230c51cea14d00b37b3/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/sequencevectors/SequenceVectors.java)라는 클래스를 갖고 있습니다. 이 클래스는 단어 벡터보다 한 단계 더 추상화 된 클래스로, 각종 시퀀스 데이터 - 소셜 미디어 프로필, 거래 내역, 단백질 등 -의 속성들을 추출합니다. 학습 과정은 skip-gram과 계층적 softmax (Hierarchic softmax)로 이루어져 있습니다. 이것은 [DeepWalk 알고리즘](https://github.com/deeplearning4j/deeplearning4j/blob/1ee1666d3a02953fc41ef41542668dd14e020396/deeplearning4j-scaleout/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/DeepWalk/DeepWalk.java)과도  호환이 되며 이 DeepWalk 알고리즘도 DL4J에 구현이 되어있습니다.
 
