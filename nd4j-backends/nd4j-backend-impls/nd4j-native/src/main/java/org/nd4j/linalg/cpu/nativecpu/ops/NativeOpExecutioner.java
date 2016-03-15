@@ -517,7 +517,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ,op.x().shapeInfoDataBuffer().address(),
                     op.y().data().address(),
                     op.y().shapeInfoDataBuffer().address()
-                    , op.z().data().address(), op.z().shapeInfoDataBuffer().address(),
+                    , op.z().data().address(),
+                    op.z().shapeInfoDataBuffer().address(),
                     dimensionAddress, dimension.length);
         }
 

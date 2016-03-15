@@ -52,8 +52,13 @@ public class SoftMaxDerivative extends SoftMax {
     }
 
     @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
     public int opNum() {
-        throw new UnsupportedOperationException();
+        return 39;
     }
 
 
