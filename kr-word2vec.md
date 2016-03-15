@@ -23,11 +23,11 @@ layout: kr-default
 
 Word2vec은 텍스트를 처리하는 뉴럴 네트워크이며 두 개의 레이어로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [딥 뉴럴 네트워크](../neuralnet-overview.html)는 아니지만 딥 뉴럴 네트워크의 전처리 단계로 많이 쓰입니다.
 
-Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니. [Deeplearning4j](http://deeplearning4j.org/kr-quickstart.html)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
+Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](http://deeplearning4j.org/kr-quickstart.html)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
 
-Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 이것이 가능한 이유는 word embeddings의 목적이 유사한 단어일 수록 거리가 가까워 지도록 하는 벡터를 구하는 것 이기 때문입니다. 이 학습 과정은 사람의 개입 없이 말뭉치 데이터만을 사용합니다.
+Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습 과정은 사람의 개입 없이 말뭉치 데이터만을 사용합니다.
 
-데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 파악합니. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](../sentiment_analysis_word2vec.html), 추천 시스템을 만들 수 있습니다.
+데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니다. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 알아냅니다. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](../sentiment_analysis_word2vec.html), 추천 시스템을 만들 수 있습니다.
 
 정리하면, Word2vec은 각 단어마다 단어에 해당하는 벡터를 구해줍니다. 이 벡터를 다시 딥 러닝 네트워크에 집어넣어서 추가적인 일을 할 수도 있고 단어의 유사성 등 관계를 파악할 수 있습니다.
 
@@ -41,21 +41,19 @@ Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 이것�
 
 ## <a name="embed">Neural Word Embeddings</a>
 
-이렇게 뉴럴 네트워크를 이용해 word embeddings를 구하는 것을 *neural word embeddings*이라고 합니다. 이렇게 Word2vec 단어를 벡터로 바꿔주면 컴퓨터가 벡터의 숫자를 보고 단어를 이해합니다.
+이렇게 뉴럴 네트워크를 이용해 word embeddings를 구하는 것을 *neural word embeddings*이라고 합니다.
 
 즉, word embeddings은 사람의 언어를 컴퓨터의 언어로 번역하는 것 입니다.
 
 단어를 같은 의미지만 다른 표현인 벡터로 바꿔준다는 점에서 Word2vec은 오토인코더와 비슷한 면이 있습니다. 하지만 [RBM(restricted Boltzmann machine)](../kr-restrictedboltzmannmachine.html)의 [재구성(reconstruction)](../kr-restrictedboltzmannmachine.html#reconstruct) 과정과 Word2vec의 학습 과정은 좀 다릅니다. Word2vec은 입력한 말뭉치의 문장에 있는 단어와 인접 단어의 관계를 이용해 단어의 의미를 학습합니다.
 
-학습 방법은 두 종류가 있습니다. CBOW(Continous Bag Of Words) 방식은 주변 단어가 만드는 맥락을 이용해 타겟 단어를 예측하는 것이고 skip-gram은 한 단어를 기준으로 주변에 올 수 있는 단어를 예측하는 것 입니다. 대규모 데이터셋에서는 skip-gram이 더 정확한 것으로 알려져있으며 저희도 이 방식을 이용합니다.
+Word2vec의 학습 방법은 두 종류가 있습니다. CBOW(Continous Bag Of Words) 방식은 주변 단어가 만드는 맥락을 이용해 타겟 단어를 예측하는 것이고 skip-gram은 한 단어를 기준으로 주변에 올 수 있는 단어를 예측하는 것 입니다. 대규모 데이터셋에서는 skip-gram이 더 정확한 것으로 알려져있으며 저희도 이 방식을 이용합니다.
 
 ![Alt text](../img/word2vec_diagrams.png) 
 
-Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학습과 비슷합니다. 한 단어에 이미 할당된 벡터, 즉 word embedding이 있다고 가정하면 이 값을 이용해 주변 문맥을 얼마나 정확하게 예측하는지 계산합니다. 그리고 정확도가 좋지 못한 경우, 즉 추가적인 조정이 필요한 경우에 오차에 따라 벡터의 값을 업데이트합니다. 즉, 말뭉치에서 단어 주변의 문맥은 embedding 벡터의 오차를 알려주는 지표입니다. 만일 어떤 단어가 비슷한 문맥에서 사용될 경우 그 결과적으로 그 단어의 벡터 값이 비슷하게 조절될 것 입니다.
+Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학습과 비슷합니다. 한 단어에 이미 할당된 벡터, 즉 word embedding이 있다고 가정하면 이 값을 이용해 주변 문맥을 얼마나 정확하게 예측하는지 계산합니다. 그리고 정확도가 좋지 못한 경우, 즉 추가적인 조정이 필요한 경우에 오차에 따라 벡터의 값을 업데이트합니다. 즉, 학습 과정에서 한 단어를 기준으로 단어 주변의 문맥을 참고하여 현재 embedding 벡터가 얼마나 정확한지, 오차의 값은 어느 정도인지를 알아냅니다. 만일 어떤 두 단어가 비슷한 문맥에서 꾸준하게 사용될 경우 두 단어의 벡터 값은 비슷하게 됩니다.
 
-유화는 2차원 기름 혼합물인 물감을 이용해 3차원 물질을 표현합니다. 마찬가지로 한 벡터의 숫자들(예를들어 500차원 벡터라고 하면 500개의 숫자들)을 이용해 단어 하나를 표현할 수 있습니다.
-
-이 embedding 벡터는 500차원 공간에 있는 점 하나에 해당합니다. 3차원 이상의 공간은 머릿속에서 상상하기 어렵지만 word embedding은 보통 수백차원의 공간을 사용합니다. 
+전체 차원이 500차원일 경우 이 embedding 벡터는 500차원 공간에 있는 점 하나에 해당합니다. 3차원 이상의 공간은 머릿속에서 상상하기 어렵지만 word embedding은 보통 수백차원의 공간을 사용합니다. 
 
 학습이 잘 완료되었다면 이 고차원 공간에서 비슷한 단어는 근처에 위치하게 됩니다. 예를 들어 나무의 종류인 *oak*, *elm* 및 *birch* 는 비슷한 곳에 모이게 됩니다. 또 의미에 유사성이 있는 *war*(전쟁), *conflict*(갈등) 및 *strife*(불화)는 다른 위치에 모이게 됩니다.
 
@@ -63,7 +61,7 @@ Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학�
 
 ![Alt text](../img/word2vec_translation.png) 
 
-이 예제에서 두 가지를 이해하시면 됩니다. 로마, 파리, 베를린, 베이징은 전부 나라의 수도이며 비슷한 의미와 맥락에서 쓰이기 때문에 가까이 위치합니다. 뿐만 아니라, 벡터의 합과 차를 이용하면 재미있는 결과를 얻을 수 있습니다. 각 수도를 뜻하는 단어는 각 나라와 같은 관계에 있습니다. 즉 로마와 이탈리아, 베이징과 중국은 모두 수도와 국가의 관계입니다. 실제로 Word2vec을 이용해 로마(의 embedding 벡터) - 이탈리아(의 embedding 벡터) + 중국(의 embedding 벡터)를 수행하면 베이징이 나옵니다. 왜냐하면 로마-이탈리아와 중국-베이징은 상대적으로 비슷한 벡터이기 때문입니다. 
+이 예제에서 두 가지를 이해하시면 됩니다. 로마, 파리, 베를린, 베이징은 전부 나라의 수도이며 비슷한 의미와 맥락에서 쓰이기 때문에 가까이 위치합니다. 뿐만 아니라, 벡터의 합과 차를 이용하면 재미있는 결과를 얻을 수 있습니다. 각 수도를 뜻하는 단어는 각 나라와 같은 관계에 있습니다. 즉 로마와 이탈리아, 베이징과 중국은 모두 수도와 국가의 관계이므로 각각에 로마-이탈리아와 베이징-중국의 벡터 공간에서의 관계도 유사하게 학습이 되어야 합니다. 실제로 Word2vec을 이용해 로마(의 embedding 벡터) - 이탈리아(의 embedding 벡터) + 중국(의 embedding 벡터)를 수행하면 베이징이 나옵니다. 왜냐하면 `로마-이탈리아`와 `중국-베이징`은 상대적으로 비슷한 벡터이기 때문입니다. 
 
 ![Alt text](../img/countries_capitals.png) 
 
@@ -118,8 +116,8 @@ Word2vec에서 구한 유사 단어는 단어의 스펠링과 전혀 관계 없�
 
 Deeplearning4je는 자연어 처리 도구는 아래와 같습니다.
 
-* **SentenceIterator/DocumentIterator**: 데이터 셋의 데이터로 쉽게 반복 작업을 할 수 있습니다.  SentenceIterator는 문자열(string)을 반환하고 DocumentIterator는 문서의 `java.io.InputStream`를 반환합니다. 가급적 SentenceIterator을 사용하기를 권장합니다.
-* **Tokenizer/TokenizerFactory**: 텍스트를 토큰화 하는데 사용됩니다. 자연어 처리에서 보통 한 문장은 여러 토큰의 배열로 변환됩니다. TokenizerFactory는 문장 하나를 위한 tokenizer의 인스턴르를 생성합니다.
+* **SentenceIterator/DocumentIterator**: 데이터 셋의 데이터로 쉽게 반복 작업을 할 수 있습니다.  `SentenceIterator`는 문자열(string)을 반환하고 `DocumentIterator`는 문서의 `java.io.InputStream`를 반환합니다. 가급적 `SentenceIterator`을 사용하기를 권장합니다.
+* **Tokenizer/TokenizerFactory**: 텍스트를 토큰화 하는데 사용됩니다. 자연어 처리에서 보통 한 문장은 여러 토큰의 배열로 변환됩니다. `TokenizerFactory`는 문장 하나를 위한 tokenizer의 인스턴스를 생성합니다.
 * **VocabCache**: 단어의 개수, 단어를 포함하고 있는 문서의 개수, 토큰의 개수와 종류, [Bog-of-Words](../bagofwords-tf-idf.html), 단어 벡터 룩업테이블(Look Up Table, 순람표)) 등 메타 데이터를 저장하는데 쓰입니다.
 * **Inverted Index**: 단어가 발견된 위치를 메타 데이터에 저장합니다. 이 값은 데이터 셋을 이해하는데 사용할 수 있습니다. Lucene implementation[1]에 기반한 Lucene 색인이 자동으로 생성됩니다.
 
@@ -127,7 +125,7 @@ Word2vec은 위에서 여러 알고리즘으로 이루어져 있습니다. DL4J�
 
 ## <a name="setup">Word2Vec 설정</a> 
 
-Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 자세한 방법은 저희의 [퀵스타트 페이지](../kr-quickstart.html)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies)을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
+Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](../kr-quickstart.html)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
 
                 <properties>
                   <nd4j.version>0.4-rc3.8</nd4j.version> // check Maven Central for latest versions!
@@ -230,7 +228,7 @@ Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같�
 이 코드를 보면 굉장히 많은 하이퍼파라미터(파라미터를 정하는 파라미터)를 설정합니다. 이에 대해 간략히 설명드리겠습니다.
 
 * *batchSize*는 한 하드웨어(GPU나 CPU)에서 iteration 한번에 처리하는 단어의 양입니다. batchSize가 크면 GPU의 최적화된 병렬 프로세싱 덕분에 빠르게 진행이 되지만 한번에 많은 단어를 보기 위해선 많은 메모리가 필요합니다.
-* *minWordFrequency*는 말뭉치에서 유효한 단어로 인정받는데 필요한 최소 단어 개수입니다. 즉, 이 값보다 적게 나타난 단어는 없는 단어로 간주합니다. 이렇게 하는 이유는 우선 단어의 embedding이 잘 학습되려면 단어의 용례가 여러 개 필요하기 때문입니다. 또, 잘 나타나지 않는 희귀한 단어를 제외해주면 메모리와 연산량도 더 효율적으로 사용합니다.
+* *minWordFrequency*는 말뭉치에서 유효한 단어로 인정받는데 필요한 최소 단어 개수입니다. 즉, 이 값보다 적게 나타난 단어는 없는 단어로 간주합니다. 이렇게 하는 이유는 우선 단어의 embedding이 잘 학습되려면 단어의 용례가 여러 개 필요하기 때문입니다. 또, 잘 나타나지 않는 희귀한 단어를 제외해주면 메모리와 연산량도 효율적으로 사용하게 됩니다.
 * *useAdaGrad* - Adagrad는 학습 과정의 최적화에 쓰이는 기법 중 하나입니다. 
 * *layerSize*는 단어 벡터의 차원입니다. 예를 들어 500차원 벡터로 단어를 표현하려면 이 값을 500으로 설정하면 됩니다.
 * *iterations* 이 값은 전체 데이터에 몇 회의 학습을 반복할 것인지를 정합니다. 횟수가 부족하면 데이터에서 추출 가능한 정보를 다 쓰지 않고 학습을 끝내게 되므로 성능이 떨어집니다. 그러나 너무 많은 반복을 하는 것은 비효율 적입니다. 이 값은 상황에 따라 다르기 때문에 우선 학습을 해보고 결과를 관찰하며 조절합니다.
@@ -335,7 +333,7 @@ Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man -
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
-학습 과정에서 단어는 우선 하나의 벡터에 할당이 되고, *그 단어를 중심으로 전후의 몇 단어를 같이 읽습니다*. 이렇게 연속된 n개의 단어를 통째로 n-그램이라고 합니다. n-그램의 특수한 케이스로, 단어를 띄어쓰기 기준으로 하나의 단어를 하나의 개체로 보는 것을 유니그램(unigram, n=1), 두 개씩 이어서 생각하는 것을 바이그램(bigram, n=2)이라고 합니다. 즉 n-그램은 문서를 n개의 연속된 단어 단위로 자른 것 입니다. 예를 들어 문장이 '하나의 벡터에 할당이 된다.'라면 여기에는 4개의 유니그램 '하나의', '벡터에', '할당이', '된다'이 있는 것 입니다 (토큰화하는 과정은 생략하였습니다). 바이그램으로 표현하면 '하나의 벡터에', '벡터에 할당이' '할당이 된다' 이렇게 3개의 바이그램을 만들 수 있습니다. 스킵그램(skip-gram)은 n-그램에서 중심이 되는 단어를 제외한 것 입니다. 
+학습 과정에서 단어는 우선 하나의 벡터에 할당이 되고, *그 단어를 중심으로 전후의 몇 단어를 같이 읽습니다*. 이렇게 연속된 n개의 단어를 통째로 n-그램이라고 합니다. n-그램의 특수한 케이스로, 단어를 띄어쓰기 기준으로 하나의 단어를 하나의 개체로 보는 것을 유니그램(unigram, n=1), 두 개씩 이어서 생각하는 것을 바이그램(bigram, n=2)이라고 합니다. 즉 n-그램은 문서를 n개의 연속된 단어 단위로 자른 것 입니다. 예를 들어 문장이 '하나의 벡터에 할당이 된다.'라면 여기에는 4개의 유니그램 '하나의', '벡터에', '할당이', '된다'이 있는 것 입니다 (토큰화하는 과정은 생략하였습니다). 바이그램으로 표현하면 '하나의 벡터에', '벡터에 할당이' '할당이 된다' 이렇게 3개의 바이그램을 만들 수 있습니다. 스킵그램(skip-gram)은 n-그램에서 기준이 되는 단어를 제외한 것 입니다. 
 
 DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 더 정확한 것으로 알려져있습니다.
 
@@ -347,7 +345,7 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-[퀵 스타트 가이드](../kr-quickstart.html)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 null값을 반환할 것 입니다. 
+[퀵 스타트 가이드](../kr-quickstart.html)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다. 
 
 ### <a name="trouble">문제 해결 및 Word2Vec 튜닝하기</a>
 
@@ -423,7 +421,7 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 * `Word2Vec.Builder`는 `hugeModelExpected` 옵션을 가지고 있습니다. 이 값을 `true`로 설정하면 모델을 빌드하는 과정에서 주기적으로 단어를 잘라냅니다.
 * `minWordFrequency`를 적절히 설정할 수 있습니다.
 * WordVectorsSerialiaztion 방식은 두 가지가 있습니다. `writeFullModel` 와 `loadFullModel`입니다. 
-* 최신 워크스테이션은 몇 백만개의 단어를 처리합니다. Deeplearning4j의 Word2vec 구현은 단일 머신에서 몇 테라 바이트의 데이터를 모델링 합니다. 데이터의 크기는 대략 `vectorSize * 4 * 3 * vocab.size()`으로 계산합니다.
+* 최신 워크스테이션은 몇 백만개의 단어를 처리합니다. Deeplearning4j의 Word2vec 구현은 단일 머신에서 수 테라 바이트의 데이터를 모델링 할 수 있습니다. 데이터의 크기는 대략 `vectorSize * 4 * 3 * vocab.size()`으로 계산합니다.
 
 ### Doc2vec과 다른 리소스들
 
