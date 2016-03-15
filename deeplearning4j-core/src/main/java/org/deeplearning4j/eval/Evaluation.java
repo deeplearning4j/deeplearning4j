@@ -265,7 +265,7 @@ public class Evaluation implements Serializable {
     }
 
     public String stats() {
-        return stats(true);
+        return stats(false);
     }
 
     /**
