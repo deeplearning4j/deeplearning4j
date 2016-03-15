@@ -106,7 +106,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, Random rng) {
-		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2], numExamples, rng), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
+		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2], numExamples, numCategories, rng), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
 	}
 
 }
