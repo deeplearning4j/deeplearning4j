@@ -3125,6 +3125,383 @@ namespace functions {
             };
 
 
+
+
+            /**
+ * softmax(x)
+ */
+            template<typename T>
+            class LogSoftMax : public Transform<T> {
+            public:
+                /**
+                                        * CPU operation execution
+                                        * @param dx the input data
+                                        * @param xStride the stride to iterate over
+                                        * the x input
+                                        * @param y the y data
+                                        * @param yStride the stride to iterate
+                                        * over the y buffer
+                                        * @param result the buffer
+                                        * to store the result in
+                                        * @param resultStride the stride for the buffer
+                                        * @param extraParams the extra parameters for the transform
+                                        * @param n the length of the input
+                                        */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    if (shape::isMatrix(xShapeBuffer,2)) {
+                        int *shape = shape::shapeOf(xShapeBuffer);
+                        int *stride = shape::stride(xShapeBuffer);
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                        int len = shape::length(xShapeBuffer);
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        T maxResult[shape[0]];
+                        for(int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
+                        int maxShape[2] = {shape[0],1};
+                        int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
+                        max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
+
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        sub->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
+
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result,resultShapeBuffer,result,resultShapeBuffer,extraParams);
+
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result,resultShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
+
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        div->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
+
+                        functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
+                        log->exec(result,resultShapeBuffer,result,resultShapeBuffer,extraParams);
+
+                        delete exp;
+                        delete sub;
+                        delete sum;
+                        delete max;
+                        delete div;
+                        delete log;
+
+                        delete[] maxResultShapeBuffer;
+                    }
+                    else if (shape::isVector(xShapeBuffer,2)) {
+                        T max = 0;
+                        T sum = 0;
+
+                        int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                        int length = shape::length(xShapeBuffer);
+                        if (elementWiseStride == 1) {
+#pragma omp parallel for shared(max)
+                            for (int i = 0; i < length; i++) {
+                                max = nd4j::math::nd4j_max<T>(max, result[i]);
+                            }
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] -= max;
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] = nd4j::math::nd4j_exp<T>(result[i]);
+                            }
+
+#pragma omp parallel for shared(sum)
+                            for (int i = 0; i < length; i++) {
+                                sum += result[i];
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] /= sum;
+                            }
+
+                        }
+                        else {
+
+#pragma omp parallel for shared(max)
+                            for (int i = 0; i < length; i++) {
+#pragma omp critical
+                                {
+                                    max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
+
+                                }
+                            }
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] -= max;
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
+                            }
+
+#pragma omp parallel for shared(sum)
+                            for (int i = 0; i < length; i++) {
+#pragma omp critical
+                                {
+                                    sum += result[i * elementWiseStride];
+                                }
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] /= sum;
+                            }
+
+                        }
+                    }
+                }
+
+                /**
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T *params) {
+                    return nd4j::math::softplus<T>(d1);
+                }
+
+
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~LogSoftMax() {
+                }
+
+                LogSoftMax() {
+                    this->requiresSpecial = true;
+                }
+
+
+            };
+
+
+
+            /**
+ * softmax(x)
+ */
+            template<typename T>
+            class SoftMaxDerivative : public Transform<T> {
+            public:
+                /**
+                                        * CPU operation execution
+                                        * @param dx the input data
+                                        * @param xStride the stride to iterate over
+                                        * the x input
+                                        * @param y the y data
+                                        * @param yStride the stride to iterate
+                                        * over the y buffer
+                                        * @param result the buffer
+                                        * to store the result in
+                                        * @param resultStride the stride for the buffer
+                                        * @param extraParams the extra parameters for the transform
+                                        * @param n the length of the input
+                                        */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    if (shape::isMatrix(xShapeBuffer,2)) {
+                        int *shape = shape::shapeOf(xShapeBuffer);
+                        int *stride = shape::stride(xShapeBuffer);
+
+                        int xEleStride = shape::elementWiseStride(xShapeBuffer);
+                        int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
+
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                        int len = shape::length(xShapeBuffer);
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        T maxResult[shape[0]];
+                        for(int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
+                        int maxShape[2] = {shape[0],1};
+                        int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
+                        max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
+
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        sub->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
+
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result,resultShapeBuffer,result,resultShapeBuffer,extraParams);
+
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result,resultShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
+
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        div->exec(result,resultShapeBuffer,maxResult,maxResultShapeBuffer,result,resultShapeBuffer,dimension,1);
+
+                        if(resultEleStide >= 1) {
+                            if(resultEleStide == 1) {
+#pragma omp parallel for
+                                for(int i = 0; i < len; i++) {
+                                    result[i] = result[i] * (1 - result[i]);
+                                }
+
+                            }
+                            else {
+#pragma omp parallel for
+                                for(int i = 0; i < len; i++) {
+                                    result[i * resultEleStide] = result[i * resultEleStide] * (1 - result[i * resultEleStide]);
+                                }
+
+                            }
+                        }
+
+                        else {
+                           printf("Non element wise stride not supported right now\n");
+                        }
+
+
+
+
+
+                        delete exp;
+                        delete sub;
+                        delete sum;
+                        delete max;
+                        delete div;
+
+                        delete[] maxResultShapeBuffer;
+                    }
+                    else if (shape::isVector(xShapeBuffer,2)) {
+                        T max = 0;
+                        T sum = 0;
+
+                        int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                        int length = shape::length(xShapeBuffer);
+                        if (elementWiseStride == 1) {
+#pragma omp parallel for shared(max)
+                            for (int i = 0; i < length; i++) {
+                                max = nd4j::math::nd4j_max<T>(max, result[i]);
+                            }
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] -= max;
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] = nd4j::math::nd4j_exp<T>(result[i]);
+                            }
+
+#pragma omp parallel for shared(sum)
+                            for (int i = 0; i < length; i++) {
+                                sum += result[i];
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i] /= sum;
+                            }
+
+                        }
+                        else {
+
+#pragma omp parallel for shared(max)
+                            for (int i = 0; i < length; i++) {
+#pragma omp critical
+                                {
+                                    max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
+
+                                }
+                            }
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] -= max;
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
+                            }
+
+#pragma omp parallel for shared(sum)
+                            for (int i = 0; i < length; i++) {
+#pragma omp critical
+                                {
+                                    sum += result[i * elementWiseStride];
+                                }
+                            }
+
+#pragma omp parallel for
+                            for (int i = 0; i < length; i++) {
+                                result[i * elementWiseStride] /= sum;
+                            }
+
+                        }
+                    }
+                }
+
+                /**
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T *params) {
+                    return nd4j::math::softplus<T>(d1);
+                }
+
+
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~SoftMaxDerivative() {
+                }
+
+                SoftMaxDerivative() {
+                    this->requiresSpecial = true;
+                }
+
+
+            };
+
         }
 
         template<typename T>
@@ -3291,6 +3668,13 @@ namespace functions {
                 else if(op == 38) {
                     return new transform::ops::SoftMax<T>();
                 }
+                else if(op == 39) {
+                    return new transform::ops::SoftMaxDerivative<T>();
+                }
+                else if(op == 40) {
+                    return new transform::ops::LogSoftMax<T>();
+                }
+
                 return ret;
             }
 
