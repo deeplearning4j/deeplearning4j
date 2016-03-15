@@ -118,27 +118,53 @@ namespace functions {
                 if(xOrder == 'c') {
                     int lenMod = shape::stride(xShapeInfo)[dimension[0]];
                     int *xStride = shape::stride(xShapeInfo);
+                    int *xShape = shape::shapeOf(xShapeInfo);
                     int rank = shape::rank(xShapeInfo);
 
                     //optimized loop for vectorization
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+                        if(dimension[0] % 2 == 0) {
+
 #pragma omp parallel for
-                        for (int i = 0; i < xLength; i++) {
-                            int yOffset2 =  (i / lenMod);
-                            printf("Mapping x %d to y %d with lenmod %d as result %f with input %f\n",i,yOffset2,lenMod,result[i],x[i]);
-                            result[i] = op(x[i], y[yOffset2]);
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i  / xStride[0]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
 
 
+                            }
                         }
+                        else {
+
+#pragma omp parallel for
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i % xShape[dimension[0]]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
+
+
+                            }
+                        }
+
                     }
 
                     else {
+                        if(dimension[0] % 2 == 0) {
 #pragma omp parallel for
-                        for (int i = 0; i < xLength; i++) {
-                            int yOffset2 =  (i / lenMod) * yElementWiseStride;
-                            result[i] = op(x[i], y[yOffset2]);
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i  / xStride[dimension[0]]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
 
+                            }
                         }
+                        else {
+#pragma omp parallel for
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i % xShape[dimension[0]]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
+
+                            }
+                        }
+
+
                     }
 
                 }
@@ -159,9 +185,6 @@ namespace functions {
                         for (int i = 0; i < xLength; i++) {
                             int yOffset2 =  (i % yLength) * yElementWiseStride;
                             result[i] = op(x[i], y[yOffset2]);
-
-
-
                         }
                     }
                 }
