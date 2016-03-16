@@ -255,14 +255,75 @@ public class ParagraphVectors extends Word2Vec {
         for(String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
-            log.info("Similarity inside: ["+s+"] -> " + sim);
+            log.debug("Similarity inside: ["+s+"] -> " + sim);
             distances.incrementCount(s, sim);
         }
 
         return distances.getSortedKeys().subList(0, limit);
     }
 
+    /**
+     * This method returns top N labels nearest to specified document
+     *
+     * @param document
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(LabelledDocument document, int topN) {
+        if (document.getReferencedContent() != null) {
+            return nearestLabels(document.getReferencedContent(), topN);
+        } else return nearestLabels(document.getContent(), topN);
+    }
 
+    /**
+     * This method returns top N labels nearest to specified text
+     *
+     * @param rawText
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(String rawText, int topN) {
+        List<String> tokens = tokenizerFactory.create(rawText).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+        return  nearestLabels(document, topN);
+    }
+
+    /**
+     * This method returns top N labels nearest to specified set of vocab words
+     *
+     * @param document
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(Collection<VocabWord> document, int topN) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * This method returns top N labels nearest to specified features vector
+     *
+     * @param labelVector
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(INDArray labelVector, int topN) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param rawText
+     * @param label
+     * @return
+     */
     public double similarityToLabel(String rawText, String label) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -276,12 +337,26 @@ public class ParagraphVectors extends Word2Vec {
         return similarityToLabel(document, label);
     }
 
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param document
+     * @param label
+     * @return
+     */
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
         } else return similarityToLabel(document.getContent(), label);
     }
 
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param document
+     * @param label
+     * @return
+     */
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
 
