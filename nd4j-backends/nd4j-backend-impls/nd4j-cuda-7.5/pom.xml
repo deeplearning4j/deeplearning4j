@@ -88,6 +88,37 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>libnd4j-checks</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireProperty>
+                                    <property>env.LIBND4J_HOME</property>
+                                    <message>You must set the LIBND4J_HOME environment variable!</message>
+                                    <regex>.*/.*</regex>
+                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!</regexMessage>
+                                </requireProperty>
+                                <requireFilesExist>
+                                    <files>
+                                        <file>${env.LIBND4J_HOME}/blas/NativeBlas.h</file>
+                                        <file>${env.LIBND4J_HOME}/blasbuild/cuda/blas</file>
+                                    </files>
+                                    <message>!!! You have to compile libnd4j with cuda support first!</message>
+                                </requireFilesExist>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
