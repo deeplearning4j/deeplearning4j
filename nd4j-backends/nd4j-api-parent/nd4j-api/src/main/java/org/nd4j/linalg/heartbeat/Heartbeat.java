@@ -35,7 +35,7 @@ public class Heartbeat {
         try {
             tracker = new GoogleAnalytics("UA-48811288-4", "nd4j", "rc3.9-SNAPSHOT");
         } catch (Exception e) {
-            ;
+
         }
 
         try {
