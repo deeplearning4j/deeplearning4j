@@ -3,7 +3,7 @@ package org.deeplearning4j.models.sequencevectors.interfaces;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 /**
- * This is interface for JSON -> SequenceElement deserialziation
+ * This is interface for JSON -> SequenceElement serialization/deserialziation
  *
  * @author raver119@gmail.com
  */

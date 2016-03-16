@@ -67,9 +67,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads word 2 vec models
+ * This is utility class, providing various methods for WordVectors serialization
  *
  * @author Adam Gibson
+ * @author raver119
  */
 public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
@@ -760,6 +761,7 @@ public class WordVectorSerializer {
     }
 
     /**
+     * This method loads full w2v model, previously saved with writeFullMethod call
      *
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
@@ -1427,7 +1429,15 @@ public class WordVectorSerializer {
         return vectors;
     }
 
-    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull File file) throws FileNotFoundException, UnsupportedEncodingException {
+    /**
+     * This method saves vocab cache to provided File.
+     * Please note: it saves only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param vocabCache
+     * @param file
+     * @throws UnsupportedEncodingException
+     */
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull File file) throws IOException {
         writeVocabCache(vocabCache, new FileOutputStream(file));
     }
 
@@ -1439,7 +1449,7 @@ public class WordVectorSerializer {
      * @param stream
      * @throws UnsupportedEncodingException
      */
-    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream) throws UnsupportedEncodingException {
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream) throws IOException {
         PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
 
         for (int x = 0; x < vocabCache.numWords(); x++) {
@@ -1489,7 +1499,7 @@ public class WordVectorSerializer {
     }
 
     /**
-     * This is simple holder class
+     * This is utility holder class
      */
     @Data
     @NoArgsConstructor
@@ -1498,19 +1508,37 @@ public class WordVectorSerializer {
         private String object;
         private double[] vector;
 
+        /**
+         * This utility method serializes ElementPair into JSON + packs it into Base64-encoded string
+         *
+         * @return
+         */
         protected String toEncodedJson() {
             ObjectMapper mapper = SequenceElement.mapper();
+            Base64 base64 = new Base64(Integer.MAX_VALUE);
             try {
                 String json = mapper.writeValueAsString(this);
-                String output = Base64.encodeBase64String(json.getBytes("UTF-8"));
+                String output = base64.encodeAsString(json.getBytes("UTF-8"));
                 return output;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
+        /**
+         * This utility method returns ElementPair from Base64-encoded string
+         *
+         * @param encoded
+         * @return
+         */
         protected static ElementPair fromEncodedJson(String encoded) {
-            return null;
+            ObjectMapper mapper = SequenceElement.mapper();
+            try {
+                String decoded = new String(Base64.decodeBase64(encoded), "UTF-8");
+                return mapper.readValue(decoded, ElementPair.class);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
