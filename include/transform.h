@@ -282,7 +282,7 @@ namespace functions {
                               T *result,
                               int resultStride,
                               T *extraParams,
-                              const int n) {
+                             int n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel  for
                     for (int i = 0; i < n; i++) {
@@ -2556,12 +2556,12 @@ namespace functions {
                     int *outIndices = new int[6];
                     int *inIndices = new int[4];
 
-                    const int inStride2 = inStride[2];
-                    const int inStride3 = inStride[3];
-                    const int outStride2 = outStride[2];
-                    const int outStride3 = outStride[3];
-                    const int inShape2 = inShape[2];
-                    const int inShape3 = inShape[3];
+                   int inStride2 = inStride[2];
+                   int inStride3 = inStride[3];
+                   int outStride2 = outStride[2];
+                   int outStride3 = outStride[3];
+                   int inShape2 = inShape[2];
+                   int inShape3 = inShape[3];
 
                     const bool padding = padHeight > 0 || padWidth > 0;
 
@@ -2784,15 +2784,15 @@ namespace functions {
                     int *outIndices = new int[4];
                     int *inIndices = new int[6];
 
-                    const int inStride2 = inStride[2];
-                    const int inStride3 = inStride[3];
-                    const int outStride2 = outStride[2];
-                    const int outStride3 = outStride[3];
-                    const int outShape2 = outShape[2];
-                    const int outShape3 = outShape[3];
+                   int inStride2 = inStride[2];
+                   int inStride3 = inStride[3];
+                   int outStride2 = outStride[2];
+                   int outStride3 = outStride[3];
+                   int outShape2 = outShape[2];
+                   int outShape3 = outShape[3];
 
-                    const int yOutTo = inShape[4];
-                    const int xOutTo = inShape[5];
+                   int yOutTo = inShape[4];
+                   int xOutTo = inShape[5];
 
 
                     const bool padding = padHeight > 0 || padWidth > 0;
@@ -2983,12 +2983,12 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
-                        const int dimension[1] = {0};
-                        const int maxDimension[1] = {1};
+                       int dimension[1] = {0};
+                       int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        const T maxResult[shape[0]];
+                        T maxResult[shape[0]];
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0],1};
@@ -3163,12 +3163,12 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
-                        const int dimension[1] = {0};
-                        const int maxDimension[1] = {1};
+                       int dimension[1] = {0};
+                       int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        const T maxResult[shape[0]];
+                        T maxResult[shape[0]];
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0],1};
@@ -3232,6 +3232,7 @@ namespace functions {
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i] /= sum;
+                                result[i] = nd4j::math::nd4j_log<T>(result[i]);
                             }
 
                         }
@@ -3266,6 +3267,7 @@ namespace functions {
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] /= sum;
+                                result[i * elementWiseStride] = nd4j::math::nd4j_log<T>(result[i * elementWiseStride]);
                             }
 
                         }
@@ -3346,20 +3348,19 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
 
-                        int xEleStride = shape::elementWiseStride(xShapeBuffer);
                         int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
                         //iterate along rows
-                        const int dimension[1] = {0};
-                        const int maxDimension[1] = {1};
+                       int dimension[1] = {0};
+                       int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        const T maxResult[shape[0]];
+                        T maxResult[shape[0]];
 #pragma omp parallel for
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
-                        const int maxShape[2] = {shape[0],1};
+                       int maxShape[2] = {shape[0],1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
                         max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
 

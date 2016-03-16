@@ -116,10 +116,8 @@ namespace functions {
                 int xLength = shape::length(xShapeInfo);
                char xOrder = shape::order(xShapeInfo);
                 if(xOrder == 'c') {
-                    int lenMod = shape::stride(xShapeInfo)[dimension[0]];
                     int *xStride = shape::stride(xShapeInfo);
                     int *xShape = shape::shapeOf(xShapeInfo);
-                    int rank = shape::rank(xShapeInfo);
 
                     //optimized loop for vectorization
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {

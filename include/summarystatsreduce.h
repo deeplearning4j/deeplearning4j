@@ -962,8 +962,7 @@ struct SharedSummaryStatsData<double> {
                     return;
                 }
 
-                shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,
-                                                                      dimension, dimensionLength);
+
                 int resultLength = shape::length(resultShapeInfoBuffer);
                 /**
                  * The element wise stride belong longs to a reduction index.
