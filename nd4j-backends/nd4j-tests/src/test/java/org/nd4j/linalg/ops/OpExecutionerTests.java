@@ -218,7 +218,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
     }
 
-   
+
 
     @Test
     public void testIamax() {
