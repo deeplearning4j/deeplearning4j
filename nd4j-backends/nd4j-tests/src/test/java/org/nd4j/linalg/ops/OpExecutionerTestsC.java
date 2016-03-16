@@ -560,14 +560,17 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testLogSoftmaxMatrix(){
-        INDArray temp = Nd4j.linspace(0,24,25).reshape(5,5);
+    public void testSumDifferentOrder() {
+        INDArray toAssign = Nd4j.linspace(0,3,4).reshape(2,2);
+        INDArray cOrder = Nd4j.create(new int[]{2,2},'c').assign(toAssign);
+        INDArray fOrder = Nd4j.create(new int[]{2,2},'f').assign(toAssign);
 
-        INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()));
-        System.out.println(logsoftmax);
+       System.out.println(cOrder);
+        System.out.println(cOrder.sum(0));  //[2,4] -> correct
+        System.out.println(fOrder.sum(0));  //[2,3] -> incorrect
 
-        logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()),1);
-        System.out.println(logsoftmax);
+        assertEquals(cOrder,fOrder);
+        assertEquals(cOrder.sum(0),fOrder.sum(0));
     }
 
     @Test
