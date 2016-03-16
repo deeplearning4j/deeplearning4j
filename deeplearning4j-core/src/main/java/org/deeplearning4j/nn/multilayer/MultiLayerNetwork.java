@@ -1629,10 +1629,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         boolean hasMaskArray = data.hasMaskArrays();
         if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         // activation for output layer is calculated in computeScore
-        feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
+        List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
             BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+            ol.setInput(activations.get(activations.size()-1));     //Feedforward doesn't include output layer for efficiency
             ol.setLabels(data.getLabels());
             ol.computeScore(calcL1(),calcL2(), training);
             this.score = ol.score();
