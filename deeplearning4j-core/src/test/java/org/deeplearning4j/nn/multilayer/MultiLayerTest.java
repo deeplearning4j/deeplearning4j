@@ -632,6 +632,30 @@ public class MultiLayerTest {
     }
 
     @Test
+    public void testDataSetScore(){
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(false)
+                .learningRate(1.0)
+                .weightInit(WeightInit.XAVIER)
+                .seed(12345L)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation("sigmoid").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(3).nOut(3).build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.create(new double[]{1.0,2.0,3.0,4.0});
+        INDArray out = Nd4j.create(new double[]{1,0,0});
+
+        double score = net.score(new DataSet(in,out));
+    }
+
+    @Test
     @Ignore
     public void testCid() throws Exception {
         System.out.println(EnvironmentUtils.buildCId());
