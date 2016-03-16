@@ -99,7 +99,7 @@ class LossCalculation {
             case MCXENT:
                 if(preOut != null && "softmax".equals(activationFn)){
                     //Use LogSoftMax op to avoid numerical issues when calculating score
-                    INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()), 1);
+                    INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOut.dup()));
                     INDArray sums = labels.mul(logsoftmax);
                     if(mask != null) sums.muliColumnVector(mask);
                     scoreArray = sums;
