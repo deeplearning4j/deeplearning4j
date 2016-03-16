@@ -168,23 +168,58 @@ namespace functions {
                 }
 
                 else if(xOrder == 'f') {
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *xShape = shape::shapeOf(xShapeInfo);
+
+                    //optimized loop for vectorization
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+                        if(dimension[0] % 2 != 0) {
+
+
 #pragma omp parallel for
-                        for (int i = 0; i < xLength; i++) {
-                            int yOffset2 =  (i % yLength) * yElementWiseStride;
-                            result[i] = op(x[i], y[yOffset2]);
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i   / xStride[dimension[dimensionLength - 1]]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
 
 
+                            }
                         }
+                        else {
+
+
+#pragma omp parallel for
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i % yLength) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
+
+
+                            }
+                        }
+
                     }
 
                     else {
+                        if(dimension[0] % 2 != 0) {
 #pragma omp parallel for
-                        for (int i = 0; i < xLength; i++) {
-                            int yOffset2 =  (i % yLength) * yElementWiseStride;
-                            result[i] = op(x[i], y[yOffset2]);
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i  / xStride[dimension[dimensionLength - 1]]) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
+
+                            }
                         }
+                        else {
+
+#pragma omp parallel for
+                            for (int i = 0; i < xLength; i++) {
+                                int yOffset2 =  (i % yLength) * yElementWiseStride;
+                                result[i] = op(x[i], y[yOffset2]);
+
+                            }
+                        }
+
+
                     }
+
                 }
 
             }
