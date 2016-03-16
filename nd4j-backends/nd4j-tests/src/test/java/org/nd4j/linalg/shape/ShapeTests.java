@@ -76,7 +76,6 @@ public class ShapeTests extends BaseNd4jTest {
         assertArrayEquals(new int[]{3, 2}, tensors.shape());
         assertEquals(2, twoTwoByThree.tensorssAlongDimension(1, 2));
         double[][] dataInit = new double[][]{{1,2},{3,4}};
-        INDArray other = Nd4j.create(new double[]{1,3,2,4},new int[]{2,2});
         INDArray firstTensor = Nd4j.create(dataInit);
         for(int i = 0; i < firstTensor.rows(); i++) {
             for(int j = 0; j < firstTensor.columns(); j++) {

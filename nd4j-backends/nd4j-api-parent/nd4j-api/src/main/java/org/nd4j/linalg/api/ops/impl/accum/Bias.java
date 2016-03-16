@@ -185,7 +185,7 @@ public class Bias extends BaseAccumulation {
 
     @Override
     public boolean isPassThrough() {
-        return true;
+       return false;
     }
 
     @Override
