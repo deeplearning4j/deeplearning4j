@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class CoOccurrences implements Serializable {
     private transient  TokenizerFactory tokenizerFactory;
     private transient SentenceIterator sentenceIterator;
