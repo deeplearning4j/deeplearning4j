@@ -46,7 +46,7 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid","tanh","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
@@ -131,7 +131,7 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid","tanh","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
