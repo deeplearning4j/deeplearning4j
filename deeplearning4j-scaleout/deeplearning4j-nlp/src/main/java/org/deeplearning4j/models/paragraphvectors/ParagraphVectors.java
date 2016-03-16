@@ -7,6 +7,7 @@ import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -438,6 +439,7 @@ public class ParagraphVectors extends Word2Vec {
 
             ret.lookupTable = this.lookupTable;
             ret.modelUtils = this.modelUtils;
+            ret.eventListeners = this.vectorsListeners;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -549,6 +551,18 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder layerSize(int layerSize) {
             super.layerSize(layerSize);
+            return this;
+        }
+
+        /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param vectorsListeners
+         * @return
+         */
+        @Override
+        public Builder setVectorsListeners(@NonNull Collection<VectorsListener<VocabWord>> vectorsListeners) {
+            super.setVectorsListeners(vectorsListeners);
             return this;
         }
 
