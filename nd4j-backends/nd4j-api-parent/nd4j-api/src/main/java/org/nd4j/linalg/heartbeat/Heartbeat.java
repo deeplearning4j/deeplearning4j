@@ -1,5 +1,7 @@
 package org.nd4j.linalg.heartbeat;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import com.brsanthu.googleanalytics.EventHit;
 import com.brsanthu.googleanalytics.GoogleAnalytics;
 import com.brsanthu.googleanalytics.GoogleAnalyticsRequest;
@@ -33,6 +35,21 @@ public class Heartbeat {
 
     protected Heartbeat() {
         try {
+            java.util.logging.Logger.getLogger("org.apache.http").setLevel(java.util.logging.Level.OFF);
+            java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.OFF);
+            java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.OFF);
+            System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
+            System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "ERROR");
+            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "ERROR");
+            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "ERROR");
+
+
+            ch.qos.logback.classic.Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("org.apache.http");
+            LOG.setLevel(Level.OFF);
+
+            LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("com.brsanthu");
+            LOG.setLevel(Level.OFF);
+
             tracker = new GoogleAnalytics("UA-48811288-4", "nd4j", "rc3.9-SNAPSHOT");
         } catch (Exception e) {
 
@@ -60,8 +77,8 @@ public class Heartbeat {
             Basically we need to start background thread here, but only if lastReport was long ago, to avoid spam.
          */
         long currentTime = System.currentTimeMillis();
-        // set to one message per hour for now
-        if (lastReport.get() < currentTime - (60 * 60 * 1000)) {
+        // set to one message per session for now
+        if (lastReport.get() < 1) {
             lastReport.set(currentTime);
 
             RepoThread thread = new RepoThread(event, environment, task);
