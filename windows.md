@@ -15,23 +15,17 @@ For cpu, we recommend openblas. We will be adding instructions for mkl and other
 
 Send us a pull request or [file an issue](https://github.com/deeplearning4j/libnd4j/issues) if you have something in particular you are looking for.
 
+## Building libnd4j
 
-## Building the CPU Backend
+libnd4j and nd4j go hand in hand, and libnd4j is required for two out of the three currently supported backends (nd4j-native and nd4j-cuda). For this reason they should always be rebuild together.
 
-Now clone this repository, and in that directory run the following to build the dll:
+### Building the CPU Backend
+
+Now clone this repository, and in that directory run the following to build the dll for the cpu backend:
 
     bash ./buildnativeoperations.sh blas cpu
 
-Next you will have to setup your environment variables. While still in that folder do the following:
-
-    export LIBND4J_HOME=`pwd`
-    
-Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following there to compile nd4j with the native backend:
-
-    mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Djavacpp.platform.properties=windows-x86_64-mingw
-
-
-## Building the CUDA Backend
+### Building the CUDA Backend
 
 The CUDA Backend has some additional requirements before it can be built:
 
@@ -45,30 +39,53 @@ In order to build the CUDA backend you will have to setup some more environment 
 3. Change to your libnd4j folder
 4. `bash buildnativeoperations.sh blas cuda` (note the `bash` at the beginning, for some reason it doesn't work to directly start the script)
 
-This builds the CUDA nd4j.dll. Now, like for the CPU backend, you also have to build nd4j. But first, some more environment variables setup.
+This builds the CUDA nd4j.dll.
+
+
+## Building nd4j
 
 While still in the `libnd4j` folder, run:
 
     export LIBND4J_HOME=`pwd`
-    export INCLUDE="$VSINSTALLDIR/VC/include;$LIBND4J_HOME/include;$LIBND4J_HOME/blas;$INCLUDE" 
-    export LIB="$VSINSTALLDIR/VC/lib/amd64;$LIBND4J_HOME/blasbuild/blas;$LIB"
 
-Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following there to compile nd4j with the native backend:
+Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following to compile nd4j with support for both the native cpu backend as well as the cuda backend:
 
     mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+
+If you don't want the cuda backend, e.g. because you didn't or can't build it, you can skip it:
+
+    mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5'
+
+Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell.
 
 
 ## Using the Native Backend
 
-In order to use your new shiny backend you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend instead of x86.
+In order to use your new shiny backends you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend instead of x86.
 
-For this you first change the version of all your ND4J dependencies to "0.4-rc3.9-SNAPSHOT" and then exchange nd4j-x86 for nd4j-native like that:
+For this you change the version of all your ND4J dependencies to "0.4-rc3.9-SNAPSHOT".
+
+
+### CPU Backend
+
+Exchange nd4j-x86 for nd4j-native like that:
 
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-native</artifactId>
         <version>0.4-rc3.9-SNAPSHOT</version>
     </dependency>
+
+### CUDA Backend
+
+Exchange nd4j-x86 for nd4j-cuda-7.5 like that:
+
+    <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-7.5</artifactId>
+        <version>0.4-rc3.9-SNAPSHOT</version>
+    </dependency>
+
     
 ## Troubleshooting
 
@@ -110,3 +127,14 @@ Some situations that may be problematic include:
 - Having older (or multiple) cmake installs on your PATH (check: "where cmake" and "cmake --version")
 - Having multiple BLAS libraries on your PATH (check: "where libopenblas.dll", "where libblas.dll" and "where liblapack.dll")
 
+### I'm getting `jniNativeOps.dll: Can't find dependent libraries` errors
+
+This is usually due to an incorrectly setup PATH (see "I'm getting other errors not listed here"). As the PATH using the msys2 shell is a little bit different then for other applications, you can check that the PATH is really the problem by running the following test program:
+
+    public class App {
+        public static void main(String[] args){
+        	System.loadLibrary("libopenblas.dll");
+        }
+    }
+    
+If this also crashes with the `Can't find dependent libraries` error, then you have to setup your PATH correctly (see the introduction to this document).
