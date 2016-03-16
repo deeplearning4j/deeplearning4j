@@ -4,11 +4,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -29,6 +31,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
@@ -115,6 +119,17 @@ public class ParagraphVectors extends Word2Vec {
      * @return
      */
     public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+        if (sequenceLearningAlgorithm == null) {
+            sequenceLearningAlgorithm = new DBOW<VocabWord>();
+            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+        }
+        Sequence<VocabWord> sequence = new Sequence<VocabWord>();
+        sequence.addElements(document);
+        sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
+
+        for (int i = 0; i < iterations; i++) {
+            sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
+        }
         return null;
     }
 
