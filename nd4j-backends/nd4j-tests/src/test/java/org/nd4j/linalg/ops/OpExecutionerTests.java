@@ -218,13 +218,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
     }
 
-    @Test
-    public void testBias() {
-        INDArray bias = Nd4j.linspace(1, 4, 4);
-        Bias biaOp = new Bias(bias);
-        Nd4j.getExecutioner().exec(biaOp);
-        assertEquals(0.0,biaOp.currentResult().doubleValue(),1e-1);
-    }
+   
 
     @Test
     public void testIamax() {
@@ -264,39 +258,6 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
     }
 
-    @Test
-    public void testRowLogSoftMax(){
-        //For moderate input values, LogSoftMax op should be identical to log(softmax)
-        // through is numerically more stable for
-        int[][] shapes = new int[][]{{5,3},{5,100},{1,5},{1,100}};
-
-        double eps = 1e-3;
-
-        for( int[] shape : shapes ){
-            INDArray orig = Nd4j.rand(shape);
-
-            INDArray orig1 = orig.dup();
-            INDArray orig2 = orig.dup();
-
-            //First: standard log(softmax)
-            Nd4j.getExecutioner().exec(new SoftMax(orig1), 1);
-            Nd4j.getExecutioner().exec(new Log(orig1));
-
-            //Second: LogSoftMax op
-            Nd4j.getExecutioner().exec(new LogSoftMax(orig2),1);
-
-            for( int i = 0; i<shape[0]; i++ ){
-                for( int j = 0; j<shape[1]; j++ ){
-                    double o1 = orig1.getDouble(i);
-                    double o2 = orig2.getDouble(i);
-                    if(Math.abs(o1-o2)>eps){
-                        System.out.println();
-                    }
-                    assertEquals(o1,o2,eps);
-                }
-            }
-        }
-    }
 
     @Test
     public void testPow() {

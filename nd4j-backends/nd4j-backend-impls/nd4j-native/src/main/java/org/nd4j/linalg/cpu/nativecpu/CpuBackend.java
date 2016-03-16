@@ -32,7 +32,6 @@ import org.nd4j.linalg.io.ClassPathResource;
  */
 public class CpuBackend extends Nd4jBackend {
 
-    private static final Logger log = LoggerFactory.getLogger(CpuBackend.class);
 
     private final static String LINALG_PROPS = "/nd4j-native.properties";
 
