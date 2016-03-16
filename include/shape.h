@@ -1115,7 +1115,7 @@ namespace shape {
         }
         else {
             int innerMostStride = stride[dimension[0]];
-            int elementWiseStrideParent = dimensionLength > 1 ?  stride[dimension[1]] : 1;
+            int elementWiseStrideParent = dimensionLength > 1 ?  stride[dimension[1]] : stride[0];
             if(index >= innerMostStride) {
                 //represents the jump
                 //the offset represents how many jumps of the element wise stride to do after identifying
@@ -1707,7 +1707,6 @@ namespace shape {
             if (arr[i] >= arrLength || arr[i] < 0)
                 return -1;
         }
-
         for (int i = 0; i < arrLength; i++) {
             for (int j = 0; j < arrLength; j++) {
                 if (i != j && arr[i] == arr[j])
@@ -1981,7 +1980,7 @@ namespace shape {
                     * we can use arr.stride(1) as a representation
                     * along which to iterate.
                     */
-            int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
+            int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
             return tadElementWiseStride;
         }
         else {

@@ -813,7 +813,7 @@ void exec(T *x,
 #pragma omp  parallel  for
 			for(int i = 0; i < resultLength; i++) {
                 int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-				result[i] = op(x[offset], extraParams);
+                result[i] = op(x[offset], extraParams);
 				for(int j = 1; j < elementsPerReductionIndex; j++) {
 					result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
 				}
@@ -847,7 +847,8 @@ void exec(T *x,
         int resultLength = shape::length(resultShapeInfoBuffer);
 #pragma omp parallel for
             for(int i = 0;  i < resultLength; i++) {
-                int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                int baseOffset = i;
+                printf("Offset for %d is %d with element wise stride %d\n",i,baseOffset,tadElementWiseStride);
                 T currResult = op(x[baseOffset],extraParams);
                 result[i] = currResult;
                 for(int j = 1; j < tadLength; j++) {

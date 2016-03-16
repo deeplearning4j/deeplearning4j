@@ -3161,11 +3161,9 @@ namespace functions {
                         T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer,2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
-                        int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
                        int dimension[1] = {0};
                        int maxDimension[1] = {1};
-                        int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
                         T maxResult[shape[0]];
