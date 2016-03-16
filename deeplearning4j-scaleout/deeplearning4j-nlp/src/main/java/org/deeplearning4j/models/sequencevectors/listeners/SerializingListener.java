@@ -29,7 +29,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
     private Semaphore locker = new Semaphore(1);
 
     protected SerializingListener() {
-
+        ;
     }
 
     /**
@@ -47,7 +47,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
              */
             locker.acquire();
 
-            if (argument % targetFrequency == 0) {
+            if (event == targetEvent && argument % targetFrequency == 0) {
                 return true;
             } else return false;
         } catch (Exception e) {

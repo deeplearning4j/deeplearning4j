@@ -58,7 +58,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient T unknownElement;
 
 
-    @Setter protected transient Set<VectorsListener> eventListeners;
+    @Setter protected transient Set<VectorsListener<T>> eventListeners;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -266,6 +266,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
         protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<T>();
+
+        protected Set<VectorsListener<T>> vectorsListeners = new HashSet<>();
 
         public Builder() {
 
@@ -675,6 +677,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
 
             this.modelUtils.init(lookupTable);
+        }
+
+        /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param listeners
+         * @return
+         */
+        public Builder<T> setVectorsListeners(@NonNull Collection<VectorsListener<T>> listeners) {
+            vectorsListeners.addAll(listeners);
+            return this;
         }
 
         /**
