@@ -789,13 +789,16 @@ void exec(T *x,
 		int *dimension,
 		int dimensionLength) {
 
-	if(shape::isScalar(resultShapeInfoBuffer)) {
+            const int resultLength = shape::length(resultShapeInfoBuffer);
+
+	if(resultLength == 1 || dimensionLength == shape::rank(xShapeInfo)) {
 		result[0] = execScalar(x,xShapeInfo,extraParams);
 		return;
 	}
 
+
+
 	if(dimensionLength > 1) {
-		const int resultLength = shape::length(resultShapeInfoBuffer);
 		/**
 		 * The element wise stride belong longs to a reduction index.
 		 * When used out of order, we can get rid of the data
@@ -807,8 +810,8 @@ void exec(T *x,
 		 */
 
 		if(shape::order(xShapeInfo) == 'f') {
-            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
-            const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+            int elementsPerReductionIndex = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 
 #pragma omp  parallel  for
 			for(int i = 0; i < resultLength; i++) {
@@ -823,8 +826,8 @@ void exec(T *x,
 			}
 		}
 		else {
-            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
-            const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+           int elementsPerReductionIndex = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 
 #pragma omp  parallel  for
             for(int i = 0; i < resultLength; i++) {
@@ -832,6 +835,7 @@ void exec(T *x,
                 result[i] = op(x[offset], extraParams);
                 for(int j = 1; j < elementsPerReductionIndex; j++) {
                     result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j], extraParams), extraParams);
+
                 }
 
                 result[i] = postProcess(result[i],elementsPerReductionIndex,extraParams);
@@ -842,13 +846,12 @@ void exec(T *x,
 	}
 
 	else {
-		int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
-		int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-        int resultLength = shape::length(resultShapeInfoBuffer);
+        if(shape::order(xShapeInfo) == 'f') {
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+            int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 #pragma omp parallel for
             for(int i = 0;  i < resultLength; i++) {
-                int baseOffset = i;
-                printf("Offset for %d is %d with element wise stride %d\n",i,baseOffset,tadElementWiseStride);
+                int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                 T currResult = op(x[baseOffset],extraParams);
                 result[i] = currResult;
                 for(int j = 1; j < tadLength; j++) {
@@ -858,6 +861,26 @@ void exec(T *x,
 
                 result[i] = postProcess(result[i],tadLength,extraParams);
             }
+
+        }
+        else {
+            int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+            int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+            for(int i = 0;  i < resultLength; i++) {
+                int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                T currResult = op(x[baseOffset],extraParams);
+                result[i] = currResult;
+                for(int j = 1; j < tadLength; j++) {
+                    currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
+                    result[i] = update(result[i],currResult,extraParams);
+                }
+
+                result[i] = postProcess(result[i],tadLength,extraParams);
+            }
+
+        }
+
 
 
 
@@ -1147,93 +1170,6 @@ public:
 	}
 };
 
-/**
- * Bias operation for statistics
- */
-template<typename T>
-class Bias: public virtual functions::reduce::ReduceFunction<T> {
-public:
-	virtual
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	T startingValue(T *input) {
-		return 0.0;
-	}
-	virtual
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	ReduceFunction<T> ** extraParamsFunctions() {
-		ReduceFunction<T> ** ret = (ReduceFunction<T> **) malloc(sizeof(ReduceFunction<T> **));
-		ret[0] = new Mean<T>();
-		return ret;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	
-
-#endif
-	T merge(T old, T opOutput, T *extraParams) override {
-		return opOutput + old;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	
-
-#endif
-	T update(T old, T opOutput, T *extraParams) override {
-		return opOutput + old;
-	}
-
-
-	virtual
-#ifdef __CUDACC__
-	__host__  __device__
-
-#elif defined(__GNUC__)
-	
-
-#endif
-	T op(T d1, T *extraParams) override {
-		T mean = extraParams[0];
-		T curr = (d1 - mean);
-		return curr;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	
-
-#endif
-	T postProcess(T reduction, int n,T *extraParams) override {
-		return reduction;
-	}
-
-	virtual
-#ifdef __CUDACC__
-	inline __host__ __device__
-#endif
-	~Bias() {
-	}
-#ifdef __CUDACC__
-	inline __host__ __device__
-#endif
-	Bias() {
-		this->extraParamsLength = 1;
-	}
-};
 
 /**
  * Max reduction
@@ -1673,12 +1609,7 @@ public:
 	__host__ __device__
 #endif
 	ReduceFunction<T> ** extraParamsFunctions() {
-		ReduceFunction<T> **ret = (ReduceFunction<T> **) malloc(sizeof(ReduceFunction<T>) * 2);
-		Mean<T> *mean = new Mean<T>();
-		Bias<T> *bias = new Bias<T>();
-		ret[0] = mean;
-		ret[1] = bias;
-		return ret;
+		return NULL;
 	}
 
 	virtual
@@ -1823,8 +1754,6 @@ public:
 			return new functions::reduce::ops::Mean<T>();
 		else if (op == 1)
 			return new functions::reduce::ops::Sum<T>();
-		else if (op == 2)
-			return new functions::reduce::ops::Bias<T>();
 		else if (op == 3)
 			return new functions::reduce::ops::Max<T>();
 		else if (op == 4)

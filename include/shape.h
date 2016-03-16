@@ -1043,9 +1043,7 @@ namespace shape {
     __host__ __device__
 #endif
     int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength) {
-        int *stride = shape::stride(shapeInfo);
-        return stride[dimension[dimensionLength - 1]];
-
+        return reductionIndexElementWiseStride(shapeInfo,dimension,dimensionLength);
     }
 
 
@@ -1091,8 +1089,19 @@ namespace shape {
     *
     */
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
-        int *stride = shape::stride(shapeInfo);
-        if(shape::order(shapeInfo) == 'c') {
+        if(dimensionLength > 1) {
+            if(shape::order(shapeInfo) == 'f') {
+                int *stride = shape::stride(shapeInfo);
+                return index * stride[dimension[dimensionLength - 1]];
+
+            }
+            else {
+                int *shape = shape::shapeOf(shapeInfo);
+                return index * shape[dimension[dimensionLength - 1]];
+            }
+        }
+        else {
+            int *stride = shape::stride(shapeInfo);
             int innerMostStride = stride[dimension[dimensionLength - 1]];
             int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
             if(index >= innerMostStride) {
@@ -1112,33 +1121,13 @@ namespace shape {
             }
 
             else return index;
-        }
-        else {
-            int innerMostStride = stride[dimension[0]];
-            int elementWiseStrideParent = dimensionLength > 1 ?  stride[dimension[1]] : stride[0];
-            if(index >= innerMostStride) {
-                //represents the jump
-                //the offset represents how many jumps of the element wise stride to do after identifying
-                //the base offset for the ump as index / inner most stride. For example in our case above:
-                //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
-                //14 would be the offset as the first element wise stride after the jump with a modulus of 2.
-                int base = index / innerMostStride;
-                base *= elementWiseStrideParent;
-                if(index > innerMostStride) {
-                    int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
-                    base += addOffset;
-                }
 
-                return base;
-            }
-
-            else return index;
         }
 
 
 
     }
-    
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -1980,7 +1969,7 @@ namespace shape {
                     * we can use arr.stride(1) as a representation
                     * along which to iterate.
                     */
-            int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+            int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
             return tadElementWiseStride;
         }
         else {

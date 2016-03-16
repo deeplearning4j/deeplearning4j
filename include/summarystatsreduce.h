@@ -992,7 +992,7 @@ struct SharedSummaryStatsData<double> {
 
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
-                        int offset = i + tadElementWiseStride  * tadLength;
+                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                         SummaryStatsData<T> comp;
                         comp.initWithValue(x[offset]);
                         comp = op(comp, extraParams);
