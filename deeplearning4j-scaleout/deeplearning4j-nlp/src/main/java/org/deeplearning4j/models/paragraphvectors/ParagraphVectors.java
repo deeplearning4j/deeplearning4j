@@ -75,6 +75,79 @@ public class ParagraphVectors extends Word2Vec {
         else return predict(document.getContent());
     }
 
+
+    /**
+     * This method calculates inferred vector for given text
+     *
+     * @param text
+     * @return
+     */
+    public INDArray inferVector(String text, double learningRate, double minLearningRate, int iterations) {
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
+
+        List<String> tokens = tokenizerFactory.create(text).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+
+        return inferVector(document, learningRate, minLearningRate, iterations);
+    }
+
+    /**
+     * This method calculates inferred vector for given document
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(LabelledDocument document, double learningRate, double minLearningRate, int iterations) {
+        if (document.getReferencedContent() != null) {
+            return inferVector(document.getReferencedContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        } else return inferVector(document.getContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given document
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+        return null;
+    }
+
+    /**
+     * This method calculates inferred vector for given text, with default parameters for learning rate and iterations
+     *
+     * @param text
+     * @return
+     */
+    public INDArray inferVector(String text) {
+        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given document, with default parameters for learning rate and iterations
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(LabelledDocument document) {
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given list of words, with default parameters for learning rate and iterations
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(List<VocabWord> document) {
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
     /**
      * This method predicts label of the document.
      * Computes a similarity wrt the mean of the
