@@ -1431,6 +1431,14 @@ public class WordVectorSerializer {
         writeVocabCache(vocabCache, new FileOutputStream(file));
     }
 
+    /**
+     * This method saves vocab cache to provided OutputStream.
+     * Please note: it saves only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param vocabCache
+     * @param stream
+     * @throws UnsupportedEncodingException
+     */
     public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream) throws UnsupportedEncodingException {
         PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
 
@@ -1443,10 +1451,26 @@ public class WordVectorSerializer {
         writer.close();
     }
 
+    /**
+     * This method reads vocab cache from provided file.
+     * Please note: it reads only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
     public static VocabCache<VocabWord> readVocabCache(@NonNull File file) throws IOException {
         return readVocabCache(new FileInputStream(file));
     }
 
+    /**
+     * This method reads vocab cache from provided InputStream.
+     * Please note: it reads only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param stream
+     * @return
+     * @throws IOException
+     */
     public static VocabCache<VocabWord> readVocabCache(@NonNull InputStream stream) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
         AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
