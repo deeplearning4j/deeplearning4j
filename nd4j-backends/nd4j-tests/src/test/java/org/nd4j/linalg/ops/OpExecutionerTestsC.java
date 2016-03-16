@@ -549,6 +549,26 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(assertion,test);
     }
 
+    @Test
+    public void testLogSoftmaxVector() {
+        INDArray temp = Nd4j.create(new double[]{1.0,2.0,3.0,4.0});
+        INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()));
+        INDArray assertion = Nd4j.create(new double[]{-3.4401898,-2.4401898,-1.4401897,-0.44018975});
+        assertEquals(assertion,logsoftmax);
+
+    }
+
+
+    @Test
+    public void testLogSoftmaxMatrix(){
+        INDArray temp = Nd4j.linspace(0,24,25).reshape(5,5);
+
+        INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()));
+        System.out.println(logsoftmax);
+
+        logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()),1);
+        System.out.println(logsoftmax);
+    }
 
     @Test
     public void testLogSoftmax() {
