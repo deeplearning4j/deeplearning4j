@@ -178,7 +178,7 @@ public class UmaMover implements Mover {
      */
     @Override
     public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
-//        log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
+        //log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
         if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.DEVICE) {
             // ZERO -> DEVICE
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.ZERO) {
@@ -200,7 +200,7 @@ public class UmaMover implements Mover {
              // System.out.println("Stream at realloc: " + context.getStream());
             // we must be sure, no calculations are pending within these streams before copyback
             context.syncOldStream();
-            context.syncStream();
+            //context.syncStream();
 
             if (hostPointer == null)
                 throw new IllegalStateException("HostPointer is null, can't relocate!");
@@ -209,8 +209,8 @@ public class UmaMover implements Mover {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-/*
 
+/*
             log.info("AllocationPoint shape: " + point.getShape());
             log.info("Allocation shape: " + shape);
             log.info("Target offset/length: " + targetBuffer.offset() + "/" + targetBuffer.length());

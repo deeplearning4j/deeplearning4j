@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
-@Ignore
+
 public class AtomicAllocatorTest {
     private static AtomicAllocator allocator;
     private static CudaEnvironment singleDevice4GBcc52;
@@ -72,7 +72,9 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testOnes() throws Exception {
-        //INDArray array = Nd4j.ones(10);
+        INDArray array = Nd4j.ones(10);
+
+        assertEquals(1.0f, array.getFloat(0), 0.001);
     }
 
     @Test
@@ -85,6 +87,22 @@ public class AtomicAllocatorTest {
         allocator.tickDeviceWrite(array);
 
         System.out.println("Scalar array: " + array);
+    }
+
+    @Test
+    public void testPinnedScalarDiv() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        // reset to default MemoryStrategy, most probable is Pinned
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        INDArray array2 = Nd4j.create(new float[]{2.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+        array2.divi(0.5f);
+
+        System.out.println("Divi result: " + array2.getFloat(0));
+        assertEquals(4.0f, array2.getFloat(0), 0.01f);
     }
 
     @Test

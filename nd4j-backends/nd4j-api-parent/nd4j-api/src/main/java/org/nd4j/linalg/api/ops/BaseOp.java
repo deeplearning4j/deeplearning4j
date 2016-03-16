@@ -70,8 +70,6 @@ public abstract class BaseOp implements Op {
                 }
                 return retBuff;
             }
-
-
         }
         return null;
     }

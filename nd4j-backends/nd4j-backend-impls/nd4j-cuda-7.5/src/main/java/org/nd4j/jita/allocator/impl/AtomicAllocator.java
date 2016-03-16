@@ -697,7 +697,7 @@ public class AtomicAllocator implements Allocator {
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {
-//                log.info("Data isn't actual on host side, copyback() started");
+                //log.info("Data isn't actual on host side, copyback() started");
                 mover.copyback(point, shape);
 
                 // update the timer for hostRead
@@ -705,7 +705,7 @@ public class AtomicAllocator implements Allocator {
             }// else log.info("Data is actual 2 , skipping sync");
 
             point.getAccessState().releaseToe();
-        } //else log.info("Data is actual 1, skipping sync");
+        }// else log.info("Data is actual 1, skipping sync");
     }
 
     /**
@@ -1187,6 +1187,7 @@ public class AtomicAllocator implements Allocator {
             this.terminate = terminate;
 
             this.setName("zero gc thread " + threadId);
+            this.setDaemon(true);
         }
 
         @Override
@@ -1241,6 +1242,7 @@ public class AtomicAllocator implements Allocator {
             this.deviceId = deviceId;
             this.terminate = terminate;
             this.setName("device gc thread " + threadId + "/" + deviceId);
+            this.setDaemon(true);
         }
 
         @Override
