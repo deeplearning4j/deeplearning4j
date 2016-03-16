@@ -55,7 +55,7 @@ namespace functions {
             inline __device__ __host__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T op(T d1, T *params) = 0;
@@ -311,7 +311,7 @@ namespace functions {
             inline __host__ __device__
 #elif defined(__GNUC__)
 
-            
+
 #endif
             virtual ~Transform() {
             }
@@ -319,7 +319,7 @@ namespace functions {
             __host__ __device__
 #elif defined(__GNUC__)
 
-            
+
 #endif
             Transform() {
             }
@@ -2983,12 +2983,12 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
-                        int dimension[1] = {0};
-                        int maxDimension[1] = {1};
-                       int len = shape::length(xShapeBuffer);
+                        const int dimension[1] = {0};
+                        const int maxDimension[1] = {1};
+                        int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        T maxResult[shape[0]];
+                        const T maxResult[shape[0]];
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0],1};
@@ -3116,7 +3116,13 @@ namespace functions {
 #endif
                 virtual ~SoftMax() {
                 }
+#ifdef __CUDACC__
+                inline __host__  __device__
 
+#elif defined(__GNUC__)
+
+
+#endif
                 SoftMax() {
                     this->requiresSpecial = true;
                 }
@@ -3157,12 +3163,12 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
-                        int dimension[1] = {0};
-                        int maxDimension[1] = {1};
+                        const int dimension[1] = {0};
+                        const int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        T maxResult[shape[0]];
+                        const T maxResult[shape[0]];
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0],1};
@@ -3294,6 +3300,13 @@ namespace functions {
                 virtual ~LogSoftMax() {
                 }
 
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
                 LogSoftMax() {
                     this->requiresSpecial = true;
                 }
@@ -3337,15 +3350,16 @@ namespace functions {
                         int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
                         //iterate along rows
-                        int dimension[1] = {0};
-                        int maxDimension[1] = {1};
+                        const int dimension[1] = {0};
+                        const int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-                        T maxResult[shape[0]];
+                        const T maxResult[shape[0]];
+#pragma omp parallel for
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
-                        int maxShape[2] = {shape[0],1};
+                        const int maxShape[2] = {shape[0],1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
                         max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
 
@@ -3383,7 +3397,7 @@ namespace functions {
                         }
 
                         else {
-                           printf("Non element wise stride not supported right now\n");
+                            printf("Non element wise stride not supported right now\n");
                         }
 
 
@@ -3494,7 +3508,13 @@ namespace functions {
 #endif
                 virtual ~SoftMaxDerivative() {
                 }
+#ifdef __CUDACC__
+                inline __host__  __device__
 
+#elif defined(__GNUC__)
+
+
+#endif
                 SoftMaxDerivative() {
                     this->requiresSpecial = true;
                 }
