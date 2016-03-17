@@ -14,7 +14,7 @@ layout: kr-default
 * [Long Short-Term Memory Units (LSTM)](#long)
 * [다양한 시간 단위의 시계열 데이터 분석](#capturing)
 * [예제 코드](#code)
-* [학습자료](#resources))
+* [학습자료](#resources)
 
 이 포스팅은 RNNs(Recurrent Neural Networks), 특히 RNNs의 한 종류인 LSTM을 설명하는 포스팅입니다. 
 
@@ -22,11 +22,11 @@ RNNs은 글, 유전자, 손글씨, 음성 신호, 센서가 감지한 데이타,
 
 RNNs은 궁극의 인공 신경망 구조라고 주장하는 사람들이 있을 정도로 강력합니다. RNNs은 배열 형태가 아닌 데이터에도 적용할 수 있습니다. 예를 들어 이미지에 작은 이미지 패치(필터)를 순차적으로 적용하면 배열 데이터를 다루듯 RNNs을 적용할 수 있습니다.
 
-RNNs은 배열에 등장했던 패턴을 '기억'할 수 있는 능력이 있습니다. 이 부분은 사람의 기억과 기억력에 비유하면 아주 간결하게 설명할 수 있어서 종종 RNNs을 사람의 뇌처럼 취급하려고 합니다.<sup>[1](#one)</sup>
+RNNs은 배열에 등장했던 패턴을 '기억'할 수 있는 능력이 있습니다. 이 부분은 사람의 기억과 기억력에 비유하면 아주 간결하게 설명할 수 있어서 종종 RNNs을 사람의 뇌처럼 취급합니다.<sup>[1](#one)</sup>
 
 ## <a name="feedforward">일반적인 인공 신경망</a>
 
-RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 같은 은닉층의 입력으로 들어가도록 연결되어 있습니다.
+RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망을 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 **같은** 은닉층의 입력으로 들어가도록 연결되어 있습니다.
 
 FFNets의 입/출력이 각각 사진과 사진의 라벨(고양이, 코끼리..)이라면 (즉, 지도 학습의 경우) 이 FFNets은 사진에 있는 물체에서 패턴을 파악해서 적절한 라벨을 찾아줍니다. 아래 그림에 나온 FFNets의 구조를 참고하시기 바랍니다.
 
