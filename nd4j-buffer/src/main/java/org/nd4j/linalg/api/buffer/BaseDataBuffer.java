@@ -591,7 +591,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public long address() {
         switch(allocationMode) {
             case JAVACPP: {
-                System.out.println("ASDASDAS JAVACPP");
                 return pointer.address() + getElementSize() * offset();
             }
             case DIRECT:
