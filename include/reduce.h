@@ -162,7 +162,7 @@ public:
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
-		int numElements = gridDim.x;
+		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
 		for (int i = tid; i < numElements; i += blockDim.x)
 			sPartials[i] = init;
@@ -204,7 +204,8 @@ public:
 			 * we can use arr.stride(1) as a representation
 			 * along long which to iterate.
 			 */
-			int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+
+			int tadElementWiseStride = dimensionLength > 1 ? shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength) : shape::stride(xShapeInfo)[dimensionLength - 1];
 
 			xElementWiseStride = tadElementWiseStride;
 			xLength = shape::length(xShapeInfo);
@@ -213,11 +214,13 @@ public:
 		__syncthreads();
         int n = xLength;
 
+
 		if (!resultScalar) {
 			if(tid == 0) {
 				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 			}
 			__syncthreads();
+
 
 			int resultLength = shape::length(resultShapeInfo);
 			if(tid >= resultLength)
@@ -256,7 +259,6 @@ public:
 
 		}
 		else {
-
 			T curr;
 			if (resultScalar) {
 				if(blockIdx.x >= resultLength)

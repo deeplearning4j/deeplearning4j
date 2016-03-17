@@ -170,8 +170,8 @@ namespace nd4j {
 template<typename T>
 __host__ void copyDataToGpu(Buffer <T> **buffer, cudaStream_t stream) {
 	Buffer <T> *bufferRef = *buffer;
-	checkCudaErrors(
-			cudaMemcpyAsync(bufferRef->gData, bufferRef->data, bufferSize(bufferRef), cudaMemcpyHostToDevice, stream));
+	checkCudaErrors(cudaMemcpyAsync(bufferRef->gData, bufferRef->data, bufferSize(bufferRef), cudaMemcpyHostToDevice, stream));
+	checkCudaErrors(cudaStreamSynchronize(stream));
 }
 
 /**
@@ -183,6 +183,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 	Buffer <T> *bufferRef = *buffer;
 	int bufferTotalSize = bufferSize(bufferRef);
 	checkCudaErrors(cudaMemcpyAsync(bufferRef->data, bufferRef->gData, bufferTotalSize, cudaMemcpyDeviceToHost, stream));
+	checkCudaErrors(cudaStreamSynchronize(stream));
 }
 #endif
 

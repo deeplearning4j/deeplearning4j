@@ -259,6 +259,19 @@ else()
       "${CGAL_TAUCS_LIBRARIES_DIR} ENV BLAS_LIB_DIR"
       )
     endif()
+    
+    # BLAS in intel mkl 11 library?
+    if(NOT BLAS_LIBRARIES)
+      check_fortran_libraries(
+      BLAS_DEFINITIONS
+      BLAS_LIBRARIES
+      BLAS
+      sgemm
+      ""
+      "mkl_rt"
+      "${CGAL_TAUCS_LIBRARIES_DIR} ENV BLAS_LIB_DIR"
+      )
+    endif()
 
     #BLAS in intel mkl 10 library? (em64t 64bit)
     if(NOT BLAS_LIBRARIES)
