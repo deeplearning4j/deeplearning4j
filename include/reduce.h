@@ -852,11 +852,9 @@ void exec(T *x,
 #pragma omp parallel for
             for(int i = 0;  i < resultLength; i++) {
                 int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                printf("Starting offset %d for i %d\n",baseOffset,i);
                 T currResult = op(x[baseOffset],extraParams);
                 for(int j = 1; j < tadLength; j++) {
                     currResult = update(currResult,op(x[baseOffset + j * tadElementWiseStride],extraParams),extraParams);
-                    printf("j %d and offset %d for i %d\n",j,baseOffset + j * tadElementWiseStride,i);
                 }
 
                 result[i] = postProcess(currResult,tadLength,extraParams);
