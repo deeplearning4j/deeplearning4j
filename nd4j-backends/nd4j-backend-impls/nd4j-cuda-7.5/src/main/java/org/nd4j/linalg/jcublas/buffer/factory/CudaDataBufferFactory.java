@@ -34,14 +34,25 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class CudaDataBufferFactory implements DataBufferFactory {
+    protected DataBuffer.AllocationMode allocationMode;
+
     @Override
     public void setAllocationMode(DataBuffer.AllocationMode allocationMode) {
-
+        this.allocationMode = allocationMode;
     }
 
     @Override
     public DataBuffer.AllocationMode allocationMode() {
-        return null;
+        if(allocationMode == null) {
+            String otherAlloc = System.getProperty("alloc");
+            if(otherAlloc.equals("heap"))
+                setAllocationMode(DataBuffer.AllocationMode.HEAP);
+            else if(otherAlloc.equals("direct"))
+                setAllocationMode(DataBuffer.AllocationMode.DIRECT);
+            else if(otherAlloc.equals("javacpp"))
+                setAllocationMode(DataBuffer.AllocationMode.JAVACPP);
+        }
+        return allocationMode;
     }
 
     @Override

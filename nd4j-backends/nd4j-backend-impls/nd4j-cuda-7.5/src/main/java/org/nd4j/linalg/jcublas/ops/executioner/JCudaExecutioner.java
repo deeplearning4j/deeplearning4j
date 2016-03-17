@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
+import jcuda.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.NativeOps;
@@ -348,8 +350,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(
-                op.x().shapeInfoDataBuffer()),
+
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
                 AtomicAllocator.getInstance().
                         getCudaContext().
                         getOldStream().getNativePointer()};
@@ -562,10 +564,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
-
-            log.debug("X: " + x);
-            log.debug("Y: " + y);
-            log.debug("Z: " + z);
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execPairwiseTransformDouble(

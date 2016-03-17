@@ -31,9 +31,16 @@ public class CudaAccumTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 
-        INDArray result = Nd4j.getExecutioner().exec(new Sum(array1), 1);
+        //INDArray result = Nd4j.getExecutioner().exec(new Sum(array1), 1);
 
-        assertEquals(17.15f, result.getFloat(0), 0.01f);
+        Sum sum = new Sum(array1);
+        Nd4j.getExecutioner().exec(sum, 1);
+
+        Number resu = sum.getFinalResult();
+
+        System.out.println("Result: " + resu);
+
+        assertEquals(17.15f, resu.floatValue(), 0.01f);
     }
 
     /**
@@ -49,11 +56,17 @@ public class CudaAccumTests {
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 
+        Mean mean = new Mean(array1);
+        Nd4j.getExecutioner().exec(mean, 1);
 
-        INDArray result = Nd4j.getExecutioner().exec(new Mean(array1), 1);
+        Number resu = mean.getFinalResult();
+
+
+//        INDArray result = Nd4j.getExecutioner().exec(new Mean(array1), 1);
 
         System.out.println("Array1: " + array1);
-        System.out.println("Result: " + result);
-        assertEquals(1.14f, result.getFloat(0), 0.01f);
+//        System.out.println("Result: " + result);
+
+        assertEquals(1.14f, resu.floatValue(), 0.01f);
     }
 }
