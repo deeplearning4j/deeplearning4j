@@ -203,7 +203,7 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * [인공 신경망과 회귀](../linear-regression.html)
 * [컨볼루션 네트워크](../convolutionalnets.html)
 
-### Footnotes
+### 각주
 
 <a name="one">1)</a> RNNs과 인공 지능은 생각보다 유사합니다. RNNs 알고리즘이 좋기도 하지만 사실 사람의 지능과 기억력은 생각보다 단순합니다. 피드백 루프로 구현된 '기억력'은 인간의 의식을 구성하는 필수 요소입니다. 물론 다른 요소도 필요합니다. 예를들어 데이터를 보고 어떤 결정을 내리는 논리 구조는 강화 학습(reinforcement learning)으로 구현이 가능합니다. 이미 [구글 딥마인드는 강화 학습을 이용한 인공지능](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)을 선보였습니다.
 
