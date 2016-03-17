@@ -48,12 +48,6 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         try(CublasPointer xCPointer = new CublasPointer(X,ctx);
             CublasPointer yCPointer = new CublasPointer(Y,ctx)) {
-            /*long[] p = new long[]{AtomicAllocator.getInstance().getDevicePointer(X.shapeInfoDataBuffer()).getNativePointer(),ctx.getHandle().getNativePointer()};
-            System.out.println("P[0]: " + p[0]);
-            System.out.println("P[1]: " + p[1]);
-            System.out.println("X: " + xCPointer.getDevicePointer().getNativePointer());
-            System.out.println("Y: " + yCPointer.getDevicePointer().getNativePointer());
-            */
             ret = nd4jBlas.sdot(new long[]{ctx.getHandle().getNativePointer()},
                     N,
                     xCPointer.getDevicePointer().getNativePointer(),
