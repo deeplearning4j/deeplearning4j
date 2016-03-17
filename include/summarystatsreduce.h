@@ -988,7 +988,6 @@ struct SharedSummaryStatsData<double> {
                      * along long which to iterate.
                      */
                     int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension,dimensionLength);
-                    int tadLength = tadPermuteInfo.tensorShapeProd;
 
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {

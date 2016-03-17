@@ -146,15 +146,32 @@ namespace functions {
              * @param extraParams
              * @param n
              */
-            virtual  __inline__ __device__ void transform(int n, T *dy, int incy, T *params, T *result) {
+            virtual  __inline__ __device__ void transform(
+            int n,
+            T *dy,
+            int incy,
+            T *params,
+             T *result) {
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
-                /* equal, positive, non-unit increments. */
+
+                if(incy == 1) {
+                printf("Incy of 1 %d\n");
+                                /* equal, positive, non-unit increments. */
+#pragma unroll
+                for (; i < n; i += totalThreads) {
+                    result[i] = op(dy[i], params);
+                }
+                }
+                else {
+                                /* equal, positive, non-unit increments. */
 #pragma unroll
                 for (; i < n; i += totalThreads) {
                     result[i * incy] = op(dy[i * incy], params);
                 }
+                }
+
 
             }
 #endif
@@ -282,7 +299,7 @@ namespace functions {
                               T *result,
                               int resultStride,
                               T *extraParams,
-                             int n) {
+                              int n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel  for
                     for (int i = 0; i < n; i++) {
@@ -1455,7 +1472,7 @@ namespace functions {
 
 #endif
                 T op(T d1, T *params) {
-                    return d1 * 1 - d1;
+                    return d1 * (1 - d1);
                 }
 
 #ifdef __CUDACC__
@@ -2556,12 +2573,12 @@ namespace functions {
                     int *outIndices = new int[6];
                     int *inIndices = new int[4];
 
-                   int inStride2 = inStride[2];
-                   int inStride3 = inStride[3];
-                   int outStride2 = outStride[2];
-                   int outStride3 = outStride[3];
-                   int inShape2 = inShape[2];
-                   int inShape3 = inShape[3];
+                    int inStride2 = inStride[2];
+                    int inStride3 = inStride[3];
+                    int outStride2 = outStride[2];
+                    int outStride3 = outStride[3];
+                    int inShape2 = inShape[2];
+                    int inShape3 = inShape[3];
 
                     const bool padding = padHeight > 0 || padWidth > 0;
 
@@ -2784,15 +2801,15 @@ namespace functions {
                     int *outIndices = new int[4];
                     int *inIndices = new int[6];
 
-                   int inStride2 = inStride[2];
-                   int inStride3 = inStride[3];
-                   int outStride2 = outStride[2];
-                   int outStride3 = outStride[3];
-                   int outShape2 = outShape[2];
-                   int outShape3 = outShape[3];
+                    int inStride2 = inStride[2];
+                    int inStride3 = inStride[3];
+                    int outStride2 = outStride[2];
+                    int outStride3 = outStride[3];
+                    int outShape2 = outShape[2];
+                    int outShape3 = outShape[3];
 
-                   int yOutTo = inShape[4];
-                   int xOutTo = inShape[5];
+                    int yOutTo = inShape[4];
+                    int xOutTo = inShape[5];
 
 
                     const bool padding = padHeight > 0 || padWidth > 0;
@@ -2983,8 +3000,8 @@ namespace functions {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
-                       int dimension[1] = {0};
-                       int maxDimension[1] = {1};
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
@@ -3162,8 +3179,8 @@ namespace functions {
                     if (shape::isMatrix(xShapeBuffer,2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         //iterate along rows
-                       int dimension[1] = {0};
-                       int maxDimension[1] = {1};
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
                         T maxResult[shape[0]];
@@ -3349,8 +3366,8 @@ namespace functions {
                         int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
                         //iterate along rows
-                       int dimension[1] = {0};
-                       int maxDimension[1] = {1};
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
                         int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
@@ -3358,7 +3375,7 @@ namespace functions {
 #pragma omp parallel for
                         for(int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
-                       int maxShape[2] = {shape[0],1};
+                        int maxShape[2] = {shape[0],1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2,maxShape);
                         max->exec(dx,xShapeBuffer,extraParams,maxResult,maxResultShapeBuffer,maxDimension,1);
 
