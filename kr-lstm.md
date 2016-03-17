@@ -3,30 +3,30 @@ title: A Beginner's Guide to Recurrent Networks and LSTMs
 layout: kr-default
 ---
 
-# 초보자를 위한 RNNs과 LSTMs 가이드
+# 초보자를 위한 RNNs과 LSTM 가이드
 
 내용
 
-* [일반적인 뉴럴 네트워크 (Feedforward Networks)](#feedforward)
+* [일반적인 인공 신경망 (Feedforward Networks)](#feedforward)
 * [RNNs (Recurrent Neural Networks)](#recurrent)
 * [BPTT:Backpropagation Through Time (시간을 거슬러 가는 backprop)](#backpropagation)
 * [그라디언트 안정화 문제](#vanishing)
-* [Long Short-Term Memory Units (LSTMS)](#long)
-* [???](#capturing)
+* [Long Short-Term Memory Units (LSTM)](#long)
+* [다양한 시간 단위의 시계열 데이터 분석](#capturing)
 * [예제 코드](#code)
 * [학습자료](#resources))
 
-이 포스팅은 RNNs(Recurrent Neural Networks), 특히 RNNs의 한 종류인 LSTMs을 설명하는 포스팅입니다. 
+이 포스팅은 RNNs(Recurrent Neural Networks), 특히 RNNs의 한 종류인 LSTM을 설명하는 포스팅입니다. 
 
 RNNs은 글, 유전자, 손글씨, 음성 신호, 센서가 감지한 데이타, 주가 등 배열(sequence, 또는 시계열 데이터)의 형태를 갖는 데이터에서 패턴을 인식하는 인공 신경망 입니다. 
 
-RNNs은 궁극의 뉴럴 네트워크 구조라고 주장하는 사람들이 있을 정도로 강력합니다. RNNs은 배열 형태가 아닌 데이터에도 적용할 수 있습니다. 예를 들어 이미지에 작은 이미지 패치(필터)를 순차적으로 적용하면 배열 데이터를 다루듯 RNNs을 적용할 수 있습니다.
+RNNs은 궁극의 인공 신경망 구조라고 주장하는 사람들이 있을 정도로 강력합니다. RNNs은 배열 형태가 아닌 데이터에도 적용할 수 있습니다. 예를 들어 이미지에 작은 이미지 패치(필터)를 순차적으로 적용하면 배열 데이터를 다루듯 RNNs을 적용할 수 있습니다.
 
 RNNs은 배열에 등장했던 패턴을 '기억'할 수 있는 능력이 있습니다. 이 부분은 사람의 기억과 기억력에 비유하면 아주 간결하게 설명할 수 있어서 종종 RNNs을 사람의 뇌처럼 취급하려고 합니다.<sup>[1](#one)</sup>
 
-## <a name="feedforward">일반적인 뉴럴 네트워크</a>
+## <a name="feedforward">일반적인 인공 신경망</a>
 
-RNNs을 이해하려면 우선 [일반적인 뉴럴 네트워크(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 뉴럴 네트워크를 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 같은 은닉층의 입력으로 들어가도록 연결되어 있습니다.
+RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 같은 은닉층의 입력으로 들어가도록 연결되어 있습니다.
 
 FFNets의 입/출력이 각각 사진과 사진의 라벨(고양이, 코끼리..)이라면 (즉, 지도 학습의 경우) 이 FFNets은 사진에 있는 물체에서 패턴을 파악해서 적절한 라벨을 찾아줍니다. 아래 그림에 나온 FFNets의 구조를 참고하시기 바랍니다.
 
@@ -102,7 +102,7 @@ RNNs은 시간을 거슬러 올라가며 과거 은닉값을 추적합니다. �
 
 ![Alt text](../img/sigmoid_vanishing_gradient.png)
 
-## <a name="long">Long Short-Term Memory Units (LSTMs)</a>
+## <a name="long">Long Short-Term Memory Units (LSTM)</a>
 
 RNNs의 변형인 LSTM(Long Short-Term Memory) 유닛은 90년대 중반에 처음으로 등장했습니다. 
 
@@ -142,7 +142,7 @@ LSTM의 구조는 간단하지 않습니다. 만일 LSTM을 처음 공부하신�
 
 마지막으로 RNNs과 FFNets의 아주 큰 차이를 간략히 언급하면, FFNets은 입력 하나에 출력 하나, 즉 입력:출력이 1:1입니다. 그런데 RNNs은 설정하기에 따라 일대일, 일대다(이미지 설명하기), 다대다(기계 번역), 다대일(음성신호 인식) 등 다양하게 적용할 수 있습니다. 
 
-## <a name="time">Capturing Diverse Time Scales and Remote Dependencies</a>
+## <a name="time">다양한 시간 단위의 시계열 데이터 분석</a>
 
 LSTM의 작동 과정에서 정확히 어떤 값이 입력되면 유닛의 쓰기 게이트가 열리고 닫히는지, 또 출력 게이트가 열리고 닫히는지, 즉 어떤 사건에 게이트가 어떻게 열리고 그 구체적인 과정이 잘 와닿지 않을 것입니다. 우선 이 쓰기/읽기 게이트은 LSTM을 다양한 규모의 시계열 데이터에도 반응하도록 해준다는 점을 알려드리겠습니다.
 
