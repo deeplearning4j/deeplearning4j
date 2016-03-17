@@ -247,7 +247,7 @@ namespace functions {
                 __shared__ int xOffset;
                 __shared__ int reductionIndexesPerBlock;
 
-                int numElements = gridDim.x;
+                int numElements = blockDim.x;
                 //shared memory space for storing intermediate results
                 IndexValue<T> *sPartials;
                 functions::indexreduce::SharedIndexValue<T> holder;

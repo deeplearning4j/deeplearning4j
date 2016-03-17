@@ -162,7 +162,7 @@ public:
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
-		int numElements = gridDim.x;
+		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
 		for (int i = tid; i < numElements; i += blockDim.x)
 			sPartials[i] = init;
@@ -219,6 +219,7 @@ public:
 			}
 			__syncthreads();
 
+
 			int resultLength = shape::length(resultShapeInfo);
 			if(tid >= resultLength)
 				return;
@@ -256,7 +257,6 @@ public:
 
 		}
 		else {
-
 			T curr;
 			if (resultScalar) {
 				if(blockIdx.x >= resultLength)

@@ -46,7 +46,7 @@ dim3 getOptimalDimensions(int n,cudaFuncAttributes attributes) {
 
     // check for partial block at the end
     if(n % num_threads) ++num_blocks;
-    return dim3(num_blocks,num_threads,num_threads * sizeof(T));
+    return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
 
 /**
@@ -80,10 +80,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int n = shape::length(hostXShapeInfo);
 
-    printf("Going for getOptimalDimensions...\n");
-
     dim3 launchDims = getOptimalDimensions<T>(n,attributes);
-    launchDims.z = attributes.sharedSizeBytes;
 
     printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i]\n", launchDims.x, launchDims.y, launchDims.z);
 
@@ -1202,7 +1199,7 @@ float   NativeOps::execIndexReduceScalarFloat(
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>(*stream);
 
-    indexReduceFloat<<<launchDims.x,launchDims.y,32768, *stream>>>(
+    indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
                     opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -1594,7 +1591,7 @@ float NativeOps::execReduceScalarFloat(
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], attributes);
 
-    reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+    reduceFloat<<<launchDims.x,launchDims.y, 40000, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer
