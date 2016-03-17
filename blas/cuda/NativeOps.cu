@@ -83,6 +83,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
     printf("Going for getOptimalDimensions...\n");
 
     dim3 launchDims = getOptimalDimensions<T>(n,attributes);
+    launchDims.z = attributes.sharedSizeBytes;
 
     printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i]\n", launchDims.x, launchDims.y, launchDims.z);
 
