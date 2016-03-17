@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -376,7 +377,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
         else {
-            if (dimension == null) dimension = new int[] {0};
+            if (dimension == null)
+                dimension = new int[] {0};
             long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
             long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
             long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
@@ -431,62 +433,185 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            if(op instanceof Variance) {
-                double result = nativeOps.execSummaryStatsScalarDouble(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x
-                        ,xShapeInfo,extraArgs, true);
-                op.setFinalResult(result);
-            } else if (op.y() != null) {
-                long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
-                long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
-                double result = nativeOps.execReduce3ScalarDouble(xShapeInfoHostPointer,
-                        op.opNum()
-                        , x,
-                        xShapeInfo,
-                        extraArgs,
-                        y,
-                        yShapeInfo);
-                op.setFinalResult(result);
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
+        }
+
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return null;
+
+        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        op.setZ(ret);
+
+        if(op.z().isScalar()) {
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                if(op instanceof Variance) {
+                    double result = nativeOps.execSummaryStatsScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x
+                            ,xShapeInfo,extraArgs, true);
+                    op.setFinalResult(result);
+                } else if (op.y() != null) {
+                    long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+                    long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+                    double result = nativeOps.execReduce3ScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum()
+                            , x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo);
+                    op.setFinalResult(result);
+                } else {
+                    double result = nativeOps.execReduceScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs);
+                    op.setFinalResult(result);
+                }
             } else {
-                double result = nativeOps.execReduceScalarDouble(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        extraArgs);
-                op.setFinalResult(result);
+                if(op instanceof Variance) {
+                    float result = nativeOps.execSummaryStatsScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x
+                            ,xShapeInfo,extraArgs, true);
+                    op.setFinalResult(result);
+                } else if (op.y() != null) {
+                    long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+                    long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+                    float result = nativeOps.execReduce3ScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo);
+                    op.setFinalResult(result);
+                } else {
+                    float result = nativeOps.execReduceScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs);
+                    op.setFinalResult(result);
+                }
             }
-        } else {
-            if(op instanceof Variance) {
-                float result = nativeOps.execSummaryStatsScalarFloat(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x
-                        ,xShapeInfo,extraArgs, true);
-                op.setFinalResult(result);
-            } else if (op.y() != null) {
-                long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
-                long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
-                float result = nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer,
-                        op.opNum()
-                        , x,
-                        xShapeInfo,
-                        extraArgs,
-                        y,
-                        yShapeInfo);
-                op.setFinalResult(result);
-            } else {
-                float result = nativeOps.execReduceScalarFloat(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        extraArgs);
-                op.setFinalResult(result);
+
+        }
+        else {
+            long result = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
+            long resultShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+            long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
+
+            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                if(op.y() != null) {
+                    long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+                    long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+                    nativeOps.execReduce3Double(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo,
+                            result,
+                            resultShapeInfo,
+                            dimensionPointer,
+                            dimension.length);
+                }
+                else {
+                    if(op instanceof Variance) {
+                       nativeOps.execSummaryStatsDouble(
+                               xShapeInfoHostPointer,
+                               op.opNum(),
+                               x,
+                               xShapeInfo,
+                               extraArgs,
+                               result,
+                               resultShapeInfo,
+                               dimensionPointer,
+                               dimension.length,
+                               ((Variance) op).isBiasCorrected());
+                    }
+                    else {
+                        nativeOps.execReduceDouble(
+                                xShapeInfoHostPointer,
+                                op.opNum(),
+                                x,
+                                xShapeInfo,
+                                extraArgs,
+                                result,
+                                resultShapeInfo,
+                                dimensionPointer,
+                                dimension.length);
+                    }
+                }
+
             }
+            //float
+            else {
+                if(op.y() != null) {
+                    long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
+                    long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+                    nativeOps.execReduce3Float(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            y,
+                            yShapeInfo,
+                            result,
+                            resultShapeInfo,
+                            dimensionPointer,
+                            dimension.length);
+
+                }
+                else {
+                    if(op instanceof Variance) {
+                        nativeOps.execSummaryStatsFloat(
+                                xShapeInfoHostPointer,
+                                op.opNum(),
+                                x,
+                                xShapeInfo,
+                                extraArgs,
+                                result,
+                                resultShapeInfo,
+                                dimensionPointer,
+                                dimension.length,
+                                ((Variance) op).isBiasCorrected());
+                    }
+                    else {
+                        nativeOps.execReduceFloat(
+                                xShapeInfoHostPointer,
+                                op.opNum(),
+                                x,
+                                xShapeInfo,
+                                extraArgs,
+                                result,
+                                resultShapeInfo,
+                                dimensionPointer,
+                                dimension.length);
+                    }
+                }
+
+            }
+
         }
 
 
