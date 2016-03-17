@@ -600,8 +600,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                         Field address = Buffer.class.getDeclaredField("address");
                         address.setAccessible(true);
 
-                        System.out.println("Reflected address: " + address.getLong(wrappedBuffer));
-
                         return address.getLong(wrappedBuffer);
                         //return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
                     } catch (Exception e) {

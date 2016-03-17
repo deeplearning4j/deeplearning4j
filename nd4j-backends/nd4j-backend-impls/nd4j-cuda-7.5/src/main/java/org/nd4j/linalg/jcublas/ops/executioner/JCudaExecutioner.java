@@ -347,13 +347,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
-
-        log.info("ShapeInfoDataBuffer: " + op.x().shapeInfoDataBuffer());
-        log.info("Op.X host pointer 1: " + AddressRetriever.retrieveHostAddress(op.x().data()));
-        log.info("Op.X host pointer 2: " + Pointer.to(op.x().data().asNio()).getNativePointer());
-        log.info("shapeInfoDataBuffer wrapped buffer: " + op.x().shapeInfoDataBuffer().asNio().getInt(0));
-        log.info("shapeInfoDataBuffer wrapped buffer: " + op.x().shapeInfoDataBuffer().asNio().getInt(4));
-
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -362,7 +355,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 AtomicAllocator.getInstance().
                         getCudaContext().
                         getOldStream().getNativePointer()};
-        log.info("ShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
         if(op.z().isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 double result = nativeOps.execIndexReduceScalarDouble(
@@ -572,10 +564,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
-
-            log.debug("X: " + x);
-            log.debug("Y: " + y);
-            log.debug("Z: " + z);
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execPairwiseTransformDouble(
