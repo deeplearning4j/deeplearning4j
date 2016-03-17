@@ -1591,7 +1591,7 @@ float NativeOps::execReduceScalarFloat(
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], attributes);
 
-    reduceFloat<<<launchDims.x,launchDims.y, 40000, *stream>>>(
+    reduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer

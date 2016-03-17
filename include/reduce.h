@@ -204,7 +204,17 @@ public:
 			 * we can use arr.stride(1) as a representation
 			 * along long which to iterate.
 			 */
-			int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+
+			//int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+
+			int tadElementWiseStride = 0;
+
+			if (dimensionLength > 1) {
+				tadElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
+			} else {
+				if (1 > 0) return;
+				tadElementWiseStride = shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+			}
 
 			xElementWiseStride = tadElementWiseStride;
 			xLength = shape::length(xShapeInfo);
@@ -212,6 +222,7 @@ public:
 		}
 		__syncthreads();
         int n = xLength;
+
 
 		if (!resultScalar) {
 			if(tid == 0) {
