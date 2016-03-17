@@ -849,8 +849,6 @@ void exec(T *x,
         if(shape::order(xShapeInfo) == 'f') {
             int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
             int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-          
-
 #pragma omp parallel for
             for(int i = 0;  i < resultLength; i++) {
                 int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
