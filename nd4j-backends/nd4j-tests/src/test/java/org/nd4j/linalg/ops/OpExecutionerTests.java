@@ -471,19 +471,23 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     public void testStdev() {
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f},new int[]{1,3},ordering());
         double stdev = arr.stdNumber(true).doubleValue();
-        double stdev2 = arr.std(true,1).getDouble(0);
-        assertEquals(stdev,stdev2,1e-3);
+
 
         double exp = 0.370035856962204;
         assertEquals(exp,stdev,1e-7f);
+
+
+        double stdev2 = arr.std(true,1).getDouble(0);
+        assertEquals(stdev,stdev2,1e-3);
     }
 
     @Test
     public void testVariance() {
         INDArray arr = Nd4j.create(new float[]{0.9296161f, 0.31637555f, 0.1839188f},new int[]{1,3},ordering());
         double var = arr.varNumber().doubleValue();
-        INDArray temp = arr.var(1);
-        double var2 = arr.var(1).getDouble(0);
+
+        INDArray var1 = arr.var(1);
+        double var2 = var1.getDouble(0);
         assertEquals(var,var2,1e-3);
 
         double exp = 0.136926531791687;

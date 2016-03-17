@@ -184,15 +184,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getAddressForExtraArgs(op), true));
                 }
                 else {
-                    loop.execReduceDouble(
+                    Variance var = (Variance) op;
+                    loop.execSummaryStatsDouble(
                             dummy,
                             op.opNum(),
                             op.x().data().address(),
                             op.x().shapeInfoDataBuffer().address(),
                             getAddressForExtraArgs(op),
                             op.z().data().address(),
-                            op.z().shapeInfoDataBuffer().address(),
-                            dimensionAddress, dimension.length);
+                            op.z().shapeInfoDataBuffer().address(),dimensionAddress,dimension.length,
+                            var.isBiasCorrected());
                 }
 
             }

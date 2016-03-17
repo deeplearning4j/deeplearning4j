@@ -31,7 +31,6 @@ import org.nd4j.linalg.io.ClassPathResource;
  */
 public class JCublasBackend extends Nd4jBackend {
 
-    private static final Logger log = LoggerFactory.getLogger(JCublasBackend.class);
 
     private final static String LINALG_PROPS = "/nd4j-jcublas.properties";
 
