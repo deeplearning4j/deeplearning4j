@@ -329,7 +329,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial()) {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
                     loop.execScalarDouble(
                             dummy,
                             op.opNum(),
