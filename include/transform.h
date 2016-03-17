@@ -122,7 +122,7 @@ namespace functions {
                     length = shape::length(shapeInfo);
                 __syncthreads();
 
-                if(xElementWiseStride >= 1) {
+                if(xElementWiseStride > 1) {
                     transform(length,dy,xElementWiseStride,params,result);
                 }
                 else {

@@ -2111,7 +2111,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], attributes);
 
-    transformFloat<<<launchDims.x,launchDims.y, 16384, *stream>>>(
+    printf("Going for transformFloat...\n");
+
+    transformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
