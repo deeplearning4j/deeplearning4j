@@ -462,6 +462,16 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testOneMinus(){
+        INDArray in = Nd4j.linspace(1,3,3);
+        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in));
+
+        //Expect: 0, -2, -6 -> from 1*(1-1), 2*(1-2), 3*(1-3). Getting: [0,0,0]
+        INDArray exp = Nd4j.create(new double[]{0,-2.0,-6.0});
+        assertEquals(out,exp);
+    }
+
+    @Test
     public void testReductionIndex() {
         INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
         Map<Integer,Integer> assertionMap = new HashMap<>();
