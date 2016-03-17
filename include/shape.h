@@ -1101,26 +1101,51 @@ namespace shape {
             }
         }
         else {
-            int *stride = shape::stride(shapeInfo);
-            int innerMostStride = stride[dimension[dimensionLength - 1]];
-            int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
-            if(index >= innerMostStride) {
-                //represents the jump
-                //the offset represents how many jumps of the element wise stride to do after identifying
-                //the base offset for the ump as index / inner most stride. For example in our case above:
-                //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
-                //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
-                int base = index / innerMostStride;
-                base *= elementWiseStrideParent;
-                if(index > innerMostStride) {
-                    int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
-                    base += addOffset;
-                }
+           if(shape::order(shapeInfo) == 'c') {
+               int *stride = shape::stride(shapeInfo);
+               int innerMostStride = stride[dimension[dimensionLength - 1]];
+               int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+               if(index >= innerMostStride) {
+                   //represents the jump
+                   //the offset represents how many jumps of the element wise stride to do after identifying
+                   //the base offset for the ump as index / inner most stride. For example in our case above:
+                   //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
+                   //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
+                   int base = index / innerMostStride;
+                   base *= elementWiseStrideParent;
+                   if(index > innerMostStride) {
+                       int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
+                       base += addOffset;
+                   }
 
-                return base;
-            }
+                   return base;
+               }
 
-            else return index;
+               else return index;
+           }
+            else {
+               int *stride = shape::stride(shapeInfo);
+               int innerMostStride = stride[dimension[dimensionLength - 1]];
+               int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+
+               if(index >= innerMostStride) {
+                   //represents the jump
+                   //the offset represents how many jumps of the element wise stride to do after identifying
+                   //the base offset for the ump as index / inner most stride. For example in our case above:
+                   //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
+                   //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
+                   int base = index / innerMostStride;
+                   base += elementWiseStrideParent;
+                   if(index > innerMostStride) {
+                       int addOffset =  index / innerMostStride;
+                       base *= addOffset;
+                   }
+
+                   return base;
+               }
+
+               else return index;
+           }
 
         }
 
