@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
+import jcuda.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.NativeOps;
@@ -345,14 +347,22 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+
+        log.info("ShapeInfoDataBuffer: " + op.x().shapeInfoDataBuffer());
+        log.info("Op.X host pointer 1: " + AddressRetriever.retrieveHostAddress(op.x().data()));
+        log.info("Op.X host pointer 2: " + Pointer.to(op.x().data().asNio()).getNativePointer());
+        log.info("shapeInfoDataBuffer wrapped buffer: " + op.x().shapeInfoDataBuffer().asNio().getInt(0));
+        log.info("shapeInfoDataBuffer wrapped buffer: " + op.x().shapeInfoDataBuffer().asNio().getInt(4));
+
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(
-                op.x().shapeInfoDataBuffer()),
+
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
                 AtomicAllocator.getInstance().
                         getCudaContext().
                         getOldStream().getNativePointer()};
+        log.info("ShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
         if(op.z().isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 double result = nativeOps.execIndexReduceScalarDouble(

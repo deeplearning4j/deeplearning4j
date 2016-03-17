@@ -1,6 +1,7 @@
 package jcuda.jcublas.ops;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -19,7 +20,9 @@ public class CudaIndexReduceTests {
     @Test
     public void testPinnedIMax() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
+
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
 
         INDArray array1 = Nd4j.create(new float[]{1.0f, 0.1f, 2.0f, 3.0f, 4.0f, 5.0f});
 

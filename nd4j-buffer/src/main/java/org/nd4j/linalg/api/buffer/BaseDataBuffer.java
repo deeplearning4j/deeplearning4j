@@ -36,6 +36,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -586,14 +587,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return referencing;
     }
 
-    @Override
+     @Override
     public long address() {
         switch(allocationMode) {
-            case JAVACPP: return pointer.address() + getElementSize() * offset();
+            case JAVACPP: {
+                System.out.println("ASDASDAS JAVACPP");
+                return pointer.address() + getElementSize() * offset();
+            }
             case DIRECT:
                 if(wrappedBuffer.isDirect())
                     try {
-                        return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
+                        Field address = Buffer.class.getDeclaredField("address");
+                        address.setAccessible(true);
+
+                        System.out.println("Reflected address: " + address.getLong(wrappedBuffer));
+
+                        return address.getLong(wrappedBuffer);
+                        //return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -611,10 +621,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                                 throw new AssertionError("Not supported");
                         }
                     }catch(Exception e) {
-                        throw new IllegalStateException("Unable to get address");
+                        throw new IllegalStateException("Unable to get address", e);
                     }
                 }
             case HEAP:
+                System.out.println("DSMNNZ*1");
                 //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
                 try {
                     //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
