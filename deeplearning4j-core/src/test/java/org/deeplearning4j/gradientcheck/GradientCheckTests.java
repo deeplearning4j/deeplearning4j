@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -33,9 +34,9 @@ public class GradientCheckTests {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
 
     static {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
+		//Force Nd4j initialization, then set data type to double:
+		Nd4j.zeros(1);
+		DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -154,13 +155,13 @@ public class GradientCheckTests {
 				                .list()
 				                .layer(0, new DenseLayer.Builder()
 										.nIn(4).nOut(3)
-										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(afn)
 										.build())
 								.layer(1, new OutputLayer.Builder(lf)
 										.nIn(3).nOut(3)
-										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(outputActivation)
 										.build())
@@ -454,11 +455,11 @@ public class GradientCheckTests {
 	        .seed(12345L)
 	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("sigmoid")
-                .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("sigmoid")
-				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
-				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
