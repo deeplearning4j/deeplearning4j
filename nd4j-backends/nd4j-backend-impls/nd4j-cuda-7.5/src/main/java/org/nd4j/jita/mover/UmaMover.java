@@ -160,9 +160,9 @@ public class UmaMover implements Mover {
         /*
             We don't want to allocate memory if it's too close to the end of available ram.
          */
-        if (used > total * configuration.getMaxDeviceMemoryUsed()) return false;
+        if (configuration != null && used > total * configuration.getMaxDeviceMemoryUsed()) return false;
 
-        if (free + requiredMemory < total * configuration.getMaxDeviceMemoryUsed())
+        if (configuration != null && free + requiredMemory < total * configuration.getMaxDeviceMemoryUsed())
             return true;
         else return false;
     }
