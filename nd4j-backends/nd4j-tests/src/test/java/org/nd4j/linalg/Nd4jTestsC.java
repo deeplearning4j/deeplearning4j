@@ -2033,7 +2033,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, in);
     }
 
+    @Test
+    public void testSumDifferentOrders(){
+        INDArray arrc = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray arrf = Nd4j.create(new double[6],new int[]{3,2},'f').assign(arrc);
 
+        assertEquals(arrc,arrf);
+        //c works
+        INDArray cSum = arrc.sum(0);
+        //f doesn't
+        INDArray fSum = arrf.sum(0);
+        assertEquals(cSum,fSum);  //Expect: 0.51, 1.79; getting [0.51,1.71] for f order
+    }
     @Override
     public char ordering() {
         return 'c';
