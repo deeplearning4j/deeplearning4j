@@ -1972,7 +1972,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(separation0,t0.getTensorStartSeparation());
             assertEquals(separation1,t1.getTensorStartSeparation());
 
-            for( int i=0; i<nTAD0; i++ ){
+            for( int i = 0; i < nTAD0; i++) {
                 INDArray tad0 = arr.tensorAlongDimension(i,0);
                 assertEquals(tad0.length(), t0.getTensorLength());
                 assertEquals(tad0.elementWiseStride(),t0.getElementWiseStride());
@@ -2033,8 +2033,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, in);
     }
 
+
     @Test
-    public void testSumDifferentOrders(){
+    public void testSumDifferentOrdersSquareMatrix() {
+        INDArray arrc = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arrf = Nd4j.create(new int[]{2,2},'f').assign(arrc);
+
+        INDArray cSum = arrc.sum(0);
+        INDArray fSum = arrf.sum(0);
+        assertEquals(arrc,arrf);
+        assertEquals(cSum,fSum);  //Expect: 4,6. Getting [4, 4] for f order
+    }
+
+
+    @Test
+    public void testSumDifferentOrders() {
         INDArray arrc = Nd4j.linspace(1,6,6).reshape('c',3,2);
         INDArray arrf = Nd4j.create(new double[6],new int[]{3,2},'f').assign(arrc);
 
