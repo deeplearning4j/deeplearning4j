@@ -12,9 +12,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
 
 /**
  * Level 3 implementation of matrix matrix operations
@@ -36,8 +34,15 @@ public class JcublasLevel3 extends BaseLevel3 {
             CublasPointer cBPointer = new CublasPointer(B,ctx);
             CublasPointer cCPointer = new CublasPointer(C,ctx)) {
 
-            nd4jBlas.sgemm(new long[]{ctx.getHandle().getNativePointer()}
-            ,Order,TransA,TransB,M,N,K,alpha,
+            nd4jBlas.sgemm(
+                    new long[]{ctx.getHandle().getNativePointer()},
+                    Order,
+                    TransA,
+                    TransB,
+                    M,
+                    N,
+                    K,
+                    alpha,
                     cAPointer.getDevicePointer().getNativePointer(),
                     lda,
                     cBPointer.getDevicePointer().getNativePointer(),
@@ -141,7 +146,19 @@ public class JcublasLevel3 extends BaseLevel3 {
         CudaContext ctx = CudaContext.getBlasContext();
         try(CublasPointer aPointer = new CublasPointer(A,ctx);
             CublasPointer bPointer = new CublasPointer(B,ctx)) {
-            nd4jBlas.strsm(new long[]{ctx.getHandle().getNativePointer()},Order,Side,Uplo,TransA,Diag,M,N,alpha,aPointer.getDevicePointer().getNativePointer(),lda,bPointer.getDevicePointer().getNativePointer(),ldb);
+            nd4jBlas.strsm(new long[]{ctx.getHandle().getNativePointer()},
+                    Order,
+                    Side,
+                    Uplo,
+                    TransA,
+                    Diag,
+                    M,
+                    N,
+                    alpha,
+                    aPointer.getDevicePointer().getNativePointer(),
+                    lda,
+                    bPointer.getDevicePointer().getNativePointer(),
+                    ldb);
             ctx.syncOldStream();
 
             allocator.tickDeviceWrite(B);
@@ -173,7 +190,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         try(CublasPointer cAPointer = new CublasPointer(A,ctx);
             CublasPointer cBPointer = new CublasPointer(B,ctx);
             CublasPointer cCPointer = new CublasPointer(C,ctx)) {
-          nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()},Order,TransA,TransB,M,N,K,alpha,cAPointer.getDevicePointer().getNativePointer(),lda,cBPointer.getDevicePointer().getNativePointer(),ldb,beta,cCPointer.getDevicePointer().getNativePointer(),ldc);
+            nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()},Order,TransA,TransB,M,N,K,alpha,cAPointer.getDevicePointer().getNativePointer(),lda,cBPointer.getDevicePointer().getNativePointer(),ldb,beta,cCPointer.getDevicePointer().getNativePointer(),ldc);
             ctx.syncOldStream();
             allocator.tickDeviceWrite(C);
             allocator.tackDevice(A);
