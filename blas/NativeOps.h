@@ -806,9 +806,11 @@ public:
                               Nd4jPointer resultIndexes);
 
     /**
-     * This method exists only for cuda
+     * This method implementation exists only for cuda.
+     * The other backends should have dummy method for JNI compatibility reasons.
      */
     void initializeDevicesAndFunctions();
+
 };
 
 
