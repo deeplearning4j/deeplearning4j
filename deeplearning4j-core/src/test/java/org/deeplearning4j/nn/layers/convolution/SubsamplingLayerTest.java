@@ -27,7 +27,7 @@ import java.util.Arrays;
  */
 public class SubsamplingLayerTest {
 
-    private int nExamples;
+    private int nExamples=1;
     private int depth = 20; //depth & nOut
     private int nChannelsIn = 1;
     private int inputWidth = 28;
