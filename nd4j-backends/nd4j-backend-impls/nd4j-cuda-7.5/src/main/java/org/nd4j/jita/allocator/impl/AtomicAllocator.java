@@ -372,6 +372,10 @@ public class AtomicAllocator implements Allocator {
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         tackDevice(buffer, AllocationUtils.buildAllocationShape(array));
+
+        if (array.shapeInfoDataBuffer().getTrackingPoint() != null) {
+            tackDevice(array.shapeInfoDataBuffer(), AllocationUtils.buildAllocationShape(array.shapeInfoDataBuffer()));
+        }
     }
 
 
@@ -388,7 +392,7 @@ public class AtomicAllocator implements Allocator {
 
         point.getAccessState().requestTack();
 
-        point.tickDeviceWrite();
+        //point.tickDeviceWrite();
     }
 
 
@@ -399,6 +403,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void tickDeviceWrite(INDArray array) {
+        //log.info("Tick device write!");
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
@@ -418,7 +423,7 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null) {
-            log.info("tickHostWrite INDarray");
+//            log.info("tickHostWrite INDarray");
             pickupSpan(array);
         }
 
@@ -691,7 +696,7 @@ public class AtomicAllocator implements Allocator {
             We set memory state to Toe, and issue copyback if required
          */
 
-        //log.info("Current state: " + point.getAccessState().getCurrentState());
+//        log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
             point.getAccessState().requestToe();
@@ -764,6 +769,7 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        //log.info("Synchronize called on buffer");
         DataBuffer fbuffer = buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(fbuffer, AllocationUtils.buildAllocationShape(fbuffer), true);

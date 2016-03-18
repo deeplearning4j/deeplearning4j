@@ -14,6 +14,7 @@ import org.nd4j.jita.mover.UmaMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
@@ -21,6 +22,10 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -103,6 +108,41 @@ public class AtomicAllocatorTest {
 
         System.out.println("Divi result: " + array2.getFloat(0));
         assertEquals(4.0f, array2.getFloat(0), 0.01f);
+    }
+
+    @Test
+    public void testSerialization1() throws Exception {
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        INDArray[] arr = new INDArray[]{
+                Nd4j.ones(1,10),
+//                Nd4j.ones(5,10).getRow(2)
+        };
+
+        for(INDArray a : arr) {
+            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(a.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(a), false);
+            System.out.println("Memory state: " +  point.getAccessState().getCurrentState());
+
+            point = AtomicAllocator.getInstance().getAllocationPoint(a.shapeInfoDataBuffer(), AllocationUtils.buildAllocationShape(a.shapeInfoDataBuffer()), false);
+            System.out.println("Memory state: " +  point.getAccessState().getCurrentState());
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+                oos.writeObject(a);
+                oos.flush();
+            }
+
+
+
+            byte[] bytes = baos.toByteArray();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bais);
+
+            INDArray aDeserialized = (INDArray) ois.readObject();
+
+            System.out.println(aDeserialized);
+            assertEquals(Nd4j.ones(1,10),aDeserialized);
+        }
     }
 
     @Test

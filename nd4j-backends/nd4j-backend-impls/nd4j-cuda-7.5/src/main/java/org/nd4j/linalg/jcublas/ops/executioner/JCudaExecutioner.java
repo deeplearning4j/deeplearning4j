@@ -771,8 +771,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     extraArgs);
         }
 
-        if (op.x() != null)
+        if (op.x() != null) {
             allocator.tackDevice(op.x());
+
+        }
         if (op.y() != null)
             allocator.tackDevice(op.y());
         if (op.z() != null)

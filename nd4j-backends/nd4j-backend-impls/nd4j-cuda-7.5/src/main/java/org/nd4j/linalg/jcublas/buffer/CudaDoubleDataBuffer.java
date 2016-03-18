@@ -198,14 +198,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         return new CudaDoubleDataBuffer(buf,length);
     }
 
-
     private void writeObject(java.io.ObjectOutputStream stream)
             throws java.io.IOException {
         stream.defaultWriteObject();
 
         if (getHostPointer() == null) {
+            System.out.println("CDASDADvvv");
             stream.writeInt(0);
         } else {
+            System.out.println("ljmn,SADS");
             double[] arr = this.asDouble();
 
             stream.writeInt(arr.length);

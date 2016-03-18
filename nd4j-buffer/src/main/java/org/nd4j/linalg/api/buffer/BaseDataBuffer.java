@@ -1370,7 +1370,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
             for(int i = 0; i < length(); i++)
                 out.writeFloat(getFloat(i));
         }
-
     }
 
 
