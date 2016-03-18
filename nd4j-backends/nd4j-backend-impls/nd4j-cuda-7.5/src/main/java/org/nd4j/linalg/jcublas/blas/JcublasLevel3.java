@@ -30,11 +30,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CudaContext ctx = CudaContext.getBlasContext();
 
 
-        try(CublasPointer cAPointer = new CublasPointer(A,ctx);
-            CublasPointer cBPointer = new CublasPointer(B,ctx);
-            CublasPointer cCPointer = new CublasPointer(C,ctx)) {
+        CublasPointer cAPointer = new CublasPointer(A,ctx);
+        CublasPointer cBPointer = new CublasPointer(B,ctx);
+        CublasPointer cCPointer = new CublasPointer(C,ctx);
 
-            nd4jBlas.sgemm(
+        nd4jBlas.sgemm(
                     new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     TransA,
@@ -51,33 +51,22 @@ public class JcublasLevel3 extends BaseLevel3 {
                     cCPointer.getDevicePointer().getNativePointer(),
                     ldc);
 
-            ctx.syncOldStream();
-
             allocator.tickDeviceWrite(C);
 
 
             allocator.tackDevice(A);
             allocator.tackDevice(B);
             allocator.tackDevice(C);
-
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        finally {
-            ctx.finishBlasOperation();
-
-        }
     }
 
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx);
-            CublasPointer cPointer = new CublasPointer(C,ctx)) {
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+        CublasPointer cPointer = new CublasPointer(C,ctx);
+
             nd4jBlas.ssymm(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Side,
@@ -91,44 +80,30 @@ public class JcublasLevel3 extends BaseLevel3 {
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
 
-            ctx.syncOldStream();
 
-            allocator.tickDeviceWrite(C);
+        allocator.tickDeviceWrite(C);
 
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-            allocator.tackDevice(C);
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-
-        }
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
+        allocator.tackDevice(C);
     }
 
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta, INDArray C, int ldc) {
         CudaContext ctx = CudaContext.getBlasContext();
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer cPointer = new CublasPointer(C,ctx)) {
-            nd4jBlas.ssyrk(new long[]{ctx.getHandle().getNativePointer()},Order,Uplo,Trans,N,K,alpha,aPointer.getDevicePointer().getNativePointer(),lda,beta,cPointer.getDevicePointer().getNativePointer(),ldc);
-            ctx.syncOldStream();
 
-            allocator.tickDeviceWrite(C);
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer cPointer = new CublasPointer(C,ctx);
+
+        nd4jBlas.ssyrk(new long[]{ctx.getHandle().getNativePointer()},Order,Uplo,Trans,N,K,alpha,aPointer.getDevicePointer().getNativePointer(),lda,beta,cPointer.getDevicePointer().getNativePointer(),ldc);
 
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(C);
+        allocator.tickDeviceWrite(C);
 
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-        }
+
+        allocator.tackDevice(A);
+        allocator.tackDevice(C);
     }
 
     @Override
@@ -144,9 +119,11 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
         CudaContext ctx = CudaContext.getBlasContext();
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx)) {
-            nd4jBlas.strsm(new long[]{ctx.getHandle().getNativePointer()},
+
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+
+        nd4jBlas.strsm(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Side,
                     Uplo,
@@ -159,21 +136,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
-            ctx.syncOldStream();
 
-            allocator.tickDeviceWrite(B);
+        allocator.tickDeviceWrite(B);
 
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-
-        }
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
     }
 
     @Override
@@ -182,37 +150,30 @@ public class JcublasLevel3 extends BaseLevel3 {
         B = Shape.toOffsetZero(B);
         CudaContext ctx = CudaContext.getBlasContext();
 
-
         DataTypeValidation.assertDouble(A, B, C);
 
+        CublasPointer cAPointer = new CublasPointer(A,ctx);
+        CublasPointer cBPointer = new CublasPointer(B,ctx);
+        CublasPointer cCPointer = new CublasPointer(C,ctx);
 
-
-        try(CublasPointer cAPointer = new CublasPointer(A,ctx);
-            CublasPointer cBPointer = new CublasPointer(B,ctx);
-            CublasPointer cCPointer = new CublasPointer(C,ctx)) {
-            nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()},Order,TransA,TransB,M,N,K,alpha,cAPointer.getDevicePointer().getNativePointer(),lda,cBPointer.getDevicePointer().getNativePointer(),ldb,beta,cCPointer.getDevicePointer().getNativePointer(),ldc);
+        nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()},Order,TransA,TransB,M,N,K,alpha,cAPointer.getDevicePointer().getNativePointer(),lda,cBPointer.getDevicePointer().getNativePointer(),ldb,beta,cCPointer.getDevicePointer().getNativePointer(),ldc);
             ctx.syncOldStream();
-            allocator.tickDeviceWrite(C);
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-            allocator.tackDevice(C);
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-        }
 
+        allocator.tickDeviceWrite(C);
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
+        allocator.tackDevice(C);
     }
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx);
-            CublasPointer cPointer = new CublasPointer(C,ctx)) {
-            nd4jBlas.dsymm(new long[]{ctx.getHandle().getNativePointer()},
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+        CublasPointer cPointer = new CublasPointer(C,ctx);
+
+        nd4jBlas.dsymm(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Side,
                     Uplo,
@@ -226,29 +187,22 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-            ctx.syncOldStream();
 
-            allocator.tickDeviceWrite(C);
+        allocator.tickDeviceWrite(C);
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-            allocator.tackDevice(C);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        finally {
-            ctx.finishBlasOperation();
-        }
-
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
+        allocator.tackDevice(C);
     }
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
         CudaContext ctx = CudaContext.getBlasContext();
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer cPointer = new CublasPointer(C,ctx)) {
-            nd4jBlas.dsyrk(new long[]{ctx.getHandle().getNativePointer()},
+
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer cPointer = new CublasPointer(C,ctx);
+
+        nd4jBlas.dsyrk(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Uplo,
                     Trans,
@@ -259,30 +213,21 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     beta,cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-            ctx.syncOldStream();
-
             allocator.tickDeviceWrite(C);
 
             allocator.tackDevice(A);
             allocator.tackDevice(C);
-
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-
-        }
-
     }
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         CudaContext ctx = CudaContext.getBlasContext();
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx);
-            CublasPointer cPointer = new CublasPointer(C,ctx)) {
-            nd4jBlas.dsyr2k(new long[]{ctx.getHandle().getNativePointer()},
+
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+        CublasPointer cPointer = new CublasPointer(C,ctx);
+
+        nd4jBlas.dsyr2k(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Uplo,
                     Trans,
@@ -296,29 +241,22 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-            ctx.syncOldStream();
 
-            allocator.tickDeviceWrite(C);
+        allocator.tickDeviceWrite(C);
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-            allocator.tackDevice(C);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-        }
-
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
+        allocator.tackDevice(C);
     }
 
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
         CudaContext ctx = CudaContext.getBlasContext();
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx)) {
-            nd4jBlas.dtrmm(new long[]{ctx.getHandle().getNativePointer()},
+
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+
+        nd4jBlas.dtrmm(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Side,
                     Uplo,
@@ -332,28 +270,19 @@ public class JcublasLevel3 extends BaseLevel3 {
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
 
-            ctx.syncOldStream();
-
-            allocator.tickDeviceWrite(B);
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-        }
-
+        allocator.tickDeviceWrite(B);
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
     }
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        try(CublasPointer aPointer = new CublasPointer(A,ctx);
-            CublasPointer bPointer = new CublasPointer(B,ctx)) {
-            nd4jBlas.dtrsm(new long[]{ctx.getHandle().getNativePointer()},
+        CublasPointer aPointer = new CublasPointer(A,ctx);
+        CublasPointer bPointer = new CublasPointer(B,ctx);
+
+        nd4jBlas.dtrsm(new long[]{ctx.getHandle().getNativePointer()},
                     Order,
                     Side,
                     Uplo,
@@ -367,19 +296,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
 
-            ctx.syncOldStream();
-
-            allocator.tickDeviceWrite(B);
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            ctx.finishBlasOperation();
-        }
-
+        allocator.tickDeviceWrite(B);
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
     }
 
     @Override

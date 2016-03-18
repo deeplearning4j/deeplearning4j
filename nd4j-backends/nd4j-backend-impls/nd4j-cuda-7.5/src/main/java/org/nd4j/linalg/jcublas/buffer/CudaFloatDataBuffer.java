@@ -204,7 +204,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public double getDouble(int i) {
-        return getFloat(i);
+        return super.getFloat(i);
     }
 
 
