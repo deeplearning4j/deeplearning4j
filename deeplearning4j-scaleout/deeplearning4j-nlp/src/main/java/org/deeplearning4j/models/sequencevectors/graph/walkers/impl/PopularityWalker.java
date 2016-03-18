@@ -28,8 +28,11 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * WORK IS IN PROGRESS, DO NOT USE THIS
+ * This is vertex popularity-based walker for SequenceVectors-based DeepWalk implementation.
+ *  Instead of rand walks, this walker produces walks based on number of edges coming into each node.
+ *  This allows you to build walks filtering too rare nodes, or too popular nodes, depending on your demands.
  *
+ * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
  * @author raver119@gmail.com
  */
 public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>  implements GraphWalker<T> {
@@ -39,11 +42,21 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
 
     private static final Logger logger = LoggerFactory.getLogger(PopularityWalker.class);
 
+    /**
+     * This method checks, if walker has any more sequences left in queue
+     *
+     * @return
+     */
     @Override
     public boolean hasNext() {
         return super.hasNext();
     }
 
+    /**
+     * This method returns next walk sequence from this graph
+     *
+     * @return
+     */
     @Override
     public Sequence<T> next() {
         Sequence<T> sequence = new Sequence<>();
@@ -201,51 +214,110 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
         }
 
 
+        /**
+         * This method defines which nodes should be taken in account when choosing next hope: maximum popularity, lowest popularity, or average popularity.
+         * Default value: MAXIMUM
+         *
+         * @param popularityMode
+         * @return
+         */
         public Builder<T> setPopularityMode(@NonNull PopularityMode popularityMode) {
             this.popularityMode = popularityMode;
             return this;
         }
 
+        /**
+         * This method defines, how much nodes should take place in next hop selection. Something like top-N nodes, or bottom-N nodes.
+         * Default value: 10
+         *
+         * @param topN
+         * @return
+         */
         public Builder<T> setPopularitySpread(int topN) {
             this.spread = topN;
             return this;
         }
 
+        /**
+         * This method allows you to define, if nodes within popularity spread should have equal chances to be picked for next hop, or they should have chances proportional to their popularity.
+         *
+         * Default value: PLAIN
+         *
+         * @param spectrum
+         * @return
+         */
         public Builder<T> setSpreadSpectrum(@NonNull SpreadSpectrum spectrum) {
             this.spectrum = spectrum;
             return this;
         }
 
+        /**
+         * This method defines walker behavior when it gets to node which has no next nodes available
+         * Default value: RESTART_ON_DISCONNECTED
+         *
+         * @param handling
+         * @return
+         */
         @Override
         public Builder<T> setNoEdgeHandling(@NonNull NoEdgeHandling handling) {
             super.setNoEdgeHandling(handling);
             return this;
         }
 
+        /**
+         * This method specifies random seed.
+         *
+         * @param seed
+         * @return
+         */
         @Override
         public Builder<T> setSeed(long seed) {
             super.setSeed(seed);
             return this;
         }
 
+        /**
+         * This method defines next hop selection within walk
+         *
+         * @param direction
+         * @return
+         */
         @Override
         public Builder<T> setWalkDirection(@NonNull WalkDirection direction) {
             super.setWalkDirection(direction);
             return this;
         }
 
+        /**
+         * This method specifies output sequence (walk) length
+         *
+         * @param walkLength
+         * @return
+         */
         @Override
         public Builder<T> setWalkLength(int walkLength) {
             super.setWalkLength(walkLength);
             return this;
         }
 
+        /**
+         * This method defines a chance for walk restart
+         * Good value would be somewhere between 0.03-0.07
+         *
+         * @param alpha
+         * @return
+         */
         @Override
         public Builder<T> setRestartProbability(double alpha) {
             super.setRestartProbability(alpha);
             return this;
         }
 
+        /**
+         * This method builds PopularityWalker object with previously specified params
+         *
+         * @return
+         */
         @Override
         public PopularityWalker<T> build() {
             PopularityWalker<T> walker = new PopularityWalker<T>();

@@ -19,10 +19,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * This is Random-based walker for SequenceVectors-based DeepWalk implementation
  *
+ * Original DeepWalk paper: http://arxiv.org/pdf/1403.6652v2
+ *
+ * @author AlexDBlack
  * @author raver119@gmail.com
- *
- * WORK IS IN PROGRESS, DO NOT USE THIS
  *
  * Based on Alex Black RandomWalkIterator implementation
  */
@@ -44,11 +46,21 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     }
 
 
+    /**
+     * This method checks, if walker has any more sequences left in queue
+     *
+     * @return
+     */
     @Override
     public boolean hasNext() {
         return position.get() < sourceGraph.numVertices();
     }
 
+    /**
+     * This method returns next walk sequence from this graph
+     *
+     * @return
+     */
     @Override
     public Sequence<T> next() {
         int[] visitedHops = new int[walkLength];
@@ -198,6 +210,11 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
         return sequence;
     }
 
+    /**
+     * This method resets walker
+     *
+     * @param shuffle if TRUE, order of walks will be shuffled
+     */
     @Override
     public void reset(boolean shuffle) {
         this.position.set(0);
@@ -215,41 +232,82 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
 
     public static class Builder<T extends SequenceElement> {
         protected int walkLength = 5;
-        protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;
+        protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.RESTART_ON_DISCONNECTED;
         protected IGraph<T, ?> sourceGraph;
         protected long seed = 0;
         protected WalkDirection walkDirection = WalkDirection.FORWARD_ONLY;
         protected double alpha;
 
+        /**
+         * Builder constructor for RandomWalker
+         *
+         * @param graph source graph to be used for this walker
+         */
         public Builder(@NonNull IGraph<T, ?> graph) {
             this.sourceGraph = graph;
         }
 
+        /**
+         * This method specifies output sequence (walk) length
+         *
+         * @param walkLength
+         * @return
+         */
         public Builder<T> setWalkLength(int walkLength) {
             this.walkLength = walkLength;
             return this;
         }
 
+        /**
+         * This method defines walker behavior when it gets to node which has no next nodes available
+         * Default value: RESTART_ON_DISCONNECTED
+         *
+         * @param handling
+         * @return
+         */
         public Builder<T> setNoEdgeHandling(@NonNull NoEdgeHandling handling) {
             this.noEdgeHandling = handling;
             return this;
         }
 
+        /**
+         * This method specifies random seed.
+         *
+         * @param seed
+         * @return
+         */
         public Builder<T> setSeed(long seed) {
             this.seed = seed;
             return this;
         }
 
+        /**
+         * This method defines next hop selection within walk
+         *
+         * @param direction
+         * @return
+         */
         public Builder<T> setWalkDirection(@NonNull WalkDirection direction) {
             this.walkDirection = direction;
             return this;
         }
 
+        /**
+         * This method defines a chance for walk restart
+         * Good value would be somewhere between 0.03-0.07
+         *
+         * @param alpha
+         * @return
+         */
         public Builder<T> setRestartProbability(double alpha) {
             this.alpha = alpha;
             return this;
         }
 
+        /**
+         * This method builds RandomWalker instance
+         * @return
+         */
         public RandomWalker<T> build() {
             RandomWalker<T> walker = new RandomWalker<T>();
             walker.noEdgeHandling = this.noEdgeHandling;

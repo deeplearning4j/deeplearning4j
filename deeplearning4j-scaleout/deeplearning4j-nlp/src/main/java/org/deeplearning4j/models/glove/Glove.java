@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -300,6 +301,18 @@ public class Glove extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param vectorsListeners
+         * @return
+         */
+        @Override
+        public Builder setVectorsListeners(@NonNull Collection<VectorsListener<VocabWord>> vectorsListeners) {
+            super.setVectorsListeners(vectorsListeners);
+            return this;
+        }
+
+        /**
          * This method allows you to specify maximum memory available for CoOccurrence map builder.
          *
          * Please note: this option can be considered a debugging method. In most cases setting proper -Xmx argument set to JVM is enough to limit this algorithm.
@@ -396,6 +409,7 @@ public class Glove extends SequenceVectors<VocabWord> {
             ret.lookupTable = this.lookupTable;
             ret.vocab = this.vocabCache;
             ret.modelUtils = this.modelUtils;
+            ret.eventListeners = this.vectorsListeners;
 
 
             ret.elementsLearningAlgorithm = new GloVe.Builder<VocabWord>()
