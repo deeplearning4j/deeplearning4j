@@ -1547,11 +1547,7 @@ void   NativeOps::execReduceFloat(
     cudaFuncAttributes attributes;
     cudaFuncGetAttributes(&attributes, reduceFloat);
 
-
-
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], attributes);
-
-
 
     reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                    opNum,
