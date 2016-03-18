@@ -9,6 +9,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -57,7 +58,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient T unknownElement;
 
 
-    @Setter protected transient Set<VectorsListener> eventListeners;
+    @Setter protected transient Set<VectorsListener<T>> eventListeners;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -198,7 +199,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             if (eventListeners != null && eventListeners.size() > 0) {
                 for (VectorsListener listener: eventListeners) {
-                    listener.processEvent(currentEpoch, null);
+                    if (listener.validateEvent(ListenerEvent.EPOCH, currentEpoch))
+                        listener.processEvent(ListenerEvent.EPOCH, this, currentEpoch);
                 }
             }
         }
@@ -264,6 +266,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
         protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<T>();
+
+        protected Set<VectorsListener<T>> vectorsListeners = new HashSet<>();
 
         public Builder() {
 
@@ -676,6 +680,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param listeners
+         * @return
+         */
+        public Builder<T> setVectorsListeners(@NonNull Collection<VectorsListener<T>> listeners) {
+            vectorsListeners.addAll(listeners);
+            return this;
+        }
+
+        /**
          * Build SequenceVectors instance with defined settings/options
          * @return
          */
@@ -772,6 +787,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.nextRandom = new AtomicLong(workers + 1);
             this.iterator.reset();
             this.stopList = stopList;
+            this.setDaemon(true);
         }
 
         @Override
@@ -908,6 +924,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             this.wordsCounter.addAndGet(sequence.getElements().size());
 
                             if (totalLines.get() % 100000 == 0) log.info("Epoch: [" + this.epochNumber+ "]; Words vectorized so far: [" + this.wordsCounter.get() + "];  Lines vectorized so far: [" + this.totalLines.get() + "]; learningRate: [" + alpha + "]");
+                            if (eventListeners != null && eventListeners.size() > 0) {
+                                for (VectorsListener listener: eventListeners) {
+                                    if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
+                                        listener.processEvent(ListenerEvent.LINE, SequenceVectors.this, totalLines.get());
+                                }
+                            }
                         }
                     }
 

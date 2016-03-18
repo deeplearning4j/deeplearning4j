@@ -4,10 +4,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -28,6 +31,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
@@ -72,6 +77,90 @@ public class ParagraphVectors extends Word2Vec {
         if (document.getReferencedContent() != null)
             return predict(document.getReferencedContent());
         else return predict(document.getContent());
+    }
+
+
+    /**
+     * This method calculates inferred vector for given text
+     *
+     * @param text
+     * @return
+     */
+    public INDArray inferVector(String text, double learningRate, double minLearningRate, int iterations) {
+        if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
+
+        List<String> tokens = tokenizerFactory.create(text).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+
+        return inferVector(document, learningRate, minLearningRate, iterations);
+    }
+
+    /**
+     * This method calculates inferred vector for given document
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(LabelledDocument document, double learningRate, double minLearningRate, int iterations) {
+        if (document.getReferencedContent() != null) {
+            return inferVector(document.getReferencedContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+        } else return inferVector(document.getContent(), this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given document
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
+        if (sequenceLearningAlgorithm == null) {
+            sequenceLearningAlgorithm = new DBOW<VocabWord>();
+            sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
+        }
+        Sequence<VocabWord> sequence = new Sequence<VocabWord>();
+        sequence.addElements(document);
+        sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
+
+        for (int i = 0; i < iterations; i++) {
+            sequenceLearningAlgorithm.learnSequence(sequence, new AtomicLong(0), learningRate);
+        }
+        return null;
+    }
+
+    /**
+     * This method calculates inferred vector for given text, with default parameters for learning rate and iterations
+     *
+     * @param text
+     * @return
+     */
+    public INDArray inferVector(String text) {
+        return inferVector(text, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given document, with default parameters for learning rate and iterations
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(LabelledDocument document) {
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
+    }
+
+    /**
+     * This method calculates inferred vector for given list of words, with default parameters for learning rate and iterations
+     *
+     * @param document
+     * @return
+     */
+    public INDArray inferVector(List<VocabWord> document) {
+        return inferVector(document, this.learningRate.get(), this.minLearningRate, this.numEpochs);
     }
 
     /**
@@ -166,14 +255,75 @@ public class ParagraphVectors extends Word2Vec {
         for(String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
-            log.info("Similarity inside: ["+s+"] -> " + sim);
+            log.debug("Similarity inside: ["+s+"] -> " + sim);
             distances.incrementCount(s, sim);
         }
 
         return distances.getSortedKeys().subList(0, limit);
     }
 
+    /**
+     * This method returns top N labels nearest to specified document
+     *
+     * @param document
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(LabelledDocument document, int topN) {
+        if (document.getReferencedContent() != null) {
+            return nearestLabels(document.getReferencedContent(), topN);
+        } else return nearestLabels(document.getContent(), topN);
+    }
 
+    /**
+     * This method returns top N labels nearest to specified text
+     *
+     * @param rawText
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(String rawText, int topN) {
+        List<String> tokens = tokenizerFactory.create(rawText).getTokens();
+        List<VocabWord> document = new ArrayList<>();
+        for (String token: tokens) {
+            if (vocab.containsWord(token)) {
+                document.add(vocab.wordFor(token));
+            }
+        }
+        return  nearestLabels(document, topN);
+    }
+
+    /**
+     * This method returns top N labels nearest to specified set of vocab words
+     *
+     * @param document
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(Collection<VocabWord> document, int topN) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * This method returns top N labels nearest to specified features vector
+     *
+     * @param labelVector
+     * @param topN
+     * @return
+     */
+    public Collection<String> nearestLabels(INDArray labelVector, int topN) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param rawText
+     * @param label
+     * @return
+     */
     public double similarityToLabel(String rawText, String label) {
         if (tokenizerFactory == null) throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
 
@@ -187,12 +337,26 @@ public class ParagraphVectors extends Word2Vec {
         return similarityToLabel(document, label);
     }
 
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param document
+     * @param label
+     * @return
+     */
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
         } else return similarityToLabel(document.getContent(), label);
     }
 
+    /**
+     * This method returns similarity of the document to specific label, based on mean value
+     *
+     * @param document
+     * @param label
+     * @return
+     */
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty()) throw new IllegalStateException("Document has no words inside");
 
@@ -438,6 +602,7 @@ public class ParagraphVectors extends Word2Vec {
 
             ret.lookupTable = this.lookupTable;
             ret.modelUtils = this.modelUtils;
+            ret.eventListeners = this.vectorsListeners;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -549,6 +714,18 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder layerSize(int layerSize) {
             super.layerSize(layerSize);
+            return this;
+        }
+
+        /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param vectorsListeners
+         * @return
+         */
+        @Override
+        public Builder setVectorsListeners(@NonNull Collection<VectorsListener<VocabWord>> vectorsListeners) {
+            super.setVectorsListeners(vectorsListeners);
             return this;
         }
 

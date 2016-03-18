@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.slf4j.Logger;
@@ -9,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
+ * This is universal serialization/deserialization factor for SequenceVectors serialization.
+ * It will work for any &lt;T extends SequenceElement&gt; that doesn't breaks simple POJO rules.
+ *
  * @author raver119@gmail.com
  */
 public class AbstractElementFactory<T extends SequenceElement> implements SequenceElementFactory<T> {
@@ -16,7 +20,11 @@ public class AbstractElementFactory<T extends SequenceElement> implements Sequen
 
     protected static final Logger log = LoggerFactory.getLogger(AbstractElementFactory.class);
 
-    public AbstractElementFactory(Class cls) {
+    /**
+     * This is the only constructor available for AbstractElementFactory
+     * @param cls class that going to be serialized/deserialized using this instance. I.e.: VocabWord.class
+     */
+    public AbstractElementFactory(@NonNull Class<? extends SequenceElement> cls) {
         targetClass = cls;
     }
 
