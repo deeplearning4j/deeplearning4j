@@ -69,4 +69,19 @@ public class CudaAccumTests {
 
         assertEquals(1.14f, resu.floatValue(), 0.01f);
     }
+
+    @Test
+    public void testSum2() {
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
+        System.out.println("N result: " + n);
+        INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
+        System.out.println("Test result: " + test);
+        INDArray sum = n.sum(-1);
+
+        System.out.println("elementWiseStride: " + n.elementWiseStride());
+        System.out.println("elementStride: " + n.elementStride());
+
+        System.out.println("Sum result: " + sum);
+        assertEquals(test, sum);
+    }
 }

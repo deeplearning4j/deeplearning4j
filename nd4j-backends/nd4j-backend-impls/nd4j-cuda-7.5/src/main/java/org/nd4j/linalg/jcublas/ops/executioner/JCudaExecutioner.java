@@ -72,75 +72,187 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 dimension[i] += op.x().rank();
         }
         //do op along all dimensions
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
 
-
-
-        if(dimension[0] == Integer.MAX_VALUE|| dimension[0] == 0) {
-            if(op.x() instanceof IComplexNDArray) {
-                return Nd4j.scalar(execAndReturn(op).getFinalResultComplex());
-            }
-            return Nd4j.scalar(execAndReturn(op).getFinalResult().doubleValue());
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
         }
 
-        if(op instanceof IComplexNDArray) {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-            //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
-                else
-                    retShape = new int[] {retShape[0],1};
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.noOp();
 
+        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        op.setZ(ret);
+
+        long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
+        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+        long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
+
+        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if(op instanceof Variance) {
+                if(ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+                    op.setFinalResult(ret.getDouble(0));
+                } else {
+                    nativeOps.execSummaryStatsDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length,
+                            ((Variance) op).isBiasCorrected()
+                    );
+                }
+            } else if (op.y() != null) {
+                if (ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execReduce3ScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.y().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer())
+                    ));
+                    op.setFinalResult(ret.getDouble(0));
+                } else {
+                    nativeOps.execReduce3Double(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.y().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length
+                    );
+                }
+            } else {
+                if (ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execReduceScalarDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs
+                    ));
+                    op.setFinalResult(ret.getDouble(0));
+                } else {
+                    nativeOps.execReduceDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length
+                    );
+                }
             }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
+        } else {
+            if(op instanceof Variance) {
+                if(ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execSummaryStatsFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length,
+                            ((Variance) op).isBiasCorrected()
+                    );
+                }
+            } else if (op.y() != null) {
+                if (ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execReduce3ScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.y().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer())
+                    ));
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execReduce3Float(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.y().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length
+                    );
+                }
+            } else {
+                if (ret.isScalar()) {
+                    ret.putScalar(0, nativeOps.execReduceScalarFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs
+                    ));
+                    op.setFinalResult(ret.getFloat(0));
+                } else {
+                    nativeOps.execReduceFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            extraArgs,
+                            AddressRetriever.retrieveDeviceAddress(op.z().data()),
+                            AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer()),
+                            dimensionPointer,
+                            dimension.length
+                    );
+                }
             }
-
-            IComplexNDArray ret = Nd4j.createComplex(retShape);
-            IComplexNDArray linear = ret;
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                IComplexNumber result = execAndReturn((Accumulation) op2).getFinalResultComplex();
-                linear.putScalar(i, result);
-
-            }
-
-            if(ret.ordering() == 'c')
-                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
-
-
-            return ret;
         }
 
-        else {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-            //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
-                else
-                    retShape = new int[] {retShape[0],1};
+        if (op.x() != null)
+            allocator.tackDevice(op.x());
+        if (op.y() != null)
+            allocator.tackDevice(op.y());
+        if (op.z() != null)
+            allocator.tackDevice(op.z());
 
-            }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
-            }
+        // we notify allocator that op.Z was modified on device side
+        if (op.z() != null)
+            allocator.tickDeviceWrite(op.z());
 
-            //nothing to reduce
-            if(ArrayUtil.prod(retShape) == op.x().length()) {
-                return op.x();
-            }
-
-            invoke(op,dimension);
-            if(op.z() == null)
-                throw new IllegalStateException("No result set");
-            return op.z();
-        }
-
-
+        return ret;
     }
 
     @Override
@@ -292,10 +404,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(BroadcastOp op) {
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{
-                AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
-                AtomicAllocator.getInstance().getCudaContext().
-                        getOldStream().getNativePointer()};
+        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
 
         long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
         long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
@@ -549,7 +658,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                                ((Variance) op).isBiasCorrected());
                     }
                     else {
-                        System.out.println("Exec double");
                         nativeOps.execReduceDouble(
                                 xShapeInfoHostPointer,
                                 op.opNum(),
@@ -677,7 +785,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
