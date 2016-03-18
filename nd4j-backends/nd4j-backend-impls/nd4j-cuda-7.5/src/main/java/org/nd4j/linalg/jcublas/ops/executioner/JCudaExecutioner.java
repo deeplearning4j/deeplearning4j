@@ -549,6 +549,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                                ((Variance) op).isBiasCorrected());
                     }
                     else {
+                        System.out.println("Exec double");
                         nativeOps.execReduceDouble(
                                 xShapeInfoHostPointer,
                                 op.opNum(),
