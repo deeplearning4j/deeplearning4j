@@ -82,7 +82,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
     dim3 launchDims = getOptimalDimensions<T>(n,attributes);
 
-    printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i]\n", launchDims.x, launchDims.y, launchDims.z);
+//    printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i]\n", launchDims.x, launchDims.y, launchDims.z);
 
     return launchDims;
 
@@ -2106,8 +2106,6 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     cudaFuncGetAttributes(&attributes, transformFloatPointer);
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], attributes);
-
-    printf("Going for transformFloat...\n");
 
     transformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
             opNum,
