@@ -79,8 +79,9 @@ public class VectorsConfiguration implements Serializable {
     }
 
     public String toEncodedJson() {
+        Base64 base64 = new Base64(Integer.MAX_VALUE);
         try {
-            return Base64.encodeBase64String(this.toJson().getBytes("UTF-8"));
+            return base64.encodeAsString(this.toJson().getBytes("UTF-8"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

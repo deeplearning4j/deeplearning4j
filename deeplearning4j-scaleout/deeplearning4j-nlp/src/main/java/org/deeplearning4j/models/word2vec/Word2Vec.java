@@ -8,6 +8,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -409,6 +410,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param vectorsListeners
+         * @return
+         */
+        @Override
+        public Builder setVectorsListeners(@NonNull Collection<VectorsListener<VocabWord>> vectorsListeners) {
+            super.setVectorsListeners(vectorsListeners);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -473,6 +486,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             // we hardcode
             ret.trainSequenceVectors = false;
             ret.trainElementsVectors = true;
+
+            ret.eventListeners = this.vectorsListeners;
 
             return ret;
         }
