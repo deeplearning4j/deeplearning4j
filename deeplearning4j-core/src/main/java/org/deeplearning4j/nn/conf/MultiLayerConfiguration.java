@@ -221,7 +221,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         /**When doing truncated BPTT: how many steps of forward pass should we do
          * before doing (truncated) backprop?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
-         * Typically tBPTTForwardLength parameter is same as the the tBPTTBackwardLength parameter,
+         * Typically tBPTTForwardLength parameter is same as the tBPTTBackwardLength parameter,
          * but may be larger than it in some circumstances (but never smaller)<br>
          * Ideally your training data time series length should be divisible by this
          * This is the k1 parameter on pg23 of

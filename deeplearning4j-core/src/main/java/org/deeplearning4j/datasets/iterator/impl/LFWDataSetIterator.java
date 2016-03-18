@@ -32,7 +32,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples) {
@@ -41,7 +41,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param imgDim an array of width, height and channels
 	 * @param numExamples the overall number of examples
 	 * */
@@ -51,7 +51,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param imgDim an array of width, height and channels
 	 * @param numExamples the overall number of examples
 	 * */
@@ -61,7 +61,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param numExamples the overall number of examples
 	 * @param numCategories the overall number of labels
 	 * */
@@ -71,7 +71,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param imgDim an array of width, height and channels
 	 */
 	public LFWDataSetIterator(int batchSize, int[] imgDim)  {
@@ -81,7 +81,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param numExamples the overall number of examples
 	 * @param numCategories the overall number of labels
 	 * */
@@ -91,7 +91,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param imgDim an array of width, height and channels
 	 */
 	public LFWDataSetIterator(int batchSize, int[] imgDim, boolean useSubset)  {
@@ -101,7 +101,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
 	/**
 	 * Create LFW data specific iterator
-	 * @param batchSize the the batch size of the examples
+	 * @param batchSize the batch size of the examples
 	 * @param imgDim an array of width, height and channels
 	 * @param numExamples the overall number of examples
 	 * */
