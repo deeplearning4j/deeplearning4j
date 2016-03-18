@@ -57,7 +57,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient T unknownElement;
 
 
-    @Setter protected Set<VectorsListener> eventListeners;
+    @Setter protected transient Set<VectorsListener> eventListeners;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
