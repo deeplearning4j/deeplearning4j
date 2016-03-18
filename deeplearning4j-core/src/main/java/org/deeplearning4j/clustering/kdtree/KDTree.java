@@ -308,7 +308,7 @@ public class KDTree implements Serializable {
 
     /**
      * The number of elements in the tree
-     * @return the the number of elements in the tree
+     * @return the number of elements in the tree
      */
     public int size() {
         return size;
