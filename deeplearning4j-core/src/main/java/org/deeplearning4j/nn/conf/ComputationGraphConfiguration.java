@@ -531,7 +531,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * When doing truncated BPTT: how many steps of forward pass should we do
          * before doing (truncated) backprop?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
-         * Typically tBPTTForwardLength parameter is same as the the tBPTTBackwardLength parameter,
+         * Typically tBPTTForwardLength parameter is same as the tBPTTBackwardLength parameter,
          * but may be larger than it in some circumstances (but never smaller)<br>
          * Ideally your training data time series length should be divisible by this
          * This is the k1 parameter on pg23 of
@@ -560,7 +560,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *
-         * @param layerName   Name/label of the the layer to add
+         * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
          * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
          *                    on a combination of the two.
@@ -573,7 +573,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         /**
          * Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
          *
-         * @param layerName    Name/label of the the layer to add
+         * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
          * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
