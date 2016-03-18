@@ -1,18 +1,9 @@
 package org.nd4j.linalg.heartbeat;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import com.brsanthu.googleanalytics.EventHit;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
-import com.brsanthu.googleanalytics.GoogleAnalyticsRequest;
-import com.brsanthu.googleanalytics.PageViewHit;
-import org.nd4j.linalg.factory.Nd4j;
+
 import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
-import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,40 +17,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Heartbeat {
     private static final Heartbeat INSTANCE = new Heartbeat();
     private volatile long serialVersionID;
-    private AtomicLong lastReport = new AtomicLong(0);
     private AtomicBoolean enabled = new AtomicBoolean(true);
-    private long cId;
-    private volatile GoogleAnalytics tracker;
-    private static Logger logger = LoggerFactory.getLogger(Heartbeat.class);
 
 
     protected Heartbeat() {
-        try {
-            java.util.logging.Logger.getLogger("org.apache.http").setLevel(java.util.logging.Level.OFF);
-            java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.OFF);
-            java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.OFF);
-            System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-            System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "ERROR");
-            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "ERROR");
-            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "ERROR");
 
-
-            ch.qos.logback.classic.Logger LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("org.apache.http");
-            LOG.setLevel(Level.OFF);
-
-            LOG = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("com.brsanthu");
-            LOG.setLevel(Level.OFF);
-
-            tracker = new GoogleAnalytics("UA-48811288-4", "nd4j", "rc3.9-SNAPSHOT");
-        } catch (Exception e) {
-
-        }
-
-        try {
-            cId = EnvironmentUtils.buildCId();
-        } catch (Exception e) {
-            ;
-        }
     }
 
     public static Heartbeat getInstance() {
@@ -71,28 +33,11 @@ public class Heartbeat {
     }
 
     public synchronized void reportEvent(Event event, Environment environment, Task task) {
-        // Ignore reported even if heartbeat is disabled
-        if (!enabled.get()) return;
-        /*
-            Basically we need to start background thread here, but only if lastReport was long ago, to avoid spam.
-         */
-        long currentTime = System.currentTimeMillis();
-        // set to one message per session for now
-        if (lastReport.get() < 1) {
-            lastReport.set(currentTime);
 
-            RepoThread thread = new RepoThread(event, environment, task);
-            thread.start();
-        };// else System.out.println("Skipping report");
     }
 
     public synchronized void derivedId(long id) {
-        /*
-            this method will be actually used only after ast is implemented
-         */
-        if (serialVersionID != 0) {
-            serialVersionID = id;
-        }
+
     }
 
     private synchronized long getDerivedId() {
@@ -116,49 +61,8 @@ public class Heartbeat {
 
         @Override
         public void run() {
-            try {
-                /*
-                 now we just should pack everything environment/task into single line
-                 */
-                String lid = this.event.toString();
-                String argAction = serialVersionID != 0 ? String.valueOf(serialVersionID) : String.valueOf(cId);
 
-
-
-                EventHit eventHit = buildEvent(event, environment, task);
-                eventHit.userId(argAction);
-                eventHit.userAgent(environment.toCompactString());
-
-                tracker.post(eventHit);
-            } catch (Exception e) {
-                // keep quiet on exceptions here
-                ;
-                throw new RuntimeException(e);
-            } finally {
-                ;
-            }
         }
     }
 
-    private EventHit buildEvent(Event event, Environment environment, Task task) {
-        /*
-            So, here's the mapping:
-            event category: either standalone/spark/export
-
-            event action: NetworkType/ArchitectureType
-
-            event label: static > Total Memory GB
-
-            event value: size of memory in GB
-         */
-        String eventAction = task.getNetworkType() + "/" + task.getArchitectureType();
-        int mm = Math.max((int) (environment.getAvailableMemory() / 1024 / 1024 / 1024), 1);
-
-        EventHit hit  = new EventHit(event.toString(), eventAction,  "Total memory (GB)", mm );
-
-        //System.out.println("Reporting: {"+ event.toString()+", " + eventAction + ", " +mm+ "}" );
-        //System.out.println("Environment: " + environment.toCompactString());
-
-        return hit;
-    }
 }

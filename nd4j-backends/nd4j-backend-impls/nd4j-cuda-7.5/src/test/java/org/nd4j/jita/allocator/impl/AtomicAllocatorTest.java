@@ -19,6 +19,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,6 +109,12 @@ public class AtomicAllocatorTest {
 
         System.out.println("Divi result: " + array2.getFloat(0));
         assertEquals(4.0f, array2.getFloat(0), 0.01f);
+    }
+
+    @Test
+    public void testInit() throws Exception {
+        NativeOps nativeOps = new NativeOps();
+        nativeOps.initializeDevicesAndFunctions();
     }
 
     @Test

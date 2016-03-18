@@ -63,6 +63,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private static NativeOps nativeOps = new NativeOps();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
     public JCudaExecutioner() {
+        nativeOps.initializeDevicesAndFunctions();
     }
 
     @Override
@@ -95,7 +96,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
+        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId()};
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
@@ -404,7 +405,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(BroadcastOp op) {
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
+        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId()};
 
         long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
         long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
@@ -464,7 +465,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
                 AtomicAllocator.getInstance().
                         getCudaContext().
-                        getOldStream().getNativePointer()};
+                        getOldStream().getNativePointer(), allocator.getDeviceId()};
         if(op.z().isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 double result = nativeOps.execIndexReduceScalarDouble(
@@ -537,7 +538,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
         CudaContext ctx = null;
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId()};
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -746,7 +747,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer() };
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId() };
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.execScalarDouble(
@@ -794,7 +795,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer()};
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId()};
 
 
         if(op.y() != null) {

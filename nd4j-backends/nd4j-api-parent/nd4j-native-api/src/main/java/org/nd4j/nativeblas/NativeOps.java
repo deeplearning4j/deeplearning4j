@@ -788,6 +788,8 @@ public class NativeOps extends Pointer {
                                             long resultIndexes);
 
 
-
-
+    /**
+     * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
+     */
+    public native void initializeDevicesAndFunctions();
 }
