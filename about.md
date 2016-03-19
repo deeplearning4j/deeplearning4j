@@ -54,4 +54,4 @@ We hire from our open-source contributors. The best way to apply for a job build
 
 If you plan to publish an academic paper and wish to cite Deeplearning4j, please use this format:
 
-Deeplearning4j Development Team (<CURRENT YEAR>). Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org)
+Deeplearning4j Development Team. Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org)
