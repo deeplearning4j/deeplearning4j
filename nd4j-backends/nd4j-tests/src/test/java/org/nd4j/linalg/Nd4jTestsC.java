@@ -465,7 +465,22 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testMultiSum() {
+        INDArray arr = Nd4j.linspace(0,7,8).reshape('c',2,2,2);
+        INDArray arrF = Nd4j.create(new int[]{2,2,2},'f').assign(arr);
 
+        assertEquals(arr,arrF);
+        //0,2,4,6 and 1,3,5,7
+        assertEquals(Nd4j.create(new double[]{12,16}),arr.sum(0,1));
+        //0,1,4,5 and 2,3,6,7
+        assertEquals(Nd4j.create(new double[]{10,18}),arr.sum(0,2));
+        assertEquals(Nd4j.create(new double[]{6,22}),arr.sum(1,2));
+
+        assertEquals(Nd4j.create(new double[]{12,16}),arrF.sum(0,1));
+        assertEquals(Nd4j.create(new double[]{10,18}),arrF.sum(0,2));
+        assertEquals(Nd4j.create(new double[]{6,22}),arrF.sum(1,2));
+    }
 
 
 

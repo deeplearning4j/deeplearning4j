@@ -471,7 +471,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
-  
+
 
     @Override
     public Pointer pointer() {
@@ -509,8 +509,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     private void fillPointerWithZero() {
-        for(int i = 0; i < length(); i++)
-            put(i,0.0);
+        Pointer.memset(this.pointer(),0,getElementSize() * length());
     }
 
     /**
@@ -587,7 +586,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return referencing;
     }
 
-     @Override
+    @Override
     public long address() {
         switch(allocationMode) {
             case JAVACPP: {
