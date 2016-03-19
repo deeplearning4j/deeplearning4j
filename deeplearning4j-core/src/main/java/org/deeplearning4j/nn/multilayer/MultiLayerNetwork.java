@@ -704,7 +704,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,getInputMiniBatchSize()));
+            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,input.size(0)));
         else
             setInput(input);
         return feedForward();
