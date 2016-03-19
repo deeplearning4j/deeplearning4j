@@ -23,7 +23,7 @@ Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind
 
 ## Support
 
-Without the engagement of Skymind customers and the generous backing of [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)'s investment team, led by David Wallerstein, Deeplearning4j would not exist in its present form.
+Without the engagement of Skymind customers and community, and the generous backing of Skymind's investors -- [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)'s investment team, led by David Wallerstein; [Liquid 2 Ventures](http://liquid2.vc/); [Mandra Capital](https://angel.co/mandra-capital); [SV Angel](http://svangel.com/); Ullas Naik; Wei Guo and others -- Deeplearning4j would not exist in its present form.
 
 ## DL4J Co-founders
 
