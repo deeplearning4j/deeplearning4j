@@ -17,11 +17,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class CudaReduce3Tests {
 
-    @Test
-    @Ignore
-    public void testPinnedCosineSimilarity() throws Exception {
-        // passthrough atm, no sense testing
-    }
 
     /**
      * Norm2 + cuBlas dot call

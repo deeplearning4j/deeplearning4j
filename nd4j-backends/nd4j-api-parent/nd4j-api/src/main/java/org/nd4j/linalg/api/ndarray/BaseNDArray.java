@@ -2520,17 +2520,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         ,0.0
                         ,result);
             }
-            else
+            else {
                 Nd4j.getBlasWrapper().level3().gemm(
                         ordering()
-                        ,BlasBufferUtil.getCharForTranspose(other)
-                        ,BlasBufferUtil.getCharForTranspose(result)
-                        ,1.0
-                        ,this
-                        ,other
-                        ,0.0
-                        ,result);
-
+                        , BlasBufferUtil.getCharForTranspose(other)
+                        , BlasBufferUtil.getCharForTranspose(result)
+                        , 1.0
+                        , this
+                        , other
+                        , 0.0
+                        , result);
+            }
 
         }
 
