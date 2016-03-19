@@ -1,6 +1,7 @@
 #include "../NativeBlas.h"
 #include <cublas_v2.h>
 #include <pointercast.h>
+#include <stdio.h>
 
 
 
@@ -55,9 +56,9 @@ cublasDiagType_t convertDiag(int diag) {
 
 cublasOperation_t convertTranspose(int op) {
     switch(op) {
-        case 0: return CUBLAS_OP_N;
-        case 1: return CUBLAS_OP_T;
-        case 2: return CUBLAS_OP_C;
+        case 78: return CUBLAS_OP_N;
+        case 84: return CUBLAS_OP_T;
+        case 67: return CUBLAS_OP_C;
         default: return CUBLAS_OP_N;
     }
 }
