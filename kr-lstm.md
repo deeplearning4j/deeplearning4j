@@ -26,7 +26,7 @@ RNNs은 배열에 등장했던 패턴을 '기억'할 수 있는 능력이 있습
 
 ## <a name="feedforward">일반적인 인공 신경망</a>
 
-RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망을 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 **같은** 은닉층의 입력으로 들어가도록 연결되어 있습니다.
+RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../kr-neuralnet-overview)를 이해하셔야 합니다. 일반적인 인공 신경망을 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 **같은** 은닉층의 입력으로 들어가도록 연결되어 있습니다.
 
 FFNets의 입/출력이 각각 사진과 사진의 라벨(고양이, 코끼리..)이라면 (즉, 지도 학습의 경우) 이 FFNets은 사진에 있는 물체에서 패턴을 파악해서 적절한 라벨을 찾아줍니다. 아래 그림에 나온 FFNets의 구조를 참고하시기 바랍니다.
 
@@ -196,12 +196,12 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">DL4J의 다른 튜토리알</a>
-* [RBMs: Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [아이겐벡터, 공분산, 주성분분석, 엔트로피](../eigenvector.html)
-* [자연어처리: Word2vec](../word2vec.html)
-* [인공 신경망](../neuralnet-overview.html)
+* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
+* [아이겐벡터, 공분산, 주성분분석, 엔트로피](../kr-eigenvector.html)
+* [자연어처리: Word2vec](../kr-word2vec.html)
+* [인공 신경망](../kr-neuralnet-overview.html)
 * [인공 신경망과 회귀](../linear-regression.html)
-* [컨볼루션 네트워크](../convolutionalnets.html)
+* [컨볼루션 네트워크](../kr-convolutionalnets.html)
 
 ## 그 외
 * [RNNs 튜토리알(AIKorea 번역)](http://aikorea.org/blog/rnn-tutorial-1/)
