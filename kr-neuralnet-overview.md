@@ -188,7 +188,7 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 * [RBMs: Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
 * [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)](../eigenvector.html)
 * [딥러닝과 뉴럴 네트워크 용어 사전](../glossary.html)
-* [컨볼루션 네트워](../convolutionalnets.html)
+* [컨볼루션 네트워크](../convolutionalnets.html)
 * [RNNs과 LSTMs](../lstm.html)
 * [Word2vec과 자연어 처리](../lstm.html)
 * [Iris Flower 데이터셋 튜토리알](../iris-flower-dataset-tutorial.html)
