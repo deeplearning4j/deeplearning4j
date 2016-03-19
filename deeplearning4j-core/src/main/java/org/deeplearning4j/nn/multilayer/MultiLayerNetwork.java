@@ -2264,7 +2264,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
             } else {
                 out = this.output(features,false);
-                e.eval(labels,out);
+                if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
+                else e.eval(labels,out);
             }
         }
 
