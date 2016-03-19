@@ -133,11 +133,10 @@ public class HistogramIterationListener implements IterationListener {
                     //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
 
 
-                    int idx = indexFromString(newName);
+                    int idx = indexFromString(param);
                     if (idx >= meanMagHistoryUpdates.size()) {
                         //log.info("Can't find idx for update ["+newName+"]");
                         meanMagHistoryUpdates.add(new LinkedHashMap<String, List<Double>>());
-                        idx = indexFromString(newName);
                     }
 
 
@@ -171,11 +170,10 @@ public class HistogramIterationListener implements IterationListener {
                 newParams.put(newName, histogram.getData());
                 //dup() because params might be a view
 
-                int idx = indexFromString(newName);
+                int idx = indexFromString(param);
                 if (idx >= meanMagHistoryParams.size()) {
                     //log.info("Can't find idx for param ["+newName+"]");
                     meanMagHistoryParams.add(new LinkedHashMap<String,List<Double>>());
-                    idx = indexFromString(newName);
                 }
 
                 Map<String,List<Double>> map = meanMagHistoryParams.get(idx);
