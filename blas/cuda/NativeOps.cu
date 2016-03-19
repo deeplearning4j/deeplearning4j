@@ -197,7 +197,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
                     1,
                     1);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     double result =  scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
@@ -247,6 +247,7 @@ void   NativeOps::execIndexReduceDouble(
                     dimensionLength,
                     1);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 /**
@@ -293,6 +294,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
                     dimensionPointer,
                     dimensionLength);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -338,6 +340,8 @@ void   NativeOps::execPairwiseTransformDouble(
                     extraParamsPointer,
                     resultPointer,
                     resultStride);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -395,6 +399,8 @@ void NativeOps::execPairwiseTransformDouble(
                     xIndexesPointer,
                     yIndexesPointer,
                     resultIndexesPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -439,6 +445,8 @@ void NativeOps::execPairwiseTransformDouble(
                     xShapeInfoPointer,
                     yShapeInfoPointer,
                     resultShapeInfoPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -482,6 +490,8 @@ void   NativeOps::execReduceDouble(
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     delete scalarInfo;
 
@@ -528,6 +538,8 @@ void   NativeOps::execReduceDouble(
                     dimensionPointer,
                     dimensionLength,
                     1);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -565,7 +577,7 @@ double NativeOps::execReduceScalarDouble(
                     1,
                     1);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     double result =  scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
@@ -619,6 +631,9 @@ void   NativeOps::execReduce3Double(
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     delete scalarInfo;
 }
 
@@ -664,7 +679,7 @@ double   NativeOps::execReduce3ScalarDouble(
                     1,
                     1);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     double result  = scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
@@ -721,6 +736,8 @@ void   NativeOps::execReduce3Double(
                     dimensionLength,
                     1);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 /**
  *
@@ -759,6 +776,8 @@ void   NativeOps::execScalarDouble(
                     xStride,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -797,6 +816,8 @@ void NativeOps::execScalarDouble(
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 
@@ -843,6 +864,8 @@ void NativeOps::execScalarDouble(
                     resultPointer,
                     resultIndexesPointer);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 
 }
 /**
@@ -878,7 +901,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
                     1,
                     1,biasCorrected);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     double result = scalarShapeInformation->getFinalResultFromDevice();
     delete scalarShapeInformation;
@@ -923,6 +946,9 @@ void   NativeOps::execSummaryStatsDouble(
                     scalarShapeInformation->getDimensionDevicePointer(),
                     1,
                     1,biasCorrected);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     delete scalarShapeInformation;
 }
 /**
@@ -966,6 +992,8 @@ void   NativeOps::execSummaryStatsDouble(
                     dimensionPointer,
                     dimensionLength,
                     1,biasCorrected);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -1001,6 +1029,8 @@ void   NativeOps::execTransformDouble(
                     xStride,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1036,6 +1066,8 @@ void   NativeOps::execTransformDouble(
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1076,6 +1108,8 @@ void   NativeOps::execTransformDouble(
                     resultPointer,
                     resultIndexesPointer);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 
 /**
@@ -1111,7 +1145,7 @@ float   NativeOps::execIndexReduceScalarFloat(
                     1,
                     1);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     float result =  scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
@@ -1161,6 +1195,8 @@ void   NativeOps::execIndexReduceFloat(
                     dimensionLength,
                     1);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 /**
  *
@@ -1206,6 +1242,8 @@ void   NativeOps::execBroadcastFloat(
                     resultShapeInfoPointer,
                     dimensionPointer,
                     dimensionLength);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -1251,6 +1289,8 @@ void   NativeOps::execPairwiseTransformFloat(
                     extraParamsPointer,
                     resultPointer,
                     resultStride);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1308,6 +1348,8 @@ void NativeOps::execPairwiseTransformFloat(
                     xIndexesPointer,
                     yIndexesPointer,
                     resultIndexesPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1397,6 +1439,8 @@ void   NativeOps::execReduceFloat(
                     1,
                     1);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     delete scalarInfo;
 }
 
@@ -1439,6 +1483,8 @@ void   NativeOps::execReduceFloat(
                     dimensionPointer,
                     dimensionLength,
                     1);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1528,6 +1574,9 @@ void   NativeOps::execReduce3Float(
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     delete scalarInfo;
 
 }
@@ -1572,7 +1621,9 @@ float   NativeOps::execReduce3ScalarFloat(
                     scalarInfo->getDimensionDevicePointer(),
                     1,
                     1);
-    cudaStreamSynchronize(*stream);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     double result  = scalarInfo->getFinalResultFromDevice();
     delete scalarInfo;
     return result;
@@ -1629,6 +1680,8 @@ void   NativeOps::execReduce3Float(
                     dimensionLength,
                     1);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 /**
  *
@@ -1667,6 +1720,8 @@ void   NativeOps::execScalarFloat(
                     xStride,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1707,6 +1762,8 @@ void NativeOps::execScalarFloat(
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1753,6 +1810,8 @@ void NativeOps::execScalarFloat(
                     resultPointer,
                     resultIndexesPointer);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 /**
  *
@@ -1788,7 +1847,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
                     1,
                     1,biasCorrected);
 
-    cudaStreamSynchronize(*stream);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
     float result = scalarShapeInformation->getFinalResultFromDevice();
     delete scalarShapeInformation;
@@ -1832,6 +1891,9 @@ void   NativeOps::execSummaryStatsFloat(
                     scalarShapeInformation->getDimensionDevicePointer(),
                     1,
                     1,biasCorrected);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
     delete scalarShapeInformation;
 }
 /**
@@ -1876,6 +1938,8 @@ void   NativeOps::execSummaryStatsFloat(
                     dimensionLength,
                     1,biasCorrected);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 }
 /**
  *
@@ -1906,11 +1970,13 @@ void   NativeOps::execTransformFloat(
 
     transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
             opNum,
-                    n,
-                    xPointer,
-                    xStride,
-                    extraParamsPointer,
-                    resultPointer);
+            n,
+            xPointer,
+            xStride,
+            extraParamsPointer,
+            resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1944,6 +2010,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                     xShapeInfoPointer,
                     extraParamsPointer,
                     resultPointer);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 
@@ -1985,6 +2053,8 @@ void   NativeOps::execTransformFloat(
                     resultPointer,
                     resultIndexesPointer);
 
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 
 }
 
@@ -2005,7 +2075,7 @@ void NativeOps::initializeDevicesAndFunctions() {
     void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[1], transformFloatPointer1);
 
-    void (*transformFloatPointer2)( int opNum, float *dy, int *shapeInfo, float *params, float *result) = transformFloat;
+    void (*transformFloatPointer2)(int opNum, int n, float *dy, int incy, float *params, float *result) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[2], transformFloatPointer2);
 
     cudaFuncGetAttributes(&funcAttributes[4], scalarFloatIndexes);

@@ -17,6 +17,7 @@
 #include <shape.h>
 #include <pairwise_util.h>
 #include <dll.h>
+#include <stdio.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -165,11 +166,15 @@ namespace functions {
                 char resultOrder = shape::order(resultShapeBuffer);
 
                 int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,resultShape,resultOrder == 'f');
+                int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
                 int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
+                //if (threadIdx.x == 0 && blockIdx.x == 0)
+//                    printf("xEWStride: [%i], yEWStride: [%i], zEWStride: [%i], xLength: [%i], yLength: [%i], xOrder: [%c], yOrder: [%c]\n", xElementWiseStride, yElementWiseStride, resultElementWiseStride,shape::length(xShapeBuffer), shape::length(yShapeBuffer), xOrder, yOrder);
+
+
                 int n = shape::length(xShapeBuffer);
-                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                if(xElementWiseStride > 1 && yElementWiseStride > 1 && resultElementWiseStride > 1) {
                     transform(
                             n,
                             dx,
