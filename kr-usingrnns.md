@@ -5,7 +5,7 @@ layout: kr-default
 
 # DL4J와 RNNs (Recurrent Neural Networks)
 
-이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 가정합니다. 만일 RNNs을 잘 모르신다면 우선 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/lstm.html)을 참고하십시오.
+이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. 만일 RNNs의 기초 지식이 부족하다면 우선 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/lstm.html)을 참고하십시오.
 
 **내용**
 
@@ -14,17 +14,17 @@ layout: kr-default
 * [단기 BPTT (Back Propagation Through Time)](#tbptt)
 * [마스킹: 일대다(one-to-many), 다대일(many-to-one), 및 배열 분류](#masking)
 * [RNN과 다른 층의 조합](#otherlayertypes)
-* [? 매 시간 단계마다 결과 출력하기 ](http://deeplearning4j.org/usingrnns.html#rnntimestep)
+* [효율적인 RNNs 사용](http://deeplearning4j.org/usingrnns.html#rnntimestep)
 * [시계열 데이터 가져오기](http://deeplearning4j.org/usingrnns.html#data)
 * [예제](http://deeplearning4j.org/usingrnns.html#examples)
 
 ## <a name="basics">기본 사항: 데이터 및 네트워크 구성</a>
-현재 DL4J는 RNNs의 여러 유형 중 LSTM(Long Short-Term Memory) 모델(클래스 이름: GravesLSTM)을 지원합니다. 앞으로 더 다양한 형태의 RNNs을 지원할 예정입니다.
+현재 DL4J는 RNNs의 여러 유형 중 LSTM(Long Short-Term Memory) 모델(클래스 이름: `GravesLSTM`)을 지원합니다. 앞으로 더 다양한 형태의 RNNs을 지원할 예정입니다.
 
 #### RNNs과 입출력 데이터
 일반적인 인공 신경망(feed-forward networks: FFNets)의 구조를 생각해봅시다 (DL4J의 `DenseLayer` 클래스). FFNets은 입력과 출력을 벡터로 표현할 수 있고, 실제 학습에서는 한 번에 여러 데이터를 읽기 때문에 2차원 데이터(데이터 개수 x 입력 벡터의 길이)를 받습니다. 이 2차원 데이터는 데이터 개수 만큼의 행과 입력 벡터의 길이와 같은 크기의 열을 갖는 행렬, 다시 말해 여러 열 벡터(column vector)의 배열(array) 입니다. 예를 들어 한번에 4개의 입력 데이터를 읽어들이고 입력 벡터가 256차원이라면 입력 데이터는 4x256 크기의 행렬입니다. 출력 데이터의 크기도 마찬가지로 계산할 수 있습니다.
 
-RNNs은 좀 다릅니다. 기본적으로 시계열 데이터를 다루기 때문에 입력 데이터의 전체 크기는 3차원(데이터 개수 x 입력 벡터의 길이 x 전체 시간)이 되고 출력은 (데이터 개수 x 출력 벡터의 길이 x 전체 시간)이 됩니다. DL4J 문법으로 설명을 하면 `INDArray`의 (i,j,k) 위치의 값은 미니 배치에 있는 i번째 데이터에서 k번째 시간 단계에 있는 벡터의 j번째 성분입니다. 아래 그림을 참고하시기 바랍니다.
+RNNs은 좀 다릅니다. 기본적으로 시계열 데이터를 다루기 때문에 입력 데이터의 전체 크기는 3차원(데이터 개수 x 입력 벡터의 길이 x 전체 시간)이 되고 출력은 (데이터 개수 x 출력 벡터의 길이 x 전체 시간)이 됩니다. DL4J 문법으로 설명을 하면 `INDArray`의 `(i,j,k)` 위치의 값은 미니 배치에 있는 `i`번째 데이터에서 `k`번째 시간 단계에 있는 벡터의 `j`번째 성분입니다. 아래 그림을 참고하시기 바랍니다.
 
 
 ![Data: Feed Forward vs. RNN](../img/rnn_data.png)
@@ -70,7 +70,7 @@ DL4J에서 단기BPTT를 사용하는 방법은 아주 간단합니다. 아래�
 
 몇 가지 참고하실 내용이 있습니다.
 
-* DL4J의 디폴트 설정은 단기BPTT가 아닌 일반적인 BPTT입니다.여기!
+* DL4J의 디폴트 설정은 단기BPTT가 아닌 일반적인 BPTT입니다.
 * `tBPTTForwardLength`와 `tBPTTBackwardLength` 옵션으로 단기BPTT의 길이를 설정합니다. 보통 50-200정도의 값이 적당하고 보통은 두 값을 같은 값으로 설정합니다. (상황에 따라 `tBPTTBackwardLength`가 더 짧기도 합니다.)
 * `tBPTTForwardLength`와 `tBPTTBackwardLength`은 시계열 데이터의 전체 길이보다 짧아야합니다.
 
@@ -82,11 +82,11 @@ DL4J는 RNNs 학습과 관련한 패딩(padding) 및 마스킹(masking)을 지�
 
 ![RNN Training Types](../img/rnn_masking_1.png)
 
-마스킹과 패딩을 쓰지 않으면 RNNS은 다대다 학습만 가능합니다. 정확히 말하면 입력 데이터의 길이가 다 같고, 출력 데이터도 입력 데이터의 길이와 같은 아주 제한된 형태입니다. 
+마스킹과 패딩을 쓰지 않으면 RNNS은 다대다 학습만 가능합니다. 즉, 입력 데이터의 길이가 다 같고, 출력 데이터도 입력 데이터의 길이와 같은 아주 제한된 형태만 가능합니다.
 
 패딩(padding)의 원리는 간단합니다. 한 배치에 길이가 다른 두 개의 데이터가 있는 상황을 가정하겠습니다. 예를 들어 하나는 길이가 100이고 또 하나는 길이가 70인 경우라면, 길이가 70인 데이터에 길이가 30인 행렬을 추가해서 두 데이터가 같은 길이가 되도록 해주면 됩니다. 이 경우에 출력 데이터도 마찬가지로 패딩을 해줍니다. 
 
-패딩만으론 문제가 해결되지 않습니다. 그래서 마스킹(masking)이 필요합니다. 마스킹 하는 방법은 아주 간단합니다. 두 개의 층을 추가해서 입력과 출력이 실제로 의미 있는 샘플인지 아니면 패딩이 된 샘플인지를 기록하면 됩니다. 
+패딩을 했다면 반드시 마스킹(masking)을 해야합니다. 마스킹이란 데이터에서 어떤 값이 패딩을 한 값(즉 학습할 필요가 없는 값)인지를 알려주는 역할을 합니다. 즉, 두 개의 층(입력과 출력에 하나씩)을 추가해서 입력과 출력이 실제로 의미 있는 샘플인지 아니면 패딩이 된 샘플인지를 기록하면 됩니다. 
 
 DL4J의 미니 배치에 있는 데이터는 [배치 크기, 입력 벡터 크기, 시간축 길이(timeSeriesLength)]라고 했는데, 패딩은 이 샘플이 패딩이 된건지 아닌지만 알려주면 됩니다. 따라서 마스킹 층은 [배치 크기, 시간축 길이]의 크기를 갖는 2차원 행렬입니다. 0은 데이터가 없는, 즉 패딩이 된 상태이고 1은 반대로 패딩이 아닌 실제 존재하는 데이터 샘플입니다.
 
@@ -112,13 +112,13 @@ DL4J 사용시 패딩 배열은 데이터를 import하는 단계에서 생성됩
 
 ### <a name="otherlayertypes">RNNs층과 다른 층의 조합</a>
 
-DL4J에서는 RNNs층과 다른 유형의 층을 결합하는 것이 가능합니다. 예를 들어 `GravesLSTM`과 `DenseLayer`를 연결할 수 있습니다. 비디오 데이터가 들어오는 경우엔 컨볼루션 층(Convolutional layer)과 GravesLSTM를 결합할 수 있습니다.
+DL4J에서는 RNNs층과 다른 유형의 층을 결합하는 것이 가능합니다. 예를 들어 `GravesLSTM`과 `DenseLayer`를 연결할 수 있습니다. 비디오 데이터가 들어오는 경우엔 컨볼루션 층(Convolutional layer)과 `GravesLSTM`를 결합할 수 있습니다.
 
 물론 이렇게 여러 층을 결합한 신경망이 잘 작동하게 하려면 데이터를 전처리해야합니다. 예를 들어 `CnnToRnnPreProcessor`,  `FeedForwardToRnnPreprocessor`를 이용할 수 있습니다. 전처리기 목록은 [여기](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/preprocessor)에 정리되어있습니다. 대부분의 경우 DL4J는 자동으로 이 전처리기를 추가합니다. 아래의 코드를 참고하면 직접 전처리기를 추가할 수 있습니다. 이 예제는 레이어 1과 2 사이에 전처리기를 추가하는 코드입니다.
 
 		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor()).
 		
-## <a name="rnntimestep">?? 테스트 시간</a>
+## <a name="rnntimestep">효율적인 RNNs 사용</a>
 DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayerNetwork.output()`와 `MultiLayerNetwork.feedForward()`를 사용합니다. 주의할 점은 이 두 메서드는 늘 0에서 출발한다는 점입니다. 즉, 아무것도 없는 상태에서 새로운 시계열 데이터를 생성하는 경우에 사용하는 메서드입니다.
 
 상황에 따라 실시간으로 데이터를 읽어오면서 결과를 출력해야 할 경우가 있습니다. 만일 그동안 누적된 데이터가 많이 있다면 이렇게 매 번 새로운 시계열 데이터를 생성하는 작업은 엄청난 연산량때문에 사실상 불가능에 가깝습니다. 매 샘플마다 전체 데이터를 다 읽어야 하기 때문입니다. 
@@ -162,12 +162,12 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 - `rnnTimeStep()` 메서드로 동시에 여러 개의 예측을 할 수 있습니다. 예를 들어 하나의 날씨 모델을 가지고 여러 지역의 내일 날씨를 예측하는 경우가 이에 해당합니다. 이 경우엔 각 행에 (입력 데이터의 0차원에) 각 지역의 데이터를 넣으면 됩니다.
 - 만일 RNNs 모델에 기존에 저장된 정보가 없다면 (즉 최초로 실행하는 경우거나 `rnnClearPreviousState()`를 실행한 직후라면) 디폴트 초기값(0)이 사용됩니다. 
-- rnnTimeStep은 꼭 하나의 시간 단계에만 적용될 필요가 없습니다. 예를 들어 100시간의 날씨 모델에 1시간이 아니라 여러 시간을 한번에 추가하는 것이 가능합니다. 다만 주의할 점이 몇 가지 있습니다.
+- `rnnTimeStep`은 꼭 하나의 시간 단계에만 적용될 필요가 없습니다. 예를 들어 100시간의 날씨 모델에 1시간이 아니라 여러 시간을 한번에 추가하는 것이 가능합니다. 다만 주의할 점이 몇 가지 있습니다.
   - 한 개의 데이터만 추가하는 경우엔 입력은 [데이터의 개수, 입력 벡터의 길이]가 됩니다. 
   - 여러 시간 단계의 데이터를 추가하는 경우엔 입출력은 3차원 행렬입니다. [데이터의 개수, 입력 벡터의 길이, 시간 단계의 개수]가 됩니다.
 - 만일 처음에 `rnnTimeStep()`에 3개의 시간 단계를 사용했다면, 이후에 이 메서드를 사용할 때에도 같은 식으로 3개의 시간 단계를 사용해야합니다. 이 시간 단계를 바꾸는 방법은 `rnnClearPreviousState()`로 RNNs의 학습을 초기화하는 수 밖에 없습니다.
-- rnnTimeStep은 RNNs모델의 전체 구조에 영향을 주지 않습니다.
-- rnnTimeStep은 RNNs모델의 은닉층의 개수와 관계 없이 작동합니다.
+- `rnnTimeStep`은 RNNs모델의 전체 구조에 영향을 주지 않습니다.
+- `rnnTimeStep`은 RNNs모델의 은닉층의 개수와 관계 없이 작동합니다.
 - `RnnOutputLayer` 층은 피드백 연결이 없기 때문에 특별히 저장할 학습 정보를 갖고있지 않습니다. 
 
 ## <a name="data">시계열 데이터 가져오기</a>
@@ -272,7 +272,7 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 		DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
-정렬 모드는 간단합니다. 다른 길이의 시계열을 어딜 기준으로 정렬할지를 지정합니다. 아래 그림의 좌/우를 비교하시기 바랍니다.
+정렬 모드는 간단합니다. 다른 길이의 시계열을 어딜 기준으로 정렬할지를 지정합니다. 아래 그림의 좌/우를 비교하면 이해가 쉽습니다.
 
 ![Sequence Alignment](../img/rnn_seq_alignment.png)
 
@@ -283,7 +283,7 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
 #### 다른 방법: 사용자 정의 DataSetIterator 구현하기
-이렇게 미리 정해진 방법을 사용하는 것이 적절하지 않은 경우에 필요한 기능을 구현할 수 있습니다. [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)은 `DataSet` 객체를 반복 처리하는 인터페이스일 뿐 입니다.
+지금까지는 미리 구현된 클래스를 이용하는 방법을 알아봤습니다. 더 복잡한 기능이 필요한 경우엔 직접 [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)를 구현하는 방법이 있습니다. 간단히 말하면 `DataSetIterator`는 `DataSet` 객체를 반복 처리하는 인터페이스일 뿐 입니다.
 
 하지만 이 방법은 상당히 로우레벨의 작업입니다. `DataSetIterator`를 구현하려면 직접 입력/레이블의 마스크 어레이를 구현하고 적합한 `INDArrays`를 생성해야합니다. 물론, 그 대신에 데이터를 정확히 어떻게 불러오고 사용하는지를 이해할 수 있고 더 다양한 학습 상황을 구현할 수 있습니다.
 
