@@ -54,7 +54,4 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소
 
 만일 학술 논문에 Deeplearning4j를 인용하려면 아래의 문구를 이용해주시기 바랍니다.
 
-Deeplearning4j Development Team (<현재 년도>). Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org)
-
-
-
+Deeplearning4j Development Team (<현재 년도>). Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org/kr-index)
