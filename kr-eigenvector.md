@@ -223,6 +223,6 @@ vs.
 * [회귀 분석 & 신경망](../linear-regression.html)
 * [Word2vec: 텍스트로부터 바로 관계 추출하기](../kr-word2vec.html)
 * [RBM(Restricted Boltzmann Machines): Deep-Belief Networks의 구성 요소](../kr-restrictedboltzmannmachine.html)
-* [RNNs 및 LSTM (Long Short-Term Memory)](../lstm.html)
+* [RNNs 및 LSTM (Long Short-Term Memory)](../kr-lstm.html)
 
 <a name="ref">1)</a> *고유 벡터의 최대 값은 행렬의 차원 수와 같습으며 때로는 행렬의 고유 벡터 수가 전체 차원의 수보다 적기도 합니다.*
