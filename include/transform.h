@@ -114,7 +114,9 @@ namespace functions {
 
                 int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 
-//                printf("transform xEWS: [%i]\n", xElementWiseStride);
+//                if (threadIdx.x == 0 && blockIdx.x == 0)
+  //                  printf("transform xEWS: [%i], length: [%i], xOrder: [%c]\n", xElementWiseStride, shape::length(shapeInfo), xOrder);
+
 
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;

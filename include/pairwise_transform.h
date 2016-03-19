@@ -169,7 +169,9 @@ namespace functions {
                 int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
                 int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
-                //printf("xStride: [%i], yStride: [%i], zStride: [%i]\n", xElementWiseStride, yElementWiseStride, resultElementWiseStride);
+                //if (threadIdx.x == 0 && blockIdx.x == 0)
+//                    printf("xEWStride: [%i], yEWStride: [%i], zEWStride: [%i], xLength: [%i], yLength: [%i], xOrder: [%c], yOrder: [%c]\n", xElementWiseStride, yElementWiseStride, resultElementWiseStride,shape::length(xShapeBuffer), shape::length(yShapeBuffer), xOrder, yOrder);
+
 
                 int n = shape::length(xShapeBuffer);
                 if(xElementWiseStride > 1 && yElementWiseStride > 1 && resultElementWiseStride > 1) {
