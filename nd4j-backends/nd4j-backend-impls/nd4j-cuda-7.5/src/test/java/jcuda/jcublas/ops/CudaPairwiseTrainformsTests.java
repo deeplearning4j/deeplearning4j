@@ -109,4 +109,17 @@ public class CudaPairwiseTrainformsTests {
 
         assertEquals(3.0f, array1.getRow(0).getFloat(0), 0.01);
     }
+
+    @Test
+    public void testPinnedMuliColumnVector() throws Exception {
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        INDArray array1 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+        INDArray array2 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000).dup('f');
+
+        array1.muli(array2);
+
+        System.out.println("Array1: " + array1);
+        System.out.println("Array2: " + array2);
+    }
 }

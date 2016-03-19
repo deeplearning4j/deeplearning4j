@@ -288,7 +288,9 @@ public class UmaMover implements Mover {
 
             context.syncOldStream();
 
-        }  else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
+        } else if (currentStatus == AllocationStatus.UNDEFINED && targetStatus == AllocationStatus.HOST) {
+            // just do nothing here, it's already on host
+        } else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
     }
 
     /**

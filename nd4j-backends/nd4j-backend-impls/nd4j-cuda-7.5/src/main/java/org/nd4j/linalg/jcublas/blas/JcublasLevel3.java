@@ -13,6 +13,10 @@ import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.Nd4jBlas;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * Level 3 implementation of matrix matrix operations
@@ -22,6 +26,7 @@ import org.nd4j.nativeblas.Nd4jBlas;
 public class JcublasLevel3 extends BaseLevel3 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
+    private static Logger log = LoggerFactory.getLogger(JcublasLevel3.class);
 
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
@@ -29,6 +34,20 @@ public class JcublasLevel3 extends BaseLevel3 {
         B = Shape.toOffsetZero(B);
         CudaContext ctx = CudaContext.getBlasContext();
 
+        /*
+        log.info("SGEMM params> Order: {}, transA: {}, transB: {}, M: {}, N: {}, K: {}, alpha: {}", Order, TransA, TransB, M,  N, K, alpha);
+
+        System.out.println("A: " + Arrays.toString(A.data().asDouble()));
+        System.out.println("B: " + Arrays.toString(B.data().asDouble()));
+        System.out.println("C: " + Arrays.toString(C.data().asDouble()));
+
+
+        System.out.println("A shape: " + Arrays.toString(A.shape()));
+        System.out.println("B shape: " + Arrays.toString(B.shape()));
+        System.out.println("C shape: " + Arrays.toString(C.shape()));
+
+        ctx.syncOldStream();
+        */
 
         CublasPointer cAPointer = new CublasPointer(A,ctx);
         CublasPointer cBPointer = new CublasPointer(B,ctx);
@@ -51,12 +70,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     cCPointer.getDevicePointer().getNativePointer(),
                     ldc);
 
-            allocator.tickDeviceWrite(C);
+        allocator.tickDeviceWrite(C);
 
 
-            allocator.tackDevice(A);
-            allocator.tackDevice(B);
-            allocator.tackDevice(C);
+        allocator.tackDevice(A);
+        allocator.tackDevice(B);
+        allocator.tackDevice(C);
     }
 
     @Override

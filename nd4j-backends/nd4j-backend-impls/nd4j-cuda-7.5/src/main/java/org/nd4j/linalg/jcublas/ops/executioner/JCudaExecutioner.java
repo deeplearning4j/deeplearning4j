@@ -68,6 +68,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+//        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -258,6 +259,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -403,6 +405,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
+//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), AtomicAllocator.getInstance().getCudaContext().getOldStream().getNativePointer(), allocator.getDeviceId()};
@@ -458,6 +461,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -534,6 +538,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
+        //log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
@@ -741,6 +746,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -788,7 +794,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -803,48 +809,104 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                nativeOps.execPairwiseTransformDouble(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        y,
-                        yShapeInfo,
-                        z,
-                        zShapeInfo,
-                        extraArgs);
+                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    nativeOps.execPairwiseTransformDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            y,
+                            op.y().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execPairwiseTransformDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            y,
+                            yShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
             } else {
-                nativeOps.execPairwiseTransformFloat(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        y,
-                        yShapeInfo,
-                        z,
-                        zShapeInfo,
-                        extraArgs);
+                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    nativeOps.execPairwiseTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            y,
+                            op.y().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execPairwiseTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            y,
+                            yShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
             }
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                nativeOps.execTransformDouble(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        z,
-                        zShapeInfo,
-                        extraArgs);
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
+                    nativeOps.execTransformDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execTransformDouble(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
             } else {
-                nativeOps.execTransformFloat(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        x,
-                        xShapeInfo,
-                        z,
-                        zShapeInfo,
-                        extraArgs);
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
+                    nativeOps.execTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            op.x().elementWiseStride(),
+                            z,
+                            op.z().elementWiseStride(),
+                            extraArgs,
+                            op.n()
+                    );
+                } else {
+                    nativeOps.execTransformFloat(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            x,
+                            xShapeInfo,
+                            z,
+                            zShapeInfo,
+                            extraArgs);
+                }
             }
         }
         if (op.x() != null)
