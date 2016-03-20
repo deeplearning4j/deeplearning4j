@@ -14,7 +14,7 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
  *
  *
  */
-@Platform(include="NativeBlas.h",link = "nd4j")
+@Platform(include="NativeBlas.h",preload = "libnd4j",link = "nd4j")
 public class Nd4jBlas extends Pointer {
     static {
         Loader.load();
