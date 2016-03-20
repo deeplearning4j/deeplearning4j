@@ -834,10 +834,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     int tadLength = shape::length(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
                     shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
-                    printf("Tad length is %d\n",tadLength);
-                    for(int i = 0; i < rank; i++) {
-                        printf("Shape %d is %d and stride is %d\n",i,xShape[i],xStride[i]);
-                    }
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         //tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength)
@@ -850,7 +846,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         int xStridesIter[MAX_RANK];
                         T *xPointer = x + offset;
                         T start = this->startingValue(x);
-                        printf("Offset for reduction index %d is %d\n",i,offset);
                         if(PrepareOneRawArrayIter<T>(rankIter,
                                                      xShape,
                                                      xPointer,

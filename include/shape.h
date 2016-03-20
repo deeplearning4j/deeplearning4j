@@ -1180,25 +1180,7 @@ namespace shape {
 
                 int innerMostStride = stride[dimension[dimensionLength - 1]];
                 int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
-                printf("Inner most stride c ordering %d and parent %d and rear most %d\n",innerMostStride,elementWiseStrideParent,rearMostStride);
-
-                if(index >= innerMostStride) {
-                    //represents the jump
-                    //the offset represents how many jumps of the element wise stride to do after identifying
-                    //the base offset for the ump as index / inner most stride. For example in our case above:
-                    //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
-                    //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
-                    int base = index / innerMostStride;
-                    base *= elementWiseStrideParent;
-                    if(index > innerMostStride) {
-                        int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
-                        base += addOffset;
-                    }
-
-                    return base;
-                }
-
-                else return index * rearMostStride;
+                return index * rearMostStride;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
@@ -1206,26 +1188,7 @@ namespace shape {
                 int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
-                printf("Inner most stride f ordering %d and parent %d and rear most %d\n",innerMostStride,elementWiseStrideParent,rearMostStride);
-                if(index >= innerMostStride) {
-                    //represents the jump
-                    //the offset represents how many jumps of the element wise stride to do after identifying
-                    //the base offset for the ump as index / inner most stride. For example in our case above:
-                    //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
-                    //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
-                    int base = index / innerMostStride;
-                    printf("Base is %d\n",base);
-                    base *= elementWiseStrideParent;
-                    if(index > innerMostStride) {
-                        int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
-                        base += addOffset;
-                    }
-
-                    return base;
-                }
-
-                else
-                    return index * rearMostStride;
+                return index * rearMostStride;
             }
 
         }
@@ -3399,6 +3362,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
     int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength) {
+        int dimIdx = dimensionLength - 1;
         for(int i = length - 1; i > 0; i--) {
             /**
              * Needs to find an algorithm such that:
@@ -3411,13 +3375,11 @@ __device__ int tadOffset(int *xInfo, int offset) {
              *
              * We should avoid excessive object creation by only looping backwards.
              */
-            if(dimension[i] != i) {
-                printf("Returning in for loop %d and final dimension item %d\n",i,dimension[dimensionLength - 1]);
+            if(dimension[dimIdx--] != i) {
                 return data[i];
             }
         }
 
-        printf("Returning data 0 %d\n",data[0]);
         return data[0];
     }
 
