@@ -456,15 +456,16 @@ public  class OpExecutionerTests extends BaseNd4jTest {
             assertEquals(arr5m.getDouble(i),1,1e-1);
         for( int i = 0; i<arr5s.length(); i++)
             assertEquals(arr5s.getDouble(i),16,1e-1);
-
         System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
-        INDArray arr6m = arr6.mean(2, 3);
         INDArray arr6s = arr6.sum(2,3);
+        for( int i = 0; i < arr6s.length(); i++)
+            assertEquals(arr6s.getDouble(i),16,1e-1);
+
+        INDArray arr6m = arr6.mean(2, 3);
         for( int i = 0; i < arr6m.length(); i++)
             assertEquals(arr6m.getDouble(i),1,1e-1);
-        for( int i = 0; i < arr6s.length(); i++ )
-            assertEquals(arr6s.getDouble(i),16,1e-1);
+
     }
 
     @Test

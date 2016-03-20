@@ -36,7 +36,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals;
-import org.nd4j.linalg.api.ops.impl.transforms.Negative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -58,7 +58,7 @@ import java.io.*;
 import java.lang.Iterable;
 import java.nio.IntBuffer;
 import java.util.*;
-
+import java.util.Set;
 
 
 /**
@@ -1025,11 +1025,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         else {
-            NdIndexIterator iterator = new NdIndexIterator(this.shape());
-            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
-            for(int i = 0; i < length(); i++) {
-                putScalar(iterator.next(),arr.getDouble(otherIter.next()));
-            }
+            Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
         }
 
 

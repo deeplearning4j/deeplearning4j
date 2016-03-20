@@ -250,13 +250,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            NdIndexIterator iter = new NdIndexIterator(d.shape());
-            while(iter.hasNext()) {
-                for (int i = 0; i < d.length(); i++) {
-                    ret.putScalar(linearIndex++, d.getDouble(iter.next()));
-                }
-            }
-
+            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(linearIndex,linearIndex + d.length())},d);
+            linearIndex += d.length();
         }
 
         return ret;

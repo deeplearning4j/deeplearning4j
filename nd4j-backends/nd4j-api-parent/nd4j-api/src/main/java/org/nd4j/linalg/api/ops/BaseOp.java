@@ -152,28 +152,10 @@ public abstract class BaseOp implements Op {
 
 
     public BaseOp(INDArray x, INDArray y, INDArray z, int n) {
-        ensureProperVectors(x,y,z);
         this.n = n;
         init(x, y, z, n);
     }
 
-    protected void ensureProperVectors(INDArray x,INDArray y,INDArray z) {
-        this.x = x;
-        if(x.offset() > 0  && x.length() < x.data().length()) {
-            this.x = x.linearView();
-        }
-
-        this.y = y;
-        if(y != null && y.offset() > 0 && y.majorStride() > y.elementStride()) {
-            this.y = y.linearView();
-        }
-
-        this.z = z;
-        if(z.offset() > 0 && z.majorStride() > z.elementStride()) {
-            this.z = z.linearView();
-        }
-
-    }
 
 
     /**
@@ -214,7 +196,10 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
-
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.n = n;
 
     }
 

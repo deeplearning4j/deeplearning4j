@@ -490,20 +490,44 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(arr,arrF);
         //0,2,4,6 and 1,3,5,7
-       // assertEquals(Nd4j.create(new double[]{12,16}),arr.sum(0,1));
+        assertEquals(Nd4j.create(new double[]{12,16}),arr.sum(0,1));
         //0,1,4,5 and 2,3,6,7
-        //assertEquals(Nd4j.create(new double[]{10,18}),arr.sum(0,2));
+        assertEquals(Nd4j.create(new double[]{10,18}),arr.sum(0,2));
         //0,2,4,6 and 1,3,5,7
-        //assertEquals(Nd4j.create(new double[]{12,16}),arrF.sum(0,1));
+        assertEquals(Nd4j.create(new double[]{12,16}),arrF.sum(0,1));
         //0,1,4,5 and 2,3,6,7
-        //assertEquals(Nd4j.create(new double[]{10,18}),arrF.sum(0,2));
+        assertEquals(Nd4j.create(new double[]{10,18}),arrF.sum(0,2));
 
         //0,1,2,3 and 4,5,6,7
         assertEquals(Nd4j.create(new double[]{6,22}),arr.sum(1,2));
-          //0,1,2,3 and 4,5,6,7
+        //0,1,2,3 and 4,5,6,7
         assertEquals(Nd4j.create(new double[]{6,22}),arrF.sum(1,2));
+
+
+        double[] data = new double[]{10, 26,42};
+        INDArray assertion = Nd4j.create(data);
+        for(int i = 0; i < data.length; i++) {
+            assertEquals(data[i],assertion.getDouble(i),1e-1);
+        }
+
+        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape('f',2, 2, 3);
+        INDArray multiSum = twoTwoByThree.sum(0, 1);
+        assertEquals(assertion,multiSum);
     }
 
+    @Test
+    public void testToFlattened() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        List<INDArray> concat = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            concat.add(arr.dup());
+        }
+
+        INDArray assertion = Nd4j.create(new double[]{1,2,3,4,1,2,3,4,1,2,3,4});
+        INDArray flattened = Nd4j.toFlattened(concat);
+        assertEquals(assertion,flattened);
+
+    }
 
 
     @Test
