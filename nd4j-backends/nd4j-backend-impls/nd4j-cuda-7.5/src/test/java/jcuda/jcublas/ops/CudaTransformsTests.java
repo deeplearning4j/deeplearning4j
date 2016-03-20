@@ -7,6 +7,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -318,5 +320,40 @@ public class CudaTransformsTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(-1.01f, array2.getFloat(0), 0.01);
+    }
+
+    @Test
+    public void testPinnedCosineF() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f}).dup('f');
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+
+
+        Nd4j.getExecutioner().exec(new Cos(array1, array2));
+
+        System.out.println("Array1: " + array1);
+        System.out.println("Array2: " + array2);
+
+        assertEquals(0.53f, array2.getFloat(0), 0.01);
+    }
+
+     @Test
+    public void testSoftmaxFC()  throws Exception {
+        INDArray array1 = Nd4j.ones(2048).dup('f');
+        INDArray array2 = Nd4j.zeros(2048);
+
+        Nd4j.getExecutioner().exec(new SoftMax(array1));
+
+        Nd4j.getExecutioner().exec(new SoftMax(array2));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+        System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
+
+        assertEquals(array1, array2);
+
+        assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
+        assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
     }
 }
