@@ -169,7 +169,6 @@ namespace functions {
 
                 else if(xOrder == 'f') {
                     int *xStride = shape::stride(xShapeInfo);
-                    int *xShape = shape::shapeOf(xShapeInfo);
 
                     //optimized loop for vectorization
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
