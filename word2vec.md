@@ -292,7 +292,7 @@ You'll want to save the model. The normal way to save models in Deeplearning4j i
         log.info("Save vectors....");
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
 
-This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should one word per line, followed by a series of numbers that together are its vector representation.
+This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
 
 To keep working with the vectors, simply call methods on `vec` like this:
 
