@@ -1168,7 +1168,7 @@ public class Shape {
         sb.append("Rank: " + rank + ",");
         sb.append("Offset: " + Shape.offset(buffer) + "\n");
         sb.append(" Order: " + Shape.order(buffer));
-        sb.append("shape: [");
+        sb.append(" Shape: [");
         for(int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
             if(i < rank - 1)
@@ -1176,7 +1176,7 @@ public class Shape {
         }
         sb.append("], ");
 
-        sb.append("stride: [");
+        sb.append(" stride: [");
         for(int i = 0; i < rank; i++) {
             sb.append(strideBuff.get(i));
             if(i < rank - 1)
