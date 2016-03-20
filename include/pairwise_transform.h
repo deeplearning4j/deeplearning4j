@@ -39,7 +39,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             T op(T d1, T d2, T *params) = 0;
 
@@ -47,7 +47,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             T op(T d1, T *params) = 0;
 
@@ -491,21 +491,21 @@ namespace functions {
                                                        &result,
                                                        resultStridesIter) >= 0) {
                             ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
-                                    /* Process the innermost dimension */
-                                    T *xIter = dx;
-                                    T *yIter = y;
-                                    T *resultIter = result;
-                                    resultIter[0] = op(xIter[0],yIter[0],extraParams);
-                                } ND4J_RAW_ITER_THREE_NEXT(dim,
-                                                           rank,
-                                                           coord,
-                                                           shapeIter,
-                                                           dx,
-                                                           xStridesIter,
-                                                           y,
-                                                           yStridesIter,
-                                                           result,
-                                                           resultStridesIter);
+                                /* Process the innermost dimension */
+                                T *xIter = dx;
+                                T *yIter = y;
+                                T *resultIter = result;
+                                resultIter[0] = op(xIter[0],yIter[0],extraParams);
+                            } ND4J_RAW_ITER_THREE_NEXT(dim,
+                                                       rank,
+                                                       coord,
+                                                       shapeIter,
+                                                       dx,
+                                                       xStridesIter,
+                                                       y,
+                                                       yStridesIter,
+                                                       result,
+                                                       resultStridesIter);
                         }
                         else {
                             printf("Unable to prepare array\n");
@@ -583,7 +583,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            
+
 
 #endif
             virtual ~PairWiseTransform() {
@@ -591,7 +591,7 @@ namespace functions {
 #ifdef __CUDACC__
             inline __host__ __device__
 #elif defined(__GNUC__)
-            
+
 
 #endif
             PairWiseTransform() {
@@ -637,7 +637,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 + d2;
@@ -647,7 +647,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -655,7 +655,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Add() {
@@ -663,7 +663,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Add() {
@@ -698,13 +698,13 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
-                     }
+                }
 
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2;
@@ -714,7 +714,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -722,7 +722,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Copy() {
@@ -730,7 +730,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Copy() {
@@ -765,13 +765,13 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
-                     }
+                }
 
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 / d2;
@@ -781,7 +781,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -789,7 +789,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Divide() {
@@ -797,14 +797,85 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Divide() {
                 }
             };
 
-/**
+
+
+            /**
+ *Set x to y
+ */
+            template<typename T>
+            class Set: public virtual PairWiseTransform<T> {
+            public:
+                /**
+                                      * CPU operation execution
+                                      * @param dx the input data
+                                      * @param xStride the stride to iterate over
+                                      * the x input
+                                      * @param y the y data
+                                      * @param yStride the stride to iterate
+                                      * over the y buffer
+                                      * @param result the buffer
+                                      * to store the result in
+                                      * @param resultStride the stride for the buffer
+                                      * @param extraParams the extra parameters for the transform
+                                      * @param n the length of the input
+                                      */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T d2, T *params) {
+                    return d2;
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Set() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Set() {
+                }
+            };
+
+
+            /**
  * Whether 2 elements in an array
  * are epsilion equal
  */
@@ -833,14 +904,14 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
-                     }
+                }
 
 
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
@@ -854,7 +925,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -862,7 +933,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Epsilon() {
@@ -870,7 +941,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Epsilon() {
@@ -912,7 +983,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 == d2;
@@ -922,7 +993,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -930,7 +1001,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~EqualTo() {
@@ -938,7 +1009,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 EqualTo() {
@@ -980,7 +1051,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 != d2;
@@ -990,7 +1061,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -998,7 +1069,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~NotEqualTo() {
@@ -1006,7 +1077,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 NotEqualTo() {
@@ -1049,7 +1120,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 >= d2;
@@ -1059,7 +1130,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1067,7 +1138,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~GreaterThanOrEqual() {
@@ -1075,7 +1146,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 GreaterThanOrEqual() {
@@ -1117,7 +1188,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 > d2;
@@ -1127,7 +1198,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1135,7 +1206,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~GreaterThan() {
@@ -1143,7 +1214,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 GreaterThan() {
@@ -1184,7 +1255,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 < d2;
@@ -1194,7 +1265,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1202,7 +1273,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~LessThan() {
@@ -1210,7 +1281,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 LessThan() {
@@ -1223,20 +1294,20 @@ namespace functions {
             template<typename T>
             class LessThanOrEqual: public virtual PairWiseTransform<T> {
             public:
-  /**
-                                      * CPU operation execution
-                                      * @param dx the input data
-                                      * @param xStride the stride to iterate over
-                                      * the x input
-                                      * @param y the y data
-                                      * @param yStride the stride to iterate
-                                      * over the y buffer
-                                      * @param result the buffer
-                                      * to store the result in
-                                      * @param resultStride the stride for the buffer
-                                      * @param extraParams the extra parameters for the transform
-                                      * @param n the length of the input
-                                      */
+                /**
+                                                    * CPU operation execution
+                                                    * @param dx the input data
+                                                    * @param xStride the stride to iterate over
+                                                    * the x input
+                                                    * @param y the y data
+                                                    * @param yStride the stride to iterate
+                                                    * over the y buffer
+                                                    * @param result the buffer
+                                                    * to store the result in
+                                                    * @param resultStride the stride for the buffer
+                                                    * @param extraParams the extra parameters for the transform
+                                                    * @param n the length of the input
+                                                    */
                 virtual void execSpecial(
                         T *dx,
                         int *xShapeBuffer,
@@ -1245,14 +1316,14 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
-                     }
+                }
 
 
                 virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 <= d2;
@@ -1262,7 +1333,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1270,7 +1341,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~LessThanOrEqual() {
@@ -1278,7 +1349,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 LessThanOrEqual() {
@@ -1320,7 +1391,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 * d2;
@@ -1330,7 +1401,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1339,7 +1410,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Multiply() {
@@ -1347,7 +1418,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Multiply() {
@@ -1388,7 +1459,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2 / d1;
@@ -1398,7 +1469,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1406,7 +1477,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~ReverseDivide() {
@@ -1414,7 +1485,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 ReverseDivide() {
@@ -1456,7 +1527,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d2 - d2;
@@ -1466,7 +1537,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1474,7 +1545,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~ReverseSubtraction() {
@@ -1482,7 +1553,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 ReverseSubtraction() {
@@ -1523,7 +1594,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return d1 - d2;
@@ -1533,7 +1604,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1541,7 +1612,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Subtract() {
@@ -1549,7 +1620,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Subtract() {
@@ -1591,7 +1662,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_max<T>(d1,d2);
@@ -1601,7 +1672,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1609,7 +1680,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Max() {
@@ -1617,7 +1688,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Max() {
@@ -1660,7 +1731,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_min(d1,d2);
@@ -1670,7 +1741,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 T op(T d1, T *params) {
                     return d1;
@@ -1678,7 +1749,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 virtual ~Min() {
@@ -1686,7 +1757,7 @@ namespace functions {
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 Min() {
@@ -1762,6 +1833,10 @@ namespace functions {
                     return new pairwise_transforms::ops::Min<T>();
                 if(op == 15)
                     return new pairwise_transforms::ops::NotEqualTo<T>();
+                if(op == 16)
+                    return new pairwise_transforms::ops::Set<T>();
+
+
                 return NULL;
             }
 
