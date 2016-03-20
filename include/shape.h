@@ -175,7 +175,10 @@ namespace shape {
 #endif
     int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
                                  int *dimension, int dimensionLength);
-
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength);
 /**
  *
  * @param length
@@ -200,6 +203,37 @@ namespace shape {
 #endif
 
     void doPermuteSwap(int length, int **shape, int *rearrange);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int *permuteShapeBuffer(int *shapeBuffer,int *rearrange);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void doPermuteShapeBuffer(int **shapeBuffer,int *rearrange);
+
+    /**
+     * Rearrange the permute indexes
+     * according to which  dimensions are specified.
+     *
+     * For example, dimension is implicitly:
+     * 0,1,2
+     *
+     * If you want to do a reduce along dimensions 0 and 1,
+     * you need to permute the indexes to be:
+     * 2,0,1
+     *
+     * which will give us the ability to ierate along an element
+     * wise stride.
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength);
+
 
 /**
  * Get the ordering for the device
@@ -286,6 +320,26 @@ namespace shape {
 #endif
 
     int *copyOf(int length, int *toCopy);
+
+    /**
+ * Return a copy of a buffer.
+ * This buffer allocates memory
+ * that must be freed elsewhere.
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void copyTo(int length, int *from,int **to);
+    /**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void copyTo(int length, int *from,int **to,int *indexes);
 
 /**
  * Permute the given strides
@@ -526,7 +580,17 @@ namespace shape {
     __host__ __device__
 #endif
     int *reverseCopy(int *data, int length);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
 
+    void reverseCopyTo(int *from,int **to, int length);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void reverseCopyTo(int *from,int **to, int *indexes,int length);
 /**
  *
  * @param arr1
@@ -832,6 +896,25 @@ namespace shape {
 
     int prod(int *data, int length);
 
+    /**
+     * Returns the rear most left over item not present in
+     * the dimension array. This assumes that the dimension array is sorted.
+     *
+     * For example, given a dimension array of:
+     * 0,2
+     *
+     * and
+     *
+     * 12,4,2,1 in data
+     *
+     * You end up with 1 (data[3])
+     * since the first item won't match
+     * the last item of the dimension array
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength);
 
     /**
 * Get an offset for retrieval
@@ -1090,15 +1173,24 @@ namespace shape {
     */
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
         if(dimensionLength > 1) {
-            if(shape::order(shapeInfo) == 'f') {
+            if(shape::order(shapeInfo) == 'c') {
                 int *stride = shape::stride(shapeInfo);
-                return index * stride[dimension[dimensionLength - 1]];
+                int rank = shape::rank(shapeInfo);
+                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
 
+                int innerMostStride = stride[dimension[dimensionLength - 1]];
+                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+                return index * rearMostStride;
             }
             else {
-                int *shape = shape::shapeOf(shapeInfo);
-                return index * shape[dimension[dimensionLength - 1]];
+                int *stride = shape::stride(shapeInfo);
+                int innerMostStride = stride[dimension[dimensionLength - 1]];
+                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+                int rank = shape::rank(shapeInfo);
+                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
+                return index * rearMostStride;
             }
+
         }
         else {
             if(shape::order(shapeInfo) == 'c') {
@@ -1136,6 +1228,23 @@ namespace shape {
 
 
 
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength) {
+        int *shapeOf = shape::shapeOf(shapeInfo);
+        int *strideOf = shape::stride(shapeInfo);
+        int rank = shape::rank(shapeInfo);
+        int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(dimensionLength));
+        //set the rank
+        ret[0] = dimensionLength;
+        int *retShape = shape::shapeOf(ret);
+        int *retStride = shape::stride(ret);
+        shape::reverseCopyTo(strideOf,&retStride,dimension,dimensionLength);
+        shape::copyTo(dimensionLength,shapeOf,&retShape,dimension);
+        return ret;
     }
 
 /**
@@ -1625,6 +1734,50 @@ namespace shape {
         }
 
     }
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int *permuteShapeBuffer(int *shapeBuffer,int *rearrange) {
+        int len = shape::shapeInfoLength(shape::rank(shapeBuffer));
+        int *copy = shape::copyOf(len,shapeBuffer);
+        doPermuteShapeBuffer(&copy,rearrange);
+        return copy;
+    }
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void doPermuteShapeBuffer(int **shapeBuffer,int *rearrange) {
+        int *shapeRef = *shapeBuffer;
+        //rank of the rearrange array == rank of shape buffer
+        int rearrageRank = shape::rank(shapeRef);
+        int *shape = shape::shapeOf(shapeRef);
+        int *stride = shape::stride(shapeRef);
+        int *rearrangeCopy1 = shape::copyOf(rearrageRank,rearrange);
+        shape::doPermuteSwap(rearrageRank,&shape,rearrangeCopy1);
+        free(rearrangeCopy1);
+        int *rearrangeCopy2 = shape::copyOf(rearrageRank,rearrange);
+        shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
+        free(rearrangeCopy2);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength) {
+        int delta = originalRank - dimensionLength;
+        int *ret = (int *) malloc(sizeof(int) * originalRank);
+        for(int i = 0; i < delta; i++) {
+            ret[i] = i + dimensionLength;
+        }
+
+        for(int i = delta; i  < originalRank; i++) {
+            ret[i] = i - delta;
+        }
+
+        return ret;
+    }
 
 /**
  * Get the ordering for the device
@@ -1805,6 +1958,36 @@ namespace shape {
         return ret;
     }
 
+    /**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void copyTo(int length, int *from,int **to) {
+        int *toRef = *to;
+        for(int i = 0; i < length; i++) {
+            toRef[i] = from[i];
+        }
+    }
+
+    /**
+* Return a copy of a buffer.
+* This buffer allocates memory
+* that must be freed elsewhere.
+*/
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void copyTo(int length, int *from,int **to,int *indexes) {
+        int *toRef = *to;
+        for(int i = 0; i < length; i++) {
+            toRef[i] = from[indexes[i]];
+        }
+    }
+
 /**
  * Permute the given strides
  * in the given rearrange order
@@ -1968,33 +2151,65 @@ namespace shape {
 #endif
 
     int reductionIndexElementWiseStride(int *buffer,int *dimension,int dimensionLength) {
-        char order = shape::order(buffer);
-        if(order == 'f') {
-            /**
-                    * The element wise stride belongs to a reduction index.
-                    * When used out of order, we can get rid of the data
-                    * dependencies and rely on using the max dimension
-                    * specified for stride instead.
-                    * Say we take the sum(0,1) along arr
-                    * we can use arr.stride(1) as a representation
-                    * along which to iterate.
-                    */
-            int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
-            return tadElementWiseStride;
+        if(dimensionLength > 1) {
+            char order = shape::order(buffer);
+            if(order == 'f') {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                return tadElementWiseStride;
+            }
+            else {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                return tadElementWiseStride;
+            }
         }
         else {
-            /**
-                    * The element wise stride belongs to a reduction index.
-                    * When used out of order, we can get rid of the data
-                    * dependencies and rely on using the max dimension
-                    * specified for stride instead.
-                    * Say we take the sum(0,1) along arr
-                    * we can use arr.stride(1) as a representation
-                    * along which to iterate.
-                    */
-            int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-            return tadElementWiseStride;
+            char order = shape::order(buffer);
+            if(order == 'f') {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
+                return tadElementWiseStride;
+            }
+            else {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                return tadElementWiseStride;
+            }
         }
+
     }
 
 /**
@@ -2232,6 +2447,38 @@ namespace shape {
         return copy;
     }
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void reverseCopyTo(int *from,int **to, int length) {
+        if (length < 1)
+            return;
+        int *toRef = *to;
+        for (int i = 0; i <= length / 2; i++) {
+            int temp = from[i];
+            toRef[i] = from[length - i - 1];
+            toRef[length - i - 1] = temp;
+        }
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    void reverseCopyTo(int *from,int **to, int *indexes,int length) {
+        if (length < 1)
+            return;
+        int *toRef = *to;
+        for (int i = 0; i <= length / 2; i++) {
+            int temp = from[indexes[i]];
+            toRef[i] = from[indexes[length - i - 1]];
+            toRef[length - i - 1] = temp;
+        }
+
+    }
+
 /**
  *
  * @param arr1
@@ -2375,7 +2622,6 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int *newPermuteDims = concat(remove, removeLength, reverseDimensions,
                                      dimensionLength);
 
-        //__device__ void permute(ShapeInformation *info,int *rearrange,int rank) {
         permute(&info, newPermuteDims, rank);
 
         int *permuted = info->shape;
@@ -2668,6 +2914,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->stride = ret2Stride;
             info->offset = retOffset;
             info->rank = ret2Rank;
+            info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
             free(info);
             shape::freePermuteInfo(tadInfo);
@@ -2706,6 +2953,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->stride = ret2Stride;
             info->offset = retOffset;
             info->rank = ret2Rank;
+            info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
             free(info);
             shape::freePermuteInfo(tadInfo);
@@ -2740,6 +2988,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->stride = ret2Stride;
             info->offset = retOffset;
             info->rank = ret2Rank;
+            info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
             free(info);
             shape::freePermuteInfo(tadInfo);
@@ -2782,6 +3031,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->stride = ret2Stride;
             info->offset = retOffset;
             info->rank = ret2Rank;
+            info->elementWiseStride = ret2Stride[ret2Rank - 1];
+
             int *shapeInfoRet = shape::toShapeBuffer(info);
             free(info);
             shape::freePermuteInfo(tadInfo);
@@ -3105,6 +3356,31 @@ __device__ int tadOffset(int *xInfo, int offset) {
         }
 
         return prod;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength) {
+        int dimIdx = dimensionLength - 1;
+        for(int i = length - 1; i > 0; i--) {
+            /**
+             * Needs to find an algorithm such that:
+             * looping backwards will find the highest dimension left
+             * that isn't included in the dimension index list.
+             *
+             * This can also be thought of as the last item of the first index
+             * of the difference between the full list of indices and
+             * the dimension indices.
+             *
+             * We should avoid excessive object creation by only looping backwards.
+             */
+            if(dimension[dimIdx--] != i) {
+                return data[i];
+            }
+        }
+
+        return data[0];
     }
 
 }

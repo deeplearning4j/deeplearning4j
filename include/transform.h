@@ -3011,7 +3011,6 @@ namespace functions {
                         //iterate along rows
                         int dimension[1] = {0};
                         int maxDimension[1] = {1};
-                        int len = shape::length(xShapeBuffer);
                         //compute the row wise maxes
                         functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
                         std::vector<T> maxResult(shape[0]);
