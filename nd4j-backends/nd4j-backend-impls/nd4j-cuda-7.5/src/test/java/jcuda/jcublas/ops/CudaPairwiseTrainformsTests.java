@@ -7,6 +7,7 @@ import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
@@ -111,7 +112,7 @@ public class CudaPairwiseTrainformsTests {
     }
 
     @Test
-    public void testPinnedMuliColumnVector() throws Exception {
+    public void testPinnedMuliColumnVector1() throws Exception {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
@@ -121,5 +122,58 @@ public class CudaPairwiseTrainformsTests {
 
         System.out.println("Array1: " + array1);
         System.out.println("Array2: " + array2);
+    }
+
+    @Test
+    public void testPinnedMuliColumnVector2() throws Exception {
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        INDArray array1 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+        INDArray array2 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+
+        INDArray arrayTest = array1.dup('f');
+
+//        assertEquals(array1, arrayTest);
+
+        array1.muli(array2);
+
+
+
+        System.out.println("Array1: " + array1);
+
+        assertNotEquals(array1, arrayTest);
+        //System.out.println("Array2: " + array2);
+    }
+
+    @Test
+    public void testFOrdering1() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+        INDArray array2 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+
+        INDArray array3 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000);
+        INDArray array4 = Nd4j.linspace(1, 1280, 128000).reshape(128, 1000).dup('f');
+
+        System.out.println("a4 stride: " + array4.elementWiseStride());
+
+        array1.muli(array2);
+
+        array3.muli(array4);
+
+        assertEquals(array3, array1);
+    }
+
+    @Test
+    public void testFOrdering2() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1280, 128000);
+        INDArray array2 = Nd4j.linspace(1, 1280, 128000);
+
+        INDArray array3 = Nd4j.linspace(1, 1280, 128000);
+        INDArray array4 = Nd4j.linspace(1, 1280, 128000).dup('f');
+
+        array1.muli(array2);
+
+        array3.muli(array4);
+
+        assertEquals(array3, array1);
     }
 }
