@@ -735,7 +735,8 @@ namespace functions {
              */
             void exec(T *x, int *xShapeInfo,
                       T *extraParamsVals,
-                      T *y, int *yShapeInfo,
+                      T *y,
+                      int *yShapeInfo,
                       T *result,
                       int *resultShapeInfoBuffer,
                       int *dimension,

@@ -906,22 +906,48 @@ namespace functions {
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-
-
-                    int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo,dimension,dimensionLength);
-                    const int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
+                    int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                    int *xStride = shape::stride(tadShapeShapeInfo);
+                    int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
-                        int offset = i;
+                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int rankIter = rank;
+                        int xStridesIter[MAX_RANK];
+                        T *xPointer = x + offset;
                         IndexValue<T> indexValue;
                         indexValue.index = 0;
                         indexValue.value = x[offset];
-                        for(int j = 1; j < elementsPerReductionIndex; j++) {
-                            IndexValue<T> comp;
-                            comp.index = j;
-                            comp.value = x[offset + tadElementWiseStride * j];
-                            indexValue =  update(indexValue,comp,extraParams);
+                        if(PrepareOneRawArrayIter<T>(rankIter,
+                                                     xShape,
+                                                     xPointer,
+                                                     xStride,
+                                                     &rankIter,
+                                                     shapeIter,
+                                                     &xPointer,
+                                                     xStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                IndexValue<T> comp;
+                                comp.index = shape::sub2Ind(rank,xShape,coord);
+                                comp.value = xPointer[0];
+                                indexValue =  update(indexValue,comp,extraParams);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     xPointer,
+                                                     xStridesIter);
                         }
+                        else {
+                            printf("Unable to prepare array\n");
+                        }
+
+
 
                         result[i] = indexValue.index;
 

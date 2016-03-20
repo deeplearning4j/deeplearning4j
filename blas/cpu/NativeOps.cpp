@@ -82,6 +82,8 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
 
 
 }
+
+
 /**
  *
  * @param opNum

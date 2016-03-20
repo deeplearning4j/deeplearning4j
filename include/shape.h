@@ -1177,15 +1177,10 @@ namespace shape {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
-
-                int innerMostStride = stride[dimension[dimensionLength - 1]];
-                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
                 return index * rearMostStride;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
-                int innerMostStride = stride[dimension[dimensionLength - 1]];
-                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
                 return index * rearMostStride;
@@ -1236,7 +1231,6 @@ namespace shape {
     int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength) {
         int *shapeOf = shape::shapeOf(shapeInfo);
         int *strideOf = shape::stride(shapeInfo);
-        int rank = shape::rank(shapeInfo);
         int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(dimensionLength));
         //set the rank
         ret[0] = dimensionLength;
@@ -3363,6 +3357,19 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
     int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength) {
         int dimIdx = dimensionLength - 1;
+        //corner case: return the final item when its greater than the max, since its guaranteed to be left over
+        //note here that strides are interpreted in reverse for tad
+        //start from the front rather than the back
+        if(dimension[dimIdx] < length) {
+            int dimIdxBegin = 0;
+            for(int i = 0; i < length; i++) {
+                if(data[i]  != dimIdxBegin) {
+                    return data[dimIdxBegin];
+                }
+                dimIdxBegin++;
+            }
+            return data[0];
+        }
         for(int i = length - 1; i > 0; i--) {
             /**
              * Needs to find an algorithm such that:

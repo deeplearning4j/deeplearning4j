@@ -836,8 +836,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
-                        //tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength)
-                        //int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength, info);
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
@@ -863,7 +861,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                      shapeIter,
                                                      xPointer,
                                                      xStridesIter);
-                            start = postProcess(start,shape::length(xShapeInfo),extraParams);
+                            start = postProcess(start,tadLength,extraParams);
                         }
                         else {
                             printf("Unable to prepare array\n");

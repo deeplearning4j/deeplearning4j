@@ -973,11 +973,11 @@ struct SharedSummaryStatsData<double> {
                  * we can use arr.stride(1) as a representation
                  * along long which to iterate.
                  */
-                int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 
                 if (dimensionLength > 1) {
+
+
                     shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-                    const int resultLength = shape::length(resultShapeInfoBuffer);
                     /**
                      * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
@@ -987,28 +987,58 @@ struct SharedSummaryStatsData<double> {
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-                    int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension,dimensionLength);
 
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
+                    int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                    int *xStride = shape::stride(tadShapeShapeInfo);
+                    int rank = shape::rank(tadShapeShapeInfo);
+                    shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
+                    int tadLength = shape::length(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int rankIter = rank;
+                        int xStridesIter[MAX_RANK];
+                        T *xPointer = x + offset;
                         SummaryStatsData<T> comp;
                         comp.initWithValue(x[offset]);
                         comp = op(comp, extraParams);
-#pragma omp simd
-                        for (int j = 1; j < elementsPerReductionIndex; j++) {
-                            SummaryStatsData<T> comp2;
-                            comp2.initWithValue(x[offset + tadElementWiseStride * j]);
-                            comp = update(comp, comp2, extraParams);
+                        if(PrepareOneRawArrayIter<T>(rankIter,
+                                                     xShape,
+                                                     xPointer,
+                                                     xStride,
+                                                     &rankIter,
+                                                     shapeIter,
+                                                     &xPointer,
+                                                     xStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                SummaryStatsData<T> comp2;
+                                comp2.initWithValue(xPointer[0]);
+                                comp = update(comp, comp2, extraParams);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     xPointer,
+                                                     xStridesIter);
                         }
+                        else {
+                            printf("Unable to prepare array\n");
+                        }
+
+
 
                         result[i] = getValue(comp);
 
 
                     }
 
-
-                    shape::freePermuteInfo(tadPermuteInfo);
+                    free(tadShapeShapeInfo);
+                    shape::freePermuteInfo(info);
                 }
 
                 else {
