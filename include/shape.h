@@ -896,6 +896,25 @@ namespace shape {
 
     int prod(int *data, int length);
 
+    /**
+     * Returns the rear most left over item not present in
+     * the dimension array. This assumes that the dimension array is sorted.
+     *
+     * For example, given a dimension array of:
+     * 0,2
+     *
+     * and
+     *
+     * 12,4,2,1 in data
+     *
+     * You end up with 1 (data[3])
+     * since the first item won't match
+     * the last item of the dimension array
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength);
 
     /**
 * Get an offset for retrieval
@@ -1156,8 +1175,13 @@ namespace shape {
         if(dimensionLength > 1) {
             if(shape::order(shapeInfo) == 'c') {
                 int *stride = shape::stride(shapeInfo);
+                int rank = shape::rank(shapeInfo);
+                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
+
                 int innerMostStride = stride[dimension[dimensionLength - 1]];
                 int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+                printf("Inner most stride c ordering %d and parent %d and rear most %d\n",innerMostStride,elementWiseStrideParent,rearMostStride);
+
                 if(index >= innerMostStride) {
                     //represents the jump
                     //the offset represents how many jumps of the element wise stride to do after identifying
@@ -1174,15 +1198,34 @@ namespace shape {
                     return base;
                 }
 
-                else return index;
+                else return index * rearMostStride;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
-                int firstStrideIdx = dimension[dimensionLength - 1];
-                if(firstStrideIdx == 0)
-                    return index * stride[1];
+                int innerMostStride = stride[dimension[dimensionLength - 1]];
+                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
+                int rank = shape::rank(shapeInfo);
+                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
+                printf("Inner most stride f ordering %d and parent %d and rear most %d\n",innerMostStride,elementWiseStrideParent,rearMostStride);
+                if(index >= innerMostStride) {
+                    //represents the jump
+                    //the offset represents how many jumps of the element wise stride to do after identifying
+                    //the base offset for the ump as index / inner most stride. For example in our case above:
+                    //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
+                    //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
+                    int base = index / innerMostStride;
+                    printf("Base is %d\n",base);
+                    base *= elementWiseStrideParent;
+                    if(index > innerMostStride) {
+                        int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
+                        base += addOffset;
+                    }
+
+                    return base;
+                }
+
                 else
-                    return index * stride[0];
+                    return index * rearMostStride;
             }
 
         }
@@ -1233,7 +1276,7 @@ namespace shape {
         int rank = shape::rank(shapeInfo);
         int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(dimensionLength));
         //set the rank
-        ret[0] = rank;
+        ret[0] = dimensionLength;
         int *retShape = shape::shapeOf(ret);
         int *retStride = shape::stride(ret);
         shape::reverseCopyTo(strideOf,&retStride,dimension,dimensionLength);
@@ -2470,6 +2513,7 @@ namespace shape {
             toRef[i] = from[indexes[length - i - 1]];
             toRef[length - i - 1] = temp;
         }
+
     }
 
 /**
@@ -3349,6 +3393,32 @@ __device__ int tadOffset(int *xInfo, int offset) {
         }
 
         return prod;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength) {
+        for(int i = length - 1; i > 0; i--) {
+            /**
+             * Needs to find an algorithm such that:
+             * looping backwards will find the highest dimension left
+             * that isn't included in the dimension index list.
+             *
+             * This can also be thought of as the last item of the first index
+             * of the difference between the full list of indices and
+             * the dimension indices.
+             *
+             * We should avoid excessive object creation by only looping backwards.
+             */
+            if(dimension[i] != i) {
+                printf("Returning in for loop %d and final dimension item %d\n",i,dimension[dimensionLength - 1]);
+                return data[i];
+            }
+        }
+
+        printf("Returning data 0 %d\n",data[0]);
+        return data[0];
     }
 
 }

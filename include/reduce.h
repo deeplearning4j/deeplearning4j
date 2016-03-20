@@ -828,17 +828,21 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     //moving all dimensions (in sorted order)
                     //to the back.
                     //permuted version of the x shape info for setting up the tad problem
-                    int *rearrangeArr = shape::createPermuteIndexes(shape::rank(xShapeInfo),dimension,dimensionLength);
                     int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int tadLength = shape::length(tadShapeShapeInfo);
-                    int rank = shape::rank(xShapeInfo);
+                    int rank = shape::rank(tadShapeShapeInfo);
                     shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
-
+                    printf("Tad length is %d\n",tadLength);
+                    for(int i = 0; i < rank; i++) {
+                        printf("Shape %d is %d and stride is %d\n",i,xShape[i],xStride[i]);
+                    }
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
-                        int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength, info);
+                        //tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength)
+                        //int offset = shape::offset(i,xShapeInfo,dimension,dimensionLength, info);
+                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -846,6 +850,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         int xStridesIter[MAX_RANK];
                         T *xPointer = x + offset;
                         T start = this->startingValue(x);
+                        printf("Offset for reduction index %d is %d\n",i,offset);
                         if(PrepareOneRawArrayIter<T>(rankIter,
                                                      xShape,
                                                      xPointer,
@@ -873,7 +878,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                     }
 
-                    free(rearrangeArr);
+                    free(tadShapeShapeInfo);
                     shape::freePermuteInfo(info);
                 }
 
