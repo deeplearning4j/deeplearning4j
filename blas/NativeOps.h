@@ -29,7 +29,7 @@
 
 
 
-class  NativeOps {
+class ND4J_EXPORT NativeOps {
 #ifdef __CUDACC__
 cudaDeviceProp *deviceProperties;
         cudaFuncAttributes *funcAttributes;
