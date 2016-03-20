@@ -54,19 +54,6 @@ public class ShapeTests extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testMultiDimSum() {
-        double[] data = new double[]{10, 18,26};
-        INDArray assertion = Nd4j.create(data);
-        for(int i = 0; i < data.length; i++) {
-            assertEquals(data[i],assertion.getDouble(i),1e-1);
-        }
-
-        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape('f',2, 2, 3);
-        INDArray multiSum = twoTwoByThree.sum(0, 1);
-        assertEquals(assertion,multiSum);
-    }
-
 
 
     @Test
