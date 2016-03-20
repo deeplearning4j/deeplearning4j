@@ -30,7 +30,10 @@
 
 
 class ND4J_EXPORT NativeOps {
-
+#ifdef __CUDACC__
+        cudaDeviceProp *deviceProperties;
+        cudaFuncAttributes *funcAttributes;
+#endif
 
 public:
     /**
@@ -801,6 +804,13 @@ public:
                               Nd4jPointer extraParams,
                               Nd4jPointer xIndexes,
                               Nd4jPointer resultIndexes);
+
+    /**
+     * This method implementation exists only for cuda.
+     * The other backends should have dummy method for JNI compatibility reasons.
+     */
+    void initializeDevicesAndFunctions();
+
 };
 
 

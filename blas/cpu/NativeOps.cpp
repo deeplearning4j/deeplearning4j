@@ -1356,3 +1356,11 @@ void   NativeOps::execTransformFloat(
             resultIndexesPointer);
 
 }
+
+/**
+ * This is dummy method for JNI compatibility
+ * Since we'll use this from java, jni compiler would like to have method no matter what.
+ */
+void NativeOps::initializeDevicesAndFunctions() {
+
+}

@@ -77,7 +77,6 @@ namespace functions {
                     T *params,
                     T *result,
                     int *indexes) {
-
                 int n = shape::length(shapeInfo);
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
@@ -114,6 +113,10 @@ namespace functions {
                 int xOffset = shape::offset(shapeInfo);
 
                 int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+
+//                if (threadIdx.x == 0 && blockIdx.x == 0)
+  //                  printf("transform xEWS: [%i], length: [%i], xOrder: [%c]\n", xElementWiseStride, shape::length(shapeInfo), xOrder);
+
 
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
@@ -153,12 +156,16 @@ namespace functions {
             int incy,
             T *params,
              T *result) {
+//                printf("transform C: incy: [%i], params[0]: [%f]\n", incy, params[0]);
+
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
 
+//                printf("Thread index: %i\n", i);
+
                 if(incy == 1) {
-                printf("Incy of 1 %d\n");
+                //printf("Incy of 1 %d\n");
                                 /* equal, positive, non-unit increments. */
 #pragma unroll
                 for (; i < n; i += totalThreads) {
@@ -2011,6 +2018,7 @@ namespace functions {
 
 #endif
                 T op(T d1, T *params) {
+//                    printf("RELU params: %f < %f\n", d1, params[0]);
                     return d1 < params[0] ? params[0] : d1;
                 }
 

@@ -205,9 +205,21 @@ namespace functions {
 			 * along long which to iterate.
 			 */
 
-			int tadElementWiseStride = dimensionLength > 1 ? shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength) : shape::stride(xShapeInfo)[dimensionLength - 1];
 
-			xElementWiseStride = tadElementWiseStride;
+			if (dimensionLength > 1) {
+				xElementWiseStride = shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+			} else {
+				int *xShape = shape::shapeOf(xShapeInfo);
+            	int *xStride = shape::stride(xShapeInfo);
+            	char xOrder = shape::order(xShapeInfo);
+            	int n = shape::length(xShapeInfo);
+        	    int xRank = shape::rank(xShapeInfo);
+    	        int xOffset = shape::offset(xShapeInfo);
+
+	            xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+//				printf("stride: [%i], length: [%i], elements: [%i], resultScalar: [%i], rank: [%i], offset: [%i]\n", xElementWiseStride, xLength, elementsPerTad, resultScalar, xRank, xOffset);
+			}
+
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
 		}
@@ -223,8 +235,9 @@ namespace functions {
 
 
 			int resultLength = shape::length(resultShapeInfo);
-			if(tid >= resultLength)
+			if(tid >= resultLength) {
 				return;
+			}
 
 			/**
 			 * The element wise stride belong longs to a reduction index.
