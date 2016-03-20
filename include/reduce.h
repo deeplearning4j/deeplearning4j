@@ -207,7 +207,7 @@ namespace functions {
 
 
 			if (dimensionLength > 1) {
-				xElementWiseStride = shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
+				xElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
 			} else {
 				int *xShape = shape::shapeOf(xShapeInfo);
             	int *xStride = shape::stride(xShapeInfo);
@@ -216,12 +216,15 @@ namespace functions {
         	    int xRank = shape::rank(xShapeInfo);
     	        int xOffset = shape::offset(xShapeInfo);
 
-	            xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-//				printf("stride: [%i], length: [%i], elements: [%i], resultScalar: [%i], rank: [%i], offset: [%i]\n", xElementWiseStride, xLength, elementsPerTad, resultScalar, xRank, xOffset);
+                if (dimension[0] != shape::MAX_DIMENSION)
+	                xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f', dimension, dimensionLength);
+	            else xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			}
-
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
+
+			//if (threadIdx.x == 0 && blockIdx.x == 0)
+			//	printf("stride: [%i], length: [%i], order: [%c], dimensionLength: [%i]\n", xElementWiseStride, xLength, shape::order(xShapeInfo), dimensionLength);
 		}
 		__syncthreads();
         int n = xLength;

@@ -95,9 +95,9 @@ cublasSideMode_t convertSideMode(int sideMode) {
 float Nd4jBlas::sdsdot(Nd4jPointer *extraParams, int N, float alpha,
                        Nd4jPointer X, int incX,
                        Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
+//    float *xPointer = reinterpret_cast<float *>(X);
+//    float *yPointer = reinterpret_cast<float *>(Y);
+//    cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
     //nothing found?
     return 0.0f;
 }
@@ -105,9 +105,9 @@ float Nd4jBlas::sdsdot(Nd4jPointer *extraParams, int N, float alpha,
 double Nd4jBlas::dsdot(Nd4jPointer *extraParams, int N,
                        Nd4jPointer X, int incX,
                        Nd4jPointer Y, int incY) {
-    float *xPointer = reinterpret_cast<float *>(X);
-    float *yPointer = reinterpret_cast<float *>(Y);
-    cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
+//    float *xPointer = reinterpret_cast<float *>(X);
+//    float *yPointer = reinterpret_cast<float *>(Y);
+//    cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
     //nothing found?
     return 0.0f;
 }
@@ -1113,7 +1113,7 @@ void Nd4jBlas::strmm(Nd4jPointer *extraParams, int Order, int Side,
     float *aPointer = reinterpret_cast<float *>(A);
     float *bPointer = reinterpret_cast<float *>(B);
     cublasHandle_t *handle = reinterpret_cast<cublasHandle_t *>(&extraParams[0]);
-    float *cPointer = reinterpret_cast<float *>(&extraParams[1]);
+    //float *cPointer = reinterpret_cast<float *>(&extraParams[1]);
     cublasStrmm_v2(*handle, convertSideMode(Side), convertUplo(Uplo), convertTranspose(TransA), convertDiag(Diag), M, N,
                    &alpha, aPointer, lda, bPointer, ldb, bPointer, ldb);
 
