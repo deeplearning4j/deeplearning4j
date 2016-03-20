@@ -172,7 +172,7 @@ namespace functions {
 
 
                 int n = shape::length(xShapeBuffer);
-                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
                     transform(
                             n,
                             dx,
