@@ -2118,7 +2118,7 @@ void NativeOps::initializeDevicesAndFunctions() {
     cudaFuncGetAttributes(&funcAttributes[19], scalarDoublePointer1);
 
 
-    void (*scalarDoublePointer2)(int opNum, double dx,double *dy, int *shapeInfo,double *params, double *result) = scalarDouble;
+    void (*scalarDoublePointer2)(int opNum, int n,double dx, double *dy, int incy, double *params, double *result) = scalarDouble;
     cudaFuncGetAttributes(&funcAttributes[20], scalarDoublePointer2);
 
     cudaFuncGetAttributes(&funcAttributes[21], reduce3Double);
