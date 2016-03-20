@@ -91,7 +91,6 @@ namespace functions {
                     int *indexes,
                     int *yIndexes,
                     int *resultIndexes) {
-
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
@@ -138,7 +137,6 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams) {
-
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
@@ -165,16 +163,16 @@ namespace functions {
                 char yOrder = shape::order(yShapeBuffer);
                 char resultOrder = shape::order(resultShapeBuffer);
 
-                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                int yElementWiseStride = shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
-                int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
+                int xElementWiseStride = shape::elementWiseStride(xShapeBuffer); //shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                int yElementWiseStride = shape::elementWiseStride(yShapeBuffer); //shape::computeElementWiseStride(yRank,yShape,yStride,yOrder == 'f');
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer); // shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
-                //if (threadIdx.x == 0 && blockIdx.x == 0)
+//                if (threadIdx.x == 0 && blockIdx.x == 0)
 //                    printf("xEWStride: [%i], yEWStride: [%i], zEWStride: [%i], xLength: [%i], yLength: [%i], xOrder: [%c], yOrder: [%c]\n", xElementWiseStride, yElementWiseStride, resultElementWiseStride,shape::length(xShapeBuffer), shape::length(yShapeBuffer), xOrder, yOrder);
 
 
                 int n = shape::length(xShapeBuffer);
-                if(xElementWiseStride > 1 && yElementWiseStride > 1 && resultElementWiseStride > 1) {
+                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
                     transform(
                             n,
                             dx,
@@ -232,7 +230,6 @@ namespace functions {
                     T *params,
                     T *result,
                     int incz) {
-
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;

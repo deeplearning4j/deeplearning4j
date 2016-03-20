@@ -112,10 +112,10 @@ namespace functions {
                 int xRank = shape::rank(shapeInfo);
                 int xOffset = shape::offset(shapeInfo);
 
-                int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                int xElementWiseStride = shape::elementWiseStride(shapeInfo); //shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 
 //                if (threadIdx.x == 0 && blockIdx.x == 0)
-  //                  printf("transform xEWS: [%i], length: [%i], xOrder: [%c]\n", xElementWiseStride, shape::length(shapeInfo), xOrder);
+//                    printf("transform xEWS: [%i], length: [%i], xOrder: [%c]\n", xElementWiseStride, shape::length(shapeInfo), xOrder);
 
 
                 int totalThreads = gridDim.x * blockDim.x;
@@ -126,7 +126,7 @@ namespace functions {
                     length = shape::length(shapeInfo);
                 __syncthreads();
 
-                if(xElementWiseStride > 1) {
+                if(xElementWiseStride >= 1) {
                     transform(length,dy,xElementWiseStride,params,result);
                 }
                 else {
@@ -156,13 +156,9 @@ namespace functions {
             int incy,
             T *params,
              T *result) {
-//                printf("transform C: incy: [%i], params[0]: [%f]\n", incy, params[0]);
-
                 int totalThreads = gridDim.x * blockDim.x;
                 int tid = threadIdx.x;
                 int i = blockIdx.x * blockDim.x + tid;
-
-//                printf("Thread index: %i\n", i);
 
                 if(incy == 1) {
                 //printf("Incy of 1 %d\n");
@@ -2018,7 +2014,6 @@ namespace functions {
 
 #endif
                 T op(T d1, T *params) {
-//                    printf("RELU params: %f < %f\n", d1, params[0]);
                     return d1 < params[0] ? params[0] : d1;
                 }
 

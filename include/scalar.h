@@ -93,7 +93,7 @@ namespace functions {
 		char xOrder = shape::order(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
-		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+		int xElementWiseStride = shape::elementWiseStride(shapeInfo); //shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
        int n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
@@ -102,6 +102,11 @@ namespace functions {
 		if(tid == 0)
 			length = shape::length(shapeInfo);
 		__syncthreads();
+
+//         if (threadIdx.x == 0 && blockIdx.x == 0)
+//            printf("xEWStride: [%i], xLength: [%i], xOrder: [%c]\n", xElementWiseStride, n, xOrder);
+
+
 
 		if(xElementWiseStride >= 1) {
 			transform(length,scalar,dy,xElementWiseStride,params,result);
@@ -230,7 +235,6 @@ namespace functions {
                            T *result,
                            int *resultShapeInfo,
                            T scalar, T *extraParams) {
-
                 char xOrdering = shape::order(xShapeInfo);
                 char resultOrdering = shape::order(resultShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -328,7 +332,6 @@ namespace functions {
              */
             void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const int n) {
-
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for
                     for (int i = 0; i < n; i++) {
