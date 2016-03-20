@@ -400,7 +400,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op, int... dimension) {
-        log.info("HAHA 2");
         return super.exec(op, dimension);
     }
 
@@ -410,7 +409,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA  || op instanceof CopyOp) {
             try {
-                log.info("HAHA");
                 // we dont' care about op.Z sync state, since it'll be overwritten
                 if (op.x() != null)
                     allocator.synchronizeHostData(op.x());
