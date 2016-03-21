@@ -92,6 +92,7 @@ public class CudaZeroMover implements Mover {
 
 
 
+                // FIXME: get rid of this $#%@$!
                 // copy data from
                 ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
                 pointer.order(ByteOrder.nativeOrder());
@@ -372,6 +373,16 @@ public class CudaZeroMover implements Mover {
             default:
                 throw new IllegalStateException("Can't free memory on target [" + target + "]");
         }
+    }
+
+    /**
+     * This method returns initial allocation location. So, it can be HOST, or DEVICE if environment allows that.
+     *
+     * @return
+     */
+    @Override
+    public AllocationStatus getInitialLocation() {
+        return AllocationStatus.HOST;
     }
 
     private NioUtil.BufferType getBufferType(DataBuffer buffer) {

@@ -349,8 +349,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         long[] p =  new long[]{ctx.getHandle().getNativePointer()};
 /*            System.out.println("P[0]: " + p[0]);
             System.out.println("P[1]: " + p[1]);
-            System.out.println("X: " + xAPointer.getDevicePointer().getNativePointer());
-            System.out.println("Y: " + xBPointer.getDevicePointer().getNativePointer());*/
+            System.out.println("X: " + xAPointer.getPointer().getNativePointer());
+            System.out.println("Y: " + xBPointer.getPointer().getNativePointer());*/
          nd4jBlas.saxpy(p,
                   N,
                   alpha,

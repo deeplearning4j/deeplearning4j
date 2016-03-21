@@ -73,4 +73,11 @@ public interface Mover {
      * @param point
      */
     void free(AllocationPoint point, AllocationStatus target);
+
+    /**
+     * This method returns initial allocation location. So, it can be HOST, or DEVICE if environment allows that.
+     *
+     * @return
+     */
+    AllocationStatus getInitialLocation();
 }

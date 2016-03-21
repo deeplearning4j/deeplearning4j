@@ -301,7 +301,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Deprecated
     public Pointer getDevicePointer(int stride, int offset,int length) {
 
-        if (1 > 0) throw new UnsupportedOperationException("getDevicePointer(stride, offset, length) shouldn't be used anymore");
+        if (1 > 0) throw new UnsupportedOperationException("getPointer(stride, offset, length) shouldn't be used anymore");
 
         String name = Thread.currentThread().getName();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
@@ -394,7 +394,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
 
 
-        if (1 > 0) throw new UnsupportedOperationException("getDevicePointer(INDArray, stride, offset, length) shouldn't be used");
+        if (1 > 0) throw new UnsupportedOperationException("getPointer(INDArray, stride, offset, length) shouldn't be used");
 
         // FIXME: this is ugly hack that address double allocation over the same offset/length
         referenceCounter.incrementAndGet();

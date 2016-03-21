@@ -1,6 +1,5 @@
 package org.nd4j.jita.conf;
 
-import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import lombok.Data;
@@ -20,7 +19,7 @@ import static jcuda.driver.JCudaDriver.cuInit;
  * @author raver119@gmail.com
  */
 @Data
-public class CudaEnvironment {
+public class CudaEnvironment extends Environment {
     private Map<Integer, DeviceInformation> availableDevices = new HashMap<>();
 
     private boolean wasReset = false;

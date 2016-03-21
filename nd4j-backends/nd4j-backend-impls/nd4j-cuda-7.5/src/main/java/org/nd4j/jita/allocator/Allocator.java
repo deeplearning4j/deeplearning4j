@@ -1,7 +1,9 @@
 package org.nd4j.jita.allocator;
 
 import jcuda.Pointer;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -28,14 +30,6 @@ public interface Allocator {
      */
     void applyConfiguration(Configuration configuration);
 
-    /**
-     * This method allows you to exclude specific device from being used for calculations
-     *
-     * Please note: you can call this method multiple times, to ban multiple devices
-     *
-     * @param deviceId deviceId to be banned
-     */
-    void banDevice(Integer deviceId);
 
     /**
      * Set active CUDA environment
@@ -121,7 +115,7 @@ public interface Allocator {
      * @param buffer
      */
     @Deprecated
-    Pointer getDevicePointer(DataBuffer buffer);
+    Pointer getPointer(DataBuffer buffer);
 
     /**
      * This method returns actual device pointer valid for specified shape of current object
@@ -130,22 +124,16 @@ public interface Allocator {
      * @param shape
      */
     @Deprecated
-    Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView);
+    Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView);
 
 
     /**
      * This method returns actual device pointer valid for specified INDArray
      */
-    Pointer getDevicePointer(INDArray array);
+    Pointer getPointer(INDArray array);
 
 
-    /**
-     * This method returns actual host pointer, valid for specified shape of current object
-     *
-     * @param array
-     * @return
-     */
-    Pointer getHostPointer(INDArray array);
+
 
     /**
      * This method should be callsd to make sure that data on host side is actualized
@@ -189,7 +177,8 @@ public interface Allocator {
 
 
     /**
-     * This method returns CUDA deviceId for specified array
+     * This method returns deviceId for specified array.
+     * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
      *
      * @param array
      * @return
@@ -197,9 +186,27 @@ public interface Allocator {
     Integer getDeviceId(INDArray array);
 
     /**
-     * This method returns CUDA deviceId for current thread
+     * This method returns deviceId for current thread
+     * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
      *
      * @return
      */
     Integer getDeviceId();
+
+    /**
+     *  This method allocates required chunk of memory
+     *
+     * @param requiredMemory
+     */
+    AllocationPoint allocateMemory(AllocationShape requiredMemory);
+
+    /**
+     * This method allocates required chunk of memory in specific location
+     *
+     * PLEASE NOTE: Do not use this method, unless you're 100% sure what you're doing
+     *
+     * @param requiredMemory
+     * @param location
+     */
+    AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location);
 }

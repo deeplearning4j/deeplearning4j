@@ -205,7 +205,6 @@ public class AtomicAllocator implements Allocator {
      *
      * @param deviceId deviceId to be banned
      */
-    @Override
     public void banDevice(@NonNull Integer deviceId) {
         globalLock.writeLock().lock();
 
@@ -437,8 +436,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     @Deprecated
-    public Pointer getDevicePointer(DataBuffer objectId) {
-        return getDevicePointer(objectId, AllocationUtils.buildAllocationShape(objectId), false);
+    public Pointer getPointer(DataBuffer objectId) {
+        return getPointer(objectId, AllocationUtils.buildAllocationShape(objectId), false);
     }
 
     /**
@@ -449,7 +448,7 @@ public class AtomicAllocator implements Allocator {
      * @param isView
      */
     @Override
-    public Pointer getDevicePointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
+    public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
      //   log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
@@ -520,7 +519,7 @@ public class AtomicAllocator implements Allocator {
                 // mover.copyforward(point);
             } else {
                 /*
-                    do nothing here, the only possible reason for us to get in this scope, is concurrent getDevicePointer access, so it was stopped by TTT barrier, and now we're here after everything being done
+                    do nothing here, the only possible reason for us to get in this scope, is concurrent getPointer access, so it was stopped by TTT barrier, and now we're here after everything being done
                   */
                 ;
             }
@@ -609,7 +608,7 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
-    public Pointer getDevicePointer(INDArray array) {
+    public Pointer getPointer(INDArray array) {
         AllocationShape shape = AllocationUtils.buildAllocationShape(array);
 
         DataBuffer buffer = array.data().originalDataBuffer() != null ? array.data().originalDataBuffer() : array.data();
@@ -618,7 +617,7 @@ public class AtomicAllocator implements Allocator {
             pickupSpan(array);
         }
 
-        return getDevicePointer(buffer, shape, array.isView());
+        return getPointer(buffer, shape, array.isView());
     }
 
     /**
@@ -667,7 +666,7 @@ public class AtomicAllocator implements Allocator {
      * @param array
      * @return
      */
-    @Override
+    @Deprecated
     public Pointer getHostPointer(INDArray array) {
         if(array.data().allocationMode() == DataBuffer.AllocationMode.DIRECT || array.data().allocationMode() == DataBuffer.AllocationMode.JAVACPP)
             return Pointer.to(array.data().asNio());
@@ -912,6 +911,28 @@ public class AtomicAllocator implements Allocator {
         return devicesAffinity.get(threadId);
     }
 
+    /**
+     * This method allocates required chunk of memory
+     *
+     * @param requiredMemory
+     */
+    @Override
+    public AllocationPoint allocateMemory(AllocationShape requiredMemory) {
+        return allocateMemory(requiredMemory, mover.getInitialLocation());
+    }
+
+    /**
+     * This method allocates required chunk of memory in specific location
+     * <p>
+     * PLEASE NOTE: Do not use this method, unless you're 100% sure what you're doing
+     *
+     * @param requiredMemory
+     * @param location
+     */
+    @Override
+    public AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
 
     protected AllocationPoint getAllocationPoint(DataBuffer buffer, AllocationShape shape, boolean catchNewAllocations) {

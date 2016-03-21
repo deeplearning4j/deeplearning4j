@@ -1,6 +1,5 @@
 package org.nd4j.linalg.jcublas.buffer;
 
-import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
@@ -20,7 +19,7 @@ public class AddressRetriever {
      * data buffer
      */
     public static long retrieveDeviceAddress(DataBuffer buffer) {
-        return allocator.getDevicePointer(buffer).getNativePointer();
+        return allocator.getPointer(buffer).getNativePointer();
     }
 
 

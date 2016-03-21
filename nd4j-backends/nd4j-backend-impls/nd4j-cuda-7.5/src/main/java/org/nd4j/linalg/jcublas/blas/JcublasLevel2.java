@@ -43,12 +43,12 @@ public class JcublasLevel2 extends BaseLevel2 {
                     M,
                     N,
                     Pointer.to(new float[]{alpha}),
-                    cAPointer.getDevicePointer(),
+                    cAPointer.getPointer(),
                     lda,
-                    cBPointer.getDevicePointer(),
+                    cBPointer.getPointer(),
                     incX,
                     Pointer.to(new float[]{beta}),
-                    cCPointer.getDevicePointer(),
+                    cCPointer.getPointer(),
                     incY);*/
             //ctx.syncOldStream();
         //    cCPointer.copyToHost();
@@ -123,12 +123,12 @@ public class JcublasLevel2 extends BaseLevel2 {
                     M,
                     N,
                     Pointer.to(new double[]{alpha}),
-                    cAPointer.getDevicePointer(),
+                    cAPointer.getPointer(),
                     lda,
-                    cBPointer.getDevicePointer(),
+                    cBPointer.getPointer(),
                     incX,
                     Pointer.to(new double[]{beta}),
-                    cCPointer.getDevicePointer(),
+                    cCPointer.getPointer(),
                     incY);*/
 //            ctx.syncOldStream();
     //        cCPointer.copyToHost();

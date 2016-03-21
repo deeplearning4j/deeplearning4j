@@ -81,7 +81,7 @@ public class AtomicAllocatorTest {
     public void testScalar1() throws Exception {
         INDArray array = Nd4j.scalar(17f);
 
-        allocator.getDevicePointer(array);
+        allocator.getPointer(array);
 
         allocator.tackDevice(array);
         allocator.tickDeviceWrite(array);
@@ -280,14 +280,14 @@ public class AtomicAllocatorTest {
 
 /*
         for (int x = 0; x < 20; x++) {
-            ((BaseCudaDataBuffer) array1.data()).getDevicePointer(array1.elementWiseStride(), array1.offset(), array1.length());
+            ((BaseCudaDataBuffer) array1.data()).getPointer(array1.elementWiseStride(), array1.offset(), array1.length());
 
             allocator.tackDevice((BaseCudaDataBuffer) array1.data(), AllocationUtils.buildAllocationShape(array1));
         }
         assertEquals(1, allocator.getTotalZeroAllocations());
 
         for (int x = 0; x < 20; x++) {
-            ((BaseCudaDataBuffer) array2.data()).getDevicePointer(array2.elementWiseStride(), array2.offset(), array2.length());
+            ((BaseCudaDataBuffer) array2.data()).getPointer(array2.elementWiseStride(), array2.offset(), array2.length());
 
             allocator.tackDevice((BaseCudaDataBuffer) array2.data(), AllocationUtils.buildAllocationShape(array2));
         }
