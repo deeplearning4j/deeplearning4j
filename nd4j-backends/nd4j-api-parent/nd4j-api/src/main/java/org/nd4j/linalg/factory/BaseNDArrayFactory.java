@@ -260,23 +260,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray toFlattened(int length, Iterator<? extends INDArray>... matrices) {
-        INDArray ret = Nd4j.create(length);
-        int linearIndex = 0;
-
-        for (Iterator<? extends INDArray> iter1 : matrices) {
-            while (iter1.hasNext()) {
-                INDArray d = iter1.next();
-                NdIndexIterator iter = new NdIndexIterator(d.shape());
-                while(iter.hasNext()) {
-                    for (int i = 0; i < d.length(); i++) {
-                        ret.putScalar(linearIndex++, d.getDouble(iter.next()));
-                    }
-                }
-            }
-
+        List<INDArray> arr = new ArrayList<>();
+        for(Iterator<? extends INDArray> arrs : matrices) {
+            while(arrs.hasNext())
+                arr.add(arrs.next());
         }
-
-        return ret;
+        return toFlattened(arr);
     }
 
     /**
@@ -316,24 +305,21 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            if (!d.isVector())
-                d = Nd4j.create(d.data(), new int[]{1, d.length()}, d.offset());
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, d.getFloat(i));
-            }
+            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(linearIndex,linearIndex + d.length())},d);
+            linearIndex += d.length();
         }
 
         return ret;
     }
 
     @Override
-    public INDArray toFlattened(char order, Collection<INDArray> matrices ){
+    public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         int length = 0;
         for (INDArray m : matrices)
             length += m.length();
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
-        for(INDArray m : matrices){
+        for(INDArray m : matrices) {
             if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
                     && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
                 //Can do array copy
@@ -362,7 +348,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     @Override
-    public INDArray toFlattened(char order, INDArray... matrices ){
+    public INDArray toFlattened(char order, INDArray... matrices) {
         return toFlattened(order, Arrays.asList(matrices));
     }
 
