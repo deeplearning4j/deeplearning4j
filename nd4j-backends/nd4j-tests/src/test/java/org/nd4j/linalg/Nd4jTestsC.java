@@ -530,6 +530,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+
     @Test
     public void testDup() {
         for(int x = 0; x < 100; x++) {
@@ -1888,40 +1889,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testToFlattenedWithOrder(){
 
         int[] firstShape = {10,3};
+        int firstLen = ArrayUtil.prod(firstShape);
         int[] secondShape = {2,7};
+        int secondLen = ArrayUtil.prod(secondShape);
         int[] thirdShape = {3,3};
-        INDArray firstC = Nd4j.create(firstShape,'c');
-        INDArray firstF = Nd4j.create(firstShape,'f');
-        INDArray secondC = Nd4j.create(secondShape,'c');
-        INDArray secondF = Nd4j.create(secondShape,'f');
-        INDArray thirdC = Nd4j.create(thirdShape,'c');
-        INDArray thirdF = Nd4j.create(thirdShape,'f');
+        int thirdLen = ArrayUtil.prod(thirdShape);
+        INDArray firstC = Nd4j.linspace(1,firstLen,firstLen).reshape('c',firstShape);
+        INDArray firstF = Nd4j.create(firstShape,'f').assign(firstC);
+        INDArray secondC = Nd4j.linspace(1,secondLen,secondLen).reshape('c',secondShape);
+        INDArray secondF = Nd4j.create(secondShape,'f').assign(secondC);
+        INDArray thirdC = Nd4j.linspace(1,thirdLen,thirdLen).reshape('c',thirdShape);
+        INDArray thirdF = Nd4j.create(thirdShape,'f').assign(thirdC);
 
-        Random r = new Random(12345);
-
-        for( int i=0; i<firstShape[0]; i++) {
-            for( int j=0; j<firstShape[1]; j++) {
-                double d = r.nextDouble();
-                firstC.putScalar(new int[]{i,j},d);
-                firstF.putScalar(new int[]{i,j},d);
-            }
-        }
-
-        for( int i = 0; i < secondShape[0]; i++ ){
-            for( int j = 0; j<secondShape[1]; j++ ){
-                double d = r.nextDouble();
-                secondC.putScalar(new int[]{i,j},d);
-                secondF.putScalar(new int[]{i,j},d);
-            }
-        }
-
-        for( int i = 0; i<thirdShape[0]; i++) {
-            for( int j = 0; j<thirdShape[1]; j++) {
-                double d = r.nextDouble();
-                thirdC.putScalar(new int[]{i,j},d);
-                thirdF.putScalar(new int[]{i,j},d);
-            }
-        }
 
         assertEquals(firstC,firstF);
         assertEquals(secondC,secondF);
@@ -1929,24 +1908,24 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray cc = Nd4j.toFlattened('c',firstC,secondC,thirdC);
         INDArray cf = Nd4j.toFlattened('c',firstF,secondF,thirdF);
-        INDArray cmixed = Nd4j.toFlattened('c',firstC,secondF,thirdF);
-
-        INDArray fc = Nd4j.toFlattened('f',firstC,secondC,thirdC);
-        INDArray ff = Nd4j.toFlattened('f',firstF,secondF,thirdF);
-        INDArray fmixed = Nd4j.toFlattened('f',firstC,secondF,thirdF);
-
         assertEquals(cc,cf);
+
+        INDArray cmixed = Nd4j.toFlattened('c',firstC,secondF,thirdF);
         assertEquals(cc,cmixed);
 
+        INDArray fc = Nd4j.toFlattened('f',firstC,secondC,thirdC);
         assertNotEquals(cc,fc);
 
+        INDArray ff = Nd4j.toFlattened('f',firstF,secondF,thirdF);
         assertEquals(fc,ff);
+
+        INDArray fmixed = Nd4j.toFlattened('f',firstC,secondF,thirdF);
         assertEquals(fc,fmixed);
     }
 
 
     @Test
-    public void testDupAndDupWithOrder(){
+    public void testDupAndDupWithOrder() {
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(ordering(),4, 5, 123);
         for(Pair<INDArray,String> pair : testInputs) {
 
