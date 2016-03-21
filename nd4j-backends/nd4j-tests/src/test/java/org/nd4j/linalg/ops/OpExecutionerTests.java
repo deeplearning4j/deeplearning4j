@@ -393,7 +393,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         float[] expected = new float[slice.length()];
         for( int i = 0; i< slice.length(); i++)
-            expected[i] = (float)Math.exp(slice.getDouble(i));
+            expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
         assertEquals(getFailureMessage(),Nd4j.create(Nd4j.createBuffer(expected)), slice);

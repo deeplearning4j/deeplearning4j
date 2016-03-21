@@ -1020,7 +1020,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
+        if(arr.elementWiseStride() > 0 && elementWiseStride() > 0 && ordering() == arr.ordering()) {
+            data().copyAtStride(arr.data(),arr.length(),elementWiseStride(),arr.elementWiseStride(),0,0);
+        }
+
+        else {
+            NdIndexIterator iterator = new NdIndexIterator(this.shape());
+            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
+            for (int i = 0; i < length(); i++) {
+                putScalar(iterator.next(), arr.getDouble(otherIter.next()));
+            }
+        }
         return this;
     }
 
