@@ -3,6 +3,7 @@ package org.nd4j.jita.allocator.impl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 
 /**
@@ -22,7 +23,7 @@ public class PointersPair {
      */
     private Pointer hostPointer;
 
-    public void setDevicePointer(long pointer) {
-        Pointer pointer1 = new Pointer();
+    public PointersPair(long devicePointer, long hostPointer) {
+        // TODO: conversion from longs to javacpp pointers
     }
 }

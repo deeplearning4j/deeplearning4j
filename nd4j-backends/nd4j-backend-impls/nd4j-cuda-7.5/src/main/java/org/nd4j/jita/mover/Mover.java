@@ -5,6 +5,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
@@ -24,7 +25,7 @@ public interface Mover {
      * @param targetMode valid arguments are DEVICE, ZERO
      * @return
      */
-    DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape);
+    PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape);
 
     /**
      * This method checks if specified device has free memory
@@ -80,4 +81,9 @@ public interface Mover {
      * @return
      */
     AllocationStatus getInitialLocation();
+
+    /**
+     * This method initializes specific device for current thread
+     */
+    void initializeDevice(Long threadId, Integer deviceId);
 }

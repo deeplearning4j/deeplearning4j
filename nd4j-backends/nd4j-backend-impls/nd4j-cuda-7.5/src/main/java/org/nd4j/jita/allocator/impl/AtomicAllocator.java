@@ -2,9 +2,8 @@ package org.nd4j.jita.allocator.impl;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import jcuda.Pointer;
-import jcuda.runtime.JCuda;
 import lombok.NonNull;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.enums.AccessState;
@@ -495,7 +494,9 @@ public class AtomicAllocator implements Allocator {
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
                 point.setAllocationStatus(AllocationStatus.ZERO);
-                DevicePointerInfo info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
+
+                PointersPair info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
+
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
                 if (allocCnt % 10000 == 0)
@@ -507,7 +508,7 @@ public class AtomicAllocator implements Allocator {
                 if (info == null)
                     throw new IllegalStateException("Zero-copy allocation failed");
 
-                point.setCudaPointers(info);
+                point.setPointers(info);
 
 
 
@@ -594,7 +595,9 @@ public class AtomicAllocator implements Allocator {
         Pointer pointer = null;
         if (shape.getOffset() > 0) {
         //    log.info("Offest: " + AllocationUtils.getByteOffset(shape));
-            pointer = point.getDevicePointer().withByteOffset(AllocationUtils.getByteOffset(shape));
+            //withByteOffset(AllocationUtils.getByteOffset(shape));
+            // FIXME: get back offset considerations ^^^
+            pointer = point.getDevicePointer();
         } else pointer = point.getDevicePointer();
 
     //    log.info("Pointer GO: " + pointer.getNativePointer());
@@ -630,14 +633,15 @@ public class AtomicAllocator implements Allocator {
      * @param shape
      * @return
      */
+    // TODO: this method should be moved into CudaZeroMover implementation
     protected boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
         try {
             long threadId = Thread.currentThread().getId();
 
-            DevicePointerInfo newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
+            PointersPair newPointers = mover.alloc(AllocationStatus.DEVICE, point, shape);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
-            point.setCudaPointers(newPointers);
+            point.setPointers(newPointers);
 
             deviceLock.readLock().lock();
 
@@ -666,8 +670,10 @@ public class AtomicAllocator implements Allocator {
      * @param array
      * @return
      */
+
     @Deprecated
     public Pointer getHostPointer(INDArray array) {
+        /*
         if(array.data().allocationMode() == DataBuffer.AllocationMode.DIRECT || array.data().allocationMode() == DataBuffer.AllocationMode.JAVACPP)
             return Pointer.to(array.data().asNio());
         else {
@@ -677,9 +683,10 @@ public class AtomicAllocator implements Allocator {
                case FLOAT: return Pointer.to(array.data().asFloat());
            }
         }
-
-        throw new IllegalStateException("Unable to obtain host pointer");
+        */
+        throw new UnsupportedOperationException("getHostPointer() was deprecated");
     }
+
 
     /**
      * This method should be called to make sure that data on host side is actualized
@@ -831,12 +838,14 @@ public class AtomicAllocator implements Allocator {
         return point.getDeviceId();
     }
 
+    @Deprecated
     protected void initCudaContextForThread(Long threadId) {
         /*
             this method is called from write-locked region, but its backward call falls into lock-free branch, since deviceAffinity is already defined
          */
 
         // we set device to be used prior to stream creation
+        /*
         JCuda.cudaSetDevice(getDeviceId());
 
         CudaContext context = new CudaContext();
@@ -845,6 +854,7 @@ public class AtomicAllocator implements Allocator {
         context.initStream();
         context.associateHandle();
         contextPool.put(threadId, context);
+        */
     }
 
     /**
@@ -890,7 +900,8 @@ public class AtomicAllocator implements Allocator {
 
                     log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
 
-                    initCudaContextForThread(threadId);
+                    //initCudaContextForThread(threadId);
+                    mover.initializeDevice(threadId, device);
 
 
 

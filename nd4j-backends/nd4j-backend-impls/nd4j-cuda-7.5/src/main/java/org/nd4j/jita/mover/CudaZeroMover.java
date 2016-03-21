@@ -6,9 +6,7 @@ import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.impl.AllocationShape;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.impl.*;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -58,7 +56,7 @@ public class CudaZeroMover implements Mover {
      * @return
      */
     @Override
-    public DevicePointerInfo alloc(AllocationStatus targetMode, AllocationPoint point,  AllocationShape shape) {
+    public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
         //log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
@@ -68,11 +66,12 @@ public class CudaZeroMover implements Mover {
                         TODO: we need to implement pool here, to avoid multiple consequent cudaHostAlloc calls here, since we could just use one or few managed pools here.
                      */
 
-                    // cudaMallocHost call, or cudaHostAlloc, depending on device properties
-                    // TODO: add device capability dependant code, based on device properties from CudaEnvironment
+                // cudaMallocHost call, or cudaHostAlloc, depending on device properties
+                // TODO: add device capability dependant code, based on device properties from CudaEnvironment
 
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
+
                 JCuda.cudaHostAlloc(
                         hostPointer,
                         AllocationUtils.getRequiredMemory(shape),
@@ -83,13 +82,18 @@ public class CudaZeroMover implements Mover {
                         hostPointer,
                         0);
 
+                /*
                 DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
                         new HostDevicePointer(hostPointer,devicePointer),
                         shape.getLength(),
                         shape.getStride(),
                         shape.getOffset(),
                         false);
+            */
 
+                PointersPair devicePointerInfo = new PointersPair();
+                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer));
+                devicePointerInfo.setHostPointer(new CudaPointer(hostPointer));
 
 
                 // FIXME: get rid of this $#%@$!
@@ -103,7 +107,7 @@ public class CudaZeroMover implements Mover {
             }
             case DEVICE: {
                 point.setAllocationStatus(AllocationStatus.DEVICE);
-                    // cudaMalloc call
+                // cudaMalloc call
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
 
@@ -111,24 +115,30 @@ public class CudaZeroMover implements Mover {
 
                 JCuda.cudaMalloc(devicePointer, AllocationUtils.getRequiredMemory(shape));
 
+                /*
                 DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                    new HostDevicePointer(hostPointer,devicePointer),
-                    shape.getLength(),
-                    shape.getStride(),
-                    shape.getOffset(),
-                    false);
+                        new HostDevicePointer(hostPointer,devicePointer),
+                        shape.getLength(),
+                        shape.getStride(),
+                        shape.getOffset(),
+                        false);
+                */
+
+                PointersPair devicePointerInfo = point.getPointers();
+                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer));
 
                 JCuda.cudaMemcpyAsync(
                         devicePointer,
-                        new Pointer(point.getHostPointer().address()),
+                        new Pointer(devicePointerInfo.getHostPointer().address()),
                         AllocationUtils.getRequiredMemory(shape),
                         cudaMemcpyKind.cudaMemcpyHostToDevice,
                         context.getOldStream()
-                        );
+                );
 
                 context.syncOldStream();
 
-                free(point, AllocationStatus.ZERO);
+                // In new meta, we can't free this pointer anymore, since it's still used on java side
+                //free(point, AllocationStatus.ZERO);
 
                 return devicePointerInfo;
             }
@@ -183,7 +193,8 @@ public class CudaZeroMover implements Mover {
             // DEVICE -> ZERO
         } else if (currentStatus == AllocationStatus.ZERO && targetStatus == AllocationStatus.HOST) {
             // ZERO -> HOST
-            Pointer hostPointer = point.getHostPointer();
+            // FIXME:  ZERO == HOST now
+/*            Pointer hostPointer = point.getPointers().getHostPointer();
 
             // FIXME: remove allocator initialization
             if (allocator == null) {
@@ -195,7 +206,7 @@ public class CudaZeroMover implements Mover {
 
             CudaContext context = allocator.getCudaContext();
 
-             // System.out.println("Stream at realloc: " + context.getStream());
+            // System.out.println("Stream at realloc: " + context.getStream());
             // we must be sure, no calculations are pending within these streams before copyback
             context.syncOldStream();
             //context.syncStream();
@@ -207,27 +218,28 @@ public class CudaZeroMover implements Mover {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-
+*/
 /*
             log.info("AllocationPoint shape: " + point.getShape());
             log.info("Allocation shape: " + shape);
             log.info("Target offset/length: " + targetBuffer.offset() + "/" + targetBuffer.length());
             log.info("Target shape: " + AllocationUtils.buildAllocationShape(targetBuffer));
 */
+            /*
             // FIXME: this is wrong. We MUST take AllocationShape into account, to avoid unneccessary copybacks, also breaking partial allocationsi
             ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getElementSize(shape) * targetBuffer.length()).order(ByteOrder.nativeOrder());
             ByteBuffer bufferNio = targetBuffer.asNio();
 
 
             NioUtil.copyAtStride(shape.getLength(),getBufferType(targetBuffer),pointer, 0,1,bufferNio,shape.getOffset(),1);
-
+        */
         } else if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
             // DEVICE -> HOST
             DataBuffer targetBuffer = point.getBuffer();
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-            Pointer devicePointer = point.getDevicePointer();
+            Pointer devicePointer = new Pointer(point.getPointers().getDevicePointer().address());
 
             CudaContext context = allocator.getCudaContext();
 
@@ -241,12 +253,14 @@ public class CudaZeroMover implements Mover {
                     AllocationUtils.getRequiredMemory(shape),
                     cudaMemcpyKind.cudaMemcpyDeviceToHost,
                     context.getOldStream()
-                    );
+            );
 
             context.syncOldStream();
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.ZERO) {
             // HOST -> ZERO
+            // FIXME: HOST == ZERO NOW
+            /*
             Pointer hostPointer = point.getHostPointer();
 
             if (hostPointer == null)
@@ -265,9 +279,11 @@ public class CudaZeroMover implements Mover {
                     0, // dst offset
                     shape.getStride() // dst stride
             );
-
+            */
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
+            //  FIXME: equal to ZERO-> DEVICE now
+            /*
             DataBuffer hostBuffer = point.getBuffer();
             if (hostBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
@@ -285,7 +301,7 @@ public class CudaZeroMover implements Mover {
             );
 
             context.syncOldStream();
-
+            */
         } else if (currentStatus == AllocationStatus.UNDEFINED && targetStatus == AllocationStatus.HOST) {
             // just do nothing here, it's already on host
         } else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
@@ -302,7 +318,7 @@ public class CudaZeroMover implements Mover {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
-     //   log.info("copyback() called on shape: " + point.getShape());
+        //   log.info("copyback() called on shape: " + point.getShape());
         relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
     }
 
@@ -317,7 +333,7 @@ public class CudaZeroMover implements Mover {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
-     //   log.info("copyforward() called on shape: " + point.getShape());
+        //   log.info("copyforward() called on shape: " + point.getShape());
         relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
     }
 
@@ -332,7 +348,27 @@ public class CudaZeroMover implements Mover {
         if (point.getAllocationStatus() != AllocationStatus.DEVICE)
             throw new IllegalStateException("Can't fallback from ["+point.getAllocationStatus()+"]");
 
+        PointersPair pair = point.getPointers();
 
+        CudaContext context = allocator.getCudaContext();
+
+        Pointer devPtr = new Pointer(pair.getDevicePointer().address());
+
+        JCuda.cudaMemcpyAsync(
+                new Pointer(pair.getHostPointer().address()),
+                devPtr,
+                AllocationUtils.getRequiredMemory(shape),
+                cudaMemcpyKind.cudaMemcpyDeviceToHost,
+                context.getOldStream()
+        );
+
+        context.syncOldStream();
+
+        JCuda.cudaFree(devPtr);
+
+        pair.setDevicePointer(null);
+
+        /*
         DevicePointerInfo info = alloc(AllocationStatus.ZERO, point, shape);
 
         CudaContext context = allocator.getCudaContext();
@@ -349,7 +385,8 @@ public class CudaZeroMover implements Mover {
 
         JCuda.cudaFree(point.getDevicePointer());
 
-        point.setCudaPointers(info);
+        point.setPointers(info);
+        */
     }
 
     /**
@@ -361,15 +398,15 @@ public class CudaZeroMover implements Mover {
     public void free(AllocationPoint point, AllocationStatus target) {
         switch (target) {
             case ZERO: {
-                    // cudaFreeHost call here
-                    JCuda.cudaFreeHost(point.getDevicePointer());
-                }
-                break;
+                // cudaFreeHost call here
+                JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
+            }
+            break;
             case DEVICE: {
-                    // cudaFree call
-                    JCuda.cudaFree(point.getDevicePointer());
-                }
-                break;
+                // cudaFree call
+                JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
+            }
+            break;
             default:
                 throw new IllegalStateException("Can't free memory on target [" + target + "]");
         }
@@ -383,6 +420,26 @@ public class CudaZeroMover implements Mover {
     @Override
     public AllocationStatus getInitialLocation() {
         return AllocationStatus.HOST;
+    }
+
+    /**
+     * This method initializes specific device for current thread
+     *
+     * @param threadId
+     * @param deviceId
+     */
+    @Override
+    public void initializeDevice(Long threadId, Integer deviceId) {
+        JCuda.cudaSetDevice(deviceId);
+
+        CudaContext context = new CudaContext();
+        context.initHandle();
+        context.initOldStream();
+        context.initStream();
+        context.associateHandle();
+
+        // FIXME:  context should be treated within mover
+        //contextPool.put(threadId, context);
     }
 
     private NioUtil.BufferType getBufferType(DataBuffer buffer) {

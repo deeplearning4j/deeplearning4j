@@ -1,6 +1,6 @@
 package org.nd4j.jita.allocator;
 
-import jcuda.Pointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationPoint;

@@ -184,13 +184,23 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setCudaPointers(PointersPair pointerInfo) {
+    public void setPointers(PointersPair pointerInfo) {
         try {
             cudaLock.writeLock().lock();
 
             this.pointerInfo = pointerInfo;
         } finally {
             cudaLock.writeLock().unlock();
+        }
+    }
+
+    public PointersPair getPointers() {
+        try {
+            cudaLock.readLock().lock();
+
+            return this.pointerInfo;
+        } finally {
+            cudaLock.readLock().unlock();
         }
     }
 
