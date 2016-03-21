@@ -223,7 +223,7 @@ public class AtomicAllocatorTest {
 
         assertFalse(point.isActualOnHostSide());
 
-        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
 
         assertFalse(point.isActualOnHostSide());
 
@@ -239,7 +239,7 @@ public class AtomicAllocatorTest {
 
         assertFalse(point.isActualOnHostSide());
 
-        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
 
         assertFalse(point.isActualOnHostSide());
 
@@ -342,7 +342,7 @@ public class AtomicAllocatorTest {
 
         AllocationPoint point = allocator.getAllocationPoint(array1.data().originalDataBuffer().getTrackingPoint());
 
-        assertEquals(AllocationStatus.ZERO, point.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
     }
 
     /*
