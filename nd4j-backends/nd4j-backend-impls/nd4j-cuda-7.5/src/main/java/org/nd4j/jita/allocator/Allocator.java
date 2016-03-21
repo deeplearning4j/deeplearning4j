@@ -1,7 +1,6 @@
 package org.nd4j.jita.allocator;
 
 import jcuda.Pointer;
-import jcuda.jcublas.cublasHandle;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;

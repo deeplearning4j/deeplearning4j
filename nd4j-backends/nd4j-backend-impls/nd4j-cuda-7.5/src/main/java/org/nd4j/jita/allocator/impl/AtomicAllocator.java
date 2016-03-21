@@ -17,10 +17,9 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.mover.Mover;
-import org.nd4j.jita.mover.UmaMover;
+import org.nd4j.jita.mover.CudaZeroMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -63,7 +62,7 @@ public class AtomicAllocator implements Allocator {
 
     private Configuration configuration = new Configuration();
     private CudaEnvironment environment;
-    private transient Mover mover = new UmaMover();
+    private transient Mover mover = new CudaZeroMover();
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
     private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);

@@ -4,7 +4,6 @@ import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
-import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -14,9 +13,7 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
@@ -39,12 +36,12 @@ import java.nio.ByteOrder;
  *
  * @author raver119@gmail.com
  */
-public class UmaMover implements Mover {
+public class CudaZeroMover implements Mover {
     private Configuration configuration;
     private CudaEnvironment environment;
     private static Allocator allocator = AtomicAllocator.getInstance();
 
-    private static Logger log = LoggerFactory.getLogger(UmaMover.class);
+    private static Logger log = LoggerFactory.getLogger(CudaZeroMover.class);
 
     @Override
     public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Allocator allocator) {

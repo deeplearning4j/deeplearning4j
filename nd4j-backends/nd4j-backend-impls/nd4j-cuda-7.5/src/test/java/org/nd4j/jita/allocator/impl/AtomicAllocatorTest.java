@@ -3,22 +3,16 @@ package org.nd4j.jita.allocator.impl;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
-import org.nd4j.jita.mover.UmaMover;
+import org.nd4j.jita.mover.CudaZeroMover;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.JCublasNDArray;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +65,7 @@ public class AtomicAllocatorTest {
             allocator = AtomicAllocator.getInstance();
             allocator.applyConfiguration(configuration);
 //            allocator.setEnvironment(singleDevice4GBcc52);
-            allocator.setMover(new UmaMover());
+            allocator.setMover(new CudaZeroMover());
         }
     }
 
