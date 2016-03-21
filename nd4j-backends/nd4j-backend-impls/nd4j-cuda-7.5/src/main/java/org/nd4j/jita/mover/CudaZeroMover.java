@@ -7,12 +7,12 @@ import lombok.NonNull;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.*;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
-import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.NioUtil;
@@ -96,12 +96,14 @@ public class CudaZeroMover implements Mover {
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer));
 
 
-                // FIXME: get rid of this $#%@$!
                 // copy data from
+                /*
+                We don't need copy anymore, since we assume that memory will be filled in later
+
                 ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
                 pointer.order(ByteOrder.nativeOrder());
                 NioUtil.copyAtStride(shape.getLength(),getBufferType(point.getBuffer()), point.getBuffer().asNio(), shape.getOffset(), shape.getStride(), pointer,0,1);
-
+                */
                 point.setAllocationStatus(AllocationStatus.HOST);
                 return devicePointerInfo;
             }

@@ -1,22 +1,19 @@
 package org.nd4j.jita.allocator.impl;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
-import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

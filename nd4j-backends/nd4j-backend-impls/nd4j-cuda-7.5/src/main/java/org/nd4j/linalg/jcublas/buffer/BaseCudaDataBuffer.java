@@ -19,40 +19,28 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
-import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
-import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Base class for a data buffer
@@ -70,10 +58,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
+    public BaseCudaDataBuffer() {
+
+    }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
@@ -82,8 +72,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(float[] data, boolean copy) {
         super(data, copy);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
-
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy, int offset) {
@@ -92,7 +80,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(double[] data, boolean copy) {
         super(data, copy);
-        //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy, int offset) {

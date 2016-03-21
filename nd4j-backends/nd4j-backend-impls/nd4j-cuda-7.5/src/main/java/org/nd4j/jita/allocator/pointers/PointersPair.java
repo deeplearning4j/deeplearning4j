@@ -1,4 +1,4 @@
-package org.nd4j.jita.allocator.impl;
+package org.nd4j.jita.allocator.pointers;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +14,7 @@ import org.bytedeco.javacpp.Pointer;
 @AllArgsConstructor
 public class PointersPair {
     /**
-     * this field can be 0, on system without any special devices
+     * this field can be null, on system without any special devices
      */
     private Pointer devicePointer;
 
@@ -24,6 +24,7 @@ public class PointersPair {
     private Pointer hostPointer;
 
     public PointersPair(long devicePointer, long hostPointer) {
-        // TODO: conversion from longs to javacpp pointers
+        this.devicePointer = new CudaPointer(devicePointer);
+        this.hostPointer = new CudaPointer(hostPointer);
     }
 }

@@ -1,14 +1,12 @@
 package org.nd4j.jita.mover;
 
-import jcuda.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.impl.PointersPair;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 
 /**
  * Mover interface describes methods for data transfers between host and devices

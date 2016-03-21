@@ -55,6 +55,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, length, offset);
     }
 
+
     /**
      * Instantiate based on the given data
      *
@@ -120,7 +121,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
-        modified.set(true);
+
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -203,10 +204,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         stream.defaultWriteObject();
 
         if (getHostPointer() == null) {
-            System.out.println("CDASDADvvv");
             stream.writeInt(0);
         } else {
-            System.out.println("ljmn,SADS");
             double[] arr = this.asDouble();
 
             stream.writeInt(arr.length);
