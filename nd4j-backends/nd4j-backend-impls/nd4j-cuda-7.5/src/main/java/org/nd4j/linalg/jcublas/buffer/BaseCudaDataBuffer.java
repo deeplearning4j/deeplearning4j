@@ -23,8 +23,13 @@ import com.google.common.collect.Table;
 import io.netty.buffer.ByteBuf;
 
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.jcublas.JCublas2;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
 import org.apache.commons.lang3.tuple.Triple;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -54,12 +59,14 @@ import java.util.*;
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer {
 
+    private AllocationPoint allocationPoint;
+
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     public BaseCudaDataBuffer() {
-
+        throw new UnsupportedOperationException("You can't instantiate undefined buffer");
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
@@ -71,71 +78,104 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
+        //super(data, copy);
+        this(data.length, Sizeof.FLOAT);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy, int offset) {
-        super(data, copy, offset);
+       // super(data, copy, offset);
+        this(data, copy);
+        // FIXME: this is WRONG, and this is wrong in original implementation too
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
+        //super(data, copy);
+        this(data.length, Sizeof.DOUBLE);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy, int offset) {
-        super(data, copy, offset);
+        this(data, copy);
+        // FIXME: this is WRONG, and this is wrong in original implementation too
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
     }
 
     public BaseCudaDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-
+     //   super(data, copy);
+        this(data.length, Sizeof.INT);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(int[] data, boolean copy, int offset) {
-        super(data, copy, offset);
+        //super(data, copy, offset);
+        this(data, copy);
+        // FIXME: this is WRONG, and this is wrong in original implementation too
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
     }
 
     /**
-     * Base constructor
+     * Base constructor. It's used within all constructors internally
      *
      * @param length      the length of the buffer
      * @param elementSize the size of each element
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
-        super(length,elementSize);
-
+    //    super(length,elementSize);
+        allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
     }
 
     public BaseCudaDataBuffer(int length, int elementSize, int offset) {
-        super(length, elementSize, offset);
+        //super(length, elementSize, offset);
+        this(length, elementSize);
+        this.offset = offset;
+        this.originalOffset = offset;
     }
 
     public BaseCudaDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
-        super(underlyingBuffer, length, offset);
+        //this(length, underlyingBuffer.getElementSize(), offset);
+        this.wrappedDataBuffer = underlyingBuffer;
+        this.originalBuffer = underlyingBuffer.originalDataBuffer();
+        this.length = length;
+        this.offset = offset;
+        this.originalOffset = underlyingBuffer.originalOffset() + offset;
     }
 
     public BaseCudaDataBuffer(int length) {
-        super(length);
-
+        this(length, Sizeof.FLOAT);
     }
 
     public BaseCudaDataBuffer(float[] data) {
-        super(data);
-
+        //super(data);
+        this(data.length, Sizeof.FLOAT);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(int[] data) {
-        super(data);
-
+        //super(data);
+        this(data.length, Sizeof.INT);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(double[] data) {
-        super(data);
-
+       // super(data);
+        this(data.length, Sizeof.DOUBLE);
+        set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(byte[] data, int length) {
-        super(data,length);
+        //super(data,length);
+        throw new UnsupportedOperationException("Temporary unsupported uperation");
     }
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
@@ -146,10 +186,90 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         super(buffer, length, offset);
     }
 
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(int[] data, int length, int srcOffset, int dstOffset) {
+        // TODO: make sure getPointer returns proper pointer
+        Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * 4) : Pointer.to(data);
+        memcpyAsync(dstPtr, srcPtr, length * 4);
+    }
+
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(float[] data, int length, int srcOffset, int dstOffset) {
+        // TODO: make sure getPointer returns proper pointer
+        Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * 4) : Pointer.to(data);
+        memcpyAsync(dstPtr, srcPtr, length * 4);
+    }
+
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(double[] data, int length, int srcOffset, int dstOffset) {
+        // TODO: make sure getPointer returns proper pointer
+        Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 8 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * 8) : Pointer.to(data);
+        memcpyAsync(dstPtr, srcPtr, length * 8);
+    }
+
+    public void memcpyBlocking(Pointer dstPtr, Pointer srcPtr, long byteLen) {
+        CudaContext context = allocator.getCudaContext();
+
+        JCuda.cudaMemcpyAsync(
+                dstPtr,
+                srcPtr,
+                byteLen,
+                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                context.getOldStream()
+        );
+
+        context.syncOldStream();
+    }
+
+    public void memcpyAsync(Pointer dstPtr, Pointer srcPtr, long byteLen) {
+        CudaContext context = allocator.getCudaContext();
+
+        JCuda.cudaMemcpyAsync(
+                dstPtr,
+                srcPtr,
+                byteLen,
+                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                context.getOldStream()
+        );
+
+        // TODO: remove sync later
+        context.syncOldStream();
+    }
+
     @Override
     protected void setNioBuffer() {
+        throw new UnsupportedOperationException("setNioBuffer() is not supported for CUDA backend");
+        /*
         wrappedBuffer = ByteBuffer.allocateDirect(elementSize * length);
         wrappedBuffer.order(ByteOrder.nativeOrder());
+        */
     }
 
     @Override
@@ -219,7 +339,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(int i, IComplexNumber result) {
-
+        throw new UnsupportedOperationException("ComplexNumbers are not supported yet");
         /*
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
@@ -256,7 +376,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Deprecated
     public Pointer getHostPointer(INDArray arr,int stride, int offset,int length) {
-        return null;
+        throw new UnsupportedOperationException("This method is deprecated");
     }
 
     @Override
@@ -313,14 +433,26 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(int i, float element) {
-        super.put(i, element);
-        copyOneElement(i, element);
+        float[] tmp = new float[] {element};
+        Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = Pointer.to(tmp);
+        memcpyAsync(dstPtr, srcPtr, length * 4);
     }
 
     @Override
     public void put(int i, double element) {
-        super.put(i, element);
-        //        copyOneElement(i, element);
+        double[] tmp = new double[] {element};
+        Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = Pointer.to(tmp);
+        memcpyAsync(dstPtr, srcPtr, length * 4);
+    }
+
+    @Override
+    public void put(int i, int element) {
+        int[] tmp = new int[] {element};
+        Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
+        Pointer srcPtr = Pointer.to(tmp);
+        memcpyAsync(dstPtr, srcPtr, length * 4);
     }
 
     @Override
@@ -344,8 +476,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param index the index of the element
      * @param from  the element to get data from
      */
+    @Deprecated
     protected void set(int index, int length, Pointer from, int inc) {
-
 
 
         int offset = getElementSize() * index;
@@ -359,8 +491,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 , inc
                 , getHostPointer().withByteOffset(offset)
                 , 1, ContextHolder.getInstance().getCudaStream());
-
-
     }
 
     /**
@@ -369,14 +499,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param index the index of the element
      * @param from  the element to get data from
      */
+    @Deprecated
     protected void set(int index, int length, Pointer from) {
         set(index, length, from, 1);
     }
 
     @Override
     public void assign(DataBuffer data) {
-        JCudaBuffer buf = (JCudaBuffer) data;
+        /*JCudaBuffer buf = (JCudaBuffer) data;
         set(0, buf.getHostPointer());
+        */
+        memcpyAsync(
+                new Pointer(allocator.getPointer(this).address()),
+                new Pointer(allocator.getPointer(data).address()),
+                data.length()
+        );
     }
 
 
@@ -389,6 +526,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param index the index of the element
      * @param from  the element to get data from
      */
+    @Deprecated
     protected void set(int index, Pointer from) {
         set(index, 1, from);
     }
@@ -476,12 +614,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throws IOException {
         stream.defaultWriteObject();
         write(stream);
-
     }
 
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
         doReadObject(stream);
+        // TODO: to be implemented
         /*
         copied = new HashMap<>();
         pointersToContexts = HashBasedTable.create();
