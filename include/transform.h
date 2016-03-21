@@ -3047,26 +3047,26 @@ namespace functions {
                         int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                         int length = shape::length(xShapeBuffer);
                         if (elementWiseStride == 1) {
-#pragma omp parallel for shared(max)
+//#pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i]);
                             }
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i] -= max;
                             }
 
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i] = nd4j::math::nd4j_exp<T>(result[i]);
                             }
 
-#pragma omp parallel for shared(sum)
+//#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
                                 sum += result[i];
                             }
 
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i] /= sum;
                             }
@@ -3074,33 +3074,33 @@ namespace functions {
                         }
                         else {
 
-#pragma omp parallel for shared(max)
+//#pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
+//#pragma omp critical
                                 {
                                     max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 
                                 }
                             }
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] -= max;
                             }
 
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
-#pragma omp parallel for shared(sum)
+//#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
-                                {
+//#pragma omp critical
+                      //          {
                                     sum += result[i * elementWiseStride];
-                                }
+                        //        }
                             }
 
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (int i = 0; i < length; i++) {
                                 result[i * elementWiseStride] /= sum;
                             }
