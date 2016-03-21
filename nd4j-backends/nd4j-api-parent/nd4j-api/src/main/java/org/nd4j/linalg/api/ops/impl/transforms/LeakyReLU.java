@@ -40,6 +40,7 @@ public class LeakyReLU extends BaseTransformOp {
 
     public LeakyReLU() {
         alpha = 0.01;
+        this.extraArgs = new Object[] {alpha};
     }
     
     public LeakyReLU(INDArray x, double alpha) {
@@ -53,33 +54,38 @@ public class LeakyReLU extends BaseTransformOp {
         super(x, z);
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
-
     }
 
     public LeakyReLU(INDArray x, INDArray z, int n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray y, INDArray z, int n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray z) {
         super(x, z);
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray z, int n) {
         super(x, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLU(INDArray x) {
         super(x);
+        this.extraArgs = new Object[] {alpha};
     }
 
     @Override
