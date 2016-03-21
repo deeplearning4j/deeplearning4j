@@ -45,11 +45,15 @@ public class LeakyReLU extends BaseTransformOp {
     public LeakyReLU(INDArray x, double alpha) {
         super(x);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
+
     }
     
     public LeakyReLU(INDArray x, INDArray z, double alpha) {
         super(x, z);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
+
     }
 
     public LeakyReLU(INDArray x, INDArray z, int n, double alpha) {
@@ -108,12 +112,12 @@ public class LeakyReLU extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return origin < 0 ? (float)alpha*origin : origin;
+        return origin < 0 ? (float) alpha * origin : origin;
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin < 0 ?  alpha*origin : origin;
+        return origin < 0 ?  alpha * origin : origin;
     }
 
     @Override

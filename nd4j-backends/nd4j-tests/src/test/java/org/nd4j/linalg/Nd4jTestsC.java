@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1923,6 +1924,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(fc,fmixed);
     }
 
+
+    @Test
+    public void testLeakyRelu(){
+        INDArray arr = Nd4j.linspace(-1,1,10);
+        double[] expected = new double[10];
+        for( int i = 0; i < 10; i++ ){
+            double in = arr.getDouble(i);
+            expected[i] = (in <= 0.0 ? 0.01 * in : in);
+        }
+
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(arr,0.01));
+
+        INDArray exp = Nd4j.create(expected);
+        assertEquals(exp,out);
+    }
 
     @Test
     public void testDupAndDupWithOrder() {
