@@ -2074,7 +2074,7 @@ namespace functions {
 
 #endif
                 T op(T d1, T *params) {
-                    return nd4j::math::nd4j_leakyrelu<T>(params[0], d1);
+                    return nd4j::math::nd4j_leakyrelu<T>(d1,params[0]);
                 }
 
 
