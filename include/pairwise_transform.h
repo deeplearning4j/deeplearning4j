@@ -429,14 +429,21 @@ namespace functions {
                 int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 
+                bool sameShape = shape::shapeEquals(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer),
+                                                    shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer));
                 //ignore everything else
-                if(this->requiresSpecial) {
-                    this->execSpecial(dx,xShapeBuffer,y,yShapeBuffer,result,resultShapeBuffer,extraParams);
+                if (this->requiresSpecial) {
+                    this->execSpecial(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
                     return;
                 }
 
 
-                if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
+                if (xElementWiseStride >= 1 &&
+                    yElementWiseStride >= 1 &&
+                    resultElementWiseStride >= 1 &&
+                    shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+                    shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) &&
+                    sameShape) {
                     exec(dx,
                          xElementWiseStride,
                          y,
@@ -446,9 +453,20 @@ namespace functions {
                          extraParams,
                          n);
                 }
+                    //not same shape
+                else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+                         shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
+                    exec(dx,
+                         xElementWiseStride,
+                         y,
+                         yElementWiseStride,
+                         result,
+                         resultElementWiseStride,
+                         extraParams,
+                         shape::length(yShapeBuffer));
+                }
 
-
-                else {
+                else if (sameShape) {
                     int rank = shape::rank(xShapeBuffer);
                     int *xShape = shape::shapeOf(xShapeBuffer);
                     int *yShape = shape::shapeOf(yShapeBuffer);
@@ -467,73 +485,56 @@ namespace functions {
                     char yOrder = shape::order(yShapeBuffer);
                     char resultOrder = shape::order(resultShapeBuffer);
 
-                    if(xOrder != yOrder || xOrder != resultOrder) {
-                        int shapeIter[MAX_RANK];
-                        int coord[MAX_RANK];
-                        int dim;
-                        int xStridesIter[MAX_RANK];
-                        int yStridesIter[MAX_RANK];
-                        int resultStridesIter[MAX_RANK];
-                        if(PrepareThreeRawArrayIter<T>(rank,
-                                                       xShape,
-                                                       dx,
-                                                       xStride,
-                                                       y,
-                                                       yStride,
-                                                       result,
-                                                       resultStride,
-                                                       &rank,
-                                                       shapeIter,
-                                                       &dx,
-                                                       xStridesIter,
-                                                       &y,
-                                                       yStridesIter,
-                                                       &result,
-                                                       resultStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
-                                /* Process the innermost dimension */
-                                T *xIter = dx;
-                                T *yIter = y;
-                                T *resultIter = result;
-                                resultIter[0] = op(xIter[0],yIter[0],extraParams);
-                            } ND4J_RAW_ITER_THREE_NEXT(dim,
-                                                       rank,
-                                                       coord,
-                                                       shapeIter,
-                                                       dx,
-                                                       xStridesIter,
-                                                       y,
-                                                       yStridesIter,
-                                                       result,
-                                                       resultStridesIter);
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
+                    if (PrepareThreeRawArrayIter<T>(rank,
+                                                    xShape,
+                                                    dx,
+                                                    xStride,
+                                                    y,
+                                                    yStride,
+                                                    result,
+                                                    resultStride,
+                                                    &rank,
+                                                    shapeIter,
+                                                    &dx,
+                                                    xStridesIter,
+                                                    &y,
+                                                    yStridesIter,
+                                                    &result,
+                                                    resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter)
+                        {
+                            /* Process the innermost dimension */
+                            T *xIter = dx;
+                            T *yIter = y;
+                            T *resultIter = result;
+                            resultIter[0] = op(xIter[0], yIter[0], extraParams);
                         }
-                        else {
-                            printf("Unable to prepare array\n");
-                        }
-
+                        ND4J_RAW_ITER_THREE_NEXT(dim,
+                                                 rank,
+                                                 coord,
+                                                 shapeIter,
+                                                 dx,
+                                                 xStridesIter,
+                                                 y,
+                                                 yStridesIter,
+                                                 result,
+                                                 resultStridesIter);
                     }
                     else {
-#pragma omp parallel for
-                        for (int i = 0; i < n; i++) {
-                            int *xIdx = shape::ind2subC(xRank, xShape, i);
-                            int *yIdx = shape::ind2subC(yRank, yShape, i);
-                            int *resultIdx = shape::ind2subC(resultRank, resultShape, i);
-
-                            int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                            int yOffset2 = shape::getOffset(0, yShape, yStride, yIdx, yRank);
-                            int resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
-                            result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
-
-                            free(xIdx);
-                            free(yIdx);
-                            free(resultIdx);
-
-                        }
-
+                        printf("Unable to prepare array\n");
                     }
 
                 }
 
+                else {
+                    printf("Unable to execute pair wise transform\n");
+                }
             }
 
 

@@ -2588,7 +2588,7 @@ namespace functions {
 
                     T *dIn = dx;
                     T *dOut = result;
-#pragma omp parallel for collapse(2)
+//#pragma omp parallel for collapse(2)
                     for (int ex = exampleFrom; ex < exampleTo; ex++) {
                         for (int d = depthFrom; d < depthTo; d++) {
                             inIndices[0] = ex;
@@ -2820,7 +2820,7 @@ namespace functions {
 
                     T *fIn = dx;
                     T *fOut = result;
-#pragma omp parallel for collapse(2)
+//#pragma omp parallel for collapse(2)
                     for (int ex = exampleFrom; ex < exampleTo; ex++) {
                         for (int d = depthFrom; d < depthTo; d++) {
                             inIndices[0] = ex;

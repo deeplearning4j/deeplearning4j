@@ -63,6 +63,12 @@ namespace shape {
         int tensorShapeProd = 0;
     };
 
+#ifdef __CUDACC__
+    __inline__ __host__ __device__
+#endif
+    bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
+
+
 
 #ifdef __CUDACC__
     __inline__ __host__ __device__
@@ -192,6 +198,8 @@ namespace shape {
 
     int *doPermuteSwap(int length, int *shape, int *rearrange);
 
+
+
 /**
  * In place permute swap
  * @param length
@@ -287,7 +295,11 @@ namespace shape {
 #endif
 
     int isVector(int *shape, int rank);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
 
+    int isVector(int *shapeInfo);
 
     /**
  * Returns whether the
@@ -1225,6 +1237,23 @@ namespace shape {
 
     }
 
+
+#ifdef __CUDACC__
+    __inline__ __host__ __device__
+#endif
+    bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2) {
+       if(shape1Rank != shape2Rank)
+           return false;
+        //rank not equals
+        for(int i = 0; i < shape1Rank; i++) {
+            if(shape1[i] != shape2[i])
+                return false;
+        }
+
+        return true;
+    }
+
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1902,6 +1931,14 @@ namespace shape {
                 return 1;
         }
         return 0;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isVector(int *shapeInfo) {
+        return isVector(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
     /**
