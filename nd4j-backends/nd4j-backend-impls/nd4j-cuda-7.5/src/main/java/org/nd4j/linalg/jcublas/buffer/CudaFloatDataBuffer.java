@@ -58,8 +58,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaFloatDataBuffer(float[] buffer) {
-        this(buffer.length);
-        setData(buffer);
+        super(buffer);
     }
 
     public CudaFloatDataBuffer(float[] data, boolean copy) {
