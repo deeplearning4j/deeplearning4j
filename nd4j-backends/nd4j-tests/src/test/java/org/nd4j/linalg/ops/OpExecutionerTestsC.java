@@ -460,6 +460,15 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             assertEquals(arr6s.getDouble(i),16,1e-1);
     }
 
+    @Test
+    public void testSum5d() {
+        System.out.println("5d");
+        INDArray arr5 = Nd4j.ones(1,1,4,4,4);
+        INDArray arr5s = arr5.sum(2,3);
+        for(int i = 0; i < arr5s.length(); i++)
+            assertEquals(arr5s.getDouble(i),16,1e-1);
+    }
+
 
     @Test
     public void testOneMinus(){
