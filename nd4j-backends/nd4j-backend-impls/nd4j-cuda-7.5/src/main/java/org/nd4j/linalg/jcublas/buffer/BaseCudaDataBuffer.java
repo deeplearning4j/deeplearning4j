@@ -19,15 +19,14 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import com.google.common.collect.Table;
 import io.netty.buffer.ByteBuf;
 
+import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-import org.apache.commons.lang3.tuple.Triple;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -71,16 +70,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
+        // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
         super(buf, length, offset);
+        // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy) {
         //super(data, copy);
-       // this(data.length, Sizeof.FLOAT);
-        //set(data, data.length, 0, 0);
         this(data, copy, 0);
     }
 
@@ -130,6 +129,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.length = length;
         this.offset = 0;
         this.originalOffset = 0;
+        allocationPoint.attachBuffer(this);
+        this.elementSize = elementSize;
+        this.trackingPoint = allocationPoint.getObjectId();
+
+        // TODO: probably this one could be reconsidered
+        AtomicAllocator.getInstance().pickupSpan(allocationPoint);
     }
 
     public BaseCudaDataBuffer(int length, int elementSize, int offset) {
@@ -145,6 +150,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.length = length;
         this.offset = offset;
         this.originalOffset = underlyingBuffer.originalOffset() + offset;
+
+        // TODO: make sure we're getting pointer with offset at allocator
     }
 
     public BaseCudaDataBuffer(int length) {
@@ -170,8 +177,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(byte[] data, int length) {
-        //super(data,length);
-        throw new UnsupportedOperationException("Temporary unsupported uperation");
+        this(Unpooled.wrappedBuffer(data),length);
     }
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
@@ -288,19 +294,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset) {
         super.copyAtStride(buf, n, stride, yStride, offset, yOffset);
     }
-
-    @Override
-    @Deprecated
-    public boolean copied(String name) {
-        throw new UnsupportedOperationException("Not supported atm");
-    }
-
-    @Override
-    @Deprecated
-    public void setCopied(String name) {
-        throw new UnsupportedOperationException("Not supported atm");
-    }
-
     @Override
     public AllocationMode allocationMode() {
         return allocationMode;
@@ -312,11 +305,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public void setHostBuffer(ByteBuffer hostBuffer) {
-        this.wrappedBuffer = hostBuffer;
-    }
-
-    @Override
     public Pointer getHostPointer() {
         throw new UnsupportedOperationException();
     }
@@ -325,7 +313,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public Pointer getHostPointer(int offset) {
         throw new UnsupportedOperationException();
     }
-
 
     @Override
     public void removeReferencing(String id) {
@@ -375,28 +362,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
 
-
-
-    @Override
-    @Deprecated
-    public Pointer getDevicePointer(int stride, int offset,int length) {
-        throw new UnsupportedOperationException("getPointer(stride, offset, length) shouldn't be used anymore");
-    }
-
-
-
     @Deprecated
     public Pointer getHostPointer(INDArray arr,int stride, int offset,int length) {
         throw new UnsupportedOperationException("This method is deprecated");
     }
 
-    @Override
-    @Deprecated
-    public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
-        throw new UnsupportedOperationException("getPointer(INDArray, stride, offset, length) shouldn't be used");
-    }
-
-    @Override
     @Deprecated
     public void set(Pointer pointer) {
         throw new UnsupportedOperationException("set(Pointer) is not supported");
@@ -424,23 +394,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
         */
     }
-
-
-    @Deprecated
-    private void copyOneElement(int i,double val) {
-        throw new UnsupportedOperationException("copyOneElement() isn't supported atm");
-        /*
-        if(pointersToContexts != null)
-            for(DevicePointerInfo info : pointersToContexts.values()) {
-                if(dataType() == Type.FLOAT)
-                    JCublas2.cublasSetVector(1,getElementSize(),Pointer.to(new float[]{(float) val}),1,info.getPointers().getDevicePointer().withByteOffset(getElementSize() * i),1);
-                else
-                    JCublas2.cublasSetVector(1,getElementSize(), Pointer.to(new double[]{val}),1,info.getPointers().getDevicePointer().withByteOffset(getElementSize() * i),1);
-
-            }
-         */
-    }
-
 
     @Override
     public void put(int i, float element) {
@@ -543,78 +496,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    @Deprecated
-    public boolean freeDevicePointer(int offset, int length, int stride) {
-        /*
-            actually this method should do nothing, since memory deallocation is handled with Allocator implementations
-
-         */
-        return true;
-    }
-
-    @Override
-    @Deprecated
-    public synchronized void copyToHost(CudaContext context, int offset, int length, int stride) {
-        throw new UnsupportedOperationException("copyToHost() isn't supported atm");
-        /*
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,stride));
-        if(devicePointerInfo == null)
-            throw new IllegalStateException("No pointer found for offset " + offset);
-        //prevent inconsistent pointers
-        if (devicePointerInfo.getOffset() != offset)
-            throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
-
-        if (devicePointerInfo != null) {
-            ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,stride,length,null,offset,stride);
-        }
-
-        else
-            throw new IllegalStateException("No offset found to copy");
-        //synchronize for the copy to avoid data inconsistencies
-        context.syncOldStream();
-        */
-    }
-
-    @Override
-    @Deprecated
-    public synchronized  void copyToHost(int offset,int length) {
-        throw new UnsupportedOperationException("copyToHost() isn't supported atm");
-        /*
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
-        if(devicePointerInfo == null)
-            throw new IllegalStateException("No pointer found for offset " + offset);
-        //prevent inconsistent pointers
-        if (devicePointerInfo.getOffset() != offset)
-            throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
-
-        if (devicePointerInfo != null) {
-            int deviceStride = devicePointerInfo.getStride();
-            int  deviceOffset = devicePointerInfo.getOffset();
-            int deviceLength = (int) devicePointerInfo.getLength();
-            if(deviceOffset == 0 && length < length()) {
-                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride, deviceLength,null, deviceOffset,deviceStride);
-            }
-            else {
-                ContextHolder.getInstance().getMemoryStrategy().copyToHost(this,offset,deviceStride,deviceLength,null, deviceOffset,deviceStride);
-            }
-
-        }
-        */
-    }
-
-
-
-
-
-
-    @Override
     public void flush() {
-        throw new UnsupportedOperationException();
+        //
     }
-
-
-
-
 
 
     @Override
@@ -637,21 +521,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);
         */
-    }
-
-
-
-
-
-    @Override
-    @Deprecated
-    public Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts() {
-        throw new UnsupportedOperationException("getPointersToContext() isn't supported atm");
-    }
-
-    @Deprecated
-    public void setPointersToContexts( Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts) {
-        //
     }
 
     @Override
@@ -804,6 +673,4 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         allocator.synchronizeHostData(this);
         return super.getInt(ix);
     }
-
-
 }

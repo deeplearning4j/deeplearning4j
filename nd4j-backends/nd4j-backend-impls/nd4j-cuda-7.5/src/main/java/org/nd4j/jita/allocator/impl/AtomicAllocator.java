@@ -325,6 +325,19 @@ public class AtomicAllocator implements Allocator {
     }
 
     /**
+     * This  method registers AllocationPoint within allocator instance.
+     *
+     * This method should only be used with valid AllocationPoints, obtained via allocateMemory() calls
+     *
+     * @param point
+     * @return
+     */
+    @Override
+    public Long pickupSpan(@NonNull AllocationPoint point) {
+        return pickupSpan(point.getBuffer(), point.getShape());
+    }
+
+    /**
      * This method hints allocator, that specific object was accessed on host side.
      * This includes putRow, putScalar;
      *
@@ -942,6 +955,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location) {
+        AllocationPoint point = new AllocationPoint();
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

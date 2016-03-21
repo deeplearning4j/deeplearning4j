@@ -71,6 +71,14 @@ public interface Allocator {
     Long pickupSpan(INDArray array);
 
     /**
+     * This  method registers AllocationPoint within allocator instance
+     *
+     * @param point
+     * @return
+     */
+    Long pickupSpan(AllocationPoint point);
+
+    /**
      * This method hints allocator, that specific object was accessed on host side.
      * This includes putRow, putScalar;
      *
