@@ -1,10 +1,10 @@
 package org.nd4j.jita.allocator.impl;
 
-import jcuda.Pointer;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -38,7 +38,7 @@ public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
     // thread safety is guaranteed by cudaLock
-    private volatile DevicePointerInfo pointerInfo;
+    private volatile PointersPair pointerInfo;
 
     @Getter @Setter private Long objectId;
 
@@ -144,17 +144,14 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @return
      */
-    public Pointer getCudaPointer() {
+    public Pointer getDevicePointer() {
         try {
             cudaLock.readLock().lock();
 
             if (pointerInfo == null)
                 return null;
 
-            if (pointerInfo.getPointers() == null)
-                return null;
-
-            return pointerInfo.getPointers().getDevicePointer();
+            return pointerInfo.getDevicePointer();
         } finally {
             cudaLock.readLock().unlock();
         }
@@ -174,10 +171,7 @@ public class AllocationPoint {
             if (pointerInfo == null)
                 return null;
 
-            if (pointerInfo.getPointers() == null)
-                return null;
-
-            return pointerInfo.getPointers().getHostPointer();
+            return pointerInfo.getHostPointer();
         } finally {
             cudaLock.readLock().unlock();
         }
@@ -190,7 +184,7 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setCudaPointers(DevicePointerInfo pointerInfo) {
+    public void setCudaPointers(PointersPair pointerInfo) {
         try {
             cudaLock.writeLock().lock();
 

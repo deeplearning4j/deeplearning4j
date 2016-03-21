@@ -460,12 +460,12 @@ public class AtomicAllocator implements Allocator {
         Long trackingPoint = buffer.getTrackingPoint();
 
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
-        if (point.getCudaPointer() == null) {
+        if (point.getDevicePointer() == null) {
             //log.info("Building pointer");
             // at this point memory becomes read/write-locked for a few ms, to make sure cudaPointer exists
             point.getAccessState().requestToe();
 
-            if (point.getCudaPointer() == null) {
+            if (point.getDevicePointer() == null) {
                 /*
                     If pointer is null, that means we're on first stage of allocation, so we need to allocate Zero memory
                     PLEASE NOTE: Also, if this is a view - we allocate full underlying buffer on first call, not a shape
@@ -594,8 +594,8 @@ public class AtomicAllocator implements Allocator {
         Pointer pointer = null;
         if (shape.getOffset() > 0) {
         //    log.info("Offest: " + AllocationUtils.getByteOffset(shape));
-            pointer = point.getCudaPointer().withByteOffset(AllocationUtils.getByteOffset(shape));
-        } else pointer = point.getCudaPointer();
+            pointer = point.getDevicePointer().withByteOffset(AllocationUtils.getByteOffset(shape));
+        } else pointer = point.getDevicePointer();
 
     //    log.info("Pointer GO: " + pointer.getNativePointer());
 

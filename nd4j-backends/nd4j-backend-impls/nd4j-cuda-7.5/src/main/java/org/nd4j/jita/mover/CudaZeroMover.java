@@ -120,7 +120,7 @@ public class CudaZeroMover implements Mover {
 
                 JCuda.cudaMemcpyAsync(
                         devicePointer,
-                        point.getHostPointer(),
+                        new Pointer(point.getHostPointer().address()),
                         AllocationUtils.getRequiredMemory(shape),
                         cudaMemcpyKind.cudaMemcpyHostToDevice,
                         context.getOldStream()
@@ -227,7 +227,7 @@ public class CudaZeroMover implements Mover {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-            Pointer devicePointer = point.getCudaPointer();
+            Pointer devicePointer = point.getDevicePointer();
 
             CudaContext context = allocator.getCudaContext();
 
@@ -272,7 +272,7 @@ public class CudaZeroMover implements Mover {
             if (hostBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-            Pointer devicePointer = point.getCudaPointer();
+            Pointer devicePointer = point.getDevicePointer();
 
             CudaContext context = allocator.getCudaContext();
 
@@ -339,7 +339,7 @@ public class CudaZeroMover implements Mover {
 
         JCuda.cudaMemcpyAsync(
                 info.getPointers().getHostPointer(),
-                point.getCudaPointer(),
+                point.getDevicePointer(),
                 AllocationUtils.getRequiredMemory(shape),
                 cudaMemcpyKind.cudaMemcpyDeviceToHost,
                 context.getOldStream()
@@ -347,7 +347,7 @@ public class CudaZeroMover implements Mover {
 
         context.syncOldStream();
 
-        JCuda.cudaFree(point.getCudaPointer());
+        JCuda.cudaFree(point.getDevicePointer());
 
         point.setCudaPointers(info);
     }
@@ -362,12 +362,12 @@ public class CudaZeroMover implements Mover {
         switch (target) {
             case ZERO: {
                     // cudaFreeHost call here
-                    JCuda.cudaFreeHost(point.getCudaPointer());
+                    JCuda.cudaFreeHost(point.getDevicePointer());
                 }
                 break;
             case DEVICE: {
                     // cudaFree call
-                    JCuda.cudaFree(point.getCudaPointer());
+                    JCuda.cudaFree(point.getDevicePointer());
                 }
                 break;
             default:
