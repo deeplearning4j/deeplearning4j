@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1935,6 +1937,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
 
         INDArray out = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(arr,0.01));
+
+        INDArray exp = Nd4j.create(expected);
+        assertEquals(exp,out);
+    }
+
+    @Test
+    public void testSoftmaxRow() {
+        for( int i = 0; i < 20; i++ ){
+            INDArray arr1 = Nd4j.zeros(100);
+            Nd4j.getExecutioner().execAndReturn(new SoftMax(arr1));
+            System.out.println(Arrays.toString(arr1.data().asFloat()));
+        }
+    }
+
+    @Test
+    public void testLeakyRelu2(){
+        INDArray arr = Nd4j.linspace(-1,1,10);
+        double[] expected = new double[10];
+        for( int i=0; i<10; i++ ){
+            double in = arr.getDouble(i);
+            expected[i] = (in <= 0.0 ? 0.01 * in : in);
+        }
+
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(arr,0.01));
+
+        System.out.println("Expected: " + Arrays.toString(expected));
+        System.out.println("Actual:   " + Arrays.toString(out.data().asDouble()));
 
         INDArray exp = Nd4j.create(expected);
         assertEquals(exp,out);
