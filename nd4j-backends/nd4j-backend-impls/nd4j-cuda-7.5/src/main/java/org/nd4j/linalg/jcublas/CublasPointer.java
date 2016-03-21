@@ -131,7 +131,7 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(JCudaBuffer buffer,CudaContext context) {
         this.buffer = buffer;
-        this.devicePointer = AtomicAllocator.getInstance().getPointer((buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer()), AllocationUtils.buildAllocationShape(buffer), true);
+//        this.devicePointer = AtomicAllocator.getInstance().getPointer(new Pointer(buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer()), AllocationUtils.buildAllocationShape(buffer), true);
         this.cudaContext = context;
 /*
         context.initOldStream();
@@ -178,7 +178,7 @@ public class CublasPointer  implements AutoCloseable {
         ////int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
       //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
-        this.devicePointer = AtomicAllocator.getInstance().getPointer(array);
+        this.devicePointer = new Pointer(AtomicAllocator.getInstance().getPointer(array).address());
         /*
                 buffer.getPointer(
                 this.arr,

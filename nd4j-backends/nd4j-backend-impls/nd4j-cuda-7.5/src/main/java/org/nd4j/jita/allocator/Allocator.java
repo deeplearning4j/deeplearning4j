@@ -133,13 +133,12 @@ public interface Allocator {
     Pointer getPointer(INDArray array);
 
 
-
-
     /**
      * This method should be callsd to make sure that data on host side is actualized
      *
      * @param array
      */
+    // TODO: to be moved into mover
     void synchronizeHostData(INDArray array);
 
     /**
@@ -147,6 +146,7 @@ public interface Allocator {
      *
      * @param buffer
      */
+    // TODO: to be moved into mover
     void synchronizeHostData(DataBuffer buffer);
 
     /**
@@ -157,6 +157,7 @@ public interface Allocator {
      *
      * @param buffer
      */
+    // TODO: to be moved into mover
     void trySynchronizeHostData(DataBuffer buffer);
 
     /**
@@ -165,6 +166,7 @@ public interface Allocator {
      * @param array
      * @return
      */
+    // TODO: to be moved into mover
     SyncState getHostMemoryState(INDArray array);
 
     /**

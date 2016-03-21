@@ -8,8 +8,9 @@ import org.bytedeco.javacpp.Pointer;
  */
 public class CudaPointer extends Pointer {
 
-
-
+    public CudaPointer(Pointer pointer) {
+        this.address = pointer.address();
+    }
 
     public CudaPointer(jcuda.Pointer pointer) {
         this.address = pointer.getNativePointer();
@@ -22,6 +23,4 @@ public class CudaPointer extends Pointer {
     public Pointer asPointer() {
         return (Pointer) this;
     }
-
-
 }

@@ -19,7 +19,7 @@ public class AddressRetriever {
      * data buffer
      */
     public static long retrieveDeviceAddress(DataBuffer buffer) {
-        return allocator.getPointer(buffer).getNativePointer();
+        return allocator.getPointer(buffer).address();
     }
 
 

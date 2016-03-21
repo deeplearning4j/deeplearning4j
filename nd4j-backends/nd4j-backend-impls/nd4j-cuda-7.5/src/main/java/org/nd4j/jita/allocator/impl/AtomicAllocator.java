@@ -493,9 +493,9 @@ public class AtomicAllocator implements Allocator {
                     now it's ALMOST safe to allocate zero-copy memory.
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
                  */
-                point.setAllocationStatus(AllocationStatus.ZERO);
+                point.setAllocationStatus(AllocationStatus.HOST);
 
-                PointersPair info = mover.alloc(AllocationStatus.ZERO, point, internalShape);
+                PointersPair info = mover.alloc(AllocationStatus.HOST, point, internalShape);
 
                 long allocCnt = allocationsCounter.incrementAndGet();
                 zeroAllocations.get(Thread.currentThread().getId()).put(trackingPoint, trackingPoint);
@@ -556,7 +556,7 @@ public class AtomicAllocator implements Allocator {
             // we check promotion only for existant allocations. just ignore new allocations here :)
             // TODO: add memory check all the way here
             long requiredMemory = AllocationUtils.getRequiredMemory(shape);
-            if (point.getDeviceTicks() > configuration.getMinimumRelocationThreshold() && point.getAllocationStatus() == AllocationStatus.ZERO && requiredMemory < configuration.getMaximumSingleAllocation()) {
+            if (point.getDeviceTicks() > configuration.getMinimumRelocationThreshold() && point.getAllocationStatus() == AllocationStatus.HOST && requiredMemory < configuration.getMaximumSingleAllocation()) {
 
                 // before doing actual promotion, we check to our tracker, to minimize cuda driver calls as well
                 if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), point.getDeviceId(), requiredMemory) && mover.pingDeviceForFreeMemory(point.getDeviceId(), requiredMemory)) {
@@ -581,7 +581,7 @@ public class AtomicAllocator implements Allocator {
             Now we store use rates
          */
 
-        if (point.getAllocationStatus() == AllocationStatus.ZERO) {
+        if (point.getAllocationStatus() == AllocationStatus.HOST) {
             zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
             zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
         } else {
@@ -1019,7 +1019,7 @@ public class AtomicAllocator implements Allocator {
             zeroAllocations.get(threadId).put(objectId, objectId);
             point.tickDevice();
             point.tickDeviceWrite();
-            point.setAllocationStatus(AllocationStatus.ZERO);
+            point.setAllocationStatus(AllocationStatus.HOST);
             zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
         }
 

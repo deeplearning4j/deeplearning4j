@@ -7,8 +7,8 @@ public enum AllocationStatus {
     UNDEFINED,
     HOST,
     DEVICE,
-    ZERO,
+//    ZERO,
     DEALLOCATED,
-    PARTIAL,
-    NESTED
+//    PARTIAL,
+//    NESTED
 }
