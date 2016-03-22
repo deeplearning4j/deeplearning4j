@@ -691,7 +691,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         point.setAllocationStatus(AllocationStatus.DEALLOCATED);
 
-        zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+        zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()) * -1);
     }
 
 

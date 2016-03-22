@@ -22,6 +22,7 @@ import org.nd4j.jita.mover.MemoryHandler;
 import org.nd4j.jita.mover.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class AtomicAllocator implements Allocator {
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
-    private AtomicLong objectsTracker = new AtomicLong(0); //new AtomicLong(Long.MIN_VALUE);
+    private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
 
     // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
@@ -411,6 +412,16 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(DataBuffer buffer) {
+        AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
+
+        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+        } else {
+            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
+            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
+        }
+
         return memoryHandler.getDevicePointer(buffer);
         //return getPointer(buffer, AllocationUtils.buildAllocationShape(buffer), false);
     }
@@ -424,6 +435,16 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
+        AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
+
+        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+        } else {
+            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
+            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
+        }
+
         if (1 > 0) return memoryHandler.getDevicePointer(buffer);
         //log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
@@ -434,7 +455,7 @@ public class AtomicAllocator implements Allocator {
 
    //     log.info("Tracking Point for request: " + trackingPoint);
 
-        AllocationPoint point = getAllocationPoint(trackingPoint);
+        //AllocationPoint point = getAllocationPoint(trackingPoint);
 
         boolean isNewAllocation = false;
 
@@ -568,13 +589,7 @@ public class AtomicAllocator implements Allocator {
             Now we store use rates
          */
 
-        if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
-            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
-        } else {
-            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
-            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
-        }
+
 
         /*
             Now we should return pointer with proper offset
@@ -600,6 +615,22 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Pointer getPointer(INDArray array) {
         //DataBuffer buffer = array.data().originalDataBuffer() != null ? array.data().originalDataBuffer() : array.data();
+        AllocationPoint point = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
+
+        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            point.getTimerLong().triggerEvent();
+            point.getTimerShort().triggerEvent();
+
+            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+        } else {
+            point.getTimerLong().triggerEvent();
+            point.getTimerShort().triggerEvent();
+
+            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
+            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
+        }
+
         return memoryHandler.getDevicePointer(array.data());
 /*
         AllocationShape shape = AllocationUtils.buildAllocationShape(array);
@@ -933,6 +964,9 @@ public class AtomicAllocator implements Allocator {
         for (Long object: memoryHandler.getHostTrackingPoints(threadId)) {
             AllocationPoint point = getAllocationPoint(object);
 
+            if (point == null)
+                throw new RuntimeException("WTF???");
+
             if (point.getAccessState().isToeAvailable()) {
                 point.getAccessState().requestToe();
 
@@ -941,7 +975,7 @@ public class AtomicAllocator implements Allocator {
                     If externals don't have specified buffer - delete reference.
                  */
                 if (point.getBuffer() == null) {
-                    //log.info("Ghost reference removed: " + object);
+       //             log.info("Ghost reference removed: " + object);
 
                     purgeZeroObject(threadId, object, point, false);
                     freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
@@ -954,7 +988,7 @@ public class AtomicAllocator implements Allocator {
                     Check, if memory can be removed from allocation.
                     To check it, we just compare average rates for few tens of latest calls
                  */
-
+                /*
                 long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
                 if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
                     // we could remove device allocation ONLY if it's older then minimum TTL
@@ -966,7 +1000,7 @@ public class AtomicAllocator implements Allocator {
                         elementsDropped.incrementAndGet();
                     }
                 }
-
+            */
                 point.getAccessState().releaseToe();
             }
         }
