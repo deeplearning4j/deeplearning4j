@@ -13,6 +13,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public interface MemoryStrategy {
     /**
      * Set the data for the buffer

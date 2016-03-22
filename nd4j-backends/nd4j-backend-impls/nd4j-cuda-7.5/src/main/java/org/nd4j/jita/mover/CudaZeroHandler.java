@@ -99,6 +99,7 @@ public class CudaZeroHandler implements MemoryHandler {
         this.allocator = allocator;
 
         this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
+        initCudaContextForThread(Thread.currentThread().getId());
     }
 
     /**
@@ -110,7 +111,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
-        log.info("Alloc called for shape: " + shape);
+//        log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
@@ -447,7 +448,7 @@ public class CudaZeroHandler implements MemoryHandler {
         Pointer dP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
 
-        log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"]");
+        //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"]");
 
         JCuda.cudaMemcpyAsync(
                 dP,
@@ -733,8 +734,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
 
-                    //initCudaContextForThread(threadId);
-                  //  initializeDevice(threadId, device, contextPool);
+                    initCudaContextForThread(threadId);
+                    initializeDevice(threadId, device);
 
 
 /*

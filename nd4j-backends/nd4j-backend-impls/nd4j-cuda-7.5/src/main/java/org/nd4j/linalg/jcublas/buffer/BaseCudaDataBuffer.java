@@ -140,9 +140,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
 
-        log.info("ElementSize: " + this.elementSize);
-        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
-        log.info("Device pointer: " + allocationPoint.getPointers().getDevicePointer().address());
+//        log.info("ElementSize: " + this.elementSize);
+//        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
+//        log.info("Device pointer: " + allocationPoint.getPointers().getDevicePointer().address());
 
         this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
 
@@ -153,7 +153,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         // TODO: probably this one could be reconsidered
         Long tmpPoint = AtomicAllocator.getInstance().pickupSpan(allocationPoint);
 
-        log.info("BCDB tracking point after creation: " + tmpPoint);
+//        log.info("BCDB tracking point after creation: " + tmpPoint);
     }
 
     public BaseCudaDataBuffer(int length, int elementSize, int offset) {

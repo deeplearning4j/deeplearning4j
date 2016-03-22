@@ -15,6 +15,7 @@ import static jcuda.driver.CUdevice_attribute.*;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class MemoryStrategies {
     /**
      * Memory modes for the host memory
