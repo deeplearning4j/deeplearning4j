@@ -2064,16 +2064,11 @@ void NativeOps::initializeDevicesAndFunctions() {
     cudaGetDeviceCount(&devCnt);
     deviceProperties = new cudaDeviceProp[devCnt];
     funcAttributes = new cudaFuncAttributes[28];
-    // TODO: remove this setDevice later
-    if (devCnt > 0)
-        cudaSetDevice(0);
     for (int i = 0; i < devCnt; i++) {
         cudaGetDeviceProperties(&deviceProperties[i], i);
     }
 
-    cudaFuncGetAttributes(&funcAttributes[0], transformFloatIndexes);
-
-    cudaFuncGetAttributes(&funcAttributes[3], summaryStatsReduceFloat);
+    cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
     void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[1], transformFloatPointer1);
@@ -2081,7 +2076,9 @@ void NativeOps::initializeDevicesAndFunctions() {
     void (*transformFloatPointer2)(int opNum, int n, float *dy, int incy, float *params, float *result) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[2], transformFloatPointer2);
 
-    cudaFuncGetAttributes(&funcAttributes[4], scalarFloatIndexes);
+    cudaFuncGetAttributes(&funcAttributes[3], (void *)summaryStatsReduceFloat);
+
+    cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
 
     void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo,float *params, float *result) = scalarFloat;
     cudaFuncGetAttributes(&funcAttributes[5], scalarFloatPointer1);
