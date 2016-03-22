@@ -1031,11 +1031,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-        if(isRowVector())
-            return putScalar(new int[]{0,i},value);
-        else if(isColumnVector())
-            return putScalar(new int[]{i,0},value);
+        if(isRowVector()) {
+            System.out.println("Calling row");
+            return putScalar(new int[]{0, i}, value);
+        }
+        else if(isColumnVector()) {
+            System.out.println("Calling column");
+            return putScalar(new int[]{i, 0}, value);
+        }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
+        System.out.println("Calling matrix");
         return putScalar(indexes, value);
 
     }

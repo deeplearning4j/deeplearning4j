@@ -163,7 +163,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.wrappedDataBuffer = underlyingBuffer;
         this.wrappedBuffer = underlyingBuffer.asNio();
-        this.originalBuffer = underlyingBuffer.originalDataBuffer();
+        this.originalBuffer = underlyingBuffer.originalDataBuffer() == null ? underlyingBuffer : underlyingBuffer.originalDataBuffer();
         this.length = length;
         this.offset = offset;
         this.originalOffset = underlyingBuffer.originalOffset() + offset;
@@ -443,15 +443,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         float[] tmp = new float[] {element};
         Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
         Pointer srcPtr = Pointer.to(tmp);
+        log.info("Setting data at position: " + ((offset +  i )* 4 ) + " data: " + Arrays.toString(tmp) );
         memcpyAsync(dstPtr, srcPtr, tmp.length * 4);
     }
 
     @Override
     public void put(int i, double element) {
-        double[] tmp = new double[] {element};
-        Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
-        Pointer srcPtr = Pointer.to(tmp);
-        memcpyAsync(dstPtr, srcPtr, tmp.length  * 8);
+        if(dataType() == Type.DOUBLE) {
+            double[] tmp = new double[]{element};
+            Pointer dstPtr = i > 0 || offset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset((offset + i) * 8) : new Pointer(allocator.getPointer(this).address());
+            Pointer srcPtr = Pointer.to(tmp);
+            log.info("Setting data at position: " + ((offset + i) * 8) + " data: " + Arrays.toString(tmp));
+
+            memcpyAsync(dstPtr, srcPtr, tmp.length * 8);
+        } else if (dataType() == Type.FLOAT) {
+            float[] tmp = new float[]{(float) element};
+            Pointer dstPtr = i > 0 || offset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset((offset + i) * 4) : new Pointer(allocator.getPointer(this).address());
+            Pointer srcPtr = Pointer.to(tmp);
+            log.info("Setting data at position: " + ((offset + i) * 4) + " data: " + Arrays.toString(tmp));
+
+            memcpyAsync(dstPtr, srcPtr, tmp.length * 4);
+        } else if (dataType() == Type.INT) {
+            int[] tmp = new int[]{(int) element};
+            Pointer dstPtr = i > 0 || offset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset((offset + i) * 4) : new Pointer(allocator.getPointer(this).address());
+            Pointer srcPtr = Pointer.to(tmp);
+            log.info("Setting data at position: " + ((offset + i) * 4) + " data: " + Arrays.toString(tmp));
+
+            memcpyAsync(dstPtr, srcPtr, tmp.length * 4);
+        }
     }
 
     @Override
@@ -696,12 +715,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public float getFloat(int i) {
 //        allocator.synchronizeHostData(this);
-//        return super.getFloat(i);
-        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], position: ["+ i  +"], elementSize: [" +getElementSize() + "]");
+
+        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "] ");
         if (wrappedBuffer == null)
             throw new IllegalStateException("buffer is NULL suddenly");
-
-        return wrappedBuffer.getFloat(i * getElementSize());
+        //return super.getFloat(i);
+        return wrappedBuffer.getFloat((offset + i) * getElementSize());
     }
 
     @Override

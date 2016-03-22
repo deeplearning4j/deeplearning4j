@@ -448,14 +448,14 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
-        log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
+        //log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
 
         Long trackingPoint = buffer.getTrackingPoint();
 
-        log.info("Tracking Point for request: " + trackingPoint);
+   //     log.info("Tracking Point for request: " + trackingPoint);
 
         AllocationPoint point = getAllocationPoint(trackingPoint);
 
@@ -536,13 +536,15 @@ public class AtomicAllocator implements Allocator {
         /*
             Before coming to promotion, we should decide, if we need to synchronize data on device
          */
+        /*
         if (!isNewAllocation) {
             if (!point.isActualOnDeviceSide()) {
                 // update data in Toe state
+                log.info("Requesting toe");
                 point.getAccessState().requestToe();
 
                 if (!point.isActualOnDeviceSide()) {
-                    //log.info("Calling for copyforward on: " + shape);
+                    log.info("Calling for copyforward on: " + shape);
                     mover.copyforward(point, shape);
                 }
                 // we set device access time equal to host write time
@@ -551,6 +553,7 @@ public class AtomicAllocator implements Allocator {
                 point.getAccessState().releaseToe();
             }
         }
+        */
 
         /*
             So, right now we are guaranteed to have cudaPointer. We can decide now, if this memory chunk should be promoted or not.
@@ -697,7 +700,9 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     protected void synchronizeHostData(DataBuffer buffer, AllocationShape shape) {
+        if (1> 0) return;
         AllocationPoint point = getAllocationPoint(buffer, shape, true);
+
         //log.info("Synchronize called on buffer with shape: " + shape);
 
         /*
@@ -707,6 +712,7 @@ public class AtomicAllocator implements Allocator {
 //        log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
+            log.info("Requesting Toe");
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {

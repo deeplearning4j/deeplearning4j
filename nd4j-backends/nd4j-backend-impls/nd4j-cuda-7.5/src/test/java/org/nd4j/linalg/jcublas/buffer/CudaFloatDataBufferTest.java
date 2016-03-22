@@ -40,13 +40,38 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
-    public void testNdArrayView() throws Exception {
+    public void testNdArrayView1() throws Exception {
         INDArray array = Nd4j.create(new float[] {1f,2f,3f,4f});
 
         assertEquals(1.0f, array.getFloat(0), 0.001f);
         assertEquals(2.0f, array.getFloat(1), 0.001f);
         assertEquals(3.0f, array.getFloat(2), 0.001f);
         assertEquals(4.0f, array.getFloat(3), 0.001f);
+    }
 
+    @Test
+    public void testNdArrayView2() throws Exception {
+        INDArray array = Nd4j.create(10, 10);
+
+        long tp1 = array.data().getTrackingPoint();
+
+        array.putScalar(0, 10f);
+        assertEquals(10.0f, array.getFloat(0), 0.01f);
+
+        System.out.println("X1 --------------------------------");
+
+        INDArray array2 = array.slice(1);
+        long tp2 = array2.data().getTrackingPoint();
+
+        assertEquals(tp1, tp2);
+
+        array2.putScalar(0, 10);
+        System.out.println("X2 --------------------------------");
+        assertEquals(10.0f, array2.getFloat(0), 0.01f);
+
+        tp2 = array2.data().getTrackingPoint();
+        tp1 = array.data().getTrackingPoint();
+
+        assertEquals(tp1, tp2);
     }
 }
