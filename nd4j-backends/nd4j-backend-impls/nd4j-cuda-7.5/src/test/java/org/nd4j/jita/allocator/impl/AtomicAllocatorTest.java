@@ -13,6 +13,7 @@ import org.nd4j.jita.mover.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -376,9 +377,10 @@ public class AtomicAllocatorTest {
             Nd4j.getBlasWrapper().axpy(new Float(0.75f), array1, array2);
             long time2 = System.nanoTime();
 
-            assertNotEquals(0, array2.getDouble(0), 0.00001);
-            if (cnt.incrementAndGet() % 100000 == 0) {
+
+            if (cnt.incrementAndGet() % 10000 == 0) {
                 log.info("Execution time: [" + (time2 - time1) + "] ns");
+                assertEquals(1.7674999237060547, array2.getDouble(0), 0.00001);
                 log.info("Sleeping for 5 seconds...");
                 Thread.sleep(5000);
             }

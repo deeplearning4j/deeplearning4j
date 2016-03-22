@@ -805,6 +805,12 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public AllocationPoint allocateMemory(AllocationShape requiredMemory) {
+        if (!collectorsZero.containsKey(Thread.currentThread().getId())) {
+            ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread(Thread.currentThread().getId(), memoryHandler.getDeviceId(), shouldStop);
+            zThread.start();
+
+            collectorsZero.put(Thread.currentThread().getId(), zThread);
+        }
         return allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
     }
 
@@ -1088,7 +1094,7 @@ public class AtomicAllocator implements Allocator {
 
         @Override
         public void run() {
-            log.debug("Starting zero GC for device: " + deviceId);
+            log.debug("Starting zero GC for thread: " + threadId);
             long lastCheck = System.currentTimeMillis();
             while (!terminate.get()) {
 
