@@ -9,7 +9,7 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
-import org.nd4j.jita.mover.CudaZeroMover;
+import org.nd4j.jita.mover.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -65,7 +65,7 @@ public class AtomicAllocatorTest {
             allocator = AtomicAllocator.getInstance();
             allocator.applyConfiguration(configuration);
 //            allocator.setEnvironment(singleDevice4GBcc52);
-            allocator.setMover(new CudaZeroMover());
+            allocator.setMemoryHandler(new CudaZeroHandler());
         }
     }
 
@@ -227,7 +227,7 @@ public class AtomicAllocatorTest {
 
         assertFalse(point.isActualOnHostSide());
 
-        allocator.promoteObject(objectId, point, point.getShape());
+        ((CudaZeroHandler) allocator.getMemoryHandler()).promoteObject(objectId, point, point.getShape());
 
         assertFalse(point.isActualOnHostSide());
 
@@ -255,7 +255,7 @@ public class AtomicAllocatorTest {
 
         Random rnd = new Random(42);
         int trackingBefore =  allocator.getTotalTrackingPoints();
-        int zeroBefore =  allocator.getTotalZeroAllocations();
+        int zeroBefore =  (int) allocator.getMemoryHandler().getAllocatedHostObjects();
 
         INDArray array1 = Nd4j.create(100, 757);
         INDArray array2 = Nd4j.create(100, 757);
@@ -276,7 +276,7 @@ public class AtomicAllocatorTest {
         // + 200 comes from fact, that putRow being called, accesses row on buffer level, triggering array registration
         // however as we can see, they do not get allocated
         assertEquals(trackingBefore + 2 + 200, allocator.getTotalTrackingPoints());
-        assertEquals(zeroBefore, allocator.getTotalZeroAllocations());
+        assertEquals(zeroBefore, allocator.getMemoryHandler().getAllocatedHostObjects());
 
 /*
         for (int x = 0; x < 20; x++) {
@@ -334,7 +334,7 @@ public class AtomicAllocatorTest {
         // + 200 comes from fact, that putRow being called, accesses row on buffer level, triggering array registration
         // however as we can see, they do not get allocated
         assertEquals(trackingBefore + 2 + 200, allocator.getTotalTrackingPoints());
-        assertEquals(zeroBefore + 2, allocator.getTotalZeroAllocations());
+        assertEquals(zeroBefore + 2, allocator.getMemoryHandler().getAllocatedHostObjects());
 
 
 

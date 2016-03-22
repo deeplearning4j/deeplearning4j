@@ -1,7 +1,9 @@
 package org.nd4j.jita.mover;
 
+import com.google.common.collect.Table;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -12,13 +14,14 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Mover interface describes methods for data transfers between host and devices
+ * MemoryHandler interface describes methods for data access
  *
  * @author raver119@gmail.com
  */
-public interface Mover {
+public interface MemoryHandler {
 
     void init(Configuration configuration, CudaEnvironment environment, Allocator allocator);
 
@@ -88,11 +91,56 @@ public interface Mover {
     /**
      * This method initializes specific device for current thread
      */
-    void initializeDevice(Long threadId, Integer deviceId, Map<Long, CudaContext> contextPool);
+    void initializeDevice(Long threadId, Integer deviceId);
 
     void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
 
     void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
 
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
+
+    /**
+     * PLEASE NOTE: Specific implementation, on systems without special devices can return HostPointer here
+     * @return
+     */
+    Pointer getDevicePointer(DataBuffer buffer);
+
+    /**
+     * PLEASE NOTE: This method always returns pointer within OS memory space
+     * @return
+     */
+    Pointer getHostPointer(DataBuffer buffer);
+
+
+    /**
+     * This method returns total amount of memory allocated within system
+     *
+     * @return
+     */
+    Table<AllocationStatus, Integer, Long> getAllocationStatistics();
+
+
+    long getAllocatedHostMemory();
+
+    long getAllocatedDeviceMemory(Integer device);
+
+    long getAllocatedHostObjects(Long threadId);
+
+    long getAllocatedHostObjects();
+
+    long getAllocatedDeviceObjects(Integer deviceId);
+
+    Set<Long> getDeviceTrackingPoints(Integer deviceId);
+
+    Set<Long> getHostTrackingPoints(Long threadId);
+
+    void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback);
+
+    void purgeZeroObject(Long threadId, Long objectId, AllocationPoint point, boolean copyback);
+
+    Set<Integer> getAvailableDevices();
+
+    Integer getDeviceId();
+
+    ExternalContext getDeviceContext();
 }

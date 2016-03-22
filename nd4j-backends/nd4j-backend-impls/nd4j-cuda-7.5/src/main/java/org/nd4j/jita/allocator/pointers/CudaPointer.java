@@ -22,6 +22,10 @@ public class CudaPointer extends Pointer {
         this.address = pointer.address();
     }
 
+    public CudaPointer(Pointer pointer, long byteOffset) {
+        this.address = pointer.address() + byteOffset;
+    }
+
     public CudaPointer(jcuda.Pointer pointer,  long capacity) {
         this.address = pointer.getNativePointer();
         this.capacity = capacity;

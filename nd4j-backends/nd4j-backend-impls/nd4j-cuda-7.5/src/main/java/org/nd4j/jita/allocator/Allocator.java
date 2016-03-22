@@ -5,14 +5,12 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.jita.mover.Mover;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
+import org.nd4j.jita.mover.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
  *
@@ -43,14 +41,14 @@ public interface Allocator {
      *
      * @return
      */
-    CudaContext getCudaContext();
+    ExternalContext getDeviceContext();
 
     /**
      * This methods specifies Mover implementation to be used internally
      *
-     * @param mover
+     * @param memoryHandler
      */
-    void setMover(Mover mover);
+    void setMemoryHandler(MemoryHandler memoryHandler);
 
     /**
      * Returns current Allocator configuration
@@ -193,7 +191,7 @@ public interface Allocator {
      * @param array
      * @return
      */
-    Integer getDeviceId(INDArray array);
+   // Integer getDeviceId(INDArray array);
 
     /**
      * This method returns deviceId for current thread
@@ -201,7 +199,7 @@ public interface Allocator {
      *
      * @return
      */
-    Integer getDeviceId();
+     Integer getDeviceId();
 
     /**
      *  This method allocates required chunk of memory

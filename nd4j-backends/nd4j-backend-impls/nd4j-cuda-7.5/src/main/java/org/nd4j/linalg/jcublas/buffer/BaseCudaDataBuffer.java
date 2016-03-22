@@ -273,7 +273,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
 
-            allocator.memcpyBlocking(this, srcPtr, length * elementSize, dstOffset * elementSize);
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
         } else if (dataType() == Type.INT) {
             Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
 
