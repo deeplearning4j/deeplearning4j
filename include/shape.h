@@ -1188,13 +1188,13 @@ namespace shape {
             if(shape::order(shapeInfo) == 'c') {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
-                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
+                int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
                 return index * rearMostStride;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
-                int rearMostStride = shape::rearMostLeftOverItem(stride,rank,dimension,dimensionLength);
+                int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
                 return index * rearMostStride;
             }
 
@@ -3393,11 +3393,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
     int rearMostLeftOverItem(int *data,int length,int *dimension,int dimensionLength) {
-        int dimIdx = dimensionLength - 1;
+        int *stride = shape::stride(data);
         //corner case: return the final item when its greater than the max, since its guaranteed to be left over
         //note here that strides are interpreted in reverse for tad
         //start from the front rather than the back
-        if(dimension[dimIdx] < length) {
+
+       /* if(dimension[dimIdx] < length) {
             int dimIdxBegin = 0;
             for(int i = 0; i < length; i++) {
                 if(data[i]  != dimIdxBegin) {
@@ -3406,25 +3407,104 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 dimIdxBegin++;
             }
             return data[0];
+        }*/
+
+        int numOnes = 0;
+        int onesEncountered = 0;
+        int *shape = shape::shapeOf(data);
+        int rank = shape::rank(data);
+        bool squeezed = false;
+        for(int i = 0; i < rank; i++) {
+            if(shape[i] == 1)
+                numOnes++;
         }
-        for(int i = length - 1; i > 0; i--) {
-            /**
-             * Needs to find an algorithm such that:
-             * looping backwards will find the highest dimension left
-             * that isn't included in the dimension index list.
-             *
-             * This can also be thought of as the last item of the first index
-             * of the difference between the full list of indices and
-             * the dimension indices.
-             *
-             * We should avoid excessive object creation by only looping backwards.
-             */
-            if(dimension[dimIdx--] != i) {
-                return data[i];
+        //squeeze the dimensions
+        if(numOnes > 0) {
+            int squeezeShape[rank - numOnes];
+            int squeezeStride[rank - numOnes];
+            squeezed = true;
+            int numEncountered = 0;
+            for(int i = 0; i < rank; i++) {
+                if(shape[i] != 1) {
+                    squeezeShape[numEncountered] = shape[i];
+                    squeezeStride[numEncountered] = stride[i];
+                    numEncountered++;
+                }
+            }
+
+
+            //for any dimensions specified that are 1,ignore them
+            int numDimensionsOne = 0;
+            for(int i = 0;i < dimensionLength; i++) {
+                if(shape[dimension[i]] == 1)
+                    numDimensionsOne++;
+            }
+
+            if(numDimensionsOne > 0) {
+                int newDimensions[dimensionLength - numDimensionsOne];
+                int newDimensionIdx = 0;
+                for(int i = 0; i < dimensionLength; i++) {
+                    if(shape[dimension[i]] != 1)
+                       newDimensions[newDimensionIdx++] = dimension[i];
+                }
+
+                //reduce along the new dimensions
+                dimension = newDimensions;
+                dimensionLength  -= numDimensionsOne;
+
+            }
+            //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
+            //the previous pointer is just a view of a pointer to be reused that was passed in
+            shape = squeezeShape;
+            stride = squeezeStride;
+            rank -= numOnes;
+
+
+        }
+
+        if(shape::order(data) == 'f') {
+            int dimIdx = dimensionLength - 1;
+            for(int i = rank - 1; i > 0; i--) {
+                /**
+                 * Needs to find an algorithm such that:
+                 * looping backwards will find the highest dimension left
+                 * that isn't included in the dimension index list.
+                 *
+                 * This can also be thought of as the last item of the first index
+                 * of the difference between the full list of indices and
+                 * the dimension indices.
+                 *
+                 * We should avoid excessive object creation by only looping backwards.
+                 */
+                if(dimension[dimIdx--] != i) {
+                     return stride[i];
+                }
             }
         }
 
-        return data[0];
+        else {
+            int dimIdx = dimensionLength - 1;
+
+            for(int i = rank - 1; i > 0; i--) {
+                /**
+                 * Needs to find an algorithm such that:
+                 * looping backwards will find the highest dimension left
+                 * that isn't included in the dimension index list.
+                 *
+                 * This can also be thought of as the last item of the first index
+                 * of the difference between the full list of indices and
+                 * the dimension indices.
+                 *
+                 * We should avoid excessive object creation by only looping backwards.
+                 */
+                if(dimension[dimIdx--] != i) {
+                    return stride[i];
+                }
+            }
+        }
+
+
+        return stride[0];
     }
 
 }
