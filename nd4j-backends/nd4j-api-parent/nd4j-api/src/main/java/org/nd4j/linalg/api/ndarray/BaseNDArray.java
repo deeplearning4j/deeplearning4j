@@ -113,7 +113,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        int[] shape = {1,buffer.length()};
+        if(buffer.length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
+        int[] shape = {1,(int)buffer.length()};
         int[] stride = Nd4j.getStrides(shape);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,0,1,Nd4j.order());
         init(shape,stride);
@@ -435,7 +437,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param order
      */
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}, order), 0, order);
+        this(floatBuffer, new int[]{(int)floatBuffer.length()}, Nd4j.getStrides(new int[]{(int)floatBuffer.length()}, order), 0, order);
+        if(floatBuffer.length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
     }
 
     /**
@@ -3757,8 +3761,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int offset() {
+        if(data().offset() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
         //  return Shape.offset(shapeInfo());
-        return data().offset();
+        return (int)data().offset();
     }
 
     @Override
@@ -4298,7 +4304,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int originalOffset() {
-        return data().originalOffset();
+        if(data().originalOffset() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Original offset of buffer can not be >= Integer.MAX_VALUE");
+        return (int)data().originalOffset();
     }
 
     private void readObject(ObjectInputStream s) {

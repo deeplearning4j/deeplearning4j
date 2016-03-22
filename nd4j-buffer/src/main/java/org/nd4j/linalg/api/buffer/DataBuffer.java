@@ -162,7 +162,7 @@ public interface DataBuffer extends Serializable {
      * @param offset
      * @param yOffset
      */
-    void copyAtStride(DataBuffer buf, int n, int stride, int yStride, int offset, int yOffset);
+    void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset);
 
     /**
      * Allocation mode for buffers
@@ -224,7 +224,7 @@ public interface DataBuffer extends Serializable {
      * @param contiguous whether the indices are contiguous or not
      * @param inc        the number to increment by when assigning
      */
-    void assign(int[] indices, float[] data, boolean contiguous, int inc);
+    void assign(long[] indices, float[] data, boolean contiguous, long inc);
 
     /**
      * Assign the given elements to the given indices
@@ -234,7 +234,7 @@ public interface DataBuffer extends Serializable {
      * @param contiguous whether the data is contiguous or not
      * @param inc        the number to increment by when assigning
      */
-    void assign(int[] indices, double[] data, boolean contiguous, int inc);
+    void assign(long[] indices, double[] data, boolean contiguous, long inc);
 
 
     /**
@@ -244,7 +244,7 @@ public interface DataBuffer extends Serializable {
      * @param data       the data to assign
      * @param contiguous whether the indices are contiguous or not
      */
-    void assign(int[] indices, float[] data, boolean contiguous);
+    void assign(long[] indices, float[] data, boolean contiguous);
 
     /**
      * Assign the given elements to the given indices
@@ -253,7 +253,7 @@ public interface DataBuffer extends Serializable {
      * @param data       the data to assign
      * @param contiguous whether the data is contiguous or not
      */
-    void assign(int[] indices, double[] data, boolean contiguous);
+    void assign(long[] indices, double[] data, boolean contiguous);
 
     /**
      * Get the doubles at a particular offset
@@ -262,7 +262,7 @@ public interface DataBuffer extends Serializable {
      * @param length the length of the array
      * @return the doubles at the specified offset and length
      */
-    double[] getDoublesAt(int offset, int length);
+    double[] getDoublesAt(long offset, int length);
 
 
     /**
@@ -272,18 +272,7 @@ public interface DataBuffer extends Serializable {
      * @param length the length of the array
      * @return the doubles at the specified offset and length
      */
-    float[] getFloatsAt(int offset, int length);
-
-
-    /**
-     * Get the doubles at a particular offset
-     *
-     * @param offset the offset to start
-     * @param inc    the increment to use
-     * @param length the length of the array
-     * @return the doubles at the specified offset and length
-     */
-    double[] getDoublesAt(int offset, int inc, int length);
+    float[] getFloatsAt(long offset, int length);
 
 
     /**
@@ -294,7 +283,18 @@ public interface DataBuffer extends Serializable {
      * @param length the length of the array
      * @return the doubles at the specified offset and length
      */
-    float[] getFloatsAt(int offset, int inc, int length);
+    double[] getDoublesAt(long offset, long inc, int length);
+
+
+    /**
+     * Get the doubles at a particular offset
+     *
+     * @param offset the offset to start
+     * @param inc    the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    float[] getFloatsAt(long offset, long inc, int length);
 
 
     /**
@@ -311,7 +311,7 @@ public interface DataBuffer extends Serializable {
      * @param value  assign the value to set
      * @param offset the offset to start at
      */
-    void assign(Number value, int offset);
+    void assign(Number value, long offset);
 
     /**
      * Set the data for this buffer
@@ -384,7 +384,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    double getDouble(int i);
+    double getDouble(long i);
 
     /**
      * Get element i in the buffer as a double
@@ -392,7 +392,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    float getFloat(int i);
+    float getFloat(long i);
 
     /**
      * Get element i in the buffer as a double
@@ -400,7 +400,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    Number getNumber(int i);
+    Number getNumber(long i);
 
 
     /**
@@ -409,7 +409,7 @@ public interface DataBuffer extends Serializable {
      * @param i       the index
      * @param element the element to assign
      */
-    void put(int i, float element);
+    void put(long i, float element);
 
     /**
      * Assign an element in the buffer to the specified index
@@ -417,7 +417,7 @@ public interface DataBuffer extends Serializable {
      * @param i       the index
      * @param element the element to assign
      */
-    void put(int i, double element);
+    void put(long i, double element);
 
     /**
      * Assign an element in the buffer to the specified index
@@ -425,7 +425,7 @@ public interface DataBuffer extends Serializable {
      * @param i       the index
      * @param element the element to assign
      */
-    void put(int i, int element);
+    void put(long i, int element);
 
 
     /**
@@ -434,7 +434,7 @@ public interface DataBuffer extends Serializable {
      * @param i the i togete
      * @return the complex float at the specified index
      */
-    IComplexFloat getComplexFloat(int i);
+    IComplexFloat getComplexFloat(long i);
 
     /**
      * Get the complex double at the specified index
@@ -442,7 +442,7 @@ public interface DataBuffer extends Serializable {
      * @param i the index
      * @return the complex double
      */
-    IComplexDouble getComplexDouble(int i);
+    IComplexDouble getComplexDouble(long i);
 
     /**
      * Returns a complex number
@@ -450,7 +450,7 @@ public interface DataBuffer extends Serializable {
      * @param i the complex number cto get
      * @return the complex number to get
      */
-    IComplexNumber getComplex(int i);
+    IComplexNumber getComplex(long i);
 
 
     /**
@@ -458,27 +458,27 @@ public interface DataBuffer extends Serializable {
      *
      * @return the length of the buffer
      */
-    int length();
+    long length();
 
     /**
      * Returns the length of the buffer
      *
      * @return the length of the buffer
      */
-    int underlyingLength();
+    long underlyingLength();
     /**
      * Returns the offset of the buffer
      *
      * @return the offset of the buffer
      */
-    int offset();
+    long offset();
 
     /**
      * Returns the offset of the buffer relative to originalDataBuffer
      *
      * @return
      */
-    int originalOffset();
+    long originalOffset();
 
     /**
      * Get the int at the specified index
@@ -486,7 +486,7 @@ public interface DataBuffer extends Serializable {
      * @param ix the int at the specified index
      * @return the int at the specified index
      */
-    int getInt(int ix);
+    int getInt(long ix);
 
     /**
      * Return a copy of this buffer
@@ -505,7 +505,7 @@ public interface DataBuffer extends Serializable {
      * @param i the index to insert
      * @param result the element to insert
      */
-    void put(int i, IComplexNumber result);
+    void put(long i, IComplexNumber result);
 
 
     /**
@@ -527,7 +527,7 @@ public interface DataBuffer extends Serializable {
      * @param n       the number of elements to operate on
      * @param buffers the buffers to assign data from
      */
-    void assign(int[] offsets, int[] strides, long n, DataBuffer... buffers);
+    void assign(long[] offsets, long[] strides, long n, DataBuffer... buffers);
 
     /**
      * Assign the given data buffers to this buffer
@@ -546,7 +546,7 @@ public interface DataBuffer extends Serializable {
      * @param strides the strides to use
      * @param buffers the buffers to assign data from
      */
-    void assign(int[] offsets, int[] strides, DataBuffer... buffers);
+    void assign(long[] offsets, long[] strides, DataBuffer... buffers);
 
 
     /**

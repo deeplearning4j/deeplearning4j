@@ -36,7 +36,7 @@ public class FloatBuffer extends BaseDataBuffer {
      * Create a float buffer with the given length
      * @param length the float buffer with the given length
      */
-    public FloatBuffer(int length) {
+    public FloatBuffer(long length) {
         super(length);
     }
 
@@ -48,7 +48,7 @@ public class FloatBuffer extends BaseDataBuffer {
         super(length, elementSize, offset);
     }
 
-    public FloatBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public FloatBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
 
@@ -107,12 +107,12 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public IComplexFloat getComplexFloat(int i) {
+    public IComplexFloat getComplexFloat(long i) {
         return null;
     }
 
     @Override
-    public IComplexDouble getComplexDouble(int i) {
+    public IComplexDouble getComplexDouble(long i) {
         return null;
     }
 
@@ -132,7 +132,7 @@ public class FloatBuffer extends BaseDataBuffer {
 
 
     @Override
-    protected DataBuffer create(int length) {
+    protected DataBuffer create(long length) {
         return new FloatBuffer(length);
     }
 
