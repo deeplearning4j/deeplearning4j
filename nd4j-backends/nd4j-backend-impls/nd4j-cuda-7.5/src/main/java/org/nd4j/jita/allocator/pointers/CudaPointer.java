@@ -1,6 +1,9 @@
 package org.nd4j.jita.allocator.pointers;
 
 import org.bytedeco.javacpp.Pointer;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is simple logic-less holder for pointers derived from CUDA.
@@ -13,12 +16,17 @@ import org.bytedeco.javacpp.Pointer;
  */
 public class CudaPointer extends Pointer {
 
+    private static Logger logger = LoggerFactory.getLogger(CudaPointer.class);
+
     public CudaPointer(Pointer pointer) {
         this.address = pointer.address();
     }
 
-    public CudaPointer(jcuda.Pointer pointer) {
+    public CudaPointer(jcuda.Pointer pointer,  long capacity) {
         this.address = pointer.getNativePointer();
+        this.capacity = capacity;
+        this.limit = capacity;
+        this.position = 0;
     }
 
     public CudaPointer(long address) {
@@ -31,5 +39,13 @@ public class CudaPointer extends Pointer {
 
     public jcuda.Pointer asCudaPointer() {
         return new jcuda.Pointer(this.address());
+    }
+
+    /**
+     * Returns 1 for Pointer or BytePointer else {@code Loader.sizeof(getClass())} or -1 on error.
+     */
+    @Override
+    public int sizeof() {
+        return 4;
     }
 }

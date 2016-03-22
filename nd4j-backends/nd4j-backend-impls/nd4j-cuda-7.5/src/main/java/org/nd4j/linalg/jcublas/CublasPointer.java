@@ -69,14 +69,7 @@ public class CublasPointer  implements AutoCloseable {
      * The actual destroy method
      */
     public void destroy() {
-        if(!closed) {
-            if(arr != null) {
-                buffer.freeDevicePointer(arr.offset(), arr.length(), BlasBufferUtil.getBlasStride(this.arr));
-            } else {
-                buffer.freeDevicePointer(0, buffer.length(),1);
-            }
-            closed = true;
-        }
+
     }
 
 

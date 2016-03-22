@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Map;
 
 /**
  * This Mover implementation uses following techs:
@@ -57,7 +58,7 @@ public class CudaZeroMover implements Mover {
      */
     @Override
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
-        //log.info("Alloc called for shape: " + shape);
+        log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
@@ -71,10 +72,11 @@ public class CudaZeroMover implements Mover {
 
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
+                long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 JCuda.cudaHostAlloc(
                         hostPointer,
-                        AllocationUtils.getRequiredMemory(shape),
+                        reqMem,
                         JCuda.cudaHostAllocMapped);
 
                 JCuda.cudaHostGetDevicePointer(
@@ -92,8 +94,8 @@ public class CudaZeroMover implements Mover {
             */
 
                 PointersPair devicePointerInfo = new PointersPair();
-                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer));
-                devicePointerInfo.setHostPointer(new CudaPointer(hostPointer));
+                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
+                devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
 
                 // copy data from
@@ -115,7 +117,8 @@ public class CudaZeroMover implements Mover {
 
                 CudaContext context = allocator.getCudaContext();
 
-                JCuda.cudaMalloc(devicePointer, AllocationUtils.getRequiredMemory(shape));
+                long reqMem = AllocationUtils.getRequiredMemory(shape);
+                JCuda.cudaMalloc(devicePointer, reqMem);
 
                 /*
                 DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
@@ -127,12 +130,12 @@ public class CudaZeroMover implements Mover {
                 */
 
                 PointersPair devicePointerInfo = point.getPointers();
-                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer));
+                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
 
                 JCuda.cudaMemcpyAsync(
                         devicePointer,
                         new Pointer(devicePointerInfo.getHostPointer().address()),
-                        AllocationUtils.getRequiredMemory(shape),
+                        reqMem,
                         cudaMemcpyKind.cudaMemcpyHostToDevice,
                         context.getOldStream()
                 );
@@ -362,7 +365,7 @@ public class CudaZeroMover implements Mover {
      * @param deviceId
      */
     @Override
-    public void initializeDevice(Long threadId, Integer deviceId) {
+    public void initializeDevice(Long threadId, Integer deviceId, Map<Long, CudaContext> contextPool) {
         JCuda.cudaSetDevice(deviceId);
 
         CudaContext context = new CudaContext();
@@ -372,7 +375,7 @@ public class CudaZeroMover implements Mover {
         context.associateHandle();
 
         // FIXME:  context should be treated within mover
-        //contextPool.put(threadId, context);
+        contextPool.put(threadId, context);
     }
 
     private NioUtil.BufferType getBufferType(DataBuffer buffer) {

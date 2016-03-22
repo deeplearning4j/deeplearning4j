@@ -145,8 +145,10 @@ public class AllocationPoint {
         try {
             cudaLock.readLock().lock();
 
-            if (pointerInfo == null)
+            if (pointerInfo == null) {
+                log.info("pointerInfo is null");
                 return null;
+            }
 
             return pointerInfo.getDevicePointer();
         } finally {
@@ -181,7 +183,7 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setPointers(PointersPair pointerInfo) {
+    public void setPointers(@NonNull PointersPair pointerInfo) {
         try {
             cudaLock.writeLock().lock();
 
@@ -392,5 +394,14 @@ public class AllocationPoint {
     public void tickDeviceToHost() {
         accessDeviceRead.set(accessHostRead.get());
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+    }
+
+    @Override
+    public String toString() {
+        return "AllocationPoint{" +
+                "deviceId=" + deviceId +
+                ", objectId=" + objectId +
+                ", shape=" + shape +
+                '}';
     }
 }

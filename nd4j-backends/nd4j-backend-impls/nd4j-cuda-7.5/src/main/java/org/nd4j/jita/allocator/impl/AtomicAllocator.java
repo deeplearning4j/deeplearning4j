@@ -64,7 +64,7 @@ public class AtomicAllocator implements Allocator {
     private transient Mover mover = new CudaZeroMover();
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
-    private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
+    private AtomicLong objectsTracker = new AtomicLong(0); //new AtomicLong(Long.MIN_VALUE);
 
     // tracker for thread->device affinity
     protected Map<Long, Integer> devicesAffinity = new ConcurrentHashMap<>();
@@ -334,7 +334,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Long pickupSpan(@NonNull AllocationPoint point) {
-        return pickupSpan(point.getBuffer(), point.getShape());
+        return point.getObjectId();
     }
 
     /**
@@ -356,17 +356,6 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void tickDevice(INDArray array) {
         // TODO: to be implemented, probably
-    }
-
-    /**
-     * This method registers array's buffer within allocator instance
-     *
-     * PLEASE NOTE: This is debug method, and it shouldn't be used in any circumstances besides tests.
-     *
-     * @param object Object to be picked & tracked
-     */
-    protected Long pickupSpan(Object object) {
-        return null;
     }
 
 
@@ -443,13 +432,11 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns actual device pointer valid for current object
      *
-     * TODO: this method should be removed.
      * @param objectId
      */
     @Override
-    @Deprecated
-    public Pointer getPointer(DataBuffer objectId) {
-        return getPointer(objectId, AllocationUtils.buildAllocationShape(objectId), false);
+    public Pointer getPointer(DataBuffer buffer) {
+        return getPointer(buffer, AllocationUtils.buildAllocationShape(buffer), false);
     }
 
     /**
@@ -461,19 +448,22 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
-     //   log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
+        log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
          */
-        AllocationPoint point = getAllocationPoint(buffer, shape, true);
-
-        boolean isNewAllocation = false;
 
         Long trackingPoint = buffer.getTrackingPoint();
 
+        log.info("Tracking Point for request: " + trackingPoint);
+
+        AllocationPoint point = getAllocationPoint(trackingPoint);
+
+        boolean isNewAllocation = false;
+
         // we're checking, if cuda pointer is null without any locks. but if it's null, we'll request Toe state on this allocation, to make sure nothing can mess with it
         if (point.getDevicePointer() == null) {
-            //log.info("Building pointer");
+            log.info("Building pointer");
             // at this point memory becomes read/write-locked for a few ms, to make sure cudaPointer exists
             point.getAccessState().requestToe();
 
@@ -767,12 +757,17 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
-        //log.info("Synchronize called on array");
+        log.info("Synchronize called on array.  IsNull: ["+ (array.data().originalDataBuffer() == null) +"]");
+
+        log.info("Data trackingPoint: " + array.data().getTrackingPoint());
+        log.info("ShapeBuffer trackingPoint: " + array.shapeInfoDataBuffer().getTrackingPoint());
+
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null) {
+            log.info("AllocationPoint is null on synchronize. That's impossible!");
             pickupSpan(array);
         }
 
@@ -793,7 +788,8 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = getAllocationPoint(fbuffer, AllocationUtils.buildAllocationShape(fbuffer), true);
 
         if (point == null) {
-            pickupSpan(fbuffer);
+            throw new IllegalStateException("AllocationPoint is NULL");
+            //pickupSpan(fbuffer);
         }
 
         synchronizeHostData(fbuffer, AllocationUtils.buildAllocationShape(fbuffer));
@@ -914,7 +910,7 @@ public class AtomicAllocator implements Allocator {
                     log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
 
                     //initCudaContextForThread(threadId);
-                    mover.initializeDevice(threadId, device);
+                    mover.initializeDevice(threadId, device, contextPool);
 
 
 
@@ -956,7 +952,24 @@ public class AtomicAllocator implements Allocator {
     @Override
     public AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location) {
         AllocationPoint point = new AllocationPoint();
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        point.setDeviceId(getDeviceId());
+
+        Long allocId = objectsTracker.getAndIncrement();
+
+        point.setObjectId(allocId);
+        point.setShape(requiredMemory);
+
+        PointersPair pair = mover.alloc(location, point, requiredMemory);
+
+        point.setPointers(pair);
+
+        allocationsMap.put(allocId, point);
+
+        log.info("AllocationPoint 1: " + point);
+
+        return point;
+        //throw new UnsupportedOperationException("Not implemented yet");
     }
 
 
@@ -965,8 +978,9 @@ public class AtomicAllocator implements Allocator {
 
         if (trackingPointer == null) { // AllocationUtils.buildAllocationShape(objectId)
             if (catchNewAllocations) {
-//                log.info("Registering");
-                trackingPointer = pickupSpan(buffer, shape);
+                log.info("Registering...");
+                throw new IllegalStateException("WTF?");
+                //trackingPointer = pickupSpan(buffer, shape);
             } else return null;
         }
 
@@ -976,7 +990,7 @@ public class AtomicAllocator implements Allocator {
 
 
         AllocationPoint point = getAllocationPoint(trackingPointer);
-
+//        log.info("AllocationPoint 2: " + point);
         // temporary exception too
         if (point == null)
             throw new IllegalStateException("AllocationPoint is NULL");

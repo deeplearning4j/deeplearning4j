@@ -7,6 +7,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class PageableArrayMemoryStrategy implements MemoryStrategy {
     @Override
     public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride, int getOffset) {

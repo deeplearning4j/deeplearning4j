@@ -22,11 +22,13 @@ package org.nd4j.linalg.jcublas.buffer;
 import io.netty.buffer.ByteBuf;
 
 import io.netty.buffer.Unpooled;
+import io.netty.util.internal.SystemPropertyUtil;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import lombok.NonNull;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -69,12 +71,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
-        super(buf, length);
+        throw new UnsupportedOperationException("OOPS 1");
+        //super(buf, length);
         // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
-        super(buf, length, offset);
+        throw new UnsupportedOperationException("OOPS 2");
+        //super(buf, length, offset);
         // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
@@ -125,7 +129,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param elementSize the size of each element
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
-        allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
         this.length = length;
         this.offset = 0;
         this.originalOffset = 0;
@@ -133,8 +137,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
 
+        log.info("ElementSize: " + this.elementSize);
+        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
+        log.info("Device pointer: " + allocationPoint.getPointers().getDevicePointer().address());
+
+        this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
+
+        if (this.wrappedBuffer == null) {
+            throw new IllegalStateException("WrappedBuffer is NULL");
+        }
+
         // TODO: probably this one could be reconsidered
-        AtomicAllocator.getInstance().pickupSpan(allocationPoint);
+        Long tmpPoint = AtomicAllocator.getInstance().pickupSpan(allocationPoint);
+
+        log.info("BCDB tracking point after creation: " + tmpPoint);
     }
 
     public BaseCudaDataBuffer(int length, int elementSize, int offset) {
@@ -143,13 +159,17 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.originalOffset = offset;
     }
 
-    public BaseCudaDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, int length, int offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.wrappedDataBuffer = underlyingBuffer;
+        this.wrappedBuffer = underlyingBuffer.asNio();
         this.originalBuffer = underlyingBuffer.originalDataBuffer();
         this.length = length;
         this.offset = offset;
         this.originalOffset = underlyingBuffer.originalOffset() + offset;
+        this.trackingPoint = underlyingBuffer.getTrackingPoint();
+        this.elementSize = underlyingBuffer.getElementSize();
+        this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
         // TODO: make sure we're getting pointer with offset at allocator
     }
@@ -181,11 +201,23 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
-        super(buffer,length);
+        //super(buffer,length);
+        throw new UnsupportedOperationException("OOPS 3");
     }
 
     public BaseCudaDataBuffer(ByteBuffer buffer, int length, int offset) {
-        super(buffer, length, offset);
+        //super(buffer, length, offset);
+        throw new UnsupportedOperationException("OOPS 4");
+    }
+
+    /**
+     * This method always returns host pointer
+     *
+     * @return
+     */
+    @Override
+    public long address() {
+        return allocationPoint.getPointers().getHostPointer().address();
     }
 
     /**
@@ -215,8 +247,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public void set(float[] data, int length, int srcOffset, int dstOffset) {
         // TODO: make sure getPointer returns proper pointer
+        log.info("data: " + Arrays.toString(data));
+        log.info("set(): length: ["+length+"], srcOffset: ["+srcOffset+"], dstOffset: ["+dstOffset+"]");
+
+        System.out.println("Address: " + allocator.getPointer(this).address());
+
         Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4 ) : new Pointer(allocator.getPointer(this).address());
         Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * 4) : Pointer.to(data);
+
         memcpyAsync(dstPtr, srcPtr, length * 4);
     }
 
@@ -267,6 +305,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public void memcpyAsync(Pointer dstPtr, Pointer srcPtr, long byteLen) {
         CudaContext context = allocator.getCudaContext();
+
+        System.out.println("memcpyAsync: ["+srcPtr.getNativePointer()+"] -> ["+dstPtr.getNativePointer()+"]");
+
+//        if (srcPtr.getNativePointer() == 0)
+//            throw new IllegalStateException();
 
         JCuda.cudaMemcpyAsync(
                 dstPtr,
@@ -400,7 +443,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         float[] tmp = new float[] {element};
         Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
         Pointer srcPtr = Pointer.to(tmp);
-        memcpyAsync(dstPtr, srcPtr, length * 4);
+        memcpyAsync(dstPtr, srcPtr, tmp.length * 4);
     }
 
     @Override
@@ -408,7 +451,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         double[] tmp = new double[] {element};
         Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
         Pointer srcPtr = Pointer.to(tmp);
-        memcpyAsync(dstPtr, srcPtr, length * 4);
+        memcpyAsync(dstPtr, srcPtr, tmp.length  * 8);
     }
 
     @Override
@@ -416,7 +459,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         int[] tmp = new int[] {element};
         Pointer dstPtr = i > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(i * 4 ) : new Pointer(allocator.getPointer(this).address());
         Pointer srcPtr = Pointer.to(tmp);
-        memcpyAsync(dstPtr, srcPtr, length * 4);
+        memcpyAsync(dstPtr, srcPtr, tmp.length  * 4);
     }
 
     @Override
@@ -634,7 +677,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public double getDouble(int i) {
-        allocator.synchronizeHostData(this);
+        //allocator.synchronizeHostData(this);
         return super.getDouble(i);
     }
 
@@ -652,8 +695,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public float getFloat(int i) {
-        allocator.synchronizeHostData(this);
-        return super.getFloat(i);
+//        allocator.synchronizeHostData(this);
+//        return super.getFloat(i);
+        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], position: ["+ i  +"], elementSize: [" +getElementSize() + "]");
+        if (wrappedBuffer == null)
+            throw new IllegalStateException("buffer is NULL suddenly");
+
+        return wrappedBuffer.getFloat(i * getElementSize());
     }
 
     @Override

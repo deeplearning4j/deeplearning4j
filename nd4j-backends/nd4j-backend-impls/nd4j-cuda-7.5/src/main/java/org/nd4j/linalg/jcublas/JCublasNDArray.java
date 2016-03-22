@@ -349,7 +349,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int... indices) {
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        //AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDouble(indices);
     }
 
@@ -361,7 +361,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int index) {
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        //AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDouble(index);
     }
 
@@ -582,7 +582,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public float getFloat(int i) {
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        //AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getFloat(i);
     }
 

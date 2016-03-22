@@ -207,6 +207,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        System.out.println("JCNDAF: creating array with data: " + data.getTrackingPoint());
         return new JCublasNDArray(data, newShape, newStride, offset, ordering);
     }
 
