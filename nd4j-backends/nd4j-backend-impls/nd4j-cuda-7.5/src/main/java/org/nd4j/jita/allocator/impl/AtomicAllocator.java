@@ -656,7 +656,7 @@ public class AtomicAllocator implements Allocator {
 //        log.info("Current state: " + point.getAccessState().getCurrentState());
         if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
 
-            log.info("Requesting Toe");
+//            log.info("Requesting Toe");
             point.getAccessState().requestToe();
 
             if (!point.isActualOnHostSide()) {
@@ -708,10 +708,10 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
-        log.info("Synchronize called on array.  IsNull: ["+ (array.data().originalDataBuffer() == null) +"]");
+//        log.info("Synchronize called on array.  IsNull: ["+ (array.data().originalDataBuffer() == null) +"]");
 
-        log.info("Data trackingPoint: " + array.data().getTrackingPoint());
-        log.info("ShapeBuffer trackingPoint: " + array.shapeInfoDataBuffer().getTrackingPoint());
+//        log.info("Data trackingPoint: " + array.data().getTrackingPoint());
+//        log.info("ShapeBuffer trackingPoint: " + array.shapeInfoDataBuffer().getTrackingPoint());
 
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 

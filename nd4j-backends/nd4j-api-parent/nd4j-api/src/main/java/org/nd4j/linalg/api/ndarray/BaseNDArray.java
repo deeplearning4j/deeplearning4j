@@ -1020,7 +1020,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        log.info("BNDA Assign called");
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
         return this;
     }
@@ -1028,21 +1027,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public  INDArray putScalar(int i, double value) {
         if(isScalar()) {
-            log.info("Calling scalar");
             data.put(i,value);
             return this;
         }
 
         if(isRowVector()) {
-            log.info("Calling row");
             return putScalar(new int[]{0, i}, value);
         }
         else if(isColumnVector()) {
-            log.info("Calling column");
             return putScalar(new int[]{i, 0}, value);
         }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
-        log.info("Calling matrix");
         return putScalar(indexes, value);
 
     }
@@ -1669,7 +1664,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
         if (indices[0] instanceof SpecifiedIndex && element.isVector()) {
-            log.info("Going cycle way");
             indices[0].reset();
             int cnt = 0;
             while(indices[0].hasNext()) {
@@ -1679,7 +1673,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             return this;
         } else {
-            log.info("Going index way");
             return get(indices).assign(element);
         }
     }
@@ -1763,7 +1756,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
-        log.info("Going to create new array -> offset: ["+offset+"]");
         return create(
                 data
                 , Arrays.copyOf(shape, shape.length)
@@ -3100,7 +3092,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putRow(int row, INDArray toPut) {
         if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape())) {
-            log.info("Seriously assign called");
             return assign(toPut);
         }
         return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
@@ -3548,18 +3539,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
-        log.info("PEWPEW");
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
 
-        log.info("ZOMG");
         if(indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
         int[] shape = resolution.getShapes();
 
         if(indexes[0] instanceof SpecifiedIndex) {
-            log.info("Going back to cycle");
             INDArray ret = create(shape);
             int count = 0;
             if(isVector()) {
@@ -3570,7 +3558,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             }
             else {
-                log.info("Going deeper...");
                 while(indexes[0].hasNext()) {
                     int nextIdx = indexes[0].next();
                     INDArray next = slice(nextIdx);

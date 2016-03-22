@@ -165,7 +165,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, int length, int offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
 
-        log.info("BCDB create: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"]");
+//        log.info("BCDB create: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"]");
 
         this.wrappedDataBuffer = underlyingBuffer;
         this.wrappedBuffer = underlyingBuffer.asNio();
@@ -746,7 +746,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public float getFloat(int i) {
 //        allocator.synchronizeHostData(this);
 
-        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "] ");
+        //log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "] ");
         if (wrappedBuffer == null)
             throw new IllegalStateException("buffer is NULL suddenly");
         //return super.getFloat(i);

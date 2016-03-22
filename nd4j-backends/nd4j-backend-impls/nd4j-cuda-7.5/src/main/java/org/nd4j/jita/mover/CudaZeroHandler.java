@@ -111,7 +111,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
-        log.info("Alloc called for shape: " + shape);
+        //log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
@@ -449,7 +449,7 @@ public class CudaZeroHandler implements MemoryHandler {
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
 
 //        if (length > 4)
-            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
+//            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
         JCuda.cudaMemcpyAsync(
                 dP,

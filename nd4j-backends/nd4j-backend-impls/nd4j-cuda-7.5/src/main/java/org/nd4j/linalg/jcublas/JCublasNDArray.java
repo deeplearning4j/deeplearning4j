@@ -368,7 +368,6 @@ public class JCublasNDArray extends BaseNDArray {
     @Override
     public INDArray putScalar(int i, double value) {
         try {
-            System.out.println("putScalar called");
             AtomicAllocator.getInstance().synchronizeHostData(this);
             return super.putScalar(i, value);
         } finally {
@@ -545,7 +544,6 @@ public class JCublasNDArray extends BaseNDArray {
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
         try {
-            log.info("JCNDA Put on index called");
             AtomicAllocator.getInstance().synchronizeHostData(this);
             return super.put(indices, element);
         } finally {
@@ -620,7 +618,6 @@ public class JCublasNDArray extends BaseNDArray {
     @Override
     public INDArray putRow(int row, INDArray toPut) {
         try {
-            log.info("JCNDA putRow called");
             AtomicAllocator.getInstance().synchronizeHostData(this);
             return super.putRow(row, toPut);
         } catch (Exception e) {
