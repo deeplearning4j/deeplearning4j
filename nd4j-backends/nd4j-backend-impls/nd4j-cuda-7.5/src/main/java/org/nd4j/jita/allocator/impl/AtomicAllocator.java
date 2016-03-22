@@ -1380,4 +1380,19 @@ public class AtomicAllocator implements Allocator {
     protected long getTotalAllocatedDeviceMemory(Integer deviceId) {
         return deviceMemoryTracker.getAllocatedSize(deviceId);
     }
+
+    @Override
+    public void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+        this.mover.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+        this.mover.memcpyBlocking(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        this.mover.memcpy(dstBuffer, srcBuffer);
+    }
 }

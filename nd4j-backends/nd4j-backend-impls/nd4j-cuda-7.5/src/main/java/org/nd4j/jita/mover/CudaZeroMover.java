@@ -13,6 +13,7 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.NioUtil;
@@ -41,6 +42,10 @@ public class CudaZeroMover implements Mover {
     private static Allocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(CudaZeroMover.class);
+
+    public CudaZeroMover() {
+        allocator = AtomicAllocator.getInstance();
+    }
 
     @Override
     public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Allocator allocator) {
@@ -385,5 +390,76 @@ public class CudaZeroMover implements Mover {
             case FLOAT: return NioUtil.BufferType.FLOAT;
             default: throw new UnsupportedOperationException("Unsupported data buffer type");
         }
+    }
+
+    @Override
+    public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        CudaContext context = AtomicAllocator.getInstance().getCudaContext();
+        AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+        // we update host memory regardless.
+        Pointer dP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
+//        Pointer sP = new Pointer(srcPointer.getNativePointer());
+
+        log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"]");
+
+        JCuda.cudaMemcpyAsync(
+                dP,
+                srcPointer,
+                length,
+                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                context.getOldStream()
+        );
+
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            // TODO:  device replication to be implemented
+        }
+
+        // TODO: to be removed
+        context.syncOldStream();
+    }
+
+    @Override
+    public void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        CudaContext context = AtomicAllocator.getInstance().getCudaContext();
+        memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+        context.syncOldStream();
+    }
+
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        CudaContext context = allocator.getCudaContext();
+        AllocationPoint dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+        AllocationPoint srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
+
+        Pointer dP = new Pointer(dstPoint.getPointers().getHostPointer().address());
+        Pointer sP = null;
+
+        if (srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            sP = new Pointer(srcPoint.getPointers().getDevicePointer().address());
+
+            JCuda.cudaMemcpyAsync(
+                    dP,
+                    sP,
+                    srcBuffer.length(),
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    context.getOldStream()
+            );
+        } else {
+            sP = new Pointer(srcPoint.getPointers().getHostPointer().address());
+
+            JCuda.cudaMemcpyAsync(
+                    dP,
+                    sP,
+                    srcBuffer.length(),
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    context.getOldStream()
+            );
+        }
+
+        if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            // TODO:  device replication to be implemented
+        }
+
+        context.syncOldStream();
     }
 }
