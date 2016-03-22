@@ -150,6 +150,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
+                zeroAllocations.get(Thread.currentThread().getId()).put(point.getObjectId(), point.getObjectId());
+                zeroUseCounter.addAndGet(reqMem);
 
                 // copy data from
                 /*

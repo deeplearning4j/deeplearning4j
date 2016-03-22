@@ -378,7 +378,7 @@ public class AtomicAllocatorTest {
             long time2 = System.nanoTime();
 
 
-            if (cnt.incrementAndGet() % 10000 == 0) {
+            if (cnt.incrementAndGet() % 100000 == 0) {
                 log.info("Execution time: [" + (time2 - time1) + "] ns");
                 assertEquals(1.7674999237060547, array2.getDouble(0), 0.00001);
                 log.info("Sleeping for 5 seconds...");

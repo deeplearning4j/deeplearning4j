@@ -918,7 +918,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
         int totalElements = (int) memoryHandler.getAllocatedHostObjects(threadId);
-        log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
+        log.info("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
 
         float shortAverage = zeroShort.getAverage();
         float longAverage = zeroLong.getAverage();
