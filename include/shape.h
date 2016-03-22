@@ -1242,8 +1242,8 @@ namespace shape {
     __inline__ __host__ __device__
 #endif
     bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2) {
-       if(shape1Rank != shape2Rank)
-           return false;
+        if(shape1Rank != shape2Rank)
+            return false;
         //rank not equals
         for(int i = 0; i < shape1Rank; i++) {
             if(shape1[i] != shape2[i])
@@ -3398,30 +3398,31 @@ __device__ int tadOffset(int *xInfo, int offset) {
         //note here that strides are interpreted in reverse for tad
         //start from the front rather than the back
 
-       /* if(dimension[dimIdx] < length) {
-            int dimIdxBegin = 0;
-            for(int i = 0; i < length; i++) {
-                if(data[i]  != dimIdxBegin) {
-                    return data[dimIdxBegin];
-                }
-                dimIdxBegin++;
-            }
-            return data[0];
-        }*/
+        /* if(dimension[dimIdx] < length) {
+             int dimIdxBegin = 0;
+             for(int i = 0; i < length; i++) {
+                 if(data[i]  != dimIdxBegin) {
+                     return data[dimIdxBegin];
+                 }
+                 dimIdxBegin++;
+             }
+             return data[0];
+         }*/
 
         int numOnes = 0;
         int onesEncountered = 0;
         int *shape = shape::shapeOf(data);
         int rank = shape::rank(data);
         bool squeezed = false;
+        bool newSqueezeDimensions = false;
         for(int i = 0; i < rank; i++) {
             if(shape[i] == 1)
                 numOnes++;
         }
         //squeeze the dimensions
         if(numOnes > 0) {
-            int squeezeShape[rank - numOnes];
-            int squeezeStride[rank - numOnes];
+            int *squeezeShape = (int *) malloc(sizeof(int) * rank - numOnes);
+            int *squeezeStride = (int *) malloc(sizeof(int) * rank - numOnes);
             squeezed = true;
             int numEncountered = 0;
             for(int i = 0; i < rank; i++) {
@@ -3441,11 +3442,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
             }
 
             if(numDimensionsOne > 0) {
-                int newDimensions[dimensionLength - numDimensionsOne];
+                int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
                 int newDimensionIdx = 0;
+                newSqueezeDimensions = true;
                 for(int i = 0; i < dimensionLength; i++) {
                     if(shape[dimension[i]] != 1)
-                       newDimensions[newDimensionIdx++] = dimension[i];
+                        newDimensions[newDimensionIdx++] = dimension[i];
                 }
 
                 //reduce along the new dimensions
@@ -3477,7 +3479,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  * We should avoid excessive object creation by only looping backwards.
                  */
                 if(dimension[dimIdx--] != i) {
-                     return stride[i];
+                    return stride[i];
                 }
             }
         }
@@ -3502,6 +3504,16 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 }
             }
         }
+
+        if(squeezed) {
+            free(shape);
+            free(stride);
+        }
+
+        if(newSqueezeDimensions) {
+            free(dimension);
+        }
+
 
 
         return stride[0];
