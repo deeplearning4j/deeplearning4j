@@ -111,7 +111,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
-//        log.info("Alloc called for shape: " + shape);
+        log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
@@ -448,7 +448,8 @@ public class CudaZeroHandler implements MemoryHandler {
         Pointer dP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
 
-        //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"]");
+//        if (length > 4)
+            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
         JCuda.cudaMemcpyAsync(
                 dP,
@@ -523,7 +524,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // here's the place, where we do care about promotion
 
-        return new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.originalOffset());
+        return new CudaPointer(dstPoint.getPointers().getDevicePointer(), (buffer.offset() * buffer.getElementSize()));
     }
 
     /**
@@ -769,15 +770,14 @@ public class CudaZeroHandler implements MemoryHandler {
     public CudaContext getCudaContext() {
         if (!contextPool.containsKey(Thread.currentThread().getId())) {
             initCudaContextForThread(Thread.currentThread().getId());
+
         }
         return contextPool.get(Thread.currentThread().getId());
     }
 
+
     @Deprecated
     protected void initCudaContextForThread(Long threadId) {
-        /*
-            this method is called from write-locked region, but its backward call falls into lock-free branch, since deviceAffinity is already defined
-         */
 
         // we set device to be used prior to stream creation
 

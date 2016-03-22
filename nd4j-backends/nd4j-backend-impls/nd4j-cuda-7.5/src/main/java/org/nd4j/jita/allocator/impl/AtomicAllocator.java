@@ -681,6 +681,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void trySynchronizeHostData(DataBuffer syncBuffer) {
+        /*
         DataBuffer buffer =  syncBuffer.originalDataBuffer() == null ? syncBuffer : syncBuffer.originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(buffer), false);
@@ -697,7 +698,7 @@ public class AtomicAllocator implements Allocator {
 
                 point.getAccessState().releaseToe();
             }// else log.info("Toe is busy, skipping");
-        }
+        }*/
     }
 
     /**

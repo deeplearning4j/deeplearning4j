@@ -164,12 +164,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, int length, int offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
+
+        log.info("BCDB create: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"]");
+
         this.wrappedDataBuffer = underlyingBuffer;
         this.wrappedBuffer = underlyingBuffer.asNio();
         this.originalBuffer = underlyingBuffer.originalDataBuffer() == null ? underlyingBuffer : underlyingBuffer.originalDataBuffer();
         this.length = length;
         this.offset = offset;
-        this.originalOffset = underlyingBuffer.originalOffset() + offset;
+        this.originalOffset = 0;  // + underlyingBuffer.originalOffset();
         this.trackingPoint = underlyingBuffer.getTrackingPoint();
         this.elementSize = underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;

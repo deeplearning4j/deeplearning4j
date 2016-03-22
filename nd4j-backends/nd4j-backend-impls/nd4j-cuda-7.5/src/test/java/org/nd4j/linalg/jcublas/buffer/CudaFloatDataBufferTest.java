@@ -74,4 +74,63 @@ public class CudaFloatDataBufferTest {
 
         assertEquals(tp1, tp2);
     }
+
+    @Test
+    public void testINDArrayOffsets2() throws Exception {
+        INDArray array = Nd4j.linspace(0, 24, 25).reshape(5, 5);
+
+        assertEquals(6.0f, array.getFloat(6), 0.01f);
+
+        INDArray slice0 = array.slice(0);
+        assertEquals(0f, slice0.getFloat(0), 0.01f);
+
+        INDArray slice1 = array.slice(1);
+        assertEquals(5f, slice1.getFloat(0), 0.01f);
+
+        INDArray slice2 = array.slice(2);
+        assertEquals(10f, slice2.getFloat(0), 0.01f);
+
+        INDArray slice3 = array.slice(3);
+        assertEquals(15f, slice3.getFloat(0), 0.01f);
+
+        assertEquals(array.data().getTrackingPoint(), slice0.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice1.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice2.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice3.data().getTrackingPoint());
+    }
+
+    @Test
+    public void testINDArrayOffsets3() throws Exception {
+        INDArray array = Nd4j.linspace(0, 24, 25).reshape(5, 5);
+        INDArray array2 = Nd4j.create(5, 5);
+
+        assertEquals(6.0f, array.getFloat(6), 0.01f);
+
+        INDArray slice0 = array.slice(0);
+        assertEquals(0f, slice0.getFloat(0), 0.01f);
+
+        array2.putRow(0, slice0);
+        assertEquals(slice0, array2.slice(0));
+
+        INDArray slice1 = array.slice(1);
+        assertEquals(5f, slice1.getFloat(0), 0.01f);
+
+        System.out.println("---------------------------------------------------------------------");
+        array2.putRow(1, slice1);
+//        assertFalse(true);
+        assertEquals(slice1, array2.slice(1));
+        System.out.println("---------------------------------------------------------------------");
+
+
+        INDArray slice2 = array.slice(2);
+        assertEquals(10f, slice2.getFloat(0), 0.01f);
+
+        INDArray slice3 = array.slice(3);
+        assertEquals(15f, slice3.getFloat(0), 0.01f);
+
+        assertEquals(array.data().getTrackingPoint(), slice0.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice1.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice2.data().getTrackingPoint());
+        assertEquals(array.data().getTrackingPoint(), slice3.data().getTrackingPoint());
+    }
 }
