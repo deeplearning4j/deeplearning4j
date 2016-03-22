@@ -1189,21 +1189,12 @@ namespace shape {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
-              /*  printf("Rear most stride for c ordering %d and index %d\n",rearMostStride,index);
-                for(int i = 0; i < shape::rank(shapeInfo); i++) {
-                    printf("Stride %d is %d\n",i,stride[i]);
-                }*/
                 return index * rearMostStride;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
-
-               /* printf("Rear most stride for c ordering %d and index %d\n",rearMostStride,index);
-                for(int i = 0; i < shape::rank(shapeInfo); i++) {
-                    printf("Stride %d is %d\n",i,stride[i]);
-                }*/
                 return index * rearMostStride;
             }
 
@@ -3441,7 +3432,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 }
             }
 
-          
+
             //for any dimensions specified that are 1,ignore them
             int numDimensionsOne = 0;
             for(int i = 0;i < dimensionLength; i++) {
@@ -3486,9 +3477,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  * We should avoid excessive object creation by only looping backwards.
                  */
                 if(dimension[dimIdx--] != i) {
-                   // printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
-                   // printf("Returning stride %d with stride index %d\n",stride[i],i);
-                    return stride[i];
+                     return stride[i];
                 }
             }
         }
@@ -3509,7 +3498,6 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  * We should avoid excessive object creation by only looping backwards.
                  */
                 if(dimension[dimIdx--] != i) {
-                    // printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
                     return stride[i];
                 }
             }
