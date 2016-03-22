@@ -615,6 +615,8 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Pointer getPointer(INDArray array) {
         //DataBuffer buffer = array.data().originalDataBuffer() != null ? array.data().originalDataBuffer() : array.data();
+        if (array == null) throw new RuntimeException("?????????");
+        if (array.data() == null) throw new RuntimeException("WTF???");
         AllocationPoint point = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
 
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
