@@ -1663,8 +1663,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         System.out.println("Out:\n" + out);
 
         int countZero = 0;
-        for( int i = 0; i < 8; i++ )
-            if(out.getDouble(i) == 0.0 )
+        for( int i = 0; i < 8; i++)
+            if(out.getDouble(i) == 0.0)
                 countZero++;
         assertEquals(countZero, 0);
     }
@@ -1955,7 +1955,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testLeakyRelu2(){
         INDArray arr = Nd4j.linspace(-1,1,10);
         double[] expected = new double[10];
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             double in = arr.getDouble(i);
             expected[i] = (in <= 0.0 ? 0.01 * in : in);
         }

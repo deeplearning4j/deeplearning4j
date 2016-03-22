@@ -51,7 +51,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
     private INDArray features, labels;
-    private String id = UUID.randomUUID().toString();
     private INDArray featuresMask;
     private INDArray labelsMask;
 
@@ -287,7 +286,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public String id() {
-        return id;
+        return "";
     }
 
     @Override
