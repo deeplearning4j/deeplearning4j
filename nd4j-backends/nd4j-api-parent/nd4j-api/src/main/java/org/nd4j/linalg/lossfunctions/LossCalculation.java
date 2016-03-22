@@ -12,7 +12,6 @@ import org.nd4j.linalg.indexing.functions.StableNumber;
 import org.nd4j.linalg.indexing.functions.Value;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
@@ -120,7 +119,7 @@ class LossCalculation {
                 break;
             case RMSE_XENT:
                 INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
+                INDArray squaredrmseXentDiff = rmseXentDiff.muli(rmseXentDiff);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
                 if(mask != null) sqrt.muliColumnVector(mask);
                 scoreArray = sqrt;
