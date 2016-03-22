@@ -1185,8 +1185,6 @@ namespace shape {
     */
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
         if(dimensionLength > 1) {
-
-
             if(shape::order(shapeInfo) == 'c') {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
@@ -3443,7 +3441,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 }
             }
 
-
+          
             //for any dimensions specified that are 1,ignore them
             int numDimensionsOne = 0;
             for(int i = 0;i < dimensionLength; i++) {
@@ -3461,19 +3459,21 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
                 //reduce along the new dimensions
                 dimension = newDimensions;
+                dimensionLength  -= numDimensionsOne;
 
             }
             //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
             //the previous pointer is just a view of a pointer to be reused that was passed in
             shape = squeezeShape;
             stride = squeezeStride;
+            rank -= numOnes;
+
 
         }
 
         if(shape::order(data) == 'f') {
             int dimIdx = dimensionLength - 1;
-
-            for(int i = length - 1; i > 0; i--) {
+            for(int i = rank - 1; i > 0; i--) {
                 /**
                  * Needs to find an algorithm such that:
                  * looping backwards will find the highest dimension left
@@ -3487,6 +3487,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  */
                 if(dimension[dimIdx--] != i) {
                    // printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
+                   // printf("Returning stride %d with stride index %d\n",stride[i],i);
                     return stride[i];
                 }
             }
@@ -3495,7 +3496,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         else {
             int dimIdx = dimensionLength - 1;
 
-            for(int i = length - 1; i > 0; i--) {
+            for(int i = rank - 1; i > 0; i--) {
                 /**
                  * Needs to find an algorithm such that:
                  * looping backwards will find the highest dimension left

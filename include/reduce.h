@@ -840,6 +840,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                       // printf("Shape tad offset %d\n",offset);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
