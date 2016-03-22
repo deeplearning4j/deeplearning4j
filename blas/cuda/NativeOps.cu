@@ -2064,6 +2064,9 @@ void NativeOps::initializeDevicesAndFunctions() {
     cudaGetDeviceCount(&devCnt);
     deviceProperties = new cudaDeviceProp[devCnt];
     funcAttributes = new cudaFuncAttributes[28];
+    // TODO: remove this setDevice later
+    if (devCnt > 0)
+        cudaSetDevice(0);
     for (int i = 0; i < devCnt; i++) {
         cudaGetDeviceProperties(&deviceProperties[i], i);
     }
