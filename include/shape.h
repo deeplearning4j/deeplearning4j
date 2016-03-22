@@ -3424,9 +3424,50 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int onesEncountered = 0;
         int *shape = shape::shapeOf(data);
         int rank = shape::rank(data);
+        bool squeezed = false;
         for(int i = 0; i < rank; i++) {
             if(shape[i] == 1)
                 numOnes++;
+        }
+        //squeeze the dimensions
+        if(numOnes > 0) {
+            int squeezeShape[rank - numOnes];
+            int squeezeStride[rank - numOnes];
+            squeezed = true;
+            int numEncountered = 0;
+            for(int i = 0; i < rank; i++) {
+                if(shape[i] != 1) {
+                    squeezeShape[numEncountered] = shape[i];
+                    squeezeStride[numEncountered] = stride[i];
+                    numEncountered++;
+                }
+            }
+
+
+            //for any dimensions specified that are 1,ignore them
+            int numDimensionsOne = 0;
+            for(int i = 0;i < dimensionLength; i++) {
+                if(shape[dimension[i]] == 1)
+                    numDimensionsOne++;
+            }
+
+            if(numDimensionsOne > 0) {
+                int newDimensions[dimensionLength - numDimensionsOne];
+                int newDimensionIdx = 0;
+                for(int i = 0; i < dimensionLength; i++) {
+                    if(shape[dimension[i]] != 1)
+                       newDimensions[newDimensionIdx++] = dimension[i];
+                }
+
+                //reduce along the new dimensions
+                dimension = newDimensions;
+
+            }
+            //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
+            //the previous pointer is just a view of a pointer to be reused that was passed in
+            shape = squeezeShape;
+            stride = squeezeStride;
+
         }
 
         if(shape::order(data) == 'f') {
@@ -3444,7 +3485,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  *
                  * We should avoid excessive object creation by only looping backwards.
                  */
-                if(dimension[dimIdx--] != i && (onesEncountered++ >= numOnes || onesEncountered == 0)) {
+                if(dimension[dimIdx--] != i) {
                    // printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
                     return stride[i];
                 }
@@ -3452,7 +3493,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         }
 
         else {
-            int dimIdx = 0;
+            int dimIdx = dimensionLength - 1;
 
             for(int i = length - 1; i > 0; i--) {
                 /**
@@ -3466,8 +3507,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  *
                  * We should avoid excessive object creation by only looping backwards.
                  */
-                if(dimension[dimIdx++] != i && (onesEncountered++ >= numOnes || onesEncountered == 0)) {
-                    //printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
+                if(dimension[dimIdx--] != i) {
+                    // printf("Num ones is %d vs ones encountered %d\n",numOnes,onesEncountered);
                     return stride[i];
                 }
             }
