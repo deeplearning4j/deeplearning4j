@@ -249,17 +249,19 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
+        if (1 > 0) return memoryHandler.getDevicePointer(buffer);
+
         AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
-            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+       //     zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+       //     zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
         } else {
             deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
             deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
         }
 
-        if (1 > 0) return memoryHandler.getDevicePointer(buffer);
+
         //log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
             We assume that object is registered within allocator
@@ -408,9 +410,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(INDArray array) {
-        //DataBuffer buffer = array.data().originalDataBuffer() != null ? array.data().originalDataBuffer() : array.data();
-        if (array == null) throw new RuntimeException("?????????");
-        if (array.data() == null) throw new RuntimeException("WTF???");
+
+        return memoryHandler.getDevicePointer(array.data());
+/*
         AllocationPoint point = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
 
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
@@ -426,16 +428,6 @@ public class AtomicAllocator implements Allocator {
             deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
             deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
         }
-
-        return memoryHandler.getDevicePointer(array.data());
-/*
-        AllocationShape shape = AllocationUtils.buildAllocationShape(array);
-
-        if (buffer.getTrackingPoint() == null) {
-            pickupSpan(array);
-        }
-
-        return getPointer(buffer, shape, array.isView());
         */
     }
 
