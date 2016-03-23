@@ -133,4 +133,13 @@ public class CudaFloatDataBufferTest {
         assertEquals(array.data().getTrackingPoint(), slice2.data().getTrackingPoint());
         assertEquals(array.data().getTrackingPoint(), slice3.data().getTrackingPoint());
     }
+
+    @Test
+    public void testDup1() throws Exception {
+        INDArray array1 = Nd4j.linspace(0, 9, 10);
+        INDArray array2 = array1.dup();
+
+        assertEquals(array1, array2);
+        assertNotEquals(array1.data().getTrackingPoint(), array2.data().getTrackingPoint());
+    }
 }

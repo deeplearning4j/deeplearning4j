@@ -125,6 +125,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         set(data, this.length, 0, offset);
     }
 
+
+
     /**
      * Base constructor. It's used within all constructors internally
      *
@@ -714,8 +716,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public DataBuffer dup() {
-        allocator.synchronizeHostData(this);
-        return super.dup();
+        //allocator.synchronizeHostData(this);
+
+        DataBuffer buffer = create(this.length);
+        allocator.memcpy(buffer, this);
+
+        return buffer;
     }
 
     @Override
