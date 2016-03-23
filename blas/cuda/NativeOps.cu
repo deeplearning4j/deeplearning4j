@@ -22,7 +22,8 @@
 #include <pointercast.h>
 #include <stdio.h>
 
-
+cudaDeviceProp *deviceProperties;
+cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 
 
 template <typename T>
@@ -2063,7 +2064,6 @@ void NativeOps::initializeDevicesAndFunctions() {
     int devCnt = 0;
     cudaGetDeviceCount(&devCnt);
     deviceProperties = new cudaDeviceProp[devCnt];
-    funcAttributes = new cudaFuncAttributes[28];
     for (int i = 0; i < devCnt; i++) {
         cudaGetDeviceProperties(&deviceProperties[i], i);
     }
