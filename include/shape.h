@@ -943,7 +943,10 @@ namespace shape {
     __host__ __device__
 #endif
     static int getOffset(int baseOffset,int *shape,int *stride,int *indices,int rank);
-
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * createShapeInfo(int *shape,int *stride,int rank);
 
     /**
  * Convert a linear index to
@@ -1189,13 +1192,15 @@ namespace shape {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
-                return index * rearMostStride;
+                int ret =  index * rearMostStride;
+                return ret;
             }
             else {
                 int *stride = shape::stride(shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 int rearMostStride = shape::rearMostLeftOverItem(shapeInfo,rank,dimension,dimensionLength);
-                return index * rearMostStride;
+                int ret = index * rearMostStride;
+                return ret;
             }
 
         }
@@ -1267,6 +1272,22 @@ namespace shape {
         int *retStride = shape::stride(ret);
         shape::reverseCopyTo(strideOf,&retStride,dimension,dimensionLength);
         shape::copyTo(dimensionLength,shapeOf,&retShape,dimension);
+        return ret;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * createShapeInfo(int *shape,int *stride,int rank) {
+        int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(rank));
+        ret[0] = rank;
+        int *retShape = shape::shapeOf(ret);
+        int *retStride = shape::stride(ret);
+        for(int i = 0;i < rank; i++) {
+            retShape[i] = shape[i];
+            retStride[i] = stride[i];
+        }
+
         return ret;
     }
 
@@ -3398,75 +3419,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
         //note here that strides are interpreted in reverse for tad
         //start from the front rather than the back
 
-        /* if(dimension[dimIdx] < length) {
-             int dimIdxBegin = 0;
-             for(int i = 0; i < length; i++) {
-                 if(data[i]  != dimIdxBegin) {
-                     return data[dimIdxBegin];
-                 }
-                 dimIdxBegin++;
-             }
-             return data[0];
-         }*/
-
-        int numOnes = 0;
-        int onesEncountered = 0;
-        int *shape = shape::shapeOf(data);
         int rank = shape::rank(data);
-        bool squeezed = false;
-        bool newSqueezeDimensions = false;
-        for(int i = 0; i < rank; i++) {
-            if(shape[i] == 1)
-                numOnes++;
-        }
-        //squeeze the dimensions
-        if(numOnes > 0) {
-            int *squeezeShape = (int *) malloc(sizeof(int) * rank - numOnes);
-            int *squeezeStride = (int *) malloc(sizeof(int) * rank - numOnes);
-            squeezed = true;
-            int numEncountered = 0;
-            for(int i = 0; i < rank; i++) {
-                if(shape[i] != 1) {
-                    squeezeShape[numEncountered] = shape[i];
-                    squeezeStride[numEncountered] = stride[i];
-                    numEncountered++;
-                }
-            }
 
-
-            //for any dimensions specified that are 1,ignore them
-            int numDimensionsOne = 0;
-            for(int i = 0;i < dimensionLength; i++) {
-                if(shape[dimension[i]] == 1)
-                    numDimensionsOne++;
-            }
-
-            if(numDimensionsOne > 0) {
-                int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
-                int newDimensionIdx = 0;
-                newSqueezeDimensions = true;
-                for(int i = 0; i < dimensionLength; i++) {
-                    if(shape[dimension[i]] != 1)
-                        newDimensions[newDimensionIdx++] = dimension[i];
-                }
-
-                //reduce along the new dimensions
-                dimension = newDimensions;
-                dimensionLength  -= numDimensionsOne;
-
-            }
-            //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
-            //the previous pointer is just a view of a pointer to be reused that was passed in
-            shape = squeezeShape;
-            stride = squeezeStride;
-            rank -= numOnes;
-
-
-        }
 
         if(shape::order(data) == 'f') {
             int dimIdx = dimensionLength - 1;
-            for(int i = rank - 1; i > 0; i--) {
+            for(int i = rank - 1; i >= 0; i--) {
                 /**
                  * Needs to find an algorithm such that:
                  * looping backwards will find the highest dimension left
@@ -3479,7 +3437,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  * We should avoid excessive object creation by only looping backwards.
                  */
                 if(dimension[dimIdx--] != i) {
-                    return stride[i];
+                    int ret = stride[i];
+                    return ret;
                 }
             }
         }
@@ -3487,7 +3446,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         else {
             int dimIdx = dimensionLength - 1;
 
-            for(int i = rank - 1; i > 0; i--) {
+            for(int i = rank - 1; i >= 0; i--) {
                 /**
                  * Needs to find an algorithm such that:
                  * looping backwards will find the highest dimension left
@@ -3500,23 +3459,17 @@ __device__ int tadOffset(int *xInfo, int offset) {
                  * We should avoid excessive object creation by only looping backwards.
                  */
                 if(dimension[dimIdx--] != i) {
-                    return stride[i];
+                    int ret = stride[i];
+                    return ret;
                 }
             }
         }
 
-        if(squeezed) {
-            free(shape);
-            free(stride);
-        }
-
-        if(newSqueezeDimensions) {
-            free(dimension);
-        }
 
 
 
-        return stride[0];
+        int ret = stride[0];
+        return ret;
     }
 
 }
