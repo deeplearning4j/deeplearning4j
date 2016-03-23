@@ -453,11 +453,22 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6m = arr6.mean(2, 3);
-        INDArray arr6s = arr6.sum(2,3);
-        for( int i = 0; i<arr6m.length(); i++ )
+        for( int i = 0; i < arr6m.length(); i++ )
             assertEquals(arr6m.getDouble(i),1,1e-1);
+
+        INDArray arr6s = arr6.sum(2,3);
+
         for( int i = 0; i < arr6s.length(); i++)
             assertEquals(arr6s.getDouble(i),16,1e-1);
+    }
+
+    @Test
+    public void testSum6d() {
+        INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
+        INDArray arr6s = arr6.sum(2,3);
+        for( int i = 0; i < arr6s.length(); i++)
+            assertEquals(arr6s.getDouble(i),16,1e-1);
+
     }
 
     @Test
@@ -482,7 +493,6 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testReductionIndex() {
-        INDArray x = Nd4j.linspace(1,24,24).reshape(2,2,3,2);
         Map<Integer,Integer> assertionMap = new HashMap<>();
         assertionMap.put(0,0);
         assertionMap.put(1,0);
@@ -498,9 +508,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertionMap.put(11,3);
         assertionMap.put(12,3);
 
-        int[] smallerDimension ={3};
-        int[] biggerDImensions = new int[] {2,3};
-        assertEquals(3,TadCollapseAccumulation.tadsPerReduceIndex(4,12));
+          assertEquals(3,TadCollapseAccumulation.tadsPerReduceIndex(4,12));
         for(int i = 0; i < 12; i++) {
             int val = assertionMap.get(i);
             assertEquals(val, TadCollapseAccumulation.reductionIndexForTad(i, 4, 12));
