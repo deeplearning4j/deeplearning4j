@@ -47,6 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.*;
 import java.util.*;
@@ -70,7 +71,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
     public BaseCudaDataBuffer() {
-        throw new UnsupportedOperationException("You can't instantiate undefined buffer");
+
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
@@ -134,13 +135,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param elementSize the size of each element
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
+        this.allocationMode = AllocationMode.JAVACPP;
+
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
         this.length = length;
-        this.offset = 0;
-        this.originalOffset = 0;
         allocationPoint.attachBuffer(this);
         this.elementSize = elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
+        this.offset = 0;
+        this.originalOffset = 0;
+
 
 //        log.info("ElementSize: " + this.elementSize);
 //        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
@@ -153,7 +157,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         // TODO: probably this one could be reconsidered
-        Long tmpPoint = AtomicAllocator.getInstance().pickupSpan(allocationPoint);
+//        Long tmpPoint = AtomicAllocator.getInstance().pickupSpan(allocationPoint);
 
 //        log.info("BCDB tracking point after creation: " + tmpPoint);
     }
@@ -166,7 +170,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, int length, int offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
-
+        this.allocationMode = AllocationMode.JAVACPP;
 //        log.info("BCDB create: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"]");
 
         this.wrappedDataBuffer = underlyingBuffer;
@@ -174,7 +178,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.originalBuffer = underlyingBuffer.originalDataBuffer() == null ? underlyingBuffer : underlyingBuffer.originalDataBuffer();
         this.length = length;
         this.offset = offset;
-        this.originalOffset = 0;  // + underlyingBuffer.originalOffset();
+        this.originalOffset = offset;
         this.trackingPoint = underlyingBuffer.getTrackingPoint();
         this.elementSize = underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
@@ -453,17 +457,22 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if(dataType() == Type.DOUBLE) {
             double[] tmp = new double[]{(double) element};
             Pointer srcPtr = Pointer.to(tmp);
-//            log.info("Setting data at position: " + ((offset + i) * 8) + " data: " + Arrays.toString(tmp));
+
+//            log.info("Setting data at position: " + ((offset + i) * elementSize) + " data: " + Arrays.toString(tmp));
 
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         } else if (dataType() == Type.FLOAT) {
             float[] tmp = new float[]{element};
             Pointer srcPtr = Pointer.to(tmp);
 
+   //         log.info("Setting data at position: " + ((offset + i) * elementSize) + " data: " + Arrays.toString(tmp));
+
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         } else if (dataType() == Type.INT) {
             int[] tmp = new int[]{(int) element};
             Pointer srcPtr = Pointer.to(tmp);
+
+//            log.info("Setting data at position: " + ((offset + i) * elementSize) + " data: " + Arrays.toString(tmp));
 
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         }
@@ -658,6 +667,51 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (this == o) return true;
 
         return false;
+    }
+
+    @Override
+    public void read(DataInputStream s) {
+        try {
+            // skip allocationMode
+            s.readUTF();
+            allocationMode = AllocationMode.JAVACPP;
+            length = s.readInt();
+            Type t = Type.valueOf(s.readUTF());
+            if(t == Type.DOUBLE) {
+                this.elementSize = 8;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+                allocationPoint.attachBuffer(this);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readDouble());
+                }
+            } else if(t == Type.FLOAT) {
+                this.elementSize = 4;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+                allocationPoint.attachBuffer(this);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readFloat());
+                }
+            } else if(t == Type.INT) {
+                this.elementSize = 4;
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+                allocationPoint.attachBuffer(this);
+                this.trackingPoint = allocationPoint.getObjectId();
+
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readInt());
+                }
+            } else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
+
+            this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        allocator.synchronizeHostData(this);
     }
 
     @Override

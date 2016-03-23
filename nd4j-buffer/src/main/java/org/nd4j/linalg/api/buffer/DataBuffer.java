@@ -57,7 +57,8 @@ public interface DataBuffer extends Serializable {
     enum AllocationMode {
         DIRECT,
         HEAP,
-        JAVACPP
+        JAVACPP,
+        CUDA
     }
 
     /**
