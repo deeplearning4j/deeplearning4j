@@ -320,6 +320,7 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
+    @Deprecated
     public void tickHost(INDArray array) {
         // TODO: to be implemented, probably
     }
@@ -330,6 +331,7 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
+    @Deprecated
     public void tickDevice(INDArray array) {
         // TODO: to be implemented, probably
     }
@@ -341,16 +343,17 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
+    @Deprecated
     public void tackDevice(INDArray array) {
 //        log.info("tackDevice(INDArray)");
-
+/*
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         tackDevice(buffer, AllocationUtils.buildAllocationShape(array));
 
         if (array.shapeInfoDataBuffer().getTrackingPoint() != null) {
             tackDevice(array.shapeInfoDataBuffer(), AllocationUtils.buildAllocationShape(array.shapeInfoDataBuffer()));
-        }
+        }*/
     }
 
 
@@ -362,10 +365,11 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      * @param shape
      */
+    @Deprecated
     protected void tackDevice(DataBuffer buffer, AllocationShape shape) {
-        AllocationPoint point = getAllocationPoint(buffer, shape, true);
+        //AllocationPoint point = getAllocationPoint(buffer, shape, true);
 
-        point.getAccessState().requestTack();
+        //point.getAccessState().requestTack();
 
         //point.tickDeviceWrite();
     }
@@ -377,13 +381,16 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
+    @Deprecated
     public void tickDeviceWrite(INDArray array) {
         //log.info("Tick device write!");
+        /*
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         point.tickDeviceWrite();
+        */
     }
 
     /**
@@ -392,7 +399,9 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
+    @Deprecated
     public void tickHostWrite(INDArray array) {
+        /*
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
@@ -403,6 +412,7 @@ public class AtomicAllocator implements Allocator {
         }
 
         point.tickHostWrite();
+        */
     }
 
     /**
@@ -415,8 +425,8 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
-            zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
+            //zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
+            //zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
         } else {
             deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
             deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
@@ -676,6 +686,7 @@ public class AtomicAllocator implements Allocator {
      *
      * @param buffer
      */
+    @Deprecated
     protected void synchronizeHostData(DataBuffer buffer, AllocationShape shape) {
         if (1> 0) return;
         AllocationPoint point = getAllocationPoint(buffer, shape, true);
@@ -741,13 +752,15 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        synchronizeHostData(buffer);
 //        log.info("Synchronize called on array.  IsNull: ["+ (array.data().originalDataBuffer() == null) +"]");
 
 //        log.info("Data trackingPoint: " + array.data().getTrackingPoint());
 //        log.info("ShapeBuffer trackingPoint: " + array.shapeInfoDataBuffer().getTrackingPoint());
 
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
 
+/*
         AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
 
         if (point == null) {
@@ -756,6 +769,7 @@ public class AtomicAllocator implements Allocator {
         }
 
         synchronizeHostData(buffer, AllocationUtils.buildAllocationShape(array));
+        */
     }
 
     /**
@@ -766,7 +780,12 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        if (memoryHandler.isDeviceDependant())
+            memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId());
+
+
         //log.info("Synchronize called on buffer");
+        /*
         DataBuffer fbuffer = buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer();
 
         AllocationPoint point = getAllocationPoint(fbuffer, AllocationUtils.buildAllocationShape(fbuffer), true);
@@ -777,6 +796,7 @@ public class AtomicAllocator implements Allocator {
         }
 
         synchronizeHostData(fbuffer, AllocationUtils.buildAllocationShape(fbuffer));
+        */
     }
 
     /**

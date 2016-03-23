@@ -74,13 +74,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
-        throw new UnsupportedOperationException("OOPS 1");
+        throw new UnsupportedOperationException("Not implemented yet");
         //super(buf, length);
         // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
     public BaseCudaDataBuffer(ByteBuf buf, int length, int offset) {
-        throw new UnsupportedOperationException("OOPS 2");
+        throw new UnsupportedOperationException("Not implemented yet");
         //super(buf, length, offset);
         // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
@@ -702,13 +702,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public FloatBuffer asNioFloat() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNioFloat();
     }
 
     @Override
     public IntBuffer asNioInt() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNioInt();
     }
 
@@ -726,42 +726,38 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public double getDouble(int i) {
-        //allocator.synchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.getDouble(i);
     }
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
-        allocator.synchronizeHostData(this);
         return super.getDoublesAt(offset, inc, length);
     }
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
-        allocator.synchronizeHostData(this);
         return super.getDoublesAt(offset, length);
     }
 
     @Override
     public float getFloat(int i) {
-//        allocator.synchronizeHostData(this);
+        allocator.synchronizeHostData(this);
 
         //log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "] ");
         if (wrappedBuffer == null)
             throw new IllegalStateException("buffer is NULL suddenly");
-        //return super.getFloat(i);
-        return wrappedBuffer.getFloat((offset + i) * getElementSize());
+        return super.getFloat(i);
+        //return wrappedBuffer.getFloat((offset + i) * getElementSize());
     }
 
     @Override
     public float[] getFloatsAt(int offset, int inc, int length) {
-        allocator.synchronizeHostData(this);
         return super.getFloatsAt(offset, inc, length);
     }
 
     @Override
     public float[] getFloatsAt(int offset, int length) {
-        allocator.synchronizeHostData(this);
         return super.getFloatsAt(offset, length);
     }
 

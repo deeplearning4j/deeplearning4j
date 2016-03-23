@@ -25,6 +25,10 @@ public interface MemoryHandler {
 
     void init(Configuration configuration, CudaEnvironment environment, Allocator allocator);
 
+    boolean isDeviceDependant();
+
+    void synchronizeThreadDevice(Long threadId, Integer deviceId);
+
     /**
      * Allocate specified memory chunk on specified device/host
      *

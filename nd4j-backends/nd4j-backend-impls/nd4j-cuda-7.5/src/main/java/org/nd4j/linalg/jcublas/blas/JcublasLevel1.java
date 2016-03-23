@@ -359,10 +359,10 @@ public class JcublasLevel1 extends BaseLevel1 {
                   xBPointer.getDevicePointer().getNativePointer(),
                   incY);
 
-         allocator.tickDeviceWrite(Y);
+//         allocator.tickDeviceWrite(Y);
 
-         allocator.tackDevice(X);
-         allocator.tackDevice(Y);
+//         allocator.tackDevice(X);
+//         allocator.tackDevice(Y);
     }
 
     @Override

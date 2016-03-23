@@ -793,4 +793,13 @@ public class CudaZeroHandler implements MemoryHandler {
         contextPool.put(threadId, context);
     }
 
+    @Override
+    public boolean isDeviceDependant() {
+        return true;
+    }
+
+    @Override
+    public void synchronizeThreadDevice(Long threadId, Integer deviceId) {
+        getCudaContext().syncOldStream();
+    }
 }
