@@ -99,17 +99,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer, dimension.length);
         }
 
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
-
         return op.z();
     }
 
@@ -293,17 +282,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
-
         return ret;
     }
 
@@ -404,20 +382,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA  || op instanceof CopyOp) {
-            try {
-                // we dont' care about op.Z sync state, since it'll be overwritten
-                if (op.x() != null)
-                    allocator.synchronizeHostData(op.x());
-                if (op.y() != null)
-                    allocator.synchronizeHostData(op.y());
-
                 super.exec(op);
                 return null;
-            } finally {
-                // we notify allocator that op.Z was modified on host side
-                if (op.z() != null)
-                    allocator.tickHostWrite(op.z());
-            }
         }
 
         if (op instanceof TransformOp) {
@@ -496,16 +462,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
         return null;
     }
 
@@ -572,16 +528,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                         dimension.length);
             }
         }
-
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-         //if (op.x() != null) allocator.tickDeviceWrite(op.x());
 
         return null;
 
@@ -781,18 +727,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
-
         return ctx;
     }
 
@@ -843,18 +777,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     extraArgs);
         }
 
-        if (op.x() != null) {
-            allocator.tackDevice(op.x());
-
-        }
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
         return  null;
     }
 
@@ -976,16 +898,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             }
         }
-        if (op.x() != null)
-            allocator.tackDevice(op.x());
-        if (op.y() != null)
-            allocator.tackDevice(op.y());
-        if (op.z() != null)
-            allocator.tackDevice(op.z());
-
-        // we notify allocator that op.Z was modified on device side
-        if (op.z() != null)
-            allocator.tickDeviceWrite(op.z());
 
         return null;
     }

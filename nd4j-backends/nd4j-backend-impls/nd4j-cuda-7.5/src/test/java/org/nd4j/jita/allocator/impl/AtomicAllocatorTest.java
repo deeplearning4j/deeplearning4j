@@ -84,9 +84,6 @@ public class AtomicAllocatorTest {
 
         allocator.getPointer(array);
 
-        allocator.tackDevice(array);
-        allocator.tickDeviceWrite(array);
-
         System.out.println("Scalar array: " + array);
     }
 

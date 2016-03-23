@@ -740,19 +740,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public ByteBuf asNetty() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNetty();
     }
 
     @Override
     public ByteBuffer asNio() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNio();
     }
 
     @Override
     public DoubleBuffer asNioDouble() {
-        allocator.trySynchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNioDouble();
     }
 

@@ -58,69 +58,10 @@ public interface Allocator {
     Configuration getConfiguration();
 
     /**
-     * This method registers buffer within allocator instance
-     */
-   // Long pickupSpan(BaseCudaDataBuffer buffer, AllocationShape shape);
-
-    /**
-     * This method registers array's buffer within allocator instance
-     * @param array INDArray object to be picked
-     */
-    Long pickupSpan(INDArray array);
-
-    /**
-     * This  method registers AllocationPoint within allocator instance
-     *
-     * @param point
-     * @return
-     */
-    Long pickupSpan(AllocationPoint point);
-
-    /**
-     * This method hints allocator, that specific object was accessed on host side.
-     * This includes putRow, putScalar;
-     *
-     * @param array
-     */
-    void tickHost(INDArray array);
-
-
-    /**
-     * This methods hints allocator, that specific object was accessed on device side.
-     *
-     * @param array
-     */
-    @Deprecated
-    void tickDevice(INDArray array);
-
-
-    /**
-     * This method hints allocator, that specific object was released on device side
-     *
-     * @param array
-     */
-    void tackDevice(INDArray array);
-
-    /**
-     * This method notifies allocator, that specific object was changed on device side
-     *
-     * @param array
-     */
-    void tickDeviceWrite(INDArray array);
-
-    /**
-     * This method notifies allocator, that specific object was changed on host side
-     *
-     * @param array
-     */
-    void tickHostWrite(INDArray array);
-
-    /**
      * This method returns actual device pointer valid for current object
      *
      * @param buffer
      */
-    @Deprecated
     Pointer getPointer(DataBuffer buffer);
 
     /**
@@ -129,8 +70,7 @@ public interface Allocator {
      * @param buffer
      * @param shape
      */
-    @Deprecated
-    Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView);
+     Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView);
 
 
     /**
@@ -144,7 +84,6 @@ public interface Allocator {
      *
      * @param array
      */
-    // TODO: to be moved into mover
     void synchronizeHostData(INDArray array);
 
     /**
@@ -152,46 +91,7 @@ public interface Allocator {
      *
      * @param buffer
      */
-    // TODO: to be moved into mover
     void synchronizeHostData(DataBuffer buffer);
-
-    /**
-     * This method should be callsd to make sure that data on host side is actualized.
-     * However, this method only tries to lock data before synchronization.
-     *
-     * PLEASE NOTE: This methos is considered non-safe.
-     *
-     * @param buffer
-     */
-    // TODO: to be moved into mover
-    void trySynchronizeHostData(DataBuffer buffer);
-
-    /**
-     * This method returns current host memory state
-     *
-     * @param array
-     * @return
-     */
-    // TODO: to be moved into mover
-    SyncState getHostMemoryState(INDArray array);
-
-    /**
-     * This method returns the number of top-level memory allocation.
-     * No descendants are included in this result.
-     *
-     * @return number of allocated top-level memory chunks
-     */
-    int tableSize();
-
-
-    /**
-     * This method returns deviceId for specified array.
-     * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
-     *
-     * @param array
-     * @return
-     */
-   // Integer getDeviceId(INDArray array);
 
     /**
      * This method returns deviceId for current thread

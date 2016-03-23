@@ -69,13 +69,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cCPointer.getDevicePointer().getNativePointer(),
                     ldc);
-
-        allocator.tickDeviceWrite(C);
-
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -98,14 +91,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-
-
-        allocator.tickDeviceWrite(C);
-
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -116,13 +101,6 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer cPointer = new CublasPointer(C,ctx);
 
         nd4jBlas.ssyrk(new long[]{ctx.getHandle().getNativePointer()},Order,Uplo,Trans,N,K,alpha,aPointer.getDevicePointer().getNativePointer(),lda,beta,cPointer.getDevicePointer().getNativePointer(),ldc);
-
-
-        allocator.tickDeviceWrite(C);
-
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -155,12 +133,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
-
-        allocator.tickDeviceWrite(B);
-
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
     }
 
     @Override
@@ -177,11 +149,6 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()},Order,TransA,TransB,M,N,K,alpha,cAPointer.getDevicePointer().getNativePointer(),lda,cBPointer.getDevicePointer().getNativePointer(),ldb,beta,cCPointer.getDevicePointer().getNativePointer(),ldc);
             ctx.syncOldStream();
-
-        allocator.tickDeviceWrite(C);
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -206,12 +173,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-
-        allocator.tickDeviceWrite(C);
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -232,10 +193,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     beta,cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-            allocator.tickDeviceWrite(C);
-
-            allocator.tackDevice(A);
-            allocator.tackDevice(C);
     }
 
     @Override
@@ -260,12 +217,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     beta,
                     cPointer.getDevicePointer().getNativePointer(),
                     ldc);
-
-        allocator.tickDeviceWrite(C);
-
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
-        allocator.tackDevice(C);
     }
 
     @Override
@@ -288,10 +239,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
-
-        allocator.tickDeviceWrite(B);
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
     }
 
     @Override
@@ -314,10 +261,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     lda,
                     bPointer.getDevicePointer().getNativePointer(),
                     ldb);
-
-        allocator.tickDeviceWrite(B);
-        allocator.tackDevice(A);
-        allocator.tackDevice(B);
     }
 
     @Override

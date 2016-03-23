@@ -53,12 +53,6 @@ public class JcublasLevel2 extends BaseLevel2 {
             //ctx.syncOldStream();
         //    cCPointer.copyToHost();
 
-        allocator.tickDeviceWrite(Y);
-
-
-        allocator.tackDevice(X);
-        allocator.tackDevice(Y);
-        allocator.tackDevice(A);
     }
 
     @Override
@@ -132,13 +126,6 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);*/
 //            ctx.syncOldStream();
     //        cCPointer.copyToHost();
-
-        allocator.tickDeviceWrite(Y);
-
-
-        allocator.tackDevice(X);
-        allocator.tackDevice(Y);
-        allocator.tackDevice(A);
     }
 
     @Override

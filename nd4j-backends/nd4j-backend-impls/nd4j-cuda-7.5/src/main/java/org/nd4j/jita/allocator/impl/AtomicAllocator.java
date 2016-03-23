@@ -218,202 +218,6 @@ public class AtomicAllocator implements Allocator {
         }
     }
 
-    /**
-     * This method registers buffer within allocator instance
-     *
-     * @param buffer DataBuffer object to be picked & tracked
-     */
-
-    protected Long pickupSpan(DataBuffer buffer, AllocationShape shape) {
-        //log.info("pickupSpan(BaseCudaDataBuffer)");
-//        if (1> 0) throw new RuntimeException("");
-        try {
-            externalsLock.writeLock().lock();
-
-            if (externalBuffers.containsKey(buffer)) {
-                /*
-                    We have such buffer already. It's either the Nested allocation, or something like that.
-                    Just throw exception for now.
-                 */
-                throw new IllegalStateException("Buffer is already registered");
-                //return buffer.getAllocatorPointer();
-            } else {
-                /*
-                    We don't have such buffer registered somehow. Probably that's new allocation
-                 */
-                AllocationPoint point = new AllocationPoint();
-                //point.setShape(AllocationUtils.buildAllocationShape(buffer.originalDataBuffer()));
-
-                // set device ID -> current thread
-//                point.setDeviceId(getDeviceId());
-
-                Long allocPointer = objectsTracker.getAndIncrement();
-
-                point.setObjectId(allocPointer);
-                point.setShape(shape);
-
-                /*
-                    we don't keep strong references Allocator -> Buffer, but we store Buffer -> Allocator references instead :)
-                  */
-                //buffer.setAllocationPoint(point);
-                buffer.setTrackingPoint(allocPointer);
-
-                // we storing buffer instance as WeakReference here for future copybacks
-                point.attachBuffer(buffer);
-
-                // the only
-                externalBuffers.put(buffer, allocPointer);
-
-                allocationsMap.put(allocPointer, point);
-
-                return allocPointer;
-            }
-
-        } finally {
-            externalsLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * This method registers array's buffer within allocator instance
-     *
-     * @param array INDArray object to be picked & tracked
-     */
-    @Override
-    public Long pickupSpan(INDArray array) {
-        //log.info("pickupSpan(INDarray)");
-        /*
-         while working on array level, we actually immediately downgrade to buffer level, with AllocationShape defined by this array
-          */
-        //if (!(array.data() instanceof BaseCudaDataBuffer)) throw new IllegalStateException("Underlying buffer isn't instance of BaseCudaDataBuffer");
-
-        // For buffer registration we're always using full underlying buffer
-        AllocationShape shape = AllocationUtils.buildAllocationShape(array); /*new AllocationShape();
-        shape.setOffset(0);
-        shape.setStride(1);
-        shape.setLength(array.data().length());
-        shape.setDataType(Nd4j.dataType());
-*/
-
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-
-        return pickupSpan(buffer, shape);
-    }
-
-    /**
-     * This  method registers AllocationPoint within allocator instance.
-     *
-     * This method should only be used with valid AllocationPoints, obtained via allocateMemory() calls
-     *
-     * @param point
-     * @return
-     */
-    @Override
-    public Long pickupSpan(@NonNull AllocationPoint point) {
-        return point.getObjectId();
-    }
-
-    /**
-     * This method hints allocator, that specific object was accessed on host side.
-     * This includes putRow, putScalar;
-     *
-     * @param array
-     */
-    @Override
-    @Deprecated
-    public void tickHost(INDArray array) {
-        // TODO: to be implemented, probably
-    }
-
-    /**
-     * This methods hints allocator, that specific object was accessed on device side.
-     *
-     * @param array
-     */
-    @Override
-    @Deprecated
-    public void tickDevice(INDArray array) {
-        // TODO: to be implemented, probably
-    }
-
-
-    /**
-     * This method hints allocator, that specific object was released on device side
-     *
-     * @param array
-     */
-    @Override
-    @Deprecated
-    public void tackDevice(INDArray array) {
-//        log.info("tackDevice(INDArray)");
-/*
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-
-        tackDevice(buffer, AllocationUtils.buildAllocationShape(array));
-
-        if (array.shapeInfoDataBuffer().getTrackingPoint() != null) {
-            tackDevice(array.shapeInfoDataBuffer(), AllocationUtils.buildAllocationShape(array.shapeInfoDataBuffer()));
-        }*/
-    }
-
-
-
-
-    /**
-     * This method hints allocator, that specific object was released on device side
-     *
-     * @param buffer
-     * @param shape
-     */
-    @Deprecated
-    protected void tackDevice(DataBuffer buffer, AllocationShape shape) {
-        //AllocationPoint point = getAllocationPoint(buffer, shape, true);
-
-        //point.getAccessState().requestTack();
-
-        //point.tickDeviceWrite();
-    }
-
-
-    /**
-     * This method notifies allocator, that specific object was changed on device side
-     *
-     * @param array
-     */
-    @Override
-    @Deprecated
-    public void tickDeviceWrite(INDArray array) {
-        //log.info("Tick device write!");
-        /*
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
-
-        point.tickDeviceWrite();
-        */
-    }
-
-    /**
-     * This method notifies allocator, that specific object was changed on host side
-     *
-     * @param array
-     */
-    @Override
-    @Deprecated
-    public void tickHostWrite(INDArray array) {
-        /*
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
-
-        if (point == null) {
-//            log.info("tickHostWrite INDarray");
-            pickupSpan(array);
-        }
-
-        point.tickHostWrite();
-        */
-    }
 
     /**
      * This method returns actual device pointer valid for current object
@@ -482,26 +286,6 @@ public class AtomicAllocator implements Allocator {
                 */
 
                 AllocationShape internalShape = isView? AllocationUtils.buildAllocationShape(buffer) : shape;
-
-                /*
-                    Before allocating anything, we must ensure that we have enough space left
-                 */
-                /*
-                long requiredMemory = AllocationUtils.getRequiredMemory(internalShape);
-                while (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                    log.warn("No free host memory available. Starting GC manually with [URGENT] agressiveness");
-//                    if (zeroUseCounter.get() > configuration.getMaximumZeroAllocation() - (configuration.getMaximumZeroAllocation() / 10)) {
-                    long freedMemory = seekUnusedZero(Thread.currentThread().getId(), Aggressiveness.URGENT);
-//                    } else {
-
-//                    }
-                }
-                */
-                /*
-                    We intentionally update counter prior to allocation
-                 */
-           //     zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(internalShape));
-
                 /*
                     now it's ALMOST safe to allocate zero-copy memory.
                     Technically it's still possible to fail there, with oom or CUDA-originated exception
@@ -664,86 +448,6 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
 
-    @Deprecated
-    public Pointer getHostPointer(INDArray array) {
-        /*
-        if(array.data().allocationMode() == DataBuffer.AllocationMode.DIRECT || array.data().allocationMode() == DataBuffer.AllocationMode.JAVACPP)
-            return Pointer.to(array.data().asNio());
-        else {
-           switch(array.data().dataType()) {
-               case INT: return Pointer.to(array.data().asInt());
-               case DOUBLE: return Pointer.to(array.data().asDouble());
-               case FLOAT: return Pointer.to(array.data().asFloat());
-           }
-        }
-        */
-        throw new UnsupportedOperationException("getHostPointer() was deprecated");
-    }
-
-
-    /**
-     * This method should be called to make sure that data on host side is actualized
-     *
-     * @param buffer
-     */
-    @Deprecated
-    protected void synchronizeHostData(DataBuffer buffer, AllocationShape shape) {
-        if (1> 0) return;
-        AllocationPoint point = getAllocationPoint(buffer, shape, true);
-
-        //log.info("Synchronize called on buffer with shape: " + shape);
-
-        /*
-            We set memory state to Toe, and issue copyback if required
-         */
-
-//        log.info("Current state: " + point.getAccessState().getCurrentState());
-        if (!point.isActualOnHostSide() || point.getAccessState().getCurrentState() != AccessState.TACK) {
-
-//            log.info("Requesting Toe");
-            point.getAccessState().requestToe();
-
-            if (!point.isActualOnHostSide()) {
-                //log.info("Data isn't actual on host side, copyback() started");
-                memoryHandler.copyback(point, shape);
-
-                // update the timer for hostRead
-                point.tickHostRead();
-            }// else log.info("Data is actual 2 , skipping sync");
-
-            point.getAccessState().releaseToe();
-        }// else log.info("Data is actual 1, skipping sync");
-    }
-
-    /**
-     * This method should be callsd to make sure that data on host side is actualized.
-     * However, this method only tries to lock data before synchronization.
-     * <p>
-     * PLEASE NOTE: This method is considered UNSAFE.
-     *
-     * @param syncBuffer
-     */
-    @Override
-    public void trySynchronizeHostData(DataBuffer syncBuffer) {
-        /*
-        DataBuffer buffer =  syncBuffer.originalDataBuffer() == null ? syncBuffer : syncBuffer.originalDataBuffer();
-
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(buffer), false);
-        //log.info("trySync on shape: " + AllocationUtils.buildAllocationShape(buffer));
-
-        if (point != null && !point.isActualOnHostSide()) {
-            //log.info("Try hit");
-            if (point.getAccessState().tryRequestToe()) {
-                // log.info("Try copyback");
-                memoryHandler.copyback(point, AllocationUtils.buildAllocationShape(buffer));
-
-                // update the timer for hostRead
-                point.tickHostRead();
-
-                point.getAccessState().releaseToe();
-            }// else log.info("Toe is busy, skipping");
-        }*/
-    }
 
     /**
      * This method should be called to make sure that data on host side is actualized
@@ -754,22 +458,6 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(INDArray array) {
         DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         synchronizeHostData(buffer);
-//        log.info("Synchronize called on array.  IsNull: ["+ (array.data().originalDataBuffer() == null) +"]");
-
-//        log.info("Data trackingPoint: " + array.data().getTrackingPoint());
-//        log.info("ShapeBuffer trackingPoint: " + array.shapeInfoDataBuffer().getTrackingPoint());
-
-
-/*
-        AllocationPoint point = getAllocationPoint(buffer, AllocationUtils.buildAllocationShape(array), true);
-
-        if (point == null) {
-            log.info("AllocationPoint is null on synchronize. That's impossible!");
-            pickupSpan(array);
-        }
-
-        synchronizeHostData(buffer, AllocationUtils.buildAllocationShape(array));
-        */
     }
 
     /**
@@ -782,58 +470,8 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(DataBuffer buffer) {
         if (memoryHandler.isDeviceDependant())
             memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId());
-
-
-        //log.info("Synchronize called on buffer");
-        /*
-        DataBuffer fbuffer = buffer.originalDataBuffer() == null ? buffer : buffer.originalDataBuffer();
-
-        AllocationPoint point = getAllocationPoint(fbuffer, AllocationUtils.buildAllocationShape(fbuffer), true);
-
-        if (point == null) {
-            throw new IllegalStateException("AllocationPoint is NULL");
-            //pickupSpan(fbuffer);
-        }
-
-        synchronizeHostData(fbuffer, AllocationUtils.buildAllocationShape(fbuffer));
-        */
     }
 
-    /**
-     * This method returns current host memory state
-     *
-     * @param array
-     * @return
-     */
-    @Override
-    public SyncState getHostMemoryState(INDArray array) {
-        /*
-            basically we just want to compare two access time values: device & host.
-            we can't know, if memory was changed on device side or not
-          */
-
-        /*
-            TODO: improvement is possible here ->
-             as soon as we'll have partial allocations available, we can have partially synced memory
-         */
-        AllocationPoint point = getAllocationPoint(null);
-        if (point.isActualOnHostSide() == true) {
-            return SyncState.SYNC;
-        } else {
-            return SyncState.DESYNC;
-        }
-    }
-
-    /**
-     * This method returns the number of top-level memory allocation.
-     * No descendants are included in this result.
-     *
-     * @return number of allocated top-level memory chunks
-     */
-    @Override
-    public int tableSize() {
-        return allocationsMap.size();
-    }
 
     /**
      * This method returns CUDA deviceId for specified buffer
@@ -842,12 +480,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public Integer getDeviceId(INDArray array) {
-        AllocationPoint point = getAllocationPoint(array.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(array), false);
-
-        if (point == null || point.getDeviceId() == null)
-            throw new IllegalStateException("deviceId for point is undefined");
-
-        return point.getDeviceId();
+        return memoryHandler.getDeviceId();
     }
 
 
