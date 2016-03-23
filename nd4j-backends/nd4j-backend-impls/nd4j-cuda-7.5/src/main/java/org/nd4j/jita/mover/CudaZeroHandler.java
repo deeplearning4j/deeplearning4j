@@ -471,7 +471,15 @@ public class CudaZeroHandler implements MemoryHandler {
         );
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            // TODO:  device replication to be implemented
+            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+
+            JCuda.cudaMemcpyAsync(
+                    rDP,
+                    dP,
+                    length,
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    context.getOldStream()
+            );
         }
 
         // TODO: to be removed
@@ -543,8 +551,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     promoteObject(dstPoint.getObjectId(), dstPoint, dstPoint.getShape());
                 }
             }
-            dstPoint.tickDevice();
         }
+
+        dstPoint.tickDevice();
+
 
         return new CudaPointer(dstPoint.getPointers().getDevicePointer(), (buffer.offset() * buffer.getElementSize()));
     }
@@ -819,7 +829,20 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
     @Override
-    public void synchronizeThreadDevice(Long threadId, Integer deviceId) {
-        getCudaContext().syncOldStream();
+    public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
+        CudaContext context = getCudaContext();
+        context.syncOldStream();
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide() ) {
+            point.tickHostRead();
+            JCuda.cudaMemcpyAsync(
+                    new Pointer(point.getHostPointer().address()),
+                    new Pointer(point.getDevicePointer().address()),
+                    AllocationUtils.getRequiredMemory(point.getShape()),
+                    cudaMemcpyKind.cudaMemcpyDeviceToHost,
+                    context.getOldStream()
+            );
+
+            context.syncOldStream();
+        }
     }
 }

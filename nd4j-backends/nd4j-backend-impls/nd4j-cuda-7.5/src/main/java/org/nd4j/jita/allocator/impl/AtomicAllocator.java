@@ -460,8 +460,10 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
-        if (memoryHandler.isDeviceDependant())
-            memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId());
+        if (memoryHandler.isDeviceDependant()) {
+            AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId(), point);
+        }
     }
 
 

@@ -376,7 +376,8 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public boolean isActualOnHostSide() {
-        return getHostAccessTime() >= getDeviceWriteTime();
+        log.info("DeviceAT: ["+getDeviceAccessTime()+"], HostAT: ["+getHostAccessTime()+"]");
+        return getHostAccessTime() >= getDeviceAccessTime();
     }
 
     /**

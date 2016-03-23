@@ -1,9 +1,11 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import static org.junit.Assert.*;
 
@@ -136,8 +138,23 @@ public class CudaFloatDataBufferTest {
 
     @Test
     public void testDup1() throws Exception {
-        INDArray array1 = Nd4j.linspace(0, 9, 10);
+        INDArray array0 = Nd4j.ones(10);
+        INDArray array7 = Nd4j.ones(10);
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        context.syncOldStream();
+
+        long time1 = System.nanoTime();
+        INDArray array1 = Nd4j.linspace(0, 9, 1000);
+        context.syncOldStream();
+        long time2 = System.nanoTime();
         INDArray array2 = array1.dup();
+        context.syncOldStream();
+        long time3 = System.nanoTime();
+
+        System.out.println("Linspace time: " + (time2 - time1));
+        System.out.println("Dup time: " + (time3 - time2));
+        System.out.println("Total time: " + (time3 - time1));
 
         assertEquals(array1, array2);
         assertNotEquals(array1.data().getTrackingPoint(), array2.data().getTrackingPoint());

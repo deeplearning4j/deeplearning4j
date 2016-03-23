@@ -27,7 +27,7 @@ public interface MemoryHandler {
 
     boolean isDeviceDependant();
 
-    void synchronizeThreadDevice(Long threadId, Integer deviceId);
+    void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point);
 
     /**
      * Allocate specified memory chunk on specified device/host
