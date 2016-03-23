@@ -147,7 +147,7 @@ public class DeviceAllocationsTracker {
         }
     }
 
-    protected long getReservedSpace(Integer deviceId) {
+    public long getReservedSpace(Integer deviceId) {
         return reservedSpace.get(deviceId).get();
     }
 

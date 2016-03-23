@@ -525,6 +525,17 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion
+        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST ) {
+            if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
+                // at this point we know, that this request is done withing some existent context
+                long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
+                if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), requiredMemory) && pingDeviceForFreeMemory(getDeviceId(), requiredMemory)) {
+                    // so, memory is reserved
+                    promoteObject(dstPoint.getObjectId(), dstPoint, dstPoint.getShape());
+                }
+            }
+            dstPoint.tickDevice();
+        }
 
         return new CudaPointer(dstPoint.getPointers().getDevicePointer(), (buffer.offset() * buffer.getElementSize()));
     }
@@ -556,6 +567,8 @@ public class CudaZeroHandler implements MemoryHandler {
         try {
             long threadId = Thread.currentThread().getId();
 
+            point.setDeviceId(getDeviceId());
+
             PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
@@ -572,12 +585,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
             deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
 
-            zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+            zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
 
 //                    log.info("Relocation happened!");
         } catch (Exception e){
-            if (1>0) throw new RuntimeException(e);
-            return false;
+            throw new RuntimeException(e);
         }
 
         return true;
@@ -653,14 +665,11 @@ public class CudaZeroHandler implements MemoryHandler {
             point.tickDevice();
             point.tickDeviceWrite();
             point.setAllocationStatus(AllocationStatus.HOST);
-            zeroUseCounter.set(zeroUseCounter.get() - AllocationUtils.getRequiredMemory(point.getShape()));
+            zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
         }
 
-        deviceLock.readLock().lock();
-        Map<Long, Long> allocations = deviceAllocations.get(deviceId);
-        deviceLock.readLock().unlock();
 
-        allocations.remove(objectId);
+        deviceAllocations.get(deviceId).remove(objectId);
 
         deviceMemoryTracker.subFromAllocation(threadId, deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
 

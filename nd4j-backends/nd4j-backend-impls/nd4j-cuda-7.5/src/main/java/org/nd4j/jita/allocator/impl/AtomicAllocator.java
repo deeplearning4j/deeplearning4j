@@ -953,7 +953,7 @@ public class AtomicAllocator implements Allocator {
             allocationsMap.remove(objectId);
         }
 
-        memoryHandler.purgeZeroObject(threadId, objectId, point, copyback);
+        memoryHandler.purgeDeviceObject(threadId, deviceId, objectId, point, copyback);
     }
 
     /**
@@ -1206,7 +1206,7 @@ public class AtomicAllocator implements Allocator {
 
         @Override
         public void run() {
-            log.debug("Starting device GC for device: " + deviceId);
+            log.info("Starting device GC for device: " + deviceId);
             while (!terminate.get()) {
                 /*
                     Check for device garbage
