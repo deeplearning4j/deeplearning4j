@@ -344,11 +344,13 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = getCudaContext();
 
         Pointer devPtr = new Pointer(pair.getDevicePointer().address());
+        Pointer hostPointer = new Pointer(pair.getHostPointer().address());
+        long reqMem =AllocationUtils.getRequiredMemory(shape);
 
         JCuda.cudaMemcpyAsync(
-                new Pointer(pair.getHostPointer().address()),
+                hostPointer,
                 devPtr,
-                AllocationUtils.getRequiredMemory(shape),
+                reqMem,
                 cudaMemcpyKind.cudaMemcpyDeviceToHost,
                 context.getOldStream()
         );
@@ -357,7 +359,14 @@ public class CudaZeroHandler implements MemoryHandler {
 
         JCuda.cudaFree(devPtr);
 
-        pair.setDevicePointer(null);
+        Pointer newDevPtr = new Pointer();
+
+        JCuda.cudaHostGetDevicePointer(
+                newDevPtr,
+                hostPointer,
+                0);
+
+        pair.setDevicePointer(new CudaPointer(devPtr, reqMem));
 
         /*
         DevicePointerInfo info = alloc(AllocationStatus.ZERO, point, shape);
@@ -657,15 +666,17 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback) {
+        if (point.getAllocationStatus() == AllocationStatus.HOST)
+            return;
+
         if (copyback) {
             // copyback here basically means that we're gonna have new zero allocation right now
             fallback(point, point.getShape());
 
-            zeroAllocations.get(threadId).put(objectId, objectId);
-            point.tickDevice();
-            point.tickDeviceWrite();
+//            zeroAllocations.get(threadId).put(objectId, objectId);
+
             point.setAllocationStatus(AllocationStatus.HOST);
-            zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+   //         zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
         }
 
 

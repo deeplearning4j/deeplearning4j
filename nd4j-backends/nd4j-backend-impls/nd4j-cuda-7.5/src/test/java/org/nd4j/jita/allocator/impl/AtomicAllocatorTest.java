@@ -467,7 +467,7 @@ public class AtomicAllocatorTest {
                 time2 = System.nanoTime();
             }
 
-            if (cnt.incrementAndGet() % 100000 == 0) {
+            if (cnt.incrementAndGet() % 10000 == 0) {
                 log.info("Execution time: [" + (time2 - time1) + "] ns");
                 log.info("Sleeping for 5 seconds...");
                 Thread.sleep(5000);

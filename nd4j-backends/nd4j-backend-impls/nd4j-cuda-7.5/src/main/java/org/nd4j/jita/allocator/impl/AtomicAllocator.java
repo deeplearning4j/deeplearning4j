@@ -1119,7 +1119,7 @@ public class AtomicAllocator implements Allocator {
 
                         elementsMoved.incrementAndGet();
 
-                        purgeZeroObject(threadId, object, point, true);
+                        purgeDeviceObject(threadId, deviceId, object, point, true);
                     }
                 }
 
