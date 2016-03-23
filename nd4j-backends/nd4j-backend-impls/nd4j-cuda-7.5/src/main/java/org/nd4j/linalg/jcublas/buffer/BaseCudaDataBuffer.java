@@ -642,16 +642,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean sameUnderlyingData(DataBuffer buffer) {
-        if(allocationMode() != buffer.allocationMode())
-            return false;
-        if(allocationMode() == AllocationMode.HEAP) {
-            return array() == buffer.array();
-        }
-        else if(allocationMode() == AllocationMode.JAVACPP)
-            return pointer() == buffer.pointer();
-        else {
-            return buffer.originalDataBuffer() == originalDataBuffer();
-        }
+            return buffer.getTrackingPoint() == getTrackingPoint();
     }
 
     /**
