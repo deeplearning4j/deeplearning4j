@@ -455,7 +455,9 @@ namespace functions {
                 }
                     //not same shape
                 else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
-                         shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
+                         shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
+                                                                                      yElementWiseStride >= 1 &&
+                                                                                      resultElementWiseStride >= 1) {
                     exec(dx,
                          xElementWiseStride,
                          y,

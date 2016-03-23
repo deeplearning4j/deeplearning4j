@@ -222,9 +222,6 @@ namespace functions {
 			}
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
-
-			//if (threadIdx.x == 0 && blockIdx.x == 0)
-			//	printf("stride: [%i], length: [%i], order: [%c], dimensionLength: [%i]\n", xElementWiseStride, xLength, shape::order(xShapeInfo), dimensionLength);
 		}
 		__syncthreads();
         int n = xLength;
@@ -814,9 +811,83 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     return;
                 }
 
-
-
                 if(dimensionLength > 1) {
+                    int numOnes = 0;
+                    int onesEncountered = 0;
+                    int *shape = shape::shapeOf(xShapeInfo);
+                    int *stride = shape::stride(xShapeInfo);
+                    int wholeRank = shape::rank(xShapeInfo);
+                    bool squeezed = false;
+                    bool newSqueezeDimensions = false;
+                    for(int i = 0; i < wholeRank; i++) {
+                        if(shape[i] == 1)
+                            numOnes++;
+                    }
+                    //squeeze the dimensions
+                    if(numOnes > 0) {
+                        printf("In num ones > 0\n");
+                        int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+                        int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+                        squeezed = true;
+                        int numEncountered = 0;
+                        for(int i = 0; i < wholeRank; i++) {
+                            if(shape[i] != 1) {
+                                squeezeShape[numEncountered] = shape[i];
+                                squeezeStride[numEncountered] = stride[i];
+                                numEncountered++;
+                            }
+                        }
+
+
+                        printf("Initialized squeeze shape and stride\n");
+                        //for any dimensions specified that are 1,ignore them
+                        int numDimensionsOne = 0;
+                        for(int i = 0;i < dimensionLength; i++) {
+                            if(shape[dimension[i]] == 1)
+                                numDimensionsOne++;
+                        }
+
+                        if(numDimensionsOne > 0) {
+                            int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
+                            int newDimensionIdx = 0;
+                            newSqueezeDimensions = true;
+                            for(int i = 0; i < dimensionLength; i++) {
+                                if(shape[dimension[i]] != 1)
+                                    newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
+                            }
+
+                            //reduce along the new dimensions
+                            dimension = newDimensions;
+                            dimensionLength  -= numDimensionsOne;
+
+                        }
+                        //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
+                        //the previous pointer is just a view of a pointer to be reused that was passed in
+                        shape = squeezeShape;
+                        stride = squeezeStride;
+                        wholeRank -= numOnes;
+                        //adjust dimensions
+                        for(int i = 0; i < dimensionLength; i++) {
+                            dimension[i] -= numOnes;
+                        }
+
+                        for(int i = 0; i < dimensionLength; i++) {
+                            //didn't need to be adjusted
+                            if(dimension[i] < 0)
+                                dimension[i] += numDimensionsOne;
+                        }
+
+                        xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
+
+                    }
+                    else {
+                        printf("No dimensions needed to be adjusted reduce\n");
+                    }
+
+
+
+
+
                     /**
                      * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
@@ -826,6 +897,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
+
 
                     //decompose in to several sub tads after
                     //moving all dimensions (in sorted order)
@@ -840,7 +912,10 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                       // printf("Shape tad offset %d\n",offset);
+                        if(offset + tadLength >= shape::length(xShapeInfo) && squeezed) {
+                            offset = i;
+                        }
+
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -875,8 +950,20 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                     }
 
+
                     free(tadShapeShapeInfo);
                     shape::freePermuteInfo(info);
+
+
+
+                    if(newSqueezeDimensions) {
+                        free(dimension);
+                    }
+
+                    if(numOnes > 0) {
+                        free(xShapeInfo);
+                    }
+
                 }
 
                 else {
