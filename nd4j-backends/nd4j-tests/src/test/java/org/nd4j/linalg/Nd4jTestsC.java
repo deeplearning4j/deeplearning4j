@@ -518,6 +518,26 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion,multiSum);
     }
 
+
+    @Test
+    public void testSum2dv2() {
+        INDArray in = Nd4j.linspace(1,8,8).reshape('c',2,2,2);
+
+        int[][] dims = new int[][]{{0,1}, {1,0}, {0,2}, {2,0}, {1,2}, {2,1}};
+        double[][] exp = new double[][]{{16,20}, {16,20}, {14,22}, {14,22}, {10,26}, {10,26}};
+
+        System.out.println("dims\texpected\t\tactual");
+        for(int i = 0; i < dims.length; i++) {
+            int[] d = dims[i];
+            double[] e = exp[i];
+
+            INDArray out = in.sum(d);
+
+            System.out.println(Arrays.toString(d) + "\t" + Arrays.toString(e) + "\t" + out);
+            assertEquals(Nd4j.create(e,out.shape()),out);
+        }
+    }
+
     @Test
     public void testToFlattened() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
