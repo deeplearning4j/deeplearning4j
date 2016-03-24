@@ -825,7 +825,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     }
                     //squeeze the dimensions
                     if(numOnes > 0) {
-                        printf("In num ones > 0\n");
                         int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
                         int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
                         squeezed = true;
@@ -839,7 +838,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         }
 
 
-                        printf("Initialized squeeze shape and stride\n");
                         //for any dimensions specified that are 1,ignore them
                         int numDimensionsOne = 0;
                         for(int i = 0;i < dimensionLength; i++) {
