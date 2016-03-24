@@ -240,7 +240,7 @@ public class CudaZeroHandler implements MemoryHandler {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
-           log.info("copyback() called on shape: " + point.getShape());
+        //   log.info("copyback() called on shape: " + point.getShape());
         relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
     }
 
@@ -255,7 +255,7 @@ public class CudaZeroHandler implements MemoryHandler {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
-        log.info("copyforward() called on tp["+point.getObjectId()+"], shape: " + point.getShape());
+ //       log.info("copyforward() called on tp["+point.getObjectId()+"], shape: " + point.getShape());
         relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
     }
 

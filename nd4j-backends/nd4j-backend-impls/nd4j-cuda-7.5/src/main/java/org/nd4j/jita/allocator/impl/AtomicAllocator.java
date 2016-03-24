@@ -617,7 +617,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
         int totalElements = (int) memoryHandler.getAllocatedHostObjects(threadId);
-        log.info("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
+        log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
 
         float shortAverage = zeroShort.getAverage();
         float longAverage = zeroLong.getAverage();
@@ -827,7 +827,7 @@ public class AtomicAllocator implements Allocator {
                 if (memoryHandler.getAllocatedHostMemory()> (configuration.getMaximumZeroAllocation() * 0.85))
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
-                if (memoryHandler.getAllocatedHostMemory() < (configuration.getMaximumZeroAllocation() * 0.25) && (memoryHandler.getAllocatedHostObjects(threadId) < 500) && lastCheck > System.currentTimeMillis() - 30000) {
+                if (memoryHandler.getAllocatedHostMemory() < (configuration.getMaximumZeroAllocation() * 0.25) && (memoryHandler.getAllocatedHostObjects(threadId) < 5000) && lastCheck > System.currentTimeMillis() - 30000) {
                     ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                     //log.debug("Skipping zero GC round: ["+zeroUseCounter.get()+"/" +zeroAllocations.get(threadId).size() + "]");
                 }  else {

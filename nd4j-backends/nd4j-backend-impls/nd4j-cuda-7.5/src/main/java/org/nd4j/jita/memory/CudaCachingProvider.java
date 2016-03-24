@@ -145,8 +145,8 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     public void printCacheStats() {
         float cacheRatio = getCacheHitRatio();
 
-        log.info("Total shapes in cache: " + zeroCache.size());
-        log.info("Current hit ratio: " + cacheRatio);
+        log.debug("Total shapes in cache: " + zeroCache.size());
+        log.debug("Current hit ratio: " + cacheRatio);
     }
 
     private static class CacheHolder {
