@@ -138,23 +138,24 @@ public class CudaFloatDataBufferTest {
 
     @Test
     public void testDup1() throws Exception {
-        INDArray array0 = Nd4j.ones(10);
-        INDArray array7 = Nd4j.ones(10);
+        INDArray array0 = Nd4j.create(10);
+        INDArray array7 = Nd4j.create(10);
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         context.syncOldStream();
 
         long time1 = System.nanoTime();
-        INDArray array1 = Nd4j.linspace(0, 9, 1000);
-        context.syncOldStream();
+        INDArray array1 =  Nd4j.linspace(0, 9, 1000);
         long time2 = System.nanoTime();
-        INDArray array2 = array1.dup();
-        context.syncOldStream();
+//        context.syncOldStream();
         long time3 = System.nanoTime();
+        INDArray array2 = array1.dup();
+        long time4 = System.nanoTime();
+        //context.syncOldStream();
 
         System.out.println("Linspace time: " + (time2 - time1));
-        System.out.println("Dup time: " + (time3 - time2));
-        System.out.println("Total time: " + (time3 - time1));
+        System.out.println("Dup time: " + (time4 - time3));
+        System.out.println("Total time: " + ((time2 - time1)+ (time4 - time3)));
 
         assertEquals(array1, array2);
         assertNotEquals(array1.data().getTrackingPoint(), array2.data().getTrackingPoint());

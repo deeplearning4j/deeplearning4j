@@ -16,6 +16,8 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.memory.CudaDirectProvider;
+import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -69,6 +71,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
+    private final MemoryProvider provider = new CudaDirectProvider();
+
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
 */
@@ -116,91 +120,17 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
             case HOST: {
-                    /*
-                        TODO: we need to implement pool here, to avoid multiple consequent cudaHostAlloc calls here, since we could just use one or few managed pools here.
-                     */
-
-                // cudaMallocHost call, or cudaHostAlloc, depending on device properties
-                // TODO: add device capability dependant code, based on device properties from CudaEnvironment
-
-                Pointer devicePointer = new Pointer();
-                Pointer hostPointer = new Pointer();
-                long reqMem = AllocationUtils.getRequiredMemory(shape);
-
-                JCuda.cudaHostAlloc(
-                        hostPointer,
-                        reqMem,
-                        JCuda.cudaHostAllocMapped);
-
-                JCuda.cudaHostGetDevicePointer(
-                        devicePointer,
-                        hostPointer,
-                        0);
-
-                /*
-                DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                        new HostDevicePointer(hostPointer,devicePointer),
-                        shape.getLength(),
-                        shape.getStride(),
-                        shape.getOffset(),
-                        false);
-            */
-
-                PointersPair devicePointerInfo = new PointersPair();
-                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
-                devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
+                PointersPair pair = provider.malloc(shape, point, targetMode);
 
                 zeroAllocations.get(Thread.currentThread().getId()).put(point.getObjectId(), point.getObjectId());
-                zeroUseCounter.addAndGet(reqMem);
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
 
-                // copy data from
-                /*
-                We don't need copy anymore, since we assume that memory will be filled in later
-
-                ByteBuffer pointer = hostPointer.getByteBuffer(0, AllocationUtils.getRequiredMemory(shape));
-                pointer.order(ByteOrder.nativeOrder());
-                NioUtil.copyAtStride(shape.getLength(),getBufferType(point.getBuffer()), point.getBuffer().asNio(), shape.getOffset(), shape.getStride(), pointer,0,1);
-                */
-                point.setAllocationStatus(AllocationStatus.HOST);
-                return devicePointerInfo;
+                return pair;
             }
             case DEVICE: {
-                point.setAllocationStatus(AllocationStatus.DEVICE);
-                // cudaMalloc call
-                Pointer devicePointer = new Pointer();
-                Pointer hostPointer = new Pointer();
+                PointersPair pair = provider.malloc(shape, point, targetMode);
 
-                CudaContext context = getCudaContext();
-
-                long reqMem = AllocationUtils.getRequiredMemory(shape);
-                JCuda.cudaMalloc(devicePointer, reqMem);
-
-                /*
-                DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                        new HostDevicePointer(hostPointer,devicePointer),
-                        shape.getLength(),
-                        shape.getStride(),
-                        shape.getOffset(),
-                        false);
-                */
-
-                PointersPair devicePointerInfo = point.getPointers();
-                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
-
-                JCuda.cudaMemcpyAsync(
-                        devicePointer,
-                        new Pointer(devicePointerInfo.getHostPointer().address()),
-                        reqMem,
-                        cudaMemcpyKind.cudaMemcpyHostToDevice,
-                        context.getOldStream()
-                );
-
-                context.syncOldStream();
-
-                // In new meta, we can't free this pointer anymore, since it's still used on java side
-                //free(point, AllocationStatus.ZERO);
-
-                return devicePointerInfo;
+                return pair;
             }
             default:
                 throw new IllegalStateException("Can't allocate memory on target [" + targetMode + "]");
@@ -324,7 +254,7 @@ public class CudaZeroHandler implements MemoryHandler {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
-        log.info("copyforward() called on shape: " + point.getShape());
+        log.info("copyforward() called on tp["+point.getObjectId()+"], shape: " + point.getShape());
         relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
     }
 
@@ -483,7 +413,7 @@ public class CudaZeroHandler implements MemoryHandler {
         }
 
         // TODO: to be removed
-//        context.syncOldStream();
+        context.syncOldStream();
     }
 
     @Override
@@ -551,6 +481,12 @@ public class CudaZeroHandler implements MemoryHandler {
                     promoteObject(dstPoint.getObjectId(), dstPoint, dstPoint.getShape());
                 }
             }
+        } else {
+            // if that's device state, we probably might want to update device memory state
+            if (dstPoint.isActualOnHostSide()) {
+//                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape());
+                copyforward(dstPoint, dstPoint.getShape());
+            }
         }
 
         dstPoint.tickDevice();
@@ -588,7 +524,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
             point.setDeviceId(getDeviceId());
 
+
+
             PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape);
+
+            relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
 
             point.setAllocationStatus(AllocationStatus.DEVICE);
             point.setPointers(newPointers);

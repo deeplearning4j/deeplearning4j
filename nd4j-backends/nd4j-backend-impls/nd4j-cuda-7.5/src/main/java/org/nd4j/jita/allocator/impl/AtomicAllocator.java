@@ -491,7 +491,10 @@ public class AtomicAllocator implements Allocator {
 
             collectorsZero.put(Thread.currentThread().getId(), zThread);
         }
-        return allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
+
+        AllocationPoint point = allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
+
+        return point;
     }
 
     /**

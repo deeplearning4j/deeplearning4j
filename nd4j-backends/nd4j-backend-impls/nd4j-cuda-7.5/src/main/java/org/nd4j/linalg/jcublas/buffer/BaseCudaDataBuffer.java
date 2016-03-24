@@ -454,6 +454,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(int i, float element) {
+        allocator.synchronizeHostData(this);
+        super.put(i, element);
+        /*
         if(dataType() == Type.DOUBLE) {
             double[] tmp = new double[]{(double) element};
             Pointer srcPtr = Pointer.to(tmp);
@@ -476,10 +479,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         }
+        */
     }
 
     @Override
     public void put(int i, double element) {
+        allocator.synchronizeHostData(this);
+        super.put(i, element);
+
+        /*
         if(dataType() == Type.DOUBLE) {
             double[] tmp = new double[]{element};
             Pointer srcPtr = Pointer.to(tmp);
@@ -497,10 +505,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         }
+        */
     }
 
     @Override
     public void put(int i, int element) {
+        allocator.synchronizeHostData(this);
+        super.put(i, element);
+        /*
         if(dataType() == Type.DOUBLE) {
             double[] tmp = new double[]{(double) element};
             Pointer srcPtr = Pointer.to(tmp);
@@ -518,6 +530,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, tmp.length * elementSize, (offset + i) * elementSize );
         }
+        */
     }
 
     @Override
@@ -761,8 +774,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public DataBuffer dup() {
-        //allocator.synchronizeHostData(this);
-
+        allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
         //allocator.memcpy(buffer, this);
         return buffer;

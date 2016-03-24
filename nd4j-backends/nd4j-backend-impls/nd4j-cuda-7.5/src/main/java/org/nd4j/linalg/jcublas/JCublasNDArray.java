@@ -20,7 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -31,8 +31,6 @@ import java.util.List;
 
 /**
  *
- * PLEASE NOTE: This method uses hooks to AtomicAllocator.getInstance() instance, to notify when data gets changed on java side.
- * PLEASE NOTE: This method uses hooks to AtomicAllocator.getInstance() instance, to valida data actuality on host side, compared to gpu side
  *
  * Created by mjk on 8/23/14.
  *
