@@ -326,20 +326,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void free(AllocationPoint point, AllocationStatus target) {
-        switch (target) {
-            case HOST: {
-                // cudaFreeHost call here
-                JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
-            }
-            break;
-            case DEVICE: {
-                // cudaFree call
-                JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
-            }
-            break;
-            default:
-                throw new IllegalStateException("Can't free memory on target [" + target + "]");
-        }
+        provider.free(point);
     }
 
     /**
