@@ -1,5 +1,8 @@
 package org.nd4j.jita.allocator.pointers;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.slf4j.Logger;
@@ -18,12 +21,16 @@ public class CudaPointer extends Pointer {
 
     private static Logger logger = LoggerFactory.getLogger(CudaPointer.class);
 
-    public CudaPointer(Pointer pointer) {
+    public CudaPointer(Pointer pointer, long capacity) {
         this.address = pointer.address();
+        this.capacity = capacity;
+        this.limit = capacity;
     }
 
-    public CudaPointer(Pointer pointer, long byteOffset) {
+    public CudaPointer(Pointer pointer, long capacity, long byteOffset) {
         this.address = pointer.address() + byteOffset;
+        this.capacity = capacity;
+        this.limit = capacity;
     }
 
     public CudaPointer(jcuda.Pointer pointer,  long capacity) {
@@ -38,7 +45,19 @@ public class CudaPointer extends Pointer {
     }
 
     public Pointer asNativePointer() {
-        return (Pointer) this;
+        return new Pointer(this);
+    }
+
+    public FloatPointer asFloatPointer() {
+        return new FloatPointer(this);
+    }
+
+    public DoublePointer asDoublePointer() {
+        return new DoublePointer(this);
+    }
+
+    public IntPointer asIntPointer() {
+        return new IntPointer(this);
     }
 
     public jcuda.Pointer asCudaPointer() {

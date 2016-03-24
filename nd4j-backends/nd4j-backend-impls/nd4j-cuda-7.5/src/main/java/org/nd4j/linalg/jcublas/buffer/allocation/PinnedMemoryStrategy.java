@@ -34,7 +34,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
 
     @Override
     public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
-        getData(buffer,offset,1,buffer.length(),get,ctx,1,0);
+        getData(buffer,offset,1,(int)buffer.length(),get,ctx,1,0);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         // Flip and read from the original.
         //pointer.flip();
         //bufferNio.put(pointer);
-        NioUtil.copyAtStride(buf2.length(),getBufferType(copy),pointer,offset,1,bufferNio,offset,1);
+        NioUtil.copyAtStride((int)buf2.length(),getBufferType(copy),pointer,offset,1,bufferNio,offset,1);
         return devicePointerInfo;
     }
 
@@ -102,7 +102,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         if(initData) {
             ByteBuffer pointer = hostPointer.getByteBuffer(0, buffer.getElementSize() * buffer.length());
             pointer.order(ByteOrder.nativeOrder());
-            NioUtil.copyAtStride(buffer.length(),getBufferType(buffer),buffer.asNio(),offset,stride,pointer,0,1);
+            NioUtil.copyAtStride((int)buffer.length(),getBufferType(buffer),buffer.asNio(),offset,stride,pointer,0,1);
         }
         return devicePointerInfo;
     }

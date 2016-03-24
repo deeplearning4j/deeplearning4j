@@ -33,8 +33,9 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = null; // buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
 
+
         JCublas2.cublasGetVectorAsync(
-                buffer.length()
+                (int) buffer.length()
                 , buffer.getElementSize()
                 , devicePointerInfo.getPointers().getDevicePointer()
                 , stride
@@ -50,7 +51,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
 
         JCublas2.cublasGetVectorAsync(
-                buffer.length()
+                (int) buffer.length()
                 , buffer.getElementSize()
                 , devicePointerInfo.getPointers().getDevicePointer()
                 , 1

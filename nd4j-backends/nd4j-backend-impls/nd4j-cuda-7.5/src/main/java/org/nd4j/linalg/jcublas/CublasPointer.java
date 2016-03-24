@@ -239,42 +239,7 @@ public class CublasPointer  implements AutoCloseable {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        if(devicePointer != null) {
-            if(arr != null) {
-                if(arr instanceof IComplexNDArray
-                        && arr.length() * 2
-                        == buffer.length()
-                        || arr.length() == buffer.length())
-                    appendWhereArrayLengthEqualsBufferLength(sb);
-                else
-                    appendWhereArrayLengthLessThanBufferLength(sb);
-
-            }
-            else {
-                if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
-                    double[] set = new double[buffer.length()];
-                    DataBuffer setBuffer = Nd4j.createBuffer(set);
-                    ContextHolder.getInstance().getMemoryStrategy().getData(setBuffer, 0, 1, buffer.length(), buffer, cudaContext, 1,0);
-                    sb.append(setBuffer);
-                }
-                else if(buffer.dataType() == DataBuffer.Type.INT) {
-                    int[] set = new int[buffer.length()];
-                    DataBuffer setBuffer = Nd4j.createBuffer(set);
-                    ContextHolder.getInstance().getMemoryStrategy().getData(setBuffer, 0, 1, buffer.length(),buffer, cudaContext, 1, 0);
-                    sb.append(setBuffer);
-                }
-                else {
-                    float[] set = new float[buffer.length()];
-                    DataBuffer setBuffer = Nd4j.createBuffer(set);
-                    ContextHolder.getInstance().getMemoryStrategy().getData(setBuffer,0,1,buffer.length(), buffer,cudaContext,1, 0);
-                    sb.append(setBuffer);
-                }
-
-
-            }
-        }
-        else
-            sb.append("No device pointer yet");
+        sb.append("NativePointer: ["+devicePointer.getNativePointer()+"]");
         return sb.toString();
     }
 

@@ -55,6 +55,7 @@ public class CudaFloatDataBufferTest {
     public void testNdArrayView2() throws Exception {
         INDArray array = Nd4j.create(10, 10);
 
+        System.out.println("X0 --------------------------------");
         long tp1 = array.data().getTrackingPoint();
 
         array.putScalar(0, 10f);

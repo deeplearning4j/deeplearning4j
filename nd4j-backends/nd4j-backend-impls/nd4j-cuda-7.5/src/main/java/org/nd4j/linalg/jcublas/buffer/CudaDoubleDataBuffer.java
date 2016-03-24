@@ -22,6 +22,8 @@ package org.nd4j.linalg.jcublas.buffer;
 import io.netty.buffer.ByteBuf;
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -39,19 +41,19 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
      *
      * @param length the length of the buffer
      */
-    public CudaDoubleDataBuffer(int length) {
+    public CudaDoubleDataBuffer(long length) {
         super(length, Sizeof.DOUBLE);
     }
 
-    public CudaDoubleDataBuffer(int length, int elementSize) {
+    public CudaDoubleDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaDoubleDataBuffer(int length, int elementSize, int offset) {
+    public CudaDoubleDataBuffer(long length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
-    public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
 
@@ -70,7 +72,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaDoubleDataBuffer(double[] data, boolean copy, int offset) {
+    public CudaDoubleDataBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -82,7 +84,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaDoubleDataBuffer(float[] data, boolean copy, int offset) {
+    public CudaDoubleDataBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -94,33 +96,33 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaDoubleDataBuffer(int[] data, boolean copy, int offset) {
+    public CudaDoubleDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public CudaDoubleDataBuffer(ByteBuf buf, int length) {
+    public CudaDoubleDataBuffer(ByteBuf buf, long length) {
         super(buf, length);
     }
 
-    public CudaDoubleDataBuffer(ByteBuf buf, int length, int offset) {
+    public CudaDoubleDataBuffer(ByteBuf buf, long length, long offset) {
         super(buf, length, offset);
     }
 
-    public CudaDoubleDataBuffer(byte[] data, int length) {
+    public CudaDoubleDataBuffer(byte[] data, long length) {
         super(data, length);
     }
 
-    public CudaDoubleDataBuffer(ByteBuffer buffer, int length) {
+    public CudaDoubleDataBuffer(ByteBuffer buffer, long length) {
         super(buffer, length);
     }
 
-    public CudaDoubleDataBuffer(ByteBuffer buffer, int length, int offset) {
+    public CudaDoubleDataBuffer(ByteBuffer buffer, long length, long offset) {
         super(buffer, length, offset);
     }
 
 
     @Override
-    public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
+    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
 
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -128,7 +130,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            int offset = indices[0];
+            long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
 
@@ -138,14 +140,14 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
+    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            int offset = indices[0];
+            long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
         } else
@@ -154,7 +156,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    protected DataBuffer create(int length) {
+    protected DataBuffer create(long length) {
         return new CudaDoubleDataBuffer(length);
     }
 
@@ -228,8 +230,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
         this.length = n;
         this.elementSize = Sizeof.DOUBLE;
-        wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
-        wrappedBuffer.order(ByteOrder.nativeOrder());
+
+        //wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
+        //wrappedBuffer.order(ByteOrder.nativeOrder());
+
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+        this.trackingPoint = allocationPoint.getObjectId();
+        this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
+        this.wrappedBuffer.order(ByteOrder.nativeOrder());
+
         setData(arr);
     }
 

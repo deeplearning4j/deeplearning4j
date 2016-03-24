@@ -167,8 +167,6 @@ public class AtomicAllocator implements Allocator {
             this.configuration = configuration;
             this.environment = new CudaEnvironment(this.configuration);
 
-
-
             globalLock.writeLock().unlock();
         }
     }
