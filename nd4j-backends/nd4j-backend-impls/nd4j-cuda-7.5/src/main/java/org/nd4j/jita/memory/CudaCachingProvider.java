@@ -26,11 +26,13 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     private AtomicLong cacheHit = new AtomicLong(0);
     private AtomicLong cacheMiss = new AtomicLong(0);
 
+    private AtomicLong allocRequests = new AtomicLong(0);
+
 
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         if (location == AllocationStatus.HOST) {
-            if (cacheMiss.get() % 50000 == 0)
+            if (allocRequests.incrementAndGet() % 50000 == 0)
                 printCacheStats();
 
             Queue<Pointer> queue = zeroCache.get(shape);
@@ -68,7 +70,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
             }
 
             Queue<Pointer> queue = zeroCache.get(shape);
-            if (queue.size() < 10000) {
+            if (queue.size() < 500000) {
                 queue.add(new Pointer(point.getHostPointer().address()));
             } else {
                 super.free(point);

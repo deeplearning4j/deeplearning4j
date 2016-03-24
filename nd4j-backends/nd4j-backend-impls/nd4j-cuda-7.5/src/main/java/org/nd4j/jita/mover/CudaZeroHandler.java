@@ -401,7 +401,7 @@ public class CudaZeroHandler implements MemoryHandler {
         }
 
         // TODO: to be removed
-        context.syncOldStream();
+        //context.syncOldStream();
     }
 
     @Override
