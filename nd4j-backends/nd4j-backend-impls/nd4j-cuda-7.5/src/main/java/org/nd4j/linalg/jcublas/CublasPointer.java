@@ -149,12 +149,17 @@ public class CublasPointer  implements AutoCloseable {
     public CublasPointer(INDArray array,CudaContext context) {
         //we have to reset the pointer to be zero offset due to the fact that
         //vector based striding won't work with an array that looks like this
+
+        this.cudaContext = context;
+        this.devicePointer = new Pointer(AtomicAllocator.getInstance().getPointer(array).address());
+
+        /*
         if(array instanceof IComplexNDArray) {
             if(array.length() * 2 < array.data().length()  && !array.isVector()) {
                 array = Shape.toOffsetZero(array);
             }
         }
-        this.cudaContext = context;
+
         buffer = (JCudaBuffer) array.data();
 
         //the name of this thread for knowing whether to copy data or not
@@ -166,12 +171,12 @@ public class CublasPointer  implements AutoCloseable {
             if(this.arr.elementWiseStride() < 0)
                 throw new IllegalStateException("Unable to iterate over buffer");
         }
-
+*/
         //int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
         ////int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
       //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
-        this.devicePointer = new Pointer(AtomicAllocator.getInstance().getPointer(array).address());
+
         /*
                 buffer.getPointer(
                 this.arr,

@@ -429,9 +429,27 @@ public class AtomicAllocator implements Allocator {
         */
     }
 
-
+    /**
+     * This method returns actual host pointer valid for current object
+     *
+     * @param array
+     */
+    @Override
+    public Pointer getHostPointer(INDArray array) {
+        return memoryHandler.getHostPointer(array.data());
+    }
 
     /**
+     * This method returns actual host pointer valid for current object
+     *
+     * @param buffer
+     */
+    @Override
+    public Pointer getHostPointer(DataBuffer buffer) {
+        return memoryHandler.getHostPointer(buffer);
+    }
+
+/**
      * This method returns actual host pointer, valid for specified shape of current object
      *
      * @param array

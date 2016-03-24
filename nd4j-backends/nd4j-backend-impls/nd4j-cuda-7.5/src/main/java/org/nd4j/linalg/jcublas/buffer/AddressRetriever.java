@@ -29,7 +29,7 @@ public class AddressRetriever {
      * @return
      */
     public static long retrieveHostAddress(DataBuffer buffer) {
-        return  buffer.address();
+        return  allocator.getHostPointer(buffer).address();
     }
 
 }

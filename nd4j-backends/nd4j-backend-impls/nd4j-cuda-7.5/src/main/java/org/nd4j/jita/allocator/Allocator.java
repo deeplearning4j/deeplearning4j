@@ -65,6 +65,20 @@ public interface Allocator {
     Pointer getPointer(DataBuffer buffer);
 
     /**
+     * This method returns actual host pointer valid for current object
+     *
+     * @param buffer
+     */
+    Pointer getHostPointer(DataBuffer buffer);
+
+    /**
+     * This method returns actual host pointer valid for current object
+     *
+     * @param array
+     */
+    Pointer getHostPointer(INDArray array);
+
+    /**
      * This method returns actual device pointer valid for specified shape of current object
      *
      * @param buffer

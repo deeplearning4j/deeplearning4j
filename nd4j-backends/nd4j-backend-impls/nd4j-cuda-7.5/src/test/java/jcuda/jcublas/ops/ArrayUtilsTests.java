@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -46,6 +47,7 @@ public class ArrayUtilsTests {
     }
 
     @Test
+    @Ignore
     public void testArrayRemoveIndexX() throws Exception {
         //INDArray arraySource = Nd4j.create(new float[]{1,2,3,4,5,6,7,8});
         int[] arraySource = new int[] {1,2,3,4,5,6,7,8};
@@ -58,6 +60,7 @@ public class ArrayUtilsTests {
     }
 
     @Test
+    @Ignore
     public void testArrayRemoveIndex5() throws Exception {
         //INDArray arraySource = Nd4j.create(new float[]{1,2,3,4,5,6,7,8});
         int[] arraySource = new int[] {1,2,3,4,5,6,7,8};
