@@ -906,7 +906,7 @@ namespace functions {
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);

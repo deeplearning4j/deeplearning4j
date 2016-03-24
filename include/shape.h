@@ -184,7 +184,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength);
+    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength,bool reverseCopyStride);
 /**
  *
  * @param length
@@ -1262,7 +1262,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength) {
+    int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength,bool reverseCopyStride) {
         int *shapeOf = shape::shapeOf(shapeInfo);
         int *strideOf = shape::stride(shapeInfo);
         int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(dimensionLength));
@@ -1270,7 +1270,10 @@ namespace shape {
         ret[0] = dimensionLength;
         int *retShape = shape::shapeOf(ret);
         int *retStride = shape::stride(ret);
-        shape::reverseCopyTo(strideOf,&retStride,dimension,dimensionLength);
+        if(reverseCopyStride)
+            shape::reverseCopyTo(strideOf,&retStride,dimension,dimensionLength);
+        else
+            shape::copyTo(dimensionLength,strideOf,&retStride,dimension);
         shape::copyTo(dimensionLength,shapeOf,&retShape,dimension);
         return ret;
     }

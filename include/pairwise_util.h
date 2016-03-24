@@ -47,7 +47,7 @@ void quickSort(StridePermutation *arr, int elements);
 
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
-            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
@@ -81,7 +81,7 @@ void quickSort(StridePermutation *arr, int elements);
                               dataA, stridesA, \
                               dataB, stridesB, \
                               dataC, stridesC) \
-            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
@@ -103,7 +103,7 @@ void quickSort(StridePermutation *arr, int elements);
                               dataB, stridesB, \
                               dataC, stridesC, \
                               dataD, stridesD) \
-            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
@@ -160,7 +160,7 @@ void  SortStrideArray(int ndim, int *strides,
  * where no buffering of any kind is needed, and the array may
  * not be stored as a PyArrayObject.
  *
- * The arrays shape, out_shape, strides, and out_strides must all
+ * The arrays shape, outShape, strides, and outStrides must all
  * point to different data.
  *
  * Returns 0 on success, -1 on failure.
@@ -172,8 +172,8 @@ __host__
 #endif
 int PrepareOneRawArrayIter(int ndim, int *shape,
                            T *data, int *strides,
-                           int *out_ndim, int *out_shape,
-                           T **out_data, int *out_strides) {
+                           int *out_ndim, int *outShape,
+                           T **out_data, int *outStrides) {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
 
@@ -181,22 +181,22 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
     if (ndim == 0) {
         *out_ndim = 1;
         *out_data = data;
-        out_shape[0] = 1;
-        out_strides[0] = 0;
+        outShape[0] = 1;
+        outStrides[0] = 0;
         return 0;
     }
     else if (ndim == 1) {
         int stride_entry = strides[0], shape_entry = shape[0];
         *out_ndim = 1;
-        out_shape[0] = shape[0];
+        outShape[0] = shape[0];
         /* Always make a positive stride */
         if (stride_entry >= 0) {
             *out_data = data;
-            out_strides[0] = stride_entry;
+            outStrides[0] = stride_entry;
         }
         else {
             *out_data = data + stride_entry * (shape_entry - 1);
-            out_strides[0] = -stride_entry;
+            outStrides[0] = -stride_entry;
         }
         return 0;
     }
@@ -205,24 +205,24 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
     SortStrideArray(ndim, strides, strideperm);
     for (i = 0; i < ndim; i++) {
         int iperm = strideperm[ndim - i - 1].perm;
-        out_shape[i] = shape[iperm];
-        out_strides[i] = strides[iperm];
+        outShape[i] = shape[iperm];
+        outStrides[i] = strides[iperm];
     }
 
     /* Reverse any negative strides */
     for (i = 0; i < ndim; ++i) {
-        int stride_entry = out_strides[i], shape_entry = out_shape[i];
+        int stride_entry = outStrides[i], shape_entry = outShape[i];
 
         if (stride_entry < 0) {
             data += stride_entry * (shape_entry - 1);
-            out_strides[i] = -stride_entry;
+            outStrides[i] = -stride_entry;
         }
         /* Detect 0-size arrays here */
         if (shape_entry == 0) {
             *out_ndim = 1;
             *out_data = data;
-            out_shape[0] = 0;
-            out_strides[0] = 0;
+            outShape[0] = 0;
+            outStrides[0] = 0;
             return 0;
         }
     }
@@ -230,23 +230,23 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
     /* Coalesce any dimensions where possible */
     i = 0;
     for (j = 1; j < ndim; ++j) {
-        if (out_shape[i] == 1) {
+        if (outShape[i] == 1) {
             /* Drop axis i */
-            out_shape[i] = out_shape[j];
-            out_strides[i] = out_strides[j];
+            outShape[i] = outShape[j];
+            outStrides[i] = outStrides[j];
         }
-        else if (out_shape[j] == 1) {
+        else if (outShape[j] == 1) {
             /* Drop axis j */
         }
-        else if (out_strides[i] * out_shape[i] == out_strides[j]) {
+        else if (outStrides[i] * outShape[i] == outStrides[j]) {
             /* Coalesce axes i and j */
-            out_shape[i] *= out_shape[j];
+            outShape[i] *= outShape[j];
         }
         else {
             /* Can't coalesce, go to next i */
             ++i;
-            out_shape[i] = out_shape[j];
-            out_strides[i] = out_strides[j];
+            outShape[i] = outShape[j];
+            outStrides[i] = outStrides[j];
         }
     }
     ndim = i+1;
@@ -257,12 +257,12 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
         printf("raw iter ndim %d\n", ndim);
         printf("shape: ");
         for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)out_shape[i]);
+            printf("%d ", (int)outShape[i]);
         }
         printf("\n");
         printf("strides: ");
         for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)out_strides[i]);
+            printf("%d ", (int)outStrides[i]);
         }
         printf("\n");
     }
@@ -359,9 +359,9 @@ __host__
 int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataA, int *stridesA,
                            T *dataB, int *stridesB,
-                           int *out_ndim, int *out_shape,
-                           T **out_dataA, int *out_stridesA,
-                           T **out_dataB, int *out_stridesB)
+                           int *out_ndim, int *outShape,
+                           T **out_dataA, int *outStridesA,
+                           T **out_dataB, int *outStridesB)
 {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
@@ -371,28 +371,28 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
         *out_ndim = 1;
         *out_dataA = dataA;
         *out_dataB = dataB;
-        out_shape[0] = 1;
-        out_stridesA[0] = 0;
-        out_stridesB[0] = 0;
+        outShape[0] = 1;
+        outStridesA[0] = 0;
+        outStridesB[0] = 0;
         return 0;
     }
     else if (ndim == 1) {
         int stride_entryA = stridesA[0], stride_entryB = stridesB[0];
         int shape_entry = shape[0];
         *out_ndim = 1;
-        out_shape[0] = shape[0];
+        outShape[0] = shape[0];
         /* Always make a positive stride for the first operand */
         if (stride_entryA >= 0) {
             *out_dataA = dataA;
             *out_dataB = dataB;
-            out_stridesA[0] = stride_entryA;
-            out_stridesB[0] = stride_entryB;
+            outStridesA[0] = stride_entryA;
+            outStridesB[0] = stride_entryB;
         }
         else {
             *out_dataA = dataA + stride_entryA * (shape_entry - 1);
             *out_dataB = dataB + stride_entryB * (shape_entry - 1);
-            out_stridesA[0] = -stride_entryA;
-            out_stridesB[0] = -stride_entryB;
+            outStridesA[0] = -stride_entryA;
+            outStridesB[0] = -stride_entryB;
         }
         return 0;
     }
@@ -401,32 +401,32 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     SortStrideArray(ndim, stridesA, strideperm);
     for (i = 0; i < ndim; ++i) {
         int iperm = strideperm[ndim - i - 1].perm;
-        out_shape[i] = shape[iperm];
-        out_stridesA[i] = stridesA[iperm];
-        out_stridesB[i] = stridesB[iperm];
+        outShape[i] = shape[iperm];
+        outStridesA[i] = stridesA[iperm];
+        outStridesB[i] = stridesB[iperm];
     }
 
     /* Reverse any negative strides of operand A */
     for (i = 0; i < ndim; ++i) {
-        int stride_entryA = out_stridesA[i];
-        int stride_entryB = out_stridesB[i];
-        int shape_entry = out_shape
+        int stride_entryA = outStridesA[i];
+        int stride_entryB = outStridesB[i];
+        int shape_entry = outShape
         [i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);
             dataB += stride_entryB * (shape_entry - 1);
-            out_stridesA[i] = -stride_entryA;
-            out_stridesB[i] = -stride_entryB;
+            outStridesA[i] = -stride_entryA;
+            outStridesB[i] = -stride_entryB;
         }
         /* Detect 0-size arrays here */
         if (shape_entry == 0) {
             *out_ndim = 1;
             *out_dataA = dataA;
             *out_dataB = dataB;
-            out_shape[0] = 0;
-            out_stridesA[0] = 0;
-            out_stridesB[0] = 0;
+            outShape[0] = 0;
+            outStridesA[0] = 0;
+            outStridesB[0] = 0;
             return 0;
         }
     }
@@ -434,26 +434,26 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     /* Coalesce any dimensions where possible */
     i = 0;
     for (j = 1; j < ndim; ++j) {
-        if (out_shape[i] == 1) {
+        if (outShape[i] == 1) {
             /* Drop axis i */
-            out_shape[i] = out_shape[j];
-            out_stridesA[i] = out_stridesA[j];
-            out_stridesB[i] = out_stridesB[j];
+            outShape[i] = outShape[j];
+            outStridesA[i] = outStridesA[j];
+            outStridesB[i] = outStridesB[j];
         }
-        else if (out_shape[j] == 1) {
+        else if (outShape[j] == 1) {
             /* Drop axis j */
         }
-        else if (out_stridesA[i] * out_shape[i] == out_stridesA[j] &&
-                 out_stridesB[i] * out_shape[i] == out_stridesB[j]) {
+        else if (outStridesA[i] * outShape[i] == outStridesA[j] &&
+                 outStridesB[i] * outShape[i] == outStridesB[j]) {
             /* Coalesce axes i and j */
-            out_shape[i] *= out_shape[j];
+            outShape[i] *= outShape[j];
         }
         else {
             /* Can't coalesce, go to next i */
             ++i;
-            out_shape[i] = out_shape[j];
-            out_stridesA[i] = out_stridesA[j];
-            out_stridesB[i] = out_stridesB[j];
+            outShape[i] = outShape[j];
+            outStridesA[i] = outStridesA[j];
+            outStridesB[i] = outStridesB[j];
         }
     }
     ndim = i+1;
@@ -488,10 +488,10 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
                               T *dataA, int *stridesA,
                               T *dataB, int *stridesB,
                               T *dataC, int *stridesC,
-                              int *out_ndim, int *out_shape,
-                              T **out_dataA, int *out_stridesA,
-                              T **out_dataB, int *out_stridesB,
-                              T **out_dataC, int *out_stridesC)
+                              int *out_ndim, int *outShape,
+                              T **out_dataA, int *outStridesA,
+                              T **out_dataB, int *outStridesB,
+                              T **out_dataC, int *outStridesC)
 {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
@@ -502,10 +502,10 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
         *out_dataA = dataA;
         *out_dataB = dataB;
         *out_dataC = dataC;
-        out_shape[0] = 1;
-        out_stridesA[0] = 0;
-        out_stridesB[0] = 0;
-        out_stridesC[0] = 0;
+        outShape[0] = 1;
+        outStridesA[0] = 0;
+        outStridesB[0] = 0;
+        outStridesC[0] = 0;
         return 0;
     }
     else if (ndim == 1) {
@@ -514,23 +514,23 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
         int stride_entryC = stridesC[0];
         int shape_entry = shape[0];
         *out_ndim = 1;
-        out_shape[0] = shape[0];
+        outShape[0] = shape[0];
         /* Always make a positive stride for the first operand */
         if (stride_entryA >= 0) {
             *out_dataA = dataA;
             *out_dataB = dataB;
             *out_dataC = dataC;
-            out_stridesA[0] = stride_entryA;
-            out_stridesB[0] = stride_entryB;
-            out_stridesC[0] = stride_entryC;
+            outStridesA[0] = stride_entryA;
+            outStridesB[0] = stride_entryB;
+            outStridesC[0] = stride_entryC;
         }
         else {
             *out_dataA = dataA + stride_entryA * (shape_entry - 1);
             *out_dataB = dataB + stride_entryB * (shape_entry - 1);
             *out_dataC = dataC + stride_entryC * (shape_entry - 1);
-            out_stridesA[0] = -stride_entryA;
-            out_stridesB[0] = -stride_entryB;
-            out_stridesC[0] = -stride_entryC;
+            outStridesA[0] = -stride_entryA;
+            outStridesB[0] = -stride_entryB;
+            outStridesC[0] = -stride_entryC;
         }
         return 0;
     }
@@ -539,26 +539,26 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
     SortStrideArray(ndim, stridesA, strideperm);
     for (i = 0; i < ndim; ++i) {
         int iperm = strideperm[ndim - i - 1].perm;
-        out_shape[i] = shape[iperm];
-        out_stridesA[i] = stridesA[iperm];
-        out_stridesB[i] = stridesB[iperm];
-        out_stridesC[i] = stridesC[iperm];
+        outShape[i] = shape[iperm];
+        outStridesA[i] = stridesA[iperm];
+        outStridesB[i] = stridesB[iperm];
+        outStridesC[i] = stridesC[iperm];
     }
 
     /* Reverse any negative strides of operand A */
     for (i = 0; i < ndim; ++i) {
-        int stride_entryA = out_stridesA[i];
-        int stride_entryB = out_stridesB[i];
-        int stride_entryC = out_stridesC[i];
-        int shape_entry = out_shape[i];
+        int stride_entryA = outStridesA[i];
+        int stride_entryB = outStridesB[i];
+        int stride_entryC = outStridesC[i];
+        int shape_entry = outShape[i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);
             dataB += stride_entryB * (shape_entry - 1);
             dataC += stride_entryC * (shape_entry - 1);
-            out_stridesA[i] = -stride_entryA;
-            out_stridesB[i] = -stride_entryB;
-            out_stridesC[i] = -stride_entryC;
+            outStridesA[i] = -stride_entryA;
+            outStridesB[i] = -stride_entryB;
+            outStridesC[i] = -stride_entryC;
         }
         /* Detect 0-size arrays here */
         if (shape_entry == 0) {
@@ -566,10 +566,10 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
             *out_dataA = dataA;
             *out_dataB = dataB;
             *out_dataC = dataC;
-            out_shape[0] = 0;
-            out_stridesA[0] = 0;
-            out_stridesB[0] = 0;
-            out_stridesC[0] = 0;
+            outShape[0] = 0;
+            outStridesA[0] = 0;
+            outStridesB[0] = 0;
+            outStridesC[0] = 0;
             return 0;
         }
     }
@@ -577,29 +577,29 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
     /* Coalesce any dimensions where possible */
     i = 0;
     for (j = 1; j < ndim; ++j) {
-        if (out_shape[i] == 1) {
+        if (outShape[i] == 1) {
             /* Drop axis i */
-            out_shape[i] = out_shape[j];
-            out_stridesA[i] = out_stridesA[j];
-            out_stridesB[i] = out_stridesB[j];
-            out_stridesC[i] = out_stridesC[j];
+            outShape[i] = outShape[j];
+            outStridesA[i] = outStridesA[j];
+            outStridesB[i] = outStridesB[j];
+            outStridesC[i] = outStridesC[j];
         }
-        else if (out_shape[j] == 1) {
+        else if (outShape[j] == 1) {
             /* Drop axis j */
         }
-        else if (out_stridesA[i] * out_shape[i] == out_stridesA[j] &&
-                 out_stridesB[i] * out_shape[i] == out_stridesB[j] &&
-                 out_stridesC[i] * out_shape[i] == out_stridesC[j]) {
+        else if (outStridesA[i] * outShape[i] == outStridesA[j] &&
+                 outStridesB[i] * outShape[i] == outStridesB[j] &&
+                 outStridesC[i] * outShape[i] == outStridesC[j]) {
             /* Coalesce axes i and j */
-            out_shape[i] *= out_shape[j];
+            outShape[i] *= outShape[j];
         }
         else {
             /* Can't coalesce, go to next i */
             ++i;
-            out_shape[i] = out_shape[j];
-            out_stridesA[i] = out_stridesA[j];
-            out_stridesB[i] = out_stridesB[j];
-            out_stridesC[i] = out_stridesC[j];
+            outShape[i] = outShape[j];
+            outStridesA[i] = outStridesA[j];
+            outStridesB[i] = outStridesB[j];
+            outStridesC[i] = outStridesC[j];
         }
     }
     ndim = i+1;

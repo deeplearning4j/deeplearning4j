@@ -8,6 +8,7 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <nd4jmalloc.h>
+#include <pairwise_util.h>
 #pragma once
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -878,7 +879,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
 
                     }
-                   
+
 
 
 
@@ -899,26 +900,24 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     //moving all dimensions (in sorted order)
                     //to the back.
                     //permuted version of the x shape info for setting up the tad problem
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'f');
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int tadLength = shape::length(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-                    shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
                         if(offset + tadLength >= shape::length(xShapeInfo) && squeezed) {
                             offset = i;
                         }
-
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
                         int rankIter = rank;
                         int xStridesIter[MAX_RANK];
                         T *xPointer = x + offset;
-                        T start = this->startingValue(x);
+                        T start = this->startingValue(xPointer);
                         if(PrepareOneRawArrayIter<T>(rankIter,
                                                      xShape,
                                                      xPointer,
@@ -948,7 +947,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
 
                     free(tadShapeShapeInfo);
-                    shape::freePermuteInfo(info);
 
 
 

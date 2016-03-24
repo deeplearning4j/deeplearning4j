@@ -988,7 +988,7 @@ struct SharedSummaryStatsData<double> {
                      * along long which to iterate.
                      */
 
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength);
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'f');
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
@@ -1135,10 +1135,8 @@ struct SharedSummaryStatsData<double> {
 #endif
                 T getValue(SummaryStatsData<T> val) {
                     if (this->biasCorrected) {
-                        printf("Getting val bias corrected %f vs normal variance %f and n %f\n",val.varianceBiasCorrected(),val.variance(),val.n);
                     return val.varianceBiasCorrected();
                 }
-                    printf("Getting val non bias corrected\n");
                     return val.variance();
                 }
 
