@@ -878,9 +878,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
 
                     }
-                    else {
-                        printf("No dimensions needed to be adjusted reduce\n");
-                    }
+                   
 
 
 
