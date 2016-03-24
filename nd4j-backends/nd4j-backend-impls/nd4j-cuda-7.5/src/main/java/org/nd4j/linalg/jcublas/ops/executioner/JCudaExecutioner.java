@@ -73,6 +73,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        Arrays.sort(dimension);
+
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long y = AtomicAllocator.getInstance().getDevicePointer(op.y()).getNativePointer();
         long z = AtomicAllocator.getInstance().getDevicePointer(op.z()).getNativePointer();
@@ -121,6 +123,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        Arrays.sort(dimension);
+
 //        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 //        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
         for(int i = 0; i < dimension.length; i++) {
@@ -313,6 +317,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        Arrays.sort(dimension);
+
 //        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -400,6 +406,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op, int... dimension) {
+        Arrays.sort(dimension);
         return super.exec(op, dimension);
     }
 
@@ -515,6 +522,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        Arrays.sort(dimension);
+
 //        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getDevicePointer(op.x()).getNativePointer();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
@@ -592,6 +601,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
+        Arrays.sort(dimension);
+
 //        log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
