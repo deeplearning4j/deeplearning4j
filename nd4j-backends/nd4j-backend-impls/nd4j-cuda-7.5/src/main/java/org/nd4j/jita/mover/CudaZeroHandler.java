@@ -16,6 +16,7 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.memory.CudaCachingProvider;
 import org.nd4j.jita.memory.CudaDirectProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -71,7 +72,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final MemoryProvider provider = new CudaDirectProvider();
+    private final MemoryProvider provider = new CudaCachingProvider();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap

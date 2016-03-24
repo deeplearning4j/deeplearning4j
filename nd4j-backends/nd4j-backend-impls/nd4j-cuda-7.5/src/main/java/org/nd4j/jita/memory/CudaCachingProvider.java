@@ -28,7 +28,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
             if (queue != null) {
                 log.info("YAY! We have something in cache!");
                 throw new UnsupportedOperationException("Not implemented yet");
-                
+
             } else return super.malloc(shape, point, location);
         } else return super.malloc(shape, point, location);
     }
@@ -36,6 +36,8 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            super.free(point);
+        } else {
             super.free(point);
         }
     }
