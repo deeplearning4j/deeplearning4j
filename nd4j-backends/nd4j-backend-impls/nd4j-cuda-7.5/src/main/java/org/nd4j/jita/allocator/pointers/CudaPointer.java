@@ -33,7 +33,6 @@ public class CudaPointer extends Pointer {
         this.capacity = capacity;
         this.limit = capacity;
         this.position = 0;
-        logger.info("Creating pointer: ["+ this.address + "], capacity: ["+this.capacity+"]");
     }
 
     public CudaPointer(Pointer pointer, long capacity, long byteOffset) {

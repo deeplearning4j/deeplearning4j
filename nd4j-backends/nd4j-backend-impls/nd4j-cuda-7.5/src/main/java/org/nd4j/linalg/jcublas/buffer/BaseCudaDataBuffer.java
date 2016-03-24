@@ -200,7 +200,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
-        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
+//        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
 
         if (underlyingBuffer.dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asDoublePointer();
@@ -214,7 +214,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         this.wrappedBuffer = this.pointer.asByteBuffer();
-        log.info("Buffer info: dataType: ["+underlyingBuffer.dataType()+"], capacity: [" + this.wrappedBuffer.capacity()+ "], limit: ["+this.wrappedBuffer.limit()+"], position: ["+ this.wrappedBuffer.position() + "]");
+//        log.info("Buffer info: dataType: ["+underlyingBuffer.dataType()+"], capacity: [" + this.wrappedBuffer.capacity()+ "], limit: ["+this.wrappedBuffer.limit()+"], position: ["+ this.wrappedBuffer.position() + "]");
 
         // TODO: make sure we're getting pointer with offset at allocator
     }
@@ -842,7 +842,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public float getFloat(long i) {
         allocator.synchronizeHostData(this);
 
-        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], length: ["+length+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "], bufferCapacity: ["+this.wrappedBuffer.capacity()+"], dtype: ["+dataType()+"]");
+//        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], length: ["+length+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "], bufferCapacity: ["+this.wrappedBuffer.capacity()+"], dtype: ["+dataType()+"]");
 
         return super.getFloat(i);
         //return wrappedBuffer.getFloat((int)(offset + i) * getElementSize());
