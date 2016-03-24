@@ -480,7 +480,7 @@ public class CudaZeroHandler implements MemoryHandler {
         dstPoint.tickDevice();
 
 
-        return new CudaPointer(dstPoint.getPointers().getDevicePointer(), (buffer.offset() * buffer.getElementSize()));
+        return new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),  (buffer.offset() * buffer.getElementSize()));
     }
 
     /**
@@ -493,7 +493,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public org.bytedeco.javacpp.Pointer getHostPointer(DataBuffer buffer) {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
-        return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.originalOffset());
+        return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
     }
 
     /**

@@ -285,10 +285,10 @@ public class AtomicAllocatorTest {
 
             INDArray slice1 = array1.slice(y);
 
-            log.info("X3: " + arrayX.getDouble(3));
+    //        log.info("X3: " + arrayX.getDouble(3));
             assertEquals(arrayX.getDouble(3), slice1.getDouble(3), 0.00001);
 
-            log.info("Cycles passed: " + (y + 1));
+         //   log.info("Cycles passed: " + (y + 1));
             //assertTrue(y < 2);
         }
 

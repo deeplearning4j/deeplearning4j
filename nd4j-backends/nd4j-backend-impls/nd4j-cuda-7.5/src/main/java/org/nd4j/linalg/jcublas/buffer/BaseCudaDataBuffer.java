@@ -722,6 +722,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
+                indexer = DoubleIndexer.create((DoublePointer) pointer);
+
                 for(int i = 0; i < length(); i++) {
                     put(i,s.readDouble());
                 }
@@ -731,6 +734,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
+                indexer = FloatIndexer.create((FloatPointer) pointer);
+
                 for(int i = 0; i < length(); i++) {
                     put(i,s.readFloat());
                 }
@@ -739,6 +745,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
                 allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+                indexer = IntIndexer.create((IntPointer) pointer);
 
                 for(int i = 0; i < length(); i++) {
                     put(i,s.readInt());
