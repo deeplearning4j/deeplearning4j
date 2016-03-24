@@ -821,7 +821,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public DataBuffer dup() {
         allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
-        //allocator.memcpy(buffer, this);
+        allocator.memcpyBlocking(buffer, new Pointer(allocator.getHostPointer(this).address()), this.length * elementSize, 0 );
         return buffer;
     }
 

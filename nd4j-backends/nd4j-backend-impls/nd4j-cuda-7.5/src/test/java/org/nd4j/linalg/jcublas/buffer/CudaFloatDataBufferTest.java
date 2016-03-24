@@ -8,6 +8,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 /**
@@ -164,6 +166,47 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
+    public void testDup2() throws Exception {
+        INDArray array = Nd4j.linspace(0,99, 100).reshape(10, 10);
+
+        INDArray slice1 = array.slice(2);
+
+        assertEquals(10, slice1.length());
+
+        INDArray duplicate = slice1.dup();
+        assertEquals(10, duplicate.length());
+
+        assertEquals(10, duplicate.data().length());
+        assertEquals(10, duplicate.data().asDouble().length);
+
+        assertEquals(20f, duplicate.getFloat(0), 0.0001f);
+        assertEquals(21f, duplicate.getFloat(1), 0.0001f);
+        assertEquals(22f, duplicate.getFloat(2), 0.0001f);
+        assertEquals(23f, duplicate.getFloat(3), 0.0001f);
+    }
+
+    @Test
+    public void testDup3() throws Exception {
+        INDArray array = Nd4j.linspace(0,99, 100).reshape(10, 10);
+
+        INDArray slice1 = array.slice(2);
+        DataBuffer duplicate = slice1.data().dup();
+
+        assertEquals(10, duplicate.length());
+        assertEquals(20f, duplicate.getFloat(0), 0.0001f);
+        assertEquals(21f, duplicate.getFloat(1), 0.0001f);
+        assertEquals(22f, duplicate.getFloat(2), 0.0001f);
+        assertEquals(23f, duplicate.getFloat(3), 0.0001f);
+        assertEquals(24f, duplicate.getFloat(4), 0.0001f);
+        assertEquals(25f, duplicate.getFloat(5), 0.0001f);
+        assertEquals(26f, duplicate.getFloat(6), 0.0001f);
+        assertEquals(27f, duplicate.getFloat(7), 0.0001f);
+        assertEquals(28f, duplicate.getFloat(8), 0.0001f);
+        assertEquals(29f, duplicate.getFloat(9), 0.0001f);
+
+    }
+
+    @Test
     public void testIndexer1() throws Exception {
         INDArray array1 = Nd4j.zeros(15,15);
 
@@ -184,13 +227,13 @@ public class CudaFloatDataBufferTest {
     @Test
     public void testSum2() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        System.out.println("-------------------------------------");
-        System.out.println("N result: " + n);
+   //     System.out.println("-------------------------------------");
+//        System.out.println("N result: " + n);
         INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
-        System.out.println("Test result: " + test);
+//        System.out.println("Test result: " + test);
         INDArray sum = n.sum(-1);
 
-        System.out.println("Sum result: " + sum);
+//        System.out.println("Sum result: " + sum);
         assertEquals(test, sum);
     }
 }
