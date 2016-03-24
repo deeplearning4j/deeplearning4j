@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import static org.junit.Assert.*;
 
@@ -160,5 +161,36 @@ public class CudaFloatDataBufferTest {
 
         assertEquals(array1, array2);
         assertNotEquals(array1.data().getTrackingPoint(), array2.data().getTrackingPoint());
+    }
+
+    @Test
+    public void testIndexer1() throws Exception {
+        INDArray array1 = Nd4j.zeros(15,15);
+
+        System.out.println("-------------------------------------");
+//        assertEquals(0.0, array1.getFloat(0), 0.0001);
+        System.out.println(array1);
+    }
+
+    @Test
+    public void testIndexer2() throws Exception {
+        INDArray array1 = Nd4j.create(15);
+
+        System.out.println("-------------------------------------");
+//        assertEquals(0.0, array1.getFloat(0), 0.0001);
+        System.out.println(array1);
+    }
+
+    @Test
+    public void testSum2() {
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
+        System.out.println("-------------------------------------");
+        System.out.println("N result: " + n);
+        INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
+        System.out.println("Test result: " + test);
+        INDArray sum = n.sum(-1);
+
+        System.out.println("Sum result: " + sum);
+        assertEquals(test, sum);
     }
 }

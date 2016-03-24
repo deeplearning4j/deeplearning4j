@@ -156,20 +156,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 //        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
 //        log.info("Device pointer: " + allocationPoint.getPointers().getDevicePointer().address());
 
+   //     log.info("Creating fresh buffer: length: ["+length+"], elementSize: ["+ elementSize+"]");
 
         if (dataType() == Type.DOUBLE) {
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length * elementSize).asDoublePointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
+            log.info("Pointer DOUBLE capacity: " + this.pointer.capacity());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
         } else if (dataType() == Type.FLOAT){
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length* elementSize).asFloatPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
+            log.info("Pointer FLOAT capacity: " + this.pointer.capacity());
             indexer = FloatIndexer.create((FloatPointer) pointer);
         } else if (dataType() == Type.INT){
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length * elementSize).asIntPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+            log.info("Pointer INT capacity: " + this.pointer.capacity());
             indexer = IntIndexer.create((IntPointer) pointer);
         }
 
 
-        this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
+        this.wrappedBuffer = this.pointer.asByteBuffer();
 
         if (this.wrappedBuffer == null) {
             throw new IllegalStateException("WrappedBuffer is NULL");
@@ -190,7 +194,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, long length, long offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.allocationMode = AllocationMode.JAVACPP;
-//        log.info("BCDB create: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"]");
 
         this.wrappedDataBuffer = underlyingBuffer;
         this.originalBuffer = underlyingBuffer.originalDataBuffer() == null ? underlyingBuffer : underlyingBuffer.originalDataBuffer();
@@ -201,19 +204,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
+        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
 
         if (underlyingBuffer.dataType() == Type.DOUBLE) {
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length * elementSize).asDoublePointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), underlyingBuffer.length()).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.FLOAT){
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length* elementSize).asFloatPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), underlyingBuffer.length()).asFloatPointer();
             indexer = FloatIndexer.create((FloatPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.INT){
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length * elementSize).asIntPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), underlyingBuffer.length()).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
         }
 
-        this.wrappedBuffer = underlyingBuffer.asNio();
+        this.wrappedBuffer = ((BaseCudaDataBuffer) underlyingBuffer).wrappedBuffer;
+        log.info("Buffer info: dataType: ["+underlyingBuffer.dataType()+"], capacity: [" + this.wrappedBuffer.capacity()+ "], limit: ["+this.wrappedBuffer.limit()+"], position: ["+ this.wrappedBuffer.position() + "]");
 
         // TODO: make sure we're getting pointer with offset at allocator
     }
@@ -841,11 +846,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public float getFloat(long i) {
         allocator.synchronizeHostData(this);
 
-        //log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "] ");
-        if (wrappedBuffer == null)
-            throw new IllegalStateException("buffer is NULL suddenly");
+        log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], length: ["+length+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "], bufferCapacity: ["+this.wrappedBuffer.capacity()+"], dtype: ["+dataType()+"]");
+
         return super.getFloat(i);
-        //return wrappedBuffer.getFloat((offset + i) * getElementSize());
+        //return wrappedBuffer.getFloat((int)(offset + i) * getElementSize());
     }
 
     @Override

@@ -21,16 +21,26 @@ public class CudaPointer extends Pointer {
 
     private static Logger logger = LoggerFactory.getLogger(CudaPointer.class);
 
+    public CudaPointer(Pointer pointer) {
+        this.address = pointer.address();
+        this.capacity = pointer.capacity();
+        this.limit = pointer.limit();
+        this.position = pointer.position();
+    }
+
     public CudaPointer(Pointer pointer, long capacity) {
         this.address = pointer.address();
         this.capacity = capacity;
         this.limit = capacity;
+        this.position = 0;
+        logger.info("Creating pointer: ["+ this.address + "], capacity: ["+this.capacity+"]");
     }
 
     public CudaPointer(Pointer pointer, long capacity, long byteOffset) {
         this.address = pointer.address() + byteOffset;
         this.capacity = capacity;
         this.limit = capacity;
+        this.position = 0;
     }
 
     public CudaPointer(jcuda.Pointer pointer,  long capacity) {

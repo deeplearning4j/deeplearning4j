@@ -92,9 +92,6 @@ public class CudaAccumTests {
         System.out.println("Test result: " + test);
         INDArray sum = n.sum(-1);
 
-        System.out.println("elementWiseStride: " + n.elementWiseStride());
-        System.out.println("elementStride: " + n.elementStride());
-
         System.out.println("Sum result: " + sum);
         assertEquals(test, sum);
     }
