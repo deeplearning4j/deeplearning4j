@@ -43,7 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
+import org.nd4j.nativeblas.NativeOps;
 
 
 /**
@@ -431,6 +431,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
         assertEquals(9, minIdx);
     }
+
 
     @Test
     public void testMeanSumSimple() {

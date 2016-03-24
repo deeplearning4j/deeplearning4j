@@ -12,7 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
-
+import java.util.Arrays;
 
 
 /**
@@ -55,6 +55,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        Arrays.sort(dimension);
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -146,6 +147,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        Arrays.sort(dimension);
+
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
@@ -502,6 +505,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        Arrays.sort(dimension);
+
         long[] dummy = new long[1];
         long dimensionAddress = Nd4j.createBuffer(dimension).address();
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {

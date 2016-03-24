@@ -640,7 +640,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
             case HEAP:
-                System.out.println("DSMNNZ*1");
                 //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
                 try {
                     //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
