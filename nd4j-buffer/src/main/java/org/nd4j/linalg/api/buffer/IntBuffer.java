@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  */
 public class IntBuffer extends BaseDataBuffer {
 
-    public IntBuffer(int length) {
+    public IntBuffer(long length) {
         super(length);
     }
 
@@ -77,7 +77,7 @@ public class IntBuffer extends BaseDataBuffer {
         super(length, elementSize, offset);
     }
 
-    public IntBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public IntBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
 
@@ -86,7 +86,7 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
-    protected DataBuffer create(int length) {
+    protected DataBuffer create(long length) {
         return new IntBuffer(length);
     }
 
@@ -127,12 +127,12 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public IComplexFloat getComplexFloat(int i) {
+    public IComplexFloat getComplexFloat(long i) {
         return null;
     }
 
     @Override
-    public IComplexDouble getComplexDouble(int i) {
+    public IComplexDouble getComplexDouble(long i) {
         throw new UnsupportedOperationException();
 
     }
