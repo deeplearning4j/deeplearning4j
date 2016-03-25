@@ -813,7 +813,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public IntBuffer asNioInt() {
-        allocator.synchronizeHostData(this);
+        //allocator.synchronizeHostData(this);
         return super.asNioInt();
     }
 
