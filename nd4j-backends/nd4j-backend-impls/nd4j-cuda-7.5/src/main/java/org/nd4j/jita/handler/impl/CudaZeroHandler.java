@@ -659,7 +659,9 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public long getAllocatedHostObjects(Long bucketId) {
-        return zeroAllocations.get(bucketId).size();
+        if (zeroAllocations.containsKey(bucketId))
+            return zeroAllocations.get(bucketId).size();
+        else return 0L;
     }
 
     /**
