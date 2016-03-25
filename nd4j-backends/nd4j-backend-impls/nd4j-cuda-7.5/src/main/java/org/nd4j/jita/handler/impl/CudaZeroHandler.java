@@ -40,9 +40,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 2. Zero-Copy Pinned Memory (if available)
  * 3. Pageable memory (if zero-copy pinned memory isn't supported by device)
  *
- * Current drawbacks:
- * 1. For each allocation it's using it's own separate malloc call.
- * 2. Result arrays/scalars are note covered yet.
  *
  * @author raver119@gmail.com
  */
@@ -97,6 +94,13 @@ public class CudaZeroHandler implements MemoryHandler {
         allocator = AtomicAllocator.getInstance();
     }
 
+    /**
+     * This method gets called from Allocator, during Allocator/MemoryHandler initialization
+     *
+     * @param configuration
+     * @param environment
+     * @param allocator
+     */
     @Override
     public void init(@NonNull Configuration configuration, @NonNull CudaEnvironment environment, @NonNull Allocator allocator) {
         this.configuration = configuration;
@@ -369,6 +373,16 @@ public class CudaZeroHandler implements MemoryHandler {
         }
     }
 
+    /**
+     * Asynchronous version of memcpy
+     *
+     * PLEASE NOTE: This is device-dependent method, if it's not supported in your environment, blocking call will be used instead.
+     *
+     * @param dstBuffer
+     * @param srcPointer
+     * @param length
+     * @param dstOffset
+     */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         CudaContext context = getCudaContext();
@@ -400,10 +414,17 @@ public class CudaZeroHandler implements MemoryHandler {
             );
         }
 
-        // TODO: to be removed
-        //context.syncOldStream();
     }
 
+    /**
+     *  Synchronous version of memcpy.
+     *
+     *
+     * @param dstBuffer
+     * @param srcPointer
+     * @param length
+     * @param dstOffset
+     */
     @Override
     public void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         CudaContext context = getCudaContext();
@@ -411,6 +432,13 @@ public class CudaZeroHandler implements MemoryHandler {
         context.syncOldStream();
     }
 
+    /**
+     *  Synchronous version of memcpy.
+     *
+     *
+     * @param dstBuffer
+     * @param srcBuffer
+     */
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
         CudaContext context = getCudaContext();
@@ -443,7 +471,15 @@ public class CudaZeroHandler implements MemoryHandler {
         }
 
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
-            // TODO:  device replication to be implemented
+            Pointer rDP = new Pointer(dstPoint.getPointers().getDevicePointer().address());
+
+            JCuda.cudaMemcpyAsync(
+                    rDP,
+                    dP,
+                    srcBuffer.length(),
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    context.getOldStream()
+            );
         }
 
         context.syncOldStream();
@@ -555,26 +591,53 @@ public class CudaZeroHandler implements MemoryHandler {
         return table;
     }
 
+    /**
+     * This method returns total amount of memory allocated at specified device
+     *
+     * @param device
+     * @return
+     */
     @Override
     public long getAllocatedDeviceMemory(Integer device) {
         return deviceMemoryTracker.getAllocatedSize(device);
     }
 
+    /**
+     * This method returns total amount of host memory allocated within this MemoryHandler
+     *
+     * @return
+     */
     @Override
     public long getAllocatedHostMemory() {
         return zeroUseCounter.get();
     }
 
+    /**
+     * This method returns total number of object allocated on specified device
+     *
+     * @param deviceId
+     * @return
+     */
     @Override
     public long getAllocatedDeviceObjects(Integer deviceId) {
         return deviceAllocations.get(deviceId).size();
     }
 
+    /**
+     * This method returns number of allocated objects within specific bucket
+     *
+     * @param bucketId
+     * @return
+     */
     @Override
-    public long getAllocatedHostObjects(Long threadId) {
-        return zeroAllocations.get(threadId).size();
+    public long getAllocatedHostObjects(Long bucketId) {
+        return zeroAllocations.get(bucketId).size();
     }
 
+    /**
+     * This method returns total number of allocated objects in host memory
+     * @return
+     */
     @Override
     public long getAllocatedHostObjects() {
         AtomicLong counter = new AtomicLong(0);
@@ -584,14 +647,26 @@ public class CudaZeroHandler implements MemoryHandler {
         return counter.get();
     }
 
+    /**
+     * This method returns set of allocation tracking IDs for specific device
+     *
+     * @param deviceId
+     * @return
+     */
     @Override
     public Set<Long> getDeviceTrackingPoints(Integer deviceId) {
         return deviceAllocations.get(deviceId).keySet();
     }
 
+    /**
+     * This method returns sets of allocation tracking IDs for specific bucket
+     *
+     * @param bucketId
+     * @return
+     */
     @Override
-    public Set<Long> getHostTrackingPoints(Long threadId) {
-        return zeroAllocations.get(threadId).keySet();
+    public Set<Long> getHostTrackingPoints(Long bucketId) {
+        return zeroAllocations.get(bucketId).keySet();
     }
 
 
@@ -718,15 +793,28 @@ public class CudaZeroHandler implements MemoryHandler {
         return devicesAffinity.get(threadId);
     }
 
+    /**
+     * This method returns set of available devices
+     * @return
+     */
+    @Override
     public Set<Integer> getAvailableDevices() {
         return environment.getAvailableDevices().keySet();
     }
 
+    /**
+     * This method returns ExternalContext wrapper (if applicable)
+     * @return
+     */
     @Override
     public ExternalContext getDeviceContext() {
         return new ExternalContext(getCudaContext());
     }
 
+    /**
+     * This method returns CudaContext for current thread. If context doesn't exist - it gets created first.
+     * @return
+     */
     public CudaContext getCudaContext() {
         if (!contextPool.containsKey(Thread.currentThread().getId())) {
             initCudaContextForThread(Thread.currentThread().getId());
@@ -736,7 +824,12 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
 
-    @Deprecated
+    /**
+     * This method does initialization for thread.
+     *
+     *
+     * @param threadId
+     */
     protected void initCudaContextForThread(Long threadId) {
 
         // we set device to be used prior to stream creation
@@ -751,11 +844,24 @@ public class CudaZeroHandler implements MemoryHandler {
         contextPool.put(threadId, context);
     }
 
+    /**
+     * This method returns if this MemoryHandler instance is device-dependant (i.e. CUDA)
+     *
+     * @return TRUE if dependant, FALSE otherwise
+     */
     @Override
     public boolean isDeviceDependant() {
         return true;
     }
 
+    /**
+     * This method causes memory synchronization on host side.
+     *  Viable only for Device-dependant MemoryHandlers
+     *
+     * @param threadId
+     * @param deviceId
+     * @param point
+     */
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         if (!point.isActualOnHostSide()) {

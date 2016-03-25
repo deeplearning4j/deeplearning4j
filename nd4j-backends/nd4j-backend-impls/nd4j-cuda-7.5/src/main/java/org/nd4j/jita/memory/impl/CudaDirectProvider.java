@@ -16,6 +16,15 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  * @author raver119@gmail.com
  */
 public class CudaDirectProvider implements MemoryProvider {
+
+    /**
+     * This method provides PointersPair to memory chunk specified by AllocationShape
+     *
+     * @param shape shape of desired memory chunk
+     * @param point target AllocationPoint structure
+     * @param location either HOST or DEVICE
+     * @return
+     */
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         switch (location) {
@@ -85,6 +94,11 @@ public class CudaDirectProvider implements MemoryProvider {
         }
     }
 
+    /**
+     * This method frees specific chunk of memory, described by AllocationPoint passed in
+     *
+     * @param point
+     */
     @Override
     public void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {

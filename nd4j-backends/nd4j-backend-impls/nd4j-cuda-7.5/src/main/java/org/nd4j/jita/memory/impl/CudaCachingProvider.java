@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
+ * This is MemoryProvider implementation, that adds cache for memory reuse purposes.
+ * If some memory chunk gets released via allocator, it'll be probably saved for future reused within same JVM process.
+ *
  * @author raver119@gmail.com
  */
 public class CudaCachingProvider extends CudaDirectProvider implements MemoryProvider {
@@ -52,6 +55,16 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
         MAX_CACHED_MEMORY = Runtime.getRuntime().maxMemory() / 2;
     }
 
+    /**
+     * This method provides PointersPair to memory chunk specified by AllocationShape
+     *
+     * PLEASE NOTE: This method can actually ignore malloc request, and give out previously cached free memory chunk with equal shape.
+     *
+     * @param shape shape of desired memory chunk
+     * @param point target AllocationPoint structure
+     * @param location either HOST or DEVICE
+     * @return
+     */
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
@@ -107,6 +120,13 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
 
     }
 
+    /**
+     * This method frees specific chunk of memory, described by AllocationPoint passed in.
+     *
+     * PLEASE NOTE: This method can actually ignore free, and keep released memory chunk for future reuse.
+     *
+     * @param point
+     */
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
