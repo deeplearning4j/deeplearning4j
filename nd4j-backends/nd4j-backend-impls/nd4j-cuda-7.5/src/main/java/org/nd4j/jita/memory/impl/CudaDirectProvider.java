@@ -52,7 +52,6 @@ public class CudaDirectProvider implements MemoryProvider {
                 return devicePointerInfo;
             }
             case DEVICE: {
-                point.setAllocationStatus(AllocationStatus.DEVICE);
                 // cudaMalloc call
                 Pointer devicePointer = new Pointer();
                 Pointer hostPointer = new Pointer();
@@ -115,5 +114,32 @@ public class CudaDirectProvider implements MemoryProvider {
             default:
                 throw new IllegalStateException("Can't free memory on target [" + point.getAllocationStatus() + "]");
         }
+    }
+
+    /**
+     * This method checks specified device for specified amount of memory
+     *
+     * @param deviceId
+     * @param requiredMemory
+     * @return
+     */
+    public boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory) {
+        long[] totalMem = new long[1];
+        long[] freeMem = new long[1];
+
+        JCuda.cudaMemGetInfo(freeMem, totalMem);
+
+        long free = freeMem[0];
+        long total = totalMem[0];
+        long used = total - free;
+
+        /*
+            We don't want to allocate memory if it's too close to the end of available ram.
+         */
+        //if (configuration != null && used > total * configuration.getMaxDeviceMemoryUsed()) return false;
+
+        if (free + requiredMemory < total * 0.90)
+            return true;
+        else return false;
     }
 }

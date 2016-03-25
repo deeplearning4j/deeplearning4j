@@ -289,6 +289,14 @@ public class AtomicAllocatorTest {
         System.out.println("Average Execution time: [" + (time2-time1)/count + "] ns");
     }
 
+    @Test
+    public void testGpuBlas5() throws Exception{
+        INDArray array1 = Nd4j.ones(1024 * 1024 * 13);
+
+        log.info("Big array size: " + array1.length());
+        assertEquals(1f, array1.getFloat(10292443), 0.0001f);
+    }
+
     /*
         This test isn't actual anymore
      */

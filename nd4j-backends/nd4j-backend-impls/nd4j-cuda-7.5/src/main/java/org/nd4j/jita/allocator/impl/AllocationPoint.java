@@ -38,6 +38,7 @@ public class AllocationPoint {
     private volatile PointersPair pointerInfo;
 
     @Getter @Setter private Long objectId;
+    @Getter @Setter private Long bucketId;
 
     // thread safety is guaranteed by allocLock
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;

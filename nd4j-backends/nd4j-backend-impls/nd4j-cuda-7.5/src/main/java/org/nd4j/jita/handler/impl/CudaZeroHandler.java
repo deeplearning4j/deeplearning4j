@@ -124,13 +124,29 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Alloc called for shape: " + shape);
         //if (shape.getLength() == 757) throw new RuntimeException("757");
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
+        long reqMemory = AllocationUtils.getRequiredMemory(shape);
+
         switch (targetMode) {
             case HOST: {
-                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
+
+
+                if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
+                    if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
+                        try {
+                            log.warn("No available [HOST] memory, sleeping...");
+                            Thread.sleep(10000);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+
+                zeroUseCounter.addAndGet(reqMemory);
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
                 int numBuckets = configuration.getNumberOfHostMemoryBuckets();
                 long bucketId = RandomUtils.nextInt(0, numBuckets);
+                point.setBucketId(bucketId);
 
                 if (!zeroAllocations.containsKey(bucketId)) {
 
@@ -147,8 +163,20 @@ public class CudaZeroHandler implements MemoryHandler {
                 return pair;
             }
             case DEVICE: {
-                PointersPair pair = provider.malloc(shape, point, targetMode);
-                return pair;
+                int deviceId = getDeviceId();
+
+                if (reqMemory < configuration.getMaximumSingleAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
+
+                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
+                        PointersPair pair = provider.malloc(shape, point, targetMode);
+
+                        point.setAllocationStatus(AllocationStatus.DEVICE);
+
+                        return pair;
+                    }
+                }
+
+                return point.getPointers();
             }
             default:
                 throw new IllegalStateException("Can't allocate memory on target [" + targetMode + "]");
@@ -164,23 +192,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory) {
-        long[] totalMem = new long[1];
-        long[] freeMem = new long[1];
-
-        JCuda.cudaMemGetInfo(freeMem, totalMem);
-
-        long free = freeMem[0];
-        long total = totalMem[0];
-        long used = total - free;
-
-        /*
-            We don't want to allocate memory if it's too close to the end of available ram.
-         */
-        if (configuration != null && used > total * configuration.getMaxDeviceMemoryUsed()) return false;
-
-        if (configuration != null && free + requiredMemory < total * configuration.getMaxDeviceMemoryUsed())
-            return true;
-        else return false;
+        return provider.pingDeviceForFreeMemory(deviceId, requiredMemory);
     }
 
     /**
@@ -558,6 +570,8 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
         try {
+
+            long bucketId = point.getBucketId();
             long threadId = Thread.currentThread().getId();
 
             point.setDeviceId(getDeviceId());
@@ -578,7 +592,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             //deviceLock.readLock().unlock();
 
-            zeroAllocations.get(threadId).remove(trackingPoint);
+            zeroAllocations.get(bucketId).remove(trackingPoint);
 
             deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
 

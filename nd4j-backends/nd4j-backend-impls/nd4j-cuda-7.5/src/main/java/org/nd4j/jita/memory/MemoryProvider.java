@@ -27,4 +27,13 @@ public interface MemoryProvider {
      * @param point
      */
     void free(AllocationPoint point);
+
+    /**
+     * This method checks specified device for specified amount of memory
+     *
+     * @param deviceId
+     * @param requiredMemory
+     * @return
+     */
+    boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory);
 }
