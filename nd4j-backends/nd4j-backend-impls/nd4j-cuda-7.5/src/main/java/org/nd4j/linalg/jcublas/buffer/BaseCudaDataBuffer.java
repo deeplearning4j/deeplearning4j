@@ -156,7 +156,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 //        log.info("Host pointer: " + allocationPoint.getPointers().getHostPointer().address());
 //        log.info("Device pointer: " + allocationPoint.getPointers().getDevicePointer().address());
 
-   //     log.info("Creating fresh buffer: length: ["+length+"], elementSize: ["+ elementSize+"]");
+//        log.info("Creating fresh buffer: length: ["+length+"], elementSize: ["+ elementSize+"]");
 
         if (dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
@@ -716,6 +716,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             allocationMode = AllocationMode.JAVACPP;
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
+    //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if(t == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
@@ -754,8 +755,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
             } else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
-            this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
+
+
+            this.wrappedBuffer = this.pointer .asByteBuffer();
             this.wrappedBuffer.order(ByteOrder.nativeOrder());
+
+      //      log.info("wrappedBuffer: length: ["+ wrappedBuffer.capacity()+"]");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -813,7 +818,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public IntBuffer asNioInt() {
-        //allocator.synchronizeHostData(this);
+        allocator.synchronizeHostData(this);
         return super.asNioInt();
     }
 

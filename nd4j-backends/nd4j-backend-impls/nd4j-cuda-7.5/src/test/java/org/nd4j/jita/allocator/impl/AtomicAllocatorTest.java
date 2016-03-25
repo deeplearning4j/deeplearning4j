@@ -112,38 +112,43 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testSerialization1() throws Exception {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+      //  Nd4j.dtype = DataBuffer.Type.DOUBLE;
+
+        INDArray test = Nd4j.ones(1,10);
+
         INDArray[] arr = new INDArray[]{
                 Nd4j.ones(1,10),
 //                Nd4j.ones(5,10).getRow(2)
         };
 
+        System.out.println("X1 ---------------------------");
+
         for(INDArray a : arr) {
-            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(a.data().originalDataBuffer(), AllocationUtils.buildAllocationShape(a), false);
-            System.out.println("Memory state: " +  point.getAccessState().getCurrentState());
-
-            point = AtomicAllocator.getInstance().getAllocationPoint(a.shapeInfoDataBuffer(), AllocationUtils.buildAllocationShape(a.shapeInfoDataBuffer()), false);
-            System.out.println("Memory state: " +  point.getAccessState().getCurrentState());
-
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
                 oos.writeObject(a);
                 oos.flush();
             }
 
-
+            System.out.println("X2 ---------------------------");
 
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bais);
 
-            System.out.println("---------------------------");
+
+
+
+            System.out.println("X3 ---------------------------");
 
             INDArray aDeserialized = (INDArray) ois.readObject();
 
+            System.out.println("X4 ---------------------------");
+
+            assertEquals(test, aDeserialized);
+
             System.out.println("Deserialized: " + aDeserialized);
-            assertEquals(Nd4j.ones(1,10),aDeserialized);
         }
     }
 

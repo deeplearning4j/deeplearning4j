@@ -1427,7 +1427,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1;
         }
         else if (Shape.rank(shapeInformation.asNioInt()) == 2) {
-            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1 && Shape.shapeOf(shapeInformation.asNioInt()).get(1) == 1;
+            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1
+                    && Shape.shapeOf(shapeInformation.asNioInt()).get(1) == 1;
         }
 
         else

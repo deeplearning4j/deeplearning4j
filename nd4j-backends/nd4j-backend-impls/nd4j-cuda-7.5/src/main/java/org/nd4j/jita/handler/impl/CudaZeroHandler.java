@@ -758,19 +758,22 @@ public class CudaZeroHandler implements MemoryHandler {
 
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
-        CudaContext context = getCudaContext();
-        context.syncOldStream();
-        if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide() ) {
-            point.tickHostRead();
-            JCuda.cudaMemcpyAsync(
-                    new Pointer(point.getHostPointer().address()),
-                    new Pointer(point.getDevicePointer().address()),
-                    AllocationUtils.getRequiredMemory(point.getShape()),
-                    cudaMemcpyKind.cudaMemcpyDeviceToHost,
-                    context.getOldStream()
-            );
-
+        if (!point.isActualOnHostSide()) {
+            //log.info("Calling sync...");
+            CudaContext context = getCudaContext();
             context.syncOldStream();
+            point.tickHostRead();
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
+                JCuda.cudaMemcpyAsync(
+                        new Pointer(point.getHostPointer().address()),
+                        new Pointer(point.getDevicePointer().address()),
+                        AllocationUtils.getRequiredMemory(point.getShape()),
+                        cudaMemcpyKind.cudaMemcpyDeviceToHost,
+                        context.getOldStream()
+                );
+
+                context.syncOldStream();
+            }
         }
     }
 }

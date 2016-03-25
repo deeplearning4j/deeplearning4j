@@ -207,12 +207,19 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
+    public void testShapeInfo1() throws Exception {
+        INDArray array1 = Nd4j.ones(1,10);
+
+        System.out.println(array1.shapeInfoDataBuffer());
+    }
+
+    @Test
     public void testIndexer1() throws Exception {
         INDArray array1 = Nd4j.zeros(15,15);
 
         System.out.println("-------------------------------------");
-//        assertEquals(0.0, array1.getFloat(0), 0.0001);
-        System.out.println(array1);
+        assertEquals(0.0, array1.getFloat(0), 0.0001);
+      //  System.out.println(array1);
     }
 
     @Test
