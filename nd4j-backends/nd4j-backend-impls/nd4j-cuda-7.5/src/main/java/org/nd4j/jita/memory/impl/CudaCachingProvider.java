@@ -84,6 +84,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
                 preallocator.start();
             }
 
+            cacheMiss.incrementAndGet();
             return super.malloc(shape, point, location);
         }
 
