@@ -167,14 +167,14 @@ public class AtomicAllocatorTest {
         long time1 = 0;
         long time2 = 0;
         long exec[] = new long[100];
-        for (int x = 0; x < 10000; x++) {
+        for (int x = 0; x < 1000000; x++) {
             time1 = System.nanoTime();
             dotWrapped = Nd4j.getBlasWrapper().dot(array1, array2);
             time2 = System.nanoTime();
 
 
             assertEquals(879.2554931640625, dotWrapped, 0.001d);
-            if (x % 500 == 0) log.info("Execution time: [" + (time2 - time1) + "] ns");
+            if (x % 50000 == 0) log.info("Execution time: [" + (time2 - time1) + "] ns");
             //      exec[x] = time2 - time1;
         }
 
@@ -233,7 +233,7 @@ public class AtomicAllocatorTest {
         }
 
         long time1 = System.nanoTime();
-        int count = 50000;
+        int count = 5000000;
         for (int i = 0; i < count; i++) {
             blasWrapper.axpy(new Float(0.75f), array1, array2);
         }

@@ -28,7 +28,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 JCuda.cudaHostAlloc(
                         hostPointer,
                         reqMem,
-                        JCuda.cudaHostAllocMapped);
+                        JCuda.cudaHostAllocMapped | JCuda.cudaHostAllocPortable );
 
                 JCuda.cudaHostGetDevicePointer(
                         devicePointer,
