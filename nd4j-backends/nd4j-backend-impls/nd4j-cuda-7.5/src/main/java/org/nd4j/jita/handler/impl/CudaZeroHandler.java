@@ -759,10 +759,9 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         if (!point.isActualOnHostSide()) {
-            //log.info("Calling sync...");
+            log.info("Calling sync...");
             CudaContext context = getCudaContext();
             context.syncOldStream();
-            point.tickHostRead();
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
                 JCuda.cudaMemcpyAsync(
                         new Pointer(point.getHostPointer().address()),
@@ -774,6 +773,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 context.syncOldStream();
             }
+            point.tickHostRead();
         }
     }
 }
