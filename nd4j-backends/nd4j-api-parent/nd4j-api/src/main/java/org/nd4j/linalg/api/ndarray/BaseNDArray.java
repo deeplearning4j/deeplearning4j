@@ -113,7 +113,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        int[] shape = {1,buffer.length()};
+        if(buffer.length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
+        int[] shape = {1,(int)buffer.length()};
         int[] stride = Nd4j.getStrides(shape);
         this.shapeInformation = Shape.createShapeInformation(shape,stride,0,1,Nd4j.order());
         init(shape,stride);
@@ -435,7 +437,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param order
      */
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}, order), 0, order);
+        this(floatBuffer, new int[]{(int)floatBuffer.length()}, Nd4j.getStrides(new int[]{(int)floatBuffer.length()}, order), 0, order);
+        if(floatBuffer.length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
     }
 
     /**
@@ -1041,10 +1045,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-        if(isRowVector())
-            return putScalar(new int[]{0,i},value);
-        else if(isColumnVector())
-            return putScalar(new int[]{i,0},value);
+        if(isRowVector()) {
+            return putScalar(new int[]{0, i}, value);
+        }
+        else if(isColumnVector()) {
+            return putScalar(new int[]{i, 0}, value);
+        }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         return putScalar(indexes, value);
 
@@ -1421,7 +1427,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1;
         }
         else if (Shape.rank(shapeInformation.asNioInt()) == 2) {
-            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1 && Shape.shapeOf(shapeInformation.asNioInt()).get(1) == 1;
+            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1
+                    && Shape.shapeOf(shapeInformation.asNioInt()).get(1) == 1;
         }
 
         else
@@ -1680,7 +1687,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 cnt++;
             }
             return this;
-        } else return get(indices).assign(element);
+        } else {
+            return get(indices).assign(element);
+        }
     }
 
     @Override
@@ -1761,7 +1770,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Invalid subArray offsets");
             }
         }
-
 
         return create(
                 data
@@ -3098,8 +3106,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-        if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape()))
+        if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape())) {
             return assign(toPut);
+        }
         return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
     }
 
@@ -3547,6 +3556,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
+
         if(indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
@@ -3757,8 +3767,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int offset() {
+        if(data().offset() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
         //  return Shape.offset(shapeInfo());
-        return data().offset();
+        return (int)data().offset();
     }
 
     @Override
@@ -4298,7 +4310,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int originalOffset() {
-        return data().originalOffset();
+        if(data().originalOffset() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Original offset of buffer can not be >= Integer.MAX_VALUE");
+        return (int)data().originalOffset();
     }
 
     private void readObject(ObjectInputStream s) {

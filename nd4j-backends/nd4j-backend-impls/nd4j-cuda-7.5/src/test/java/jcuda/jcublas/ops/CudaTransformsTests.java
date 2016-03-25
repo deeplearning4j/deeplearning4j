@@ -126,6 +126,8 @@ public class CudaTransformsTests {
         INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
+        System.out.println("Array1: " + array1);
+        System.out.println("Array2: " + array2);
 
         Nd4j.getExecutioner().exec(new Pow(array1, 3));
 

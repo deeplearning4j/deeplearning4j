@@ -137,17 +137,17 @@ public class DeviceAllocationsTracker {
 
 
     public long getAllocatedSize(Integer deviceId) {
+        if (!memoryTackled.containsKey(deviceId))
+            return 0L;
         try {
             deviceLocks.get(deviceId).readLock().lock();
-
-
             return memoryTackled.get(deviceId).get();
         } finally {
             deviceLocks.get(deviceId).readLock().unlock();
         }
     }
 
-    protected long getReservedSpace(Integer deviceId) {
+    public long getReservedSpace(Integer deviceId) {
         return reservedSpace.get(deviceId).get();
     }
 

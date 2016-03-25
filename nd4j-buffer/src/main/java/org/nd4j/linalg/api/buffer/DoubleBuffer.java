@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class DoubleBuffer extends BaseDataBuffer {
-    public DoubleBuffer(int length) {
+    public DoubleBuffer(long length) {
         super(length);
     }
 
@@ -44,7 +44,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length, elementSize, offset);
     }
 
-    public DoubleBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public DoubleBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
 
@@ -103,12 +103,12 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public IComplexFloat getComplexFloat(int i) {
+    public IComplexFloat getComplexFloat(long i) {
         return null;
     }
 
     @Override
-    public IComplexDouble getComplexDouble(int i) {
+    public IComplexDouble getComplexDouble(long i) {
         return null;
     }
 
@@ -130,12 +130,12 @@ public class DoubleBuffer extends BaseDataBuffer {
 
 
     @Override
-    public float getFloat(int i) {
+    public float getFloat(long i) {
         return (float) getDouble(i);
     }
 
     @Override
-    public Number getNumber(int i) {
+    public Number getNumber(long i) {
         return  getDouble(i);
     }
 
@@ -154,7 +154,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         return new DoubleBuffer(data);
     }
     @Override
-    protected DataBuffer create(int length) {
+    protected DataBuffer create(long length) {
         return new DoubleBuffer(length);
     }
 

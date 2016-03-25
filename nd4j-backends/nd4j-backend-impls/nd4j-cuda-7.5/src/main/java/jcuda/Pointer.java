@@ -446,7 +446,7 @@ public class Pointer extends NativePointerObject
      *
      * @param nativePointerValue The native pointer value
      */
-    protected Pointer(long nativePointerValue)
+    public Pointer(long nativePointerValue)
     {
         super(nativePointerValue);
         buffer = null;

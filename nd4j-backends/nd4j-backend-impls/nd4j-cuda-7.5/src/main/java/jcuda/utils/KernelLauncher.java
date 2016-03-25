@@ -1117,7 +1117,7 @@ public class KernelLauncher {
             }
         }
 
-        CudaContext context = AtomicAllocator.getInstance().getCudaContext();
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
         Pointer pointer = Pointer.to(kernelParameters);
         /*

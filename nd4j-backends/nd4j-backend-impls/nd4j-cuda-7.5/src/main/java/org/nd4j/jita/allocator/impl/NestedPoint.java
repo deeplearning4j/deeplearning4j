@@ -23,7 +23,7 @@ public class NestedPoint {
 
 
     // by default memory is UNDEFINED, and depends on parent memory chunk for now
-    @Getter @Setter private AllocationStatus nestedStatus = AllocationStatus.NESTED;
+    @Getter @Setter private AllocationStatus nestedStatus = AllocationStatus.UNDEFINED;
 
     private AtomicLong counter = new AtomicLong(0);
 

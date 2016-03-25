@@ -3,6 +3,7 @@ package org.nd4j.jita.allocator.enums;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public enum SyncState {
     UNDEFINED, // state is unknown
     DESYNC, // memory is desync

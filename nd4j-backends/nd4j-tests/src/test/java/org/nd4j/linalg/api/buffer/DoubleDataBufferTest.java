@@ -148,7 +148,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
 
         double[] get2 = buffer.asDouble();
-        double[] allData = buffer.getDoublesAt(0, buffer.length());
+        double[] allData = buffer.getDoublesAt(0, (int)buffer.length());
         assertArrayEquals(get2, allData, 1e-1f);
 
 
@@ -165,7 +165,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
         double[] allButLast = new double[]{2, 3, 4, 5};
 
-        double[] allData = buffer.getDoublesAt(1, buffer.length());
+        double[] allData = buffer.getDoublesAt(1, (int)buffer.length());
         assertArrayEquals(allButLast, allData, 1e-1f);
 
     }

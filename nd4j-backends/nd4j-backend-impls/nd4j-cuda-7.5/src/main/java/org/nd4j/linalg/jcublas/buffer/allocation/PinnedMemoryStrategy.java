@@ -22,6 +22,7 @@ import java.nio.ByteOrder;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class PinnedMemoryStrategy implements MemoryStrategy {
     public PinnedMemoryStrategy() {
     }
@@ -33,7 +34,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
 
     @Override
     public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
-        getData(buffer,offset,1,buffer.length(),get,ctx,1,0);
+        getData(buffer,offset,1,(int)buffer.length(),get,ctx,1,0);
     }
 
     @Override
@@ -54,7 +55,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     @Override
     public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, buf2.length(), 1));
+        DevicePointerInfo devicePointerInfo =  null; //buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, buf2.length(), 1));
         HostDevicePointer hostDevicePointer = devicePointerInfo.getPointers();
         Pointer hostPointer = hostDevicePointer.getHostPointer();
         ByteBuffer pointer = hostPointer.getByteBuffer(0, copy.getElementSize() * copy.length()).order(ByteOrder.nativeOrder());
@@ -62,7 +63,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         // Flip and read from the original.
         //pointer.flip();
         //bufferNio.put(pointer);
-        NioUtil.copyAtStride(buf2.length(),getBufferType(copy),pointer,offset,1,bufferNio,offset,1);
+        NioUtil.copyAtStride((int)buf2.length(),getBufferType(copy),pointer,offset,1,bufferNio,offset,1);
         return devicePointerInfo;
     }
 
@@ -70,7 +71,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     public Object copyToHost(DataBuffer copy, int offset, int stride, int length, CudaContext context, int hostOffset, int hostStride) {
         ByteBuffer nio = copy.asNio();
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, length, stride));
+        DevicePointerInfo devicePointerInfo = null; // buf2.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(offset, length, stride));
         HostDevicePointer hostDevicePointer = devicePointerInfo.getPointers();
         Pointer hostPointer = hostDevicePointer.getHostPointer();
         ByteBuffer pointer = hostPointer.getByteBuffer(0, copy.length() * copy.getElementSize());
@@ -101,7 +102,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         if(initData) {
             ByteBuffer pointer = hostPointer.getByteBuffer(0, buffer.getElementSize() * buffer.length());
             pointer.order(ByteOrder.nativeOrder());
-            NioUtil.copyAtStride(buffer.length(),getBufferType(buffer),buffer.asNio(),offset,stride,pointer,0,1);
+            NioUtil.copyAtStride((int)buffer.length(),getBufferType(buffer),buffer.asNio(),offset,stride,pointer,0,1);
         }
         return devicePointerInfo;
     }
@@ -118,7 +119,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     @Override
     public void free(DataBuffer buffer,int offset,int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers = buf2.getPointersToContexts();
+        Table<String, Triple<Integer,Integer,Integer>, DevicePointerInfo> pointers =  null; //buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(!devicePointerInfo.isFreed()) {
             JCuda.cudaFreeHost(devicePointerInfo.getPointers().getDevicePointer());

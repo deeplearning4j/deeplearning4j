@@ -37,13 +37,6 @@ import java.nio.ByteBuffer;
 public interface JCudaBuffer extends DataBuffer {
 
 	/**
-	 * Set the underlying host buffer, very fast method of copying on RAM side and not using cublas (SLOW)
-     * @param hostBuffer
-     */
-    @Deprecated
-	void setHostBuffer(ByteBuffer hostBuffer);
-	
-	/**
 	 * Get the underlying host bytebuffer
 	 * @return
 	 */
@@ -68,98 +61,4 @@ public interface JCudaBuffer extends DataBuffer {
      */
     @Deprecated
     Pointer getHostPointer(int offset);
-
-
-    /**
-     * Get the device pointer with the given offset and stride
-     * @param arr the array to get the device pointer for
-     * @param stride the stride for the device pointer
-     * @param offset the offset for the device pointer
-     * @return the device pointer with the given
-     * offset and stride
-     * @param length the length of the pointer
-     */
-    Pointer getDevicePointer(INDArray arr, int stride, int offset, int length);
-
-    /**
-     * Get the device pointer with the given offset and stride
-     * @param stride the stride for the device pointer
-     * @param offset the offset for the device pointer
-     * @return the device pointer with the given
-     * offset and stride
-     * @param length the length of the pointer
-     */
-    Pointer getDevicePointer(int stride, int offset, int length);
-
-    /**
-     * Sets the data for this pointer
-     * from the data in this pointer
-     *
-     * @param pointer the pointer to set
-     */
-    @Deprecated
-    void set(Pointer pointer);
-
-
-    /**
-     * Frees the pointer
-     * @param offset the offset to free
-     * @param length the length to free
-     * @return true if the pointer was freed,
-     * false other wise
-     */
-    @Deprecated
-    boolean freeDevicePointer(int offset, int length, int stride);
-
-
-    /**
-     * Copy to the host synchronizing
-     * using the given context
-     * @param context the context to synchronize
-     * @param offset the offset to copy
-     * @param length the length to copy
-     * @param stride
-     */
-    @Deprecated
-    void copyToHost(CudaContext context, int offset, int length, int stride);
-
-    /**
-     * Copies the buffer to the host
-     * @param offset the offset for the buffer (one buffer may have multiple pointers
-     * @param length the length of the pointer (one buffer may have different lengths)
-     */
-    @Deprecated
-    void copyToHost(int offset, int length);
-
-    /**
-     * Pointer to context map.
-     * Contains the device pointer information
-     * mapping thread name to offset
-     * @return the pointer info containing allocated pointers
-     */
-    @Deprecated
-    Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts();
-
-    /**
-     * Returns true if the buffer has
-     * already been copied to the device
-     * @return true if the buffer
-     * has already been copied to the device
-     * false otherwise
-     */
-    @Deprecated
-    boolean copied(String name);
-
-
-    /**
-     * Returns true if the data for this
-     * thread name has already been copied
-     * @param name the name of the thread to
-     *             check for whether it's been copied or not
-     *
-     */
-    @Deprecated
-    void setCopied(String name);
-
-
 }

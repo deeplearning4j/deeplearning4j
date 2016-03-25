@@ -124,7 +124,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
 
 
         float[] get2 = buffer.asFloat();
-        float[] allData = buffer.getFloatsAt(0, buffer.length());
+        float[] allData = buffer.getFloatsAt(0, (int)buffer.length());
         assertArrayEquals(getFailureMessage(),get2, allData, 1e-1f);
 
 
@@ -141,7 +141,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
 
         float[] allButLast = new float[]{2, 3, 4, 5};
 
-        float[] allData = buffer.getFloatsAt(1, buffer.length());
+        float[] allData = buffer.getFloatsAt(1, (int)buffer.length());
         assertArrayEquals(getFailureMessage(),allButLast, allData, 1e-1f);
 
 

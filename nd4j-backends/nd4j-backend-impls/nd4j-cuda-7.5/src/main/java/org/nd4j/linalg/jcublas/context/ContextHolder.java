@@ -72,6 +72,7 @@ import static jcuda.driver.JCudaDriver.*;
  * @author Adam Gibson
  */
 @Data
+@Deprecated
 public class ContextHolder {
 
     private Map<Integer,CUdevice> devices = new ConcurrentHashMap<>();
@@ -213,7 +214,7 @@ public class ContextHolder {
      * based on the device
      */
     public void configure() {
-        if(confCalled)
+        if(confCalled )
             return;
 
         JCublas2.setExceptionsEnabled(true);
@@ -223,11 +224,13 @@ public class ContextHolder {
         if(deviceSetup.get())
             return;
 
+
+
         JCudaDriver.cuInit(0);
         int count[] = new int[1];
         cuDeviceGetCount(count);
         numDevices = count[0];
-        log.debug("Found " + numDevices + " gpus");
+        //log.debug("Found " + numDevices + " gpus");
 
         if(numDevices < 1)
             numDevices = 1;

@@ -25,15 +25,17 @@ import java.nio.ByteOrder;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public void getData(DataBuffer buffer, int offset, int stride, int length, DataBuffer get, CudaContext ctx, int getStride, int getOffset) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = null; // buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
 
+
         JCublas2.cublasGetVectorAsync(
-                buffer.length()
+                (int) buffer.length()
                 , buffer.getElementSize()
                 , devicePointerInfo.getPointers().getDevicePointer()
                 , stride
@@ -45,11 +47,11 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public void getData(DataBuffer buffer, int offset, DataBuffer get, CudaContext ctx) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = null; //buf2.getPointersToContexts();
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
 
         JCublas2.cublasGetVectorAsync(
-                buffer.length()
+                (int) buffer.length()
                 , buffer.getElementSize()
                 , devicePointerInfo.getPointers().getDevicePointer()
                 , 1
@@ -78,7 +80,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public Object copyToHost(DataBuffer copy, int offset, CudaContext context) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = null; // buf2.getPointersToContexts();
 
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,buf2.length(),1));
         if(devicePointerInfo != null) {
@@ -96,7 +98,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public Object copyToHost(DataBuffer copy, int offset, int stride, int length, CudaContext context, int hostOffset, int hostStride) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> pointersToContexts = null;// buf2.getPointersToContexts();
 
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(offset,length,1));
         if(devicePointerInfo != null) {
@@ -130,7 +132,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
                     , cudaMemcpyKind.cudaMemcpyHostToDevice);
 
             // mark content as copied
-            buf2.copied(Thread.currentThread().getName());
+        //    buf2.copied(Thread.currentThread().getName());
         }
         return devicePointerInfo;
     }
@@ -147,7 +149,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public void free(DataBuffer buffer,int offset,int length) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),Triple.of(offset,length, 1));
+        DevicePointerInfo devicePointerInfo = null; // buf2.getPointersToContexts().get(Thread.currentThread().getName(),Triple.of(offset,length, 1));
         if (devicePointerInfo != null && !devicePointerInfo.isFreed()) {
             JCuda.cudaFree(devicePointerInfo.getPointers().getDevicePointer());
         }

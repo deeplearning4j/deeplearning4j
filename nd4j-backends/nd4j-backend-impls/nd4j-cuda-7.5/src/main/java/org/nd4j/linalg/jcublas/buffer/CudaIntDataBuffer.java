@@ -37,15 +37,15 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
      *
      * @param length the length of the buffer
      */
-    public CudaIntDataBuffer(int length) {
+    public CudaIntDataBuffer(long length) {
         super(length, Sizeof.INT);
     }
 
-    public CudaIntDataBuffer(int length, int elementSize) {
+    public CudaIntDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaIntDataBuffer(int length, int elementSize, int offset) {
+    public CudaIntDataBuffer(long length, int elementSize, int offset) {
         super(length, elementSize, offset);
     }
 
@@ -112,7 +112,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
+    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -124,7 +124,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void assign(int[] indices, double[] data, boolean contiguous, int inc) {
+    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
@@ -141,7 +141,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    protected DataBuffer create(int length) {
+    protected DataBuffer create(long length) {
         return new CudaIntDataBuffer(length);
     }
 

@@ -92,9 +92,6 @@ public class CudaAccumTests {
         System.out.println("Test result: " + test);
         INDArray sum = n.sum(-1);
 
-        System.out.println("elementWiseStride: " + n.elementWiseStride());
-        System.out.println("elementStride: " + n.elementStride());
-
         System.out.println("Sum result: " + sum);
         assertEquals(test, sum);
     }
@@ -135,12 +132,5 @@ public class CudaAccumTests {
 
         System.out.println(result);
         assertEquals(4.62f,  result.getDouble(0), 0.001);
-    }
-
-    @Test
-    public void testStride() throws Exception {
-        INDArray array1 = Nd4j.ones(10, 20, 30).dup('f');
-
-        System.out.println("F stride: " + array1.elementWiseStride());
     }
 }

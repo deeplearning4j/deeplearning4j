@@ -64,7 +64,7 @@ public class CudaContext {
      * on the old stream
      */
     public void syncOldStream() {
-        ContextHolder.getInstance().setContext();
+        //ContextHolder.getInstance().setContext();
         JCuda.cudaStreamSynchronize(oldStream);
     }
 
@@ -159,8 +159,8 @@ public class CudaContext {
      * as setup for cublas usage
      */
     public static CudaContext getBlasContext() {
-        Allocator allocator = AtomicAllocator.getInstance();
-        return allocator.getCudaContext();
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        return context;
 
     }
 

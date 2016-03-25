@@ -1,22 +1,19 @@
 package org.nd4j.jita.allocator.impl;
 
-import jcuda.Pointer;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
-import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.DevicePointerInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +35,13 @@ public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
     // thread safety is guaranteed by cudaLock
-    private volatile DevicePointerInfo pointerInfo;
+    private volatile PointersPair pointerInfo;
 
     @Getter @Setter private Long objectId;
+    @Getter @Setter private Long bucketId;
 
     // thread safety is guaranteed by allocLock
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
-
-    private SyncState hostMemoryState = SyncState.UNDEFINED;
 
     private transient TimeProvider timeProvider = new OperativeProvider();
     private transient TimeProvider realTimeProvider = new MillisecondsProvider();
@@ -75,17 +71,12 @@ public class AllocationPoint {
     @Getter @Setter private AllocationShape shape;
 
     private AtomicLong deviceTicks = new AtomicLong(0);
-    private AtomicLong descendantsTicks = new AtomicLong(0);
-    private AtomicLong descendantsTacks = new AtomicLong(0);
 
     private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
     @Getter private AtomicState accessState = new AtomicState();
 
     private volatile WeakReference<DataBuffer> originalDataBufferReference;
-
-    private ReentrantReadWriteLock cudaLock = new ReentrantReadWriteLock();
-    private ReentrantReadWriteLock allocLock = new ReentrantReadWriteLock();
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer
@@ -114,13 +105,7 @@ public class AllocationPoint {
      * @return
      */
     public AllocationStatus getAllocationStatus() {
-        try {
-            allocLock.readLock().lock();
-
             return allocationStatus;
-        } finally {
-            allocLock.readLock().unlock();
-        }
     }
 
     /**
@@ -128,13 +113,7 @@ public class AllocationPoint {
      * @param status
      */
     public void setAllocationStatus(@NonNull AllocationStatus status) {
-        try {
-            allocLock.writeLock().lock();
-
             allocationStatus = status;
-        } finally {
-            allocLock.writeLock().unlock();
-        }
     }
 
     /**
@@ -144,20 +123,12 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @return
      */
-    public Pointer getCudaPointer() {
-        try {
-            cudaLock.readLock().lock();
-
-            if (pointerInfo == null)
+    public Pointer getDevicePointer() {
+            if (pointerInfo == null) {
+                log.info("pointerInfo is null");
                 return null;
-
-            if (pointerInfo.getPointers() == null)
-                return null;
-
-            return pointerInfo.getPointers().getDevicePointer();
-        } finally {
-            cudaLock.readLock().unlock();
-        }
+            }
+            return pointerInfo.getDevicePointer();
     }
 
     /**
@@ -168,19 +139,10 @@ public class AllocationPoint {
      * @return
      */
     public Pointer getHostPointer() {
-        try {
-            cudaLock.readLock().lock();
-
             if (pointerInfo == null)
                 return null;
 
-            if (pointerInfo.getPointers() == null)
-                return null;
-
-            return pointerInfo.getPointers().getHostPointer();
-        } finally {
-            cudaLock.readLock().unlock();
-        }
+            return pointerInfo.getHostPointer();
     }
 
     /**
@@ -190,26 +152,16 @@ public class AllocationPoint {
      * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
-    public void setCudaPointers(DevicePointerInfo pointerInfo) {
-        try {
-            cudaLock.writeLock().lock();
-
+    public void setPointers(@NonNull PointersPair pointerInfo) {
             this.pointerInfo = pointerInfo;
-        } finally {
-            cudaLock.writeLock().unlock();
-        }
+    }
+
+    public PointersPair getPointers() {
+            return this.pointerInfo;
     }
 
     public long getDeviceTicks() {
         return deviceTicks.get();
-    }
-
-    public long getDescendantsTicks() {
-        return descendantsTicks.get();
-    }
-
-    public long getDescendantsTacks() {
-        return descendantsTacks.get();
     }
 
     public long getDescendantTicks(@NonNull AllocationShape shape) {
@@ -234,25 +186,6 @@ public class AllocationPoint {
         //this.deviceTicks.incrementAndGet();
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-    }
-
-    public void tickDescendant(AllocationShape shape) {
-        this.descendantsTicks.incrementAndGet();
-        this.usedChunks.get(shape).tick();
-    }
-
-    public void tackDescendant(AllocationShape shape) {
-        this.descendantsTacks.incrementAndGet();
-        this.usedChunks.get(shape).tack();
-    }
-
-    @Deprecated
-    public boolean confirmNoActiveDescendants() {
-        /*
-            This method is probably deprecated, and probably will be removed, since we have TickTackToe tracking now.
-         */
-        // TODO: point-wise lock should be assumed here
-        return descendantsTicks.get() == descendantsTacks.get();
     }
 
     public int getNumberOfDescendants() {
@@ -373,7 +306,7 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public boolean isActualOnHostSide() {
-        return getHostAccessTime() >= getDeviceWriteTime();
+        return getHostAccessTime() >= getDeviceAccessTime();
     }
 
     /**
@@ -391,5 +324,14 @@ public class AllocationPoint {
     public void tickDeviceToHost() {
         accessDeviceRead.set(accessHostRead.get());
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+    }
+
+    @Override
+    public String toString() {
+        return "AllocationPoint{" +
+                "deviceId=" + deviceId +
+                ", objectId=" + objectId +
+                ", shape=" + shape +
+                '}';
     }
 }

@@ -1338,7 +1338,7 @@ public class Shape {
     /** Are the elements in the buffer contiguous for this NDArray? */
     public static boolean isContiguousInBuffer(INDArray in) {
         int length = in.length();
-        int dLength = in.data().length();
+        long dLength = in.data().length();
         if(length == dLength)
             return true;    //full buffer, always contiguous
 
