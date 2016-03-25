@@ -534,7 +534,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
 
-                    log.info("Relocation happened!");
+            //log.info("Relocation happened!");
         } catch (Exception e){
             throw new RuntimeException(e);
         }
@@ -759,7 +759,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         if (!point.isActualOnHostSide()) {
-            log.info("Calling sync...");
+//            log.info("Calling sync...");
             CudaContext context = getCudaContext();
             context.syncOldStream();
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {

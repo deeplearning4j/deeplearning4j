@@ -214,7 +214,7 @@ public class ContextHolder {
      * based on the device
      */
     public void configure() {
-        if(confCalled)
+        if(confCalled )
             return;
 
         JCublas2.setExceptionsEnabled(true);
@@ -223,6 +223,8 @@ public class ContextHolder {
 
         if(deviceSetup.get())
             return;
+
+
 
         JCudaDriver.cuInit(0);
         int count[] = new int[1];
