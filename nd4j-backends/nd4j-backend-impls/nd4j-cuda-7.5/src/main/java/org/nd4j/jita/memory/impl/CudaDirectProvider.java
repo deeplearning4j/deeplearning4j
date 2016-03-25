@@ -1,4 +1,4 @@
-package org.nd4j.jita.memory;
+package org.nd4j.jita.memory.impl;
 
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**

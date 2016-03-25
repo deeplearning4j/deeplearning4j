@@ -1,4 +1,4 @@
-package org.nd4j.jita.memory;
+package org.nd4j.jita.memory.impl;
 
 import jcuda.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -7,13 +7,13 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.memory.MemoryProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CudaCachingProvider extends CudaDirectProvider implements MemoryProvider {
     private static Logger log = LoggerFactory.getLogger(CudaCachingProvider.class);
 
-    private ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
+    private volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
 
-    private AtomicLong cacheHit = new AtomicLong(0);
-    private AtomicLong cacheMiss = new AtomicLong(0);
+    private final AtomicLong cacheHit = new AtomicLong(0);
+    private final AtomicLong cacheMiss = new AtomicLong(0);
 
-    private AtomicLong allocRequests = new AtomicLong(0);
-    private AtomicLong cachedAmount = new AtomicLong(0);
+    private final AtomicLong allocRequests = new AtomicLong(0);
+    private final AtomicLong cachedAmount = new AtomicLong(0);
 
-    private Semaphore singleLock = new Semaphore(1);
+    private final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
     private final long MAX_SINGLE_ALLOCATION = 1000000;
@@ -43,7 +43,10 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
 
     // memory chunks below this threshold will be guaranteed regardless of number of cache entries
     // that especially covers all possible variations of shapeInfoDataBuffers in all possible cases
-    private final long FORCED_CACHE_THRESHOLD = 64;
+    private final long FORCED_CACHE_THRESHOLD = 96;
+
+    //  number of preallocation entries for each yet-unknown shape
+    private final int PREALLOCATION_LIMIT = 50;
 
     public CudaCachingProvider() {
         MAX_CACHED_MEMORY = Runtime.getRuntime().maxMemory() / 2;
@@ -72,15 +75,35 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
 
                     point.setAllocationStatus(AllocationStatus.HOST);
                     return pair;
-                } else {
-                    cacheMiss.incrementAndGet();
-                    return super.malloc(shape, point, location);
                 }
-            } else {
-                cacheMiss.incrementAndGet();
-                return super.malloc(shape, point, location);
             }
-        } else return super.malloc(shape, point, location);
+            cacheMiss.incrementAndGet();
+
+            if (cachedAmount.get() < MAX_CACHED_MEMORY / 10) {
+                CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
+                preallocator.start();
+            }
+
+            return super.malloc(shape, point, location);
+        }
+
+        return super.malloc(shape, point, location);
+    }
+
+    protected void ensureCacheHolder(AllocationShape shape) {
+        if (!zeroCache.containsKey(shape)) {
+            try {
+                singleLock.acquire();
+                if (!zeroCache.containsKey(shape)) {
+                    zeroCache.put(shape, new CacheHolder());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                singleLock.release();
+            }
+        }
+
     }
 
     @Override
@@ -97,19 +120,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
                 return;
             }
 
-
-            if (!zeroCache.containsKey(shape)) {
-                try {
-                    singleLock.acquire();
-                    if (!zeroCache.containsKey(shape)) {
-                        zeroCache.put(shape, new CacheHolder());
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    singleLock.release();
-                }
-            }
+            ensureCacheHolder(shape);
 
             /*
                 Now we should decide if this object can be cached or not
@@ -149,7 +160,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
         log.debug("Current hit ratio: " + cacheRatio);
     }
 
-    private static class CacheHolder {
+    protected static class CacheHolder {
         private Queue<Pointer> queue = new ConcurrentLinkedQueue<>();
         private AtomicInteger counter = new AtomicInteger(0);
 
@@ -168,6 +179,36 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
         public void put(Pointer pointer) {
             counter.incrementAndGet();
             queue.add(pointer);
+        }
+    }
+
+    protected class CachePreallocator extends Thread implements Runnable {
+
+        private AllocationShape shape;
+        private AllocationStatus location;
+        private int target;
+
+        public CachePreallocator(AllocationShape shape, AllocationStatus location, int numberOfEntries) {
+            this.shape = shape;
+            this.target = numberOfEntries;
+            this.location = location;
+        }
+
+        @Override
+        public void run() {
+//            log.info("Precaching ["+target+"] chunks for shape: " + shape);
+
+            ensureCacheHolder(shape);
+
+            for (int i = 0; i < target; i ++) {
+                AllocationPoint point = new AllocationPoint();
+
+                PointersPair pair = CudaCachingProvider.super.malloc(shape, point, this.location);
+                if (this.location == AllocationStatus.HOST) {
+                    Pointer pointer = new Pointer(pair.getHostPointer().address());
+                    CudaCachingProvider.this.zeroCache.get(shape).put(pointer);
+                }
+            }
         }
     }
 }

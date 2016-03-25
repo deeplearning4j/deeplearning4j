@@ -1,4 +1,4 @@
-package org.nd4j.jita.mover;
+package org.nd4j.jita.handler;
 
 import com.google.common.collect.Table;
 import org.bytedeco.javacpp.Pointer;
@@ -11,9 +11,7 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import java.util.Map;
 import java.util.Set;
 
 /**

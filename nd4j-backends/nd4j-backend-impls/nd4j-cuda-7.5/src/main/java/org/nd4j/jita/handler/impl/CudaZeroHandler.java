@@ -1,4 +1,4 @@
-package org.nd4j.jita.mover;
+package org.nd4j.jita.handler.impl;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -16,9 +16,9 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.jita.memory.CudaCachingProvider;
-import org.nd4j.jita.memory.CudaDirectProvider;
+import org.nd4j.jita.memory.impl.CudaCachingProvider;
 import org.nd4j.jita.memory.MemoryProvider;
+import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
