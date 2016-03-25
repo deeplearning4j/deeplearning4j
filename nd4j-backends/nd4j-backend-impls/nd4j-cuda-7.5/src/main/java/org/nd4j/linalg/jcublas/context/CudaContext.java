@@ -64,7 +64,7 @@ public class CudaContext {
      * on the old stream
      */
     public void syncOldStream() {
-        ContextHolder.getInstance().setContext();
+        //ContextHolder.getInstance().setContext();
         JCuda.cudaStreamSynchronize(oldStream);
     }
 
