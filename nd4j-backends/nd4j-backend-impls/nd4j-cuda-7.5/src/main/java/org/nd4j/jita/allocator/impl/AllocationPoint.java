@@ -42,8 +42,6 @@ public class AllocationPoint {
     // thread safety is guaranteed by allocLock
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 
-    private SyncState hostMemoryState = SyncState.UNDEFINED;
-
     private transient TimeProvider timeProvider = new OperativeProvider();
     private transient TimeProvider realTimeProvider = new MillisecondsProvider();
 
@@ -72,17 +70,12 @@ public class AllocationPoint {
     @Getter @Setter private AllocationShape shape;
 
     private AtomicLong deviceTicks = new AtomicLong(0);
-    private AtomicLong descendantsTicks = new AtomicLong(0);
-    private AtomicLong descendantsTacks = new AtomicLong(0);
 
     private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
     @Getter private AtomicState accessState = new AtomicState();
 
     private volatile WeakReference<DataBuffer> originalDataBufferReference;
-
-    private ReentrantReadWriteLock cudaLock = new ReentrantReadWriteLock();
-    private ReentrantReadWriteLock allocLock = new ReentrantReadWriteLock();
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer
@@ -111,13 +104,7 @@ public class AllocationPoint {
      * @return
      */
     public AllocationStatus getAllocationStatus() {
-        try {
-            allocLock.readLock().lock();
-
             return allocationStatus;
-        } finally {
-            allocLock.readLock().unlock();
-        }
     }
 
     /**
@@ -125,13 +112,7 @@ public class AllocationPoint {
      * @param status
      */
     public void setAllocationStatus(@NonNull AllocationStatus status) {
-        try {
-            allocLock.writeLock().lock();
-
             allocationStatus = status;
-        } finally {
-            allocLock.writeLock().unlock();
-        }
     }
 
     /**
@@ -142,18 +123,11 @@ public class AllocationPoint {
      * @return
      */
     public Pointer getDevicePointer() {
-        try {
-            cudaLock.readLock().lock();
-
             if (pointerInfo == null) {
                 log.info("pointerInfo is null");
                 return null;
             }
-
             return pointerInfo.getDevicePointer();
-        } finally {
-            cudaLock.readLock().unlock();
-        }
     }
 
     /**
@@ -164,16 +138,10 @@ public class AllocationPoint {
      * @return
      */
     public Pointer getHostPointer() {
-        try {
-            cudaLock.readLock().lock();
-
             if (pointerInfo == null)
                 return null;
 
             return pointerInfo.getHostPointer();
-        } finally {
-            cudaLock.readLock().unlock();
-        }
     }
 
     /**
@@ -184,35 +152,15 @@ public class AllocationPoint {
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
     public void setPointers(@NonNull PointersPair pointerInfo) {
-        try {
-            cudaLock.writeLock().lock();
-
             this.pointerInfo = pointerInfo;
-        } finally {
-            cudaLock.writeLock().unlock();
-        }
     }
 
     public PointersPair getPointers() {
-        try {
-            cudaLock.readLock().lock();
-
             return this.pointerInfo;
-        } finally {
-            cudaLock.readLock().unlock();
-        }
     }
 
     public long getDeviceTicks() {
         return deviceTicks.get();
-    }
-
-    public long getDescendantsTicks() {
-        return descendantsTicks.get();
-    }
-
-    public long getDescendantsTacks() {
-        return descendantsTacks.get();
     }
 
     public long getDescendantTicks(@NonNull AllocationShape shape) {
@@ -237,25 +185,6 @@ public class AllocationPoint {
         //this.deviceTicks.incrementAndGet();
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-    }
-
-    public void tickDescendant(AllocationShape shape) {
-        this.descendantsTicks.incrementAndGet();
-        this.usedChunks.get(shape).tick();
-    }
-
-    public void tackDescendant(AllocationShape shape) {
-        this.descendantsTacks.incrementAndGet();
-        this.usedChunks.get(shape).tack();
-    }
-
-    @Deprecated
-    public boolean confirmNoActiveDescendants() {
-        /*
-            This method is probably deprecated, and probably will be removed, since we have TickTackToe tracking now.
-         */
-        // TODO: point-wise lock should be assumed here
-        return descendantsTicks.get() == descendantsTacks.get();
     }
 
     public int getNumberOfDescendants() {

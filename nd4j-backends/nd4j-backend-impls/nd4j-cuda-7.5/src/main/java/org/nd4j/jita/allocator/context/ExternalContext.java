@@ -5,6 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
+ * This is simple class-independant storage for device contexts.
+ *
+ * TODO: Something better then typecast required here
  * @author raver119@gmail.com
  */
 @Data
