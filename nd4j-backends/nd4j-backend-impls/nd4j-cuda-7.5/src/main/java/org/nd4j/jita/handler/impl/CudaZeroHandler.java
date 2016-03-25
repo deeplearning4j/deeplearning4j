@@ -6,6 +6,7 @@ import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
+import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ExternalContext;
@@ -125,16 +126,28 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
         switch (targetMode) {
             case HOST: {
+                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
-                zeroAllocations.get(Thread.currentThread().getId()).put(point.getObjectId(), point.getObjectId());
-                zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(shape));
+                int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+                long bucketId = RandomUtils.nextInt(0, numBuckets);
+
+                if (!zeroAllocations.containsKey(bucketId)) {
+
+                    synchronized (this) {
+                        if (!zeroAllocations.containsKey(bucketId)) {
+                            // TODO: investigate CopyOnWriteArrayList here, _PROBABLY_ we could replace it with synchronized list, without backing
+                            zeroAllocations.put(bucketId, new ConcurrentHashMap<Long, Long>());
+                        }
+                    }
+                }
+
+                zeroAllocations.get(bucketId).put(point.getObjectId(), point.getObjectId());
 
                 return pair;
             }
             case DEVICE: {
                 PointersPair pair = provider.malloc(shape, point, targetMode);
-
                 return pair;
             }
             default:
@@ -493,6 +506,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public org.bytedeco.javacpp.Pointer getDevicePointer(DataBuffer buffer) {
+        // TODO: It would be awesome to get rid of typecasting here
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion
@@ -707,17 +721,16 @@ public class CudaZeroHandler implements MemoryHandler {
     /**
      * This method explicitly removes object from zero-copy memory.
      *
-     * @param threadId
+     * @param bucketId
      * @param objectId
      * @param copyback  if TRUE, corresponding memory block on JVM side will be updated, if FALSE - memory will be just discarded
      */
     @Override
-    public void purgeZeroObject(Long threadId, Long objectId, AllocationPoint point, boolean copyback) {
+    public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
         if (copyback) {
 //            copyback(point, point.getShape());
         }
-        zeroAllocations.get(threadId).remove(objectId);
-
+        zeroAllocations.get(bucketId).remove(objectId);
 
         // we call for caseless deallocation here
         free(point, point.getAllocationStatus());
@@ -758,11 +771,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
 
                     devicesAffinity.put(threadId, device);
-
-                    if (!zeroAllocations.containsKey(threadId)) {
-                        // TODO: investigate CopyOnWriteArrayList here, _PROBABLY_ we could replace it with synchronized list, without backing
-                        zeroAllocations.put(threadId, new ConcurrentHashMap<Long, Long>());
-                    }
 
                     if (!deviceAllocations.containsKey(device)) {
                         deviceAllocations.put(device, new ConcurrentHashMap<Long, Long>());

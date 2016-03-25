@@ -108,6 +108,16 @@ public class AtomicAllocator implements Allocator {
         this.memoryHandler.init(configuration, environment, this);
 
         initDeviceCollectors();
+        initHostCollectors();
+    }
+
+    protected void initHostCollectors() {
+        for (int i = 0; i < configuration.getNumberOfHostMemoryBuckets(); i++) {
+            ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread((long) i, memoryHandler.getDeviceId(), shouldStop);
+            zThread.start();
+
+            collectorsZero.put((long) i, zThread);
+        }
     }
 
     protected void initDeviceCollectors() {
@@ -214,20 +224,10 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method returns actual device pointer valid for current object
      *
-     * @param objectId
+     * @param buffer
      */
     @Override
     public Pointer getPointer(DataBuffer buffer) {
-        AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
-
-        if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            //zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
-            //zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
-        } else {
-            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
-            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
-        }
-
         return memoryHandler.getDevicePointer(buffer);
         //return getPointer(buffer, AllocationUtils.buildAllocationShape(buffer), false);
     }
@@ -243,16 +243,6 @@ public class AtomicAllocator implements Allocator {
     public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
         if (1 > 0) return memoryHandler.getDevicePointer(buffer);
 
-        AllocationPoint point = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
-
-        if (point.getAllocationStatus() == AllocationStatus.HOST) {
-       //     zeroLong.store(point.getTimerLong().getFrequencyOfEvents());
-       //     zeroShort.store(point.getTimerShort().getFrequencyOfEvents());
-        } else {
-            deviceLong.store(point.getTimerLong().getFrequencyOfEvents());
-            deviceShort.store(point.getTimerShort().getFrequencyOfEvents());
-        }
-
 
         //log.info("requesting pointer for: [" + shape + "]; isView: [" + isView +"]");
         /*
@@ -263,7 +253,7 @@ public class AtomicAllocator implements Allocator {
 
    //     log.info("Tracking Point for request: " + trackingPoint);
 
-        //AllocationPoint point = getAllocationPoint(trackingPoint);
+        AllocationPoint point = getAllocationPoint(trackingPoint);
 
         boolean isNewAllocation = false;
 
@@ -495,12 +485,6 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public AllocationPoint allocateMemory(AllocationShape requiredMemory) {
-        if (!collectorsZero.containsKey(Thread.currentThread().getId())) {
-            ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread(Thread.currentThread().getId(), memoryHandler.getDeviceId(), shouldStop);
-            zThread.start();
-
-            collectorsZero.put(Thread.currentThread().getId(), zThread);
-        }
 
         AllocationPoint point = allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
 
@@ -599,10 +583,10 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method seeks for unused zero-copy memory allocations
      *
-     * @param threadId Id of the thread, retrieved via Thread.currentThread().getId()
+     * @param bucketId Id of the bucket, serving allocations
      * @return size of memory that was deallocated
      */
-    protected synchronized long seekUnusedZero(Long threadId, Aggressiveness aggressiveness) {
+    protected synchronized long seekUnusedZero(Long bucketId, Aggressiveness aggressiveness) {
         /*
             This method is blocking on thread basis, just to prevent parallel calls
 
@@ -610,7 +594,7 @@ public class AtomicAllocator implements Allocator {
          */
         AtomicLong freeSpace = new AtomicLong(0);
 
-        int totalElements = (int) memoryHandler.getAllocatedHostObjects(threadId);
+        int totalElements = (int) memoryHandler.getAllocatedHostObjects(bucketId);
         log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
 
         float shortAverage = zeroShort.getAverage();
@@ -623,7 +607,7 @@ public class AtomicAllocator implements Allocator {
 
         AtomicInteger elementsDropped = new AtomicInteger(0);
 
-        for (Long object: memoryHandler.getHostTrackingPoints(threadId)) {
+        for (Long object: memoryHandler.getHostTrackingPoints(bucketId)) {
             AllocationPoint point = getAllocationPoint(object);
 
             if (point == null)
@@ -639,7 +623,7 @@ public class AtomicAllocator implements Allocator {
                 if (point.getBuffer() == null) {
        //             log.info("Ghost reference removed: " + object);
 
-                    purgeZeroObject(threadId, object, point, false);
+                    purgeZeroObject(bucketId, object, point, false);
                     freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
                     elementsDropped.incrementAndGet();

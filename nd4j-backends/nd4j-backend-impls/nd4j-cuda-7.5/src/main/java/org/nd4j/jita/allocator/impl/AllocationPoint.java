@@ -175,9 +175,9 @@ public class AllocationPoint {
 
     public void tickDevice() {
         this.deviceTicks.incrementAndGet();
-        //this.timerShort.triggerEvent();
-        //this.timerLong.triggerEvent();
-//        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        this.timerShort.triggerEvent();
+        this.timerLong.triggerEvent();
+        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
     }
 

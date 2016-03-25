@@ -26,7 +26,12 @@ public class Configuration implements Serializable {
     /**
      * Minimal guaranteed TTL for memory chunk
      */
-    private long minimumTTLMilliseconds = 5 * 1000L;
+    private long minimumTTLMilliseconds = 10 * 1000L;
+
+    /**
+     * Number of buckets/garbage collectors for host memory
+     */
+    private int numberOfHostMemoryBuckets = 4;
 
     /**
      * Deallocation aggressiveness
