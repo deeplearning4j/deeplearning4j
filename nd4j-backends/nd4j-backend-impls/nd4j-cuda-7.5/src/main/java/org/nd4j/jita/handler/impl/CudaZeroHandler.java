@@ -534,7 +534,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
 
-//                    log.info("Relocation happened!");
+                    log.info("Relocation happened!");
         } catch (Exception e){
             throw new RuntimeException(e);
         }
