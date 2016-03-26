@@ -1,6 +1,7 @@
 package org.nd4j.jita.memory.impl;
 
 import jcuda.Pointer;
+import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -11,11 +12,15 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author raver119@gmail.com
  */
 public class CudaDirectProvider implements MemoryProvider {
+
+    private static Logger log = LoggerFactory.getLogger(CudaDirectProvider.class);
 
     /**
      * This method provides PointersPair to memory chunk specified by AllocationShape
@@ -34,10 +39,16 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer hostPointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
+                if (reqMem >= Integer.MAX_VALUE)
+                    throw new UnsupportedOperationException("Sorry, you can't allocate > 2GB of memory");
+
+                //log.info("Requested memory size: " + reqMem);
+
                 JCuda.cudaHostAlloc(
                         hostPointer,
                         reqMem,
                         JCuda.cudaHostAllocMapped | JCuda.cudaHostAllocPortable );
+
 
                 JCuda.cudaHostGetDevicePointer(
                         devicePointer,

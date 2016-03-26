@@ -547,6 +547,7 @@ public class Pointer extends NativePointerObject
         {
             return null;
         }
+        System.out.println("AF1");
         ByteBuffer byteBuffer = (ByteBuffer)buffer;
         byteBuffer.limit((int)(byteOffset + byteSize));
         byteBuffer.position((int)byteOffset);

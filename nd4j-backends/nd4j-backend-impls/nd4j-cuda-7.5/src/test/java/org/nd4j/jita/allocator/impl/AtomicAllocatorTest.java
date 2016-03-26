@@ -297,6 +297,21 @@ public class AtomicAllocatorTest {
         assertEquals(1f, array1.getFloat(10292443), 0.0001f);
     }
 
+
+    @Test
+    @Ignore
+    public void testGpuBlas6() throws Exception{
+        INDArray array1 = Nd4j.create(800000000);
+
+        log.info("Big array size: " + array1.length());
+        assertEquals(0f, array1.getFloat(10292443), 0.0001f);
+    }
+
+    @Test
+    public void testGpuBlas7() throws Exception {
+        INDArray nd = Nd4j.create(2, 2);
+    }
+
     /*
         This test isn't actual anymore
      */

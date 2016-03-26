@@ -129,11 +129,15 @@ public class CudaZeroHandler implements MemoryHandler {
         switch (targetMode) {
             case HOST: {
 
-
                 if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                    if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
+                    if (reqMemory > configuration.getMaximumZeroAllocation())
+                        throw new IllegalStateException("You can't allocate more memory, then allowed with -Xmx value");
+
+
+                    while (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
                         try {
                             log.warn("No available [HOST] memory, sleeping...");
+                            System.gc();
                             Thread.sleep(10000);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
