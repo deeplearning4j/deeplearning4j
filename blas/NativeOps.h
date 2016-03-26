@@ -814,7 +814,7 @@ class ND4J_EXPORT NativeOps {
          * @param memorySize memory size, in bytes
          * @param flags optional parameter
          */
-        void mallocHost(long *pointer, long memorySize, int flags);
+        Nd4jPointer mallocHost(long memorySize, int flags);
 
         /**
          * This method acquires memory chunk of requested size on specified device
@@ -824,14 +824,14 @@ class ND4J_EXPORT NativeOps {
          * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
          * @param flags optional parameter
          */
-        void mallocDevice(long *pointer, long memorySize, long *ptrToDeviceId, int flags);
+        Nd4jPointer mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags);
 
         /**
          * This method releases previously allocated host memory space
          *
          * @param pointer pointer that'll be freed
          */
-        void freeHost(long *pointer);
+        Nd4jPointer freeHost(Nd4jPointer pointer);
 
         /**
          * This method releases previously allocated memory space on device
@@ -839,43 +839,7 @@ class ND4J_EXPORT NativeOps {
          * @param pointer pointer that'll be freed
          * @param ptrToDeviceId pointer to deviceId.
          */
-        void freeDevice(long *pointer, long *ptrToDeviceId);
-
-        /**
-         * This method provides synchronous memcpy.
-         *
-         * @param dstPointer
-         * @param srcPointer
-         * @param size
-         * @param flags
-         */
-        void memcpyBlocking(long *dstPointer, long *srcPointer, long size, int flags);
-
-        /**
-         * This method provides asynchronous memcpy (if available on specific platform). If it's not available - memcpyBlocking will be used silently instead
-         *
-         * @param dstPointer
-         * @param srcPointer
-         * @param size
-         * @param flags
-         */
-        void memcpyAsync(long *dstPointer, long *srcPointer, long size, int flags);
-
-        /**
-         * This method returns available host memory
-         *
-         * @return returns physically available host memory
-         */
-        long getAvailableHostMemory();
-
-        /**
-         * This method returns available memory for specific device
-         *
-         * @param ptrToDeviceId
-         * @return returns physically available host memory
-         */
-        long getAvailableDeviceMemory(long *ptrToDeviceId);
-
+        Nd4jPointer freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
 };
 
 
