@@ -128,7 +128,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         switch (targetMode) {
             case HOST: {
-                configuration.setMaximumZeroAllocation(10 * 1024 * 1024 * 1024L);
+//                configuration.setMaximumZeroAllocation(10 * 1024 * 1024 * 1024L);
 
                 if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
                     if (reqMemory > configuration.getMaximumZeroAllocation()) {
