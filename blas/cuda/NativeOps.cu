@@ -2135,3 +2135,61 @@ void NativeOps::initializeDevicesAndFunctions() {
 
     cudaFuncGetAttributes(&funcAttributes[27], indexReduceDouble);
 }
+
+
+/**
+       * This method acquires memory chunk of requested size on host side
+       *
+       * @param pointer pointer that'll be used for allocation
+       * @param memorySize memory size, in bytes
+       * @param flags optional parameter
+       */
+Nd4jPointer NativeOps::mallocHost(long memorySize, int flags) {
+    Nd4jPointer pointer;
+    cudaError_t res = cudaHostAlloc((void **)&pointer, memorySize, cudaHostAllocMapped |cudaHostAllocPortable );
+    if (res != 0)
+        pointer = 0L;
+    return pointer;
+}
+
+/**
+ * This method acquires memory chunk of requested size on specified device
+ *
+ * @param pointer pointer that'll be used for allocation
+ * @param memorySize memory size, in bytes
+ * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
+ * @param flags optional parameter
+ */
+Nd4jPointer NativeOps::mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+    Nd4jPointer pointer;
+    cudaError_t res = cudaMalloc((void **)&pointer, memorySize);
+    if (res != 0)
+        pointer = 0L;
+    return pointer;
+}
+
+/**
+ * This method releases previously allocated host memory space
+ *
+ * @param pointer pointer that'll be freed
+ */
+Nd4jPointer NativeOps::freeHost(Nd4jPointer pointer) {
+    cudaError_t res = cudaFreeHost((void *) pointer);
+    if (res != 0)
+        pointer = 0L;
+    return 1L;
+}
+
+/**
+ * This method releases previously allocated memory space on device
+ *
+ * @param pointer pointer that'll be freed
+ * @param ptrToDeviceId pointer to deviceId.
+ */
+Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+    // not supported
+    cudaError_t res = cudaFree((void *)pointer);
+    if (res != 0)
+        pointer = 0L;
+    return 1L;
+}
