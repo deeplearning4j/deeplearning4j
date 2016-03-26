@@ -538,6 +538,57 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    //Passes on 3.9:
+    @Test
+    public void testSum3Of4_2222() {
+        int[] shape = {2, 2, 2, 2};
+        int length = ArrayUtil.prod(shape);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', shape);
+        INDArray arrF = Nd4j.create(arrC.shape()).assign(arrC);
+
+        int[][] dimsToSum = new int[][]{{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+        double[][] expD = new double[][]{{64, 72}, {60, 76}, {52, 84}, {36, 100}};
+
+        for (int i = 0; i < dimsToSum.length; i++) {
+            int[] d = dimsToSum[i];
+
+            INDArray outC = arrC.sum(d);
+            INDArray outF = arrF.sum(d);
+            INDArray exp = Nd4j.create(expD[i],outC.shape());
+
+            assertEquals(exp, outC);
+            assertEquals(exp, outF);
+
+            System.out.println(Arrays.toString(d) + "\t" + outC + "\t" + outF);
+        }
+    }
+
+    //Does NOT pass on 3.9
+    @Test
+    public void testSum3Of4_3322() {
+        int[] shape = {3, 3, 2, 2};
+        int length = ArrayUtil.prod(shape);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', shape);
+        INDArray arrF = Nd4j.create(arrC.shape()).assign(arrC);
+
+        int[][] dimsToSum = new int[][]{{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+        double[][] expD = new double[][]{{324, 342}, {315, 351}, {174, 222, 270}, {78, 222, 366}};
+
+        for (int i = 0; i < dimsToSum.length; i++) {
+            int[] d = dimsToSum[i];
+
+            INDArray outC = arrC.sum(d);
+           // INDArray outF = arrF.sum(d);
+            INDArray exp = Nd4j.create(expD[i],outC.shape());
+
+            assertEquals(exp, outC);
+            //0assertEquals(exp, outF);
+
+            //System.out.println(Arrays.toString(d) + "\t" + outC + "\t" + outF);
+        }
+    }
+
     @Test
     public void testToFlattened() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);

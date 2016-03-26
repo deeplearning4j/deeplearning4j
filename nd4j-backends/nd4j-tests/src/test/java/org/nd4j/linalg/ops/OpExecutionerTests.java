@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
 
@@ -477,6 +478,8 @@ public  class OpExecutionerTests extends BaseNd4jTest {
             assertEquals(arr6s.getDouble(i),16,1e-1);
 
     }
+
+
 
     @Test
     public void testMean6d() {

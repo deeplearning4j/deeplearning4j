@@ -802,7 +802,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int vectorsAlongDimension(int dimension) {
-
         if(dimension == 0 && isVector() || isRowVector())
             return 1;
         if(size(dimension) == 1 && !isVector()) {
