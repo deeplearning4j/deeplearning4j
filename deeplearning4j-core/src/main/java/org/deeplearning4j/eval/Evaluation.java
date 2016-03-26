@@ -70,6 +70,7 @@ public class Evaluation implements Serializable {
     }
 
     private static List<String> createLabels(int numClasses){
+        if(numClasses == 1) numClasses = 2; //Binary (single output variable) case...
         List<String> list = new ArrayList<>(numClasses);
         for (int i = 0; i < numClasses; i++){
             list.add(String.valueOf(i));
@@ -114,6 +115,7 @@ public class Evaluation implements Serializable {
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
             int nClasses = realOutcomes.columns();
+            if(nClasses == 1) nClasses = 2;     //Binary (single output variable) case
             labelsList = new ArrayList<>(nClasses);
             for( int i=0; i<nClasses; i++ ) labelsList.add(String.valueOf(i));
             createConfusion(nClasses);
@@ -125,31 +127,26 @@ public class Evaluation implements Serializable {
 
         // For each row get the most probable label (column) from prediction and assign as guessMax
         // For each row get the column of the true label and assign as currMax
+        int nCols = realOutcomes.columns();
         for (int i = 0; i < realOutcomes.rows(); i++) {
             INDArray currRow = realOutcomes.getRow(i);
             INDArray guessRow = guesses.getRow(i);
 
+
             int currMax;
-            {
-                double max = currRow.getDouble(0);
-                currMax = 0;
-                for (int col = 1; col < currRow.columns(); col++) {
-                    if (currRow.getDouble(col) > max) {
-                        max = currRow.getDouble(col);
-                        currMax = col;
-                    }
-                }
-            }
             int guessMax;
-            {
-                double max = guessRow.getDouble(0);
-                guessMax = 0;
-                for (int col = 1; col < guessRow.columns(); col++) {
-                    if (guessRow.getDouble(col) > max) {
-                        max = guessRow.getDouble(col);
-                        guessMax = col;
-                    }
-                }
+            if( nCols == 1){
+                //Binary (single variable) case
+                if(currRow.getDouble(i) == 0.0) currMax = 0;
+                else currMax = 1;
+
+                if(guessRow.getDouble(i) <= 0.5 ) guessMax = 0;
+                else guessMax = 1;
+
+            } else {
+                //Normal case
+                currMax = (int)Nd4j.argMax(currRow,1).getDouble(0);
+                guessMax = (int)Nd4j.argMax(guessRow,1).getDouble(0);
             }
 
             // Add to the confusion matrix the real class of the row and
