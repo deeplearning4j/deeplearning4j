@@ -595,7 +595,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
         int totalElements = (int) memoryHandler.getAllocatedHostObjects(bucketId);
-        log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
+        //log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
 
         float shortAverage = zeroShort.getAverage();
         float longAverage = zeroLong.getAverage();
@@ -653,9 +653,9 @@ public class AtomicAllocator implements Allocator {
 
 
 
-        log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
-        log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.debug("Zero elements deleted: " + elementsDropped.get());
+        //log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
+        //log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
+        log.debug("Zero elements checked: ["+ totalElements +"], deleted: " + elementsDropped.get());
 
         /*
             o.n.j.a.i.AtomicAllocator - Short average: [2.29], Long average: [0.3816667]

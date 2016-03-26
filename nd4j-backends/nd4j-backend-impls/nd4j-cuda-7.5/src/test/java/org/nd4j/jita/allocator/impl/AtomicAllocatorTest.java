@@ -291,7 +291,7 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testGpuBlas5() throws Exception{
-        INDArray array1 = Nd4j.ones(1024 * 1024 * 13);
+        INDArray array1 = Nd4j.ones(1024 * 1024 * 28); // Nd4j.ones(877334528/3); //
 
         log.info("Big array size: " + array1.length());
         assertEquals(1f, array1.getFloat(10292443), 0.0001f);
@@ -301,10 +301,10 @@ public class AtomicAllocatorTest {
     @Test
     @Ignore
     public void testGpuBlas6() throws Exception{
-        INDArray array1 = Nd4j.create(800000000);
+        INDArray array1 = Nd4j.zeros(Integer.MAX_VALUE);
 
         log.info("Big array size: " + array1.length());
-        assertEquals(0f, array1.getFloat(10292443), 0.0001f);
+        assertEquals(0f, array1.getFloat(Integer.MAX_VALUE - 3), 0.0001f);
     }
 
     @Test

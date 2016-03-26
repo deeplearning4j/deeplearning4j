@@ -128,10 +128,12 @@ public class CudaZeroHandler implements MemoryHandler {
 
         switch (targetMode) {
             case HOST: {
+                configuration.setMaximumZeroAllocation(10 * 1024 * 1024 * 1024L);
 
                 if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                    if (reqMemory > configuration.getMaximumZeroAllocation())
+                    if (reqMemory > configuration.getMaximumZeroAllocation()) {
                         throw new IllegalStateException("You can't allocate more memory, then allowed with -Xmx value");
+                    }
 
 
                     while (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
@@ -700,6 +702,9 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public Set<Long> getHostTrackingPoints(Long bucketId) {
+        if (!zeroAllocations.containsKey(bucketId)) {
+            return new HashSet<>();
+        }
         return zeroAllocations.get(bucketId).keySet();
     }
 

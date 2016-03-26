@@ -11,9 +11,14 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.memory.MemoryProvider;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * @author raver119@gmail.com
@@ -34,21 +39,16 @@ public class CudaDirectProvider implements MemoryProvider {
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         switch (location) {
             case HOST: {
-
                 Pointer devicePointer = new Pointer();
-                Pointer hostPointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
-                if (reqMem >= Integer.MAX_VALUE)
-                    throw new UnsupportedOperationException("Sorry, you can't allocate > 2GB of memory");
+                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
-                //log.info("Requested memory size: " + reqMem);
+               long pointer = nativeOps.mallocHost(reqMem, 0);
+                if (pointer == 0)
+                    throw new RuntimeException("Can't allocate [HOST] memory!");
 
-                JCuda.cudaHostAlloc(
-                        hostPointer,
-                        reqMem,
-                        JCuda.cudaHostAllocMapped | JCuda.cudaHostAllocPortable );
-
+                Pointer hostPointer = new Pointer(pointer);
 
                 JCuda.cudaHostGetDevicePointer(
                         devicePointer,
@@ -64,38 +64,22 @@ public class CudaDirectProvider implements MemoryProvider {
             }
             case DEVICE: {
                 // cudaMalloc call
-                Pointer devicePointer = new Pointer();
-                Pointer hostPointer = new Pointer();
-
-//                CudaContext context = getCudaContext();
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
-                JCuda.cudaMalloc(devicePointer, reqMem);
 
-                /*
-                DevicePointerInfo devicePointerInfo = new DevicePointerInfo(
-                        new HostDevicePointer(hostPointer,devicePointer),
-                        shape.getLength(),
-                        shape.getStride(),
-                        shape.getOffset(),
-                        false);
-                */
+                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
+                long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
+                if (pointer == 0)
+                    throw new RuntimeException("Can't allocate [DEVICE] memory!");
+
+                Pointer devicePointer = new Pointer(pointer);
 
                 PointersPair devicePointerInfo = point.getPointers();
+                if (devicePointerInfo == null)
+                    devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
-/*
-                JCuda.cudaMemcpyAsync(
-                        devicePointer,
-                        new Pointer(devicePointerInfo.getHostPointer().address()),
-                        reqMem,
-                        cudaMemcpyKind.cudaMemcpyHostToDevice,
-                        context.getOldStream()
-                );
 
-                context.syncOldStream();
-*/
-                // In new meta, we can't free this pointer anymore, since it's still used on java side
-                //free(point, AllocationStatus.ZERO);
 
                 return devicePointerInfo;
             }
@@ -114,12 +98,21 @@ public class CudaDirectProvider implements MemoryProvider {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
-                JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
+                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
+                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+                long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
+                if (result == 0)
+                    throw new RuntimeException("Can't deallocate [DEVICE] memory...");
             }
             break;
             case DEVICE: {
                 // cudaFree call
-                JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
+                //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
+
+                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+                long result = nativeOps.freeDevice(point.getPointers().getDevicePointer().address(), 0);
+                if (result == 0)
+                    throw new RuntimeException("Can't deallocate [DEVICE] memory...");
             }
             break;
             default:
