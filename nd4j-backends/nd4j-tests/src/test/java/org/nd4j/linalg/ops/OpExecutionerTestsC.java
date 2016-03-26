@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -469,6 +470,50 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         for( int i = 0; i < arr6s.length(); i++)
             assertEquals(arr6s.getDouble(i),16,1e-1);
 
+    }
+
+    @Test
+    public void testMean(){
+        int[] shape = new int[]{1,2,2,2,2,2};
+        int len = ArrayUtil.prod(shape);
+        INDArray val = Nd4j.linspace(1,len,len).reshape('c',shape);
+        /**
+         * Failure comes from the lack of a jump
+         * when doing tad offset in c++
+         *
+         * We need to jump from the last element rather than the
+         * first for the next element.
+         *
+         * This happens when the index for a tad is >= the
+         * stride[0]
+         *
+         * When the index is >= a stride[0] then you take
+         * the offset at the end of the tad and use that +
+         * (possibly the last stride?)
+         * to get to the next offset.
+         *
+         * In order to get to the last element for a jump, just iterate
+         * over the tad (coordinate wise) to get the coordinate pair +
+         * offset at which to do compute.
+         *
+         * Another possible solution is to create an initialize pointer
+         * method that will just set up the tad pointer directly.
+         * Right now it is a simplistic base pointer + offset that
+         * we could turn in to an init method instead.
+         * This would allow use to use coordinate based techniques
+         * on the pointer directly. The proposal here
+         * would then be turning tad offset given an index
+         * in to a pointer initialization method which
+         * will auto insert the pointer at the right index.
+         */
+        INDArray sum = val.sum(2, 3);
+        double[] assertionData = new double[] {
+                28.0, 32.0, 36.0, 40.0, 92.0, 96.0, 100.0, 104.0
+        };
+
+        INDArray avgExpected = Nd4j.create(assertionData).reshape(1,2,2,2);
+
+        assertEquals(avgExpected, sum);
     }
 
     @Test
