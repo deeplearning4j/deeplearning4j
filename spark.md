@@ -26,7 +26,7 @@ To get OpenBLAS support in a Spark environment, Netlib should be in the Spark cl
 
 ## Scala Resources
 
-* [Deeplearning4j Spark Examples Repo](https://github.com/deeplearning4j/scene-classification-spark)
+* [Deeplearning4j Spark Examples Repo](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)
 * [Accelerate Spark with OpenBlas](../spark-fast-native-binaries.html)
 * ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
 * [ND4J/ND4S Benchmarks](http://nd4j.org/benchmarking)
