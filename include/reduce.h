@@ -876,7 +876,9 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                 dimension[i] += numDimensionsOne;
                         }
 
+                        char order = shape::order(xShapeInfo);
                         xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
+                        xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
 
                     }
 
@@ -885,22 +887,13 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
 
 
-                    /**
-                     * The element wise stride belong longs to a reduction index.
-                     * When used out of order, we can get rid of the data
-                     * dependencies and rely on using the max dimension
-                     * specified for stride instead.
-                     * Say we take the sum(0,1) along long arr
-                     * we can use arr.stride(1) as a representation
-                     * along long which to iterate.
-                     */
 
 
                     //decompose in to several sub tads after
                     //moving all dimensions (in sorted order)
                     //to the back.
                     //permuted version of the x shape info for setting up the tad problem
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'f');
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'c');
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int tadLength = shape::length(tadShapeShapeInfo);
@@ -911,6 +904,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         if(offset + tadLength >= shape::length(xShapeInfo) && squeezed) {
                             offset = i;
                         }
+
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
