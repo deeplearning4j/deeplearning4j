@@ -1238,7 +1238,6 @@ namespace shape {
         int *sub = shape::ind2subC(leftOverIndexLen,tadShape,index,len);
 
 
-        int subIdx = 0;
         for(int i = 0; i < leftOverIndexLen; i++) {
             ret[leftOverIndexes[i]] = sub[i];
         }
@@ -1333,9 +1332,9 @@ namespace shape {
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
         if(dimensionLength > 1) {
             int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+            int rank = shape::rank(shapeInfo);
             int *shape = shape::shapeOf(shapeInfo);
             int *stride = shape::stride(shapeInfo);
-            int rank = shape::rank(shapeInfo);
             int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
             free(tad2Sub);
             return ret;

@@ -893,7 +893,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     //moving all dimensions (in sorted order)
                     //to the back.
                     //permuted version of the x shape info for setting up the tad problem
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'c');
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int tadLength = shape::length(tadShapeShapeInfo);
@@ -901,9 +901,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                        if(offset + tadLength >= shape::length(xShapeInfo) && squeezed) {
-                            offset = i;
-                        }
+
 
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
