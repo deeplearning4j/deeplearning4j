@@ -88,7 +88,7 @@ public class EvalTest {
         // The rest are negative
         assertEquals(1, eval.negative().get(0), 0);
         // 2 rows and only the first is correct
-        assertEquals(eval.accuracy(), 0.5, 0);
+        assertEquals(0.5, eval.accuracy(), 0);
     }
 
     @Test
@@ -124,6 +124,8 @@ public class EvalTest {
         assertEquals(10,evaluation.falsePositives().get(0),0);
         assertEquals(5,evaluation.trueNegatives().get(0),0);
 
+        assertEquals((20.0+5)/(20+3+10+5), evaluation.accuracy(), 1e-6);
+
         System.out.println(evaluation.confusionToString());
     }
 
@@ -150,14 +152,14 @@ public class EvalTest {
         INDArray predictedOutcome = FeatureUtil.toOutcomeVector(0, 2);
 
         Map<Integer, String> labelsMap = new HashMap<>();
-        labelsMap.put(10, "hobbs");
-        labelsMap.put(25, "cal");
+        labelsMap.put(0, "hobbs");
+        labelsMap.put(1, "cal");
 
         Evaluation eval = new Evaluation(labelsMap);
 
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
-        assertEquals(labelsMap.get(10), eval.getClassLabel(10));
+        assertEquals(labelsMap.get(0), eval.getClassLabel(0));
 
     }
 
