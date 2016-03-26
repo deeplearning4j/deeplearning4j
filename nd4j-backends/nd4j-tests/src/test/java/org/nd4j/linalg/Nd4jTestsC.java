@@ -564,7 +564,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-    //Does NOT pass on 3.9
     @Test
     public void testSum3Of4_3322() {
         int[] shape = {3, 3, 2, 2};
@@ -579,11 +578,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             int[] d = dimsToSum[i];
 
             INDArray outC = arrC.sum(d);
-           // INDArray outF = arrF.sum(d);
+            INDArray outF = arrF.sum(d);
             INDArray exp = Nd4j.create(expD[i],outC.shape());
 
             assertEquals(exp, outC);
-            //0assertEquals(exp, outF);
+            assertEquals(exp, outF);
 
             //System.out.println(Arrays.toString(d) + "\t" + outC + "\t" + outF);
         }
