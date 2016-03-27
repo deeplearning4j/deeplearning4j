@@ -17,6 +17,7 @@
 #include <omp.h>
 #include <pairwise_util.h>
 #include <dll.h>
+#include <shape.h>
 
 #ifdef __JNI__
 #include <jni.h>
@@ -695,6 +696,8 @@ namespace functions {
                     }
 
                 }
+
+                return startingVal;
 
 
             }

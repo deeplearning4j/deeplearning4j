@@ -15,6 +15,7 @@
 namespace shape {
     const int MAX_DIMENSION = 0x7fffffff;
     const int MAX_NUM_THREADS = 1024;
+    const int MAX_RANK = 32;
 
 /**
  * Shape information approximating
@@ -1364,12 +1365,13 @@ namespace shape {
                 else return index;
             }
             else {
+                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+                int rank = shape::rank(shapeInfo);
+                int *shape = shape::shapeOf(shapeInfo);
                 int *stride = shape::stride(shapeInfo);
-                int firstStrideIdx = dimension[dimensionLength - 1];
-                if(firstStrideIdx == 0)
-                    return index * stride[1];
-                else
-                    return index * stride[0];
+                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+                free(tad2Sub);
+                return ret;
             }
 
         }
@@ -1399,22 +1401,57 @@ namespace shape {
     __host__ __device__
 #endif
     int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength,bool reverseCopyStride) {
-        int *shapeOf = shape::shapeOf(shapeInfo);
-        int *strideOf = shape::stride(shapeInfo);
-        int rank = dimensionLength;
+        int *theShape = shape::shapeOf(shapeInfo);
+        int *theStride = shape::stride(shapeInfo);
+        int rank = dimensionLength == 1 ? 2 : dimensionLength;
         int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(rank));
         //set the rank
         ret[0] = rank;
         int *retShape = shape::shapeOf(ret);
         int *retStride = shape::stride(ret);
         int len = rank;
-        //int *newIndexes = shape::everyIndexBut(dimension,dimensionLength,0,dimensionLength);
-        int *newIndexes = dimension;
-        if(reverseCopyStride)
-            shape::reverseCopyTo(strideOf,&retStride,newIndexes,len);
-        else
-            shape::copyTo(len,strideOf,&retStride,newIndexes);
-        shape::copyTo(len,shapeOf,&retShape,newIndexes);
+        if(dimensionLength == 1) {
+            printf("Tad shape is [%d,%d] and stride [%d,%d]\n",1,theShape[dimension[0]],1,theStride[dimension[0]]);
+            if(shape::isMatrix(theShape,shape::rank(shapeInfo))) {
+                if(dimension[0] == 0) {
+                    int newStride[2] = {theStride[dimension[0]],1};
+                    int newShape[2] = {theShape[dimension[0]],1};
+                    retShape[0] = newShape[0];
+                    retShape[1] = newShape[1];
+                    retStride[0] = newStride[0];
+                    retStride[1] = newStride[1];
+                }
+                else {
+                    int newStride[2] = {theStride[dimension[0]],1};
+                    int newShape[2] = {theShape[dimension[0]],1};
+                    retShape[0] = newShape[0];
+                    retShape[1] = newShape[1];
+                    retStride[0] = newStride[0];
+                    retStride[1] = newStride[1];
+                }
+            }
+            else {
+                int newStride[2] = {1,theStride[dimension[0]]};
+                int newShape[2] = {1,theShape[dimension[0]]};
+                retShape[0] = newShape[0];
+                retShape[1] = newShape[1];
+                retStride[0] = newStride[0];
+                retStride[1] = newStride[1];
+            }
+
+
+
+        }
+        else {
+            int *newIndexes = dimension;
+            if(reverseCopyStride)
+                shape::reverseCopyTo(theStride,&retStride,newIndexes,len);
+            else
+                shape::copyTo(len,theStride,&retStride,newIndexes);
+            shape::copyTo(len,theShape,&retShape,newIndexes);
+
+        }
+
 
         ret[shape::shapeInfoLength(rank) - 1] = shape::order(shapeInfo);
         return ret;

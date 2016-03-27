@@ -62,7 +62,7 @@ void quickSort(StridePermutation *arr, int elements);
 /* Increment to the next n-dimensional coordinate for two raw arrays */
 #define ND4J_RAW_ITER_TWO_NEXT(idim, ndim, coord, shape, \
                               dataA, stridesA, dataB, stridesB) \
-            for ((idim) = 0; (idim) < (ndim); ++(idim)) { \
+            for ((idim) = 0; (idim) < (ndim); (idim)++) { \
                 if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (dataA) -= ((shape)[idim] - 1) * (stridesA)[idim]; \
@@ -294,7 +294,6 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
 __host__
 #endif
 void quickSort(StridePermutation *arr, int elements) {
-
 #define  MAX_LEVELS  300
 
     int  beg[MAX_LEVELS], end[MAX_LEVELS], i= 0, L, R, swap ;
@@ -376,24 +375,42 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
         outStridesB[0] = 0;
         return 0;
     }
-    else if (ndim == 1) {
-        int stride_entryA = stridesA[0], stride_entryB = stridesB[0];
-        int shape_entry = shape[0];
-        *out_ndim = 1;
+    else if (ndim == 1 || shape::isVector(shape,ndim)) {
+        *out_ndim = 2;
         outShape[0] = shape[0];
-        /* Always make a positive stride for the first operand */
-        if (stride_entryA >= 0) {
-            *out_dataA = dataA;
-            *out_dataB = dataB;
-            outStridesA[0] = stride_entryA;
-            outStridesB[0] = stride_entryB;
+        outShape[1] = shape[1];
+        *out_dataA = dataA;
+        *out_dataB = dataB;
+        outStridesA[0] = stridesA[0];
+        outStridesA[1] = stridesA[1];
+        outStridesB[0] = stridesB[0];
+        outStridesB[1] = stridesB[1];
+#if 0
+        /* DEBUG */
+        {
+            printf("raw iter ndim %d\n", ndim);
+            printf("shape: ");
+            for (i = 0; i < ndim; ++i) {
+                printf("%d ", (int)outShape[i]);
+            }
+            printf("\n");
+            printf("strides a: ");
+            for (i = 0; i < ndim; ++i) {
+                printf("%d ", (int)outStridesA[i]);
+            }
+
+            printf("\n");
+            printf("strides b: ");
+
+            for (i = 0; i < ndim; ++i) {
+                printf("%d ", (int)outStridesB[i]);
+            }
+
+            printf("\n");
+
         }
-        else {
-            *out_dataA = dataA + stride_entryA * (shape_entry - 1);
-            *out_dataB = dataB + stride_entryB * (shape_entry - 1);
-            outStridesA[0] = -stride_entryA;
-            outStridesB[0] = -stride_entryB;
-        }
+#endif
+
         return 0;
     }
 
@@ -407,11 +424,10 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     }
 
     /* Reverse any negative strides of operand A */
-    for (i = 0; i < ndim; ++i) {
+    for (i = 0; i < ndim; i++) {
         int stride_entryA = outStridesA[i];
         int stride_entryB = outStridesB[i];
-        int shape_entry = outShape
-        [i];
+        int shape_entry = outShape[i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);
@@ -433,7 +449,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
 
     /* Coalesce any dimensions where possible */
     i = 0;
-    for (j = 1; j < ndim; ++j) {
+    for (j = 1; j < ndim; j++) {
         if (outShape[i] == 1) {
             /* Drop axis i */
             outShape[i] = outShape[j];
@@ -450,17 +466,46 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
         }
         else {
             /* Can't coalesce, go to next i */
-            ++i;
+            i++;
             outShape[i] = outShape[j];
             outStridesA[i] = outStridesA[j];
             outStridesB[i] = outStridesB[j];
         }
     }
-    ndim = i+1;
+
+    ndim = i + 1;
 
     *out_dataA = dataA;
     *out_dataB = dataB;
     *out_ndim = ndim;
+
+
+#if 1
+    /* DEBUG */
+    {
+        printf("raw iter ndim %d\n", ndim);
+        printf("shape: ");
+        for (i = 0; i < ndim; ++i) {
+            printf("%d ", (int)outShape[i]);
+        }
+        printf("\n");
+        printf("strides a: ");
+        for (i = 0; i < ndim; ++i) {
+            printf("%d ", (int)outStridesA[i]);
+        }
+
+        printf("\n");
+        printf("strides b: ");
+
+        for (i = 0; i < ndim; ++i) {
+            printf("%d ", (int)outStridesB[i]);
+        }
+
+        printf("\n");
+
+    }
+#endif
+
     return 0;
 }
 

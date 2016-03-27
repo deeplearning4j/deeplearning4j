@@ -13,6 +13,8 @@
 #include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
+#include <pairwise_util.h>
+
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -105,121 +107,195 @@ namespace functions {
              * @param dimension the dimension to broadcast along long
              * @param dimensionLength the length of the dimension buffer
              */
-            virtual void exec(T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result,
-                              int *resultShapeInfo, int *dimension, int dimensionLength) {
+            virtual void exec(T *x,
+                              int *xShapeInfo,
+                              T *y,
+                              int *yShapeInfo,
+                              T *result,
+                              int *resultShapeInfo,
+                              int *dimension,
+                              int dimensionLength) {
 
-                int xElementWiseStride = shape::tadElementWiseStride(xShapeInfo,dimension,dimensionLength);
-                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-                //length for the tad
-                int yLength = shape::length(yShapeInfo);
-                //length for the tad
-                int xLength = shape::length(xShapeInfo);
-               char xOrder = shape::order(xShapeInfo);
-                if(xOrder == 'c') {
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *xShape = shape::shapeOf(xShapeInfo);
+                int numOnes = 0;
+                int onesEncountered = 0;
+                int *shape = shape::shapeOf(xShapeInfo);
+                int *stride = shape::stride(xShapeInfo);
+                int wholeRank = shape::rank(xShapeInfo);
+                bool squeezed = false;
+                bool newSqueezeDimensions = false;
+                for (int i = 0; i < wholeRank; i++) {
+                    if (shape[i] == 1)
+                        numOnes++;
+                }
 
-                    //optimized loop for vectorization
-                    if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-                        if(dimension[0] % 2 == 0) {
-
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i  / xStride[0]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-
-                            }
+                //squeeze the dimensions
+                if (numOnes > 0 && wholeRank > 2) {
+                    int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+                    int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+                    squeezed = true;
+                    int numEncountered = 0;
+                    for (int i = 0; i < wholeRank; i++) {
+                        if (shape[i] != 1) {
+                            squeezeShape[numEncountered] = shape[i];
+                            squeezeStride[numEncountered] = stride[i];
+                            numEncountered++;
                         }
-                        else {
-
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i % xShape[dimension[0]]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-
-                            }
-                        }
-
                     }
 
-                    else {
-                        if(dimension[0] % 2 == 0) {
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i  / xStride[dimension[0]]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
 
-                            }
+                    //for any dimensions specified that are 1,ignore them
+                    int numDimensionsOne = 0;
+                    for (int i = 0; i < dimensionLength; i++) {
+                        if (shape[dimension[i]] == 1)
+                            numDimensionsOne++;
+                    }
+
+                    if (numDimensionsOne > 0 && wholeRank > 2) {
+                        int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
+                        int newDimensionIdx = 0;
+                        newSqueezeDimensions = true;
+                        for (int i = 0; i < dimensionLength; i++) {
+                            if (shape[dimension[i]] != 1)
+                                newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
                         }
-                        else {
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i % xShape[dimension[0]]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
 
-                            }
-                        }
-
+                        //reduce along the new dimensions
+                        dimension = newDimensions;
+                        dimensionLength -= numDimensionsOne;
 
                     }
+                    //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
+                    //the previous pointer is just a view of a pointer to be reused that was passed in
+                    shape = squeezeShape;
+                    stride = squeezeStride;
+                    wholeRank -= numOnes;
+                    //adjust dimensions
+                    for (int i = 0; i < dimensionLength; i++) {
+                        dimension[i] -= numOnes;
+                    }
+
+                    for (int i = 0; i < dimensionLength; i++) {
+                        //didn't need to be adjusted
+                        if (dimension[i] < 0)
+                            dimension[i] += numDimensionsOne;
+                    }
+
+                    char order = shape::order(xShapeInfo);
+                    xShapeInfo = shape::createShapeInfo(shape, stride, wholeRank);
+                    xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
 
                 }
 
-                else if(xOrder == 'f') {
-                    int *xStride = shape::stride(xShapeInfo);
 
-                    //optimized loop for vectorization
-                    if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-                        if(dimension[0] % 2 != 0) {
+                //decompose in to several sub tads after
+                //moving all dimensions (in sorted order)
+                //to the back.
+                //permuted version of the x shape info for setting up the tad problem
+                int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo, dimension, dimensionLength,
+                                                                            false);
+                int tads = shape::tensorsAlongDimension(xShapeInfo,dimension,dimensionLength);
+                int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                int *xStride = shape::stride(tadShapeShapeInfo);
+                int tadLength = shape::length(tadShapeShapeInfo);
+                int rank = shape::rank(tadShapeShapeInfo);
+                int *resultStride = shape::stride(tadShapeShapeInfo);
 
+                if(result == x) {
+#pragma omp  parallel  for
+                    for (int i = 0; i < tads; i++) {
+                        int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+                        T *xIter = x + offset;
+                        T *resultIter = result + offset;
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int xStridesIter[MAX_RANK];
+                        int resultStridesIter[MAX_RANK];
+                        int rank = shape::rank(tadShapeShapeInfo);
+                        int vectorIdx = 0;
 
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i   / xStride[dimension[dimensionLength - 1]]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-
+                        if (PrepareTwoRawArrayIter<T>(rank,
+                                                      xShape,
+                                                      xIter,
+                                                      xStride,
+                                                      resultIter,
+                                                      resultStride,
+                                                      &rank,
+                                                      shapeIter,
+                                                      &xIter,
+                                                      xStridesIter,
+                                                      &resultIter,
+                                                      resultStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T val = this->op(xIter[0],y[vectorIdx]);
+                                // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
+                                xIter[0] = val;
+                                vectorIdx++;
                             }
+                            ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                   rank,
+                                                   coord,
+                                                   shapeIter,
+                                                   xIter,
+                                                   xStridesIter,
+                                                   result,
+                                                   resultStridesIter);
+
+
                         }
-                        else {
-
-
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i % yLength) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-
-                            }
-                        }
-
                     }
-
-                    else {
-                        if(dimension[0] % 2 != 0) {
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i  / xStride[dimension[dimensionLength - 1]]) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-                            }
-                        }
-                        else {
-
-#pragma omp parallel for
-                            for (int i = 0; i < xLength; i++) {
-                                int yOffset2 =  (i % yLength) * yElementWiseStride;
-                                result[i] = op(x[i], y[yOffset2]);
-
-                            }
-                        }
-
-
-                    }
-
                 }
+                else {
+
+#pragma omp  parallel  for
+                    for (int i = 0; i < tads; i++) {
+                        int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+                        T *xIter = x + offset;
+                        T *resultIter = result + offset;
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int xStridesIter[MAX_RANK];
+                        int resultStridesIter[MAX_RANK];
+                        int rank = shape::rank(tadShapeShapeInfo);
+                        int vectorIdx = 0;
+
+                        if (PrepareTwoRawArrayIter<T>(rank,
+                                                      xShape,
+                                                      xIter,
+                                                      xStride,
+                                                      resultIter,
+                                                      resultStride,
+                                                      &rank,
+                                                      shapeIter,
+                                                      &xIter,
+                                                      xStridesIter,
+                                                      &resultIter,
+                                                      resultStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                                /* Process the innermost dimension */
+                                T val = this->op(xIter[0],y[vectorIdx]);
+                                // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
+                                resultIter[0] = val;
+                                vectorIdx++;
+                            }
+                            ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                   rank,
+                                                   coord,
+                                                   shapeIter,
+                                                   xIter,
+                                                   xStridesIter,
+                                                   result,
+                                                   resultStridesIter);
+
+
+                        }
+                    }
+                }
+
+
+
 
             }
 

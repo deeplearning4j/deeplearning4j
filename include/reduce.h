@@ -824,6 +824,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         if(shape[i] == 1)
                             numOnes++;
                     }
+
                     //squeeze the dimensions
                     if(numOnes > 0) {
                         int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
@@ -881,12 +882,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
 
                     }
-
-
-
-
-
-
 
 
                     //decompose in to several sub tads after
