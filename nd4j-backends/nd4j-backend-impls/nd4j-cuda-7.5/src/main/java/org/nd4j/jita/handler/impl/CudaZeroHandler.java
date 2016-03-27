@@ -145,9 +145,6 @@ public class CudaZeroHandler implements MemoryHandler {
                     }
                 }
 
-                if (zeroCounter.incrementAndGet() % 10000 == 0)
-                    log.info("zeroCount: " + zeroUseCounter.get());
-
                 zeroUseCounter.addAndGet(reqMemory);
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
@@ -159,7 +156,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     synchronized (this) {
                         if (!zeroAllocations.containsKey(bucketId)) {
-                            // TODO: investigate CopyOnWriteArrayList here, _PROBABLY_ we could replace it with synchronized list, without backing
                             zeroAllocations.put(bucketId, new ConcurrentHashMap<Long, Long>());
                         }
                     }

@@ -304,7 +304,8 @@ public class AtomicAllocatorTest {
         INDArray array1 = Nd4j.zeros(Integer.MAX_VALUE);
 
         log.info("Big array size: " + array1.length());
-        assertEquals(0f, array1.getFloat(Integer.MAX_VALUE - 3), 0.0001f);
+        array1.putScalar(Integer.MAX_VALUE  - 3, 119f);
+        assertEquals(119f, array1.getFloat(Integer.MAX_VALUE - 3), 0.0001f);
     }
 
     @Test

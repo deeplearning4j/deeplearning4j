@@ -107,9 +107,6 @@ public class AtomicAllocator implements Allocator {
         this.memoryHandler = new CudaZeroHandler();
         this.memoryHandler.init(configuration, environment, this);
 
-
-        System.out.println("MaxMemory (-Xmx): " + Runtime.getRuntime().maxMemory());
-        System.out.println("Configured MaxMemory: " + configuration.getMaximumZeroAllocation());
         initDeviceCollectors();
         initHostCollectors();
     }
