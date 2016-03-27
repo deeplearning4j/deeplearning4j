@@ -109,7 +109,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
             try {
                 singleLock.acquire();
                 if (!zeroCache.containsKey(shape)) {
-                    zeroCache.put(shape, new CacheHolder());
+                    zeroCache.put(shape, new CacheHolder(shape));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -159,7 +159,6 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
                 long cacheDepth = cacheEntries * reqMemory;
 
                 if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cachedAmount.addAndGet(reqMemory);
                     cache.put(new Pointer(point.getHostPointer().address()));
                 } else {
                     super.free(point);
@@ -177,13 +176,19 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     public void printCacheStats() {
         float cacheRatio = getCacheHitRatio();
 
+        log.debug("Cached amount: " + cachedAmount.get());
         log.debug("Total shapes in cache: " + zeroCache.size());
         log.debug("Current hit ratio: " + cacheRatio);
     }
 
-    protected static class CacheHolder {
+    protected class CacheHolder {
         private Queue<Pointer> queue = new ConcurrentLinkedQueue<>();
         private AtomicInteger counter = new AtomicInteger(0);
+        private long reqMem = 0;
+
+        public CacheHolder(AllocationShape shape) {
+            this.reqMem = AllocationUtils.getRequiredMemory(shape);
+        }
 
         public int size() {
             return counter.get();
@@ -198,6 +203,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
         }
 
         public void put(Pointer pointer) {
+            cachedAmount.addAndGet(reqMem);
             counter.incrementAndGet();
             queue.add(pointer);
         }

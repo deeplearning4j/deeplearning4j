@@ -20,6 +20,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.impl.CudaCachingProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
+import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -90,6 +91,7 @@ public class CudaZeroHandler implements MemoryHandler {
     private Map<Long, ConcurrentHashMap<Long, Long>> zeroAllocations = new HashMap<>();
 
 
+    private AtomicLong zeroCounter = new AtomicLong(0);
 
     public CudaZeroHandler() {
         allocator = AtomicAllocator.getInstance();
@@ -121,15 +123,11 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
-        //log.info("Alloc called for shape: " + shape);
-        //if (shape.getLength() == 757) throw new RuntimeException("757");
-        //log.info("Memory required: " + AllocationUtils.getRequiredMemory(shape));
+
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
         switch (targetMode) {
             case HOST: {
-//                configuration.setMaximumZeroAllocation(10 * 1024 * 1024 * 1024L);
-
                 if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
                     if (reqMemory > configuration.getMaximumZeroAllocation()) {
                         throw new IllegalStateException("You can't allocate more memory, then allowed with -Xmx value");
@@ -146,6 +144,9 @@ public class CudaZeroHandler implements MemoryHandler {
                         }
                     }
                 }
+
+                if (zeroCounter.incrementAndGet() % 10000 == 0)
+                    log.info("zeroCount: " + zeroUseCounter.get());
 
                 zeroUseCounter.addAndGet(reqMemory);
                 PointersPair pair = provider.malloc(shape, point, targetMode);
@@ -598,11 +599,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
             //deviceLock.readLock().unlock();
 
-            zeroAllocations.get(bucketId).remove(trackingPoint);
+    //        zeroAllocations.get(bucketId).remove(trackingPoint);
 
             deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
 
-            zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
+//            zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
 
             //log.info("Relocation happened!");
         } catch (Exception e){
@@ -718,17 +719,14 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback) {
-        if (point.getAllocationStatus() == AllocationStatus.HOST)
+        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            log.info("Wrong location!");
             return;
+        }
 
         if (copyback) {
             // copyback here basically means that we're gonna have new zero allocation right now
             fallback(point, point.getShape());
-
-//            zeroAllocations.get(threadId).put(objectId, objectId);
-
-            point.setAllocationStatus(AllocationStatus.HOST);
-   //         zeroUseCounter.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
         }
 
 
@@ -739,6 +737,8 @@ public class CudaZeroHandler implements MemoryHandler {
         if (!copyback) {
             free(point, AllocationStatus.DEVICE);
         }
+
+        point.setAllocationStatus(AllocationStatus.HOST);
 
         environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
     }
@@ -758,7 +758,7 @@ public class CudaZeroHandler implements MemoryHandler {
         zeroAllocations.get(bucketId).remove(objectId);
 
         // we call for caseless deallocation here
-        free(point, point.getAllocationStatus());
+        free(point, AllocationStatus.HOST);
 
         point.setAllocationStatus(AllocationStatus.DEALLOCATED);
 
