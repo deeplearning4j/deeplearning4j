@@ -16,9 +16,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                 dimension[i] += x.rank();
     }
 
-    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int n) {
-        this(x,y,z,new int[]{n});
-    }
+
 
     @Override
     public int broadcastLength() {

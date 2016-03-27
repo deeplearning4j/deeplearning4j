@@ -4,6 +4,10 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
+/**
+ * Broadcast reverse divide
+ * @author Adam Gibson
+ */
 public class BroadcastRDivOp extends BaseBroadcastOp {
 
     public BroadcastRDivOp() {
@@ -13,9 +17,6 @@ public class BroadcastRDivOp extends BaseBroadcastOp {
         super(x, y, z, dimension);
     }
 
-    public BroadcastRDivOp(INDArray x, INDArray y, INDArray z, int n) {
-        super(x, y, z, n);
-    }
 
     @Override
     public int opNum() {
