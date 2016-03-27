@@ -201,7 +201,7 @@ public class CudaZeroHandler implements MemoryHandler {
     /**
      * Copies specific chunk of memory from one storage to another
      *
-     * Possible directions:  DEVICE -> ZERO, ZERO -> DEVICE, ZERO -> HOST, DEVICE -> HOST
+     * Possible directions:  HOST -> DEVICE, DEVICE -> HOST
      *
      * @param currentStatus
      * @param targetStatus
@@ -223,7 +223,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
             // we must be sure, no calculations are pending within these streams before copyback
             context.syncOldStream();
-            context.syncStream();
 
             JCuda.cudaMemcpyAsync(
                     PointerUtil.getHostPointer(targetBuffer),
@@ -298,6 +297,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @param shape
      */
     @Override
+    @Deprecated
     public void fallback(AllocationPoint point, AllocationShape shape) {
         if (point.getAllocationStatus() != AllocationStatus.DEVICE)
             throw new IllegalStateException("Can't fallback from ["+point.getAllocationStatus()+"]");
@@ -388,17 +388,7 @@ public class CudaZeroHandler implements MemoryHandler {
         context.initStream();
         context.associateHandle();
 
-        // FIXME:  context should be treated within mover
         contextPool.put(threadId, context);
-    }
-
-    private NioUtil.BufferType getBufferType(DataBuffer buffer) {
-        switch(buffer.dataType()) {
-            case DOUBLE: return NioUtil.BufferType.DOUBLE;
-            case INT: return NioUtil.BufferType.FLOAT;
-            case FLOAT: return NioUtil.BufferType.FLOAT;
-            default: throw new UnsupportedOperationException("Unsupported data buffer type");
-        }
     }
 
     /**
@@ -430,7 +420,9 @@ public class CudaZeroHandler implements MemoryHandler {
                 context.getOldStream()
         );
 
+        // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
             Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
             JCuda.cudaMemcpyAsync(
@@ -455,6 +447,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        // internally it's just memcpyAsync + sync
         CudaContext context = getCudaContext();
         memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
         context.syncOldStream();
@@ -510,6 +503,7 @@ public class CudaZeroHandler implements MemoryHandler {
             );
         }
 
+        // it has to be blocking call
         context.syncOldStream();
     }
 
@@ -524,8 +518,8 @@ public class CudaZeroHandler implements MemoryHandler {
         // TODO: It would be awesome to get rid of typecasting here
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
-        // here's the place, where we do care about promotion
-        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST ) {
+        // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
+        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() ==0 ) {
             if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
                 // at this point we know, that this request is done withing some existent context
                 long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
@@ -542,9 +536,11 @@ public class CudaZeroHandler implements MemoryHandler {
             }
         }
 
+        //  we update memory use counter, to announce that it's somehow used on device
         dstPoint.tickDevice();
 
 
+        // return pointer with offset if needed. length is specified for constructor compatibility purposes
         return new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),  (buffer.offset() * buffer.getElementSize()));
     }
 
@@ -558,13 +554,14 @@ public class CudaZeroHandler implements MemoryHandler {
     public org.bytedeco.javacpp.Pointer getHostPointer(DataBuffer buffer) {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
+        // return pointer with offset if needed. length is specified for constructor compatibility purposes
         return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
     }
 
     /**
      * This method moves specific object from zero-copy memory to device memory
      *
-     * PLEASE NOTE:  DO NOT EVER USE THIS METHOD, UNLESS YOU 100% HAVE TO
+     * PLEASE NOTE:  DO NOT EVER USE THIS METHOD MANUALLY, UNLESS YOU 100% HAVE TO
      *
      * @param trackingPoint
      * @param point
@@ -588,18 +585,9 @@ public class CudaZeroHandler implements MemoryHandler {
             point.setAllocationStatus(AllocationStatus.DEVICE);
             point.setPointers(newPointers);
 
-
-            //deviceLock.readLock().lock();
-
             deviceAllocations.get(point.getDeviceId()).put(trackingPoint, trackingPoint);
 
-            //deviceLock.readLock().unlock();
-
-    //        zeroAllocations.get(bucketId).remove(trackingPoint);
-
             deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
-
-//            zeroUseCounter.addAndGet(-1 * AllocationUtils.getRequiredMemory(point.getShape()));
 
             //log.info("Relocation happened!");
         } catch (Exception e){
@@ -618,7 +606,6 @@ public class CudaZeroHandler implements MemoryHandler {
     public Table<AllocationStatus, Integer, Long> getAllocationStatistics() {
         Table<AllocationStatus, Integer, Long> table = HashBasedTable.create();
         table.put(AllocationStatus.HOST, 0 , zeroUseCounter.get());
-
         return table;
     }
 
@@ -651,6 +638,8 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public long getAllocatedDeviceObjects(Integer deviceId) {
+        if (!deviceAllocations.containsKey(deviceId))
+            return 0L;
         return deviceAllocations.get(deviceId).size();
     }
 
@@ -688,6 +677,8 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public Set<Long> getDeviceTrackingPoints(Integer deviceId) {
+        if (!deviceAllocations.containsKey(deviceId))
+            return new HashSet<>();
         return deviceAllocations.get(deviceId).keySet();
     }
 
@@ -716,24 +707,17 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback) {
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            log.info("Wrong location!");
             return;
         }
-
-        if (copyback) {
-            // copyback here basically means that we're gonna have new zero allocation right now
-            fallback(point, point.getShape());
-        }
-
 
         deviceAllocations.get(deviceId).remove(objectId);
 
         deviceMemoryTracker.subFromAllocation(threadId, deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
 
+        // TODO: this check could actually be removed, since copyback is always false by design now
         if (!copyback) {
             free(point, AllocationStatus.DEVICE);
         }
-
         point.setAllocationStatus(AllocationStatus.HOST);
 
         environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
@@ -748,9 +732,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
-        if (copyback) {
-//            copyback(point, point.getShape());
-        }
         zeroAllocations.get(bucketId).remove(objectId);
 
         // we call for caseless deallocation here
@@ -801,17 +782,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     initCudaContextForThread(threadId);
                     initializeDevice(threadId, device);
-
-
-/*
-                    ZeroGarbageCollectorThread thread = new ZeroGarbageCollectorThread(threadId, device, shouldStop);
-                    thread.start();
-                    collectorsZero.put(threadId, thread);
-
-                    DeviceGarbageCollectorThread dThread = new DeviceGarbageCollectorThread(threadId, device, shouldStop);
-                    dThread.start();
-                    collectorsDevice.put(threadId, dThread);
-                    */
                 }
                 return devicesAffinity.get(threadId);
             } finally {
@@ -847,7 +817,6 @@ public class CudaZeroHandler implements MemoryHandler {
     public CudaContext getCudaContext() {
         if (!contextPool.containsKey(Thread.currentThread().getId())) {
             initCudaContextForThread(Thread.currentThread().getId());
-
         }
         return contextPool.get(Thread.currentThread().getId());
     }
@@ -880,6 +849,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public boolean isDeviceDependant() {
+        // this is always TRUE for current implementation
         return true;
     }
 
@@ -893,10 +863,11 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
+        // we synchronize only if this AllocationPoint was used within device context, so for multiple consequent syncs only first one will be issued
         if (!point.isActualOnHostSide()) {
-//            log.info("Calling sync...");
             CudaContext context = getCudaContext();
-            context.syncOldStream();
+
+            // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
                 JCuda.cudaMemcpyAsync(
                         new Pointer(point.getHostPointer().address()),
@@ -905,9 +876,9 @@ public class CudaZeroHandler implements MemoryHandler {
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getOldStream()
                 );
-
-                context.syncOldStream();
             }
+            context.syncOldStream();
+
             point.tickHostRead();
         }
     }

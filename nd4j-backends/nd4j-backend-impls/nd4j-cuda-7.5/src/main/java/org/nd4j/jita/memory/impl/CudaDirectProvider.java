@@ -42,6 +42,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
+                // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
                long pointer = nativeOps.mallocHost(reqMem, 0);
@@ -67,6 +68,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
+                // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
                 long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
@@ -98,7 +100,8 @@ public class CudaDirectProvider implements MemoryProvider {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
-                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
+
+                // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
                 if (result == 0)
