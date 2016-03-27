@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,6 +13,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class CudaPairwiseTrainformsTests {
 
     @Test

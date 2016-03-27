@@ -11,6 +11,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class SimpleTimerTest {
 
     @Before
