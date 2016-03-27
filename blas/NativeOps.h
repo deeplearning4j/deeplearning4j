@@ -800,6 +800,45 @@ class ND4J_EXPORT NativeOps {
         Nd4jPointer xIndexes,
         Nd4jPointer resultIndexes);
 
+
+        /**
+    * Append an input array
+    * to the end of a flat array
+    * in a particular order
+    * @param offset the offset of the array to start at
+    * @param order the order
+    * @param result the result array
+    * @param resultShapeInfo the shape info for te array
+    * @param input the input for the array
+    * @param inputShapeInfo the shape information for that array
+    */
+        void flattenFloat(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo);
+
+        /**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+        void flattenDouble(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo);
+
         /**
          * This method implementation exists only for cuda.
          * The other backends should have dummy method for JNI compatibility reasons.

@@ -1360,6 +1360,151 @@ void   NativeOps::execTransformFloat(
 }
 
 /**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenFloat(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    float *resultPointer = reinterpret_cast<float *>(result);
+    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
+    float *inputPointer = reinterpret_cast<float *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    //start at the given offset
+    resultPointer += offset;
+
+
+    int shapeIter[MAX_RANK];
+    int coord[MAX_RANK];
+    int dim;
+    int xStridesIter[MAX_RANK];
+
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    int rank = shape::rank(inputShapeInfoPointer);
+
+    bool reversedStrides = order != shape::order(inputShapeInfoPointer);
+
+    if(reversedStrides) {
+        int *newXStride = (int *) malloc(sizeof(int) * rank);
+        shape::reverseCopyTo(xStride,&newXStride,rank);
+        xStride = newXStride;
+    }
+
+    int idx = 0;
+
+    if(PrepareOneRawArrayIter<float>(rank,
+                                     xShape,
+                                     inputPointer,
+                                     xStride,
+                                     &rank,
+                                     shapeIter,
+                                     &inputPointer,
+                                     xStridesIter) >= 0) {
+
+        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter)
+        {
+            resultPointer[idx++] = inputPointer[0];
+        }  ND4J_RAW_ITER_ONE_NEXT(dim,
+                                  rank,
+                                  coord,
+                                  shapeIter,
+                                  inputPointer,
+                                  xStridesIter);
+    }
+
+
+
+
+    //was a copy
+    if(reversedStrides) {
+        free(xStride);
+    }
+
+}
+
+/**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenDouble(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    double *resultPointer = reinterpret_cast<double *>(result);
+    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
+    double *inputPointer = reinterpret_cast<double *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    //start at the given offset
+    resultPointer += offset;
+
+    int shapeIter[MAX_RANK];
+    int coord[MAX_RANK];
+    int dim;
+    int xStridesIter[MAX_RANK];
+
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    int rank = shape::rank(inputShapeInfoPointer);
+
+    bool reversedStrides = order != shape::order(inputShapeInfoPointer);
+
+    if(reversedStrides) {
+        int *newXStride = (int *) malloc(sizeof(int) * rank);
+        shape::reverseCopyTo(xStride,&newXStride,rank);
+        xStride = newXStride;
+    }
+
+    int idx = 0;
+
+    if(PrepareOneRawArrayIter<double>(rank,
+                                      xShape,
+                                      inputPointer,
+                                      xStride,
+                                      &rank,
+                                      shapeIter,
+                                      &inputPointer,
+                                      xStridesIter) >= 0) {
+
+        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+            resultPointer[idx++] = inputPointer[0];
+        }   ND4J_RAW_ITER_ONE_NEXT(dim,
+                                   rank,
+                                   coord,
+                                   shapeIter,
+                                   inputPointer,
+                                   xStridesIter);
+    }
+
+    //was a copy
+    if(reversedStrides) {
+        free(xStride);
+    }
+
+}
+
+/**
  * This is dummy method for JNI compatibility
  * Since we'll use this from java, jni compiler would like to have method no matter what.
  */
