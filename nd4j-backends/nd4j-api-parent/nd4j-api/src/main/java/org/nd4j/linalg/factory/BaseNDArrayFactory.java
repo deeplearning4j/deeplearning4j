@@ -312,40 +312,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ret;
     }
 
-    @Override
-    public INDArray toFlattened(char order, Collection<INDArray> matrices) {
-        int length = 0;
-        for (INDArray m : matrices)
-            length += m.length();
-        INDArray ret = Nd4j.create(new int[]{1,length},order);
-        int linearIndex = 0;
-        for(INDArray m : matrices) {
-            if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
-                    && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
-                //Can do array copy
-                int retFrom = linearIndex;
-                int mFrom = m.offset();
-                Object arr = m.data().array();
-                if(arr instanceof float[]){
-                    float[] mData = (float[])arr;
-                    float[] retData = (float[])ret.data().array();
-                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
-                } else {
-                    double[] mData = (double[])arr;
-                    double[] retData = (double[])ret.data().array();
-                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
-                }
-                linearIndex += m.length();
-            } else {
-                //Works for all cases...
-                NdIndexIterator iter = new NdIndexIterator(order, m.shape());
-                while (iter.hasNext()) {
-                    ret.putScalar(linearIndex++, m.getDouble(iter.next()));
-                }
-            }
-        }
-        return ret;
-    }
 
     @Override
     public INDArray toFlattened(char order, INDArray... matrices) {

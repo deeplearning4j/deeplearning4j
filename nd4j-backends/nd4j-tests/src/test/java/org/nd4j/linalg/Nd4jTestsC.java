@@ -384,7 +384,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             List<Integer> order = new ArrayList<>(nRows);
             //in.row(order(i)) should end up as out.row(i) - ascending
             //in.row(order(i)) should end up as out.row(nRows-j-1) - descending
-            for( int j=0; j<nRows; j++ ) order.add(j);
+            for( int j = 0; j<nRows; j++ ) order.add(j);
             Collections.shuffle(order, r);
             for( int j = 0; j<nRows; j++ )
                 in.putScalar(new int[]{j,i},order.get(j));
@@ -392,7 +392,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outAsc = Nd4j.sortRows(in, i, true);
             INDArray outDesc = Nd4j.sortRows(in, i, false);
 
-            for( int j = 0; j < nRows; j++ ) {
+            for( int j = 0; j < nRows; j++) {
                 assertEquals(outAsc.getDouble(j,i),j,1e-1);
                 int origRowIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getRow(j).equals(in.getRow(origRowIdxAsc)));
@@ -403,6 +403,17 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             }
         }
     }
+
+    @Test
+    public void testToFlattenedOrder() {
+        INDArray concatC = Nd4j.linspace(1,4,4).reshape('c',2,2);
+        INDArray concatF = Nd4j.create(new int[]{2,2},'f');
+        concatF.assign(concatC);
+        INDArray test = Nd4j.toFlattened('f',concatC,concatF);
+        INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
+        assertEquals(assertion,test);
+    }
+
 
     @Test
     public void testSortColumns() {
@@ -609,10 +620,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             Nd4j.getExecutioner().exec(opc);
             Nd4j.getExecutioner().exec(opf);
-
-//            System.out.println(exp + "\n");
-//            System.out.println(zC + "\n");
-//            System.out.println(zF + "\n");
 
             assertEquals(exp,zC);
             assertEquals(exp,zF);
