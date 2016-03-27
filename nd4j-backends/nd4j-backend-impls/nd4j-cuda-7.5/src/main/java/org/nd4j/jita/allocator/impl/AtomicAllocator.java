@@ -552,32 +552,16 @@ public class AtomicAllocator implements Allocator {
     }
 
 
-    protected void purgeZeroObject(Long threadId, Long objectId, AllocationPoint point, boolean copyback) {
-        // TODO: to be implemented
-        if (copyback) {
-
-            // copyback here
-            memoryHandler.copyback(point, point.getShape());
-
-            externalsLock.writeLock().lock();
-
-            externalBuffers.remove(point.getBuffer());
-
-            externalsLock.writeLock().unlock();
-        }
+    protected void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
 
         allocationsMap.remove(objectId);
 
-        memoryHandler.purgeZeroObject(threadId, objectId, point, copyback);
+        memoryHandler.purgeZeroObject(bucketId, objectId, point, copyback);
     }
 
     protected void purgeDeviceObject(Long threadId, Integer deviceId, Long objectId, AllocationPoint point, boolean copyback) {
-        // TODO: to be implemented
-        if (!copyback) {
-            allocationsMap.remove(objectId);
-        }
-
-        memoryHandler.purgeDeviceObject(threadId, deviceId, objectId, point, copyback);
+         memoryHandler.purgeDeviceObject(threadId, deviceId, objectId, point, copyback);
+        point.setAllocationStatus(AllocationStatus.HOST);
     }
 
     /**
@@ -595,7 +579,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
         int totalElements = (int) memoryHandler.getAllocatedHostObjects(bucketId);
-        log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
+        //log.debug("Total zero elements to be checked: [" + totalElements + "]; zeroUsed: ["+ memoryHandler.getAllocatedHostMemory() +"]");
 
         float shortAverage = zeroShort.getAverage();
         float longAverage = zeroLong.getAverage();
@@ -610,24 +594,25 @@ public class AtomicAllocator implements Allocator {
         for (Long object: memoryHandler.getHostTrackingPoints(bucketId)) {
             AllocationPoint point = getAllocationPoint(object);
 
+            // point can be null, if memory was promoted to device and was deleted there
             if (point == null)
-                throw new RuntimeException("WTF???");
+                continue;
 
-            if (point.getAccessState().isToeAvailable()) {
+            if (point.getAccessState().isToeAvailable() && point.getAllocationStatus() == AllocationStatus.HOST) {
                 point.getAccessState().requestToe();
 
                 /*
                     Check if memory points to non-existant buffer, using externals.
                     If externals don't have specified buffer - delete reference.
                  */
-                if (point.getBuffer() == null) {
-       //             log.info("Ghost reference removed: " + object);
+                if (point.getBuffer() == null ) {
+                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                        purgeZeroObject(bucketId, object, point, false);
+                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
-                    purgeZeroObject(bucketId, object, point, false);
-                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
-
-                    elementsDropped.incrementAndGet();
-                    continue;
+                        elementsDropped.incrementAndGet();
+                        continue;
+                    } else log.error("Misplaced [HOST] skip...");
                 }
 
                 /*
@@ -653,9 +638,9 @@ public class AtomicAllocator implements Allocator {
 
 
 
-        log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
-        log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.debug("Zero elements deleted: " + elementsDropped.get());
+        //log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
+        //log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
+        log.debug("Zero elements checked: ["+ totalElements +"], deleted: " + elementsDropped.get());
 
         /*
             o.n.j.a.i.AtomicAllocator - Short average: [2.29], Long average: [0.3816667]
@@ -716,21 +701,25 @@ public class AtomicAllocator implements Allocator {
                     Check if memory points to non-existant buffer, using externals.
                     If externals don't have specified buffer - delete reference.
                  */
-                if (point.getBuffer() == null) {
+                if (point.getBuffer() == null ) {
                     //log.info("Ghost reference removed: " + object);
+                    if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
 
-                    purgeDeviceObject(threadId, deviceId, object, point, false);
-                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                        purgeDeviceObject(threadId, deviceId, object, point, false);
+                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
-                    elementsDropped.incrementAndGet();
-                    continue;
+                        purgeZeroObject(point.getBucketId(), object, point, false);
+
+                        elementsDropped.incrementAndGet();
+                        continue;
+                    } else log.error("Misplaced [DEVICE] skip...");
                 }
 
                 /*
                     Check, if memory can be removed from allocation.
                     To check it, we just compare average rates for few tens of latest calls
                  */
-
+/*
                 long millisecondsTTL = configuration.getMinimumTTLMilliseconds();
                 if (point.getRealDeviceAccessTime() < System.currentTimeMillis() - millisecondsTTL) {
                     // we could remove device allocation ONLY if it's older then minimum TTL
@@ -743,10 +732,10 @@ public class AtomicAllocator implements Allocator {
 
                         elementsMoved.incrementAndGet();
 
-                        purgeDeviceObject(threadId, deviceId, object, point, true);
+                        //purgeDeviceObject(threadId, deviceId, object, point, true);
                     }
                 }
-
+*/
                 point.getAccessState().releaseToe();
             }
         }
@@ -791,6 +780,8 @@ public class AtomicAllocator implements Allocator {
                 */
                 try {
                     Thread.sleep(Math.max(configuration.getMinimumTTLMilliseconds(), 5000));
+                    if (threadId == 0)
+                        System.gc();
                 } catch (Exception e) {
                     // we can have interruption here, to force gc
                     ;
