@@ -385,7 +385,7 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = new CudaContext();
         context.initHandle();
         context.initOldStream();
-        context.initStream();
+//        context.initStream();
         context.associateHandle();
 
         contextPool.put(threadId, context);
@@ -606,6 +606,9 @@ public class CudaZeroHandler implements MemoryHandler {
     public Table<AllocationStatus, Integer, Long> getAllocationStatistics() {
         Table<AllocationStatus, Integer, Long> table = HashBasedTable.create();
         table.put(AllocationStatus.HOST, 0 , zeroUseCounter.get());
+        for (Integer deviceId : environment.getAvailableDevices().keySet()) {
+            table.put(AllocationStatus.DEVICE, deviceId, getAllocatedDeviceMemory(deviceId));
+        }
         return table;
     }
 
