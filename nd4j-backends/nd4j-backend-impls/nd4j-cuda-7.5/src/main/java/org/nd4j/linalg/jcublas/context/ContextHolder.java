@@ -72,7 +72,6 @@ import static jcuda.driver.JCudaDriver.*;
  * @author Adam Gibson
  */
 @Data
-@Deprecated
 public class ContextHolder {
 
     private Map<Integer,CUdevice> devices = new ConcurrentHashMap<>();
@@ -236,7 +235,7 @@ public class ContextHolder {
             numDevices = 1;
         bannedDevices = new ArrayList<>();
 
-
+/*
         String props = System.getProperty(DEVICES_TO_BAN, "-1");
         String[] split = props.split(",");
         //Should only be used in multi device scenarios; otherwise always use one device
@@ -247,7 +246,7 @@ public class ContextHolder {
                     bannedDevices.add(Integer.parseInt(s));
 
             }
-
+*/
         deviceSetup.set(true);
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
 
@@ -260,7 +259,7 @@ public class ContextHolder {
         setContext();
 
 
-
+/*
         // Check if the device supports mapped host memory
         cudaDeviceProp deviceProperties = new cudaDeviceProp();
         JCuda.cudaGetDeviceProperties(deviceProperties, 0);
@@ -269,7 +268,7 @@ public class ContextHolder {
             System.err.println(deviceProperties.toFormattedString());
             return;
         }
-
+*/
 
         /*
         // if we'll need stack initialization, here's the code
@@ -286,6 +285,7 @@ public class ContextHolder {
 
 
         //force certain ops to have a certain number of threads
+        /*
         Properties threadProps = new Properties();
         try {
             InputStream is = ContextHolder.class.getResourceAsStream("/function_threads.properties");
@@ -297,8 +297,10 @@ public class ContextHolder {
         for(String prop : threadProps.stringPropertyNames()) {
             threads.put(prop,Integer.parseInt(threadProps.getProperty(prop)));
         }
+        */
 
         try {
+            /*
             GenericObjectPoolConfig config = new GenericObjectPoolConfig();
             config.setJmxEnabled(true);
             config.setBlockWhenExhausted(false);
@@ -323,7 +325,7 @@ public class ContextHolder {
                 streamPool.addObject();
                 oldStreamPool.addObject();
             }
-
+*/
 
             //force context initialization to occur
             JCuda.cudaFree(Pointer.to(new int[]{0}));
@@ -332,7 +334,7 @@ public class ContextHolder {
             log.warn("Unable to initialize cuda",e);
         }
 
-
+    /*
         for(int i = 0; i < numDevices; i++) {
             ClassPathResource confFile = new ClassPathResource("devices/" + i, ContextHolder.class.getClassLoader());
             if(confFile.exists()) {
@@ -349,6 +351,7 @@ public class ContextHolder {
                 confs.put(i,new DeviceConfiguration(i));
 
         }
+        */
 
         confCalled = true;
     }
@@ -407,6 +410,7 @@ public class ContextHolder {
      *
      */
     public int getDeviceForThread() {
+        /*
         if(numDevices > 1) {
             Integer device =  threadNameToDeviceNumber.get(Thread.currentThread().getName());
             if(device == null) {
@@ -421,7 +425,7 @@ public class ContextHolder {
                 return device;
             }
         }
-
+*/
         return 0;
     }
 
