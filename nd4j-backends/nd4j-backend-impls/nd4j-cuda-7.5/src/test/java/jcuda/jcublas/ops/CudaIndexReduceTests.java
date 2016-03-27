@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class CudaIndexReduceTests {
 
     @Test

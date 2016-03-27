@@ -291,10 +291,26 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testGpuBlas5() throws Exception{
-        INDArray array1 = Nd4j.ones(1024 * 1024 * 13);
+        INDArray array1 = Nd4j.ones(1024 * 1024 * 28); // Nd4j.ones(877334528/3); //
 
         log.info("Big array size: " + array1.length());
         assertEquals(1f, array1.getFloat(10292443), 0.0001f);
+    }
+
+
+    @Test
+    @Ignore
+    public void testGpuBlas6() throws Exception{
+        INDArray array1 = Nd4j.zeros(Integer.MAX_VALUE);
+
+        log.info("Big array size: " + array1.length());
+        array1.putScalar(Integer.MAX_VALUE  - 3, 119f);
+        assertEquals(119f, array1.getFloat(Integer.MAX_VALUE - 3), 0.0001f);
+    }
+
+    @Test
+    public void testGpuBlas7() throws Exception {
+        INDArray nd = Nd4j.create(2, 2);
     }
 
     /*
@@ -456,6 +472,8 @@ public class AtomicAllocatorTest {
     @Ignore
     public void testGpuBlas3akaZeroDeallocation() throws Exception {
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        log.info("MaxMemory (-Xmx): " + Runtime.getRuntime().maxMemory());
 
         AtomicLong cnt = new AtomicLong(0);
         while (true) {

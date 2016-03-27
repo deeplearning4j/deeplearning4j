@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.concurrency;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -11,6 +12,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class DeviceAllocationsTrackerTest {
 
     private static Configuration configuration = new Configuration();

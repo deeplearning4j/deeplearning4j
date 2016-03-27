@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.time.impl;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -10,6 +11,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class BinaryTimerTest {
 
     @Before

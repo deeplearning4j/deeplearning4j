@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.concurrency;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AccessState;
 
@@ -9,6 +10,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class AtomicStateTest {
 
     @Before

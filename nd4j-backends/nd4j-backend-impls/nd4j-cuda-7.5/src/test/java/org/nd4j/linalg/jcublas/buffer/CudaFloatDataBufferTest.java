@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.buffer;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -15,6 +16,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 public class CudaFloatDataBufferTest {
 
     @Test

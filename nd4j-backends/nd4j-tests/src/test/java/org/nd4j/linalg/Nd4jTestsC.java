@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -561,6 +562,60 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(exp, outF);
 
             System.out.println(Arrays.toString(d) + "\t" + outC + "\t" + outF);
+        }
+    }
+
+    @Test
+    public void testBroadcast1d() {
+        int[] shape = {4,3,2};
+        int[] toBroadcastDims = new int[]{0,1,2};
+        int[][] toBroadcastShapes = new int[][]{{1,4}, {1,3}, {1,2}};
+
+        //Expected result values in buffer: c order, need to reshape to {4,3,2}. Values taken from 0.4-rc3.8
+        double[][] expFlat = new double[][]{
+                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0},
+                {1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0},
+                {1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0}};
+
+        double[][] expLinspaced = new double[][]{
+                {2.0,3.0,4.0,5.0,6.0,7.0,9.0,10.0,11.0,12.0,13.0,14.0,16.0,17.0,18.0,19.0,20.0,21.0,23.0,24.0,25.0,26.0,27.0,28.0},
+                {2.0,3.0,5.0,6.0,8.0,9.0,8.0,9.0,11.0,12.0,14.0,15.0,14.0,15.0,17.0,18.0,20.0,21.0,20.0,21.0,23.0,24.0,26.0,27.0},
+                {2.0,4.0,4.0,6.0,6.0,8.0,8.0,10.0,10.0,12.0,12.0,14.0,14.0,16.0,16.0,18.0,18.0,20.0,20.0,22.0,22.0,24.0,24.0,26.0}
+        };
+
+        for( int i = 0; i < toBroadcastDims.length; i++) {
+            int dim = toBroadcastDims[i];
+            int[] vectorShape = toBroadcastShapes[i];
+            int length = ArrayUtil.prod(vectorShape);
+
+            INDArray zC = Nd4j.create(shape,'c');
+            zC.setData(Nd4j.linspace(1,24,24).data());
+            for(int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+                System.out.println("Tad " + tad + " is " + zC.tensorAlongDimension(tad,dim));
+            }
+
+            INDArray zF = Nd4j.create(shape,'f');
+            zF.assign(zC);
+            INDArray toBroadcast = Nd4j.linspace(1,length,length);
+
+            Op opc = new BroadcastAddOp(zC, toBroadcast, zC, dim);
+            Op opf = new BroadcastAddOp(zF, toBroadcast, zF, dim);
+            INDArray exp = Nd4j.create(expLinspaced[i],shape,'c');
+            INDArray expF = Nd4j.create(shape,'f');
+            expF.assign(exp);
+            for(int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+                System.out.println(zC.tensorAlongDimension(tad,dim).offset() + " and f offset is " + zF.tensorAlongDimension(tad,dim).offset());
+            }
+
+            Nd4j.getExecutioner().exec(opc);
+            Nd4j.getExecutioner().exec(opf);
+
+//            System.out.println(exp + "\n");
+//            System.out.println(zC + "\n");
+//            System.out.println(zF + "\n");
+
+            assertEquals(exp,zC);
+            assertEquals(exp,zF);
         }
     }
 

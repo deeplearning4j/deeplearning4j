@@ -792,4 +792,12 @@ public class NativeOps extends Pointer {
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
      */
     public native void initializeDevicesAndFunctions();
+
+    public native  long mallocHost(long memorySize, int flags);
+
+    public native  long mallocDevice(long memorySize, long ptrToDeviceId, int flags);
+
+    public native  long freeHost(long pointer);
+
+    public native  long freeDevice(long pointer, long deviceId);
 }
