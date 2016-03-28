@@ -1378,61 +1378,39 @@ void NativeOps::flattenFloat(
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *inputPointer = reinterpret_cast<float *>(input);
     int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
     //start at the given offset
     resultPointer += offset;
-
-
-    int shapeIter[MAX_RANK];
-    int coord[MAX_RANK];
-    int dim;
-    int xStridesIter[MAX_RANK];
-
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    int rank = shape::rank(inputShapeInfoPointer);
-
-    bool reversedStrides = order == 'c' && order != shape::order(inputShapeInfoPointer);
-
-    if(reversedStrides) {
-        int *newXStride = (int *) malloc(sizeof(int) * rank);
-        shape::reverseCopyTo(xStride,&newXStride,rank);
-        printf("Reversed stride[%d,%d] and original stride[%d,%d] order %c with opposite order %c\n",newXStride[0],newXStride[1],xStride[0],xStride[1],order,shape::order(inputShapeInfoPointer));
-        xStride = newXStride;
-        printf("POST Reversed stride[%d,%d] and original stride[%d,%d]\n",newXStride[0],newXStride[1],xStride[0],xStride[1]);
-    }
-
+    char inputOrder = shape::order(inputShapeInfoPointer);
     int idx = 0;
 
-    if(PrepareOneRawArrayIter<float>(rank,
-                                     xShape,
-                                     inputPointer,
-                                     xStride,
-                                     &rank,
-                                     shapeIter,
-                                     &inputPointer,
-                                     xStridesIter) >= 0) {
 
-        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
-            printf("Appending value %f at index %d with stride[%d,%d] and coord[%d,%d]\n",inputPointer[0],idx,xStridesIter[0],xStridesIter[1],coord[0],coord[1]);
-            resultPointer[idx++] = inputPointer[0];
-        }  ND4J_RAW_ITER_ONE_NEXT(dim,
-                                  rank,
-                                  coord,
-                                  shapeIter,
-                                  inputPointer,
-                                  xStridesIter);
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    if(order == 'f') {
+        for(int i = 0; i < len; i++) {
+            shape::ind2sub(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+
+        }
+    }
+    else {
+        for(int i = 0; i < len; i++) {
+            shape::ind2subC(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+
+        }
     }
 
 
+    free(coord);
 
-
-    //was a copy
-    if(reversedStrides) {
-        free(xStride);
-    }
 
 }
 
@@ -1461,52 +1439,33 @@ void NativeOps::flattenDouble(
     int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
     //start at the given offset
     resultPointer += offset;
-
-    int shapeIter[MAX_RANK];
-    int coord[MAX_RANK];
-    int dim;
-    int xStridesIter[MAX_RANK];
-
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    int rank = shape::rank(inputShapeInfoPointer);
-
-    bool reversedStrides = order == 'c' && order != shape::order(inputShapeInfoPointer);
-
-    if(reversedStrides) {
-        int *newXStride = (int *) malloc(sizeof(int) * rank);
-        shape::reverseCopyTo(xStride,&newXStride,rank);
-        printf("Reversed stride[%d,%d] and original stride[%d,%d] order %c with opposite order %c\n",newXStride[0],newXStride[1],xStride[0],xStride[1],order,shape::order(inputShapeInfoPointer));
-        xStride = newXStride;
-        printf("POST Reversed stride[%d,%d] and original stride[%d,%d]\n",newXStride[0],newXStride[1],xStride[0],xStride[1]);
-
-    }
-
+    char inputOrder = shape::order(inputShapeInfoPointer);
     int idx = 0;
 
-    if(PrepareOneRawArrayIter<double>(rank,
-                                      xShape,
-                                      inputPointer,
-                                      xStride,
-                                      &rank,
-                                      shapeIter,
-                                      &inputPointer,
-                                      xStridesIter) >= 0) {
-        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
-            printf("Appending value %f at index %d with stride[%d,%d] and coord[%d,%d]\n",inputPointer[0],idx,xStridesIter[0],xStridesIter[1],coord[0],coord[1]);
-            resultPointer[idx++] = inputPointer[0];
-        }   ND4J_RAW_ITER_ONE_NEXT(dim,
-                                   rank,
-                                   coord,
-                                   shapeIter,
-                                   inputPointer,
-                                   xStridesIter);
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    char resultOrder = shape::order(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    if(order == 'f') {
+        for(int i = 0; i < len; i++) {
+            shape::ind2sub(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+        }
+    }
+    else {
+        for(int i = 0; i < len; i++) {
+            shape::ind2subC(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+        }
     }
 
-    //was a copy
-    if(reversedStrides) {
-        free(xStride);
-    }
+    free(coord);
+
+
 
 }
 
