@@ -536,6 +536,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                 while (iter.hasNext()) {
                     ret.putScalar(linearIndex++, m.getDouble(iter.next()));
                 }*/
+
+                linearIndex += m.length();
+
             }
         }
         return ret;

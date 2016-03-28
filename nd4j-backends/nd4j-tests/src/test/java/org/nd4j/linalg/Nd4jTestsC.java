@@ -410,7 +410,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray concatF = Nd4j.create(new int[]{2,2},'f');
         concatF.assign(concatC);
         INDArray test = Nd4j.toFlattened('f',concatC,concatF);
-        INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
+        INDArray assertion = Nd4j.create(new double[]{1,3,2,4});
         assertEquals(assertion,test);
     }
 
@@ -421,13 +421,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         int nCols = 10;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i<nRows; i++ ){
+        for( int i = 0; i < nRows; i++) {
             INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
             List<Integer> order = new ArrayList<>(nRows);
-            for( int j=0; j<nCols; j++ ) order.add(j);
+            for( int j = 0; j < nCols; j++) order.add(j);
             Collections.shuffle(order, r);
-            for( int j=0; j<nCols; j++ ) in.putScalar(new int[]{i,j},order.get(j));
+            for( int j = 0; j < nCols; j++) in.putScalar(new int[]{i,j},order.get(j));
 
             INDArray outAsc = Nd4j.sortColumns(in, i, true);
             INDArray outDesc = Nd4j.sortColumns(in, i, false);
@@ -2255,6 +2255,26 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(cSum,fSum);  //Expect: 4,6. Getting [4, 4] for f order
     }
 
+    @Test
+    public void testAssign(){
+        int[] shape1 = {3,2,2,2,2,2};
+        int[] shape2 = {12,8};
+        int length = ArrayUtil.prod(shape1);
+
+        assertEquals(ArrayUtil.prod(shape1),ArrayUtil.prod(shape2));
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape1);
+        INDArray arr2c = Nd4j.create(shape2,'c');
+        INDArray arr2f = Nd4j.create(shape2,'f');
+
+        arr2c.assign(arr);
+        arr2f.assign(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
+
+        assertEquals(exp,arr2c);
+        assertEquals(exp,arr2f);
+    }
 
     @Test
     public void testSumDifferentOrders() {
