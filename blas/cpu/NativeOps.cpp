@@ -1394,9 +1394,9 @@ void NativeOps::flattenFloat(
     int *xStride = shape::stride(inputShapeInfoPointer);
     int rank = shape::rank(inputShapeInfoPointer);
 
-    bool reversedStrides = order != shape::order(inputShapeInfoPointer);
+    bool reversedStrides = order == 'c' && order != shape::order(inputShapeInfoPointer);
 
-    if(false) {
+    if(reversedStrides) {
         int *newXStride = (int *) malloc(sizeof(int) * rank);
         shape::reverseCopyTo(xStride,&newXStride,rank);
         printf("Reversed stride[%d,%d] and original stride[%d,%d] order %c with opposite order %c\n",newXStride[0],newXStride[1],xStride[0],xStride[1],order,shape::order(inputShapeInfoPointer));
@@ -1430,7 +1430,7 @@ void NativeOps::flattenFloat(
 
 
     //was a copy
-    if(false) {
+    if(reversedStrides) {
         free(xStride);
     }
 
@@ -1471,7 +1471,7 @@ void NativeOps::flattenDouble(
     int *xStride = shape::stride(inputShapeInfoPointer);
     int rank = shape::rank(inputShapeInfoPointer);
 
-    bool reversedStrides = false;
+    bool reversedStrides = order == 'c' && order != shape::order(inputShapeInfoPointer);
 
     if(reversedStrides) {
         int *newXStride = (int *) malloc(sizeof(int) * rank);
