@@ -1103,6 +1103,8 @@ namespace shape {
     void ind2subC(int rank,int *shape,int index,int **out);
 
 
+
+
     /**
 * Convert the given index (such as 1,1)
 * to a linear index
@@ -1135,6 +1137,31 @@ namespace shape {
 #endif
     int *computeIndices(int *shapeBuffer);
 
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void  ind2subOrder(int *shapeInfo,int index,int numIndices,int **out);
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void  ind2subOrder(int *shapeInfo,int index,int **out);
 
     /**
    * Tad element wise stride:
@@ -2033,6 +2060,54 @@ namespace shape {
 #endif
     void ind2subC(int rank,int *shape,int index,int **out) {
         ind2subC(rank,shape, index,shape::prod(shape,rank),out);
+    }
+
+
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void  ind2subOrder(int *shapeInfo,int index,int numIndices,int **out) {
+        if(shape::order(shapeInfo) == 'f') {
+            shape::ind2sub(
+                    shape::rank(shapeInfo),
+                    shape::shapeOf(shapeInfo),
+                    index,
+                    numIndices,
+                    out);
+        }
+        else {
+            shape::ind2subC(
+                    shape::rank(shapeInfo),
+                    shape::shapeOf(shapeInfo),
+                    index,
+                    numIndices,
+                    out);
+
+        }
+    }
+
+    /**
+ * Convert a linear index to
+ * the equivalent nd index
+ * @param shape the shape of the dimensions
+ * @param index the index to map
+ * @param numIndices the number of total indices (typically prod of shape(
+ * @return the mapped indexes along each dimension
+ */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void  ind2subOrder(int *shapeInfo,int index,int **out) {
+        ind2subOrder(shapeInfo,index,shape::length(shapeInfo),out);
     }
 
 /**

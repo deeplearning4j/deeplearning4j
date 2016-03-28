@@ -1317,7 +1317,13 @@ void   NativeOps::execTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
+    FloatNativeOpExecutioner::getInstance()->execTransform(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            extraParamsPointer);
 }
 
 /**
@@ -1384,8 +1390,6 @@ void NativeOps::flattenFloat(
     resultPointer += offset;
     char inputOrder = shape::order(inputShapeInfoPointer);
     int idx = 0;
-
-
     int rank = shape::rank(inputShapeInfoPointer);
     int *coord = (int *) malloc(sizeof(int) * rank);
     int *xShape = shape::shapeOf(inputShapeInfoPointer);
@@ -1407,11 +1411,7 @@ void NativeOps::flattenFloat(
 
         }
     }
-
-
     free(coord);
-
-
 }
 
 /**
@@ -1432,7 +1432,6 @@ void NativeOps::flattenDouble(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *inputPointer = reinterpret_cast<double *>(input);
@@ -1464,9 +1463,6 @@ void NativeOps::flattenDouble(
     }
 
     free(coord);
-
-
-
 }
 
 /**
