@@ -409,13 +409,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray concatC = Nd4j.linspace(1,4,4).reshape('c',2,2);
         INDArray concatF = Nd4j.create(new int[]{2,2},'f');
         concatF.assign(concatC);
+        INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
+        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
+        assertEquals(assertionC,testC);
         INDArray test = Nd4j.toFlattened('f',concatC,concatF);
         INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
         assertEquals(assertion,test);
 
-        INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
-        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
-        assertEquals(assertionC,testC);
+
     }
 
     @Test
@@ -429,24 +430,67 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         int length3d = rows * cols * dim2;
         int length4d = rows * cols * dim2 * dim3;
 
-        INDArray c2d = Nd4j.linspace(1,length2d,length2d).reshape('c',rows,cols);
-        INDArray f2d = Nd4j.create(new int[]{rows,cols},'f').assign(c2d).addi(0.1);
+        INDArray c2d = Nd4j.linspace(1, length2d, length2d).reshape('c', rows, cols);
+        INDArray f2d = Nd4j.create(new int[]{rows, cols}, 'f').assign(c2d).addi(0.1);
 
-        assertEquals(Nd4j.toFlattened('c',c2d,f2d), toFlattenedViaIterator('c',c2d,f2d));
-        assertEquals(Nd4j.toFlattened('f',c2d,f2d), toFlattenedViaIterator('f',c2d,f2d));
-        assertEquals(Nd4j.toFlattened('c',f2d, c2d), toFlattenedViaIterator('c',f2d, c2d));
-        assertEquals(Nd4j.toFlattened('f',f2d, c2d), toFlattenedViaIterator('f',f2d, c2d));
+        INDArray c3d = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
+        INDArray f3d = Nd4j.create(new int[]{rows, cols, dim2}).assign(c3d).addi(0.3);
+        c3d.addi(0.2);
+
+        INDArray c4d = Nd4j.linspace(1, length4d, length4d).reshape('c', rows, cols, dim2, dim3);
+        INDArray f4d = Nd4j.create(new int[]{rows, cols, dim2, dim3}).assign(c3d).addi(0.3);
+        c3d.addi(0.2);
+
+
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d),Nd4j.toFlattened('c', c2d, f2d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d),Nd4j.toFlattened('f', c2d, f2d));
+        assertEquals( toFlattenedViaIterator('c', f2d, c2d),Nd4j.toFlattened('c', f2d, c2d));
+        assertEquals(toFlattenedViaIterator('f', f2d, c2d),Nd4j.toFlattened('f', f2d, c2d));
+
+        assertEquals(toFlattenedViaIterator('c', c3d, f3d),Nd4j.toFlattened('c', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c3d, f3d),Nd4j.toFlattened('f', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d),Nd4j.toFlattened('c', c2d, f2d, c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d),Nd4j.toFlattened('f', c2d, f2d, c3d, f3d));
+
+        assertEquals( toFlattenedViaIterator('c', c4d, f4d),Nd4j.toFlattened('c', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c4d, f4d),Nd4j.toFlattened('f', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d, c4d, f4d),Nd4j.toFlattened('c', c2d, f2d, c3d, f3d, c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d, c4d, f4d),Nd4j.toFlattened('f', c2d, f2d, c3d, f3d, c4d, f4d));
     }
 
-    private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten){
-        int length = 0;
-        for(INDArray i : toFlatten ) length += i.length();
+    @Test
+    public void testToFlattenedOnViews() {
 
-        INDArray out = Nd4j.create(1,length);
-        int i=0;
-        for(INDArray arr : toFlatten){
-            NdIndexIterator iter = new NdIndexIterator(order,arr.shape());
-            while(iter.hasNext()){
+        int rows = 8;
+        int cols = 8;
+        int dim2 = 4;
+        int length = rows*cols;
+        int length3d = rows * cols * dim2;
+
+        INDArray first = Nd4j.linspace(1,length,length).reshape('c',rows,cols);
+        INDArray second = Nd4j.create('f',rows,cols).assign(first);
+        INDArray third = Nd4j.linspace(1,length3d,length3d).reshape('c',rows,cols,dim2);
+        first.addi(0.1);
+        second.addi(0.2);
+        third.addi(0.3);
+
+        first = first.get(NDArrayIndex.interval(4,8), NDArrayIndex.interval(0,2,8));
+        second = second.get(NDArrayIndex.interval(3,7), NDArrayIndex.all());
+        third = third.permute(0,2,1);
+
+        assertEquals(toFlattenedViaIterator('c', first, second, third),Nd4j.toFlattened('c', first, second, third));
+        assertEquals(toFlattenedViaIterator('f', first, second, third),Nd4j.toFlattened('f', first, second, third));
+    }
+
+    private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
+        int length = 0;
+        for (INDArray i : toFlatten) length += i.length();
+
+        INDArray out = Nd4j.create(1, length);
+        int i = 0;
+        for (INDArray arr : toFlatten) {
+            NdIndexIterator iter = new NdIndexIterator(order, arr.shape());
+            while (iter.hasNext()) {
                 double next = arr.getDouble(iter.next());
                 out.putScalar(i++, next);
             }
