@@ -410,10 +410,50 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray concatF = Nd4j.create(new int[]{2,2},'f');
         concatF.assign(concatC);
         INDArray test = Nd4j.toFlattened('f',concatC,concatF);
-        INDArray assertion = Nd4j.create(new double[]{1,3,2,4});
+        INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
         assertEquals(assertion,test);
+
+        INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
+        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
+        assertEquals(assertionC,testC);
     }
 
+    @Test
+    public void testToFlattened2() {
+        int rows = 3;
+        int cols = 4;
+        int dim2 = 5;
+        int dim3 = 6;
+
+        int length2d = rows * cols;
+        int length3d = rows * cols * dim2;
+        int length4d = rows * cols * dim2 * dim3;
+
+        INDArray c2d = Nd4j.linspace(1,length2d,length2d).reshape('c',rows,cols);
+        INDArray f2d = Nd4j.create(new int[]{rows,cols},'f').assign(c2d).addi(0.1);
+
+        assertEquals(Nd4j.toFlattened('c',c2d,f2d), toFlattenedViaIterator('c',c2d,f2d));
+        assertEquals(Nd4j.toFlattened('f',c2d,f2d), toFlattenedViaIterator('f',c2d,f2d));
+        assertEquals(Nd4j.toFlattened('c',f2d, c2d), toFlattenedViaIterator('c',f2d, c2d));
+        assertEquals(Nd4j.toFlattened('f',f2d, c2d), toFlattenedViaIterator('f',f2d, c2d));
+    }
+
+    private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten){
+        int length = 0;
+        for(INDArray i : toFlatten ) length += i.length();
+
+        INDArray out = Nd4j.create(1,length);
+        int i=0;
+        for(INDArray arr : toFlatten){
+            NdIndexIterator iter = new NdIndexIterator(order,arr.shape());
+            while(iter.hasNext()){
+                double next = arr.getDouble(iter.next());
+                out.putScalar(i++, next);
+            }
+        }
+
+        return out;
+    }
 
     @Test
     public void testSortColumns() {
