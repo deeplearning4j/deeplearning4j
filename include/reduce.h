@@ -689,11 +689,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma omp parallel for shared(finalVal)
                     for (int i = 0; i < length; i++) {
                         T curr = op(x[i], extraParams);
-#pragma omp critical
-                        {
-                            finalVal = update(finalVal, curr, extraParams);
-
-                        }
+                        finalVal = update(finalVal, curr, extraParams);
                     }
 
                     finalVal = postProcess(finalVal, length,extraParams);
@@ -706,11 +702,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma omp parallel for shared(finalVal)
                     for (int i = 0; i < length; i++) {
                         T curr = op(x[i * xElementWiseStride], extraParams);
-#pragma omp critical
-                        {
-                            finalVal = update(finalVal, curr, extraParams);
-
-                        }
+                        finalVal = update(finalVal, curr, extraParams);
                     }
 
                     finalVal = postProcess(finalVal, length,extraParams);
