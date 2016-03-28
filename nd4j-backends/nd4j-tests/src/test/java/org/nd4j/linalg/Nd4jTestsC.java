@@ -460,7 +460,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testToFlattenedOnViews() {
-
         int rows = 8;
         int cols = 8;
         int dim2 = 4;

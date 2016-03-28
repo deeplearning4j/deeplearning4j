@@ -1023,18 +1023,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        if(arr.elementWiseStride() > 0 && elementWiseStride() > 0 && ordering() == arr.ordering()) {
-            data().copyAtStride(arr.data(),arr.length(),elementWiseStride(),arr.elementWiseStride(),0,0);
-        }
-
-        else {
-            NdIndexIterator iterator = new NdIndexIterator(this.shape());
-            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
-            for (int i = 0; i < length(); i++) {
-                putScalar(iterator.next(), arr.getDouble(otherIter.next()));
-            }
-        }
-//        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
         return this;
 
     }
@@ -3231,7 +3220,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = Nd4j.create(shape,order);
         if(order != ordering()) {
-          ret.setData(dup(order).data());
+            ret.setData(dup(order).data());
         }
         else
             ret.assign(this);
