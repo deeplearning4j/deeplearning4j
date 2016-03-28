@@ -168,18 +168,30 @@ public class CudaZeroHandler implements MemoryHandler {
             case DEVICE: {
                 int deviceId = getDeviceId();
 
+                PointersPair returnPair = new PointersPair();
+
+                // if the initial memory location is device, there's a chance we don't have zero memory allocated
+                if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
+                    PointersPair tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
+
+                    returnPair.setDevicePointer(tmpPair.getDevicePointer());
+                    returnPair.setHostPointer(tmpPair.getHostPointer());
+
+                    point.setAllocationStatus(AllocationStatus.HOST);
+                }
+
                 if (reqMemory < configuration.getMaximumSingleAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
                         PointersPair pair = provider.malloc(shape, point, targetMode);
 
-                        point.setAllocationStatus(AllocationStatus.DEVICE);
+                        returnPair.setDevicePointer(pair.getDevicePointer());
 
-                        return pair;
+                        point.setAllocationStatus(AllocationStatus.DEVICE);
                     }
                 }
 
-                return point.getPointers();
+                return returnPair;
             }
             default:
                 throw new IllegalStateException("Can't allocate memory on target [" + targetMode + "]");
@@ -369,7 +381,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public AllocationStatus getInitialLocation() {
-        return AllocationStatus.HOST;
+        return AllocationStatus.DEVICE;
     }
 
     /**
