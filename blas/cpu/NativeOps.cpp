@@ -1396,10 +1396,12 @@ void NativeOps::flattenFloat(
 
     bool reversedStrides = order != shape::order(inputShapeInfoPointer);
 
-    if(reversedStrides) {
+    if(false) {
         int *newXStride = (int *) malloc(sizeof(int) * rank);
         shape::reverseCopyTo(xStride,&newXStride,rank);
+        printf("Reversed stride[%d,%d] and original stride[%d,%d] order %c with opposite order %c\n",newXStride[0],newXStride[1],xStride[0],xStride[1],order,shape::order(inputShapeInfoPointer));
         xStride = newXStride;
+        printf("POST Reversed stride[%d,%d] and original stride[%d,%d]\n",newXStride[0],newXStride[1],xStride[0],xStride[1]);
     }
 
     int idx = 0;
@@ -1413,8 +1415,8 @@ void NativeOps::flattenFloat(
                                      &inputPointer,
                                      xStridesIter) >= 0) {
 
-        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter)
-        {
+        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+            printf("Appending value %f at index %d with stride[%d,%d] and coord[%d,%d]\n",inputPointer[0],idx,xStridesIter[0],xStridesIter[1],coord[0],coord[1]);
             resultPointer[idx++] = inputPointer[0];
         }  ND4J_RAW_ITER_ONE_NEXT(dim,
                                   rank,
@@ -1428,7 +1430,7 @@ void NativeOps::flattenFloat(
 
 
     //was a copy
-    if(reversedStrides) {
+    if(false) {
         free(xStride);
     }
 
@@ -1452,6 +1454,7 @@ void NativeOps::flattenDouble(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
+
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *inputPointer = reinterpret_cast<double *>(input);
@@ -1468,12 +1471,15 @@ void NativeOps::flattenDouble(
     int *xStride = shape::stride(inputShapeInfoPointer);
     int rank = shape::rank(inputShapeInfoPointer);
 
-    bool reversedStrides = order != shape::order(inputShapeInfoPointer);
+    bool reversedStrides = false;
 
     if(reversedStrides) {
         int *newXStride = (int *) malloc(sizeof(int) * rank);
         shape::reverseCopyTo(xStride,&newXStride,rank);
+        printf("Reversed stride[%d,%d] and original stride[%d,%d] order %c with opposite order %c\n",newXStride[0],newXStride[1],xStride[0],xStride[1],order,shape::order(inputShapeInfoPointer));
         xStride = newXStride;
+        printf("POST Reversed stride[%d,%d] and original stride[%d,%d]\n",newXStride[0],newXStride[1],xStride[0],xStride[1]);
+
     }
 
     int idx = 0;
@@ -1486,8 +1492,8 @@ void NativeOps::flattenDouble(
                                       shapeIter,
                                       &inputPointer,
                                       xStridesIter) >= 0) {
-
         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+            printf("Appending value %f at index %d with stride[%d,%d] and coord[%d,%d]\n",inputPointer[0],idx,xStridesIter[0],xStridesIter[1],coord[0],coord[1]);
             resultPointer[idx++] = inputPointer[0];
         }   ND4J_RAW_ITER_ONE_NEXT(dim,
                                    rank,
