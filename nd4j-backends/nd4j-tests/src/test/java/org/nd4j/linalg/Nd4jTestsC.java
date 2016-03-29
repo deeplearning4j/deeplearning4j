@@ -2185,7 +2185,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals(offset,calcOffset);
             }
 
-            for( int i=0; i<nTAD1; i++ ){
+            for( int i = 0; i < nTAD1; i++) {
                 INDArray tad1 = arr.tensorAlongDimension(i,1);
                 assertEquals(tad1.length(), t1.getTensorLength());
                 assertEquals(tad1.elementWiseStride(),t1.getElementWiseStride());
