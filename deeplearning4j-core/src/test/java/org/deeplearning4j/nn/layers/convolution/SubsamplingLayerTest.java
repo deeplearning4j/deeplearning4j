@@ -131,6 +131,8 @@ public class SubsamplingLayerTest {
         INDArray input2 = getData();
         layer.activate(input2);
 
+        epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
+
         Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained

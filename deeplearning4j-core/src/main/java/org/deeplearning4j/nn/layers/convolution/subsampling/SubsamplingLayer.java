@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -93,26 +94,19 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 reshaped = retE.reshape(n, c, -1, outH, outW);
                 reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
-                //Iterator<int[]> iter = new NdIndexIterator('c',true,n,c,outH,outW);
                 final INDArray finalEps = epsilon;
                 final INDArray reshapedEps = reshapeEpsilon;
-                Shape.iterate(0, 4, new int[]{n, c, outH, outW}, new int[4], new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                       try {
-                           int[] i = coord[0];
-                           double epsGet = finalEps.getDouble(i);
-                           int idx = maxIndexes.getInt(i);
-                           INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
-                           sliceToGetFrom.putScalar(i, epsGet);
-                       }catch(Exception e) {
-                           throw new IllegalStateException("Iterated to " + Arrays.toString(coord[0]) + " out of shape for indexes "
-                                   + Arrays.toString(maxIndexes.shape()) + " and final eps shape " + Arrays.toString(finalEps.shape()));
-                       }
-                    }
-                });
 
-
+                NdIndexIterator iter = new NdIndexIterator(maxIndexes.shape());
+                while(iter.hasNext()) {
+                    int[] i = iter.next();
+                    // recover the index to put epsilon on new shape
+                    int idx = maxIndexes.getInt(i);
+                    double epsGet = finalEps.getDouble(i);
+                    INDArrayIndex t = NDArrayIndex.point(idx);
+                    INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
+                    sliceToGetFrom.putScalar(i, epsGet);
+                }
 
                 reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
