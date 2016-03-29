@@ -1499,7 +1499,6 @@ namespace shape {
         int *retStride = shape::stride(ret);
         int len = rank;
         if(dimensionLength == 1) {
-            printf("Tad shape is [%d,%d] and stride [%d,%d]\n",1,theShape[dimension[0]],1,theStride[dimension[0]]);
             if(shape::isMatrix(theShape,shape::rank(shapeInfo))) {
                 if(dimension[0] == 0) {
                     int newStride[2] = {theStride[dimension[0]],1};
