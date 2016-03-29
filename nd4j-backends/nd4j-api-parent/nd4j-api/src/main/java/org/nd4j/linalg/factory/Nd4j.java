@@ -4644,6 +4644,9 @@ public class Nd4j {
      */
     public void initWithBackend(Nd4jBackend backend) {
         try {
+            if(!System.getProperties().contains(backend.getClass().getName())) {
+                return;
+            }
             props = Nd4jContext.getInstance().getConf();
             InputStream is = backend.getConfigurationResource().getInputStream();
             Nd4jContext.getInstance().updateProperties(is);

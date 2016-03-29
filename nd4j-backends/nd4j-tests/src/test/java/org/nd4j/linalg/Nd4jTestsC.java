@@ -438,33 +438,34 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         c3d.addi(0.2);
 
         INDArray c4d = Nd4j.linspace(1, length4d, length4d).reshape('c', rows, cols, dim2, dim3);
-        INDArray f4d = Nd4j.create(new int[]{rows, cols, dim2, dim3}).assign(c3d).addi(0.3);
-        c3d.addi(0.2);
+        INDArray f4d = Nd4j.create(new int[]{rows, cols, dim2, dim3}).assign(c4d).addi(0.3);
+        c4d.addi(0.4);
 
 
-        assertEquals(toFlattenedViaIterator('c', c2d, f2d),Nd4j.toFlattened('c', c2d, f2d));
-        assertEquals(toFlattenedViaIterator('f', c2d, f2d),Nd4j.toFlattened('f', c2d, f2d));
-        assertEquals( toFlattenedViaIterator('c', f2d, c2d),Nd4j.toFlattened('c', f2d, c2d));
-        assertEquals(toFlattenedViaIterator('f', f2d, c2d),Nd4j.toFlattened('f', f2d, c2d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d), Nd4j.toFlattened('c', c2d, f2d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d), Nd4j.toFlattened('f', c2d, f2d));
+        assertEquals(toFlattenedViaIterator('c', f2d, c2d), Nd4j.toFlattened('c', f2d, c2d));
+        assertEquals(toFlattenedViaIterator('f', f2d, c2d), Nd4j.toFlattened('f', f2d, c2d));
 
-        assertEquals(toFlattenedViaIterator('c', c3d, f3d),Nd4j.toFlattened('c', c3d, f3d));
-        assertEquals(toFlattenedViaIterator('f', c3d, f3d),Nd4j.toFlattened('f', c3d, f3d));
-        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d),Nd4j.toFlattened('c', c2d, f2d, c3d, f3d));
-        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d),Nd4j.toFlattened('f', c2d, f2d, c3d, f3d));
+        assertEquals(toFlattenedViaIterator('c', c3d, f3d), Nd4j.toFlattened('c', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c3d, f3d), Nd4j.toFlattened('f', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d), Nd4j.toFlattened('c', c2d, f2d, c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d), Nd4j.toFlattened('f', c2d, f2d, c3d, f3d));
 
-        assertEquals( toFlattenedViaIterator('c', c4d, f4d),Nd4j.toFlattened('c', c4d, f4d));
-        assertEquals(toFlattenedViaIterator('f', c4d, f4d),Nd4j.toFlattened('f', c4d, f4d));
-        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d, c4d, f4d),Nd4j.toFlattened('c', c2d, f2d, c3d, f3d, c4d, f4d));
-        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d, c4d, f4d),Nd4j.toFlattened('f', c2d, f2d, c3d, f3d, c4d, f4d));
+        assertEquals(toFlattenedViaIterator('c', c4d, f4d), Nd4j.toFlattened('c', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c4d, f4d), Nd4j.toFlattened('f', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d, c4d, f4d), Nd4j.toFlattened('c', c2d, f2d, c3d, f3d, c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d, c4d, f4d), Nd4j.toFlattened('f', c2d, f2d, c3d, f3d, c4d, f4d));
     }
 
     @Test
-    public void testToFlattenedOnViews() {
+    public void testToFlattenedOnViews(){
+
         int rows = 8;
         int cols = 8;
         int dim2 = 4;
         int length = rows*cols;
-        int length3d = rows * cols * dim2;
+        int length3d = rows*cols*dim2;
 
         INDArray first = Nd4j.linspace(1,length,length).reshape('c',rows,cols);
         INDArray second = Nd4j.create('f',rows,cols).assign(first);
@@ -477,8 +478,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         second = second.get(NDArrayIndex.interval(3,7), NDArrayIndex.all());
         third = third.permute(0,2,1);
 
-        assertEquals(toFlattenedViaIterator('c', first, second, third),Nd4j.toFlattened('c', first, second, third));
-        assertEquals(toFlattenedViaIterator('f', first, second, third),Nd4j.toFlattened('f', first, second, third));
+        assertEquals(Nd4j.toFlattened('c', first, second, third), toFlattenedViaIterator('c', first, second, third));
+        assertEquals(Nd4j.toFlattened('f', first, second, third), toFlattenedViaIterator('f', first, second, third));
     }
 
     private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
