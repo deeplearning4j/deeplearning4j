@@ -686,11 +686,51 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                 T startingVal = this->startingValue(x);
                 if (xElementWiseStride == 1) {
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i], extraParams);
-                        finalVal = update(finalVal, curr, extraParams);
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
+#pragma omp parallel
+                    {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
                     }
+
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items);
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
+                            if(newOffset >= length) {
+                                break;
+                            }
+
+                            //handle modulo case
+                            if(newOffset + items >= length) {
+                                itemsToLoop = length - newOffset;
+                            }
+
+                            for (int i = 0; i < itemsToLoop; i++) {
+                                T curr = op(chunk[i], extraParams);
+                                local = update(local, curr, extraParams);
+                            }
+
+                        }
+
+#pragma omp critical
+                        {
+                            finalVal = update(finalVal,local,extraParams);
+
+                        }
+                    }
+
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
@@ -699,11 +739,49 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                 else {
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i * xElementWiseStride], extraParams);
-                        finalVal = update(finalVal, curr, extraParams);
+#pragma omp parallel
+                    {
+
+
+                        int id = omp_get_thread_num();
+                        int numThreads = omp_get_num_threads();
+                        int items = length / omp_get_num_threads();
+                        T shared[omp_get_num_threads()];
+                        for(int i = 0; i < omp_get_num_threads(); i++) {
+                            shared[i] = this->startingValue(x);
+                        }
+
+                        //a "grid" is the number of items per thread * number of cores
+                        int gridSize = omp_get_num_threads() * items;
+                        int chunkId = id;
+                        while(true) {
+                            int newOffset = (chunkId * items);
+                            if(newOffset >= length) {
+                                break;
+                            }
+
+                            //handle modulo case
+                            if(newOffset + items >= length) {
+                                items = length - newOffset;
+                            }
+
+                            T *chunk = x + newOffset;
+#pragma omp for
+                            for (int i = 0; i < items; i++) {
+                                T curr = op(chunk[i * xElementWiseStride], extraParams);
+                                shared[id] = update(shared[id], curr, extraParams);
+                            }
+                            chunkId += numThreads;
+                        }
+
+#pragma omp critical
+                        {
+                            for(int i = 0; i < numThreads; i++) {
+                                finalVal = update(finalVal,shared[i],extraParams);
+                            }
+                        }
                     }
+
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
@@ -750,7 +828,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                  &x,
                                                  xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                             /* Process the innermost dimension */
                             T *xIter = x;
                             start = update(start,op(xIter[0],extraParams),extraParams);
@@ -905,7 +983,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                      shapeIter,
                                                      &xPointer,
                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 start = update(start,op(xPointer[0],extraParams),extraParams);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,

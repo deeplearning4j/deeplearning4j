@@ -764,7 +764,7 @@ namespace functions {
                                                  &x,
                                                  xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 int i = shape::getOffset(0,xShape,xStride,coord,rank);
                                 IndexValue<T> curr;
@@ -930,7 +930,7 @@ namespace functions {
                                                      shapeIter,
                                                      &xPointer,
                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 IndexValue<T> comp;
                                 comp.index = shape::sub2Ind(rank,xShape,coord);
