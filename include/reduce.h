@@ -739,53 +739,54 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                 else {
                     T finalVal = startingVal;
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
 #pragma omp parallel
                     {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
+                    }
 
-
-                        int id = omp_get_thread_num();
-                        int numThreads = omp_get_num_threads();
-                        int items = length / omp_get_num_threads();
-                        T shared[omp_get_num_threads()];
-                        for(int i = 0; i < omp_get_num_threads(); i++) {
-                            shared[i] = this->startingValue(x);
-                        }
-
-                        //a "grid" is the number of items per thread * number of cores
-                        int gridSize = omp_get_num_threads() * items;
-                        int chunkId = id;
-                        while(true) {
-                            int newOffset = (chunkId * items);
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items);
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
                             if(newOffset >= length) {
                                 break;
                             }
 
                             //handle modulo case
                             if(newOffset + items >= length) {
-                                items = length - newOffset;
+                                itemsToLoop = length - newOffset;
                             }
 
-                            T *chunk = x + newOffset;
-#pragma omp for
-                            for (int i = 0; i < items; i++) {
+                            for (int i = 0; i < itemsToLoop; i++) {
                                 T curr = op(chunk[i * xElementWiseStride], extraParams);
-                                shared[id] = update(shared[id], curr, extraParams);
+                                local = update(local, curr, extraParams);
                             }
-                            chunkId += numThreads;
+
                         }
 
 #pragma omp critical
                         {
-                            for(int i = 0; i < numThreads; i++) {
-                                finalVal = update(finalVal,shared[i],extraParams);
-                            }
+                            finalVal = update(finalVal,local,extraParams);
+
                         }
                     }
 
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-
 
                 }
 
