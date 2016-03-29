@@ -311,6 +311,9 @@ public class AtomicAllocatorTest {
     @Test
     public void testGpuBlas7() throws Exception {
         INDArray nd = Nd4j.create(2, 2);
+
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(nd.data().getTrackingPoint());
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
     }
 
     /*
