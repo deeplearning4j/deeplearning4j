@@ -119,6 +119,8 @@ public abstract class BaseNd4jTest  {
     @After
     public void after() {
         log.info("Ending " + getClass().getName());
+        if(System.getProperties().getProperty("backends") != null && !System.getProperty("backends").contains(backend.getClass().getName()))
+            return;
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());

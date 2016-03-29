@@ -420,6 +420,20 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testSumNumberRepeatability() {
+        INDArray arr = Nd4j.ones(1,450).reshape('c',150,3);
+
+        double first = arr.sumNumber().doubleValue();
+        double assertion = 450;
+        assertEquals(assertion,first,1e-1);
+        for( int i = 0; i < 50; i++) {
+            double second = arr.sumNumber().doubleValue();
+            assertEquals(assertion,second,1e-1);
+            assertEquals(String.valueOf(i),first,second,1e-2);
+        }
+    }
+
+    @Test
     public void testToFlattened2() {
         int rows = 3;
         int cols = 4;
