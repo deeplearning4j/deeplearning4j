@@ -234,7 +234,6 @@ namespace functions {
 			}
 			__syncthreads();
 
-
 			int resultLength = shape::length(resultShapeInfo);
 			if(tid >= resultLength) {
 				return;
@@ -275,8 +274,10 @@ namespace functions {
 		else {
 			T curr;
 			if (resultScalar) {
-				if(blockIdx.x >= resultLength)
-					return;
+
+			// this is impossible statement, since reduce works with 1 block only
+			//	if(blockIdx.x >= resultLength)
+			//		return;
 
 
 				T *realExtraParams;
@@ -337,9 +338,9 @@ namespace functions {
 
 			// write result for this block to global mem
 			if (tid == 0) {
-				if(postProcessOrNot)
+				if(postProcessOrNot) {
 					result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
-				else
+				} else
 					result[blockIdx.x] = sPartials[0];
 				if(extraParamsLength >= 1)
 					delete[] realExtraParams;
@@ -587,7 +588,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 	int floorPow2 = blockDim.x;
 
 	if (floorPow2 & (floorPow2 - 1)) {
-		while (floorPow2 & (floorPow2 - 1)) {
+	    while (floorPow2 & (floorPow2 - 1)) {
 			floorPow2 &= floorPow2 - 1;
 		}
 		if (tid >= floorPow2) {
@@ -737,8 +738,9 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
             T execScalar(T *x, int *xShapeInfo,T *extraParams) {
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                if(xElementWiseStride >= 1)
-                    return execScalar(x,xElementWiseStride,length,extraParams);
+                if(xElementWiseStride >= 1) {
+                    return execScalar(x, xElementWiseStride, length, extraParams);
+                }
                 else {
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];
