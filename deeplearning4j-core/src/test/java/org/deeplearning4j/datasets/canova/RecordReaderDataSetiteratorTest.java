@@ -26,6 +26,7 @@ import org.canova.api.records.reader.impl.CSVSequenceRecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.api.split.NumberedFileInputSplit;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -64,6 +65,43 @@ public class RecordReaderDataSetiteratorTest {
         iter.next();
         iter.next();
         assertEquals(false, iter.hasNext());
+    }
+
+    @Test
+    public void testRecordReaderMultiRegression() throws Exception {
+
+        RecordReader csv = new CSVRecordReader();
+        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+
+        int batchSize = 3;
+        int labelIdxFrom = 3;
+        int labelIdxTo = 4;
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(csv,batchSize,labelIdxFrom,labelIdxTo,true);
+        DataSet ds = iter.next();
+
+        INDArray f = ds.getFeatureMatrix();
+        INDArray l = ds.getLabels();
+        assertArrayEquals(new int[]{3,3}, f.shape());
+        assertArrayEquals(new int[]{3,2}, l.shape());
+
+        //Check values:
+        double[][] fExpD = new double[][]{
+                {5.1,3.5,1.4},
+                {4.9,3.0,1.4},
+                {4.7,3.2,1.3}};
+
+        double[][] lExpD = new double[][]{
+                {0.2,0},
+                {0.2,0},
+                {0.2,0}};
+
+        INDArray fExp = Nd4j.create(fExpD);
+        INDArray lExp = Nd4j.create(lExpD);
+
+        assertEquals(fExp, f);
+        assertEquals(lExp, l);
+
     }
 
     @Test
