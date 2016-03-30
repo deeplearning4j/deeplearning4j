@@ -25,9 +25,13 @@ import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
+import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -38,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**Base/abstract class for conducting early stopping training locally (single machine).<br>
@@ -60,7 +65,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
     private int bestModelEpoch = -1;
 
     protected BaseEarlyStoppingTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model, DataSetIterator train,
-                                       MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener){
+                                       MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener) {
         this.esConfig = earlyStoppingConfiguration;
         this.model = model;
         this.train = train;
@@ -91,9 +96,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             }
         }
 
-        if(listener != null) listener.onStart(esConfig,model);
+        if (listener != null) listener.onStart(esConfig, model);
 
-        Map<Integer,Double> scoreVsEpoch = new LinkedHashMap<>();
+        Map<Integer, Double> scoreVsEpoch = new LinkedHashMap<>();
 
         int epochCount = 0;
         while (true) {
@@ -104,16 +109,20 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             int iterCount = 0;
             while (iterator.hasNext()) {
                 try {
-                    if(train != null) fit(train.next());
-                    else fit(trainMulti.next());
-                } catch(Exception e){
+                    if (train != null) {
+                        DataSet ds = (DataSet) iterator.next();
+                        if (ds != null)
+                            fit(ds);
+                    } else
+                        fit(trainMulti.next());
+                } catch (Exception e) {
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
-                            epochCount,iterCount,e);
+                            epochCount, iterCount, e);
                     //Load best model to return
                     T bestModel;
-                    try{
+                    try {
                         bestModel = esConfig.getModelSaver().getBestModel();
-                    }catch(IOException e2){
+                    } catch (IOException e2) {
                         throw new RuntimeException(e2);
                     }
                     return new EarlyStoppingResult<T>(
@@ -135,16 +144,16 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                         break;
                     }
                 }
-                if(terminate) break;
+                if (terminate) break;
 
                 iterCount++;
             }
-            if(terminate){
+            if (terminate) {
                 //Handle termination condition:
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
                         epochCount, iterCount, terminationReason);
 
-                if(esConfig.isSaveLastModel()) {
+                if (esConfig.isSaveLastModel()) {
                     //Save last model:
                     try {
                         esConfig.getModelSaver().saveLatestModel(model, 0.0);
@@ -154,9 +163,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }
 
                 T bestModel;
-                try{
+                try {
                     bestModel = esConfig.getModelSaver().getBestModel();
-                }catch(IOException e2){
+                } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
 
@@ -169,18 +178,18 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                         bestModelScore,
                         epochCount,
                         bestModel);
-                if(listener != null) listener.onCompletion(result);
+                if (listener != null) listener.onCompletion(result);
                 return result;
             }
 
-            log.info("Completed training epoch {}",epochCount);
+            log.info("Completed training epoch {}", epochCount);
 
 
-            if( (epochCount==0 && esConfig.getEvaluateEveryNEpochs()==1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0 ){
+            if ((epochCount == 0 && esConfig.getEvaluateEveryNEpochs() == 1) || epochCount % esConfig.getEvaluateEveryNEpochs() == 0) {
                 //Calculate score at this epoch:
                 ScoreCalculator sc = esConfig.getScoreCalculator();
                 double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(model));
-                scoreVsEpoch.put(epochCount-1,score);
+                scoreVsEpoch.put(epochCount - 1, score);
 
                 if (sc != null && score < bestModelScore) {
                     //Save best model:
@@ -194,14 +203,14 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     bestModelScore = score;
                     bestModelEpoch = epochCount;
 
-                    try{
-                        esConfig.getModelSaver().saveBestModel(model,score);
-                    }catch(IOException e){
-                        throw new RuntimeException("Error saving best model",e);
+                    try {
+                        esConfig.getModelSaver().saveBestModel(model, score);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error saving best model", e);
                     }
                 }
 
-                if(esConfig.isSaveLastModel()) {
+                if (esConfig.isSaveLastModel()) {
                     //Save last model:
                     try {
                         esConfig.getModelSaver().saveLatestModel(model, score);
@@ -210,24 +219,24 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     }
                 }
 
-                if(listener != null) listener.onEpoch(epochCount,score,esConfig,model);
+                if (listener != null) listener.onEpoch(epochCount, score, esConfig, model);
 
                 //Check per-epoch termination conditions:
                 boolean epochTerminate = false;
                 EpochTerminationCondition termReason = null;
-                for(EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
-                    if(c.terminate(epochCount,score)){
+                for (EpochTerminationCondition c : esConfig.getEpochTerminationConditions()) {
+                    if (c.terminate(epochCount, score)) {
                         epochTerminate = true;
                         termReason = c;
                         break;
                     }
                 }
-                if(epochTerminate){
+                if (epochTerminate) {
                     log.info("Hit epoch termination condition at epoch {}. Details: {}", epochCount, termReason.toString());
                     T bestModel;
-                    try{
+                    try {
                         bestModel = esConfig.getModelSaver().getBestModel();
-                    }catch(IOException e2){
+                    } catch (IOException e2) {
                         throw new RuntimeException(e2);
                     }
                     EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
@@ -236,9 +245,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                             scoreVsEpoch,
                             bestModelEpoch,
                             bestModelScore,
-                            epochCount+1,
+                            epochCount + 1,
                             bestModel);
-                    if(listener != null) listener.onCompletion(result);
+                    if (listener != null) listener.onCompletion(result);
 
                     return result;
                 }
@@ -255,8 +264,10 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
 
     protected void reset() {
-        if(train != null) train.reset();
-        if(trainMulti != null) trainMulti.reset();;
+        if (train != null) train.reset();
+        if (trainMulti != null) trainMulti.reset();
+        ;
     }
+
 
 }
