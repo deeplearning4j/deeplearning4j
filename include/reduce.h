@@ -684,6 +684,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #endif
             T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
+               printf("Exec scalar with length %d and x element wise stride %d\n",length,xElementWiseStride);
                 if (xElementWiseStride == 1) {
                     T finalVal = startingVal;
                     int items;
@@ -749,6 +750,8 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     {
                         threads = omp_get_num_threads();
                         items = length / threads;
+                        if(items < 1)
+                            items = 1;
                         chunks = length / items;
                         modulo = length % items;
                         //one left over chunk
@@ -760,22 +763,16 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     {
                         T local = this->startingValue(x);
                         for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
-                            int newOffset = (i * items);
+                            int newOffset = (i * items) * xElementWiseStride;
                             T *chunk = x + newOffset;
                             int itemsToLoop = items;
-                            if(newOffset >= length) {
-                                break;
-                            }
 
-                            //handle modulo case
-                            if(newOffset + items >= length) {
-                                itemsToLoop = length - newOffset;
-                            }
 
                             for (int i = 0; i < itemsToLoop; i++) {
                                 T curr = op(chunk[i * xElementWiseStride], extraParams);
                                 local = update(local, curr, extraParams);
                             }
+
 
                         }
 
@@ -810,8 +807,10 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
             T execScalar(T *x, int *xShapeInfo,T *extraParams) {
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                if(xElementWiseStride >= 1)
-                    return execScalar(x,xElementWiseStride,length,extraParams);
+                if(xElementWiseStride >= 1) {
+                    printf("Element wise stride in shape is %d\n",xElementWiseStride);
+                    return execScalar(x, xElementWiseStride, length, extraParams);
+                }
                 else {
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];

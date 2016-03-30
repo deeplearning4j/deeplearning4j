@@ -3230,7 +3230,11 @@ namespace functions {
                         if (elementWiseStride == 1) {
 #pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-                                max = nd4j::math::nd4j_max<T>(max, result[i]);
+#pragma omp critical
+                                {
+                                    max = nd4j::math::nd4j_max<T>(max, result[i]);
+
+                                }
                             }
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
@@ -3244,7 +3248,11 @@ namespace functions {
 
 #pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-                                sum += result[i];
+#pragma omp critical
+                                {
+                                    sum += result[i];
+
+                                }
                             }
 
 #pragma omp parallel for

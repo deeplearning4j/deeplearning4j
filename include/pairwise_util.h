@@ -192,9 +192,8 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
         *out_data = data;
         outStrides[0] = strides[0];
         outStrides[1] = strides[1];
-        printf("Out stride[%d,%d]\n",outStrides[0],outStrides[1]);
  \
-#if 1
+#if 0
         /* DEBUG */
         {
             printf("raw iter ndim %d\n", ndim);
@@ -494,7 +493,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     *out_ndim = ndim;
 
 
-#if 1
+#if 0
     /* DEBUG */
     {
         printf("raw iter ndim %d\n", ndim);
