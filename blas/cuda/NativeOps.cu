@@ -60,12 +60,11 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
     dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-    //printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+//    printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
     return launchDims;
-
-    //return dim3(5,1024,24500);
 }
+
 
 nd4j::buffer::Buffer<int> * createScalarBuffer(cudaStream_t stream) {
     int *scalarShapeInfo = shape::createScalarShapeInfo();
@@ -187,7 +186,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[27], deviceProperties[(int) extraPointers[2]]);
 
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
-    indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+    indexReduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -1511,7 +1510,7 @@ float NativeOps::execReduceScalarFloat(
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[(int) extraPointers[2]]);
 
-    reduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+    reduceFloat<<< 1,launchDims.y, launchDims.z, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer
