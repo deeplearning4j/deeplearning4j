@@ -306,12 +306,13 @@ namespace functions {
                               int n) {
                 if (xStride == 1 && resultStride == 1) {
                     if(n < 8000) {
-#pragma omp parallel  for
+#pragma simd
                         for (int i = 0; i < n; i++) {
                             result[i] = op(dx[i], extraParams);
                         }
                     }
                     else {
+#pragma omp parallel  for
                         for (int i = 0; i < n; i++) {
                             result[i] = op(dx[i], extraParams);
                         }
