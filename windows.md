@@ -33,6 +33,7 @@ The CUDA Backend has some additional requirements before it can be built:
 * [Visual Studio 2012 or 2013](https://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx) (Please note: Visual Studio 2015 is *NOT SUPPORTED* by CUDA 7.5 and below)
 
 In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
+But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
 
 1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
 2. Run `c:\msys64\mingw64_shell.bat` inside that
