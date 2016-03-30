@@ -694,6 +694,8 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                     {
                         threads = omp_get_num_threads();
                         items = length / threads;
+                        if(items < 1)
+                            items = 1;
                         chunks = length / items;
                         modulo = length % items;
                         //one left over chunk
