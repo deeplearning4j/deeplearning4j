@@ -694,6 +694,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                             local = update(local, curr, extraParams);
 
                         }
+                        local = postProcess(local, length,extraParams);
 
                         return local;
                     }
@@ -757,9 +758,11 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #pragma simd
                         for(int i = 0; i < length; i++) {
                             T curr = op(x[i *xElementWiseStride], extraParams);
-                            local = update(local * xElementWiseStride, curr, extraParams);
+                            local = update(local, curr, extraParams);
 
                         }
+
+                        local = postProcess(local, length,extraParams);
 
                         return local;
                     }

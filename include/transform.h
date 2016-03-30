@@ -3264,13 +3264,8 @@ namespace functions {
                         }
                         else {
 
-#pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
-                                {
-                                    max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
-
-                                }
+                                max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
@@ -3282,12 +3277,9 @@ namespace functions {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
-#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
-                                {
                                     sum += result[i * elementWiseStride];
-                                }
+
                             }
 
 #pragma omp parallel for
