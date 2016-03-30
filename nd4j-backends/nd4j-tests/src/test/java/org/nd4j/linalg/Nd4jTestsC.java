@@ -384,7 +384,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             List<Integer> order = new ArrayList<>(nRows);
             //in.row(order(i)) should end up as out.row(i) - ascending
             //in.row(order(i)) should end up as out.row(nRows-j-1) - descending
-            for( int j=0; j<nRows; j++ ) order.add(j);
+            for( int j = 0; j<nRows; j++ ) order.add(j);
             Collections.shuffle(order, r);
             for( int j = 0; j<nRows; j++ )
                 in.putScalar(new int[]{j,i},order.get(j));
@@ -392,7 +392,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outAsc = Nd4j.sortRows(in, i, true);
             INDArray outDesc = Nd4j.sortRows(in, i, false);
 
-            for( int j = 0; j < nRows; j++ ) {
+            for( int j = 0; j < nRows; j++) {
                 assertEquals(outAsc.getDouble(j,i),j,1e-1);
                 int origRowIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getRow(j).equals(in.getRow(origRowIdxAsc)));
@@ -405,18 +405,135 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testToFlattenedOrder() {
+        INDArray concatC = Nd4j.linspace(1,4,4).reshape('c',2,2);
+        INDArray concatF = Nd4j.create(new int[]{2,2},'f');
+        concatF.assign(concatC);
+        INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
+        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
+        assertEquals(assertionC,testC);
+        INDArray test = Nd4j.toFlattened('f',concatC,concatF);
+        INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
+        assertEquals(assertion,test);
+
+
+    }
+
+    @Test
+    public void testZero() {
+        Nd4j.ones(11).sumNumber();
+        Nd4j.ones(12).sumNumber();
+        Nd4j.ones(2).sumNumber();
+    }
+
+
+    @Test
+    public void testSumNumberRepeatability() {
+        INDArray arr = Nd4j.ones(1,450).reshape('c',150,3);
+
+        double first = arr.sumNumber().doubleValue();
+        double assertion = 450;
+        assertEquals(assertion,first,1e-1);
+        for( int i = 0; i < 50; i++) {
+            double second = arr.sumNumber().doubleValue();
+            assertEquals(assertion,second,1e-1);
+            assertEquals(String.valueOf(i),first,second,1e-2);
+        }
+    }
+
+    @Test
+    public void testToFlattened2() {
+        int rows = 3;
+        int cols = 4;
+        int dim2 = 5;
+        int dim3 = 6;
+
+        int length2d = rows * cols;
+        int length3d = rows * cols * dim2;
+        int length4d = rows * cols * dim2 * dim3;
+
+        INDArray c2d = Nd4j.linspace(1, length2d, length2d).reshape('c', rows, cols);
+        INDArray f2d = Nd4j.create(new int[]{rows, cols}, 'f').assign(c2d).addi(0.1);
+
+        INDArray c3d = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
+        INDArray f3d = Nd4j.create(new int[]{rows, cols, dim2}).assign(c3d).addi(0.3);
+        c3d.addi(0.2);
+
+        INDArray c4d = Nd4j.linspace(1, length4d, length4d).reshape('c', rows, cols, dim2, dim3);
+        INDArray f4d = Nd4j.create(new int[]{rows, cols, dim2, dim3}).assign(c4d).addi(0.3);
+        c4d.addi(0.4);
+
+
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d), Nd4j.toFlattened('c', c2d, f2d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d), Nd4j.toFlattened('f', c2d, f2d));
+        assertEquals(toFlattenedViaIterator('c', f2d, c2d), Nd4j.toFlattened('c', f2d, c2d));
+        assertEquals(toFlattenedViaIterator('f', f2d, c2d), Nd4j.toFlattened('f', f2d, c2d));
+
+        assertEquals(toFlattenedViaIterator('c', c3d, f3d), Nd4j.toFlattened('c', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c3d, f3d), Nd4j.toFlattened('f', c3d, f3d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d), Nd4j.toFlattened('c', c2d, f2d, c3d, f3d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d), Nd4j.toFlattened('f', c2d, f2d, c3d, f3d));
+
+        assertEquals(toFlattenedViaIterator('c', c4d, f4d), Nd4j.toFlattened('c', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c4d, f4d), Nd4j.toFlattened('f', c4d, f4d));
+        assertEquals(toFlattenedViaIterator('c', c2d, f2d, c3d, f3d, c4d, f4d), Nd4j.toFlattened('c', c2d, f2d, c3d, f3d, c4d, f4d));
+        assertEquals(toFlattenedViaIterator('f', c2d, f2d, c3d, f3d, c4d, f4d), Nd4j.toFlattened('f', c2d, f2d, c3d, f3d, c4d, f4d));
+    }
+
+    @Test
+    public void testToFlattenedOnViews(){
+
+        int rows = 8;
+        int cols = 8;
+        int dim2 = 4;
+        int length = rows*cols;
+        int length3d = rows*cols*dim2;
+
+        INDArray first = Nd4j.linspace(1,length,length).reshape('c',rows,cols);
+        INDArray second = Nd4j.create('f',rows,cols).assign(first);
+        INDArray third = Nd4j.linspace(1,length3d,length3d).reshape('c',rows,cols,dim2);
+        first.addi(0.1);
+        second.addi(0.2);
+        third.addi(0.3);
+
+        first = first.get(NDArrayIndex.interval(4,8), NDArrayIndex.interval(0,2,8));
+        second = second.get(NDArrayIndex.interval(3,7), NDArrayIndex.all());
+        third = third.permute(0,2,1);
+
+        assertEquals(Nd4j.toFlattened('c', first, second, third), toFlattenedViaIterator('c', first, second, third));
+        assertEquals(Nd4j.toFlattened('f', first, second, third), toFlattenedViaIterator('f', first, second, third));
+    }
+
+    private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
+        int length = 0;
+        for (INDArray i : toFlatten) length += i.length();
+
+        INDArray out = Nd4j.create(1, length);
+        int i = 0;
+        for (INDArray arr : toFlatten) {
+            NdIndexIterator iter = new NdIndexIterator(order, arr.shape());
+            while (iter.hasNext()) {
+                double next = arr.getDouble(iter.next());
+                out.putScalar(i++, next);
+            }
+        }
+
+        return out;
+    }
+
+    @Test
     public void testSortColumns() {
         int nRows = 5;
         int nCols = 10;
         java.util.Random r = new java.util.Random(12345);
 
-        for( int i=0; i<nRows; i++ ){
+        for( int i = 0; i < nRows; i++) {
             INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
             List<Integer> order = new ArrayList<>(nRows);
-            for( int j=0; j<nCols; j++ ) order.add(j);
+            for( int j = 0; j < nCols; j++) order.add(j);
             Collections.shuffle(order, r);
-            for( int j=0; j<nCols; j++ ) in.putScalar(new int[]{i,j},order.get(j));
+            for( int j = 0; j < nCols; j++) in.putScalar(new int[]{i,j},order.get(j));
 
             INDArray outAsc = Nd4j.sortColumns(in, i, true);
             INDArray outDesc = Nd4j.sortColumns(in, i, false);
@@ -609,10 +726,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             Nd4j.getExecutioner().exec(opc);
             Nd4j.getExecutioner().exec(opf);
-
-//            System.out.println(exp + "\n");
-//            System.out.println(zC + "\n");
-//            System.out.println(zF + "\n");
 
             assertEquals(exp,zC);
             assertEquals(exp,zF);
@@ -2248,6 +2361,26 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(cSum,fSum);  //Expect: 4,6. Getting [4, 4] for f order
     }
 
+    @Test
+    public void testAssign(){
+        int[] shape1 = {3,2,2,2,2,2};
+        int[] shape2 = {12,8};
+        int length = ArrayUtil.prod(shape1);
+
+        assertEquals(ArrayUtil.prod(shape1),ArrayUtil.prod(shape2));
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape1);
+        INDArray arr2c = Nd4j.create(shape2,'c');
+        INDArray arr2f = Nd4j.create(shape2,'f');
+
+        arr2c.assign(arr);
+        arr2f.assign(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
+
+        assertEquals(exp,arr2c);
+        assertEquals(exp,arr2f);
+    }
 
     @Test
     public void testSumDifferentOrders() {

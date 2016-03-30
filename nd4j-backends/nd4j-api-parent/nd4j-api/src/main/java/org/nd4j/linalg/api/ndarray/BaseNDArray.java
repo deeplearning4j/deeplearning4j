@@ -130,7 +130,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
-        this.data = Nd4j.createBuffer(buffer,offset,ArrayUtil.prod(shape));
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prod(shape)) : buffer;
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
@@ -1023,19 +1023,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        if(arr.elementWiseStride() > 0 && elementWiseStride() > 0 && ordering() == arr.ordering()) {
-            data().copyAtStride(arr.data(),arr.length(),elementWiseStride(),arr.elementWiseStride(),0,0);
-        }
-
-        else {
-            NdIndexIterator iterator = new NdIndexIterator(this.shape());
-            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
-            for (int i = 0; i < length(); i++) {
-                putScalar(iterator.next(), arr.getDouble(otherIter.next()));
-            }
-        }
-//        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this,arr,this,length()));
         return this;
+
     }
 
     @Override
@@ -3230,7 +3220,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = Nd4j.create(shape,order);
         if(order != ordering()) {
-          ret.setData(dup(order).data());
+            ret.setData(dup(order).data());
         }
         else
             ret.assign(this);
