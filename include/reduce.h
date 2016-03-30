@@ -684,8 +684,19 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #endif
             T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
-               printf("Exec scalar with length %d and x element wise stride %d\n",length,xElementWiseStride);
+                printf("Exec scalar with length %d and x element wise stride %d\n",length,xElementWiseStride);
                 if (xElementWiseStride == 1) {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i], extraParams);
+                            local = update(local, curr, extraParams);
+
+                        }
+
+                        return local;
+                    }
                     T finalVal = startingVal;
                     int items;
                     int threads;
@@ -741,6 +752,18 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                 }
 
                 else {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i *xElementWiseStride], extraParams);
+                            local = update(local * xElementWiseStride, curr, extraParams);
+
+                        }
+
+                        return local;
+                    }
+
                     T finalVal = startingVal;
                     int items;
                     int threads;
