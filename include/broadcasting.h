@@ -226,7 +226,7 @@ namespace functions {
                                                       xStridesIter,
                                                       &resultIter,
                                                       resultStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 T val = this->op(xIter[0],y[vectorIdx]);
                                 // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
@@ -273,7 +273,7 @@ namespace functions {
                                                       xStridesIter,
                                                       &resultIter,
                                                       resultStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 T val = this->op(xIter[0],y[vectorIdx]);
                                 // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);

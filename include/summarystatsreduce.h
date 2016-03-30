@@ -1014,7 +1014,7 @@ struct SharedSummaryStatsData<double> {
                                                      shapeIter,
                                                      &xPointer,
                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 SummaryStatsData<T> comp2;
                                 comp2.initWithValue(xPointer[0]);

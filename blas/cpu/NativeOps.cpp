@@ -1317,7 +1317,13 @@ void   NativeOps::execTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
+    FloatNativeOpExecutioner::getInstance()->execTransform(
+            opNum,
+            xPointer,
+            xShapeInfoPointer,
+            resultPointer,
+            resultShapeInfoPointer,
+            extraParamsPointer);
 }
 
 /**
@@ -1357,6 +1363,106 @@ void   NativeOps::execTransformFloat(
             xIndexesPointer,
             resultIndexesPointer);
 
+}
+
+/**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenFloat(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    float *resultPointer = reinterpret_cast<float *>(result);
+    float *inputPointer = reinterpret_cast<float *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    //start at the given offset
+    resultPointer += offset;
+    char inputOrder = shape::order(inputShapeInfoPointer);
+    int idx = 0;
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    if(order == 'f') {
+        for(int i = 0; i < len; i++) {
+            shape::ind2sub(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+
+        }
+    }
+    else {
+        for(int i = 0; i < len; i++) {
+            shape::ind2subC(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+
+        }
+    }
+    free(coord);
+}
+
+/**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenDouble(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    double *resultPointer = reinterpret_cast<double *>(result);
+    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
+    double *inputPointer = reinterpret_cast<double *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    //start at the given offset
+    resultPointer += offset;
+    char inputOrder = shape::order(inputShapeInfoPointer);
+    int idx = 0;
+
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    char resultOrder = shape::order(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    if(order == 'f') {
+        for(int i = 0; i < len; i++) {
+            shape::ind2sub(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+        }
+    }
+    else {
+        for(int i = 0; i < len; i++) {
+            shape::ind2subC(rank,xShape,i,&coord);
+            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+            resultPointer[idx++] = inputPointer[offset];
+        }
+    }
+
+    free(coord);
 }
 
 /**

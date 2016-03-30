@@ -234,6 +234,7 @@ namespace functions {
 			}
 			__syncthreads();
 
+
 			int resultLength = shape::length(resultShapeInfo);
 			if(tid >= resultLength) {
 				return;
@@ -274,10 +275,8 @@ namespace functions {
 		else {
 			T curr;
 			if (resultScalar) {
-
-			// this is impossible statement, since reduce works with 1 block only
-			//	if(blockIdx.x >= resultLength)
-			//		return;
+				if(blockIdx.x >= resultLength)
+					return;
 
 
 				T *realExtraParams;
@@ -338,9 +337,9 @@ namespace functions {
 
 			// write result for this block to global mem
 			if (tid == 0) {
-				if(postProcessOrNot) {
+				if(postProcessOrNot)
 					result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
-				} else
+				else
 					result[blockIdx.x] = sPartials[0];
 				if(extraParamsLength >= 1)
 					delete[] realExtraParams;
@@ -588,7 +587,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 	int floorPow2 = blockDim.x;
 
 	if (floorPow2 & (floorPow2 - 1)) {
-	    while (floorPow2 & (floorPow2 - 1)) {
+		while (floorPow2 & (floorPow2 - 1)) {
 			floorPow2 &= floorPow2 - 1;
 		}
 		if (tid >= floorPow2) {
@@ -685,17 +684,68 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 #endif
             T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
+                printf("Exec scalar with length %d and x element wise stride %d\n",length,xElementWiseStride);
                 if (xElementWiseStride == 1) {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i], extraParams);
+                            local = update(local, curr, extraParams);
+
+                        }
+                        local = postProcess(local, length,extraParams);
+
+                        return local;
+                    }
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i], extraParams);
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
+#pragma omp parallel
+                    {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        if(items < 1)
+                            items = 1;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
+                    }
+
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items);
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
+                            if(newOffset >= length) {
+                                break;
+                            }
+
+                            //handle modulo case
+                            if(newOffset + items >= length) {
+                                itemsToLoop = length - newOffset;
+                            }
+
+                            for (int i = 0; i < itemsToLoop; i++) {
+                                T curr = op(chunk[i], extraParams);
+                                local = update(local, curr, extraParams);
+                            }
+
+                        }
+
 #pragma omp critical
                         {
-                            finalVal = update(finalVal, curr, extraParams);
+                            finalVal = update(finalVal,local,extraParams);
 
                         }
                     }
+
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
@@ -703,20 +753,65 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                 }
 
                 else {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i *xElementWiseStride], extraParams);
+                            local = update(local, curr, extraParams);
+
+                        }
+
+                        local = postProcess(local, length,extraParams);
+
+                        return local;
+                    }
+
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i * xElementWiseStride], extraParams);
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
+#pragma omp parallel
+                    {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        if(items < 1)
+                            items = 1;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
+                    }
+
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items) * xElementWiseStride;
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
+
+
+                            for (int i = 0; i < itemsToLoop; i++) {
+                                T curr = op(chunk[i * xElementWiseStride], extraParams);
+                                local = update(local, curr, extraParams);
+                            }
+
+
+                        }
+
 #pragma omp critical
                         {
-                            finalVal = update(finalVal, curr, extraParams);
+                            finalVal = update(finalVal,local,extraParams);
 
                         }
                     }
 
+
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-
 
                 }
 
@@ -739,6 +834,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                 const int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if(xElementWiseStride >= 1) {
+                    printf("Element wise stride in shape is %d\n",xElementWiseStride);
                     return execScalar(x, xElementWiseStride, length, extraParams);
                 }
                 else {
@@ -760,7 +856,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                  &x,
                                                  xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                             /* Process the innermost dimension */
                             T *xIter = x;
                             start = update(start,op(xIter[0],extraParams),extraParams);
@@ -915,7 +1011,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                      shapeIter,
                                                      &xPointer,
                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 start = update(start,op(xPointer[0],extraParams),extraParams);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,
