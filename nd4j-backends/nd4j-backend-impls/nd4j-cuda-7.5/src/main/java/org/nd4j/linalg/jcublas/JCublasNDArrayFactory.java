@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
@@ -35,7 +36,9 @@ import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -45,6 +48,7 @@ import java.util.List;
  * @author mjk
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
+    private NativeOps nativeOps = new NativeOps();
 
 
     public JCublasNDArrayFactory() {
@@ -429,5 +433,68 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, int offset) {
         return new JCublasNDArray(buffer, shape, offset);
+    }
+
+
+    @Override
+    public INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        int length = 0;
+        for (INDArray m : matrices)
+            length += m.length();
+        INDArray ret = Nd4j.create(new int[]{1,length},order);
+        int linearIndex = 0;
+        for(INDArray m : matrices) {
+            if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
+                    && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
+                //Can do array copy
+                int retFrom = linearIndex;
+                int mFrom = m.offset();
+                Object arr = m.data().array();
+                if(arr instanceof float[]) {
+                    float[] mData = (float[]) arr;
+                    float[] retData = (float[])ret.data().array();
+                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
+                }
+                else {
+                    double[] mData = (double[])arr;
+                    double[] retData = (double[])ret.data().array();
+                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
+                }
+                linearIndex += m.length();
+            } else {
+                if(m.data().dataType() == DataBuffer.Type.DOUBLE) {
+                    nativeOps.flattenDouble(
+                            linearIndex,
+                            order,
+                            ret.data().address(),
+                            ret.shapeInfoDataBuffer().address(),
+                            m.data().address(),
+                            m.shapeInfoDataBuffer().address());
+                }
+                else if(m.data().dataType() == DataBuffer.Type.FLOAT) {
+                    nativeOps.flattenFloat(
+                            linearIndex,
+                            order,
+                            ret.data().address(),
+                            ret.shapeInfoDataBuffer().address(),
+                            m.data().address(),
+                            m.shapeInfoDataBuffer().address());
+
+                }
+                else {
+                    throw new UnsupportedOperationException("Illegal data type for copy");
+                }
+                //Works for all cases...
+
+               /* NdIndexIterator iter = new NdIndexIterator(order, m.shape());
+                while (iter.hasNext()) {
+                    ret.putScalar(linearIndex++, m.getDouble(iter.next()));
+                }*/
+
+                linearIndex += m.length();
+
+            }
+        }
+        return ret;
     }
 }

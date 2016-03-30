@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.linalg.api.buffer.util.LibUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**
@@ -770,13 +771,15 @@ public class NativeOps extends Pointer {
 
     /**
      *
+     * @param extraPointers
      * @param opNum
      * @param dx
      * @param xShapeInfo
      * @param result
      * @param resultShapeInfo
      * @param extraParams
-     * @param n
+     * @param xIndexes
+     * @param resultIndexes
      */
     public native void   execTransformFloat(long[]extraPointers,int opNum,
                                             long dx,
@@ -787,6 +790,43 @@ public class NativeOps extends Pointer {
                                             long xIndexes,
                                             long resultIndexes);
 
+
+    /**
+     * Append an input array
+     * to the end of a flat array
+     * in a particular order
+     * @param offset the offset of the array to start at
+     * @param order the order
+     * @param result the result array
+     * @param resultShapeInfo the shape info for te array
+     * @param input the input for the array
+     * @param inputShapeInfo the shape information for that array
+     */
+    public native void flattenFloat(int offset,
+                               char order,
+                               long result,
+                               long resultShapeInfo,
+                               long input,
+                               long inputShapeInfo);
+
+
+    /**
+     * Append an input array
+     * to the end of a flat array
+     * in a particular order
+     * @param offset the offset of the array to start at
+     * @param order the order
+     * @param result the result array
+     * @param resultShapeInfo the shape info for te array
+     * @param input the input for the array
+     * @param inputShapeInfo the shape information for that array
+     */
+    public native void flattenDouble(int offset,
+                                    char order,
+                                    long result,
+                                    long resultShapeInfo,
+                                    long input,
+                                    long inputShapeInfo);
 
     /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
