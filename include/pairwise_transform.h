@@ -606,21 +606,40 @@ namespace functions {
             virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
                               int resultStride, T *extraParams, const int n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], y[i], extraParams);
+                    if(n < 8000) {
+#pragma omp simd
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
+                    }
+
 
 
                 }
 
                 else {
-
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * xStride],
-                                                      y[i * yStride], extraParams);
+                    if(n < 8000) {
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
+                    }
+
+
+
                 }
 
             }

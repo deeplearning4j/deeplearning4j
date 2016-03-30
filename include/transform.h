@@ -305,19 +305,36 @@ namespace functions {
                               T *extraParams,
                               int n) {
                 if (xStride == 1 && resultStride == 1) {
+                    if(n < 8000) {
 #pragma omp parallel  for
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], extraParams);
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], extraParams);
+                        }
                     }
+                    else {
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], extraParams);
+                        }
+                    }
+
                 }
 
 
                 else {
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * xStride],
-                                                      extraParams);
+                    if(n < 8000) {
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          extraParams);
+                        }
+                    }
+
                 }
 
             }
