@@ -1,6 +1,7 @@
 package org.deeplearning4j.earlystopping;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -70,6 +71,53 @@ public class TestEarlyStopping {
                 .build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+        System.out.println(result);
+
+        assertEquals(5, result.getTotalEpochs());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+        Map<Integer,Double> scoreVsIter = result.getScoreVsEpoch();
+        assertEquals(5,scoreVsIter.size());
+        String expDetails = esConf.getEpochTerminationConditions().get(0).toString();
+        assertEquals(expDetails, result.getTerminationDetails());
+
+        MultiLayerNetwork out = result.getBestModel();
+        assertNotNull(out);
+
+        //Check that best score actually matches (returned model vs. manually calculated score)
+        MultiLayerNetwork bestNetwork = result.getBestModel();
+        irisIter.reset();
+        double score = bestNetwork.score(irisIter.next());
+        assertEquals(result.getBestModelScore(), score, 1e-2);
+    }
+
+
+    @Test
+    public void testEarlyStoppingIrisMultiEpoch(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        MultipleEpochsIterator mIter = new MultipleEpochsIterator(10, irisIter);
+
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculator(irisIter,true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf,net,mIter);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
