@@ -2989,7 +2989,7 @@ namespace shape {
     int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
         int *ret = (int *) malloc(numTotalElements * sizeof(int));
         int count = 0;
-#pragma omp simd
+#pragma simd
         for (int i = 0; i < numArrays; i++) {
             for (int j = 0; j < lengths[i]; j++) {
                 ret[count++] = arr[i][j];
@@ -3699,11 +3699,11 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int count = 1;
         const int rank = info->rank;
         ret[0] = info->rank;
-#pragma omp simd
+#pragma simd
         for (int i = 0; i < rank; i++) {
             ret[count++] = info->shape[i];
         }
-#pragma omp simd
+#pragma simd
         for (int i = 0; i < rank; i++) {
             ret[count++] = info->stride[i];
         }

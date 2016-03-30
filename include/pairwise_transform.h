@@ -607,7 +607,7 @@ namespace functions {
                               int resultStride, T *extraParams, const int n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
                     if(n < 8000) {
-#pragma omp simd
+#pragma simd
                         for (int i = 0; i < n; i++) {
                             result[i] = op(dx[i], y[i], extraParams);
                         }

@@ -198,7 +198,7 @@ namespace functions {
                     T *extraParams,
                     int *indexes) {
                 int n = shape::length(xShapeInfo);
-#pragma omp simd
+#pragma simd
                 for (int i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]], extraParams);
                 }
