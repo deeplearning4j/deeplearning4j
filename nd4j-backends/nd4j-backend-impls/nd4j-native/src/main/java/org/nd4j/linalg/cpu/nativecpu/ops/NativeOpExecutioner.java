@@ -613,7 +613,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             dummy,
                             op.opNum(),
                             op.x().data().address()
-                            ,op.x().shapeInfoDataBuffer().address(),  getAddressForExtraArgs(op)));
+                            ,op.x().shapeInfoDataBuffer().address(),
+                            getAddressForExtraArgs(op)));
                 }
             }
         }

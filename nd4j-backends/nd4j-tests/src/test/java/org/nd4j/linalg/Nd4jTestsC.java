@@ -420,6 +420,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testZero() {
+        Nd4j.ones(11).sumNumber();
+        Nd4j.ones(12).sumNumber();
+        Nd4j.ones(2).sumNumber();
+    }
+
+
+    @Test
     public void testSumNumberRepeatability() {
         INDArray arr = Nd4j.ones(1,450).reshape('c',150,3);
 

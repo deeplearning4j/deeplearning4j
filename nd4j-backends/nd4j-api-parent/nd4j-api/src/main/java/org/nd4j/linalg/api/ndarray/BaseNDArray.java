@@ -130,7 +130,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
-        this.data = Nd4j.createBuffer(buffer,offset,ArrayUtil.prod(shape));
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prod(shape)) : buffer;
         this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
