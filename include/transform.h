@@ -255,33 +255,48 @@ namespace functions {
                 int n = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeInfo) == shape::order(resultShapeInfo)) {
                     exec(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
                 else {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
                     int *xShape = shape::shapeOf(xShapeInfo);
-                    int *resultShape = shape::shapeOf(resultShapeInfo);
-
                     int *xStride = shape::stride(xShapeInfo);
                     int *resultStride = shape::stride(resultShapeInfo);
-                    int xRank = shape::rank(xShapeInfo);
-                    int resultRank = shape::rank(resultShapeInfo);
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 dx,
+                                                 xStride,
+                                                 result,
+                                                 resultStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &dx,
+                                                 xStridesIter,
+                                                 &result,
+                                                 resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
+                        {
+                            /* Process the innermost dimension */
+                            T *xIter = dx;
+                            T *resultIter = result;
+                            resultIter[0] = op(xIter[0], extraParams);
+                        }
+                        ND4J_RAW_ITER_TWO_NEXT(dim,
+                                               rank,
+                                               coord,
+                                               shapeIter,
+                                               dx,
+                                               xStridesIter,
+                                               result,
+                                               resultStridesIter);
 
-                    int xOffset = shape::offset(xShapeInfo);
-                    int resultOffset = shape::offset(resultShapeInfo);
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        int *xIdx = shape::ind2sub(xRank, xShape, i);
-                        int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
-                        int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-                        int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
-                        result[resultOffset2] = op(dx[xOffset2], extraParams);
-                        free(xIdx);
-                        free(resultIdx);
                     }
-
-
-
 
                 }
 
