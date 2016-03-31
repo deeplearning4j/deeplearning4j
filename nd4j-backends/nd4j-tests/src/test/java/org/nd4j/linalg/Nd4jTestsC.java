@@ -1926,6 +1926,87 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testBroadcastDiv() {
+        INDArray num = Nd4j.create(new double[] {
+                1.00,1.00,1.00,1.00,2.00,2.00,2.00,2.00,1.00,1.00,1.00,1.00,2.00,2.00,2.00,2.00,
+                -1.00,-1.00,-1.00,-1.00,-2.00,-2.00,-2.00,-2.00,-1.00,-1.00,-1.00,-1.00,-2.00,-2.00,-2.00,-2.00
+        }).reshape(2,16);
+
+        INDArray denom = Nd4j.create(new double[] {
+                1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00, 1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00
+        });
+
+        INDArray expected = Nd4j.create(new double[] {
+                1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+                -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
+        }, new int[]{2, 16});
+
+        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(num, denom, num.dup(),-1));
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testBroadcastMult() {
+        INDArray num = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00,
+                -1.00,-2.00,-3.00,-4.00,-5.00,-6.00,-7.00,-8.00
+        }).reshape(2,8);
+
+        INDArray denom = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00
+        });
+
+        INDArray expected = Nd4j.create(new double[] {
+                1,4,9,16,25,36,49,64,
+                -1,-4,-9,-16,-25,-36,-49,-64
+        }, new int[]{2, 8});
+
+        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(num, denom, num.dup(),-1));
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testBroadcastSub() {
+        INDArray num = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00,
+                -1.00,-2.00,-3.00,-4.00,-5.00,-6.00,-7.00,-8.00
+        }).reshape(2,8);
+
+        INDArray denom = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00
+        });
+
+        INDArray expected = Nd4j.create(new double[] {
+                0,0,0,0,0,0,0,0,
+                -2,-4,-6,-8,-10,-12,-14,-16
+        }, new int[]{2, 8});
+
+        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(num, denom, num.dup(),-1));
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testBroadcastAdd() {
+        INDArray num = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00,
+                -1.00,-2.00,-3.00,-4.00,-5.00,-6.00,-7.00,-8.00
+        }).reshape(2,8);
+
+        INDArray denom = Nd4j.create(new double[] {
+                1.00,2.00,3.00,4.00,5.00,6.00,7.00,8.00
+        });
+
+        INDArray expected = Nd4j.create(new double[] {
+                2,4,6,8,10,12,14,16,
+                0,0,0,0,0,0,0,0,
+        }, new int[]{2, 8});
+        INDArray dup = num.dup();
+        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(num, denom, dup,-1));
+        assertEquals(expected, actual);
+    }
+
 
     @Test
     public void testDimension() {
