@@ -186,7 +186,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[27], deviceProperties[(int) extraPointers[2]]);
 
     ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
-    indexReduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+    indexReduceDouble<<<1,launchDims.y,launchDims.z * 4, *stream>>>(
             opNum,
                     xPointer,
                     xShapeInfoPointer,
@@ -1134,7 +1134,7 @@ float   NativeOps::execIndexReduceScalarFloat(
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>(*stream);
 
-    indexReduceFloat<<<1,launchDims.y, launchDims.z * 3, *stream>>>(
+    indexReduceFloat<<<1,launchDims.y, launchDims.z * 4, *stream>>>(
                     opNum,
                     xPointer,
                     xShapeInfoPointer,
