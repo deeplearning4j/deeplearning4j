@@ -38,7 +38,9 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1854,6 +1856,74 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp,stdev);
     }
 
+
+    @Test
+    public void testSignXZ(){
+        double[] d =   {1.0, -1.1,  1.2,  1.3, -1.4, -1.5, 1.6, -1.7, -1.8, -1.9, -1.01, -1.011};
+        double[] e =   {1.0, -1.0,  1.0,  1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
+
+        INDArray arrF = Nd4j.create(d,new int[]{4,3},'f');
+        INDArray arrC = Nd4j.create(new int[]{4,3},'c').assign(arrF);
+
+        INDArray exp = Nd4j.create(e, new int[]{4,3}, 'f');
+
+        //First: do op with just x (inplace)
+        INDArray arrFCopy = arrF.dup('f');
+        INDArray arrCCopy = arrC.dup('c');
+        Nd4j.getExecutioner().exec(new Sign(arrFCopy));
+        Nd4j.getExecutioner().exec(new Sign(arrCCopy));
+        assertEquals(exp, arrFCopy);
+        assertEquals(exp, arrCCopy);
+
+        //Second: do op with both x and z:
+        INDArray zOutFC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutFF = Nd4j.create(new int[]{4,3},'f');
+        INDArray zOutCC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutCF = Nd4j.create(new int[]{4,3},'f');
+        Nd4j.getExecutioner().exec(new Sign(arrF, zOutFC));
+        Nd4j.getExecutioner().exec(new Sign(arrF, zOutFF));
+        Nd4j.getExecutioner().exec(new Sign(arrC, zOutCC));
+        Nd4j.getExecutioner().exec(new Sign(arrC, zOutCF));
+
+        assertEquals(exp, zOutFC);  //fails
+        assertEquals(exp, zOutFF);  //pass
+        assertEquals(exp, zOutCC);  //pass
+        assertEquals(exp, zOutCF);  //fails
+    }
+
+    @Test
+    public void testTanhXZ(){
+        INDArray arrC = Nd4j.linspace(-6,6,12).reshape('c',4,3);
+        INDArray arrF = Nd4j.create(new int[]{4,3},'f').assign(arrC);
+        double[] d = arrC.data().asDouble();
+        double[] e = new double[d.length];
+        for(int i=0; i<e.length; i++ ) e[i] = Math.tanh(d[i]);
+
+        INDArray exp = Nd4j.create(e, new int[]{4,3}, 'c');
+
+        //First: do op with just x (inplace)
+        INDArray arrFCopy = arrF.dup('f');
+        INDArray arrCCopy = arrF.dup('c');
+        Nd4j.getExecutioner().exec(new Tanh(arrFCopy));
+        Nd4j.getExecutioner().exec(new Tanh(arrCCopy));
+        assertEquals(exp, arrFCopy);
+        assertEquals(exp, arrCCopy);
+
+        //Second: do op with both x and z:
+        INDArray zOutFC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutFF = Nd4j.create(new int[]{4,3},'f');
+        INDArray zOutCC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutCF = Nd4j.create(new int[]{4,3},'f');
+        Nd4j.getExecutioner().exec(new Tanh(arrF, zOutFC));
+        Nd4j.getExecutioner().exec(new Tanh(arrF, zOutFF));
+        Nd4j.getExecutioner().exec(new Tanh(arrC, zOutCC));
+        Nd4j.getExecutioner().exec(new Tanh(arrC, zOutCF));
+
+        assertEquals(exp, zOutFC);  //fails
+        assertEquals(exp, zOutFF);  //pass
+        assertEquals(exp, zOutCC);  //pass
+        assertEquals(exp, zOutCF);  //fails
+    }
 
 
 
