@@ -426,7 +426,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
+                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                         loop.execTransformDouble(
                                 dummy,
                                 op.opNum(),
@@ -479,7 +479,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial()) {
+                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                         loop.execTransformFloat(dummy,op.opNum(),
                                 op.x().data().address(),
                                 op.x().elementWiseStride(),
