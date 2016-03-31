@@ -1835,6 +1835,26 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testStdev0(){
+        double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
+        INDArray in = Nd4j.create(ind);
+        INDArray stdev = in.std(0);
+        INDArray exp = Nd4j.create(new double[]{0.20000005,0.24527183,0.047140464});
+
+        assertEquals(exp,stdev);
+    }
+
+    @Test
+    public void testStdev1(){
+        double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
+        INDArray in = Nd4j.create(ind);
+        INDArray stdev = in.std(1);
+        INDArray exp = Nd4j.create(new double[]{1.8552212,1.7519685,1.7035841});
+        assertEquals(exp,stdev);
+    }
+
+
 
 
     @Test
