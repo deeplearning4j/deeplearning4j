@@ -169,10 +169,11 @@ public class CudaZeroHandler implements MemoryHandler {
                 int deviceId = getDeviceId();
 
                 PointersPair returnPair = new PointersPair();
+                PointersPair tmpPair = new PointersPair();
 
                 // if the initial memory location is device, there's a chance we don't have zero memory allocated
                 if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
-                    PointersPair tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
+                    tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
 
                     returnPair.setDevicePointer(tmpPair.getDevicePointer());
                     returnPair.setHostPointer(tmpPair.getHostPointer());
@@ -184,10 +185,16 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
                         PointersPair pair = provider.malloc(shape, point, targetMode);
+                        if (pair != null) {
+                            returnPair.setDevicePointer(pair.getDevicePointer());
 
-                        returnPair.setDevicePointer(pair.getDevicePointer());
+                            point.setAllocationStatus(AllocationStatus.DEVICE);
+                        } else {
+                            // if device memory allocation failed (aka returned NULL), keep using host memory instead
+                            returnPair.setDevicePointer(tmpPair.getDevicePointer());
 
-                        point.setAllocationStatus(AllocationStatus.DEVICE);
+                            point.setAllocationStatus(AllocationStatus.HOST);
+                        }
                     }
                 }
 

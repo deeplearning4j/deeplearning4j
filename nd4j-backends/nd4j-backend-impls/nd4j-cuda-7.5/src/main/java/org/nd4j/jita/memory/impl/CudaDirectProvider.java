@@ -73,7 +73,8 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
                 if (pointer == 0)
-                    throw new RuntimeException("Can't allocate [DEVICE] memory!");
+                    return null;
+                    //throw new RuntimeException("Can't allocate [DEVICE] memory!");
 
                 Pointer devicePointer = new Pointer(pointer);
 
