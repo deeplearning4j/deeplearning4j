@@ -1,5 +1,5 @@
 ---
-title: "Word2vec: Java에서 뉴럴넷을 이용한 Word Embeddings 구하기"
+title: "Word2vec: Java에서 인공 신경망으로 Word Embeddings 구현하기"
 layout: kr-default
 ---
 
@@ -8,7 +8,7 @@ layout: kr-default
 내용
 
 * <a href="#intro">소개</a>
-* <a href="#embed">뉴럴넷과 Word Embeddings</a>
+* <a href="#embed">신경망과 Word Embeddings</a>
 * <a href="#crazy">재미있는 Word2vec 결과</a>
 * <a href="#just">예제 코드</a>
 * <a href="#anatomy">DL4J에서 Word2vec 구조</a>
@@ -21,15 +21,15 @@ layout: kr-default
 
 ## <a name="intro">Word2Vec 소개</a>
 
-Word2vec은 텍스트를 처리하는 뉴럴 네트워크이며 두 개의 레이어로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [딥 뉴럴 네트워크](../neuralnet-overview.html)는 아니지만 딥 뉴럴 네트워크의 전처리 단계로 많이 쓰입니다.
+Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [심층 신경망](../kr-0neuralnet-overview.html)은 아니지만 심층 신경망은 전처리 단계로 많이 쓰입니다.
 
 Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](http://deeplearning4j.org/kr-quickstart.html)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
 
-Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습 과정은 사람의 개입 없이 말뭉치 데이터만을 사용합니다.
+Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습은 사람이 간여하지 않으며 말뭉치 데이터만을 사용합니다.
 
 데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니다. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 알아냅니다. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](../sentiment_analysis_word2vec.html), 추천 시스템을 만들 수 있습니다.
 
-정리하면, Word2vec은 각 단어마다 단어에 해당하는 벡터를 구해줍니다. 이 벡터를 다시 딥 러닝 네트워크에 집어넣어서 추가적인 일을 할 수도 있고 단어의 유사성 등 관계를 파악할 수 있습니다.
+정리하면, Word2vec은 각 단어마다 단어에 해당하는 벡터를 구해줍니다. 이 벡터를 다시 심층 신경망에 집어넣어서 추가적인 일을 할 수도 있고 단어의 유사성 등 관계를 파악할 수 있습니다.
 
 유사성을 구하는 방법은 여러 가지가 있습니다. 흔히 쓰이는 방법은 [코사인 유사도](../glossary.html#cosine)입니다. 코사인 유사도는 두 벡터의 각도를 측정하는 것으로 각도가 같은 경우, 즉 두 벡터가 이루는 각이 0도인 경우엔 유사도의 최대값인 1.0이 나옵니다. 그리고 가장 유사도가 낮은 경우는 두 벡터의 각도가 90도가 되는 경우입니다 (실제로 90도가 나오는 경우는 잘 없습니다). 예를 들어 '스웨덴'과 '노르웨이'의 유사성을 구하면 0.760124 라는 제법 높은 유사도가 나올 것 입니다.
 
@@ -397,7 +397,7 @@ Word2Vec는 DL4J가 [딥 오토인코더](../deepautoencoder.html)를 사용해 
 
 ### <a name="patent">구글의 Word2vec 특허</a>
 
-Word2vec는 Tomas Mikolov를 비롯한 구글의 연구자들이 출판한 논문 [단어의 벡터 표현들을 계산하는 방법](http://arxiv.org/pdf/1301.3781.pdf)을 통해 소개되었습니다. 구글은 Apache 2.0 라이센스를 적용한 [오픈 소스 버전의 Word2vec](https://code.google.com/p/word2vec/)를 호스팅하고 있습니다. 2014년, Mikolov는 구글을 떠나 페이스북으로 이직했고, 2015년 5월, [구글은 출시되어 온 Apache 라이센스를 폐지하지 않는 조건의 Word2vec 특허](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464)를 등록했습니.
+Word2vec는 Tomas Mikolov를 비롯한 구글의 연구자들이 출판한 논문 [단어의 벡터 표현들을 계산하는 방법](http://arxiv.org/pdf/1301.3781.pdf)을 통해 소개되었습니다. 구글은 Apache 2.0 라이센스를 적용한 [오픈 소스 버전의 Word2vec](https://code.google.com/p/word2vec/)를 호스팅하고 있습니다. 2014년, Mikolov는 구글을 떠나 페이스북으로 이직했고, 2015년 5월, [구글은 출시되어 온 Apache 라이센스를 폐지하지 않는 조건의 Word2vec 특허](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464)를 등록했습니다.
 
 ### <a name="foreign">외국어</a>
 

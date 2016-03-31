@@ -5,13 +5,13 @@ layout: kr-default
 
 # Deeplearning4j란?
 
-Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 세계 최초의 상용 수준 오픈소스 딥러닝 라이브러리입니다. 연구 목적으로 쓰여진 다른 라이브러리와 달리, Deeplearning4j는 상용 서비스를 위해 설계되었고 하둡(Hadoop)/스파크([Spark](../gpu_aws.html))와 통합해 사용할 수 있습니다. 스카이마인드([Skymind](http://skymind.io))는 Deeplearning4j의 유료 사용자를 지원하는 회사입니다.
+Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 세계 최초의 상용 수준 오픈소스 심층학습(딥러닝) 라이브러리입니다. 연구 목적으로 쓰여진 다른 라이브러리와 달리, Deeplearning4j는 상용 서비스를 위해 설계되었고 하둡(Hadoop)/스파크([Spark](../gpu_aws.html))와 통합해 사용할 수 있습니다. 스카이마인드([Skymind](http://skymind.io))는 Deeplearning4j의 유료 사용자를 지원하는 회사입니다.
 
-Deeplearning4j는 최신 기술을 간편하게 사용하는데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
+Deeplearning4j는 최신 기술을 간편하게 사용하는 데 초점을 두었습니다. 특히, 설치와 활용에 있어서 일반적인 문법과 규칙을 사용하였기 때문에 머신 러닝에 대한 깊은 지식이 없는 사람도 빠르게 시제품을 만들 수 있도록 하고 있습니다. 확장성에도 초점을 두어 어떠한 규모의 데이타에도 사용할 수 있습니다. Deeplearning4j는 아파치 2.0 라이센스로 배포되기 때문에 파생된 모든 소스 코드는 저작권이 코드의 작성자에게 귀속됩니다.
 
-지금 바로 Deeplearning4j 예제 코드를 실행해보세요. [빠른 설치 페이지의 안내](http://deeplearning4j.org/quickstart.html)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
+지금 바로 Deeplearning4j 예제 코드를 실행해 보세요. [빠른 설치 페이지의 안내](http://deeplearning4j.org/quickstart.html)를 따르면 인공 신경망 예제를 실행할 수 있습니다.
 
-### [딥 러닝 활용 사례](http://deeplearning4j.org/use_cases.html)
+### [심층 학습 활용 사례](http://deeplearning4j.org/use_cases.html)
 
 * [얼굴/이미지 인식](../facial-reconstruction-tutorial.html)
 * 음성 검색
@@ -34,9 +34,12 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 
 ### DL4J의 인공 신경망(Neural Networks)
 
-* RBM ([Restricted Boltzmann machines](../restrictedboltzmannmachine.html))
-* 컨볼루션 네트워크([CNNs, Convolutional Networks](../convolutionalnets.html)) (이미지에 적용)
-* [RNNs/LSTMs](../recurrentnetwork.html) (시계열 데이터, 센서 데이터에 적용)
+* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
+* [인공 신경망](../kr-neuralnet-overview.html)
+* [인공 신경망과 회귀](../kr-linear-regression.html)
+* [자연어처리: Word2vec](../kr-word2vec.html)
+* [컨볼루션 네트워크(CNNs, Convolutional Networks)](../kr-convolutionalnets.html)
+* [RNNs/LSTMs](../kr-recurrentnetwork.html) (시계열 데이터, 센서 데이터에 적용)
 * 재귀 오토인코더([Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java))
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * 딥 오토인코더([Deep autoencoders](http://deeplearning4j.org/deepautoencoder.html)) (자동 질의응답, 데이터 압축에 적용)
@@ -44,15 +47,16 @@ Deeplearning4j는 분산 처리와 단일 스레드 처리를 모두 지원합�
 * 누적 디노이징 오토인코더([Stacked Denoising Autoencoders](http://deeplearning4j.org/stackeddenoisingautoencoder.html))
 * 더 자세한 내용은 "[적절한 인공 신경망을 선택하는 방법](http://deeplearning4j.org/neuralnetworktable.html)"을 참고하십시오.
 
-심층 신경망은 여러 가지 머신러닝 작업에서 [최고의 정확도](http://deeplearning4j.org/accuracy.html)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](http://deeplearning4j.org/neuralnet-overview.html) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 레이어를 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (레이어를 조합하는 방법에 따라 RBM, 오토 인코더, CNNs, RNNs 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
+
+심층 신경망은 여러 가지 기계학습 작업에서 [최고의 정확도](http://deeplearning4j.org/accuracy.html)를 자랑합니다. 심층 신경망에 관한 자세한 소개는 [개요](http://deeplearning4j.org/neuralnet-overview.html) 페이지를 참고하세요. Deeplearning4j를 이용하면 여러 층을 조합하여 다양한 깊이와 종류의 인공 신경망을 쉽게 만들 수 있습니다 (층을 조합하는 방법에 따라 RBM, 오토 인코더, CNNs, RNNs 등을 구현할 수 있습니다). 또, 모든 인공 신경망은 CPU 혹은 GPU기반의 하둡/스파크로 분산 처리할 수 있습니다.
 
 저희가 그동안 개발한 라이브러리와 그 적용 방법은 아래와 같습니다.
 
 ![Alt text](../img/schematic_overview.png)
 
-딥 러닝 네트워크를 설계/학습하는 과정에서 여러분은 수 많은 매개변수를 지정해주어야 하는데, 이 매개변수는 주어진 문제와 상황에 따라 적합하게 설정되어야 합니다. 저희는 자바, [스칼라](https://github.com/deeplearning4j/nd4s) 및 [Clojure](https://github.com/whilo/clj-nd4j) 개발자들이 Deeplearning4j를 도구로써 편리하게 사용할 수 있도록 네트워크의 설계/학습과정에서 지원을 아끼지 않습니다.
+심층 신경망을 설계/학습하는 과정에서 여러분은 수많은 매개변수를 지정해주어야 하는데, 이 매개변수는 주어진 문제와 상황에 따라 적합하게 설정되어야 합니다. 저희는 자바, [스칼라](https://github.com/deeplearning4j/nd4s) 및 [Clojure](https://github.com/whilo/clj-nd4j) 개발자들이 Deeplearning4j를 도구로써 편리하게 사용할 수 있도록 설계/학습과정에서 지원을 아끼지 않습니다.
 
-간략한 질문이 있다면 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)를 이용해주세요. 프리미엄 서비스를 원하시면 [Skymind](http://www.skymind.io/contact/)로 연락을 주시기 바랍니다.
+간략한 질문이 있다면 [Gitter](https://gitter.im/deeplearning4j/deeplearning4j)를 이용해 주세요. 프리미엄 서비스를 원하시면 [Skymind](http://www.skymind.io/contact/)로 연락을 주시기 바랍니다.
 
 [ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/). 크기가 큰 행렬을 다루는 경우 벤치마크에서 [ND4J는 Numpy 대비 대략 두 배 가까이 빠른 연산성능](http://nd4j.org/benchmarking)을 보여줍니다. 
 

@@ -4,7 +4,7 @@ layout: kr-default
 
 # 전체 설치
 
-전체 설치는 여러 단계의 소프트웨어를 설치해야 합니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 참여하시길 바랍니다. 대화에 꼭 참여하지 않으셔도 사람들의 질문과 대화를 보며 여러 가지를 배울 수 있씁니다. 만일 딥 러닝에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
+전체 설치는 여러 단계의 소프트웨어를 설치해야 합니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 참여하시길 바랍니다. 대화에 꼭 참여하지 않으셔도 사람들의 질문과 대화를 보며 여러 가지를 배울 수 있씁니다. 만일 심층 신경망(딥러닝)에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
 
 좀 더 빠르게 저희 예제를 실행하시려면 [퀵 스타트 페이지](http://nd4j.org/kr-index.html)를 참고하시기 바랍니다. 사실 전체 설치 전에 예제들을 먼저 실행해보시기를 권하는 편입니다. 그렇게 하시는 편이 좀 더 DL4J를 쉽게 배울 수 있습니다.
 
@@ -157,7 +157,7 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 
 ### <a name="next">다음 단계: IRIS 예제와 인공 신경망 설계하기</a>
 
-신경망을 설계하기 전에 [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
+신경망을 설계하기 전에 [인공 신경망 개요](../kr-neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
 
 속성 안내를 찾으신다면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)를, *Deep-Belief Networks (DBNs)*의 기본 원리를 이해하시려면 [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html) 가이드를 확인하시기 바랍니다.
 

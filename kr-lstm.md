@@ -90,11 +90,11 @@ RNNs의 역사는 제법 깁니다. 1980년대에 이미 RNNs에 대한 논문�
 
 RNNs은 시간을 거슬러 올라가며 과거 은닉값을 추적합니다. 그런데 이 추적이 이어질수록 - 즉 과거로 많이 거슬러 올라가면 - gradient의 계산이 잘 되지 않는 경우가 있습니다.
 
-이것은 뉴럴넷이 곱하기 연산을 기반으로 이루어져있기 때문입니다. 
+이것은 신경망이 곱하기 연산을 기반으로 이루어져있기 때문입니다. 
 
 은행의 적금 상품을 보면 1보다 아주 조금만 큰 값이라도 여러 번 곱하면 나중엔 제법 큰 값이 됩니다. 복리의 마법이라고도 하는데, 적은 이율로도 아주 오랜 기간을 보관하면 나중엔 엄청난 금액이 됩니다. 마찬가지로 1보다 아주 살짝 작은 값이라도 계속 곱하게 되면 나중엔 0에 가까운 값이 됩니다.
 
-뉴럴넷의 연산도 많은 곱하기로 이루어져 있고, 계속 곱해나가다보면 그라디언트가 완전 소실되거나(vanishing) 발산하는(exploding) 경우가 있습니다. 
+인공 신경망의 연산도 많은 곱하기로 이루어져 있고, 계속 곱해나가다보면 그라디언트가 완전 소실되거나(vanishing) 발산하는(exploding) 경우가 있습니다. 
 
 그라디언트가 발산하는 경우엔 최종적으로 컴퓨터가 다를 수 있는 가장 큰 숫자를 넘어서버립니다. 그러나 발산은 비교적 제어하기가 쉽습니다. 그라디언트의 최대 범위를 지정해주면 됩니다. 문제는 바로 그라디언트가 소실되는 경우입니다.
 
@@ -168,7 +168,7 @@ RNNs 유닛의 한 종류로 GRU(Gated Recurrent Units)이 있습니다. GRU는 
 
 LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 참고하십시오.
 
-* 과적합(overfitting)이 일어나는지를 계속 모니터링하십시오. 과적합은 뉴럴넷이 학습 데이터를 보고 패턴을 인식하는 것이 아니라 그냥 데이터를 외워버리는 것인데 이렇게 되면 처음 보는 데이터가 왔을 때 제대로 결과를 내지 못합니다.
+* 과적합(overfitting)이 일어나는지를 계속 모니터링하십시오. 과적합은 신경망이 학습 데이터를 보고 패턴을 인식하는 것이 아니라 그냥 데이터를 외워버리는 것인데 이렇게 되면 처음 보는 데이터가 왔을 때 제대로 결과를 내지 못합니다.
 * 학습 과정에서 규제(regularization)가 필요할 수도 있습니다. l1-규제, l2-규제, 드롭아웃을 고려해보십시오.
 * 학습엔 사용하지 않는 시험 데이터(test set)를 별도로 마련해두십시오.
 * 신경망이 커질수록 더 많고 복잡한 패턴을 인식할 수 있습니다. 그렇지만 신경망의 크기를 키우면 신경망의 파라미터의 수가 늘어나게 되고 결과적으로 과적합이 일어날 수 있습니다. 예를 들어 10,000개의 데이터로 수백만개의 파라미터를 학습하는 것은 무리입니다. 
@@ -196,12 +196,12 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">DL4J의 다른 튜토리알</a>
-* [RBMs: Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [아이겐벡터, 공분산, 주성분분석, 엔트로피](../eigenvector.html)
-* [자연어처리: Word2vec](../word2vec.html)
-* [인공 신경망](../neuralnet-overview.html)
-* [인공 신경망과 회귀](../linear-regression.html)
-* [컨볼루션 네트워크](../convolutionalnets.html)
+* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
+* [아이겐벡터, 공분산, 주성분분석, 엔트로피](../kr-eigenvector.html)
+* [자연어처리: Word2vec](../kr-word2vec.html)
+* [인공 신경망](../kr-neuralnet-overview.html)
+* [인공 신경망과 회귀](../kr-linear-regression.html)
+* [컨볼루션 네트워크](../kr-convolutionalnets.html)
 
 ## 그 외
 * [RNNs 튜토리알(AIKorea 번역)](http://aikorea.org/blog/rnn-tutorial-1/)

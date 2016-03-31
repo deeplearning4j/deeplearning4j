@@ -14,9 +14,9 @@ layout: kr-default
 3. Maven (빌드 자동화 도구)
 4. Github
 
-자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오 (ND4J는 DL4J의 딥러닝 작업에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다). 여기에서 소개된 예제를 실행하려면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 골라서 설치하면 됩니다.
+자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오 (ND4J는 DL4J의 심층학습(딥러닝)에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다). 여기에서 소개된 예제를 실행하려면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 골라서 설치하면 됩니다.
 
-저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽고 빠르게 저희에게 질문을 하거나 피드백을 줄 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 읽어보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 딥 러닝에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
+저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽고 빠르게 저희에게 질문을 하거나 피드백을 줄 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 읽어보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 심층학습에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
 
 Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사용에 익숙한 고급 자바 개발자를 대상으로 합니다. 만약 여러분이 이미 이런 소프트웨어의 사용에 익숙하시다면 DL4J를 사용하실 준비를 완벽하게 갖춘 셈 입니다.
 
