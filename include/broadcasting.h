@@ -231,7 +231,7 @@ namespace functions {
                                 T val = this->op(xIter[0],y[vectorIdx]);
                                 // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
                                 xIter[0] = val;
-                                vectorIdx++;
+                                vectorIdx+= shape::elementWiseStride(yShapeInfo);
                             }
                             ND4J_RAW_ITER_TWO_NEXT(dim,
                                                    rank,
@@ -278,7 +278,7 @@ namespace functions {
                                 T val = this->op(xIter[0],y[vectorIdx]);
                                 // printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
                                 resultIter[0] = val;
-                                vectorIdx++;
+                                vectorIdx+= shape::elementWiseStride(yShapeInfo);
                             }
                             ND4J_RAW_ITER_TWO_NEXT(dim,
                                                    rank,
