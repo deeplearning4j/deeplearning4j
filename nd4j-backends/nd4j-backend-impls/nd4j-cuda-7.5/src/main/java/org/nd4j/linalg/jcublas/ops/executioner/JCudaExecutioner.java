@@ -20,11 +20,9 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-import jcuda.Pointer;
-import lombok.Getter;
+
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -37,11 +35,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.DefaultPointerConverter;
 import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.PointerConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

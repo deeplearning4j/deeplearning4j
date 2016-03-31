@@ -1799,7 +1799,28 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testMuliRowVector(){
+        INDArray arrC = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray arrF = Nd4j.create(new int[]{3,2},'f').assign(arrC);
 
+        INDArray temp = Nd4j.create(new int[]{2,11},'c');
+        INDArray vec = temp.get(NDArrayIndex.all(), NDArrayIndex.interval(9,10)).transpose();
+        vec.assign(Nd4j.linspace(1,2,2));
+
+        //Passes if we do one of these...
+//        vec = vec.dup('c');
+//        vec = vec.dup('f');
+
+        INDArray outC = arrC.muliRowVector(vec);
+        INDArray outF = arrF.muliRowVector(vec);
+
+        double[][] expD = new double[][]{{1,4},{3,8},{5,12}};
+        INDArray exp = Nd4j.create(expD);
+
+        assertEquals(exp, outC);
+        assertEquals(exp, outF);
+    }
 
     @Test
     public void testSliceConstructor() throws Exception {
