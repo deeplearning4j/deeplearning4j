@@ -704,60 +704,14 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                     //squeeze the dimensions
                     if(numOnes > 0) {
-                        int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
-                        int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
-                        squeezed = true;
-                        int numEncountered = 0;
-                        for(int i = 0; i < wholeRank; i++) {
-                            if(shape[i] != 1) {
-                                squeezeShape[numEncountered] = shape[i];
-                                squeezeStride[numEncountered] = stride[i];
-                                numEncountered++;
-                            }
-                        }
-
-
-                        //for any dimensions specified that are 1,ignore them
-                        int numDimensionsOne = 0;
-                        for(int i = 0;i < dimensionLength; i++) {
-                            if(shape[dimension[i]] == 1)
-                                numDimensionsOne++;
-                        }
-
-                        if(numDimensionsOne > 0) {
-                            int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
-                            int newDimensionIdx = 0;
-                            newSqueezeDimensions = true;
-                            for(int i = 0; i < dimensionLength; i++) {
-                                if(shape[dimension[i]] != 1)
-                                    newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
-                            }
-
-                            //reduce along the new dimensions
-                            dimension = newDimensions;
-                            dimensionLength  -= numDimensionsOne;
-
-                        }
-                        //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
-                        //the previous pointer is just a view of a pointer to be reused that was passed in
-                        shape = squeezeShape;
-                        stride = squeezeStride;
-                        wholeRank -= numOnes;
-                        //adjust dimensions
-                        for(int i = 0; i < dimensionLength; i++) {
-                            dimension[i] -= numOnes;
-                        }
-
-                        for(int i = 0; i < dimensionLength; i++) {
-                            //didn't need to be adjusted
-                            if(dimension[i] < 0)
-                                dimension[i] += numDimensionsOne;
-                        }
-
-                        char order = shape::order(xShapeInfo);
-                        xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
-                        xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
-
+                        xShapeInfo = shape::squeezeDimensions(
+                                xShapeInfo,
+                                &dimension,
+                                &dimensionLength,
+                                &squeezed,
+                                &newSqueezeDimensions,
+                                wholeRank,
+                                numOnes);
                     }
 
 
@@ -857,9 +811,6 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                         }
 
                     }
-
-
-
 
                 }
             }

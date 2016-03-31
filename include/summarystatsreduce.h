@@ -51,7 +51,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData() {
@@ -64,7 +64,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void initialize() {
@@ -75,7 +75,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void initWithValue(T val) {
@@ -92,7 +92,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setValues(SummaryStatsData<T> *target) {
@@ -110,7 +110,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T variance()   {
@@ -127,8 +127,8 @@ namespace functions {
 #endif
             T varianceBiasCorrected() {
                 if (this->n <= 1) {
-                return 0.0;
-            }
+                    return 0.0;
+                }
 
                 return (M2 - nd4j::math::nd4j_pow<T>(skewness(),2.0) / n ) / (n - 1.0);
             }
@@ -137,7 +137,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T variance_n() {
@@ -150,7 +150,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T skewness()   { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
@@ -159,7 +159,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T kurtosis()   { return n * M4 / (M2 * M2); }
@@ -168,7 +168,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getM2() const {
@@ -179,7 +179,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setM2(T m2) {
@@ -190,7 +190,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getM3() const {
@@ -201,7 +201,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setM3(T m3) {
@@ -212,7 +212,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getM4() const {
@@ -223,7 +223,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setM4(T m4) {
@@ -234,7 +234,7 @@ namespace functions {
             __inline__ __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getMax() const {
@@ -245,7 +245,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setMax(T max) {
@@ -256,7 +256,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getMean() const {
@@ -267,7 +267,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setMean(T mean) {
@@ -278,7 +278,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getMin() const {
@@ -289,7 +289,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setMin(T min) {
@@ -300,7 +300,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getN() const {
@@ -311,7 +311,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             void setN(T n) {
@@ -392,7 +392,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData<T> op(SummaryStatsData<T> val, T *extraParams) {
@@ -412,7 +412,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
@@ -467,7 +467,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData<T> merge(SummaryStatsData<T> f1, SummaryStatsData<T> f2, T *extraParams) = 0;
@@ -477,7 +477,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             T getValue(SummaryStatsData<T> val) = 0;
@@ -499,7 +499,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData<T> postProcess(SummaryStatsData<T> reduction, int n, int xOffset,
@@ -517,7 +517,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             SummaryStatsData<T> op(SummaryStatsData<T> d1, SummaryStatsData<T> d2, T *extraParams) = 0;
@@ -863,7 +863,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -888,7 +888,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             T execScalar(T *x,
                          int *xShapeInfo,
@@ -949,7 +949,7 @@ struct SharedSummaryStatsData<double> {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -975,9 +975,30 @@ struct SharedSummaryStatsData<double> {
                  */
 
                 if (dimensionLength > 1) {
+                    int numOnes = 0;
+                    int onesEncountered = 0;
+                    int *shape = shape::shapeOf(xShapeInfo);
+                    int *stride = shape::stride(xShapeInfo);
+                    int wholeRank = shape::rank(xShapeInfo);
+                    bool squeezed = false;
+                    bool newSqueezeDimensions = false;
+                    for(int i = 0; i < wholeRank; i++) {
+                        if(shape[i] == 1)
+                            numOnes++;
+                    }
 
+                    //squeeze the dimensions
+                    if(numOnes > 0) {
+                        xShapeInfo = shape::squeezeDimensions(
+                                xShapeInfo,
+                                &dimension,
+                                &dimensionLength,
+                                &squeezed,
+                                &newSqueezeDimensions,
+                                wholeRank,
+                                numOnes);
+                    }
 
-                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
                     /**
                      * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
@@ -992,7 +1013,6 @@ struct SharedSummaryStatsData<double> {
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-                    shape::TADPermuteInfo info = shape::tadInfo(xShapeInfo,dimension,dimensionLength);
                     int tadLength = shape::length(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
@@ -1038,28 +1058,56 @@ struct SharedSummaryStatsData<double> {
                     }
 
                     free(tadShapeShapeInfo);
-                    shape::freePermuteInfo(info);
-                }
 
-                else {
-                    int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
-                    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                    const int resultLength = shape::length(resultShapeInfoBuffer);
-#pragma omp parallel for
-                    for (int i = 0; i < resultLength; i++) {
-                        int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
-                        SummaryStatsData<T> comp;
-                        comp.initWithValue(x[offset]);
-                        for (int j = 1; j < tadLength; j++) {
-                            SummaryStatsData<T> comp2;
-                            comp2.initWithValue(x[offset + tadElementWiseStride * j]);
-                            comp = update(comp, comp2, extraParams);
-                        }
+                    if(newSqueezeDimensions) {
+                        free(dimension);
+                    }
 
-                        result[i] = getValue(comp);
+                    if(numOnes > 0) {
+                        free(xShapeInfo);
                     }
 
 
+                }
+
+                else {
+                    if(shape::order(xShapeInfo) == 'f') {
+                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+                        for(int i = 0;  i < resultLength; i++) {
+                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                            SummaryStatsData<T> comp;
+                            comp.initWithValue(x[baseOffset]);
+
+                            for(int j = 1; j < tadLength; j++) {
+                                SummaryStatsData<T> comp2;
+                                comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
+                                comp = update(comp, comp2, extraParams);
+                            }
+
+                            result[i] = getValue(comp);
+                        }
+
+                    }
+                    else {
+                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
+                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+                        for(int i = 0;  i < resultLength; i++) {
+                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                            SummaryStatsData<T> comp;
+                            comp.initWithValue(x[baseOffset]);
+                            for(int j = 1; j < tadLength; j++) {
+                                SummaryStatsData<T> comp2;
+                                comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
+                                comp = update(comp, comp2, extraParams);
+                            }
+
+                            result[i] = getValue(comp);
+                        }
+
+                    }
                 }
 
             }
@@ -1083,14 +1131,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             virtual ~SummaryStatsReduce() {
             }
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             SummaryStatsReduce() {
             }
@@ -1117,7 +1165,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> op(
@@ -1130,13 +1178,16 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
                     if (this->biasCorrected) {
-                    return val.varianceBiasCorrected();
-                }
+                        T ret =  val.varianceBiasCorrected();
+                        if(ret < 0)
+                            return val.variance();
+                        return ret;
+                    }
                     return val.variance();
                 }
 
@@ -1154,7 +1205,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> merge(
@@ -1180,7 +1231,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> postProcess(
@@ -1201,7 +1252,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
@@ -1211,14 +1262,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 virtual ~Variance() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 Variance() {
                 }
@@ -1245,14 +1296,18 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 T getValue(SummaryStatsData<T> val) {
-                    if(this->biasCorrected)
-                        return nd4j::math::nd4j_sqrt(val.varianceBiasCorrected());
-
-                    return nd4j::math::nd4j_sqrt(val.variance());
+                    if (this->biasCorrected) {
+                        T ret =  val.varianceBiasCorrected();
+                        if(ret < 0)
+                            return  nd4j::math::nd4j_sqrt(val.variance());
+                        else
+                            return  nd4j::math::nd4j_sqrt(ret);
+                    }
+                    return  nd4j::math::nd4j_sqrt(val.variance());
                 }
 
                 /**
@@ -1267,7 +1322,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> op(
@@ -1289,7 +1344,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> merge(
@@ -1315,7 +1370,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::summarystats::SummaryStatsData<T> postProcess(
@@ -1336,7 +1391,7 @@ struct SharedSummaryStatsData<double> {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,
@@ -1347,14 +1402,14 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 virtual ~StandardDeviation() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 StandardDeviation() {
                 }
@@ -1396,7 +1451,7 @@ struct SharedSummaryStatsData<double> {
             __inline__ __host__ __device__
 #endif
             functions::summarystats::SummaryStatsReduce<T> * getOp(int op) {
-               return this->getOp(op,true);
+                return this->getOp(op,true);
             }
         };
     }
