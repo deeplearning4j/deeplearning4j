@@ -261,7 +261,7 @@ namespace functions {
                                                  xStridesIter,
                                                  &result,
                                                  resultStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *resultIter = result;

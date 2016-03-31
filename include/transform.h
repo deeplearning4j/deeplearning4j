@@ -198,7 +198,7 @@ namespace functions {
                     T *extraParams,
                     int *indexes) {
                 int n = shape::length(xShapeInfo);
-#pragma omp simd
+#pragma simd
                 for (int i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]], extraParams);
                 }
@@ -305,19 +305,36 @@ namespace functions {
                               T *extraParams,
                               int n) {
                 if (xStride == 1 && resultStride == 1) {
+                    if(n < 8000) {
 #pragma omp parallel  for
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], extraParams);
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], extraParams);
+                        }
                     }
+                    else {
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], extraParams);
+                        }
+                    }
+
                 }
 
 
                 else {
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * xStride],
-                                                      extraParams);
+                    if(n < 8000) {
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          extraParams);
+                        }
+                    }
+
                 }
 
             }
@@ -3230,7 +3247,11 @@ namespace functions {
                         if (elementWiseStride == 1) {
 #pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-                                max = nd4j::math::nd4j_max<T>(max, result[i]);
+#pragma omp critical
+                                {
+                                    max = nd4j::math::nd4j_max<T>(max, result[i]);
+
+                                }
                             }
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
@@ -3244,7 +3265,11 @@ namespace functions {
 
 #pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-                                sum += result[i];
+#pragma omp critical
+                                {
+                                    sum += result[i];
+
+                                }
                             }
 
 #pragma omp parallel for
@@ -3256,13 +3281,8 @@ namespace functions {
                         }
                         else {
 
-#pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
-                                {
-                                    max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
-
-                                }
+                                max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
 #pragma omp parallel for
                             for (int i = 0; i < length; i++) {
@@ -3274,12 +3294,9 @@ namespace functions {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
-#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
-#pragma omp critical
-                                {
                                     sum += result[i * elementWiseStride];
-                                }
+
                             }
 
 #pragma omp parallel for

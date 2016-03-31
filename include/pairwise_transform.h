@@ -456,8 +456,8 @@ namespace functions {
                     //not same shape
                 else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
                          shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
-                                                                                      yElementWiseStride >= 1 &&
-                                                                                      resultElementWiseStride >= 1) {
+                         yElementWiseStride >= 1 &&
+                         resultElementWiseStride >= 1) {
                     exec(dx,
                          xElementWiseStride,
                          y,
@@ -509,7 +509,7 @@ namespace functions {
                                                     yStridesIter,
                                                     &result,
                                                     resultStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter)
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
                         {
                             /* Process the innermost dimension */
                             T *xIter = dx;
@@ -535,7 +535,56 @@ namespace functions {
                 }
 
                 else {
-                    printf("Unable to execute pair wise transform\n");
+                    char xOrder = shape::order(xShapeBuffer);
+                    char yOrder = shape::order(yShapeBuffer);
+                    char resultOrder = shape::order(resultShapeBuffer);
+                    int len = shape::length(xShapeBuffer);
+                    int xRank = shape::rank(xShapeBuffer);
+                    int yRank = shape::rank(yShapeBuffer);
+                    int resultRank = shape::rank(resultShapeBuffer);
+                    int *xCoord = (int *) malloc(sizeof(int) * xRank);
+                    int *yCoord = (int *) malloc(sizeof(int) * yRank);
+                    int *resultCoord = (int *) malloc(sizeof(int) * resultRank);
+
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+                    int *xStride = shape::stride(xShapeBuffer);
+
+                    int *yShape = shape::shapeOf(yShapeBuffer);
+                    int *yStride = shape::stride(yShapeBuffer);
+
+                    int *resultShape = shape::shapeOf(resultShapeBuffer);
+                    int *resultStride = shape::stride(resultShapeBuffer);
+                    if(dx == result) {
+                        for (int i = 0; i < len; i++) {
+                            shape::ind2subC(xRank,xShape, i, &xCoord);
+                            shape::ind2subC(yRank,yShape, i, &yCoord);
+                            shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+
+                            int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+                        }
+                    }
+                    else {
+                        for (int i = 0; i < len; i++) {
+                            shape::ind2subC(xRank,xShape, i, &xCoord);
+                            shape::ind2subC(yRank,yShape, i, &yCoord);
+                            shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+
+                            int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            int resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+                            result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+                        }
+                    }
+
+
+
+                    free(xCoord);
+                    free(yCoord);
+                    free(resultCoord);
                 }
             }
 
@@ -557,21 +606,40 @@ namespace functions {
             virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
                               int resultStride, T *extraParams, const int n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i] = op(dx[i], y[i], extraParams);
+                    if(n < 8000) {
+#pragma simd
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
+                    }
+
 
 
                 }
 
                 else {
-
-#pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
-                        result[i * resultStride] = op(dx[i * xStride],
-                                                      y[i * yStride], extraParams);
+                    if(n < 8000) {
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
                     }
+                    else {
+#pragma omp parallel for
+                        for (int i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
+                    }
+
+
+
                 }
 
             }

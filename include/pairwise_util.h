@@ -185,22 +185,35 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
         outStrides[0] = 0;
         return 0;
     }
-    else if (ndim == 1) {
-        int stride_entry = strides[0], shape_entry = shape[0];
-        *out_ndim = 1;
+    else if (ndim <= 2 || shape::isVector(shape,ndim)) {
+        *out_ndim = 2;
         outShape[0] = shape[0];
-        /* Always make a positive stride */
-        if (stride_entry >= 0) {
-            *out_data = data;
-            outStrides[0] = stride_entry;
+        outShape[1] = shape[1];
+        *out_data = data;
+        outStrides[0] = strides[0];
+        outStrides[1] = strides[1];
+ \
+#if 0
+        /* DEBUG */
+        {
+            printf("raw iter ndim %d\n", ndim);
+            printf("shape: ");
+            for (i = 0; i < ndim; ++i) {
+                printf("%d ", (int)outShape[i]);
+            }
+            printf("\n");
+            printf("strides a: ");
+            for (i = 0; i < ndim; ++i) {
+                printf("%d ", (int)outStrides[i]);
+            }
+
+            printf("\n");
+
         }
-        else {
-            *out_data = data + stride_entry * (shape_entry - 1);
-            outStrides[0] = -stride_entry;
-        }
+#endif
+
         return 0;
     }
-
     /* Sort the axes based on the destination strides */
     SortStrideArray(ndim, strides, strideperm);
     for (i = 0; i < ndim; i++) {
@@ -375,7 +388,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
         outStridesB[0] = 0;
         return 0;
     }
-    else if (ndim == 1 || shape::isVector(shape,ndim)) {
+    else if (ndim <= 2 || shape::isVector(shape,ndim)) {
         *out_ndim = 2;
         outShape[0] = shape[0];
         outShape[1] = shape[1];
@@ -480,7 +493,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     *out_ndim = ndim;
 
 
-#if 1
+#if 0
     /* DEBUG */
     {
         printf("raw iter ndim %d\n", ndim);

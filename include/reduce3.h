@@ -675,7 +675,7 @@ namespace functions {
                                                  xStridesIter,
                                                  &y,
                                                  yStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *yIter = y;
@@ -779,7 +779,7 @@ namespace functions {
 
                         int resultLength = shape::length(resultShapeInfoBuffer);
                         int tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *yIter = y;

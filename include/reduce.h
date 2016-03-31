@@ -234,6 +234,7 @@ namespace functions {
 			}
 			__syncthreads();
 
+
 			int resultLength = shape::length(resultShapeInfo);
 			if(tid >= resultLength) {
 				return;
@@ -274,10 +275,8 @@ namespace functions {
 		else {
 			T curr;
 			if (resultScalar) {
-
-			// this is impossible statement, since reduce works with 1 block only
-			//	if(blockIdx.x >= resultLength)
-			//		return;
+				if(blockIdx.x >= resultLength)
+					return;
 
 
 				T *realExtraParams;
@@ -338,9 +337,9 @@ namespace functions {
 
 			// write result for this block to global mem
 			if (tid == 0) {
-				if(postProcessOrNot) {
+				if(postProcessOrNot)
 					result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
-				} else
+				else
 					result[blockIdx.x] = sPartials[0];
 				if(extraParamsLength >= 1)
 					delete[] realExtraParams;
@@ -353,225 +352,6 @@ namespace functions {
 
 	}
 
-}
-
-/**
- * This implements a collapsing tad reduction
- * based on different dimensions.
- *
- * The reason we need this is because of the fact that
- * there are certain dimension combinations (usually > 1)
- * that don't have an element wise stride.
- *
- * A way to bypass this problem is to expand the problem
- * in to a 1 dimension reduction problem
- * and then collapsing the results in to the equivalent
- * shape of the multi dimension problem.
- *
- * An example problem would be an array of:
- * linspace(1,24,24).reshape(2,2,3,2)
- *
- * The tad for reduction:
- * 2,3 doesn't have an element wise stride.
- *
- * However, the tad for reduction:
- * 3 does
- *
- * What we can exploit here is the ability
- * to reshape problems of multiple dimensions
- *
- * in to equivalent expanded problems based on smaller tads
- * eg:
- * multiple reductions for each dimension along long dimension 3
- * followed by collapsing the problem in to an equivalent state
- * as if we had specified 2,3 for the dimensions instead.
- *
- * This gives us a way of executing an element wise stride based
- * algorithm  that is executable on the gpu.
- *
- * For the GPU, we force each block to process a  tad
- * at the singular dimension level. Eg: dimension 3
- *
- * So for example along long dimension 3 of the 2,2,3,2
- * array we have 12 tensors along long dimension.
- *
- * We then map those 12 tads to a reduction index.
- *
- * A reduction index is the equivalent value
- * in teh result as if we had specified the reduction dimensions
- * to be 2,3 instead.
- *
- * For example, if we have 12 tads for dimension 3
- * we will only have 4 for dimensions 2,3
- *
- * The goal will be then to generate the equivalent results
- * using dimension 3 but collapsing the results according to
- * the dimension 2,3 space (remember: the reason we are doing this mapping
- * is because we are trying to map the multi dimensional problem on to
- * a problem that allows us to solve it via element wise stride)
- *
- *
- * An example mapping relative to a gpu block is as follows:
- * ([[[[  1.,   2.],
-	 [  3.,   4.],
-	 [  5.,   6.]],
-
-	 [[  7.,   8.],
-	 [  9.,  10.],
-	 [ 11.,  12.]]],
-
-
-	 [[[ 13.,  14.],
-	 [ 15.,  16.],
-	 [ 17.,  18.]],
-
-	 [[ 19.,  20.],
-	 [ 21.,  22.],
-	 [ 23.,  24.]]]])
-
-
-
- * Along long dimension 3 we will have tads of length 2
- * and 4 reduction indexes we need to map for the
- * 2,3 dimension problem.
- *
- *
- * The first reduction index will map to the first 3 tads of length 2
- * The next reduction index will map to the next 3, etc.
- *
- * We then process a reduction index per block on the gpu.
- * If any gpu block index is > the number of
- * reduction indexes we skip it.
- *
- * Note here we did this implementation because of
- * race conditions on the block and shared memory.
- *
- * This way of mapping allows us to avoid race conditions.
- *
- * @param data the data to process
- * @param result the result vector
- * @param initialValue the initial value for the reductino
- * @param elementsPerTad the elements per tad
- * for the expanded tad (eg: the one being collapsed from)
- * @param numTads the number of tads for the final result
- * @param n the number of elements in the buffer total
- * @param elementWiseStride the element wise stride
- * we use for the singular dimensions for each tad
- * @param numOriginalTads the number of original tads for the expanded version (eg: we are doing
- * reduction mapping a single dimension problem that allows for an element wise stride on to a multi
- * index problem)
- * @param sharedMemorySize the shared memory size we specified for launching the kernel - this is used for figuring out
- * how many elements are possible for the shared memory buffer for initializing the values to be default
- * @param xShapeInfo the shape information for the buffer - for more information on this see tad.h
- * @param dimension the dimension for the problem on the smaller scale (eg: the expanded version of the problem)
- * @param dimensionLength the length of the number of dimensions
- *
- */
-__device__ virtual void collapseTad(
-		T *data,
-		T *result,
-		T *extraParams,
-		int numOriginalTads,
-		int sharedMemorySize,
-		int *xShapeInfo,
-		int *resultShapeInfo,
-		int *dimension,
-		int dimensionLength) {
-	SharedMemory <T> val;
-	//number of tads for the reduced solution
-	int numTads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
-
-	volatile T *sPartials = val.getPointer();
-	int tid = threadIdx.x;
-	//initialize the values
-	int numItems = sharedMemorySize / sizeof(T);
-	T initialShapredValue = this->startingValue(data);
-	for (int i = tid; i < numItems; i += blockDim.x) {
-		sPartials[i] = initialShapredValue;
-	}
-	__syncthreads();
-
-	//each block processes a reduction index
-	//don't bother iterating on this block if it goes over the number of tads
-
-	__shared__ shape::TADPermuteInfo xTadInfo;
-
-	if (tid == 0) {
-		xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-	}
-
-	__syncthreads();
-
-	/**
-	 * Reverse engineer which tads belong long to a particular
-	 * reduction index.
-	 *
-	 * Each tad should be handled by a thread.
-	 *
-	 * Combine them all in the block at the end.
-	 *
-	 *
-	 */
-
-	//number of tads per reduce index
-	__shared__ int tadsPerReduceIndex2;
-	if (tid == 0) {
-		tadsPerReduceIndex2 = shape::tadsPerReduceIndex(numTads, numOriginalTads);
-	}
-
-	__syncthreads();
-
-	//each thread does a tad
-	if (tid >= numTads || blockIdx.x >= tadsPerReduceIndex2)
-		return;
-
-	/**
-	 * Need to ensure we stay in bounds on each block -
-	 * we need to compute the proper tads for each block and
-	 * do bounds checking on each thread.
-	 *
-	 * This is to ensure that each thread processes
-	 * a unique tad at most once.
-	 *
-	 *
-	 */
-	/**
-	 * NEXT PART HERE
-	 */
-
-	/**
-	 * Now WRT the thread id
-	 * we want to iterate through a tad
-	 * on each thread using the element wise stride
-	 * and num elements per tad to compute a reduce
-	 * for the tad. We then reduce in shared memory
-	 * setting the item in the shared memory space
-	 * and aggregate all of thh partial results
-	 * on thread 0 aggregating the final results
-	 * on the block resulting in one global write.
-	 */
-	//compute the offset for the tad for this thread
-	//iterating via element wise stride
-	//note here blockidx.x + tid is the tad we want
-	int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
-	int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimension,dimensionLength, xTadInfo);
-#pragma unroll
-	for (int i = 0; i < tadsPerReduceIndex2; offsetForBlock += shape::elementWiseStride(xShapeInfo), i++) {
-		sPartials[tid] = update(sPartials[tid], op(data[offsetForBlock], extraParams), extraParams);
-		__syncthreads();
-	}
-
-	if (tid == 0 && blockIdx.x < numTads) {
-		//start at 1 so we don't count the first entry twice
-#pragma unroll
-		for (int i = 1; i < numTads; i++) {
-			sPartials[0] = update(sPartials[0], sPartials[i], extraParams);
-			__syncthreads();
-		}
-
-		result[blockIdx.x] = sPartials[0];
-		shape::freePermuteInfo(xTadInfo);
-	}
 }
 
 /**
@@ -588,7 +368,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 	int floorPow2 = blockDim.x;
 
 	if (floorPow2 & (floorPow2 - 1)) {
-	    while (floorPow2 & (floorPow2 - 1)) {
+		while (floorPow2 & (floorPow2 - 1)) {
 			floorPow2 &= floorPow2 - 1;
 		}
 		if (tid >= floorPow2) {
@@ -686,16 +466,66 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
             T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
                 T startingVal = this->startingValue(x);
                 if (xElementWiseStride == 1) {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i], extraParams);
+                            local = update(local, curr, extraParams);
+
+                        }
+                        local = postProcess(local, length,extraParams);
+
+                        return local;
+                    }
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i], extraParams);
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
+#pragma omp parallel
+                    {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        if(items < 1)
+                            items = 1;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
+                    }
+
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items);
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
+                            if(newOffset >= length) {
+                                break;
+                            }
+
+                            //handle modulo case
+                            if(newOffset + items >= length) {
+                                itemsToLoop = length - newOffset;
+                            }
+
+                            for (int i = 0; i < itemsToLoop; i++) {
+                                T curr = op(chunk[i], extraParams);
+                                local = update(local, curr, extraParams);
+                            }
+
+                        }
+
 #pragma omp critical
                         {
-                            finalVal = update(finalVal, curr, extraParams);
+                            finalVal = update(finalVal,local,extraParams);
 
                         }
                     }
+
 
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
@@ -703,20 +533,65 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                 }
 
                 else {
+                    if(length < 8000) {
+                        T local = this->startingValue(x);
+#pragma simd
+                        for(int i = 0; i < length; i++) {
+                            T curr = op(x[i *xElementWiseStride], extraParams);
+                            local = update(local, curr, extraParams);
+
+                        }
+
+                        local = postProcess(local, length,extraParams);
+
+                        return local;
+                    }
+
                     T finalVal = startingVal;
-#pragma omp parallel for shared(finalVal)
-                    for (int i = 0; i < length; i++) {
-                        T curr = op(x[i * xElementWiseStride], extraParams);
+                    int items;
+                    int threads;
+                    int chunks;
+                    int modulo;
+#pragma omp parallel
+                    {
+                        threads = omp_get_num_threads();
+                        items = length / threads;
+                        if(items < 1)
+                            items = 1;
+                        chunks = length / items;
+                        modulo = length % items;
+                        //one left over chunk
+                        if(modulo > 0)
+                            chunks++;
+                    }
+
+#pragma omp parallel
+                    {
+                        T local = this->startingValue(x);
+                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
+                            int newOffset = (i * items) * xElementWiseStride;
+                            T *chunk = x + newOffset;
+                            int itemsToLoop = items;
+
+
+                            for (int i = 0; i < itemsToLoop; i++) {
+                                T curr = op(chunk[i * xElementWiseStride], extraParams);
+                                local = update(local, curr, extraParams);
+                            }
+
+
+                        }
+
 #pragma omp critical
                         {
-                            finalVal = update(finalVal, curr, extraParams);
+                            finalVal = update(finalVal,local,extraParams);
 
                         }
                     }
 
+
                     finalVal = postProcess(finalVal, length,extraParams);
                     return finalVal;
-
 
                 }
 
@@ -760,7 +635,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                  &x,
                                                  xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                             /* Process the innermost dimension */
                             T *xIter = x;
                             start = update(start,op(xIter[0],extraParams),extraParams);
@@ -915,7 +790,7 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
                                                      shapeIter,
                                                      &xPointer,
                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 start = update(start,op(xPointer[0],extraParams),extraParams);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,

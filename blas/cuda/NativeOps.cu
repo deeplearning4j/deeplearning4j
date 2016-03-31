@@ -2058,6 +2058,46 @@ void   NativeOps::execTransformFloat(
 
 }
 
+/**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenFloat(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    printf("Cuda no op atm\n");
+}
+/**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+void NativeOps::flattenDouble(
+        int offset,
+        char order,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo,
+        Nd4jPointer input,
+        Nd4jPointer inputShapeInfo) {
+    printf("Cuda no op atm\n");
+}
 
 void NativeOps::initializeDevicesAndFunctions() {
     int devCnt = 0;
