@@ -1134,7 +1134,7 @@ float   NativeOps::execIndexReduceScalarFloat(
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     ScalarInfo<float> *scalarInfo = new ScalarInfo<float>(*stream);
 
-    indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+    indexReduceFloat<<<1,launchDims.y, launchDims.z * 3, *stream>>>(
                     opNum,
                     xPointer,
                     xShapeInfoPointer,
