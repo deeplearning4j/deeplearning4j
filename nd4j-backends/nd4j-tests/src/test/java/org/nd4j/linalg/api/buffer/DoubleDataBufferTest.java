@@ -124,7 +124,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         double[] d1 = new double[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
-        assertEquals(d, d2);
+        assertArrayEquals(d.asDouble(), d2.asDouble(), 0.0001f);
     }
 
 
@@ -179,7 +179,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         DataBuffer twoThree = Nd4j.createBuffer(new double[]{2,3});
         DataBuffer blank = Nd4j.createBuffer(new double[]{0, 0, 0});
         blank.assign(one,twoThree);
-        assertEquals(assertion, blank);
+        assertArrayEquals(assertion.asDouble(), blank.asDouble(), 0.0001);
     }
 
 
