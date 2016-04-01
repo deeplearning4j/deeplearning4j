@@ -1080,7 +1080,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         float nFirst = 2;
         float dFirst = d.getFloat(0, 1);
         assertEquals(nFirst, dFirst, 1e-1);
-        assertEquals(d.data(), n.data());
+        assertEquals(d, n);
         assertEquals(true, Arrays.equals(new int[]{2, 2}, n.shape()));
 
         INDArray newRow = Nd4j.linspace(5, 6, 2);

@@ -60,6 +60,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
+                point.setPointers(devicePointerInfo);
+
                 point.setAllocationStatus(AllocationStatus.HOST);
                 return devicePointerInfo;
             }

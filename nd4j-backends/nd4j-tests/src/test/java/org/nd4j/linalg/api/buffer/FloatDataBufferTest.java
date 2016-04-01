@@ -73,14 +73,16 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         file.deleteOnExit();
         SerializationUtils.saveObject(buf, file);
         DataBuffer buf2 = SerializationUtils.readObject(file);
-        assertEquals(buf, buf2);
+//        assertEquals(buf, buf2);
+        assertArrayEquals(buf.asFloat(), buf2.asFloat(), 0.0001f);
 
         Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
         buf = Nd4j.createBuffer(5);
         file.deleteOnExit();
         SerializationUtils.saveObject(buf, file);
         buf2 = SerializationUtils.readObject(file);
-        assertEquals(buf, buf2);
+        //assertEquals(buf, buf2);
+        assertArrayEquals(buf.asFloat(), buf2.asFloat(), 0.0001f);
     }
 
     @Test

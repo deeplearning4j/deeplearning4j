@@ -23,6 +23,7 @@ package org.nd4j.linalg;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -523,7 +524,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         float nFirst = 3;
         float dFirst = d.getFloat(0, 1);
         assertEquals(nFirst, dFirst, 1e-1);
-        assertEquals(d.data(), n.data());
+        assertEquals(d, n);
         assertEquals(true, Arrays.equals(new int[]{2, 2}, n.shape()));
 
         INDArray newRow = Nd4j.linspace(5, 6, 2);
