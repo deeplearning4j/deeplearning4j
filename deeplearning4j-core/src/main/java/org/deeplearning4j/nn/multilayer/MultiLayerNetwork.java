@@ -53,6 +53,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
@@ -1648,6 +1649,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(hasMaskArray) clearLayerMaskArrays();
         return score();
+    }
+
+    public INDArray scoreExamples(DataSetIterator iter, boolean addRegularizationTerms){
+        List<INDArray> out = new ArrayList<>();
+
+        while(iter.hasNext()){
+            out.add(scoreExamples(iter.next(), addRegularizationTerms));
+        }
+        return Nd4j.toFlattened('f',out);
     }
 
     /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(DataSet)} and {@link #score(DataSet, boolean)}
