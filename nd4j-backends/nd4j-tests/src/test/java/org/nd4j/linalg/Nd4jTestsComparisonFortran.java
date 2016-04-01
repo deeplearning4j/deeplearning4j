@@ -114,6 +114,8 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
             for( int j = 0; j < second.size(); j++ ){
                 for( int k = 0; k<alpha.length; k++ ) {
                     for( int m = 0; m<beta.length; m++ ) {
+                        System.out.println((String.format("Running iteration %d %d %d %d",i,j,k,m)));
+
                         INDArray cff = Nd4j.create(cOrig.shape(),'f');
                         cff.assign(cOrig);
                         INDArray cft = Nd4j.create(cOrig.shape(),'f');

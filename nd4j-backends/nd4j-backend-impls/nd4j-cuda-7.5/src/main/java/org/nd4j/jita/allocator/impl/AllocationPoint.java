@@ -153,7 +153,7 @@ public class AllocationPoint {
      * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
      */
     public void setPointers(@NonNull PointersPair pointerInfo) {
-            this.pointerInfo = pointerInfo;
+        this.pointerInfo = pointerInfo;
     }
 
     public PointersPair getPointers() {
