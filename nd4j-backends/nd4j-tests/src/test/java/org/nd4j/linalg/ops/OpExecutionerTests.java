@@ -296,11 +296,11 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         int axis = 0;
         INDArray row = linspace.slice(axis);
         Max max = new Max(row);
-        double max2 = Nd4j.getExecutioner().execAndReturn(max).currentResult().doubleValue();
+        double max2 = Nd4j.getExecutioner().execAndReturn(max).getFinalResult().doubleValue();
         assertEquals(5.0, max2, 1e-1);
 
         Min min = new Min(row);
-        double min2 = Nd4j.getExecutioner().execAndReturn(min).currentResult().doubleValue();
+        double min2 = Nd4j.getExecutioner().execAndReturn(min).getFinalResult().doubleValue();
         assertEquals(1.0, min2, 1e-1);
     }
 
