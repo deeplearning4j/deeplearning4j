@@ -25,7 +25,7 @@ public class ContextPool {
     private static Logger logger = LoggerFactory.getLogger(ContextPool.class);
 
     public boolean containsContextForThread(long threadId) {
-        return false;
+        return contextsPool.containsKey(threadId);
     }
 
     public CudaContext getContextForDevice(Integer deviceId) {

@@ -806,7 +806,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         deviceAllocations.put(device, new ConcurrentHashMap<Long, Long>());
                     }
 
-                    log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
+                    log.debug("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
 
                     //initCudaContextForThread(threadId);
                     //initializeDevice(threadId, device);
