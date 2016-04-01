@@ -538,7 +538,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
-        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() ==0 ) {
+        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 ) {
             if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
                 // at this point we know, that this request is done withing some existent context
                 long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
@@ -549,9 +549,11 @@ public class CudaZeroHandler implements MemoryHandler {
             }
         } else {
             // if that's device state, we probably might want to update device memory state
-            if (dstPoint.isActualOnHostSide()) {
+            if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+                if (dstPoint.isActualOnHostSide()) {
 //                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape());
-                copyforward(dstPoint, dstPoint.getShape());
+                    copyforward(dstPoint, dstPoint.getShape());
+                }
             }
         }
 
