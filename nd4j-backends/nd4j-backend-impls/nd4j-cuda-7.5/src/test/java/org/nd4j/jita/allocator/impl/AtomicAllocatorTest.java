@@ -316,6 +316,15 @@ public class AtomicAllocatorTest {
         assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
     }
 
+
+    @Test
+    public void testGpuVariance() throws Exception {
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray columnVar = twoByThree.var(true,0);
+        INDArray assertion = Nd4j.create(new double[]{2, 2});
+        assertEquals(assertion, columnVar);
+    }
+
     /*
         This test isn't actual anymore
      */

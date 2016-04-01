@@ -837,6 +837,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     public CudaContext getCudaContext() {
+        // FIXME: remove this before release
         if (!contextPool.containsKey(Thread.currentThread().getId())) {
             initCudaContextForThread(Thread.currentThread().getId());
         }
