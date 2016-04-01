@@ -725,7 +725,7 @@ namespace shape {
  * and the offset to be read.
  */
 #ifdef __CUDACC__
-    __device__
+    __device__ __host__
 #endif
     int tadOffset(int *xInfo, int offset);
 
@@ -1249,6 +1249,9 @@ namespace shape {
      * had a stride of 6, we never need to do a major stride jump.
      *
      */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
 
 
