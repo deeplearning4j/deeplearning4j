@@ -1028,7 +1028,7 @@ void   NativeOps::execTransformDouble(
                     xPointer,
                     xStride,
                     extraParamsPointer,
-                    resultPointer);
+                    resultPointer,resultStride);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1055,7 +1055,7 @@ void   NativeOps::execTransformDouble(
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-
+    int *resultShapeInfoPointer =  reinterpret_cast<int *>(resultShapeInfo);
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[15], deviceProperties[(int) extraPointers[2]]);
@@ -1065,7 +1065,7 @@ void   NativeOps::execTransformDouble(
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
-                    resultPointer);
+                    resultPointer,resultShapeInfoPointer);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1974,7 +1974,7 @@ void   NativeOps::execTransformFloat(
             xPointer,
             xStride,
             extraParamsPointer,
-            resultPointer);
+            resultPointer,resultStride);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1999,6 +1999,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2009,7 +2010,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                     xPointer,
                     xShapeInfoPointer,
                     extraParamsPointer,
-                    resultPointer);
+                    resultPointer,resultShapeInfoPointer);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -2109,10 +2110,10 @@ void NativeOps::initializeDevicesAndFunctions() {
 
     cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
-    void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result) = transformFloat;
+    void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result,int *resultShapeInfo) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[1], transformFloatPointer1);
 
-    void (*transformFloatPointer2)(int opNum, int n, float *dy, int incy, float *params, float *result) = transformFloat;
+    void (*transformFloatPointer2)(int opNum, int n, float *dy, int incy, float *params, float *result,int resultStride) = transformFloat;
     cudaFuncGetAttributes(&funcAttributes[2], transformFloatPointer2);
 
     cudaFuncGetAttributes(&funcAttributes[3], (void *)summaryStatsReduceFloat);
@@ -2143,10 +2144,10 @@ void NativeOps::initializeDevicesAndFunctions() {
 
     cudaFuncGetAttributes(&funcAttributes[14], transformDoubleIndexes);
 
-    void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, double *params, double *result) = transformDouble;
+    void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, double *params, double *result,int *resultShapeInfo) = transformDouble;
     cudaFuncGetAttributes(&funcAttributes[15], transformDoublePointer1);
 
-    void (*transformDoublePointer2)(int opNum, int n, double *dy, int incy, double *params, double *result) = transformDouble;
+    void (*transformDoublePointer2)(int opNum, int n, double *dy, int incy, double *params, double *result,int resultStride) = transformDouble;
     cudaFuncGetAttributes(&funcAttributes[16], transformDoublePointer2);
 
     cudaFuncGetAttributes(&funcAttributes[17], summaryStatsReduceDouble);
