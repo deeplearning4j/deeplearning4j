@@ -82,19 +82,20 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(
+	virtual __inline__ __device__ void transformCuda(
 			T scalar,
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result) {
+			T *result, int *resultShapeInfo) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(shapeInfo); //shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-       int n = shape::length(shapeInfo);
+		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
+        int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+		int n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -103,23 +104,29 @@ namespace functions {
 			length = shape::length(shapeInfo);
 		__syncthreads();
 
-//         if (threadIdx.x == 0 && blockIdx.x == 0)
-//            printf("xEWStride: [%i], xLength: [%i], xOrder: [%c]\n", xElementWiseStride, n, xOrder);
 
-
-
-		if(xElementWiseStride >= 1) {
-			transform(length,scalar,dy,xElementWiseStride,params,result);
+		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == shape::order(resultShapeInfo)) {
+			transformCuda(
+					length,
+					scalar,
+					dy,
+					xElementWiseStride,
+					params,
+					result,resultElementWiseStride);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
+			int *xIdx = (int *) malloc(sizeof(int) * xRank);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
+				shape::ind2sub(xRank, xShape, i,&xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-				result[xOffset2] = op(dy[xOffset2],scalar, params);
-				free(xIdx);
+				int resultOffset = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
+
+			free(xIdx);
+
 		}
 
 
@@ -139,13 +146,13 @@ namespace functions {
 	 * @param blockSize
 	 */
 	virtual
-	__inline__ __device__ void transform(
+	__inline__ __device__ void transformCuda(
 			int n,
 			T dx,
 			T *dy,
 			int incy,
 			T *params,
-			T *result) {
+			T *result,int resultStride) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -158,7 +165,7 @@ namespace functions {
 		else {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i * incy] = op(dy[i * incy],dx, params);
+				result[i * resultStride] = op(dy[i * incy],dx, params);
 			}
 		}
 
@@ -1090,7 +1097,7 @@ __device__ void scalarGeneric(
 		T dx,
 		T *dy,
 		int incy, T *params,
-		T *result) {
+		T *result,int resultStride) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 	if(threadIdx.x == 0)
@@ -1104,7 +1111,7 @@ __device__ void scalarGeneric(
 
 
 
-	op->transform(n,dx,dy,incy,params,result);
+	op->transformCuda(n,dx,dy,incy,params,result,resultStride);
 	if(threadIdx.x == 0)
 		free(op);
 }
@@ -1115,7 +1122,7 @@ __global__ void scalarDouble(
 		double dx,
 		double *dy,
 		int incy, double *params,
-		double *result) {
+		double *result,int resultStride) {
 	scalarGeneric<double>(
 			opNum,
 			n,
@@ -1123,11 +1130,11 @@ __global__ void scalarDouble(
 			dy,
 			incy,
 			params,
-			result);
+			result,resultStride);
 }
 
  __global__ void scalarFloat(int opNum,
-		int n,float dx, float *dy, int incy, float *params, float *result) {
+		int n,float dx, float *dy, int incy, float *params, float *result,int resultStride) {
 	scalarGeneric<float>(
 			opNum,
 			n,
@@ -1135,7 +1142,7 @@ __global__ void scalarDouble(
 			dy,
 			incy,
 			params,
-			result);
+			result,resultStride);
 }
 
 
@@ -1213,7 +1220,7 @@ __device__ void scalarGeneric(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result) {
+		T *result,int *resultShapeInfo) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 	if(threadIdx.x == 0)
@@ -1227,7 +1234,7 @@ __device__ void scalarGeneric(
 
 
 
-	op->transform(dx,dy,shapeInfo,params,result);
+	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo);
 	if(threadIdx.x == 0)
 		free(op);
 }
@@ -1237,14 +1244,14 @@ extern "C" __global__ void scalarDouble(
 		double dx,
 		double *dy,
 		int *shapeInfo, double *params,
-		double *result) {
+		double *result,int *resultShapeInfo) {
 	scalarGeneric<double>(
 			opNum,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result);
+			result,resultShapeInfo);
 }
 
 extern "C" __global__ void scalarFloat(
@@ -1253,14 +1260,14 @@ extern "C" __global__ void scalarFloat(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result) {
+		float *result,int *resultShapeInfo) {
 	scalarGeneric<float>(
 			opNum,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result);
+			result,resultShapeInfo);
 }
 
 #endif
