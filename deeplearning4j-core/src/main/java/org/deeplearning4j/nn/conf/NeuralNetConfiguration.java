@@ -53,6 +53,7 @@ import java.util.*;
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected Layer layer;
+    protected double leakyreluAlpha = 0.01;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
     protected int numIterations = 5;
@@ -317,6 +318,17 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
+    public Object[] getExtraArgs() {
+
+        switch( layer.getActivationFunction()) {
+            case "leakyrelu" :
+                return new Object[] {leakyreluAlpha};
+            case "relu" :
+                return new Object[] { 0 };
+            default:
+                return new Object [] {};
+        }
+    }
 
     @Data
     public static class Builder implements Cloneable {
@@ -339,6 +351,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double adamMeanDecay = 0.9;
         protected double adamVarDecay = 0.999;
         protected Layer layer;
+        protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
         protected int numIterations = 5;
         protected int maxNumLineSearchIterations = 5;
@@ -510,6 +523,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder leakyreluAlpha(double leakyreluAlpha) {
+            this.leakyreluAlpha = leakyreluAlpha;
             return this;
         }
 
