@@ -45,6 +45,19 @@ namespace functions {
                     T *result,
                     int *resultShapeBuffer,
                     T *extraParams) = 0;
+
+#ifdef __CUDACC__
+            /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) = 0;
+#endif
             /**
              * The op for transforms
              * @param d1
@@ -105,6 +118,12 @@ namespace functions {
                     int *shapeInfo,
                     T *params,
                     T *result) {
+
+                   if(this->requiresSpecial) {
+                    this->execSpecialCuda(dy,shapeInfo,result,shapeInfo,params);
+                    return;
+                }
+
                 int *xShape = shape::shapeOf(shapeInfo);
                 int *xStride = shape::stride(shapeInfo);
                 char xOrder = shape::order(shapeInfo);
@@ -409,6 +428,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -466,6 +498,20 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -526,6 +572,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -584,6 +644,18 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
 
                 /**
@@ -645,6 +717,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -703,6 +789,20 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
 
                 /**
                  * The op for transforms
@@ -764,6 +864,18 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
                 /**
                  * The op for transforms
                  * @param d1
@@ -821,6 +933,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -881,6 +1006,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -939,6 +1077,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1008,6 +1159,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1066,6 +1230,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1126,6 +1303,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
                 /**
                  * The op for transforms
                  * @param d1
@@ -1186,6 +1376,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1256,6 +1459,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1315,6 +1532,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1373,6 +1603,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1434,6 +1677,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1492,6 +1748,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1552,6 +1821,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1610,6 +1892,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
 
                 /**
                  * The op for transforms
@@ -1670,6 +1965,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1729,6 +2037,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -1791,6 +2112,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1852,6 +2187,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -1911,6 +2259,22 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
 
                 /**
                  * The op for transforms
@@ -1972,6 +2336,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2030,6 +2407,21 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
 
                 /**
                  * The op for transforms
@@ -2091,6 +2483,21 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2150,6 +2557,18 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -2211,6 +2630,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2270,6 +2703,20 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2328,6 +2775,19 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                  * The op for transforms
@@ -2390,6 +2850,20 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {//no-op
                 }
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
 
                 /**
                  * The op for transforms
@@ -2456,6 +2930,21 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2516,6 +3005,19 @@ namespace functions {
                         T *extraParams) {//no-op
                 }
 
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                  * The op for transforms
                  * @param d1
@@ -2557,6 +3059,19 @@ namespace functions {
                     else
                         return (size + p * 2 - k) / s + 1;
                 }
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
 
                 /**
                                                                 * CPU operation execution
@@ -2788,6 +3303,19 @@ namespace functions {
             class Col2Im : public Transform<T> {
 
             public:
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
                 /**
                                                     * CPU operation execution
                                                     * @param dx the input data
@@ -3012,6 +3540,20 @@ namespace functions {
             template<typename T>
             class SoftMax : public Transform<T> {
             public:
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
                 /**
                                         * CPU operation execution
                                         * @param dx the input data
@@ -3127,9 +3669,9 @@ namespace functions {
 //#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
 //#pragma omp critical
-                      //          {
-                                    sum += result[i * elementWiseStride];
-                        //        }
+                                //          {
+                                sum += result[i * elementWiseStride];
+                                //        }
                             }
 
 //#pragma omp parallel for
@@ -3191,6 +3733,19 @@ namespace functions {
             template<typename T>
             class LogSoftMax : public Transform<T> {
             public:
+
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
                 /**
                                         * CPU operation execution
                                         * @param dx the input data
@@ -3310,7 +3865,7 @@ namespace functions {
                             }
 
                             for (int i = 0; i < length; i++) {
-                                    sum += result[i * elementWiseStride];
+                                sum += result[i * elementWiseStride];
 
                             }
 
@@ -3374,6 +3929,20 @@ namespace functions {
             template<typename T>
             class SoftMaxDerivative : public Transform<T> {
             public:
+#ifdef __CUDACC__
+                /**
+             *
+             */
+
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {}
+#endif
+
+
                 /**
                                         * CPU operation execution
                                         * @param dx the input data
