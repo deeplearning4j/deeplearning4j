@@ -117,11 +117,9 @@ namespace functions {
                               int dimensionLength) {
 
                 int numOnes = 0;
-                int onesEncountered = 0;
                 int *shape = shape::shapeOf(xShapeInfo);
                 int *stride = shape::stride(xShapeInfo);
                 int wholeRank = shape::rank(xShapeInfo);
-                bool squeezed = false;
                 bool newSqueezeDimensions = false;
                 for (int i = 0; i < wholeRank; i++) {
                     if (shape[i] == 1)
@@ -131,7 +129,6 @@ namespace functions {
                 //squeeze the dimensions
                 if (numOnes > 0 && wholeRank > 2) {
                     int numOnes = 0;
-                    int onesEncountered = 0;
                     int *shape = shape::shapeOf(xShapeInfo);
                     int *stride = shape::stride(xShapeInfo);
                     int wholeRank = shape::rank(xShapeInfo);

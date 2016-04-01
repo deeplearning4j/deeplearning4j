@@ -118,6 +118,12 @@ namespace functions {
                     int *shapeInfo,
                     T *params,
                     T *result) {
+
+                   if(this->requiresSpecial) {
+                    this->execSpecialCuda(dy,shapeInfo,result,shapeInfo,params);
+                    return;
+                }
+
                 int *xShape = shape::shapeOf(shapeInfo);
                 int *xStride = shape::stride(shapeInfo);
                 char xOrder = shape::order(shapeInfo);
@@ -3663,9 +3669,9 @@ namespace functions {
 //#pragma omp parallel for shared(sum)
                             for (int i = 0; i < length; i++) {
 //#pragma omp critical
-                      //          {
-                                    sum += result[i * elementWiseStride];
-                        //        }
+                                //          {
+                                sum += result[i * elementWiseStride];
+                                //        }
                             }
 
 //#pragma omp parallel for
@@ -3859,7 +3865,7 @@ namespace functions {
                             }
 
                             for (int i = 0; i < length; i++) {
-                                    sum += result[i * elementWiseStride];
+                                sum += result[i * elementWiseStride];
 
                             }
 
