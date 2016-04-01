@@ -144,17 +144,28 @@ public:
 		__syncthreads();
 
 		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
-			transformCuda(length,dy,xElementWiseStride,params,result,resultElementWiseStride);
+			transformCuda(
+					length,
+					dy,
+					xElementWiseStride,
+					params,
+					result,
+					resultElementWiseStride);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
+			int *xIdx = (int *) malloc(sizeof(int) * xRank);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
 				int *xIdx = shape::ind2sub(xRank, xShape, i);
+				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,&xIdx);
 				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				result[xOffset2] = op(dy[xOffset2], params);
-				free(xIdx);
+				int resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				result[resultOffset2] = op(dy[xOffset2], params);
+
 			}
+
+			free(xIdx);
 		}
 	}
 
@@ -177,7 +188,7 @@ public:
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
 
-		if(incy == 1) {
+		if(incy == 1 && resultStride == 1) {
 			/* equal, positive, non-unit increments. */
 #pragma unroll
 			for (; i < n; i += totalThreads) {
@@ -188,7 +199,7 @@ public:
 			/* equal, positive, non-unit increments. */
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i * incy] = op(dy[i * incy], params);
+				result[i * resultStride] = op(dy[i * incy], params);
 			}
 		}
 
