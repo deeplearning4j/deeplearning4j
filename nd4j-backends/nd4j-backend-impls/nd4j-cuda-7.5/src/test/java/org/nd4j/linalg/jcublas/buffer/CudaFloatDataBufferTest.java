@@ -245,4 +245,14 @@ public class CudaFloatDataBufferTest {
 //        System.out.println("Sum result: " + sum);
         assertEquals(test, sum);
     }
+
+    @Test
+    public void testOffsets() throws Exception {
+        DataBuffer create = Nd4j.createBuffer(new double[]{1,2,3,4},2);
+        assertEquals(2,create.length());
+        assertEquals(4,create.underlyingLength());
+        assertEquals(2,create.offset());
+        assertEquals(3,create.getDouble(0),1e-1);
+        assertEquals(4,create.getDouble(1),1e-1);
+    }
 }
