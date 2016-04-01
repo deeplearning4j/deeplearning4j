@@ -57,6 +57,28 @@ public class CudaAccumTests {
         assertEquals(50945.52f, result.getFloat(0), 0.01f);
     }
 
+    @Test
+    public void testStdev0(){
+        double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
+        INDArray in = Nd4j.create(ind);
+        INDArray stdev = in.std(0);
+
+        INDArray exp = Nd4j.create(new double[]{0.2, 0.25166114784, 0.05773502692});
+
+        assertEquals(exp,stdev);
+    }
+
+    @Test
+    public void testStdev1(){
+        double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
+        INDArray in = Nd4j.create(ind);
+        INDArray stdev = in.std(1);
+
+        INDArray exp = Nd4j.create(new double[]{1.8556220880, 1.7521415468, 1.7039170559});
+
+        assertEquals(exp,stdev);
+    }
+
 
     /**
      * Mean call
