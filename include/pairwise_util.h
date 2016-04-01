@@ -135,7 +135,7 @@ void quickSort(StridePermutation *arr, int elements);
  * [(2, 12), (0, 4), (1, -2)].
  */
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 void  SortStrideArray(int ndim, int *strides,
                       StridePermutation *out_strideperm) {
@@ -169,7 +169,7 @@ void  SortStrideArray(int ndim, int *strides,
 template <typename T>
 
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int PrepareOneRawArrayIter(int ndim, int *shape,
                            T *data, int *strides,
@@ -389,7 +389,7 @@ void quickSort(StridePermutation *arr, int elements) {
  */
 template <typename T>
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataA, int *stridesA,
@@ -563,7 +563,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
  */
 template <typename T>
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, int *shape,
                               T *dataA, int *stridesA,
