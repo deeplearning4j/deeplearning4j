@@ -478,57 +478,46 @@ __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItem
 
                         return local;
                     }
-                    T finalVal = startingVal;
-                    int items;
-                    int threads;
-                    int chunks;
-                    int modulo;
-#pragma omp parallel
-                    {
-                        threads = omp_get_num_threads();
-                        items = length / threads;
-                        if(items < 1)
-                            items = 1;
-                        chunks = length / items;
-                        modulo = length % items;
-                        //one left over chunk
-                        if(modulo > 0)
-                            chunks++;
-                    }
+
+                    else {
+                        T finalVal = startingVal;
+                        BlockInformation info(length);
 
 #pragma omp parallel
-                    {
-                        T local = this->startingValue(x);
-                        for(int i = omp_get_thread_num(); i < chunks; i+= threads) {
-                            int newOffset = (i * items);
-                            T *chunk = x + newOffset;
-                            int itemsToLoop = items;
-                            if(newOffset >= length) {
-                                break;
-                            }
+                        {
+                            T local = this->startingValue(x);
+                            for(int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
+                                int newOffset = (i * info.items);
+                                T *chunk = x + newOffset;
+                                int itemsToLoop = info.items;
+                                if(newOffset >= length) {
+                                    break;
+                                }
 
-                            //handle modulo case
-                            if(newOffset + items >= length) {
-                                itemsToLoop = length - newOffset;
-                            }
+                                //handle modulo case
+                                if(newOffset + info.items >= length) {
+                                    itemsToLoop = length - newOffset;
+                                }
 
-                            for (int i = 0; i < itemsToLoop; i++) {
-                                T curr = op(chunk[i], extraParams);
-                                local = update(local, curr, extraParams);
-                            }
+                                for (int j = 0; j < itemsToLoop; j++) {
+                                    T curr = op(chunk[j], extraParams);
+                                    local = update(local, curr, extraParams);
+                                }
 
-                        }
+                            }
 
 #pragma omp critical
-                        {
-                            finalVal = update(finalVal,local,extraParams);
+                            {
+                                finalVal = update(finalVal,local,extraParams);
 
+                            }
                         }
+
+
+                        finalVal = postProcess(finalVal, length,extraParams);
+                        return finalVal;
+
                     }
-
-
-                    finalVal = postProcess(finalVal, length,extraParams);
-                    return finalVal;
 
                 }
 

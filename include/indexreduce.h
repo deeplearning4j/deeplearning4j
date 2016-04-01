@@ -35,7 +35,7 @@ namespace functions {
         };
 
 #ifdef __CUDACC__
-// This is the un-specialized struct.  Note that we prevent instantiation of this
+        // This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
         template<typename T>
         struct SharedIndexValue {
@@ -87,7 +87,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
@@ -105,7 +105,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
@@ -124,7 +124,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
@@ -146,7 +146,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
@@ -164,7 +164,7 @@ namespace functions {
             inline __host__  __device__
 
 #elif defined(__GNUC__)
-            
+
 
 #endif
             IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
@@ -522,7 +522,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             T execScalar(T *x,
                          int *xShapeInfo,
@@ -553,19 +553,19 @@ namespace functions {
                                                  xStridesIter) >= 0) {
 
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                /* Process the innermost dimension */
-                                int i = shape::getOffset(0,xShape,xStride,coord,rank);
-                                IndexValue<T> curr;
-                                curr.value = x[i];
-                                curr.index = i;
-                                startingIndex = update(startingIndex, curr,
-                                                       extraParams);
-                            } ND4J_RAW_ITER_ONE_NEXT(dim,
-                                                     rank,
-                                                     coord,
-                                                     shapeIter,
-                                                     x,
-                                                     xStridesIter);
+                            /* Process the innermost dimension */
+                            int i = shape::getOffset(0,xShape,xStride,coord,rank);
+                            IndexValue<T> curr;
+                            curr.value = x[i];
+                            curr.index = i;
+                            startingIndex = update(startingIndex, curr,
+                                                   extraParams);
+                        } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                 rank,
+                                                 coord,
+                                                 shapeIter,
+                                                 x,
+                                                 xStridesIter);
                         return startingIndex.index;
                     }
                     else {
@@ -576,21 +576,67 @@ namespace functions {
                 else {
 
                     if (xElementWiseStride == 1) {
-#pragma omp parallel for
-                        for (int i = 0; i < length; i++) {
-                            IndexValue<T> curr;
-                            curr.value = x[i];
-                            curr.index = i;
-#pragma omp critical
-                            {
+                        if(length < 8000) {
+#pragma  simd
+                            for (int i = 0; i < length; i++) {
+                                IndexValue<T> curr;
+                                curr.value = x[i];
+                                curr.index = i;
                                 startingIndex = update(startingIndex, curr,
                                                        extraParams);
+
+
+
+                            }
+                            return startingIndex.index;
+                        }
+                        else {
+                            BlockInformation info(length);
+
+#pragma omp parallel
+
+                            {
+                                IndexValue<T> local;
+                                local.value = this->startingValue(x);
+                                local.index = 0;
+
+                                for (int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
+                                    int newOffset = (i * info.items);
+                                    T *chunk = x + newOffset;
+                                    int itemsToLoop = info.items;
+                                    if(newOffset >= length) {
+                                        break;
+                                    }
+
+                                    //handle modulo case
+                                    if(newOffset + info.items >= length) {
+                                        itemsToLoop = length - newOffset;
+                                    }
+
+                                    for (int j = 0; j < itemsToLoop; j++) {
+                                        IndexValue<T> curr;
+                                        curr.value = chunk[j];
+                                        curr.index = j;
+                                        local = update(local, curr, extraParams);
+                                    }
+
+
+#pragma omp critical
+                                    {
+                                        startingIndex = update(startingIndex, local,
+                                                               extraParams);
+                                    }
+
+
+                                }
                             }
 
-
+                            return startingIndex.index;
                         }
-                        return startingIndex.index;
-                    } else {
+
+                    }
+
+                    else {
 #pragma omp parallel for
                         for (int i = 0; i < length; i++) {
                             IndexValue<T> curr;
@@ -629,7 +675,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -656,7 +702,7 @@ namespace functions {
             inline __host__
 
 #elif defined(__GNUC__)
-            
+
 #endif
             void exec(T *x,
                       int *xShapeInfo,
@@ -787,14 +833,14 @@ namespace functions {
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             virtual ~IndexReduce() {
             }
 #ifdef __CUDACC__
             __host__ __device__
 #elif defined(__GNUC__)
-            
+
 #endif
             IndexReduce() {
             }
@@ -822,7 +868,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> op(
@@ -843,7 +889,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> update(
@@ -867,7 +913,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> merge(
@@ -895,7 +941,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> postProcess(
@@ -923,7 +969,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
@@ -933,14 +979,14 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 virtual ~IMax() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 IMax() {
                 }
@@ -966,7 +1012,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> op(
@@ -993,7 +1039,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> update(
@@ -1020,7 +1066,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> merge(
@@ -1048,7 +1094,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 functions::indexreduce::IndexValue<T> postProcess(
@@ -1069,7 +1115,7 @@ namespace functions {
                 inline __host__  __device__
 
 #elif defined(__GNUC__)
-                
+
 
 #endif
                 IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
@@ -1080,14 +1126,14 @@ namespace functions {
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 virtual ~IMin() {
                 }
 #ifdef __CUDACC__
                 __host__ __device__
 #elif defined(__GNUC__)
-                
+
 #endif
                 IMin() {
                 }
