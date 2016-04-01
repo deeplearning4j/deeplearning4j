@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class CublasTests {
     @Test
-    public void testGemv1() throws Exception {
+    public void testGemm1() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 100, 100).reshape(1, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
@@ -23,7 +23,7 @@ public class CublasTests {
     }
 
     @Test
-    public void testGemv2() throws Exception {
+    public void testGemm2() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 100, 100).reshape('f', 1, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
 
@@ -33,7 +33,7 @@ public class CublasTests {
     }
 
     @Test
-    public void testGemv3() throws Exception {
+    public void testGemm3() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
 
@@ -51,7 +51,7 @@ public class CublasTests {
     }
 
     @Test
-    public void testGemv4() throws Exception {
+    public void testGemm4() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape('f', 100, 10);
 
@@ -68,7 +68,7 @@ public class CublasTests {
     }
 
     @Test
-    public void testGemv5() throws Exception {
+    public void testGemm5() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
 
@@ -82,7 +82,7 @@ public class CublasTests {
     }
 
     @Test
-    public void testGemv6() throws Exception {
+    public void testGemm6() throws Exception {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape('f', 100, 10);
 
@@ -96,5 +96,80 @@ public class CublasTests {
         assertEquals(8313100.0f, array3.data().getFloat(11),0.001f);
         assertEquals(1.325805E7f, array3.data().getFloat(20),5f);
         assertEquals(1.32831E7f, array3.data().getFloat(21),5f);
+    }
+
+    @Test
+    public void testGemm7() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
+        INDArray array3 = Nd4j.create(10, 10);
+
+
+        array1.mmul(array2, array3);
+
+//        System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));
+
+        assertEquals(3338050.0f, array3.data().getFloat(0),0.001f);
+        assertEquals(8298050.0f, array3.data().getFloat(1),0.001f);
+        assertEquals(3343100.0f, array3.data().getFloat(10),0.001f);
+        assertEquals(8313100.0f, array3.data().getFloat(11),0.001f);
+        assertEquals(3348150.0f, array3.data().getFloat(20),0.001f);
+        assertEquals(8328150.0f, array3.data().getFloat(21),0.001f);
+    }
+
+    @Test
+    public void testGemv1() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1,100, 100).reshape(100,1);
+
+        INDArray array3 = array1.mmul(array2);
+
+        assertEquals(10, array3.length());
+        assertEquals(338350f, array3.getFloat(0), 0.001f);
+        assertEquals(843350f, array3.getFloat(1), 0.001f);
+        assertEquals(1348350f, array3.getFloat(2), 0.001f);
+        assertEquals(1853350f, array3.getFloat(3), 0.001f);
+    }
+
+    @Test
+    public void testGemv2() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1,100, 100).reshape('f', 100,1);
+
+        INDArray array3 = array1.mmul(array2);
+
+        assertEquals(10, array3.length());
+        assertEquals(338350f, array3.getFloat(0), 0.001f);
+        assertEquals(843350f, array3.getFloat(1), 0.001f);
+        assertEquals(1348350f, array3.getFloat(2), 0.001f);
+        assertEquals(1853350f, array3.getFloat(3), 0.001f);
+    }
+
+    @Test
+    public void testGemv3() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1,100, 100).reshape('f', 100,1);
+
+        INDArray array3 = array1.mmul(array2);
+
+        assertEquals(10, array3.length());
+        assertEquals(3338050f, array3.getFloat(0), 0.001f);
+        assertEquals(3343100f, array3.getFloat(1), 0.001f);
+        assertEquals(3348150f, array3.getFloat(2), 0.001f);
+        assertEquals(3353200f, array3.getFloat(3), 0.001f);
+    }
+
+    @Test
+    public void testGemv4() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1,100, 100).reshape(100,1);
+
+        INDArray array3 = array1.mmul(array2);
+
+        assertEquals(10, array3.length());
+        assertEquals(3338050f, array3.getFloat(0), 0.001f);
+        assertEquals(3343100f, array3.getFloat(1), 0.001f);
+        assertEquals(3348150f, array3.getFloat(2), 0.001f);
+        assertEquals(3353200f, array3.getFloat(3), 0.001f);
     }
 }
