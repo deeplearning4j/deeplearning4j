@@ -104,4 +104,9 @@ public class Level3Test extends BaseNd4jTest {
         assertEquals(1.325805E7f, array3.data().getFloat(20),5f);
         assertEquals(1.32831E7f, array3.data().getFloat(21),5f);
     }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

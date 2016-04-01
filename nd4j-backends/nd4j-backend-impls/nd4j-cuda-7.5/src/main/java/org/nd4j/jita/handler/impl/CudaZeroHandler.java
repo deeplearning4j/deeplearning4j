@@ -429,9 +429,10 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = getCudaContext();
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
-        Pointer dP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
+      Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
+     //   Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
-
+//        log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
 //            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
@@ -439,7 +440,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 dP,
                 srcPointer,
                 length,
-                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
+              //  cudaMemcpyKind.cudaMemcpyHostToDevice,
                 context.getOldStream()
         );
 
