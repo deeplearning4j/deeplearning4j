@@ -60,10 +60,11 @@ if(CUDA_BLAS)
     message("Build cublas")
     find_package(CUDA)
     add_definitions(-D__CUDABLAS__=true)
-    if(WIN32)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        list(APPEND CUDA_NVCC_FLAGS "-ccbin clang-omp")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         set (CMAKE_CXX_FLAGS "")
     endif()
-
 
     if (CUDA_FOUND)
         message("CUDA found!")
