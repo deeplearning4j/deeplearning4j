@@ -318,6 +318,17 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
+    public Object[] getExtraArgs() {
+
+        switch( layer.getActivationFunction()) {
+            case "leakyrelu" :
+                return new Object[] {leakyreluAlpha};
+            case "relu" :
+                return new Object[] { 0 };
+            default:
+                return new Object [] {};
+        }
+    }
 
     @Data
     public static class Builder implements Cloneable {
