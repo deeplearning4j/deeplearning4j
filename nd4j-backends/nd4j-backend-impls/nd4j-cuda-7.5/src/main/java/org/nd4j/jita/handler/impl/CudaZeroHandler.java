@@ -9,6 +9,7 @@ import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.*;
@@ -56,7 +57,8 @@ public class CudaZeroHandler implements MemoryHandler {
     protected final AtomicLong zeroUseCounter = new AtomicLong(0);
 
     // simple pool for cublas contexts
-    private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
+    //private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
+    private ContextPool contextPool = new ContextPool();
 
 
     // another simple counter, to track allocated device memory on per-thread per-device basis
@@ -111,7 +113,7 @@ public class CudaZeroHandler implements MemoryHandler {
         this.allocator = allocator;
 
         this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
-        initCudaContextForThread(Thread.currentThread().getId());
+        //initCudaContextForThread(Thread.currentThread().getId());
     }
 
     /**
@@ -399,6 +401,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void initializeDevice(Long threadId, Integer deviceId) {
+        /*
         JCuda.cudaSetDevice(deviceId);
 
         CudaContext context = new CudaContext();
@@ -408,6 +411,7 @@ public class CudaZeroHandler implements MemoryHandler {
         context.associateHandle();
 
         contextPool.put(threadId, context);
+        */
     }
 
     /**
@@ -804,8 +808,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     log.info("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
 
-                    initCudaContextForThread(threadId);
-                    initializeDevice(threadId, device);
+                    //initCudaContextForThread(threadId);
+                    //initializeDevice(threadId, device);
                 }
                 return devicesAffinity.get(threadId);
             } finally {
@@ -840,10 +844,12 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public CudaContext getCudaContext() {
         // FIXME: remove this before release
-        if (!contextPool.containsKey(Thread.currentThread().getId())) {
-            initCudaContextForThread(Thread.currentThread().getId());
+        long threadId = Thread.currentThread().getId();
+        Integer deviceId = getDeviceId();
+        if (!contextPool.containsContextForThread(threadId)) {
+            return contextPool.acquireContextForDevice(deviceId);
         }
-        return contextPool.get(Thread.currentThread().getId());
+        return contextPool.acquireContextForDevice(deviceId);
     }
 
 
@@ -864,7 +870,7 @@ public class CudaZeroHandler implements MemoryHandler {
         context.initOldStream();
         context.initStream();
         context.associateHandle();
-        contextPool.put(threadId, context);
+        //contextPool.put(threadId, context);
     }
 
     /**
