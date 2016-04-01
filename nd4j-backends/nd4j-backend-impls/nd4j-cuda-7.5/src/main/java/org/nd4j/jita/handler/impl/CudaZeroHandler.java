@@ -73,7 +73,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final MemoryProvider provider = new CudaCachingProvider();
+    private final MemoryProvider provider = new CudaDirectProvider();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -390,7 +390,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public AllocationStatus getInitialLocation() {
-        return AllocationStatus.DEVICE;
+        return AllocationStatus.HOST;
     }
 
     /**
@@ -580,6 +580,12 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes
+        if (dstPoint.getPointers().getHostPointer()== null) {
+            log.info("DevicePointer: " + dstPoint.getPointers().getDevicePointer());
+            log.info("HostPointer: " + dstPoint.getPointers().getHostPointer());
+            log.info("AllocStatus: " + dstPoint.getAllocationStatus());
+            throw new RuntimeException("pointer is null");
+        }
         return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
     }
 
@@ -595,25 +601,26 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public boolean promoteObject(Long trackingPoint, AllocationPoint point, AllocationShape shape) {
         try {
+            if (point.getAllocationStatus() != AllocationStatus.HOST)
+                return false;
 
             long bucketId = point.getBucketId();
             long threadId = Thread.currentThread().getId();
 
             point.setDeviceId(getDeviceId());
 
-
-
             PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape);
 
-            relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
+            if (newPointers != null) {
+                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
 
-            point.setAllocationStatus(AllocationStatus.DEVICE);
-            point.setPointers(newPointers);
+                point.setAllocationStatus(AllocationStatus.DEVICE);
+                point.getPointers().setDevicePointer(newPointers.getDevicePointer());
 
-            deviceAllocations.get(point.getDeviceId()).put(trackingPoint, trackingPoint);
+                deviceAllocations.get(point.getDeviceId()).put(trackingPoint, trackingPoint);
 
-            deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
-
+                deviceMemoryTracker.addToAllocation(threadId, point.getDeviceId(), AllocationUtils.getRequiredMemory(shape));
+            }
             //log.info("Relocation happened!");
         } catch (Exception e){
             throw new RuntimeException(e);
