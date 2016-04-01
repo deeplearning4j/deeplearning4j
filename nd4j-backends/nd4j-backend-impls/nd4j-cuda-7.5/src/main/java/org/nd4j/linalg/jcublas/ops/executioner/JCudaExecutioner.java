@@ -311,76 +311,87 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(IndexAccumulation op, int... dimension) {
         Arrays.sort(dimension);
 
-//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+
+
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += op.x().rank();
         }
         //do op along all dimensions
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
 
 
-        if(dimension[0] == Integer.MAX_VALUE) {
-            if(op.x() instanceof IComplexNDArray)
-                return Nd4j.scalar(execAndReturn(op).getFinalResult());
-            return Nd4j.scalar(execAndReturn(op).getFinalResult());
+        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+            return op.x();
+
+
+        //ensure vector is proper shape
+        if (retShape.length == 1) {
+            if (dimension[0] == 0)
+                retShape = new int[]{1, retShape[0]};
+            else
+                retShape = new int[]{retShape[0], 1};
+        } else if (retShape.length == 0) {
+            retShape = new int[]{1, 1};
         }
 
-        if(op instanceof IComplexNDArray) {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-            //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
-                else
-                    retShape = new int[] {retShape[0],1};
+        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        op.setZ(ret);
+        //do op along all dimensions
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
-            }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
-            }
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-            IComplexNDArray ret = Nd4j.createComplex(retShape);
-            IComplexNDArray linear = ret;
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                IComplexNumber result = execAndReturn((Accumulation) op2).getFinalResultComplex();
-                linear.putScalar(i, result);
+/*
+        log.info("X: " + Arrays.toString(op.x().data().asFloat()));
+        log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
+        log.info("Extras: " + op.extraArgsDataBuff());
+        log.info("Result: " + op.z().length());
+        log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
+        log.info("Dimension: " + Arrays.toString(dimension));
+        log.info("DimensionLength");
+*/
+        long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
+        long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
 
-            }
+        long z = AtomicAllocator.getInstance().getPointer(op.z()).address();
+        long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
+        long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId()};
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+        long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
-            if(ret.ordering() == 'c')
-                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
 
 
-            return ret;
+        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execIndexReduceDouble(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    extraArgs,
+                    z,
+                    zShapeInfo,
+                    dimensionPointer, dimension.length);
+
         }
-
         else {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-            //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
-                else
-                    retShape = new int[] {retShape[0],1};
+            nativeOps.execIndexReduceFloat(
+                    xShapeInfoHostPointer,
+                    op.opNum(),
+                    x,
+                    xShapeInfo,
+                    extraArgs,
+                    z,
+                    zShapeInfo,
+                    dimensionPointer, dimension.length);
 
-            }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
-            }
-
-            //nothing to reduce
-            if(ArrayUtil.prod(retShape) == op.x().length())
-                return op.x();
-
-            invoke(op,dimension);
-            return op.z();
         }
-
-
+        return op.z();
     }
 
 
@@ -502,7 +513,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
 
 
-      //  log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+  //      log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -550,6 +561,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             long z = AtomicAllocator.getInstance().getPointer(op.z()).address();
             long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
             long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
+
+//            log.info("Z.length: " + op.z().length());
+//            log.info("Z.shapeInfo: " + op.z().shapeInfoDataBuffer());
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 nativeOps.execIndexReduceDouble(
                         xShapeInfoHostPointer,
