@@ -2159,7 +2159,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testArgMaxSameValues() {
+        //Here: assume that by convention, argmax returns the index of the FIRST maximum value
+        //Thus, argmax(ones(...)) = 0 by convention
+        INDArray arr = Nd4j.ones(10);
 
+        for (int i = 0; i < 10; i++) {
+            double argmax = Nd4j.argMax(arr, 1).getDouble(0);
+            //System.out.println(argmax);
+            assertEquals(0.0, argmax, 0.0);
+        }
+    }
 
 
 
