@@ -319,6 +319,12 @@ namespace shape {
 #endif
 
     int isMatrix(int *shape, int rank);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -2454,7 +2460,16 @@ namespace shape {
             if (shape[0] == 1 || shape[1] == 1)
                 return 0;
         }
+
         return 1;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shapeInfo) {
+        return isMatrix(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
 /**

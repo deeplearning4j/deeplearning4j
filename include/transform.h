@@ -275,7 +275,7 @@ public:
 			T *extraParams) {
 
 		if(this->requiresSpecial) {
-			this->execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
+            this->execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
 			return;
 		}
 
@@ -3582,8 +3582,8 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
-		if (shape::isMatrix(xShapeBuffer,2)) {
-			int *shape = shape::shapeOf(xShapeBuffer);
+		if (shape::isMatrix(xShapeBuffer)) {
+            int *shape = shape::shapeOf(xShapeBuffer);
 			int *stride = shape::stride(xShapeBuffer);
 			//iterate along rows
 			int dimension[1] = {0};
@@ -3622,72 +3622,62 @@ public:
 
 			delete[] maxResultShapeBuffer;
 		}
-		else if (shape::isVector(xShapeBuffer,2)) {
+		else if (shape::isVector(xShapeBuffer)) {
 			T max = 0;
 			T sum = 0;
-
 			int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+			int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 			int length = shape::length(xShapeBuffer);
-			if (elementWiseStride == 1) {
-				//#pragma omp parallel for shared(max)
-				for (int i = 0; i < length; i++) {
-					max = nd4j::math::nd4j_max<T>(max, result[i]);
-				}
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i] -= max;
-				}
+			if(elementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                if(elementWiseStride == 1 && resultElementWiseStride == 1) {
+                    for (int i = 0; i < length; i++) {
+                        max = nd4j::math::nd4j_max<T>(max, dx[i]);
+                    }
 
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i] = nd4j::math::nd4j_exp<T>(result[i]);
-				}
 
-				//#pragma omp parallel for shared(sum)
-				for (int i = 0; i < length; i++) {
-					sum += result[i];
-				}
+                    for (int i = 0; i < length; i++) {
+                        result[i]  = dx[i] - max;
+                    }
 
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i] /= sum;
-				}
+                    for (int i = 0; i < length; i++) {
+                        result[i] = nd4j::math::nd4j_exp<T>(result[i]);
+                    }
 
-			}
-			else {
 
-				//#pragma omp parallel for shared(max)
-				for (int i = 0; i < length; i++) {
-					//#pragma omp critical
-					{
-						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 
-					}
-				}
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i * elementWiseStride] -= max;
-				}
+                    for (int i = 0; i < length; i++) {
+                        sum += result[i];
+                    }
 
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
-				}
 
-				//#pragma omp parallel for shared(sum)
-				for (int i = 0; i < length; i++) {
-					//#pragma omp critical
-					//          {
-					sum += result[i * elementWiseStride];
-					//        }
-				}
+                    for (int i = 0; i < length; i++) {
+                        result[i] /= sum;
+                    }
 
-				//#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					result[i * elementWiseStride] /= sum;
-				}
+
+                }
+                else {
+
+                    for (int i = 0; i < length; i++) {
+                        max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
+                    }
+                    for (int i = 0; i < length; i++) {
+                        result[i * resultElementWiseStride]  = dx[i * elementWiseStride] - max;
+                    }
+                    for (int i = 0; i < length; i++) {
+                        result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * resultElementWiseStride]);
+                    }
+                    for (int i = 0; i < length; i++) {
+                        sum += result[i * resultElementWiseStride];
+                    }
+                    for (int i = 0; i < length; i++) {
+                        result[i * resultElementWiseStride] /= sum;
+                    }
+                }
 
 			}
+
+
 		}
 	}
 
