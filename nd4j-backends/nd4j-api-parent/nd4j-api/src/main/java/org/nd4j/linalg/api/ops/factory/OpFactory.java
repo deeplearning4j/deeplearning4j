@@ -99,6 +99,13 @@ public interface OpFactory {
      */
     TransformOp createTransform(String name, INDArray x);
 
+    /**
+     * @param name
+     * @param x
+     * @param extraArgs
+     * @return
+     */
+    TransformOp createTransform(String name, INDArray x, Object[] extraArgs);
 
     /**
      * @param name
