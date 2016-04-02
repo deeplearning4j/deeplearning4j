@@ -53,7 +53,7 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public int update(float accum, int accumIdx, float x, int xIdx){
-        return (accum>=x ? accumIdx : xIdx);
+        return (accum >= x ? accumIdx : xIdx);
     }
 
     @Override
