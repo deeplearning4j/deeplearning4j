@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  */
 public class ContextPool {
     // TODO: number of max threads should be device-dependant
-    private static final int MAX_STREAMS_PER_DEVICE = 15;
+    private static final int MAX_STREAMS_PER_DEVICE = 4;
 
     private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
 
