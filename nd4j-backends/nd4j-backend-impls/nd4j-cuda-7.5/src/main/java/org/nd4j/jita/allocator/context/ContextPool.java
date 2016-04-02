@@ -14,9 +14,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
+ * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
+ *
+ * Each context given contains:
+ * 1. Stream for custom kernel invocations.
+ * 2. cuBLAS handle tied with separate stream.
+ *
  * @author raver119@gmail.com
  */
 public class ContextPool {
+    // TODO: number of max threads should be device-dependant
     private static final int MAX_STREAMS_PER_DEVICE = 15;
 
     private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
@@ -60,6 +67,8 @@ public class ContextPool {
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
+                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
+
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
                         cublasHandle handle = createNewCublasHandle(cublasStream);
