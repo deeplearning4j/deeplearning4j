@@ -731,7 +731,7 @@ namespace shape {
  * and the offset to be read.
  */
 #ifdef __CUDACC__
-    __device__ __host__
+    __device__
 #endif
     int tadOffset(int *xInfo, int offset);
 
