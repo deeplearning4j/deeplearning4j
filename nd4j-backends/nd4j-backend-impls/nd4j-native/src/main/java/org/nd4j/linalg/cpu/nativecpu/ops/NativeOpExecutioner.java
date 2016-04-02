@@ -390,10 +390,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-        if(op.x() instanceof IComplexNDArray ||  executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-        }
-        else {
             long[] dummy = new long[1];
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
@@ -500,7 +496,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
             }
-        }
+
     }
 
     @Override
