@@ -33,14 +33,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
-                    <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
+                    </environmentVariables>
                     <includes>
                         <include>*.java</include>
                     </includes>
                     <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
                         <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -92,7 +93,6 @@
                                 <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                             </classOrPackageNames>
                             <copyLibs>true</copyLibs>
-
                         </configuration>
                     </execution>
                 </executions>

@@ -33,7 +33,7 @@
 
 
     <properties>
-        <junit.version>4.11</junit.version>
+        <junit.version>4.12</junit.version>
     </properties>
 
     <dependencies>
@@ -43,16 +43,15 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-<!--
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
+            <artifactId>nd4j-native-api</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency> -->
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-7.5</artifactId>
+            <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -66,15 +65,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
-        </dependency>
-
-
-
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>3.3.1</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
