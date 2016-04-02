@@ -1,6 +1,9 @@
 package org.nd4j.jita.allocator.context;
 
+import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaStream_t;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -11,10 +14,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
+ * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
+ *
+ * Each context given contains:
+ * 1. Stream for custom kernel invocations.
+ * 2. cuBLAS handle tied with separate stream.
+ *
  * @author raver119@gmail.com
  */
 public class ContextPool {
-    private static final int MAX_STREAMS_PER_DEVICE = 2;
+    // TODO: number of max threads should be device-dependant
+    private static final int MAX_STREAMS_PER_DEVICE = 15;
+
+    private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
 
     private volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
@@ -53,6 +65,27 @@ public class ContextPool {
                     logger.debug("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
+                    if (contextsForDevices.get(deviceId).size() == 0) {
+                        // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
+                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
+
+                        cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
+
+                        cublasHandle handle = createNewCublasHandle(cublasStream);
+                        context.setHandle(handle);
+                        context.setCublasStream(cublasStream);
+
+                        cublasPool.put(deviceId, handle);
+                    } else {
+                        // just pick handle out there
+                        cublasHandle handle = cublasPool.get(deviceId);
+                        context.setHandle(handle);
+
+                        cudaStream_t cublasStream = new cudaStream_t();
+                        JCublas2.cublasGetStream(handle, cublasStream);
+                        context.setCublasStream(cublasStream);
+                    }
+
                     contextsPool.put(threadId, context);
                     contextsForDevices.get(deviceId).put(contextsForDevices.get(deviceId).size(), context);
 
@@ -83,11 +116,20 @@ public class ContextPool {
         JCuda.cudaSetDevice(deviceId);
 
         CudaContext context = new CudaContext();
-        context.initHandle();
         context.initOldStream();
-        context.associateHandle();
+
+        //context.initHandle();
+        //context.associateHandle();
         //context.initStream();
 
         return context;
+    }
+
+    private cublasHandle createNewCublasHandle(cudaStream_t stream) {
+        cublasHandle handle = new cublasHandle();
+        JCublas2.cublasCreate(handle);
+        JCublas2.cublasSetStream(handle,stream);
+
+        return handle;
     }
 }

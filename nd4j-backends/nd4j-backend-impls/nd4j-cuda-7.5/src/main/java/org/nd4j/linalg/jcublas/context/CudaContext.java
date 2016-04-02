@@ -28,6 +28,7 @@ public class CudaContext {
     private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
+    private cudaStream_t cublasStream;
     //private cudaEvent_t oldEvent;
     private cublasHandle handle;
     private CublasPointer resultPointer;
@@ -66,6 +67,14 @@ public class CudaContext {
     public void syncOldStream() {
         //ContextHolder.getInstance().setContext();
         JCuda.cudaStreamSynchronize(oldStream);
+
+        syncCublasStream();
+    }
+
+    public void syncCublasStream() {
+        if (cublasStream != null) {
+            JCuda.cudaStreamSynchronize(cublasStream);
+        }
     }
 
 
@@ -75,7 +84,7 @@ public class CudaContext {
      * to the given stream
      */
     public synchronized  void associateHandle() {
-        JCublas2.cublasSetStream(handle,oldStream);
+        //JCublas2.cublasSetStream(handle,oldStream);
     }
 
 
@@ -117,12 +126,16 @@ public class CudaContext {
      *
      */
     public void initHandle() {
+        /*
+
+        We don't create handles here anymore
+
         if(handle == null) {
             handle = new cublasHandle();
             JCublas2.cublasCreate(handle);
             handleFromPool = false;
         }
-
+        */
     }
 
     /**
@@ -161,7 +174,6 @@ public class CudaContext {
     public static CudaContext getBlasContext() {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         return context;
-
     }
 
 }

@@ -56,6 +56,23 @@ public class CudaIndexReduceTests {
     }
 
     @Test
+    public void testIMaxDimensional() throws Exception {
+        INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
+        INDArray valueArray = Nd4j.valueArrayOf(new int[]{4, 2}, 2.0);
+        INDArray valueArrayTwo = Nd4j.valueArrayOf(new int[]{3,2},3.0);
+        INDArray valueArrayThree = Nd4j.valueArrayOf(new int[]{4,3},1.0);
+
+        INDArray  argMax = Nd4j.argMax(toArgMax, 1);
+        assertEquals(valueArray, argMax);
+
+        INDArray argMaxZero = Nd4j.argMax(toArgMax,0);
+        assertEquals(valueArrayTwo, argMaxZero);
+
+        INDArray argMaxTwo = Nd4j.argMax(toArgMax,2);
+        assertEquals(valueArrayThree,argMaxTwo);
+    }
+
+    @Test
     public void testPinnedIMax2() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
