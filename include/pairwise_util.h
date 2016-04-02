@@ -7,6 +7,7 @@
 #include <array.h>
 #include <dll.h>
 #include <nd4jmemset.h>
+#include <omp.h>
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
@@ -134,7 +135,7 @@ void quickSort(StridePermutation *arr, int elements);
  * [(2, 12), (0, 4), (1, -2)].
  */
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 void  SortStrideArray(int ndim, int *strides,
                       StridePermutation *out_strideperm) {
@@ -168,7 +169,7 @@ void  SortStrideArray(int ndim, int *strides,
 template <typename T>
 
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int PrepareOneRawArrayIter(int ndim, int *shape,
                            T *data, int *strides,
@@ -262,7 +263,7 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
             outStrides[i] = outStrides[j];
         }
     }
-    ndim = i+1;
+    ndim = i + 1;
 
 #if 0
     /* DEBUG */
@@ -287,7 +288,29 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
 }
 
 
+class BlockInformation {
+public:
+    int items;
+    int threads;
+    int chunks;
+    int modulo;
+    BlockInformation(int length) {
 
+#pragma omp parallel
+        {
+            threads = omp_get_num_threads();
+            items = length / threads;
+            if(items < 1)
+                items = 1;
+            chunks = length / items;
+            modulo = length % items;
+            //one left over chunk
+            if(modulo > 0)
+                chunks++;
+        }
+
+    }
+};
 
 /**
  * Credit to:
@@ -366,7 +389,7 @@ void quickSort(StridePermutation *arr, int elements) {
  */
 template <typename T>
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataA, int *stridesA,
@@ -540,7 +563,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
  */
 template <typename T>
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, int *shape,
                               T *dataA, int *stridesA,

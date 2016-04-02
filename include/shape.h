@@ -201,6 +201,12 @@ namespace shape {
 
 
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * squeezeDimensions(int *shapeInfo,int **dimensionRef,int *dimensionLengthRef,bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes);
+
 /**
  * In place permute swap
  * @param length
@@ -313,6 +319,12 @@ namespace shape {
 #endif
 
     int isMatrix(int *shape, int rank);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -719,7 +731,7 @@ namespace shape {
  * and the offset to be read.
  */
 #ifdef __CUDACC__
-    __device__
+    __device__ __host__
 #endif
     int tadOffset(int *xInfo, int offset);
 
@@ -1243,6 +1255,9 @@ namespace shape {
      * had a stride of 6, we never need to do a major stride jump.
      *
      */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     int tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
 
 
@@ -2169,6 +2184,77 @@ namespace shape {
         }
 
     }
+
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int * squeezeDimensions(int *shapeInfo,int **dimensionRef,int *dimensionLengthRef,bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes) {
+        int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+        int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
+        int *dimension = *dimensionRef;
+        int dimensionLength = *dimensionLengthRef;
+        *squeezedRef = true;
+        bool newSqueezeDimensions = *squeezeDimensionsRef;
+
+        int *shape = shape::shapeOf(shapeInfo);
+        int *stride = shape::stride(shapeInfo);
+
+
+        int numEncountered = 0;
+        for(int i = 0; i < wholeRank; i++) {
+            if(shape[i] != 1) {
+                squeezeShape[numEncountered] = shape[i];
+                squeezeStride[numEncountered] = stride[i];
+                numEncountered++;
+            }
+        }
+
+
+        //for any dimensions specified that are 1,ignore them
+        int numDimensionsOne = 0;
+        for(int i = 0; i < dimensionLength; i++) {
+            if(shape[dimension[i]] == 1)
+                numDimensionsOne++;
+        }
+
+        if(numDimensionsOne > 0) {
+            int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
+            int newDimensionIdx = 0;
+            newSqueezeDimensions = true;
+            for(int i = 0; i < dimensionLength; i++) {
+                if(shape[dimension[i]] != 1)
+                    newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
+            }
+
+            //reduce along the new dimensions
+            dimension = newDimensions;
+            dimensionLength  -= numDimensionsOne;
+
+        }
+        //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
+        //the previous pointer is just a view of a pointer to be reused that was passed in
+        shape = squeezeShape;
+        stride = squeezeStride;
+        wholeRank -= numOnes;
+        //adjust dimensions
+        for(int i = 0; i < dimensionLength; i++) {
+            dimension[i] -= numOnes;
+        }
+
+        for(int i = 0; i < dimensionLength; i++) {
+            //didn't need to be adjusted
+            if(dimension[i] < 0)
+                dimension[i] += numDimensionsOne;
+        }
+
+        char order = shape::order(shapeInfo);
+        int *xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
+        xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
+        return xShapeInfo;
+
+    }
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -2374,7 +2460,16 @@ namespace shape {
             if (shape[0] == 1 || shape[1] == 1)
                 return 0;
         }
+
         return 1;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    int isMatrix(int *shapeInfo) {
+        return isMatrix(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
 /**

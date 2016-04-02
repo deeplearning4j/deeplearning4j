@@ -49,6 +49,10 @@ While still in the `libnd4j` folder, run:
 
     export LIBND4J_HOME=`pwd`
 
+    or
+
+    If you want to use Control Panel for that: if you have libnd4j path looking like 'c:\Users\username\libnd4j' set LIBND4J_HOME to '/Users/username/libnd4j'
+
 Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following to compile nd4j with support for both the native cpu backend as well as the cuda backend:
 
     mvn clean install -DskipTests -Dmaven.javadoc.skip=true
