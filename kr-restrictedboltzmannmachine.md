@@ -18,7 +18,7 @@ layout: kr-default
 
 ## <a name="define">RBM의 정의와 구조</a>
 
-RBM(제한된 볼츠만 머신, Restricted Boltzmann machine)은 차원 감소, 분류, [선형 회귀 분석](../linear-regression.html), 협업 필터링(collaborative filtering), 특징값 학습(feature learning) 및 주제 모델링(topic modelling)에 사용할 수 있는 알고리즘으로 Geoff Hinton이 제안한 모델입니다. (RBMs을 포함한 [인공 신경망](../neuralnet-overview.html) 이용 사례는 [이용 사례 페이지](../use_cases.html)를 참고하십시오).
+RBM(제한된 볼츠만 머신, Restricted Boltzmann machine)은 차원 감소, 분류, [선형 회귀 분석](../linear-regression.html), 협업 필터링(collaborative filtering), 특징값 학습(feature learning) 및 주제 모델링(topic modelling)에 사용할 수 있는 알고리즘으로 Geoff Hinton이 제안한 모델입니다. (RBMs을 포함한 [인공 신경망](../kr-neuralnet-overview.html) 이용 사례는 [이용 사례 페이지](../use_cases.html)를 참고하십시오).
 
 RBM의 구조는 상대적으로 단순한 편입니다. RBM은 자체적으로도 사용할 수 있지만 다른 심층 신경망의 학습을 돕기 위해 쓰이기도 합니다. 이제부터 RBM의 작동 원리를 설명드리겠습니다.
 
@@ -66,7 +66,7 @@ RBM의 목적은 조금 다릅니다. 여기에선 RBM을 이용한 비지도학
 
 학습이 일어나기 전에는 가중치를 임의의 값으로 초기화합니다. 따라서 이렇게 재구성한 값은 실제 입력값과 많이 다를 수 있습니다. 위 그림에서 `r`, 즉 재구성한 값과 입력값의 차이는 오차가 됩니다. 이 오차는 (다른 인공 신경망 학습과정과 마찬가지로) backprop됩니다. 그리고 RBM의 학습은 위의 두 과정을 반복하면서 점점 오차를 줄여나갑니다.
 
-Backprop은 [여기](../neuralnet-overview.html#forward)에 자세히 설명되어있습니다.
+Backprop은 [여기](../kr-neuralnet-overview.html#forward)에 자세히 설명되어있습니다.
 
 입력 데이터로 은닉층의 값을 추정하는 과정은 [`w`가 주어졌을 때 입력 `x`에 대한 은닉층 `a`의 조건부 확률](https://en.wikipedia.org/wiki/Bayes%27_theorem) `p(a|x; w)`이 됩니다.
 
@@ -255,8 +255,8 @@ k는 contrastive divergence의 실행 과정에서 사용하는 마르코프 체
 
 ### 다른 초보자 가이드
 
-* [Recurrent Networks/LSTMs](../lstm.html)
-* [Neural Networks](../neuralnet-overview.html)
-* [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [Recurrent Networks/LSTMs](../kr-lstm.html)
+* [Neural Networks](../kr-neuralnet-overview.html)
+* [Eigenvectors, PCA and Entropy](../kr-eigenvector.html)
 * [Neural Networks & Regression](../linear-regression.html)
-* [Convolutional Networks](../convolutionalnets.html)
+* [Convolutional Networks](../kr-convolutionalnets.html)
