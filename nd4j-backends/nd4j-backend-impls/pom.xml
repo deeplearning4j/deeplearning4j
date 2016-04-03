@@ -14,7 +14,6 @@
 
     <modules>
         <module>nd4j-native</module>
-        <module>nd4j-x86</module>
         <module>nd4j-cuda-7.5</module>
     </modules>
     <build>

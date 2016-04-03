@@ -554,21 +554,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(dataType() == Type.DOUBLE) {
                 pointer = new DoublePointer(length());
                 indexer = DoubleIndexer.create((DoublePointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
 
             }
             else if(dataType() == Type.FLOAT) {
                 pointer = new FloatPointer(length());
                 indexer = FloatIndexer.create((FloatPointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
 
             }
             else if(dataType() == Type.INT) {
                 pointer = new IntPointer(length());
                 indexer = IntIndexer.create((IntPointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
             }
         }
@@ -1374,6 +1371,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
 
                 }
+                else if(allocationMode == AllocationMode.JAVACPP) {
+                    pointer = new DoublePointer(length());
+                    indexer = DoubleIndexer.create((DoublePointer) pointer);
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readDouble());
+                    }
+                }
                 else {
                     indexer = null;
                     wrappedBuffer = ByteBuffer.allocateDirect((int)length() * getElementSize());
@@ -1386,6 +1390,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             else if(t == Type.FLOAT) {
                 if(allocationMode == AllocationMode.HEAP) {
                     floatData = new float[(int)length()];
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readFloat());
+                    }
+
+                }
+                else if(allocationMode == AllocationMode.JAVACPP) {
+                    pointer = new FloatPointer(length());
+                    indexer = FloatIndexer.create((FloatPointer) pointer);
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
@@ -1406,6 +1418,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readInt());
                     }
+                }
+                else if(allocationMode == AllocationMode.JAVACPP) {
+                    pointer = new IntPointer(length());
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readInt());
+                    }
+
                 }
                 else {
                     indexer = null;
@@ -1428,7 +1448,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void write(DataOutputStream out) throws IOException {
         if(length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
-
         out.writeUTF(allocationMode.name());
         out.writeInt((int)length());
         out.writeUTF(dataType().name());

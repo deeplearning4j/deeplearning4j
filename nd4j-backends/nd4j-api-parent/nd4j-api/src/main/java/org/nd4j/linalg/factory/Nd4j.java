@@ -1090,6 +1090,8 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
         int length = ArrayUtil.prod(shape);
+        if(type == DataBuffer.Type.INT)
+            return createBuffer(new int[length]);
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
@@ -1928,6 +1930,19 @@ public class Nd4j {
 
 
 
+    private static int[] toIntArray(int length,DataBuffer buffer) {
+        int[] ret = new int[length];
+        for(int i = 0; i < length; i++) {
+            ret[i] = buffer.getInt(i);
+        }
+        return ret;
+    }
+
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data,DataBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        int offset = Shape.offset(shapeInfo);
+        return Nd4j.create(data,toIntArray(rank, Shape.shapeOf(shapeInfo)),toIntArray(rank,Shape.stride(shapeInfo)),offset,Shape.order(shapeInfo));
+    }
 
 
     /**
@@ -1938,10 +1953,14 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        return SerializationUtils.readObject(dis);
-
-
+        DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
+        shapeInformation.read(dis);
+        int length = Shape.length(shapeInformation);
+        DataBuffer data = Nd4j.createBuffer(length);
+        data.read(dis);
+        return createArrayFromShapeBuffer(data,shapeInformation);
     }
+
 
     /**
      * Write an ndarray to the specified outputstream
@@ -1951,7 +1970,8 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(INDArray arr, DataOutputStream dataOutputStream) throws IOException {
-        SerializationUtils.writeObject(arr,dataOutputStream);
+        arr.shapeInfoDataBuffer().write(dataOutputStream);
+        arr.data().write(dataOutputStream);
     }
 
     /**

@@ -23,6 +23,10 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -32,23 +36,20 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit4</artifactId>
-                        <version>2.19.1</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
-                    <forkCount>0</forkCount>
-                    <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
+                    </environmentVariables>
                     <includes>
                         <include>*.java</include>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*TestCase.java</include>
                     </includes>
+                    <junitArtifactName>junit:junit</junitArtifactName>
                     <systemPropertyVariables>
                         <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
                         <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -100,7 +101,6 @@
                                 <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                             </classOrPackageNames>
                             <copyLibs>true</copyLibs>
-
                         </configuration>
                     </execution>
                 </executions>
