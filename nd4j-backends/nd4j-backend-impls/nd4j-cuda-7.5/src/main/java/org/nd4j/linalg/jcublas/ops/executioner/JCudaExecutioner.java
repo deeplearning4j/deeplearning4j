@@ -116,7 +116,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
 
-//        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 //        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -289,6 +289,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     ));
                     op.setFinalResult(ret.getFloat(0));
                 } else {
+                    log.info("AMSFDA execReduceFloat");
                     nativeOps.execReduceFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -463,7 +464,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
-//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
@@ -513,7 +514,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
 
 
-  //      log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
@@ -598,7 +599,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
 
-//        log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
@@ -808,7 +809,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(ScalarOp op) {
-//       log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+       log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -847,7 +848,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-//        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
+        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 

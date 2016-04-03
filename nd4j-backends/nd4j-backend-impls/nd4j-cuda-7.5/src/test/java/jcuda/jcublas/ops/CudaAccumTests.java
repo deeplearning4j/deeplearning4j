@@ -11,6 +11,7 @@ import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -155,5 +156,17 @@ public class CudaAccumTests {
 
         System.out.println(result);
         assertEquals(4.62f,  result.getDouble(0), 0.001);
+    }
+
+    @Test
+    public void testSumF() throws Exception {
+        INDArray arrc = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray arrf = Nd4j.create(new double[6],new int[]{3,2},'f').assign(arrc);
+
+        System.out.println("ArrF: " + arrf);
+
+        INDArray fSum = arrf.sum(0);
+
+        assertEquals(Nd4j.create(new float[]{9f,12f}),fSum);
     }
 }
