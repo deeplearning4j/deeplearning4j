@@ -13,7 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * op execution on cpu
  * @author Adam Gibson
  */
-@Platform(include="NativeOps.h",preload = "libnd4j",link = "nd4j")
+@Platform(include="NativeOps.h",link = "nd4j")
 public class NativeOps extends Pointer {
     static {
         Loader.load();

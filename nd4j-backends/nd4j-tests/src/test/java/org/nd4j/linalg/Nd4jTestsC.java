@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -37,10 +38,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.transforms.Sign;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -56,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -92,6 +92,34 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testSerialization() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(1,20);
+
+        String temp = System.getProperty("java.io.tmpdir");
+
+        String outPath = FilenameUtils.concat(temp,"dl4jtestserialization.bin");
+
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(outPath)))){
+            Nd4j.write(arr,dos);
+        }
+
+        INDArray in;
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(outPath))){
+            in = Nd4j.read(dis);
+        }
+
+        INDArray inDup = in.dup();
+
+        System.out.println(in);
+        System.out.println(inDup);
+
+        assertEquals(arr,in);       //Passes:   Original array "in" is OK, but array "inDup" is not!?
+        assertEquals(in,inDup);     //Fails
+    }
+
     @Test
     public void testTensorAlongDimension2() {
         INDArray array = Nd4j.create( new float[100], new int[]{50,1,2});
@@ -99,6 +127,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testIsMax() {
+        INDArray arr = Nd4j.create(new double[]{1,2,4,3},new int[]{2,2});
+        INDArray assertion = Nd4j.create(new double[]{0,0,1,0},new int[]{2,2});
+        INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr)).z();
+        assertEquals(assertion,test);
+    }
 
     @Test
     public void testArgMax() {
@@ -2174,6 +2209,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testSoftmaxStability() {
+        INDArray input = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).transpose();
+        System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
+        INDArray output = Nd4j.create(10,1);
+        System.out.println("Element wise stride of output " + output.elementWiseStride());
+        Nd4j.getExecutioner().exec(new SoftMax(input, output));
+    }
 
     @Test
     public void testAssignOffset() {
