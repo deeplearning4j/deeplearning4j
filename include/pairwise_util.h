@@ -60,6 +60,20 @@ void quickSort(StridePermutation *arr, int elements);
             } \
         } while ((idim) < (ndim))
 
+#define ND4J_RAW_ITER_ONE_NEXTF(idim, ndim, coord, shape, data, strides) \
+            for ((idim) = ndim - 1; (idim) >= (0); (idim)--) { \
+                if (++(coord)[idim] == (shape)[idim]) { \
+                    (coord)[idim] = 0; \
+                    (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
+                } \
+                else { \
+                    (data) += (strides)[idim]; \
+                    break; \
+                } \
+            } \
+        } while ((idim) >= (0))
+
+
 /* Increment to the next n-dimensional coordinate for two raw arrays */
 #define ND4J_RAW_ITER_TWO_NEXT(idim, ndim, coord, shape, \
                               dataA, stridesA, dataB, stridesB) \

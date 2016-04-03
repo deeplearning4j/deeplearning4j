@@ -1388,11 +1388,21 @@ void flattenGeneric(int offset,
     int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
     T *inputPointer = reinterpret_cast<T *>(input);
     int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    int numOnes = 0;
+    int *shape = shape::shapeOf(inputShapeInfoPointer);
+    int *stride = shape::stride(inputShapeInfoPointer);
+    int wholeRank = shape::rank(inputShapeInfoPointer);
+    bool squeezed = false;
+    for(int i = 0; i < wholeRank; i++) {
+        if(shape[i] == 1)
+            numOnes++;
+    }
+
+
+
     //start at the given offset
     resultPointer += offset;
     char inputOrder = shape::order(inputShapeInfoPointer);
-    int idx = 0;
-
     int rank = shape::rank(inputShapeInfoPointer);
     int *coord = (int *) malloc(sizeof(int) * rank);
     int *xShape = shape::shapeOf(inputShapeInfoPointer);
@@ -1419,81 +1429,60 @@ void flattenGeneric(int offset,
             }
         }
         else {
-            int shapeIter[MAX_RANK];
-            int coord[MAX_RANK];
-            int dim;
-            int xStridesIter[MAX_RANK];
-
+            char inputOrder = shape::order(inputShapeInfoPointer);
+            int idx = 0;
+            int rank = shape::rank(inputShapeInfoPointer);
+            int *coord = (int *) malloc(sizeof(int) * rank);
             int *xShape = shape::shapeOf(inputShapeInfoPointer);
             int *xStride = shape::stride(inputShapeInfoPointer);
-            int rank = shape::rank(inputShapeInfoPointer);
-            int resultIdx = 0;
-            if (PrepareOneRawArrayIter<T>(rank,
-                                          xShape,
-                                          inputPointer,
-                                          xStride,
-                                          &rank,
-                                          shapeIter,
-                                          &inputPointer,
-                                          xStridesIter) >= 0) {
+            int len = shape::length(inputShapeInfoPointer);
+            if(order == 'f') {
+                for(int i = 0; i < len; i++) {
+                    shape::ind2sub(rank,xShape,i,&coord);
+                    int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                    resultPointer[idx++] = inputPointer[offset];
 
-                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-                {
-                    resultPointer[resultIdx++] = inputPointer[0];
                 }
-                ND4J_RAW_ITER_ONE_NEXT(dim,
-                                       rank,
-                                       coord,
-                                       shapeIter,
-                                       inputPointer,
-                                       xStridesIter);
             }
             else {
-                printf("Unable to prepare array\n");
-            }
+                for(int i = 0; i < len; i++) {
+                    shape::ind2subC(rank,xShape,i,&coord);
+                    int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                    resultPointer[idx++] = inputPointer[offset];
 
+                }
+            }
+            free(coord);
         }
     }
     else {
-        int dimension[1] = {(order == 'f' ? 0 : shape::rank(inputShapeInfoPointer) - 1)};
-        int tads = shape::tensorsAlongDimension(inputShapeInfoPointer,dimension,1);
-        int tadLength = shape::tadLength(inputShapeInfoPointer,dimension,1);
-#pragma omp parallel for
-        for(int i = 0; i < tads; i++) {
-            int tadOffset = shape::tadOffset(i,inputShapeInfoPointer,dimension,1);
-            printf("Offset for tad %d is %d with num tads %d and tad length %d\n",i,tadOffset,tads,tadLength);
-            int shapeIter[MAX_RANK];
-            int coord[MAX_RANK];
-            int dim;
-            int rankIter = rank;
-            int xStridesIter[MAX_RANK];
-            T *xPointer = inputPointer + tadOffset;
-            int idx = i * tadLength;
-            if(PrepareOneRawArrayIter<T>(rankIter,
-                                         xShape,
-                                         xPointer,
-                                         xStride,
-                                         &rankIter,
-                                         shapeIter,
-                                         &xPointer,
-                                         xStridesIter) >= 0) {
-                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                    /* Process the innermost dimension */
-                    resultPointer[idx++] = xPointer[0];
-                } ND4J_RAW_ITER_ONE_NEXT(dim,
-                                         rank,
-                                         coord,
-                                         shapeIter,
-                                         xPointer,
-                                         xStridesIter);
-            }
-            else {
-                printf("Unable to prepare array\n");
-            }
+        char inputOrder = shape::order(inputShapeInfoPointer);
+        int idx = 0;
+        int rank = shape::rank(inputShapeInfoPointer);
+        int *coord = (int *) malloc(sizeof(int) * rank);
+        int *xShape = shape::shapeOf(inputShapeInfoPointer);
+        int *xStride = shape::stride(inputShapeInfoPointer);
+        int len = shape::length(inputShapeInfoPointer);
+        if(order == 'f') {
+            for(int i = 0; i < len; i++) {
+                shape::ind2sub(rank,xShape,i,&coord);
+                int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                resultPointer[idx++] = inputPointer[offset];
 
-
+            }
         }
+        else {
+            for(int i = 0; i < len; i++) {
+                shape::ind2subC(rank,xShape,i,&coord);
+                int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                resultPointer[idx++] = inputPointer[offset];
+
+            }
+        }
+        free(coord);
     }
+
+
 
 }
 
