@@ -1,22 +1,22 @@
 ---
-title: "DL4J와 RNNs (Recurrent Neural Networks)"
+title: 
 layout: kr-default
 ---
 
 # DL4J와 RNNs (Recurrent Neural Networks)
 
-이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/kr-lstm.html)를 참고하십시오.
+이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/lstm.html)를 참고하십시오.
 
 **내용**
 
 * [기본 사항: 데이터 및 네트워크 설정](#basics)
-* [RNNs의 학습](#trainingfeatures)
+* [RNNs의 학습](trainingfeatures)
 * [단기 BPTT (Back Propagation Through Time)](#tbptt)
 * [마스킹: 일대다(one-to-many), 다대일(many-to-one), 및 배열 분류](#masking)
 * [RNN과 다른 층의 조합](#otherlayertypes)
-* [효율적인 RNNs 사용](#rnntimestep)
-* [시계열 데이터 가져오기](#data)
-* [예제](#examples)
+* [효율적인 RNNs 사용](http://deeplearning4j.org/usingrnns.html#rnntimestep)
+* [시계열 데이터 가져오기](http://deeplearning4j.org/usingrnns.html#data)
+* [예제](http://deeplearning4j.org/usingrnns.html#examples)
 
 ## <a name="basics">기본 사항: 데이터 및 네트워크 구성</a>
 현재 DL4J는 RNNs의 여러 유형 중 LSTM(Long Short-Term Memory) 모델(클래스 이름: `GravesLSTM`)을 지원합니다. 앞으로 더 다양한 형태의 RNNs을 지원할 예정입니다.
@@ -138,6 +138,8 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 2. 그리고 기존의 학습 내용을 업데이트합니다.
 
 예를 들어 그동안 100시간 분량의 날씨 예측을 했는데 101시간째 날씨를 예측하고 싶은 경우에, 1시간의 데이터만 추가적으로 공급하면 됩니다. 만일 이 방식이 없다면 시간이 바뀔때마다 100시간, 101시간, 102시간, 103시간.. 분량의 데이터로 다시 학습해야 합니다.
+
+
 
 
 ![RNN Time Step](../img/rnn_timestep_1.png)
