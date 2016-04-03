@@ -78,11 +78,11 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
         Updater updater = net.getUpdater();
 
         FileUtils.writeStringToFile(new File(confOut), confJSON, encoding);
-        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(paramOut)))){
+        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(paramOut))))){
             Nd4j.write(params, dos);
         }
 
-        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(updaterOut)))){
+        try(ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(updaterOut))))){
             oos.writeObject(updater);
         }
     }
@@ -107,10 +107,10 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
         String confJSON = FileUtils.readFileToString(new File(confOut), encoding);
         INDArray params;
         Updater updater;
-        try(DataInputStream dis = new DataInputStream(Files.newInputStream(Paths.get(paramOut)))){
+        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(Paths.get(paramOut))))){
             params = Nd4j.read(dis);
         }
-        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(updaterOut)))){
+        try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(new File(updaterOut))))){
             updater = (Updater)ois.readObject();
         }catch(ClassNotFoundException e){
             throw new RuntimeException(e);  //Should never happen

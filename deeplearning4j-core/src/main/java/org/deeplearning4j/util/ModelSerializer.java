@@ -1,7 +1,6 @@
 package org.deeplearning4j.util;
 
 import lombok.NonNull;
-import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -18,7 +17,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -29,11 +27,15 @@ import java.util.zip.ZipOutputStream;
 public class ModelSerializer {
 
     public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater) throws IOException {
-        writeModel(model, new FileOutputStream(file), saveUpdater);
+        try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))){
+            writeModel(model, stream, saveUpdater);
+        }
     }
 
     public static void writeModel(@NonNull Model model, @NonNull String path, boolean saveUpdater) throws IOException {
-        writeModel(model, new FileOutputStream(path), saveUpdater);
+        try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(path))){
+            writeModel(model, stream, saveUpdater);
+        }
     }
 
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater) throws IOException {
