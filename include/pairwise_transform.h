@@ -603,9 +603,7 @@ public:
 			int resultStride, T *extraParams, const int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-#pragma simd
 				for (int i = 0; i < n; i++) {
-                    printf("Performing op %d on x %f and y %f and result %f\n",i,dx[i],y[i],result[i]);
 					result[i] = op(dx[i], y[i], extraParams);
 				}
 			}
@@ -815,7 +813,7 @@ public:
 	 * CPU operation execution
 	 * @param dx the input data
 	 * @param xStride the stride to iterate over
-	 * the x input
+	 * the x inputCopy
 	 * @param y the y data
 	 * @param yStride the stride to iterate
 	 * over the y buffer

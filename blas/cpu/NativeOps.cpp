@@ -806,11 +806,6 @@ void   NativeOps::execPairwiseTransformFloat(
     float *yPointer = reinterpret_cast<float *>(y);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    printf("x address %ld y address %ld and result address %ld\n",dx,y,result);
-#pragma simd
-    for (int i = 0; i < n; i++) {
-        printf("Performing op %d on x %f and y %f and result %f\n",i,xPointer[i],yPointer[i],resultPointer[i]);
-    }
     FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(
             opNum,
             xPointer,
