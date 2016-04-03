@@ -12,8 +12,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Native interface for 
  * op execution on cpu
  * @author Adam Gibson
+ *
+ * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
+ * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
+ * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include="NativeOps.h",link = "nd4j")
+@Platform(include="NativeOps.h", preload="libnd4j", link = "nd4j")
 public class NativeOps extends Pointer {
     static {
         Loader.load();

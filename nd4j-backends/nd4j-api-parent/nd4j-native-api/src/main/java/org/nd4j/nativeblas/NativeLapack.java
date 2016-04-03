@@ -6,6 +6,10 @@ import org.bytedeco.javacpp.annotation.Platform;
 
 /**
  * Created by agibsonccc on 2/20/16.
+ *
+ * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
+ * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
+ * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
 @Platform(include="NativeLapack.h",preload = "libnd4j", link = "nd4j")
 public class NativeLapack extends Pointer {
