@@ -3679,7 +3679,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 return sliceIdx;
             } else {
                 // special case for F ordering on 0 dimension
-                return index * info.tensorShapeLength;
+                return index * info.tensorShapeProd;
             }
         }
 
