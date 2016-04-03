@@ -34,11 +34,9 @@ public class NetSaverLoaderUtils {
         log.info("Saving model and parameters to {} and {} ...",  confPath, paramPath);
 
         // save parameters
-        try {
-            DataOutputStream dos = new DataOutputStream(new FileOutputStream(paramPath));
+        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(paramPath)))) {
             Nd4j.write(net.params(), dos);
             dos.flush();
-            dos.close();
 
             // save model configuration
             FileUtils.write(new File(confPath), net.conf().toJson());
@@ -81,11 +79,9 @@ public class NetSaverLoaderUtils {
         // save parameters for each layer
         log.info("Saving parameters to {} ...", paramPath);
 
-        try {
-            DataOutputStream dos = new DataOutputStream(new FileOutputStream(paramPath));
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(paramPath)))){
             Nd4j.write(param, dos);
             dos.flush();
-            dos.close();
         } catch(IOException e) {
             e.printStackTrace();
         }
