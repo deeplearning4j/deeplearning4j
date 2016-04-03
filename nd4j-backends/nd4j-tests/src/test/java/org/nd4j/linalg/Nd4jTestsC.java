@@ -38,10 +38,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.transforms.Sign;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -130,6 +127,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testIsMax() {
+        INDArray arr = Nd4j.create(new double[]{1,2,4,3},new int[]{2,2});
+        INDArray assertion = Nd4j.create(new double[]{0,0,1,0},new int[]{2,2});
+        INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr)).z();
+        assertEquals(assertion,test);
+    }
 
     @Test
     public void testArgMax() {
