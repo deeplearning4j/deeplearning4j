@@ -36,7 +36,7 @@ typedef struct {
  *  the gpu etc
  */
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 void quickSort(StridePermutation *arr, int elements);
 
@@ -327,7 +327,7 @@ public:
  *  the gpu etc
  */
 #ifdef __CUDACC__
-__host__
+__host__ __device__
 #endif
 void quickSort(StridePermutation *arr, int elements) {
 #define  MAX_LEVELS  300
