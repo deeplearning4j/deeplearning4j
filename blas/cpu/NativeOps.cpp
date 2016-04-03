@@ -5,6 +5,7 @@
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
 #include <pointercast.h>
+#include <pairwise_util.h>
 
 class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
 private:
@@ -1374,6 +1375,129 @@ void   NativeOps::execTransformFloat(
 
 }
 
+
+
+template <typename T>
+void flattenGeneric(int offset,
+                    char order,
+                    Nd4jPointer result,
+                    Nd4jPointer resultShapeInfo,
+                    Nd4jPointer input,
+                    Nd4jPointer inputShapeInfo) {
+    T *resultPointer = reinterpret_cast<T *>(result);
+    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
+    T *inputPointer = reinterpret_cast<T *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    //start at the given offset
+    resultPointer += offset;
+    char inputOrder = shape::order(inputShapeInfoPointer);
+    int idx = 0;
+
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    char resultOrder = shape::order(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    int resultEleStride = shape::elementWiseStride(resultShapeInfoBufferPointer);
+    int inputEleStride = shape::elementWiseStride(inputShapeInfoPointer);
+    if (inputOrder == order) {
+        if (resultEleStride == 1 && inputEleStride == 1) {
+            memcpy(resultPointer, inputPointer, len* sizeof(T));
+        }
+        else if (resultEleStride >= 1 && inputEleStride >= 1) {
+            if (len < 8000) {
+                for (int i = 0; i < len; i++) {
+                    resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
+                }
+            }
+            else {
+#pragma omp parallel for
+                for (int i = 0; i < len; i++) {
+                    resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
+                }
+            }
+        }
+        else {
+            int shapeIter[MAX_RANK];
+            int coord[MAX_RANK];
+            int dim;
+            int xStridesIter[MAX_RANK];
+
+            int *xShape = shape::shapeOf(inputShapeInfoPointer);
+            int *xStride = shape::stride(inputShapeInfoPointer);
+            int rank = shape::rank(inputShapeInfoPointer);
+            int resultIdx = 0;
+            if (PrepareOneRawArrayIter<T>(rank,
+                                          xShape,
+                                          inputPointer,
+                                          xStride,
+                                          &rank,
+                                          shapeIter,
+                                          &inputPointer,
+                                          xStridesIter) >= 0) {
+
+                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
+                {
+                    resultPointer[resultIdx++] = inputPointer[0];
+                }
+                ND4J_RAW_ITER_ONE_NEXT(dim,
+                                       rank,
+                                       coord,
+                                       shapeIter,
+                                       inputPointer,
+                                       xStridesIter);
+            }
+            else {
+                printf("Unable to prepare array\n");
+            }
+
+        }
+    }
+    else {
+        int dimension[1] = {(order == 'f' ? 0 : shape::rank(inputShapeInfoPointer) - 1)};
+        int tads = shape::tensorsAlongDimension(inputShapeInfoPointer,dimension,1);
+        int tadLength = shape::tadLength(inputShapeInfoPointer,dimension,1);
+#pragma omp parallel for
+        for(int i = 0; i < tads; i++) {
+            int tadOffset = shape::tadOffset(i,inputShapeInfoPointer,dimension,1);
+            printf("Offset for tad %d is %d with num tads %d and tad length %d\n",i,tadOffset,tads,tadLength);
+            int shapeIter[MAX_RANK];
+            int coord[MAX_RANK];
+            int dim;
+            int rankIter = rank;
+            int xStridesIter[MAX_RANK];
+            T *xPointer = inputPointer + tadOffset;
+            int idx = i * tadLength;
+            if(PrepareOneRawArrayIter<T>(rankIter,
+                                         xShape,
+                                         xPointer,
+                                         xStride,
+                                         &rankIter,
+                                         shapeIter,
+                                         &xPointer,
+                                         xStridesIter) >= 0) {
+                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                    /* Process the innermost dimension */
+                    resultPointer[idx++] = xPointer[0];
+                } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                         rank,
+                                         coord,
+                                         shapeIter,
+                                         xPointer,
+                                         xStridesIter);
+            }
+            else {
+                printf("Unable to prepare array\n");
+            }
+
+
+        }
+    }
+
+}
+
+
 /**
 * Append an input array
 * to the end of a flat array
@@ -1392,36 +1516,9 @@ void NativeOps::flattenFloat(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    float *resultPointer = reinterpret_cast<float *>(result);
-    float *inputPointer = reinterpret_cast<float *>(input);
-    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
-    //start at the given offset
-    resultPointer += offset;
-    char inputOrder = shape::order(inputShapeInfoPointer);
-    int idx = 0;
-    int rank = shape::rank(inputShapeInfoPointer);
-    int *coord = (int *) malloc(sizeof(int) * rank);
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    int len = shape::length(inputShapeInfoPointer);
-    if(order == 'f') {
-        for(int i = 0; i < len; i++) {
-            shape::ind2sub(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-
-        }
-    }
-    else {
-        for(int i = 0; i < len; i++) {
-            shape::ind2subC(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-
-        }
-    }
-    free(coord);
+    flattenGeneric<float>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
+
 
 /**
 * Append an input array
@@ -1441,37 +1538,7 @@ void NativeOps::flattenDouble(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *inputPointer = reinterpret_cast<double *>(input);
-    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
-    //start at the given offset
-    resultPointer += offset;
-    char inputOrder = shape::order(inputShapeInfoPointer);
-    int idx = 0;
-
-    int rank = shape::rank(inputShapeInfoPointer);
-    int *coord = (int *) malloc(sizeof(int) * rank);
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    char resultOrder = shape::order(inputShapeInfoPointer);
-    int len = shape::length(inputShapeInfoPointer);
-    if(order == 'f') {
-        for(int i = 0; i < len; i++) {
-            shape::ind2sub(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-        }
-    }
-    else {
-        for(int i = 0; i < len; i++) {
-            shape::ind2subC(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-        }
-    }
-
-    free(coord);
+    flattenGeneric<double>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 /**

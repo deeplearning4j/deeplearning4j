@@ -4244,7 +4244,7 @@ namespace functions {
                                         currMax = dx[i];
                                         maxIdx = i;
                                     }
-                                    
+
                                     dx[i * eleStride] = 0.0;
 
                                 }
