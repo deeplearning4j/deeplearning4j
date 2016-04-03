@@ -806,7 +806,16 @@ void   NativeOps::execPairwiseTransformFloat(
     float *yPointer = reinterpret_cast<float *>(y);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(opNum,xPointer,xStride,yPointer,yStride,resultPointer,resultStride,extraParamsPointer,n);
+    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(
+            opNum,
+            xPointer,
+            xStride,
+            yPointer,
+            yStride,
+            resultPointer,
+            resultStride,
+            extraParamsPointer,
+            n);
 }
 
 /**

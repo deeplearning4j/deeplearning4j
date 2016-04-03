@@ -233,9 +233,9 @@ public:
 		if (incy == 0) {
 			if ((blockIdx.x == 0) && (tid == 0)) {
 #pragma unroll
-for (; i < n; i++) {
-	result[i * incz] = op(dx[i * incx], params);
-}
+				for (; i < n; i++) {
+					result[i * incz] = op(dx[i * incx], params);
+				}
 
 			}
 		} else if ((incx == incy) && (incx > 0)) {
@@ -428,160 +428,160 @@ public:
 		bool sameShape = shape::shapeEquals(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer),
 				shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer));
 		//ignore everything else
-			if (this->requiresSpecial) {
-				this->execSpecial(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				return;
-			}
+		if (this->requiresSpecial) {
+			this->execSpecial(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+			return;
+		}
 
 
-			if (xElementWiseStride >= 1 &&
-					yElementWiseStride >= 1 &&
-					resultElementWiseStride >= 1 &&
-					shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
-					shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) &&
-					sameShape) {
-				exec(dx,
-						xElementWiseStride,
-						y,
-						yElementWiseStride,
-						result,
-						resultElementWiseStride,
-						extraParams,
-						n);
-			}
-			//not same shape
-			else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
-					shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
-					yElementWiseStride >= 1 &&
-					resultElementWiseStride >= 1) {
-				exec(dx,
-						xElementWiseStride,
-						y,
-						yElementWiseStride,
-						result,
-						resultElementWiseStride,
-						extraParams,
-						shape::length(yShapeBuffer));
-			}
+		if (xElementWiseStride >= 1 &&
+				yElementWiseStride >= 1 &&
+				resultElementWiseStride >= 1 &&
+				shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+				shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) &&
+				sameShape) {
+			exec(dx,
+					xElementWiseStride,
+					y,
+					yElementWiseStride,
+					result,
+					resultElementWiseStride,
+					extraParams,
+					n);
+		}
+		//not same shape
+		else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+				shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
+				yElementWiseStride >= 1 &&
+				resultElementWiseStride >= 1) {
+			exec(dx,
+					xElementWiseStride,
+					y,
+					yElementWiseStride,
+					result,
+					resultElementWiseStride,
+					extraParams,
+					shape::length(yShapeBuffer));
+		}
 
-			else if (sameShape) {
-				int rank = shape::rank(xShapeBuffer);
-				int *xShape = shape::shapeOf(xShapeBuffer);
-				int *yShape = shape::shapeOf(yShapeBuffer);
-				int *resultShape = shape::shapeOf(resultShapeBuffer);
+		else if (sameShape) {
+			int rank = shape::rank(xShapeBuffer);
+			int *xShape = shape::shapeOf(xShapeBuffer);
+			int *yShape = shape::shapeOf(yShapeBuffer);
+			int *resultShape = shape::shapeOf(resultShapeBuffer);
 
-				int *xStride = shape::stride(xShapeBuffer);
-				int *yStride = shape::stride(yShapeBuffer);
-				int *resultStride = shape::stride(resultShapeBuffer);
+			int *xStride = shape::stride(xShapeBuffer);
+			int *yStride = shape::stride(yShapeBuffer);
+			int *resultStride = shape::stride(resultShapeBuffer);
 
-				int xRank = shape::rank(xShapeBuffer);
-				int yRank = shape::rank(yShapeBuffer);
-				int resultRank = shape::rank(resultShapeBuffer);
+			int xRank = shape::rank(xShapeBuffer);
+			int yRank = shape::rank(yShapeBuffer);
+			int resultRank = shape::rank(resultShapeBuffer);
 
 
-				char xOrder = shape::order(xShapeBuffer);
-				char yOrder = shape::order(yShapeBuffer);
-				char resultOrder = shape::order(resultShapeBuffer);
+			char xOrder = shape::order(xShapeBuffer);
+			char yOrder = shape::order(yShapeBuffer);
+			char resultOrder = shape::order(resultShapeBuffer);
 
-				int shapeIter[MAX_RANK];
-				int coord[MAX_RANK];
-				int dim;
-				int xStridesIter[MAX_RANK];
-				int yStridesIter[MAX_RANK];
-				int resultStridesIter[MAX_RANK];
-				if (PrepareThreeRawArrayIter<T>(rank,
-						xShape,
-						dx,
-						xStride,
-						y,
-						yStride,
-						result,
-						resultStride,
-						&rank,
+			int shapeIter[MAX_RANK];
+			int coord[MAX_RANK];
+			int dim;
+			int xStridesIter[MAX_RANK];
+			int yStridesIter[MAX_RANK];
+			int resultStridesIter[MAX_RANK];
+			if (PrepareThreeRawArrayIter<T>(rank,
+					xShape,
+					dx,
+					xStride,
+					y,
+					yStride,
+					result,
+					resultStride,
+					&rank,
+					shapeIter,
+					&dx,
+					xStridesIter,
+					&y,
+					yStridesIter,
+					&result,
+					resultStridesIter) >= 0) {
+				ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
+				{
+					/* Process the innermost dimension */
+					T *xIter = dx;
+					T *yIter = y;
+					T *resultIter = result;
+					resultIter[0] = op(xIter[0], yIter[0], extraParams);
+				}
+				ND4J_RAW_ITER_THREE_NEXT(dim,
+						rank,
+						coord,
 						shapeIter,
-						&dx,
+						dx,
 						xStridesIter,
-						&y,
+						y,
 						yStridesIter,
-						&result,
-						resultStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-					{
-						/* Process the innermost dimension */
-						T *xIter = dx;
-						T *yIter = y;
-						T *resultIter = result;
-						resultIter[0] = op(xIter[0], yIter[0], extraParams);
-					}
-					ND4J_RAW_ITER_THREE_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							dx,
-							xStridesIter,
-							y,
-							yStridesIter,
-							result,
-							resultStridesIter);
-				}
-				else {
-					printf("Unable to prepare array\n");
-				}
-
+						result,
+						resultStridesIter);
 			}
-
 			else {
-				char xOrder = shape::order(xShapeBuffer);
-				char yOrder = shape::order(yShapeBuffer);
-				char resultOrder = shape::order(resultShapeBuffer);
-				int len = shape::length(xShapeBuffer);
-				int xRank = shape::rank(xShapeBuffer);
-				int yRank = shape::rank(yShapeBuffer);
-				int resultRank = shape::rank(resultShapeBuffer);
-				int *xCoord = (int *) malloc(sizeof(int) * xRank);
-				int *yCoord = (int *) malloc(sizeof(int) * yRank);
-				int *resultCoord = (int *) malloc(sizeof(int) * resultRank);
-
-				int *xShape = shape::shapeOf(xShapeBuffer);
-				int *xStride = shape::stride(xShapeBuffer);
-
-				int *yShape = shape::shapeOf(yShapeBuffer);
-				int *yStride = shape::stride(yShapeBuffer);
-
-				int *resultShape = shape::shapeOf(resultShapeBuffer);
-				int *resultStride = shape::stride(resultShapeBuffer);
-				if(dx == result) {
-					for (int i = 0; i < len; i++) {
-						shape::ind2subC(xRank,xShape, i, &xCoord);
-						shape::ind2subC(yRank,yShape, i, &yCoord);
-						shape::ind2subC(resultRank,resultShape, i, &resultCoord);
-
-						int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-						int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-						result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
-
-					}
-				}
-				else {
-					for (int i = 0; i < len; i++) {
-						shape::ind2subC(xRank,xShape, i, &xCoord);
-						shape::ind2subC(yRank,yShape, i, &yCoord);
-						shape::ind2subC(resultRank,resultShape, i, &resultCoord);
-
-						int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-						int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-						int resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
-						result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
-
-					}
-				}
-
-
-
-				free(xCoord);
-				free(yCoord);
-				free(resultCoord);
+				printf("Unable to prepare array\n");
 			}
+
+		}
+
+		else {
+			char xOrder = shape::order(xShapeBuffer);
+			char yOrder = shape::order(yShapeBuffer);
+			char resultOrder = shape::order(resultShapeBuffer);
+			int len = shape::length(xShapeBuffer);
+			int xRank = shape::rank(xShapeBuffer);
+			int yRank = shape::rank(yShapeBuffer);
+			int resultRank = shape::rank(resultShapeBuffer);
+			int *xCoord = (int *) malloc(sizeof(int) * xRank);
+			int *yCoord = (int *) malloc(sizeof(int) * yRank);
+			int *resultCoord = (int *) malloc(sizeof(int) * resultRank);
+
+			int *xShape = shape::shapeOf(xShapeBuffer);
+			int *xStride = shape::stride(xShapeBuffer);
+
+			int *yShape = shape::shapeOf(yShapeBuffer);
+			int *yStride = shape::stride(yShapeBuffer);
+
+			int *resultShape = shape::shapeOf(resultShapeBuffer);
+			int *resultStride = shape::stride(resultShapeBuffer);
+			if(dx == result) {
+				for (int i = 0; i < len; i++) {
+					shape::ind2subC(xRank,xShape, i, &xCoord);
+					shape::ind2subC(yRank,yShape, i, &yCoord);
+					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+
+					int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+				}
+			}
+			else {
+				for (int i = 0; i < len; i++) {
+					shape::ind2subC(xRank,xShape, i, &xCoord);
+					shape::ind2subC(yRank,yShape, i, &yCoord);
+					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+
+					int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					int resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+				}
+			}
+
+
+
+			free(xCoord);
+			free(yCoord);
+			free(resultCoord);
+		}
 	}
 
 
@@ -603,7 +603,6 @@ public:
 			int resultStride, T *extraParams, const int n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-#pragma simd
 				for (int i = 0; i < n; i++) {
 					result[i] = op(dx[i], y[i], extraParams);
 				}
@@ -628,10 +627,10 @@ public:
 			}
 			else {
 #pragma omp parallel for
-for (int i = 0; i < n; i++) {
-	result[i * resultStride] = op(dx[i * xStride],
-			y[i * yStride], extraParams);
-}
+				for (int i = 0; i < n; i++) {
+					result[i * resultStride] = op(dx[i * xStride],
+							y[i * yStride], extraParams);
+				}
 			}
 
 
@@ -814,7 +813,7 @@ public:
 	 * CPU operation execution
 	 * @param dx the input data
 	 * @param xStride the stride to iterate over
-	 * the x input
+	 * the x inputCopy
 	 * @param y the y data
 	 * @param yStride the stride to iterate
 	 * over the y buffer
