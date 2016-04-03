@@ -554,21 +554,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(dataType() == Type.DOUBLE) {
                 pointer = new DoublePointer(length());
                 indexer = DoubleIndexer.create((DoublePointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
 
             }
             else if(dataType() == Type.FLOAT) {
                 pointer = new FloatPointer(length());
                 indexer = FloatIndexer.create((FloatPointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
 
             }
             else if(dataType() == Type.INT) {
                 pointer = new IntPointer(length());
                 indexer = IntIndexer.create((IntPointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
                 fillPointerWithZero();
             }
         }

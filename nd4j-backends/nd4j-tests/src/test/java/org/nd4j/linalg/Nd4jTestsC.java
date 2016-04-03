@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -56,6 +57,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -90,6 +93,34 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
 
+    }
+
+
+    @Test
+    public void testSerialization() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(1,20);
+
+        String temp = System.getProperty("java.io.tmpdir");
+
+        String outPath = FilenameUtils.concat(temp,"dl4jtestserialization.bin");
+
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(outPath)))){
+            Nd4j.write(arr,dos);
+        }
+
+        INDArray in;
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(outPath))){
+            in = Nd4j.read(dis);
+        }
+
+        INDArray inDup = in.dup();
+
+        System.out.println(in);
+        System.out.println(inDup);
+
+        assertEquals(arr,in);       //Passes:   Original array "in" is OK, but array "inDup" is not!?
+        assertEquals(in,inDup);     //Fails
     }
 
     @Test

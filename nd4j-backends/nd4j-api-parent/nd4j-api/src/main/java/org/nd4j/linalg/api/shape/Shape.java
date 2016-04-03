@@ -127,7 +127,6 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
-
         if(arr instanceof IComplexNDArray) {
             if(arr.isRowVector()){
                 IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
@@ -139,7 +138,8 @@ public class Shape {
             for (int i = 0; i < ret.slices(); i++)
                 ret.putSlice(i, arr.slice(i));
             return ret;
-        } else {
+        }
+        else {
             //Use CopyOp:
             char outOrder = (anyOrder ? arr.ordering() : order);
             if(outOrder == 'a')
