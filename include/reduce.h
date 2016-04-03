@@ -208,18 +208,31 @@ public:
 
 
 			if (dimensionLength > 1) {
-				xElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
+				int dimz = dimension[dimensionLength - 1];
+//				printf("DimensionLength > 1, using [%i] as dimension\n", dimz);
+
+				xElementWiseStride = shape::stride(xShapeInfo)[dimz];
 			} else {
+				int *xStride = shape::stride(xShapeInfo);
+				char xOrder = shape::order(xShapeInfo);
+				/*
 				int *xShape = shape::shapeOf(xShapeInfo);
 				int *xStride = shape::stride(xShapeInfo);
 				char xOrder = shape::order(xShapeInfo);
 				int n = shape::length(xShapeInfo);
 				int xRank = shape::rank(xShapeInfo);
 				int xOffset = shape::offset(xShapeInfo);
+				*/
+//				int
 
-				if (dimension[0] != shape::MAX_DIMENSION)
-					xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f', dimension, dimensionLength);
-				else xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				if (dimension[0] != shape::MAX_DIMENSION) {
+					xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+				} else {
+					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				}
+
+
+				//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0]);
 			}
 			xLength = shape::length(xShapeInfo);
 			elementsPerTad = xLength / resultLength;
@@ -229,6 +242,7 @@ public:
 
 
 		if (!resultScalar) {
+
 			if(tid == 0) {
 				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 			}
@@ -253,12 +267,20 @@ public:
 			int tadLength = xTadInfo.tensorShapeProd;
 			int xLength = shape::length(xShapeInfo);
 			int i = 0,j = 0;
+
+//            if (threadIdx.x == 0)
+//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
 #pragma unroll
 			for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-				int offsetForTad = shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
+				int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
+
+//				printf("Initial Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad, offsetForTad, dx[offsetForTad]);
+
 				sPartials[tid] = op(dx[offsetForTad], extraParams);
 				__syncthreads();
 				for(j = 1; j < elementsPerReductionIndex; j++) {
+//					printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
+
 					sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
 					__syncthreads();
 				}
@@ -273,6 +295,9 @@ public:
 
 		}
 		else {
+			if (threadIdx.x == 0)
+					printf("Scalar here\n");
+
 			T curr;
 			if (resultScalar) {
 				if(blockIdx.x >= resultLength)
@@ -304,6 +329,8 @@ public:
 				 */
 				unsigned int i = blockIdx.x * xElementWiseStride + tid;
 				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
+				if (threadIdx.x == 0)
+					printf("GridSize: [%i]\n", gridSize);
 				if(!this->indexBased) {
 #pragma unroll
 					while (i < n) {
@@ -315,13 +342,14 @@ public:
 				else {
 #pragma unroll
 					while (i < n) {
+						printf("Idx: [%i]\n", i);
 						int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
 						if(tadIndex == 0) {
-							curr = op(dx[i],realExtraParams);
+							curr = op(dx[i * xElementWiseStride],realExtraParams);
 							reduction = curr;
 						}
 						else {
-							curr = op(dx[i],realExtraParams);
+							curr = op(dx[i * xElementWiseStride],realExtraParams);
 							reduction = update(reduction,curr, realExtraParams);
 						}
 
