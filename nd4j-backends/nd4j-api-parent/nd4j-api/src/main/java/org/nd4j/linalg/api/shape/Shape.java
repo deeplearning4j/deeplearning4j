@@ -145,8 +145,7 @@ public class Shape {
             if(outOrder == 'a')
                 outOrder = Nd4j.order();
             INDArray z = Nd4j.create(arr.shape(),outOrder);
-            CopyOp op = new CopyOp(z,arr,z);
-            Nd4j.getExecutioner().exec(op);
+            z.assign(arr);
             return z;
         }
     }
@@ -1101,6 +1100,30 @@ public class Shape {
         return ret;
     }
 
+
+    /**
+     * Gets the rank given the shape info buffer
+     * @param buffer the buffer to get the rank for
+     * @return the rank for the shape buffer
+     */
+    public static int length(DataBuffer buffer) {
+        int ret = 1;
+        DataBuffer shape = Shape.shapeOf(buffer);
+        int rank = Shape.rank(buffer);
+        for(int i = 0; i < rank; i++)
+            ret *= shape.getInt(i);
+        return ret;
+    }
+
+        /**
+     * Gets the rank given the shape info buffer
+     * @param buffer the buffer to get the rank for
+     * @return the rank for the shape buffer
+     */
+    public static int rank(DataBuffer buffer) {
+        return buffer.getInt(0);
+    }
+
     /**
      * Gets the rank given the shape info buffer
      * @param buffer the buffer to get the rank for
@@ -1132,6 +1155,19 @@ public class Shape {
         IntBuffer ret =  (IntBuffer) buffer.position(1 + rank);
         return ret.slice();
     }
+
+    /**
+     * Get the shape from
+     * the given int buffer
+     * @param buffer the buffer to get the shape information for
+     * @return
+     */
+    public static DataBuffer stride(DataBuffer buffer) {
+        int rank =  rank(buffer);
+        return Nd4j.createBuffer(buffer,1 + rank,rank);
+    }
+
+
 
     /**
      * Get the shape from
@@ -1186,6 +1222,16 @@ public class Shape {
         return sb.toString();
     }
 
+    /**
+     * Get the offset for the buffer
+     * @param buffer the shape info buffer to get the offset for
+     * @return
+     */
+    public static int offset(DataBuffer buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        int ret = buffer.getInt(length - 3);
+        return ret;
+    }
 
     /**
      * Get the offset for the buffer
@@ -1233,6 +1279,17 @@ public class Shape {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         return (char) buffer.get(length - 1);
     }
+
+    /**
+     * Returns the order given the shape information
+     * @param buffer the buffer
+     * @return
+     */
+    public static char order(DataBuffer buffer) {
+        int length = Shape.shapeInfoLength(Shape.rank(buffer));
+        return (char) buffer.getInt(length - 1);
+    }
+
 
     /**
      * Returns the order given the shape information
