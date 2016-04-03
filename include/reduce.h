@@ -209,7 +209,10 @@ public:
 
 
 			if (dimensionLength > 1) {
-				xElementWiseStride = shape::stride(xShapeInfo)[dimensionLength - 1];
+				int dimz = dimension[dimensionLength - 1];
+				printf("DimensionLength > 1, using [%i] as dimension\n", dimz);
+
+				xElementWiseStride = shape::stride(xShapeInfo)[dimz];
 			} else {
 				printf("Going for stride...\n");
 				int *xShape = shape::shapeOf(xShapeInfo);
@@ -222,6 +225,7 @@ public:
 
 				if (dimension[0] != shape::MAX_DIMENSION) {
 					printf("Computing stride...\n");
+					printf("Requested dimension: [%i]\n", dimension[0]);
 					xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 				} else {
 					printf("Using passed in stride...\n");
@@ -277,7 +281,7 @@ public:
 				sPartials[tid] = op(dx[offsetForTad], extraParams);
 				__syncthreads();
 				for(j = 1; j < elementsPerReductionIndex; j++) {
-					printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
+					//printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
 					sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
 					__syncthreads();
 				}

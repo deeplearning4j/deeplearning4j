@@ -3672,13 +3672,14 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int ret2Rank = info.xRank - 1;
 
         int retOffset = sliceIdx * info.permutedStrides[0];
-        if(dimension[0] == 0) {
+        if(dimension[0] == 0 ) {
             printf("Falling back...\n");
             char xOrder = order(xShapeInfo);
             if (xOrder == 'c') {
                 return sliceIdx;
             } else {
                 // special case for F ordering on 0 dimension
+                printf("tensorShapeProd: [%i]\n", info.tensorShapeProd);
                 return index * info.tensorShapeProd;
             }
         }
