@@ -14,9 +14,9 @@ layout: kr-default
 3. Maven (빌드 자동화 도구)
 4. Github
 
-자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오 (ND4J는 DL4J의 딥러닝 작업에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다). 여기에서 소개된 예제를 실행하려면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 골라서 설치하면 됩니다.
+자세한 설치 안내는 [ND4J 시작하기](http://nd4j.org/kr-getstarted.html)를 참조하십시오 (ND4J는 DL4J의 심층학습(딥러닝)에 사용되는 연산 엔진이며, ND4J 시작하기에 있는 안내는 ND4J와 DL4J에 모두 적용됩니다). 여기에서 소개된 예제를 실행하려면 ND4J 시작하기 페이지에 열거된 소프트웨어 중 위의 네 가지만 골라서 설치하면 됩니다.
 
-저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽고 빠르게 저희에게 질문을 하거나 피드백을 줄 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 읽어보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 딥 러닝에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
+저희가 운영하는 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) 페이지에서는 쉽고 빠르게 저희에게 질문을 하거나 피드백을 줄 수 있습니다. 채팅 페이지에서 다른 사람들의 질문/대화를 읽어보는 것 만으로도 DL4J에 대한 여러 가지를 배울 수 있을 겁니다. 만일 심층학습에 대해 전혀 아는 내용이 없으시면, [시작하실때 무엇을 배워야 할지를 보여주는 로드맵](http://deeplearning4j.org/deeplearningforbeginners.html) 페이지를 참고하시기 바랍니다.
 
 Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사용에 익숙한 고급 자바 개발자를 대상으로 합니다. 만약 여러분이 이미 이런 소프트웨어의 사용에 익숙하시다면 DL4J를 사용하실 준비를 완벽하게 갖춘 셈 입니다.
 
@@ -25,8 +25,7 @@ Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사
 위 소프트웨어를 설치한 뒤엔 아래의 단계를 따라 하시면 바로 딥러닝 코드를 실행하실 수 있습니다. 아래의 내용은 맥 사용을 가정하고 쓰여졌습니다. 윈도우 사용자들은 아래 [Walkthrough](http://deeplearning4j.org/quickstart.html#walk) 섹션을 참고하시기 바랍니다
 
 * 터미널을 열고 `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`을 입력 합니다. (예제의 현재 버전은 0.0.4.x 입니다.)
-* IntelliJ에서 `File/New/Project from Existing Sources`로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
-![Alt text](../img/IntelliJ_New_Project.png)
+* IntelliJ에서 File/New/Project from Existing Sources로 가서 위에서 클론한 폴더의 최상위 폴더로 가서 프로젝트를 엽니다.
 * 이제부터 안내해드리는 코드를 복사/붙여넣기 하시면 여러분의 `POM.xml`이 [이 xml 문서](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)와 같은 지 확인하게 됩니다.
 * [윈도우 사용자를 위한 추가 안내는 여기](http://deeplearning4j.org/gettingstarted.html#windows)를 참고하세요.
 * 화면 왼쪽의 파일 트리에서 DBNIrisExample.java를 선택하십시오.
@@ -36,7 +35,7 @@ Deeplearning4j는 IntelliJ나 Maven과 같은 IDE와 빌드 자동화 도구 사
 만일 Databricks, Domino, Sense.io같은 환경을 사용하신다면 추가적으로 아래의 코드를 터미널에서 실행해야 합니다. 터미널의 예제 디렉토리에서
 
 ```
-		mvn clean package 
+mvn clean package 
 ```
 
 를 실행하세요. 그러면 사용중인 환경에 JAR파일을 업로드할 수 있습니다.
@@ -72,7 +71,7 @@ nd4j-x86 백엔드는 아래과 같이 쓰여있습니다.
 
 ## 고급: AWS의 커맨드 라인(Command Line) 사용 하기
 
-만약 AWS에서 Linux OS를 사용해 Deeplearning4j를 설치하는 경우 커맨드 라인에서 예제를 실행할 수 있습니다. 우선 위의 설명에 따라 `*git clones*` 및 `*mvn clean installs*`를 실행하십시오. 설치가 완료되면  커맨드 라인에서 아래와 같은 명령어로 예제를 실행할 수 있습니다 (명령어는 repo 버전과 실행하고자 하는 예제에 따라 조금씩 달라질 수 있습니다).
+만약 AWS에서 Linux OS를 사용해 Deeplearning4j를 설치하는 경우 커맨드 라인에서 예제를 실행할 수 있습니다. 우선 위의 설명에 따라 `*git clones*` 및 `*mvn clean installs*`를 실행하십시오. 설치가 완료되면 커맨드 라인에서 아래와 같은 명령어로 예제를 실행할 수 있습니다 (명령어는 repo 버전과 실행하고자 하는 예제에 따라 조금씩 달라질 수 있습니다).
 
 명령어 템플릿은 다음과 같습니다:
 
@@ -115,7 +114,7 @@ nd4j-x86 백엔드는 아래과 같이 쓰여있습니다.
 * 터미널에서 `cd` 명령어를 이용해 DL4J 예제를 다운받을 디렉토리로 이동하십시오. 그리고 `mkdir dl4j-examples`로 새 디렉토리를 만들고 `cd dl4j-examples`를 입력하여 그 디렉토리로 이동하십시오. 그리고 아래의 명령어를 실행하십시오.
 
 ```
-			git clone https://github.com/deeplearning4j/dl4j-0.4-examples
+git clone https://github.com/deeplearning4j/dl4j-0.4-examples
 ```
 
 * `ls` 명령어로 파일이 전부 다운로드 되었는지 확인하십시오.
