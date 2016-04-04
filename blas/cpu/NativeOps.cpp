@@ -5,6 +5,7 @@
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
 #include <pointercast.h>
+#include <pairwise_util.h>
 
 class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
 private:
@@ -1374,6 +1375,118 @@ void   NativeOps::execTransformFloat(
 
 }
 
+
+
+template <typename T>
+void flattenGeneric(int offset,
+                    char order,
+                    Nd4jPointer result,
+                    Nd4jPointer resultShapeInfo,
+                    Nd4jPointer input,
+                    Nd4jPointer inputShapeInfo) {
+    T *resultPointer = reinterpret_cast<T *>(result);
+    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
+    T *inputPointer = reinterpret_cast<T *>(input);
+    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+    int numOnes = 0;
+    int *shape = shape::shapeOf(inputShapeInfoPointer);
+    int *stride = shape::stride(inputShapeInfoPointer);
+    int wholeRank = shape::rank(inputShapeInfoPointer);
+    bool squeezed = false;
+    for(int i = 0; i < wholeRank; i++) {
+        if(shape[i] == 1)
+            numOnes++;
+    }
+
+
+
+    //start at the given offset
+    resultPointer += offset;
+    char inputOrder = shape::order(inputShapeInfoPointer);
+    int rank = shape::rank(inputShapeInfoPointer);
+    int *coord = (int *) malloc(sizeof(int) * rank);
+    int *xShape = shape::shapeOf(inputShapeInfoPointer);
+    int *xStride = shape::stride(inputShapeInfoPointer);
+    char resultOrder = shape::order(inputShapeInfoPointer);
+    int len = shape::length(inputShapeInfoPointer);
+    int resultEleStride = shape::elementWiseStride(resultShapeInfoBufferPointer);
+    int inputEleStride = shape::elementWiseStride(inputShapeInfoPointer);
+    if (inputOrder == order) {
+        if (resultEleStride == 1 && inputEleStride == 1) {
+            memcpy(resultPointer, inputPointer, len* sizeof(T));
+        }
+        else if (resultEleStride >= 1 && inputEleStride >= 1) {
+            if (len < 8000) {
+                for (int i = 0; i < len; i++) {
+                    resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
+                }
+            }
+            else {
+#pragma omp parallel for
+                for (int i = 0; i < len; i++) {
+                    resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
+                }
+            }
+        }
+        else {
+            char inputOrder = shape::order(inputShapeInfoPointer);
+            int idx = 0;
+            int rank = shape::rank(inputShapeInfoPointer);
+            int *coord = (int *) malloc(sizeof(int) * rank);
+            int *xShape = shape::shapeOf(inputShapeInfoPointer);
+            int *xStride = shape::stride(inputShapeInfoPointer);
+            int len = shape::length(inputShapeInfoPointer);
+            if(order == 'f') {
+                for(int i = 0; i < len; i++) {
+                    shape::ind2sub(rank,xShape,i,&coord);
+                    int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                    resultPointer[idx++] = inputPointer[offset];
+
+                }
+            }
+            else {
+                for(int i = 0; i < len; i++) {
+                    shape::ind2subC(rank,xShape,i,&coord);
+                    int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                    resultPointer[idx++] = inputPointer[offset];
+
+                }
+            }
+            free(coord);
+        }
+    }
+    else {
+        char inputOrder = shape::order(inputShapeInfoPointer);
+        int idx = 0;
+        int rank = shape::rank(inputShapeInfoPointer);
+        int *coord = (int *) malloc(sizeof(int) * rank);
+        int *xShape = shape::shapeOf(inputShapeInfoPointer);
+        int *xStride = shape::stride(inputShapeInfoPointer);
+        int len = shape::length(inputShapeInfoPointer);
+        if(order == 'f') {
+            for(int i = 0; i < len; i++) {
+                shape::ind2sub(rank,xShape,i,&coord);
+                int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                resultPointer[idx++] = inputPointer[offset];
+
+            }
+        }
+        else {
+            for(int i = 0; i < len; i++) {
+                shape::ind2subC(rank,xShape,i,&coord);
+                int offset = shape::getOffset(0,xShape,xStride,coord,rank);
+                resultPointer[idx++] = inputPointer[offset];
+
+            }
+        }
+        free(coord);
+    }
+
+
+
+}
+
+
 /**
 * Append an input array
 * to the end of a flat array
@@ -1392,36 +1505,9 @@ void NativeOps::flattenFloat(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    float *resultPointer = reinterpret_cast<float *>(result);
-    float *inputPointer = reinterpret_cast<float *>(input);
-    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
-    //start at the given offset
-    resultPointer += offset;
-    char inputOrder = shape::order(inputShapeInfoPointer);
-    int idx = 0;
-    int rank = shape::rank(inputShapeInfoPointer);
-    int *coord = (int *) malloc(sizeof(int) * rank);
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    int len = shape::length(inputShapeInfoPointer);
-    if(order == 'f') {
-        for(int i = 0; i < len; i++) {
-            shape::ind2sub(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-
-        }
-    }
-    else {
-        for(int i = 0; i < len; i++) {
-            shape::ind2subC(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-
-        }
-    }
-    free(coord);
+    flattenGeneric<float>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
+
 
 /**
 * Append an input array
@@ -1441,37 +1527,7 @@ void NativeOps::flattenDouble(
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoBufferPointer = reinterpret_cast<int *>(resultShapeInfo);
-    double *inputPointer = reinterpret_cast<double *>(input);
-    int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
-    //start at the given offset
-    resultPointer += offset;
-    char inputOrder = shape::order(inputShapeInfoPointer);
-    int idx = 0;
-
-    int rank = shape::rank(inputShapeInfoPointer);
-    int *coord = (int *) malloc(sizeof(int) * rank);
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    char resultOrder = shape::order(inputShapeInfoPointer);
-    int len = shape::length(inputShapeInfoPointer);
-    if(order == 'f') {
-        for(int i = 0; i < len; i++) {
-            shape::ind2sub(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-        }
-    }
-    else {
-        for(int i = 0; i < len; i++) {
-            shape::ind2subC(rank,xShape,i,&coord);
-            int offset = shape::getOffset(0,xShape,xStride,coord,rank);
-            resultPointer[idx++] = inputPointer[offset];
-        }
-    }
-
-    free(coord);
+    flattenGeneric<double>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 /**
