@@ -141,12 +141,19 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 
 ## <a name="cli">Command-Line Interface</a>
 
-`deeplearning4j-cli` can now be installed these two ways:
+`deeplearning4j-cli` can now be installed these three ways:
 
 On Centos/Redhat, you can do:
 
 		# install
 		sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/deeplearning4j-cli.rpm
+		# run
+		dl4j
+
+On OS X with Homebrew, do:
+
+		# install
+		brew install homebrew/science/deeplearning4j-cli
 		# run
 		dl4j
 
