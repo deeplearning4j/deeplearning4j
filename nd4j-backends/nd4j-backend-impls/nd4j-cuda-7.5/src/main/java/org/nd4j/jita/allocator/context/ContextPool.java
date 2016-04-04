@@ -1,5 +1,9 @@
 package org.nd4j.jita.allocator.context;
 
+import jcuda.driver.CUcontext;
+import jcuda.driver.CUdevice;
+import jcuda.driver.CUresult;
+import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
@@ -13,6 +17,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
+import static jcuda.driver.JCudaDriver.cuCtxCreate;
+import static jcuda.driver.JCudaDriver.cuDeviceGet;
+
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
  *
@@ -24,7 +31,9 @@ import java.util.concurrent.Semaphore;
  */
 public class ContextPool {
     // TODO: number of max threads should be device-dependant
-    private static final int MAX_STREAMS_PER_DEVICE = 15;
+    private static final int MAX_STREAMS_PER_DEVICE = 4;
+
+    private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
     private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
 
@@ -56,18 +65,32 @@ public class ContextPool {
             try {
                 // this is lockable thing, but since it locks once per thread initialization, performance impact won't be big
                 lock.acquire();
+                // we create 1 CUcontext per device, which will be shared for all threads/streams on this device
+                if (!cuPool.containsKey(deviceId)) {
+                    CUcontext cuContext = createNewContext(deviceId);
+                    cuPool.put(deviceId, cuContext);
+                }
+
+                int result = JCudaDriver.cuCtxSetCurrent(cuPool.get(deviceId));
+                if (result != CUresult.CUDA_SUCCESS) {
+                    throw new RuntimeException("Failed to set context on assigner");
+                }
+
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
                 }
 
                 // if we hadn't hit MAX_STREAMS_PER_DEVICE limit - we add new stream. Otherwise we use random one.
                 if (contextsForDevices.get(deviceId).size() < MAX_STREAMS_PER_DEVICE) {
-                    logger.debug("Creating new context...");
+                    logger.info("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
+                        logger.info("Creating new cuBLAS handle for device ["+deviceId+"]...");
+
+                        // FIXME: remove this later
+                        JCuda.cudaDeviceSetLimit(deviceId,2048);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -92,7 +115,7 @@ public class ContextPool {
                     return context;
                 } else {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
-                    logger.debug("Reusing context: " + rand);
+                    logger.info("Reusing context: " + rand);
 
                     JCuda.cudaSetDevice(deviceId);
 
@@ -131,5 +154,46 @@ public class ContextPool {
         JCublas2.cublasSetStream(handle,stream);
 
         return handle;
+    }
+
+    private CUcontext createNewContext(Integer deviceId) {
+        logger.info("Creating new CUcontext...");
+        CUdevice device = new CUdevice();
+        CUcontext context = new CUcontext();
+
+        //JCuda.cudaSetDevice(deviceId);
+
+
+        int result = cuDeviceGet(device, deviceId);
+        if (result != CUresult.CUDA_SUCCESS) {
+            throw new RuntimeException("Failed to setDevice on driver");
+        }
+
+        result = cuCtxCreate(context, 0, device);
+        if (result != CUresult.CUDA_SUCCESS) {
+            throw new RuntimeException("Failed to create context on driver");
+        }
+
+        return context;
+    }
+
+    /**
+     * This methods reset everything in pool, forcing recreation of all streams
+     *
+     * PLEASE NOTE: This is debugging-related method, and should NOT be used in real tasks
+     */
+    public synchronized void resetPool(int deviceId) {
+
+        for (CUcontext cuContext: cuPool.values()) {
+            logger.info("Destroying context: " + cuContext);
+            JCudaDriver.cuCtxDestroy(cuContext);
+        }
+
+        cuPool.clear();
+        contextsForDevices.clear();
+        contextsPool.clear();
+        cublasPool.clear();
+
+        acquireContextForDevice(deviceId);
     }
 }
