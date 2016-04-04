@@ -298,7 +298,7 @@ public  class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException("Operation should use exec special");
 
     }
-    
+
     public ExecutionMode executionMode() {
         return executionMode;
     }
