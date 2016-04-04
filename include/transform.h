@@ -4404,7 +4404,7 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if(extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_VALUE) {
+                    if(extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
                         this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
                     }
                     else {
@@ -4413,7 +4413,7 @@ namespace functions {
                         for(int i = 0; i < dimensionLength; i++) {
                             dimension[i] = (int) extraParams[i + 1];
                         }
-                        
+
                         int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension,dimensionLength);
                         int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension,dimensionLength);
                         for(int i = 0; i < tads; i++) {
