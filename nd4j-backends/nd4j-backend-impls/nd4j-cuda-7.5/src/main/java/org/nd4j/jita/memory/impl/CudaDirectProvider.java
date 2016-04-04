@@ -42,6 +42,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
+                // FIXME: this is WRONG, and directly leads to memleak
+                if (reqMem < 1)
+                    reqMem = 1;
+
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
@@ -69,6 +73,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 // cudaMalloc call
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
+
+                // FIXME: this is WRONG, and directly leads to memleak
+                if (reqMem < 1)
+                    reqMem = 1;
 
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
@@ -103,12 +111,11 @@ public class CudaDirectProvider implements MemoryProvider {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
-
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
                 if (result == 0)
-                    throw new RuntimeException("Can't deallocate [DEVICE] memory...");
+                    throw new RuntimeException("Can't deallocate [HOST] memory...");
             }
             break;
             case DEVICE: {
