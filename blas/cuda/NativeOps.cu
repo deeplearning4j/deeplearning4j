@@ -60,7 +60,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//    printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+	//printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
@@ -1429,7 +1429,7 @@ void   NativeOps::execReduceFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[(int) extraPointers[2]]);
 
-	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1474,7 +1474,7 @@ void   NativeOps::execReduceFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[(int) extraPointers[2]]);
 
-	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
