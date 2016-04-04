@@ -136,12 +136,6 @@ public interface OpExecutioner {
      */
     INDArray exec(IndexAccumulation indexAccum, int... dimension);
 
-    /**Execute a transform operation along one or more dimensions
-     *
-     * @param op the operation to execute
-     */
-    INDArray execAndReturn(TransformOp op, int...dimension);
-
 
 
     /**Execute and return  a result
@@ -150,13 +144,6 @@ public interface OpExecutioner {
      * @return the result from the operation
      */
     INDArray execAndReturn(Op op);
-
-    /**Execute and return the result from an scalar op
-     *
-     * @param op the operation to execute
-     * @return the accumulated result
-     */
-    INDArray execAndReturn(ScalarOp op, int... dimension);
 
 
     /**Get the execution mode for this
