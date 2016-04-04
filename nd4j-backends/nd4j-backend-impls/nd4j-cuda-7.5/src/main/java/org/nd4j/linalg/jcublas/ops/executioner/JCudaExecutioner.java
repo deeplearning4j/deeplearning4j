@@ -598,7 +598,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
 
-//        log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};

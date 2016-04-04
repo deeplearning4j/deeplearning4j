@@ -66,6 +66,7 @@ public class ContextPool {
                 // this is lockable thing, but since it locks once per thread initialization, performance impact won't be big
                 lock.acquire();
                 // we create 1 CUcontext per device, which will be shared for all threads/streams on this device
+/*
                 if (!cuPool.containsKey(deviceId)) {
                     CUcontext cuContext = createNewContext(deviceId);
                     cuPool.put(deviceId, cuContext);
@@ -75,6 +76,7 @@ public class ContextPool {
                 if (result != CUresult.CUDA_SUCCESS) {
                     throw new RuntimeException("Failed to set context on assigner");
                 }
+                */
 
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
@@ -161,7 +163,7 @@ public class ContextPool {
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
 
-        //JCuda.cudaSetDevice(deviceId);
+        JCuda.cudaSetDevice(deviceId);
 
 
         int result = cuDeviceGet(device, deviceId);
@@ -195,5 +197,9 @@ public class ContextPool {
         cublasPool.clear();
 
         acquireContextForDevice(deviceId);
+    }
+
+    public CUcontext getCuContextForDevice(Integer deviceId) {
+        return cuPool.get(deviceId);
     }
 }

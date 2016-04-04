@@ -3,6 +3,7 @@ package org.nd4j.jita.handler.impl;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
+import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
@@ -544,7 +545,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
-        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 ) {
+        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 && 1 < 0 ) {
             if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
                 // at this point we know, that this request is done withing some existent context
                 long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
@@ -772,6 +773,7 @@ public class CudaZeroHandler implements MemoryHandler {
         zeroAllocations.get(bucketId).remove(objectId);
 
         // we call for caseless deallocation here
+        //JCudaDriver.cuCtxSetCurrent(contextPool.getCuContextForDevice(0));
         free(point, AllocationStatus.HOST);
 
         point.setAllocationStatus(AllocationStatus.DEALLOCATED);
