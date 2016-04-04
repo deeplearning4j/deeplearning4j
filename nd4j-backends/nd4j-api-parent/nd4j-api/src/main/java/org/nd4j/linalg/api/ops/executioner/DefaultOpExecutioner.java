@@ -229,13 +229,12 @@ public  class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException("exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
-        } else if (op instanceof TransformOp) {
-            execAndReturn((TransformOp) op,dimension);
-            return op;
         } else if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
             doScalarOp((ScalarOp) op);
             return op;
+        }else if (op instanceof TransformOp) {
+            throw new UnsupportedOperationException("Executing transform ops along a dimension should be done via exec special");
         } else {
             throw new UnsupportedOperationException("Unknown op type");
         }
@@ -300,17 +299,6 @@ public  class DefaultOpExecutioner implements OpExecutioner {
 
     }
 
-    @Override
-    public INDArray execAndReturn(TransformOp op, int... dimension) {
-        throw new UnsupportedOperationException("Operation should use exec special");
-    }
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op, int... dimension) {
-        return exec(op, dimension);
-    }
-
-    @Override
     public ExecutionMode executionMode() {
         return executionMode;
     }
