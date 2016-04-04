@@ -401,12 +401,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op, int... dimension) {
-        return super.execAndReturn(op, dimension);
-    }
-
     @Override
     public Op exec(Op op, int... dimension) {
         Arrays.sort(dimension);

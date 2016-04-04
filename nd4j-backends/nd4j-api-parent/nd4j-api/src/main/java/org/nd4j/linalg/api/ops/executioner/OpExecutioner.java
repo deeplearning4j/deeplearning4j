@@ -151,13 +151,6 @@ public interface OpExecutioner {
      */
     INDArray execAndReturn(Op op);
 
-    /**Execute and return the result from an scalar op
-     *
-     * @param op the operation to execute
-     * @return the accumulated result
-     */
-    INDArray execAndReturn(ScalarOp op, int... dimension);
-
 
     /**Get the execution mode for this
      * execuioner

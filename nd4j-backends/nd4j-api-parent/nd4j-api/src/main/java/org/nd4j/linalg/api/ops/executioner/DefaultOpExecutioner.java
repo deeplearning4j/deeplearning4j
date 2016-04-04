@@ -306,11 +306,6 @@ public  class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray execAndReturn(ScalarOp op, int... dimension) {
-        return exec(op, dimension);
-    }
-
-    @Override
     public ExecutionMode executionMode() {
         return executionMode;
     }
