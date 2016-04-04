@@ -207,6 +207,7 @@ public class CudaAccumTests {
         INDArray arrF = Nd4j.create(arrC.shape()).reshape('f', arrC.shape()).assign(arrC);
 
         System.out.println("Arrf: " + arrF);
+        System.out.println("Arrf: " + Arrays.toString(arrF.data().asFloat()));
         System.out.println("ArrF shapeInfo: " + arrF.shapeInfoDataBuffer());
         System.out.println("----------------------------");
 
