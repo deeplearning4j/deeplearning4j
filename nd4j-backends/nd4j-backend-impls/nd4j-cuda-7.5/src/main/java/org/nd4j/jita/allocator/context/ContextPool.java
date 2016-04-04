@@ -90,7 +90,7 @@ public class ContextPool {
                         logger.info("Creating new cuBLAS handle for device ["+deviceId+"]...");
 
                         // FIXME: remove this later
-                        JCuda.cudaDeviceSetLimit(deviceId,2048);
+                        JCuda.cudaDeviceSetLimit(deviceId,6144);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
