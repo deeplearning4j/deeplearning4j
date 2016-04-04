@@ -296,10 +296,9 @@ public  class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
         throw new UnsupportedOperationException("Operation should use exec special");
-        
-    }
 
-    @Override
+    }
+    
     public ExecutionMode executionMode() {
         return executionMode;
     }
