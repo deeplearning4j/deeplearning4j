@@ -657,45 +657,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return feedForward(false);
     }
 
-
-    /**
-     * Compute input linear transformation (z)
-     * Compute activations (applies activation transformation to z)
-     *
-     * @return a pair of activations and corresponding derivatives
-     */
-    public Pair<List<INDArray>,List<INDArray>> feedForwardActivationsAndDerivatives(boolean training) {
-        INDArray currInput = input;
-
-        List<INDArray> activations = new ArrayList<>();
-        List<INDArray> derivatives = new ArrayList<>();
-        activations.add(currInput);
-
-        for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
-            //special case: row wise softmax
-            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", currInput.dup()), 1));
-            else
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), currInput)));
-        }
-
-        currInput = this.input;
-        for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
-            INDArray dup = currInput.dup();
-            //special case: row wise softmax
-            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative(), 1));
-            else
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative()));
-        }
-        // Duplicating last layer derivative to keep pair list equal
-        derivatives.add(derivatives.get(layers.length - 1));
-        return new Pair<>(activations, derivatives);
-    }
-
-
     /**
      * Compute activations from input to output of the output layer
      *
