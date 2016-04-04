@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.context;
 
+import jcuda.driver.CUcontext;
 import jcuda.driver.CUstream;
 import jcuda.driver.CUstream_flags;
 import jcuda.driver.JCudaDriver;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Data
 public class CudaContext {
+    private CUcontext context;
     private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
@@ -50,7 +52,7 @@ public class CudaContext {
 
 
     public CudaContext() {
-        ContextHolder.getInstance().setContext();
+        //ContextHolder.getInstance().setContext();
     }
 
     /**
@@ -94,7 +96,7 @@ public class CudaContext {
      * Initializes the stream
      */
     public void initStream() {
-        ContextHolder.getInstance().setContext();
+        //ContextHolder.getInstance().setContext();
         if(stream == null) {
             stream = new CUstream();
             JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
@@ -107,7 +109,7 @@ public class CudaContext {
      * Initializes the old stream
      */
     public void initOldStream() {
-        ContextHolder.getInstance().setContext();
+        //ContextHolder.getInstance().setContext();
         if(oldStream == null)  {
             oldStreamFromPool = false;
             oldStream = new cudaStream_t();

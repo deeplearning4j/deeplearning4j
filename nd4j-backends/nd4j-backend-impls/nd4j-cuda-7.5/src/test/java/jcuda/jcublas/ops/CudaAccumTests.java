@@ -3,16 +3,18 @@ package jcuda.jcublas.ops;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.Mean;
-import org.nd4j.linalg.api.ops.impl.accum.Norm2;
-import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
@@ -127,6 +129,8 @@ public class CudaAccumTests {
 
         INDArray sum = n.sum(new int[]{0});
 
+        System.out.println("Sum: " + sum);
+        System.out.println("Sum.Length: " + sum.length());
         System.out.println("elementWiseStride: " + n.elementWiseStride());
         System.out.println("elementStride: " + n.elementStride());
 
@@ -149,6 +153,100 @@ public class CudaAccumTests {
     }
 
     @Test
+    public void testSum5() {
+        INDArray n = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
+
+
+        INDArray sum = n.sum(new int[]{1});
+        INDArray sum2 = n.sum(new int[]{-1});
+        INDArray sum3 = n.sum(new int[]{0});
+
+        System.out.println("elementWiseStride: " + n.elementWiseStride());
+        System.out.println("elementStride: " + n.elementStride());
+
+        assertEquals(4898.4707f, sum.getFloat(0), 0.01f);
+        assertEquals(12703.209f, sum.getFloat(1), 0.01f);
+        assertEquals(sum, sum2);
+        assertNotEquals(sum, sum3);
+        assertEquals(63565.023f, sum3.getFloat(0), 0.01f);
+        assertEquals(63570.008f, sum3.getFloat(5), 0.01f);
+    }
+
+    @Test
+    public void testSum6() {
+        INDArray n = Nd4j.linspace(1, 1000, 128000).reshape(128, 10, 10, 10);
+
+
+        INDArray sum0 = n.sum(new int[]{0});
+        INDArray sum1 = n.sum(new int[]{1});
+        INDArray sum3 = n.sum(new int[]{3});
+        INDArray sumN = n.sum(new int[]{-1});
+        INDArray sum2 = n.sum(new int[]{2});
+
+        System.out.println("elementWiseStride: " + n.elementWiseStride());
+        System.out.println("elementStride: " + n.elementStride());
+
+        assertEquals(63565.023f, sum0.getFloat(0), 0.01f);
+        assertEquals(63570.008f, sum0.getFloat(5), 0.01f);
+
+        assertEquals(45.12137f, sum1.getFloat(0), 0.01f);
+        assertEquals(45.511604f, sum1.getFloat(5), 0.01f);
+
+        assertEquals(10.351214f, sum3.getFloat(0), 0.01f);
+        assertEquals(14.25359f, sum3.getFloat(5), 0.01f);
+
+        assertEquals(14.25359f, sumN.getFloat(5), 0.01f);
+        assertEquals(13.74628f, sum2.getFloat(3), 0.01f);
+    }
+
+    @Test
+    public void testSum3Of4_2222() {
+        int[] shape = {2, 2, 2, 2};
+        int length = ArrayUtil.prod(shape);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape(shape);
+        INDArray arrF = Nd4j.create(arrC.shape()).reshape('f', arrC.shape()).assign(arrC);
+
+        System.out.println("Arrf: " + arrF);
+        System.out.println("ArrF shapeInfo: " + arrF.shapeInfoDataBuffer());
+        System.out.println("----------------------------");
+
+        int[][] dimsToSum = new int[][]{{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+        double[][] expD = new double[][]{{64, 72}, {60, 76}, {52, 84}, {36, 100}};
+
+        for (int i = 0; i < dimsToSum.length; i++) {
+            int[] d = dimsToSum[i];
+
+            INDArray outC = arrC.sum(d);
+            INDArray outF = arrF.sum(d);
+            INDArray exp = Nd4j.create(expD[i],outC.shape());
+
+            assertEquals(exp, outC);
+            assertEquals(exp, outF);
+
+            System.out.println("PASSED:" + Arrays.toString(d) + "\t" + outC + "\t" + outF);
+        }
+    }
+
+    @Test
+    public void testDimensionMax() {
+        INDArray linspace = Nd4j.linspace(1, 6, 6).reshape('f', 2, 3);
+        int axis = 0;
+        INDArray row = linspace.slice(axis);
+        System.out.println("Linspace: " + linspace);
+        System.out.println("Row: " + row);
+
+        System.out.println("Row shapeInfo: " + row.shapeInfoDataBuffer());
+
+        Max max = new Max(row);
+        double max2 = Nd4j.getExecutioner().execAndReturn(max).getFinalResult().doubleValue();
+        assertEquals(5.0, max2, 1e-1);
+
+        Min min = new Min(row);
+        double min2 = Nd4j.getExecutioner().execAndReturn(min).getFinalResult().doubleValue();
+        assertEquals(1.0, min2, 1e-1);
+    }
+
+    @Test
     public void testNorm2() throws Exception {
         INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
 
@@ -163,7 +261,13 @@ public class CudaAccumTests {
         INDArray arrc = Nd4j.linspace(1,6,6).reshape('c',3,2);
         INDArray arrf = Nd4j.create(new double[6],new int[]{3,2},'f').assign(arrc);
 
+        System.out.println("ArrC: " + arrc);
+        System.out.println("ArrC buffer: " + Arrays.toString(arrc.data().asFloat()));
         System.out.println("ArrF: " + arrf);
+        System.out.println("ArrF buffer: " + Arrays.toString(arrf.data().asFloat()));
+        System.out.println("ArrF shape: " + arrf.shapeInfoDataBuffer());
+
+        INDArray cSum = arrc.sum(0);
 
         INDArray fSum = arrf.sum(0);
 
