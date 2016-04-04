@@ -15,7 +15,7 @@
 #include <dll.h>
 #include "reduce.h"
 #include "broadcasting.h"
-
+#include <shape.h>
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #endif
@@ -184,7 +184,8 @@ namespace functions {
 			T *dy,
 			int incy,
 			T *params,
-			T *result,int resultStride) {
+			T *result,
+			int resultStride) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		int i = blockIdx.x * blockDim.x + tid;
@@ -3350,7 +3351,6 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-
                     int inOffset = 0;
                     int *inShape = shape::shapeOf(xShapeBuffer);
                     int *inStride = shape::stride(xShapeBuffer);
@@ -4164,36 +4164,15 @@ namespace functions {
          */
             template<typename T>
             class IsMax : public Transform<T> {
-            public:
-
+            private:
 #ifdef __CUDACC__
-                /**
-     *
-     */
+                inline __host__  __device__
 
-    virtual __device__ void execSpecialCuda(
-            T *dx,
-            int *xShapeBuffer,
-            T *result,
-            int *resultShapeBuffer,
-            T *extraParams) {}
+#elif defined(__GNUC__)
+
+
 #endif
-
-                /**
-                 * CPU operation execution
-                 * @param dx the input data
-                 * @param xStride the stride to iterate over
-                 * the x input
-                 * @param y the y data
-                 * @param yStride the stride to iterate
-                 * over the y buffer
-                 * @param result the buffer
-                 * to store the result in
-                 * @param resultStride the stride for the buffer
-                 * @param extraParams the extra parameters for the transform
-                 * @param n the length of the input
-                 */
-                virtual void execSpecial(
+                void doAll(
                         T *dx,
                         int *xShapeBuffer,
                         T *result,
@@ -4388,6 +4367,61 @@ namespace functions {
                         }
 
                     }
+                }
+            public:
+
+
+#ifdef __CUDACC__
+                /**
+     *
+     */
+
+    virtual __device__ void execSpecialCuda(
+            T *dx,
+            int *xShapeBuffer,
+            T *result,
+            int *resultShapeBuffer,
+            T *extraParams) {}
+#endif
+
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    if(extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_VALUE) {
+                        this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+                    }
+                    else {
+                        int dimensionLength = (int) extraParams[0];
+                        int dimension[dimensionLength];
+                        for(int i = 0; i < dimensionLength; i++) {
+                            dimension[i] = (int) extraParams[i + 1];
+                        }
+                        
+                        int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension,dimensionLength);
+                        int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension,dimensionLength);
+                        for(int i = 0; i < tads; i++) {
+                            int offset = shape::tadOffset(i,xShapeBuffer,dimension,dimensionLength);
+                            this->doAll(dx + offset,tadShapeInfo,result + offset,tadShapeInfo,extraParams);
+                        }
+                    }
+
                 }
 
                 /**
