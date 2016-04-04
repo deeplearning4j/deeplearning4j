@@ -267,37 +267,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-
-    @Test
-    public void testReadWrite() throws Exception {
-        INDArray write = Nd4j.linspace(1, 4, 4);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        SerializationUtils.writeObject(write,bos);
-        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-        INDArray read = SerializationUtils.readObject(bis);
-        assertEquals(write, read);
-
-    }
-
-
-
-
-    @Test
-    public void testReadWriteDouble() throws Exception {
-        INDArray write = Nd4j.linspace(1, 4, 4);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(write, dos);
-
-        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-        DataInputStream dis = new DataInputStream(bis);
-        INDArray read = Nd4j.read(dis);
-        assertEquals(write, read);
-
-    }
-
-
-
     @Test
     public void testSubiRowVector() throws Exception {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape('c',2, 2);
@@ -522,16 +491,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testToFlattenedOnViews(){
-
+    public void testToFlattenedOnViews() {
         int rows = 8;
         int cols = 8;
         int dim2 = 4;
-        int length = rows*cols;
-        int length3d = rows*cols*dim2;
+        int length = rows* cols;
+        int length3d = rows * cols * dim2;
 
         INDArray first = Nd4j.linspace(1,length,length).reshape('c',rows,cols);
-        INDArray second = Nd4j.create('f',rows,cols).assign(first);
+        INDArray second = Nd4j.create(new int[]{rows,cols},'f').assign(first);
         INDArray third = Nd4j.linspace(1,length3d,length3d).reshape('c',rows,cols,dim2);
         first.addi(0.1);
         second.addi(0.2);
@@ -540,9 +508,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         first = first.get(NDArrayIndex.interval(4,8), NDArrayIndex.interval(0,2,8));
         second = second.get(NDArrayIndex.interval(3,7), NDArrayIndex.all());
         third = third.permute(0,2,1);
-
-        assertEquals(Nd4j.toFlattened('c', first, second, third), toFlattenedViaIterator('c', first, second, third));
-        assertEquals(Nd4j.toFlattened('f', first, second, third), toFlattenedViaIterator('f', first, second, third));
+        INDArray cAssertion = Nd4j.create(new double[]{33.10, 35.10, 37.10, 39.10, 41.10, 43.10, 45.10, 47.10, 49.10, 51.10, 53.10, 55.10, 57.10, 59.10, 61.10, 63.10, 25.20, 26.20, 27.20, 28.20, 29.20, 30.20, 31.20, 32.20, 33.20, 34.20, 35.20, 36.20, 37.20, 38.20, 39.20, 40.20, 41.20, 42.20, 43.20, 44.20, 45.20, 46.20, 47.20, 48.20, 49.20, 50.20, 51.20, 52.20, 53.20, 54.20, 55.20, 56.20, 1.30, 5.30, 9.30, 13.30, 17.30, 21.30, 25.30, 29.30, 2.30, 6.30, 10.30, 14.30, 18.30, 22.30, 26.30, 30.30, 3.30, 7.30, 11.30, 15.30, 19.30, 23.30, 27.30, 31.30, 4.30, 8.30, 12.30, 16.30, 20.30, 24.30, 28.30, 32.30, 33.30, 37.30, 41.30, 45.30, 49.30, 53.30, 57.30, 61.30, 34.30, 38.30, 42.30, 46.30, 50.30, 54.30, 58.30, 62.30, 35.30, 39.30, 43.30, 47.30, 51.30, 55.30, 59.30, 63.30, 36.30, 40.30, 44.30, 48.30, 52.30, 56.30, 60.30, 64.30, 65.30, 69.30, 73.30, 77.30, 81.30, 85.30, 89.30, 93.30, 66.30, 70.30, 74.30, 78.30, 82.30, 86.30, 90.30, 94.30, 67.30, 71.30, 75.30, 79.30, 83.30, 87.30, 91.30, 95.30, 68.30, 72.30, 76.30, 80.30, 84.30, 88.30, 92.30, 96.30, 97.30, 101.30, 105.30, 109.30, 113.30, 117.30, 121.30, 125.30, 98.30, 102.30, 106.30, 110.30, 114.30, 118.30, 122.30, 126.30, 99.30, 103.30, 107.30, 111.30, 115.30, 119.30, 123.30, 127.30, 100.30, 104.30, 108.30, 112.30, 116.30, 120.30, 124.30, 128.30, 129.30, 133.30, 137.30, 141.30, 145.30, 149.30, 153.30, 157.30, 130.30, 134.30, 138.30, 142.30, 146.30, 150.30, 154.30, 158.30, 131.30, 135.30, 139.30, 143.30, 147.30, 151.30, 155.30, 159.30, 132.30, 136.30, 140.30, 144.30, 148.30, 152.30, 156.30, 160.30, 161.30, 165.30, 169.30, 173.30, 177.30, 181.30, 185.30, 189.30, 162.30, 166.30, 170.30, 174.30, 178.30, 182.30, 186.30, 190.30, 163.30, 167.30, 171.30, 175.30, 179.30, 183.30, 187.30, 191.30, 164.30, 168.30, 172.30, 176.30, 180.30, 184.30, 188.30, 192.30, 193.30, 197.30, 201.30, 205.30, 209.30, 213.30, 217.30, 221.30, 194.30, 198.30, 202.30, 206.30, 210.30, 214.30, 218.30, 222.30, 195.30, 199.30, 203.30, 207.30, 211.30, 215.30, 219.30, 223.30, 196.30, 200.30, 204.30, 208.30, 212.30, 216.30, 220.30, 224.30, 225.30, 229.30, 233.30, 237.30, 241.30, 245.30, 249.30, 253.30, 226.30, 230.30, 234.30, 238.30, 242.30, 246.30, 250.30, 254.30, 227.30, 231.30, 235.30, 239.30, 243.30, 247.30, 251.30, 255.30, 228.30, 232.30, 236.30, 240.30, 244.30, 248.30, 252.30, 256.30});
+        INDArray fAssertion = Nd4j.create(new double[] {33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10, 45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10, 25.20, 33.20, 41.20, 49.20, 26.20, 34.20, 42.20, 50.20, 27.20, 35.20, 43.20, 51.20, 28.20, 36.20, 44.20, 52.20, 29.20, 37.20, 45.20, 53.20, 30.20, 38.20, 46.20, 54.20, 31.20, 39.20, 47.20, 55.20, 32.20, 40.20, 48.20, 56.20, 1.30, 33.30, 65.30, 97.30, 129.30, 161.30, 193.30, 225.30, 2.30, 34.30, 66.30, 98.30, 130.30, 162.30, 194.30, 226.30, 3.30, 35.30, 67.30, 99.30, 131.30, 163.30, 195.30, 227.30, 4.30, 36.30, 68.30, 100.30, 132.30, 164.30, 196.30, 228.30, 5.30, 37.30, 69.30, 101.30, 133.30, 165.30, 197.30, 229.30, 6.30, 38.30, 70.30, 102.30, 134.30, 166.30, 198.30, 230.30, 7.30, 39.30, 71.30, 103.30, 135.30, 167.30, 199.30, 231.30, 8.30, 40.30, 72.30, 104.30, 136.30, 168.30, 200.30, 232.30, 9.30, 41.30, 73.30, 105.30, 137.30, 169.30, 201.30, 233.30, 10.30, 42.30, 74.30, 106.30, 138.30, 170.30, 202.30, 234.30, 11.30, 43.30, 75.30, 107.30, 139.30, 171.30, 203.30, 235.30, 12.30, 44.30, 76.30, 108.30, 140.30, 172.30, 204.30, 236.30, 13.30, 45.30, 77.30, 109.30, 141.30, 173.30, 205.30, 237.30, 14.30, 46.30, 78.30, 110.30, 142.30, 174.30, 206.30, 238.30, 15.30, 47.30, 79.30, 111.30, 143.30, 175.30, 207.30, 239.30, 16.30, 48.30, 80.30, 112.30, 144.30, 176.30, 208.30, 240.30, 17.30, 49.30, 81.30, 113.30, 145.30, 177.30, 209.30, 241.30, 18.30, 50.30, 82.30, 114.30, 146.30, 178.30, 210.30, 242.30, 19.30, 51.30, 83.30, 115.30, 147.30, 179.30, 211.30, 243.30, 20.30, 52.30, 84.30, 116.30, 148.30, 180.30, 212.30, 244.30, 21.30, 53.30, 85.30, 117.30, 149.30, 181.30, 213.30, 245.30, 22.30, 54.30, 86.30, 118.30, 150.30, 182.30, 214.30, 246.30, 23.30, 55.30, 87.30, 119.30, 151.30, 183.30, 215.30, 247.30, 24.30, 56.30, 88.30, 120.30, 152.30, 184.30, 216.30, 248.30, 25.30, 57.30, 89.30, 121.30, 153.30, 185.30, 217.30, 249.30, 26.30, 58.30, 90.30, 122.30, 154.30, 186.30, 218.30, 250.30, 27.30, 59.30, 91.30, 123.30, 155.30, 187.30, 219.30, 251.30, 28.30, 60.30, 92.30, 124.30, 156.30, 188.30, 220.30, 252.30, 29.30, 61.30, 93.30, 125.30, 157.30, 189.30, 221.30, 253.30, 30.30, 62.30, 94.30, 126.30, 158.30, 190.30, 222.30, 254.30, 31.30, 63.30, 95.30, 127.30, 159.30, 191.30, 223.30, 255.30, 32.30, 64.30, 96.30, 128.30, 160.30, 192.30, 224.30, 256.30});
+        assertEquals(cAssertion,Nd4j.toFlattened('c', first, second, third));
+        assertEquals(fAssertion,Nd4j.toFlattened('f', first, second, third));
     }
 
     private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
@@ -560,6 +529,81 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
 
         return out;
+    }
+
+
+
+    @Test
+    public void testIsMax2() {
+        //Tests: full buffer...
+        //1d
+        INDArray arr1 = Nd4j.create(new double[]{1,2,3,1});
+        Nd4j.getExecutioner().execAndReturn(new IsMax(arr1));
+        INDArray exp1 = Nd4j.create(new double[]{0,0,1,0});
+
+        assertEquals(exp1, arr1);
+
+        arr1 = Nd4j.create(new double[]{1,2,3,1});
+        INDArray result = Nd4j.zeros(4);
+        Nd4j.getExecutioner().execAndReturn(new IsMax(arr1,result));
+
+        assertEquals(Nd4j.create(new double[]{1,2,3,1}), arr1);
+        assertEquals(exp1, result);
+
+        //2d
+        INDArray arr2d = Nd4j.create(new double[][]{{0,1,2},{2,9,1}});
+        INDArray exp2d = Nd4j.create(new double[][]{{0,0,0},{0,1,0}});
+
+        INDArray out2dc = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('c')));
+        INDArray out2df = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('f')));
+        assertEquals(exp2d, out2dc);
+        assertEquals(exp2d, out2df);
+    }
+
+    @Test
+    public void testToFlattened3(){
+        INDArray inC1 = Nd4j.create(new int[]{10,100},'c');
+        INDArray inC2 = Nd4j.create(new int[]{1,100},'c');
+
+        INDArray inF1 = Nd4j.create(new int[]{10,100},'f');
+//        INDArray inF1 = Nd4j.create(new int[]{784,1000},'f');
+        INDArray inF2 = Nd4j.create(new int[]{1,100},'f');
+
+        Nd4j.toFlattened('f',inF1); //ok
+        Nd4j.toFlattened('f',inF2); //ok
+
+        Nd4j.toFlattened('f',inC1); //crash
+        Nd4j.toFlattened('f',inC2); //crash
+
+        Nd4j.toFlattened('c',inF1); //crash on shape [784,1000]. infinite loop on shape [10,100]
+        Nd4j.toFlattened('c',inF2); //ok
+
+        Nd4j.toFlattened('c',inC1); //ok
+        Nd4j.toFlattened('c',inC2); //ok
+    }
+
+    @Test
+    public void testIsMaxEqualValues(){
+        //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
+
+        //[1 1 1] -> [1 0 0]
+        //Loop to double check against any threading weirdness...
+        for( int i=0; i<10; i++ ) {
+            assertEquals(Nd4j.create(new double[]{1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.ones(3))));
+        }
+
+        //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
+        assertEquals(Nd4j.create(new double[]{0, 0, 0, 1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.create(new double[]{0, 0, 0, 2, 2, 0}))));
+
+        //[0 2]    [0 1]
+        //[2 1] -> [0 0]
+        INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
+        INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
+        INDArray outc = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('c')));
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+
+        assertEquals(exp, outc);
+        assertEquals(exp, outf);
     }
 
     @Test
@@ -2378,7 +2422,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testToFlattenedWithOrder(){
-
         int[] firstShape = {10,3};
         int firstLen = ArrayUtil.prod(firstShape);
         int[] secondShape = {2,7};

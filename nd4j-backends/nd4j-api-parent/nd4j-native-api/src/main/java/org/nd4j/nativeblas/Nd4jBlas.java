@@ -4,7 +4,6 @@ package org.nd4j.nativeblas;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
-import org.nd4j.linalg.api.buffer.util.LibUtils;
 
 /**
  * CBlas bindings
@@ -12,9 +11,11 @@ import org.nd4j.linalg.api.buffer.util.LibUtils;
  * Original credit:
  * https://github.com/uncomplicate/neanderthal-atlas
  *
- *
+ * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
+ * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
+ * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include="NativeBlas.h",link = "nd4j")
+@Platform(include="NativeBlas.h",preload = "libnd4j", link = "nd4j")
 public class Nd4jBlas extends Pointer {
     static {
         Loader.load();
