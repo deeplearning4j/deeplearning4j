@@ -730,7 +730,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(assertion, log);
     }
 
+    @Test
+    public void testVectorSum() {
+        INDArray lin = Nd4j.linspace(1,4,4);
+        assertEquals(10.0,lin.sumNumber().doubleValue(),1e-1);
 
+    }
 
     @Test
     public void testSmallSum() {
