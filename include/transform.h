@@ -4409,15 +4409,15 @@ namespace functions {
                     }
                     else {
                         int dimensionLength = (int) extraParams[0];
-                        int dimension[dimensionLength];
+                        std::vector<int> dimension(dimensionLength);
                         for(int i = 0; i < dimensionLength; i++) {
                             dimension[i] = (int) extraParams[i + 1];
                         }
 
-                        int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension,dimensionLength);
-                        int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension,dimensionLength);
+                        int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension.data(),dimensionLength);
+                        int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension.data(),dimensionLength);
                         for(int i = 0; i < tads; i++) {
-                            int offset = shape::tadOffset(i,xShapeBuffer,dimension,dimensionLength);
+                            int offset = shape::tadOffset(i,xShapeBuffer,dimension.data(),dimensionLength);
                             this->doAll(dx + offset,tadShapeInfo,result + offset,tadShapeInfo,extraParams);
                         }
                     }
