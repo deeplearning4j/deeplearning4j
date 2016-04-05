@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.components.text.style;
 
-import io.skymind.ui.api.Style;
+
+import org.deeplearning4j.ui.api.Style;
 
 /**
  * Created by Alex on 3/04/2016.

@@ -1,3 +1,4 @@
+/// <reference path="../api/Margin.ts" />
 
 class TSUtils {
 
@@ -22,5 +23,4 @@ class TSUtils {
         }
         return min;
     }
-
 }

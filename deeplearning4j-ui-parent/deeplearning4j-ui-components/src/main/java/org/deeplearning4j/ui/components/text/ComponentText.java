@@ -17,10 +17,10 @@
  */
 package org.deeplearning4j.ui.components.text;
 
-import io.skymind.ui.api.Component;
-import io.skymind.ui.components.text.style.TextStyle;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.components.text.style.TextStyle;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

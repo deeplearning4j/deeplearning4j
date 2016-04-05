@@ -5,6 +5,7 @@ Some things to know regarding the deeplearning4j-ui-components module:
 - This module is designed with the following goals in mind:
     - Providing easy Java/JavaScript interoperability for reusable user interface components (charts, tables etc)
     - Maintainability via the use of TypeScript and proper OO design
+    - Rapid application development, rather than providing the greatest amount of power/flexibility
   
 The directory/package and file structure is mirrored (as much as possible) on both the java and typescript sides.
 
@@ -19,6 +20,7 @@ Some design principles here:
     - Consequently, any changes made to the Java UI component classes should be mirrored
 - After the JS/TS versions of the UI objects are created, they can be added to an existing component using the .render(addToObject: JQuery) method
     - For charts, d3.js is used
+- At present: behaviour (on click events, etc) cannot be defined in Java (this has to be done in TS/JS)
 
 
 Some additional setup that is required for developing/maintaining the TypeScript code:
