@@ -18,8 +18,8 @@ import java.util.List;
  */
 public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
-    protected static int width = 32;
     protected static int height = 32;
+    protected static int width = 32;
     protected static int channels = 3;
     protected static int numPixels = 3073;
     protected static CifarLoader loader;
@@ -35,7 +35,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples) {
-        super(null, batchSize, width * height * channels, CifarLoader.NUM_LABELS);
+        super(null, batchSize, height * width * channels , CifarLoader.NUM_LABELS);
         this.loader = new CifarLoader();
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
@@ -47,7 +47,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, String version) {
-        super(null, batchSize, width * height * channels, CifarLoader.NUM_LABELS);
+        super(null, batchSize, height * width * channels, CifarLoader.NUM_LABELS);
         this.loader = new CifarLoader(version);
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
@@ -57,7 +57,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     /**
      * Create Cifar data specific iterator
      * @param batchSize the batch size of the examples
-     * @param imgDim an array of width, height and channels
+     * @param imgDim an array of height, width and channels
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
@@ -70,7 +70,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     /**
      * Create Cifar data specific iterator
      * @param batchSize the batch size of the examples
-     * @param imgDim an array of width, height and channels
+     * @param imgDim an array of height, width and channels
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories) {
@@ -87,7 +87,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * @param numCategories the overall number of labels
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, int numCategories) {
-        super(null, batchSize, width * height * channels, numCategories);
+        super(null, batchSize, height * width * channels, numCategories);
         this.loader = new CifarLoader();
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
@@ -97,7 +97,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     /**
      * Create Cifar data specific iterator
      * @param batchSize the batch size of the examples
-     * @param imgDim an array of width, height and channels
+     * @param imgDim an array of height, width and channels
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim)  {
         super(null, batchSize, imgDim[0] * imgDim[1] * imgDim[2], CifarLoader.NUM_LABELS);
