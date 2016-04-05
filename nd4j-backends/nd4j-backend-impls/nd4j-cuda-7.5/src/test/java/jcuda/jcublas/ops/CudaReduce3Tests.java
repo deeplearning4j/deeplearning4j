@@ -27,7 +27,6 @@ public class CudaReduce3Tests {
     @Test
     public void testPinnedCosineSim() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
@@ -42,7 +41,6 @@ public class CudaReduce3Tests {
     @Test
     public void testPinnedManhattanDistance() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
         INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
         INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
@@ -60,8 +58,6 @@ public class CudaReduce3Tests {
     @Test
     public void testPinnedEuclideanDistance() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
         INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
         INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
 
