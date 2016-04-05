@@ -21,14 +21,16 @@ public class TableStyle extends Style {
     private String backgroundColor;
 
     private TableStyle(Builder builder){
+        super(builder);
         this.columnWidths = builder.columnWidths;
         this.columnWidthUnit = builder.columnWidthUnit;
         this.borderWidthPx = builder.borderWidthPx;
         this.headerColor = builder.headerColor;
+        this.backgroundColor = builder.backgroundColor;
     }
 
 
-    public class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder>{
 
         private double[] columnWidths;
         private LengthUnit columnWidthUnit;
@@ -54,7 +56,7 @@ public class TableStyle extends Style {
         }
 
         public Builder headerColor(String color){
-            if(!color.matches("#dddddd")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
+            if(!color.matches("#[a-f0-9]{6}")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
             this.headerColor = color;
             return this;
         }
@@ -65,11 +67,14 @@ public class TableStyle extends Style {
         }
 
         public Builder backgroundColor(String color){
-            if(!color.matches("#dddddd")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
+            if(!color.matches("#[a-f0-9]{6}")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
             this.backgroundColor = color;
             return this;
         }
 
+        public TableStyle build(){
+            return new TableStyle(this);
+        }
     }
 
 }

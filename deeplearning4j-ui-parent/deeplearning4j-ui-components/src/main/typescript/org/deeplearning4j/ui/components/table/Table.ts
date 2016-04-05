@@ -16,8 +16,7 @@ class Table extends Component implements Renderable {
 
         this.header = json['header'];
         this.content = json['content'];
-
-
+        if(json['style']) this.style = new TableStyle(json['style']);
     }
 
     render = (appendToObject: JQuery) => {
@@ -28,7 +27,7 @@ class Table extends Component implements Renderable {
         var tbl = document.createElement('table');
         tbl.style.width = '100%';
         tbl.style.height = '100%';
-        if(s && s.getBorderWidthPx() ) tbl.setAttribute('border', String(s.getBorderWidthPx()));
+        if(s && s.getBorderWidthPx() != null ) tbl.setAttribute('border', String(s.getBorderWidthPx()));
         if(s && s.getBackgroundColor()) tbl.style.backgroundColor = s.getBackgroundColor();
 
         if (s && s.getColumnWidths()) {

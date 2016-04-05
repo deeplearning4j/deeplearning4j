@@ -25,57 +25,6 @@ class ChartHistogram extends Chart implements Renderable {
         var s: ChartStyle = this.getStyle();
         var margin: Margin = Style.getMargins(s);
 
-        // Set the ranges
-        var xScale: d3.scale.Linear<number,number> = d3.scale.linear().range([0, margin.widthExMargins]);
-        var yScale: d3.scale.Linear<number,number> = d3.scale.linear().range([margin.heightExMargins, 0]);
-
-        // Define the axes
-        var xAxis: any = d3.svg.axis().scale(xScale)
-            .orient("bottom").ticks(5);
-        if(this.gridVerticalStrokeWidth && this.gridVerticalStrokeWidth > 0){
-            xAxis.innerTickSize(-margin.heightExMargins);     //used as grid line
-        }
-
-
-        var yAxis: any = d3.svg.axis().scale(yScale)
-            .orient("left").ticks(5);
-        if(this.gridHorizontalStrokeWidth && this.gridHorizontalStrokeWidth > 0){
-            yAxis.innerTickSize(-margin.widthExMargins);      //used as grid line
-        }
-
-        if(this.suppressAxisHorizontal === true) xAxis.tickValues([]);
-
-        if(this.suppressAxisVertical === true) yAxis.tickValues([]);
-
-        // Set up the data:
-        var lowerBounds: number[] = this.lowerBounds;
-        var upperBounds: number[] = this.upperBounds;
-        var yValues: number[] = this.yValues;
-
-        var data: any = lowerBounds.map(function (d, i) {
-            return {'width': upperBounds[i] - lowerBounds[i], 'height': yValues[i], 'offset': lowerBounds[i]};
-        });
-
-        // Define the line
-        var valueline = d3.svg.line()
-            .x(function (d: any) {
-                return xScale(d.xPos);
-            })
-            .y(function (d: any) {
-                return yScale(d.yPos);
-            });
-
-        // Adds the svg canvas
-        var svg = d3.select("#" + appendToObject.attr("id"))
-            .append("svg")
-            .style("fill", "none")
-            .attr("width", s.getWidth())
-            .attr("height", s.getHeight())
-            .attr("padding", "20px")
-            .append("g")
-            .attr("transform",
-                "translate(" + margin.left + "," + margin.top + ")");
-
         // Add the bins.
         var xMin: number;
         var xMax: number;
@@ -90,15 +39,64 @@ class ChartHistogram extends Chart implements Renderable {
         if(this.setYMax) yMax = this.setYMax;
         else yMax = (this.yValues ? d3.max(this.yValues) : 1);
 
+        //// Define the axes
+        var xScale: any = d3.scale.linear()
+            .domain([xMin, xMax])
+            .range([0, margin.widthExMargins]);
+
+        var xAxis: any = d3.svg.axis().scale(xScale)
+            .orient("bottom").ticks(5);
+
+        if(this.gridVerticalStrokeWidth && this.gridVerticalStrokeWidth > 0){
+            xAxis.innerTickSize(-margin.heightExMargins);     //used as grid line
+        }
+
+        var yScale: any = d3.scale.linear()
+            .domain([0, yMax])
+            .range([margin.heightExMargins, 0]);
+        var yAxis: any = d3.svg.axis().scale(yScale)
+            .orient("left").ticks(5);
+        if(this.gridHorizontalStrokeWidth && this.gridHorizontalStrokeWidth > 0){
+            yAxis.innerTickSize(-margin.widthExMargins);      //used as grid line
+        }
+
+
+
+        if(this.suppressAxisHorizontal === true) xAxis.tickValues([]);
+
+        if(this.suppressAxisVertical === true) yAxis.tickValues([]);
+
+        // Set up the data:
+        var lowerBounds: number[] = this.lowerBounds;
+        var upperBounds: number[] = this.upperBounds;
+        var yValues: number[] = this.yValues;
+
+        var data: any = lowerBounds.map(function (d, i) {
+            return {'width': upperBounds[i] - lowerBounds[i], 'height': yValues[i], 'offset': lowerBounds[i]};
+        });
+
+        // Adds the svg canvas
+        var svg = d3.select("#" + appendToObject.attr("id"))
+            .append("svg")
+            .style("fill", "none")
+            .attr("width", s.getWidth())
+            .attr("height", s.getHeight())
+            .attr("padding", "20px")
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+
 
         svg.selectAll(".bin")
             .data(data)
             .enter().append("rect")
             .attr("class", "bin")
-            .attr("x", function(d: any) { return xAxis(d.offset); })
-            .attr("width", function(d: any) { return xAxis(xMin + d.width) - 1; })
-            .attr("y", function(d: any) { return yAxis(d.height); })
-            .attr("height", function(d: any) { return margin.heightExMargins - yAxis(d.height); });
+            .style("fill","steelblue")
+            .attr("x", function(d: any) { return xScale(d.offset); })
+            .attr("width", function(d: any) { return xScale(xMin + d.width) - 1; })
+            .attr("y", function(d: any) { return yScale(d.height); })
+            .attr("height", function(d: any) { return margin.heightExMargins - yScale(d.height); });
 
         // Add the X Axis
         var xAxisNode = svg.append("g")

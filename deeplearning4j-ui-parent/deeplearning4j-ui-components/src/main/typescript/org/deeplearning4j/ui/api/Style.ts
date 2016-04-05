@@ -85,10 +85,10 @@ class TableStyle extends Style {
     constructor( jsonObj: any ){
         super(jsonObj['StyleTable']);
 
-        this.columnWidths = jsonObj['columnWidths']
-        this.borderWidthPx = jsonObj['borderWidthPx'];
-        this.headerColor = jsonObj['headerColor'];
-        this.backgroundColor = jsonObj['backgroundColor'];
+        this.columnWidths = jsonObj['StyleTable']['columnWidths'];
+        this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
+        this.headerColor = jsonObj['StyleTable']['headerColor'];
+        this.backgroundColor = jsonObj['StyleTable']['backgroundColor'];
     }
 
     getColumnWidths = () => this.columnWidths;
