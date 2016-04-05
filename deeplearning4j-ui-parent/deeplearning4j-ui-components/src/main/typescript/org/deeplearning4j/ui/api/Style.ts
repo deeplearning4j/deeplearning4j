@@ -55,7 +55,7 @@ class ChartStyle extends Style {
     getSeriesColor = (idx: number) => {
         if(!this.seriesColors || idx < 0 || idx > this.seriesColors.length) return null;
         return this.seriesColors[idx];
-    }
+    };
 
     getAxisStrokeWidth = () => this.axisStrokeWidth;
 }
