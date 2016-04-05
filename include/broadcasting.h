@@ -82,7 +82,6 @@ public:
 			int *shape = shape::shapeOf(xShapeInfo);
 			int *stride = shape::stride(xShapeInfo);
 			int wholeRank = shape::rank(xShapeInfo);
-			bool newSqueezeDimensions = false;
 			for (int i = 0; i < wholeRank; i++) {
 				if (shape[i] == 1)
 					numOnes++;

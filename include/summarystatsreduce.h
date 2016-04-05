@@ -598,7 +598,6 @@ struct SharedSummaryStatsData<double> {
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
-		__shared__ int reductionIndexesPerBlock;
 
 		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
@@ -621,9 +620,7 @@ struct SharedSummaryStatsData<double> {
 
 		__shared__ volatile int resultLength;
 
-		__shared__ int tensorsForDimension;
 
-		__shared__ int elementsPerTad;
 
 		//only compute the tad indexes once
 		__shared__
@@ -633,7 +630,6 @@ struct SharedSummaryStatsData<double> {
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
 		if (tid == 0) {
-			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 			resultLength = shape::length(resultShapeInfo);
 			if (dimensionLength == 1) {
 				if (dimension[0] == shape::MAX_DIMENSION)
@@ -658,14 +654,8 @@ struct SharedSummaryStatsData<double> {
 
 
 			xLength = shape::length(xShapeInfo);
-			elementsPerTad = xLength / resultLength;
 
-			if (gridDim.x >= resultLength) {
-				reductionIndexesPerBlock = 1;
-			}
-			else {
-				reductionIndexesPerBlock = resultLength / gridDim.x;
-			}
+
 		}
 		__syncthreads();
 		if (!resultScalar) {
@@ -802,7 +792,6 @@ struct SharedSummaryStatsData<double> {
 				 * along long which to iterate.
 				 */
 				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-				int tadLength = xTadInfo.tensorShapeProd;
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
