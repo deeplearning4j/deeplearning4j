@@ -184,11 +184,20 @@ public class ShapeOffsetResolution implements Serializable {
      *
      */
     public void exec(INDArrayIndex... indexes) {
+        int[] shape = arr.shape();
+
+        // Check that given point indexes are not out of bounds
+        for (int i = 0; i < indexes.length; i++) {
+            INDArrayIndex idx = indexes[i];
+            if(idx instanceof PointIndex && idx.current() >= shape[i]){
+                throw new IllegalArgumentException("INDArrayIndex["+i+"] is out of bounds (value: "+idx.current()+")");
+            }
+        }
+
         indexes = NDArrayIndex.resolve(arr.shapeInfo(),indexes);
         if(tryShortCircuit(indexes)) {
             return;
         }
-        int[] shape = arr.shape();
 
 
         int numIntervals = 0;

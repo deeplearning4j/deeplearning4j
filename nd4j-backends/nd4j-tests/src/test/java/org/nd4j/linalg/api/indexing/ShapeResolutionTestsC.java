@@ -14,7 +14,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -124,6 +123,18 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         try {
             resolution.exec(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(2, 4));
+            fail("Out of range index should throw an IllegalArgumentException");
+        }catch (IllegalArgumentException e){
+            //do nothing
+        }
+    }
+
+    @Test
+    public void testOutOfRangeIndices2() {
+        INDArray arr = Nd4j.create(1,4, 4);
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
+        try {
+            resolution.exec(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.point(0));
             fail("Out of range index should throw an IllegalArgumentException");
         }catch (IllegalArgumentException e){
             //do nothing
