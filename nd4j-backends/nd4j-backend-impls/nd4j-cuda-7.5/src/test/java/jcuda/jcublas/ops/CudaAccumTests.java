@@ -83,6 +83,15 @@ public class CudaAccumTests {
     }
 
 
+    @Test
+    public void testStdevNum(){
+        INDArray in = Nd4j.linspace(1, 100, 100);
+        float stdev = in.stdNumber().floatValue();
+
+
+        assertEquals(29.011492f, stdev, 0.001f);
+    }
+
     /**
      * Mean call
      * @throws Exception

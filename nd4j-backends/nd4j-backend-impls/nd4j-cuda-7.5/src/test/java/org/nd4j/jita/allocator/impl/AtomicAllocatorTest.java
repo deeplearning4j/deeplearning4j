@@ -500,8 +500,8 @@ public class AtomicAllocatorTest {
             if (cnt.incrementAndGet() % 100000 == 0) {
                 log.info("Execution time: [" + (time2 - time1) + "] ns");
                 assertEquals(1.7674999237060547, array2.getDouble(0), 0.00001);
-                log.info("Sleeping for 5 seconds...");
-                Thread.sleep(5000);
+                log.info("Sleeping for 2 seconds...");
+                Thread.sleep(2000);
             }
         }
     }
