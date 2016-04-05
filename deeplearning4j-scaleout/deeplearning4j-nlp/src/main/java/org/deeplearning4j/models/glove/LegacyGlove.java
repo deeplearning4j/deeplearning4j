@@ -23,11 +23,9 @@ import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.LegacyTfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.sequencevectors.SequenceVectors;
-import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -47,7 +45,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -74,7 +71,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
     private int batchSize = 1000;
     private int minWordFrequency = 5;
     private double maxCount = 100;
-    public final static String UNK = Word2Vec.UNK;
+    public final static String UNK = Word2Vec.DEFAULT_UNK;
     private int iterations = 5;
     private static final Logger log = LoggerFactory.getLogger(Glove.class);
     private boolean symmetric = true;
@@ -119,7 +116,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
         if(textVectorizer == null && cacheFresh) {
             InvertedIndex index = new LuceneInvertedIndex(vocab(),false,"glove-index");
-            textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory).index(index)
+            textVectorizer = new LegacyTfidfVectorizer.Builder().tokenize(tokenizerFactory).index(index)
                     .cache(vocab()).iterate(sentenceIterator).minWords(minWordFrequency)
                     .stopWords(stopWords).stem(stem).build();
 
@@ -141,7 +138,7 @@ public class LegacyGlove  extends WordVectorsImpl<VocabWord> {
 
         if(lookupTable == null) {
             lookupTable = new GloveWeightLookupTable.Builder()
-                    .cache(textVectorizer.vocab()).lr(learningRate)
+                    .cache(textVectorizer.getVocabCache()).lr(learningRate)
                     .vectorLength(layerSize).maxCount(maxCount)
                    .build();
         }

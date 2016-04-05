@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,9 +95,17 @@ public class WordVectorSerializerTest {
     }
 
     @Test
-    @Ignore
     public void testLoaderText() throws IOException {
         WordVectors vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        assertEquals(vec.vocab().numWords(), 30);
+        assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
+        assertTrue(vec.vocab().hasToken("JA_Montalbano"));
+    }
+
+    @Test
+    public void testLoaderStream() throws IOException {
+        WordVectors vec = WordVectorSerializer.loadTxtVectors(new FileInputStream(textFile), true);
+
         assertEquals(vec.vocab().numWords(), 30);
         assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
         assertTrue(vec.vocab().hasToken("JA_Montalbano"));

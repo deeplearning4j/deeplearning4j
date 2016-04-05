@@ -43,22 +43,23 @@ import java.util.List;
  * Turns a applyTransformToDestination of documents in to a tfidf bag of words
  * @author Adam Gibson
  */
-public class TfidfVectorizer extends BaseTextVectorizer implements Serializable {
+@Deprecated
+public class LegacyTfidfVectorizer extends LegacyBaseTextVectorizer implements Serializable {
 
-    public TfidfVectorizer(){}
+    public LegacyTfidfVectorizer(){}
 
-    protected TfidfVectorizer(VocabCache cache,
-                              TokenizerFactory tokenizerFactory,
-                              List<String> stopWords,
-                              int minWordFrequency,
-                              DocumentIterator docIter,
-                              SentenceIterator sentenceIterator,
-                              List<String> labels,
-                              InvertedIndex index,
-                              int batchSize,
-                              double sample,
-                              boolean stem,
-                              boolean cleanup) {
+    protected LegacyTfidfVectorizer(VocabCache cache,
+                                    TokenizerFactory tokenizerFactory,
+                                    List<String> stopWords,
+                                    int minWordFrequency,
+                                    DocumentIterator docIter,
+                                    SentenceIterator sentenceIterator,
+                                    List<String> labels,
+                                    InvertedIndex index,
+                                    int batchSize,
+                                    double sample,
+                                    boolean stem,
+                                    boolean cleanup) {
         super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator, labels,index,batchSize,sample,stem,cleanup);
     }
 
@@ -68,7 +69,8 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
 
     private double tfForWord(String word) {
-        return MathUtils.tf(cache.wordFrequency(word));
+        //return MathUtils.tf(cache.wordFrequency(word));
+        return 0;
     }
 
     private double idfForWord(String word) {
@@ -144,7 +146,7 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
         public TextVectorizer build() {
 
-            return new TfidfVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
+            return new LegacyTfidfVectorizer(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,labels,index,batchSize,sample,stem,cleanup);
 
         }
 

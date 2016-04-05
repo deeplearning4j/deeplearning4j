@@ -256,7 +256,10 @@ public class MathUtils  {
      * @return log(10) (totalDocs/numTImesWordAppearedInADocument)
      */
     public static double idf(double totalDocs,double numTimesWordAppearedInADocument) {
-        return totalDocs > 0 ? Math.log10(totalDocs/numTimesWordAppearedInADocument) : 0;
+        //return totalDocs > 0 ? Math.log10(totalDocs/numTimesWordAppearedInADocument) : 0;
+        if (totalDocs == 0) return 0;
+        double idf = Math.log10(totalDocs / numTimesWordAppearedInADocument);
+        return idf;
     }
 
     /**
@@ -264,17 +267,20 @@ public class MathUtils  {
      * @param count the count of a word or character in a given string or document
      * @return 1+ log(10) count
      */
-    public static double tf(int count) {
-        return count > 0 ? 1 + Math.log10(count) : 0;
+    public static double tf(int count, int documentLength) {
+        //return count > 0 ? 1 + Math.log10(count) : 0
+        double tf = ((double) count/ documentLength);
+        return tf;
     }
     /**
      * Return td * idf
-     * @param td the term frequency (assumed calculated)
+     * @param tf the term frequency (assumed calculated)
      * @param idf inverse document frequency (assumed calculated)
      * @return td * idf
      */
-    public static double tfidf(double td,double idf) {
-        return td * idf;
+    public static double tfidf(double tf,double idf) {
+//        System.out.println("TF-IDF Value: " + (tf * idf));
+        return tf * idf;
     }
 
     private static int charForLetter(char c) {

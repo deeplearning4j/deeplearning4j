@@ -63,7 +63,7 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     public Word2VecJobIterator(TextVectorizer textVectorizer,WeightLookupTable table,VocabCache cache,StateTracker stateTracker,int batchSize) {
-        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
+        //this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);
@@ -81,7 +81,7 @@ public class Word2VecJobIterator implements JobIterator {
 
 
     public Word2VecJobIterator(TextVectorizer textVectorizer,WeightLookupTable table,VocabCache cache,StateTracker stateTracker) {
-        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
+    //    this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);

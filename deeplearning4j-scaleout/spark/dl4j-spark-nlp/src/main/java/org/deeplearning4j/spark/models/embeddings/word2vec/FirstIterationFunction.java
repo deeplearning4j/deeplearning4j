@@ -114,7 +114,7 @@ public class FirstIterationFunction
         if (vocabWordsList != null && !vocabWordsList.isEmpty()) {
             for (int ithWordInSentence = 0; ithWordInSentence < vocabWordsList.size(); ithWordInSentence++) {
                 // Random value ranging from 0 to window size
-                nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                 int b = (int) (long) this.nextRandom.get() % window;
                 VocabWord currentWord = vocabWordsList.get(ithWordInSentence);
                 if (currentWord != null) {
@@ -202,7 +202,7 @@ public class FirstIterationFunction
                 if (d == 0)
                     label = 1;
                 else {
-                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     int idx = Math.abs((int) (nextRandom.get() >> 16) % negativeHolder.getTable().length());
 
                     target = negativeHolder.getTable().getInt(idx);
