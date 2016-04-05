@@ -170,9 +170,9 @@
         <module>deeplearning4j-core</module>
         <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-cli</module>
-        <module>deeplearning4j-ui</module>
         <module>dl4j-test-resources</module>
         <module>dl4j-caffe</module>
+        <module>deeplearning4j-ui-parent</module>
     </modules>
 
     <licenses>
