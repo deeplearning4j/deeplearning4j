@@ -68,6 +68,10 @@ public class CudaAccumTests {
 
         INDArray exp = Nd4j.create(new double[]{0.2, 0.25166114784, 0.05773502692});
 
+        System.out.println("Exp dtype: " + exp.data().dataType());
+        System.out.println("Exp dtype: " + exp.data().dataType());
+
+        System.out.println("Array: " + Arrays.toString(exp.data().asFloat()));
         assertEquals(exp,stdev);
     }
 

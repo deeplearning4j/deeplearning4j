@@ -605,6 +605,8 @@ public class AtomicAllocatorTest {
     @Ignore
     public void testGpuBlas9AkaMultipleDevicesDeallocation() throws Exception {
 
+        log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
+
         GpuThreadSyntheticData[] threads = new GpuThreadSyntheticData[4];
         for (int x =0; x< threads.length; x++) {
             GpuThreadSyntheticData thread = new GpuThreadSyntheticData(x);
