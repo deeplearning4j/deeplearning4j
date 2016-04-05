@@ -32,6 +32,7 @@ public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork>
         int exCount = 0;
         while(dataSetIterator.hasNext()){
             DataSet dataSet = dataSetIterator.next();
+            if(dataSet==null) break;
             int nEx = dataSet.getFeatureMatrix().size(0);
             lossSum += network.score(dataSet) * nEx;
             exCount += nEx;

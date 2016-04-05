@@ -337,7 +337,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public INDArray activate(boolean training) {
         INDArray z = preOutput(training);
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                conf.getLayer().getActivationFunction(), z));
+                conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);

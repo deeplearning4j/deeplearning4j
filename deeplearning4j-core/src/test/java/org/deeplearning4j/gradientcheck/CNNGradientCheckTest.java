@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -35,9 +36,9 @@ public class CNNGradientCheckTest {
     private static final double DEFAULT_MAX_REL_ERROR = 0.25;
 
     static {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
+        //Force Nd4j initialization, then set data type to double:
+        Nd4j.zeros(1);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -46,7 +47,7 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid","tanh","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
@@ -131,7 +132,7 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid","tanh","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
