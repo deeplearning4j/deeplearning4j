@@ -127,7 +127,77 @@ public:
 #ifdef __CUDACC__
 
 
+	__inline__ __device__ void execScalarCuda(
+			T *dx,
+			int *xShapeInfo,
+			T *extraParams,
+			T *result,
+			int *resultShapeInfo) {
+		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
+		int resultLength = shape::length(resultShapeInfo);
+		int n = shape::length(xShapeInfo);
 
+		if(blockIdx.x >= resultLength)
+			return;
+
+		int tid = threadIdx.x;
+
+		//shared memory space for storing intermediate results
+		SharedMemory <T> val;
+		volatile T *sPartials = val.getPointer();
+		int numElements = blockDim.x;
+		T init = this->startingValue(dx);
+		for (int i = tid; i < numElements; i += blockDim.x)
+			sPartials[i] = init;
+		__syncthreads();
+
+
+		if(elementWiseStride >= 1) {
+			if(elementWiseStride == 1) {
+#pragma unroll
+				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
+				}
+			}
+			else {
+#pragma unroll
+				for(int i = elementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
+					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
+				}
+			}
+
+
+			__syncthreads();
+			T **sPartialsRef = (T **) &sPartials;
+			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
+
+			__syncthreads();
+			if (tid == 0) {
+				result[0] = this->postProcess(sPartials[0],n,extraParams);
+			}
+		}
+		else {
+			int rank = shape::rank(xShapeInfo);
+			int *ind2sub = (int *) malloc(sizeof(int) * rank);
+#pragma unroll
+			for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
+				int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
+				sPartials[tid] = this->update(sPartials[tid],this->op(dx[offset],extraParams),extraParams);
+				__syncthreads();
+			}
+
+
+			// write result for this block to global mem
+			__syncthreads();
+			if (tid == 0) {
+				result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+			}
+
+			free(ind2sub);
+		}
+
+	}
 	/**
 	 * Kernel invocation for reduce
 	 * @param n the length of the buffer
@@ -207,177 +277,192 @@ public:
 			 */
 
 
-			if (dimensionLength > 1) {
-				int dimz = dimension[dimensionLength - 1];
-//				printf("DimensionLength > 1, using [%i] as dimension\n", dimz);
+			int *xStride = shape::stride(xShapeInfo);
+			char xOrder = shape::order(xShapeInfo);
 
-				xElementWiseStride = shape::stride(xShapeInfo)[dimz];
+			// this code is used only for single-dimension cases
+			if (dimension[0] == shape::MAX_DIMENSION || dimensionLength > 1) {
+				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			} else {
-				int *xStride = shape::stride(xShapeInfo);
-				char xOrder = shape::order(xShapeInfo);
-				/*
-				int *xShape = shape::shapeOf(xShapeInfo);
-				int *xStride = shape::stride(xShapeInfo);
-				char xOrder = shape::order(xShapeInfo);
-				int n = shape::length(xShapeInfo);
-				int xRank = shape::rank(xShapeInfo);
-				int xOffset = shape::offset(xShapeInfo);
-				*/
-//				int
-
-				if (dimension[0] != shape::MAX_DIMENSION) {
-					xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-				} else {
-					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-				}
-
-
-				//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0]);
+				xElementWiseStride =  xStride[dimension[0]];
 			}
+
+			//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i], dimensionLength: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0], dimensionLength);
+
 			xLength = shape::length(xShapeInfo);
-			elementsPerTad = xLength / resultLength;
 		}
 		__syncthreads();
+
+
+
 		int n = xLength;
 
 
 		if (!resultScalar) {
+			if(dimensionLength > 1) {
+				__shared__ int numOnes;
+				__shared__ bool squeezed;
+				__shared__ bool newSqueezeDimensions;
+				__shared__ int *inputShapeInfo;
+				//decompose in to several sub tads after
+				//moving all dimensions (in sorted order)
+				//to the back.
+				//permuted version of the x shape info for setting up the tad problem
 
-			if(tid == 0) {
-				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-			}
-			__syncthreads();
+				__shared__ int *tadShapeShapeInfo;
 
-
-			int resultLength = shape::length(resultShapeInfo);
-			if(tid >= resultLength) {
-				return;
-			}
-
-			/**
-			 * The element wise stride belong longs to a reduction index.
-			 * When used out of order, we can get rid of the data
-			 * dependencies and rely on using the max dimension
-			 * specified for stride instead.
-			 * Say we take the sum(0,1) along long arr
-			 * we can use arr.stride(1) as a representation
-			 * along long which to iterate.
-			 */
-			int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-			int tadLength = xTadInfo.tensorShapeProd;
-			int xLength = shape::length(xShapeInfo);
-			int i = 0,j = 0;
-
-//            if (threadIdx.x == 0)
-//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
-#pragma unroll
-			for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-				int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
-
-//				printf("Initial Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad, offsetForTad, dx[offsetForTad]);
-
-				sPartials[tid] = op(dx[offsetForTad], extraParams);
-				__syncthreads();
-				for(j = 1; j < elementsPerReductionIndex; j++) {
-//					printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
-
-					sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
-					__syncthreads();
+				if(tid == 0) {
+					inputShapeInfo = xShapeInfo;
 				}
 
-				result[i] = postProcess(sPartials[tid],tadLength,extraParams);
-			}
+				__syncthreads();
+
+				int *shape = shape::shapeOf(inputShapeInfo);
+				int *stride = shape::stride(inputShapeInfo);
+				int wholeRank = shape::rank(inputShapeInfo);
+
+				if(tid == 0) {
+					numOnes = 0;
+					for(int i = 0; i < wholeRank; i++) {
+						if(shape[i] == 1)
+							numOnes++;
+					}
+
+					//squeeze the dimensions
+					if(numOnes > 0) {
+						squeezed = false;
+						newSqueezeDimensions = false;
+						inputShapeInfo = shape::squeezeDimensions(
+								inputShapeInfo,
+								&dimension,
+								&dimensionLength,
+								&squeezed,
+								&newSqueezeDimensions,
+								wholeRank,
+								numOnes);
+					}
+				}
+
+				__syncthreads();
+
+				//decompose in to several sub tads after
+				//moving all dimensions (in sorted order)
+				//to the back.
+				//permuted version of the x shape info for setting up the tad problem
+				if(tid == 0)
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+				__syncthreads();
+
+				int *xShape = shape::shapeOf(tadShapeShapeInfo);
+				int *xStride = shape::stride(tadShapeShapeInfo);
+				int tadLength = shape::length(tadShapeShapeInfo);
+				int rank = shape::rank(tadShapeShapeInfo);
+#pragma unroll
+				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
+					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+					int shapeIter[MAX_RANK];
+					int coord[MAX_RANK];
+					int dim;
+					int rankIter = rank;
+					int xStridesIter[MAX_RANK];
+					T *xPointer = dx + offset;
+					T start = this->startingValue(xPointer);
+					if(PrepareOneRawArrayIter<T>(rankIter,
+							xShape,
+							xPointer,
+							xStride,
+							&rankIter,
+							shapeIter,
+							&xPointer,
+							xStridesIter) >= 0) {
+						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+							/* Process the innermost dimension */
+							start = update(start,op(xPointer[0],extraParams),extraParams);
+						} ND4J_RAW_ITER_ONE_NEXT(dim,
+								rank,
+								coord,
+								shapeIter,
+								xPointer,
+								xStridesIter);
+						start = postProcess(start,tadLength,extraParams);
+					}
+					else {
+						printf("Unable to prepare array\n");
+					}
+
+					result[i] = start;
+
+				}
+
+				__syncthreads();
+				if (tid == 0) {
+					free(tadShapeShapeInfo);
+
+					if(newSqueezeDimensions) {
+						free(dimension);
+					}
+
+					if(numOnes > 0) {
+						free(xShapeInfo);
+					}
+				}
 
 
-			if(tid == 0) {
-				shape::freePermuteInfo(xTadInfo);
 			}
+			else {
+
+				if(tid == 0) {
+					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+				}
+				__syncthreads();
+
+
+				int resultLength = shape::length(resultShapeInfo);
+				if(tid >= resultLength) {
+					return;
+				}
+
+				/**
+				 * The element wise stride belong longs to a reduction index.
+				 * When used out of order, we can get rid of the data
+				 * dependencies and rely on using the max dimension
+				 * specified for stride instead.
+				 * Say we take the sum(0,1) along long arr
+				 * we can use arr.stride(1) as a representation
+				 * along long which to iterate.
+				 */
+				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+				int tadLength = xTadInfo.tensorShapeProd;
+				int xLength = shape::length(xShapeInfo);
+				int i = 0,j = 0;
+
+#pragma unroll
+				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
+					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
+					sPartials[tid] = op(dx[offsetForTad], extraParams);
+					for(j = 1; j < elementsPerReductionIndex; j++) {
+						sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
+					}
+
+					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
+				}
+
+				__syncthreads();
+				if(tid == 0) {
+					shape::freePermuteInfo(xTadInfo);
+				}
+
+			}
+
 
 		}
 		else {
-			if (threadIdx.x == 0)
-					printf("Scalar here\n");
-
-			T curr;
-			if (resultScalar) {
-				if(blockIdx.x >= resultLength)
-					return;
-
-
-				T *realExtraParams;
-				if(tid == 0) {
-					realExtraParams = extraParams;
-
-				}
-
-				__syncthreads();
-				/**
-				 * Need to look closer
-				 * at how to handle the params
-				 * wrt each offset at each tad
-				 *
-				 * An idea would be to calculate and
-				 * save the tad offset we could use
-				 * for the statistics and extra params.
-				 *
-				 * Another option would be to have a shared variable
-				 * for handling the computation of different
-				 * extra parameters wrt
-				 * the offsets of each dimension.
-				 *
-				 *
-				 */
-				unsigned int i = blockIdx.x * xElementWiseStride + tid;
-				unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-				if (threadIdx.x == 0)
-					printf("GridSize: [%i]\n", gridSize);
-				if(!this->indexBased) {
-#pragma unroll
-					while (i < n) {
-						curr = op(dx[i],realExtraParams);
-						reduction = update(reduction,curr, realExtraParams);
-						i += gridSize;
-					}
-				}
-				else {
-#pragma unroll
-					while (i < n) {
-						printf("Idx: [%i]\n", i);
-						int tadIndex = shape::tadIndexForLinear(i,elementsPerTad);
-						if(tadIndex == 0) {
-							curr = op(dx[i * xElementWiseStride],realExtraParams);
-							reduction = curr;
-						}
-						else {
-							curr = op(dx[i * xElementWiseStride],realExtraParams);
-							reduction = update(reduction,curr, realExtraParams);
-						}
-
-						i += gridSize;
-					}
-				}
-
-				// each thread puts its local sum into shared memory
-				sPartials[tid] = reduction;
-				__syncthreads();
-				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, tid, numElements,realExtraParams);
-
-				// write result for this block to global mem
-				if (tid == 0) {
-					if(postProcessOrNot)
-						result[blockIdx.x] = this->postProcess(sPartials[0],n,realExtraParams);
-					else
-						result[blockIdx.x] = sPartials[0];
-					if(extraParamsLength >= 1)
-						delete[] realExtraParams;
-				}
-
-
-
-			}
-
-
+			this->execScalarCuda(
+					dx,
+					xShapeInfo,
+					extraParams,
+					result,
+					resultShapeInfo);
 		}
 
 	}
@@ -452,6 +537,7 @@ public:
 #endif
 	ReduceFunction() {
 	}
+
 
 
 

@@ -4404,7 +4404,7 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if(extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
+                    if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
                         this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
                     }
                     else {

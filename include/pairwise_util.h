@@ -326,6 +326,12 @@ public:
     }
 };
 
+
+class CudaBlockInformation {
+
+};
+
+
 /**
  * Credit to:
  * http://alienryderflex.com/quicksort/
