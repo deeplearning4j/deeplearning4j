@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+// FIXME: remove that
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
