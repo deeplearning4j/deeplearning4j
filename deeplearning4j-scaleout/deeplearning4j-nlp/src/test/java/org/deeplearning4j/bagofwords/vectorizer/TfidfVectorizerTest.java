@@ -22,22 +22,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
+
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.text.invertedindex.InvertedIndex;
-import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,9 +46,9 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * @author Adam Gibson
  */
-public class TfIdfVectorizerTest {
+public class TfidfVectorizerTest {
 
-    private static final Logger log = LoggerFactory.getLogger(TfIdfVectorizerTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TfidfVectorizerTest.class);
 
 
     @Test
@@ -63,7 +57,7 @@ public class TfIdfVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 
-        TfIdfVectorizer vectorizer = new TfIdfVectorizer.Builder()
+        TfidfVectorizer vectorizer = new TfidfVectorizer.Builder()
                 .setMinWordFrequency(1)
                 .setStopWords(new ArrayList<String>())
                 .setTokenizerFactory(tokenizerFactory)
@@ -116,7 +110,7 @@ public class TfIdfVectorizerTest {
 
         SerializationUtils.saveObject(vectorizer, tempFile);
 
-        TfIdfVectorizer vectorizer2 = SerializationUtils.readObject(tempFile);
+        TfidfVectorizer vectorizer2 = SerializationUtils.readObject(tempFile);
         vectorizer2.setTokenizerFactory(tokenizerFactory);
 
         dataSet = vectorizer2.vectorize("This is 3 file.", "label2");
