@@ -323,7 +323,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(IndexAccumulation op, int... dimension) {
         Arrays.sort(dimension);
 
-        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
 
         for(int i = 0; i < dimension.length; i++) {
@@ -359,7 +359,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-
+/*
         log.info("X.length: " + op.x().length());
         log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
         log.info("Extras: " + op.extraArgsDataBuff());
@@ -367,7 +367,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
         log.info("Dimension: " + Arrays.toString(dimension));
         log.info("DimensionLength");
-
+*/
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
 
@@ -513,7 +513,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
 
 
-        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;

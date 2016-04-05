@@ -13,6 +13,8 @@ import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.factory.BlasWrapper;
@@ -625,6 +627,26 @@ public class AtomicAllocatorTest {
 
     @Test
     @Ignore
+    public void testGpuBlas9AkaMultipleDevicesDeallocationSynthethicIndexReduce() throws Exception {
+
+        log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
+        // GpuThreadSyntheticData
+        GpuThreadOpsIndexReduceData[] threads = new GpuThreadOpsIndexReduceData[4];
+        for (int x =0; x< threads.length; x++) {
+            GpuThreadOpsIndexReduceData thread = new GpuThreadOpsIndexReduceData(x);
+            thread.start();
+            threads[x] = thread;
+        }
+
+        for (int x = 0; x < threads.length; x++) {
+            threads[x].join();
+        }
+
+        log.info("Finished");
+    }
+
+    @Test
+    @Ignore
     public void testGpuBlas9AkaMultipleDevicesDeallocationSynthethicTransform() throws Exception {
 
         log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
@@ -838,6 +860,47 @@ public class AtomicAllocatorTest {
             }
 
             log.info("Data deviceId: [" + allocator.getDeviceId(slice1) + "]; Last time: ["+(time2 - time1)+"] ns");
+        }
+    }
+
+    private class GpuThreadOpsIndexReduceData extends GpuThreadSyntheticData {
+        public GpuThreadOpsIndexReduceData(int threadId) {
+            super(threadId);
+        }
+
+        @Override
+        public void run() {
+            AtomicLong cnt = new AtomicLong(0);
+            AtomicLong cntX = new AtomicLong(0);
+            while(true) {
+                INDArray array1 = Nd4j.linspace(1,1024,1024);
+                int idx = 0;
+                long time1 = 0;
+                long time2 = 0;
+                for (int x = 0; x < 30; x++) {
+                    time1 = System.nanoTime();
+                    idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+                    time2 = System.nanoTime();
+                    cntX.incrementAndGet();
+                }
+
+                if (cnt.incrementAndGet() % 1000 == 0) {
+                    log.info("IndexReduce execution time: [" + (time2 - time1) + "] ns on device ["+ allocator.getDeviceId(array1)+"]");
+
+                    assertEquals(1023, idx);
+
+                    if (threadId == 0) {
+                        log.info("Total calls: " + cntX.get() * 4);
+                        log.info("Total memory allocated on device [0]: " + allocator.getTotalAllocatedDeviceMemory(0));
+                    }
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (Exception e) {
+                        throw  new RuntimeException(e);
+                    }
+                }
+            }
         }
     }
 
