@@ -3,18 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>deeplearning4j-parent</artifactId>
+        <artifactId>deeplearning4j-ui-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>0.4-rc3.9-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-ui-parent</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>deeplearning4j-ui-components</artifactId>
 
-    <modules>
-        <module>deeplearning4j-ui</module>
-        <module>deeplearning4j-ui-components</module>
-    </modules>
 
 </project>
