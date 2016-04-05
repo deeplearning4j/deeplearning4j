@@ -281,22 +281,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public  INDArray output(boolean training) {
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
-
-        INDArray preOutput = preOutput2d(training);
-        if(conf.getLayer().getActivationFunction().equals("softmax")) {
-            SoftMax softMax = new SoftMax(preOutput);
-            softMax.exec(1);
-            INDArray z = softMax.z();
-            if(maskArray != null){
-                z.muliColumnVector(maskArray);
-            }
-            return z;
-        }
-
-        if(training)
-            applyDropOutIfNecessary(training);
-
-        return super.activate(true);
+        return super.activate(training);
     }
 
 

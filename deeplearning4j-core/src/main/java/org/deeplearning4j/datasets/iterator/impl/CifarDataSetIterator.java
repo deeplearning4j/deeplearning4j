@@ -31,7 +31,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples) {
@@ -43,7 +43,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param numExamples the overall number of examples
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, String version) {
@@ -56,7 +56,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param imgDim an array of width, height and channels
      * @param numExamples the overall number of examples
      * */
@@ -69,7 +69,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param imgDim an array of width, height and channels
      * @param numExamples the overall number of examples
      * */
@@ -82,7 +82,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param numExamples the overall number of examples
      * @param numCategories the overall number of labels
      * */
@@ -96,7 +96,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     /**
      * Create Cifar data specific iterator
-     * @param batchSize the the batch size of the examples
+     * @param batchSize the batch size of the examples
      * @param imgDim an array of width, height and channels
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim)  {
