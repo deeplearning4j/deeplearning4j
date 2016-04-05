@@ -39,6 +39,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -267,6 +268,35 @@ public class NeuralNetConfigurationTest {
         assertEquals(0.1, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);
     }
 
+    @Test
+    public void testLeakyreluAlpha(){
+        //FIXME: Make more generic to use neuralnetconfs
+        int sizeX = 4;
+        int scaleX = 10;
+        System.out.println("Here is a leaky vector..");
+        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX);
+        leakyVector = leakyVector.mul(scaleX);
+        System.out.println(leakyVector);
+
+
+        double myAlpha = 0.5;
+        System.out.println("======================");
+        System.out.println("Exec and Return: Leaky Relu transformation with alpha = 0.5 ..");
+        System.out.println("======================");
+        INDArray outDef = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
+        System.out.println(outDef);
+
+        String confActivation = "leakyrelu";
+        Object [] confExtra = {myAlpha};
+        INDArray outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(),confExtra));
+        System.out.println("======================");
+        System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
+        System.out.println("======================");
+        System.out.println(outMine);
+
+        //Test equality for ndarray elementwise
+        //assertArrayEquals(..)
+    }
 
     @Test
     public void testL1L2ByParam(){

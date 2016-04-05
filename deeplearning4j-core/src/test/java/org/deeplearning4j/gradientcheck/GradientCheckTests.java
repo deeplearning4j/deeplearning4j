@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -33,9 +34,9 @@ public class GradientCheckTests {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
 
     static {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
+		//Force Nd4j initialization, then set data type to double:
+		Nd4j.zeros(1);
+		DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -44,7 +45,7 @@ public class GradientCheckTests {
     	// (a) activation function
     	// (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
     	// (c) Loss function (with specified output activations)
-    	String[] activFns = {"sigmoid","tanh","relu","hardtanh","softplus"};
+    	String[] activFns = {"sigmoid","tanh","softplus"};	//activation functions such as relu and hardtanh: may randomly fail due to discontinuities
     	boolean[] characteristic = {false,true};	//If true: run some backprop steps first
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -123,7 +124,7 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-    	String[] activFns = {"sigmoid","tanh","relu"};
+    	String[] activFns = {"sigmoid","tanh"};
     	boolean[] characteristic = {false,true};	//If true: run some backprop steps first
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -154,13 +155,13 @@ public class GradientCheckTests {
 				                .list()
 				                .layer(0, new DenseLayer.Builder()
 										.nIn(4).nOut(3)
-										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(afn)
 										.build())
 								.layer(1, new OutputLayer.Builder(lf)
 										.nIn(3).nOut(3)
-										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(outputActivation)
 										.build())
@@ -313,7 +314,7 @@ public class GradientCheckTests {
     
     @Test
     public void testGradientGRURNNFull(){
-    	String[] activFns = {"tanh","relu"};
+    	String[] activFns = {"tanh"};
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
     	String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
@@ -454,11 +455,11 @@ public class GradientCheckTests {
 	        .seed(12345L)
 	        .list()
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("sigmoid")
-                .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("sigmoid")
-				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
-				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -497,7 +498,7 @@ public class GradientCheckTests {
     
     @Test
     public void testGradientGravesLSTMFull(){
-    	String[] activFns = {"tanh","relu"};
+    	String[] activFns = {"tanh","softsign"};
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
     	String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
@@ -628,7 +629,7 @@ public class GradientCheckTests {
 
 	@Test
 	public void testGradientGravesBidirectionalLSTMFull(){
-		String[] activFns = {"tanh","relu"};
+		String[] activFns = {"tanh","softsign"};
 
 		LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
 		String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
@@ -789,7 +790,7 @@ public class GradientCheckTests {
 						.nIn(3)
 						.nOut(5)
 						.stride(1, 1)
-						.activation("relu")
+						.activation("tanh")
 						.weightInit(WeightInit.XAVIER)
 						.updater(Updater.NONE)
 						.build())	//Out: (10-5)/1+1 = 6 -> 6x6x5
@@ -802,7 +803,7 @@ public class GradientCheckTests {
 						.nOut(4)
 						.updater(Updater.NONE)
 						.weightInit(WeightInit.XAVIER)
-						.activation("relu")
+						.activation("tanh")
 						.build())
 				.layer(3, new GravesLSTM.Builder()
 						.nIn(4)
@@ -845,7 +846,7 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -933,7 +934,7 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid","tanh","relu"};
+        String[] activFns = {"sigmoid","tanh"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};

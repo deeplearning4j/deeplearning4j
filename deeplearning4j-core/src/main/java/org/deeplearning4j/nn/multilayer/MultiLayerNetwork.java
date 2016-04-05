@@ -53,6 +53,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
@@ -656,45 +657,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return feedForward(false);
     }
 
-
-    /**
-     * Compute input linear transformation (z)
-     * Compute activations (applies activation transformation to z)
-     *
-     * @return a pair of activations and corresponding derivatives
-     */
-    public Pair<List<INDArray>,List<INDArray>> feedForwardActivationsAndDerivatives(boolean training) {
-        INDArray currInput = input;
-
-        List<INDArray> activations = new ArrayList<>();
-        List<INDArray> derivatives = new ArrayList<>();
-        activations.add(currInput);
-
-        for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
-            //special case: row wise softmax
-            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", currInput.dup()), 1));
-            else
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), currInput)));
-        }
-
-        currInput = this.input;
-        for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
-            INDArray dup = currInput.dup();
-            //special case: row wise softmax
-            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative(), 1));
-            else
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative()));
-        }
-        // Duplicating last layer derivative to keep pair list equal
-        derivatives.add(derivatives.get(layers.length - 1));
-        return new Pair<>(activations, derivatives);
-    }
-
-
     /**
      * Compute activations from input to output of the output layer
      *
@@ -704,7 +666,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,getInputMiniBatchSize()));
+            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input,input.size(0)));
         else
             setInput(input);
         return feedForward();
@@ -1629,10 +1591,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         boolean hasMaskArray = data.hasMaskArrays();
         if(hasMaskArray) setLayerMaskArrays(data.getFeaturesMaskArray(),data.getLabelsMaskArray());
         // activation for output layer is calculated in computeScore
-        feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
+        List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(),training);
+        int n = activations.size();
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
             BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
+            INDArray olInput = activations.get(n-1);
+            if(getLayerWiseConfigurations().getInputPreProcess(n-1) != null){
+                olInput = getLayerWiseConfigurations().getInputPreProcess(n-1).preProcess(olInput,input.size(0));
+            }
+            ol.setInput(olInput);     //Feedforward doesn't include output layer for efficiency
             ol.setLabels(data.getLabels());
             ol.computeScore(calcL1(),calcL2(), training);
             this.score = ol.score();
@@ -1642,6 +1610,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if(hasMaskArray) clearLayerMaskArrays();
         return score();
+    }
+
+    public INDArray scoreExamples(DataSetIterator iter, boolean addRegularizationTerms){
+        List<INDArray> out = new ArrayList<>();
+
+        while(iter.hasNext()){
+            out.add(scoreExamples(iter.next(), addRegularizationTerms));
+        }
+        return Nd4j.toFlattened('f',out);
     }
 
     /**Calculate the score for each example in a DataSet individually. Unlike {@link #score(DataSet)} and {@link #score(DataSet, boolean)}
@@ -2258,7 +2235,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
             } else {
                 out = this.output(features,false);
-                e.eval(labels,out);
+                if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
+                else e.eval(labels,out);
             }
         }
 

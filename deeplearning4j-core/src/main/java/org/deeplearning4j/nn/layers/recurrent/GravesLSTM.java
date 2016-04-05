@@ -52,12 +52,12 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("gradient() method for layerwise pretraining: not supported for LSTMs (pretraining not possible)");
     }
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -161,7 +161,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

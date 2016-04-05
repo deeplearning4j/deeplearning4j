@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -39,11 +40,10 @@ public class GradientCheckTestsComputationGraph {
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
 
-    @Before
-    public void before(){
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        NDArrayFactory factory = Nd4j.factory();
-        factory.setDType(DataBuffer.Type.DOUBLE);
+    static {
+        //Force Nd4j initialization, then set data type to double:
+        Nd4j.zeros(1);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input")
                 .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
-                .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("relu").build(), "input")
+                .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
                 .addVertex("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax").nIn(5+5).nOut(3).build(), "merge")
@@ -155,7 +155,7 @@ public class GradientCheckTestsComputationGraph {
                     .graphBuilder()
                     .addInputs("input")
                     .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
-                    .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("relu").build(), "input")
+                    .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("sigmoid").build(), "input")
                     .addVertex("elementwise", new ElementWiseVertex(op), "l1", "l2")
                     .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                             .activation("softmax").nIn(5).nOut(3).build(), "elementwise")
@@ -208,10 +208,10 @@ public class GradientCheckTestsComputationGraph {
                 .addInputs("input")
                 .addLayer("l1", new ConvolutionLayer.Builder()
                         .kernelSize(2, 2).stride(1, 1).padding(0,0)
-                        .nIn(2).nOut(2).activation("relu").build(), "input")
+                        .nIn(2).nOut(2).activation("tanh").build(), "input")
                 .addLayer("l2", new ConvolutionLayer.Builder()
                         .kernelSize(2, 2).stride(1, 1).padding(0,0)
-                        .nIn(2).nOut(2).activation("relu").build(), "input")
+                        .nIn(2).nOut(2).activation("tanh").build(), "input")
                 .addVertex("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax").nIn(5*5*(2+2)).nOut(3).build(), "merge")

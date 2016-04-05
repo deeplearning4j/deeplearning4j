@@ -32,11 +32,16 @@ public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
     private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
     private boolean invoked = false;
+    private long iterCount = 0;
 
+    /**
+     * @param printIterations    frequency with which to print scores (i.e., every printIterations parameter updates)
+     */
     public ScoreIterationListener(int printIterations) {
         this.printIterations = printIterations;
     }
 
+    /** Default constructor printing every 10 iterations */
     public ScoreIterationListener() {
     }
 
@@ -50,12 +55,11 @@ public class ScoreIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(printIterations <= 0)
             printIterations = 1;
-        if(iteration % printIterations == 0) {
+        if(iterCount % printIterations == 0) {
             invoke();
             double result = model.score();
-            log.info("Score at iteration " + iteration + " is " + result);
-
+            log.info("Score at iteration " + iterCount + " is " + result);
         }
-
+        iterCount++;
     }
 }
