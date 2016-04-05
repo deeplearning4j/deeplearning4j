@@ -17,9 +17,9 @@
  */
 package org.deeplearning4j.ui.components.decorator;
 
-import io.skymind.ui.api.Component;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.ui.api.Component;
 
 /**Renderable component within an accordion-type component
  */

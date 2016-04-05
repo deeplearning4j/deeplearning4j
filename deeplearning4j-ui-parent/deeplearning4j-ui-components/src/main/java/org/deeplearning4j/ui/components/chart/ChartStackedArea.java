@@ -1,9 +1,8 @@
 package org.deeplearning4j.ui.components.chart;
 
-import io.skymind.ui.api.Component;
-import io.skymind.ui.components.chart.style.ChartStyle;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.ui.components.chart.style.ChartStyle;
 
 import java.util.ArrayList;
 import java.util.List;
