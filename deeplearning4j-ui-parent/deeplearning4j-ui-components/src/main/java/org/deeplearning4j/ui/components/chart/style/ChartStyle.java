@@ -1,9 +1,9 @@
 package org.deeplearning4j.ui.components.chart.style;
 
-import io.skymind.ui.api.Style;
-import io.skymind.ui.api.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.ui.api.Style;
+import org.deeplearning4j.ui.api.Utils;
 
 import java.awt.*;
 

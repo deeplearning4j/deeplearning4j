@@ -23,7 +23,7 @@ class ChartHistogram extends Chart implements Renderable {
 
     render = (appendToObject: JQuery) => {
         var s: ChartStyle = this.getStyle();
-        var margin: Margin = Chart.getMargins(s);
+        var margin: Margin = Style.getMargins(s);
 
         // Set the ranges
         var xScale: d3.scale.Linear<number,number> = d3.scale.linear().range([0, margin.widthExMargins]);

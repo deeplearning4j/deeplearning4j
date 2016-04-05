@@ -5,15 +5,6 @@
 
 import Ordinal = d3.scale.Ordinal;
 
-interface Margin {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-    widthExMargins: number;
-    heightExMargins: number;
-}
-
 class ChartConstants {
 
     static DEFAULT_AXIS_STROKE_WIDTH = 1.0;
@@ -61,20 +52,5 @@ abstract class Chart extends Component {
 
     getStyle(): ChartStyle {
         return this.style;
-    }
-
-    static getMargins(s: ChartStyle): Margin{
-        var mTop: number = (s ? s.getMarginTop() : 0);
-        var mBottom: number = (s ? s.getMarginBottom() : 0);
-        var mLeft: number = (s ? s.getMarginLeft() : 0);
-        var mRight: number = (s ? s.getMarginRight() : 0);
-
-        // Set the dimensions of the canvas / graph
-        return {top: mTop,
-            right: mRight,
-            bottom: mBottom,
-            left: mLeft,
-            widthExMargins: s.getWidth() - mLeft - mRight,
-            heightExMargins: s.getHeight() - mTop - mBottom};
     }
 }

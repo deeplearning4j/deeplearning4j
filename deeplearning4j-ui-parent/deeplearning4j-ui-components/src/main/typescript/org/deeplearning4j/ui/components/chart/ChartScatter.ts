@@ -24,7 +24,7 @@ class ChartScatter extends Chart implements Renderable {
 
         var nSeries:number = (!this.xData ? 0 : this.xData.length);
         var s:ChartStyle = this.getStyle();
-        var margin:Margin = Chart.getMargins(s);
+        var margin:Margin = Style.getMargins(s);
 
         // Set the ranges
         var xScale:d3.scale.Linear<number,number> = d3.scale.linear().range([0, margin.widthExMargins]);

@@ -17,10 +17,11 @@
  */
 package org.deeplearning4j.ui.components.table;
 
-import io.skymind.ui.api.Component;
-import io.skymind.ui.components.table.style.TableStyle;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.components.table.style.TableStyle;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -29,7 +30,7 @@ public class ComponentTable extends Component {
 
     private String title;
     private String[] header;
-    private String[][] table;
+    private String[][] content;
 
     public ComponentTable(){
         super(COMPONENT_TYPE, null);
@@ -39,20 +40,20 @@ public class ComponentTable extends Component {
     public ComponentTable(Builder builder){
         super(COMPONENT_TYPE, builder.style);
         this.header = builder.header;
-        this.table = builder.table;
+        this.content = builder.content;
     }
 
     public ComponentTable(String[] header, String[][] table, TableStyle style){
         super(COMPONENT_TYPE, style);
         this.header = header;
-        this.table = table;
+        this.content = table;
     }
 
     public static class Builder {
 
         private TableStyle style;
         private String[] header;
-        private String[][] table;
+        private String[][] content;
 
         public Builder(TableStyle style){
             this.style = style;
@@ -63,8 +64,8 @@ public class ComponentTable extends Component {
             return this;
         }
 
-        public Builder table(String[][] table){
-            this.table = table;
+        public Builder content(String[][] content){
+            this.content = content;
             return this;
         }
 

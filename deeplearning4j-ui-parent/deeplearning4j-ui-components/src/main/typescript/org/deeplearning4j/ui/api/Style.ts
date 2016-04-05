@@ -33,6 +33,21 @@ abstract class Style {
 
     getMarginRight = () => this.marginRight;
 
+
+    static getMargins(s: Style): Margin{
+        var mTop: number = (s ? s.getMarginTop() : 0);
+        var mBottom: number = (s ? s.getMarginBottom() : 0);
+        var mLeft: number = (s ? s.getMarginLeft() : 0);
+        var mRight: number = (s ? s.getMarginRight() : 0);
+
+        // Set the dimensions of the canvas / graph
+        return {top: mTop,
+            right: mRight,
+            bottom: mBottom,
+            left: mLeft,
+            widthExMargins: s.getWidth() - mLeft - mRight,
+            heightExMargins: s.getHeight() - mTop - mBottom};
+    }
 }
 
 class ChartStyle extends Style {
@@ -60,9 +75,31 @@ class ChartStyle extends Style {
     getAxisStrokeWidth = () => this.axisStrokeWidth;
 }
 
-//class TableStyle extends Style {
-//
-//}
+class TableStyle extends Style {
+
+    private columnWidths: number[];
+    private borderWidthPx: number;
+    private headerColor: string;
+    private backgroundColor: string;
+
+    constructor( jsonObj: any ){
+        super(jsonObj['StyleTable']);
+
+        this.columnWidths = jsonObj['columnWidths']
+        this.borderWidthPx = jsonObj['borderWidthPx'];
+        this.headerColor = jsonObj['headerColor'];
+        this.backgroundColor = jsonObj['backgroundColor'];
+    }
+
+    getColumnWidths = () => this.columnWidths;
+
+    getBorderWidthPx = () => this.borderWidthPx;
+
+    getHeaderColor = () => this.headerColor;
+
+    getBackgroundColor = () => this.backgroundColor;
+
+}
 //
 //class TextStyle extends Style {
 //
