@@ -1,0 +1,12 @@
+{
+   "compilerOptions": {
+      "outFile": "skymind-ui_0.0.1.js",
+      "removeComments": true,
+      "sourceMap": true
+   },
+   "filesGlob": [
+      "*.ts",
+      "api/*.ts",
+      "components/*/*.ts"
+    ]
+}
