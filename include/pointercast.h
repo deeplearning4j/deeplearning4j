@@ -4,15 +4,7 @@
 
 #ifndef NATIVEOPERATIONS_POINTERCAST_H
 #define NATIVEOPERATIONS_POINTERCAST_H
-#ifdef __APPLE__
-#define Nd4jPointer long long
-#endif
-#ifdef _WIN32
-#define Nd4jPointer long long
-#endif
 
-#ifdef __linux__
-#define Nd4jPointer long
-#endif
+#define Nd4jPointer long long
 
 #endif //NATIVEOPERATIONS_POINTERCAST_H
