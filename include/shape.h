@@ -2196,7 +2196,6 @@ namespace shape {
         int *dimension = *dimensionRef;
         int dimensionLength = *dimensionLengthRef;
         *squeezedRef = true;
-        bool newSqueezeDimensions = *squeezeDimensionsRef;
 
         int *shape = shape::shapeOf(shapeInfo);
         int *stride = shape::stride(shapeInfo);
@@ -2222,7 +2221,6 @@ namespace shape {
         if(numDimensionsOne > 0) {
             int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
             int newDimensionIdx = 0;
-            newSqueezeDimensions = true;
             for(int i = 0; i < dimensionLength; i++) {
                 if(shape[dimension[i]] != 1)
                     newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;

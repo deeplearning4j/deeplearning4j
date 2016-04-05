@@ -151,30 +151,29 @@ public:
 			sPartials[i] = init;
 		__syncthreads();
 
-
 		if(elementWiseStride >= 1) {
 			if(elementWiseStride == 1) {
 #pragma unroll
 				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				}
+
+
 			}
 			else {
 #pragma unroll
 				for(int i = elementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
 					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
+					__syncthreads();
 				}
 			}
 
 
-			__syncthreads();
+
 			T **sPartialsRef = (T **) &sPartials;
 			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
 
-			__syncthreads();
-			if (tid == 0) {
-				result[0] = this->postProcess(sPartials[0],n,extraParams);
-			}
+
 		}
 		else {
 			int rank = shape::rank(xShapeInfo);
@@ -182,19 +181,19 @@ public:
 #pragma unroll
 			for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
-				int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
-				sPartials[tid] = this->update(sPartials[tid],this->op(dx[offset],extraParams),extraParams);
+				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				__syncthreads();
 			}
 
 
 			// write result for this block to global mem
-			__syncthreads();
 			if (tid == 0) {
 				result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
 			}
 
 			free(ind2sub);
+
+
 		}
 
 	}
@@ -240,11 +239,9 @@ public:
 		__syncthreads();
 
 		//length for the tad
-		__shared__ int xLength;
 
 		__shared__ int resultLength;
 
-		__shared__ int elementsPerTad;
 
 
 		//only compute the tad indexes once
@@ -279,23 +276,29 @@ public:
 
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
+			/*
+				int *xShape = shape::shapeOf(xShapeInfo);
+				int *xStride = shape::stride(xShapeInfo);
+				char xOrder = shape::order(xShapeInfo);
+				int n = shape::length(xShapeInfo);
+				int xRank = shape::rank(xShapeInfo);
+				int xOffset = shape::offset(xShapeInfo);
+			 */
+			//				int
 
-			// this code is used only for single-dimension cases
-			if (dimension[0] == shape::MAX_DIMENSION || dimensionLength > 1) {
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			if (dimension[0] != shape::MAX_DIMENSION) {
+				xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 			} else {
-				xElementWiseStride =  xStride[dimension[0]];
+				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			}
 
-			//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i], dimensionLength: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0], dimensionLength);
 
-			xLength = shape::length(xShapeInfo);
+			//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0]);
 		}
 		__syncthreads();
 
 
 
-		int n = xLength;
 
 
 		if (!resultScalar) {
@@ -327,20 +330,23 @@ public:
 						if(shape[i] == 1)
 							numOnes++;
 					}
+				}
 
-					//squeeze the dimensions
-					if(numOnes > 0) {
-						squeezed = false;
-						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
-								inputShapeInfo,
-								&dimension,
-								&dimensionLength,
-								&squeezed,
-								&newSqueezeDimensions,
-								wholeRank,
-								numOnes);
-					}
+				__syncthreads();
+
+
+				//squeeze the dimensions
+				if(numOnes > 0) {
+					squeezed = false;
+					newSqueezeDimensions = false;
+					inputShapeInfo = shape::squeezeDimensions(
+							inputShapeInfo,
+							&dimension,
+							&dimensionLength,
+							&squeezed,
+							&newSqueezeDimensions,
+							wholeRank,
+							numOnes);
 				}
 
 				__syncthreads();
@@ -394,17 +400,17 @@ public:
 
 				}
 
-				__syncthreads();
-				if (tid == 0) {
-					free(tadShapeShapeInfo);
 
-					if(newSqueezeDimensions) {
-						free(dimension);
-					}
+				free(tadShapeShapeInfo);
 
-					if(numOnes > 0) {
-						free(xShapeInfo);
-					}
+
+
+				if(newSqueezeDimensions) {
+					free(dimension);
+				}
+
+				if(numOnes > 0) {
+					free(xShapeInfo);
 				}
 
 
@@ -436,18 +442,27 @@ public:
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
+				//            if (threadIdx.x == 0)
+				//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
+
+					//				printf("Initial Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad, offsetForTad, dx[offsetForTad]);
+
 					sPartials[tid] = op(dx[offsetForTad], extraParams);
+					__syncthreads();
 					for(j = 1; j < elementsPerReductionIndex; j++) {
+						//					printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
+
 						sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
+						__syncthreads();
 					}
 
 					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
 				}
 
-				__syncthreads();
+
 				if(tid == 0) {
 					shape::freePermuteInfo(xTadInfo);
 				}
@@ -457,6 +472,9 @@ public:
 
 		}
 		else {
+			if(tid == 0) {
+				printf("Scalar!\n");
+			}
 			this->execScalarCuda(
 					dx,
 					xShapeInfo,
