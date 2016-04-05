@@ -6,6 +6,8 @@ import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple class providing compatibility between SentenceIterator/LabelAwareSentenceIterator and LabelAwareIterator
@@ -15,6 +17,7 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 public class SentenceIteratorConverter implements LabelAwareIterator {
     private SentenceIterator backendIterator;
     private LabelsSource generator;
+    protected static final Logger log = LoggerFactory.getLogger(SentenceIteratorConverter.class);
 
     public SentenceIteratorConverter(@NonNull SentenceIterator iterator) {
         this.backendIterator = iterator;

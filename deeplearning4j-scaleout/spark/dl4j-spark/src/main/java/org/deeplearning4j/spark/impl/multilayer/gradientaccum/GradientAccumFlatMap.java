@@ -25,11 +25,13 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.spark.impl.common.misc.ScoreReport;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +44,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, Tuple2<Gradient,Updater>> {
+public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, Tuple3<Gradient,Updater, ScoreReport>> {
 
     private String json;
     private Broadcast<INDArray> params;
@@ -63,7 +65,7 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, 
 
 
     @Override
-    public Iterable<Tuple2<Gradient,Updater>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple3<Gradient,Updater, ScoreReport>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -86,8 +88,10 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, 
         network.setParameters(val);
         network.setUpdater(updater.getValue().clone());
         network.fit(data);
-
-        return Collections.singletonList(new Tuple2<>(network.gradient(),network.getUpdater()));
+        ScoreReport report = new ScoreReport();
+        report.setS(network.score());
+        report.setM(Runtime.getRuntime().maxMemory());
+        return Collections.singletonList(new Tuple3<>(network.gradient(),network.getUpdater(), report));
 
     }
 }

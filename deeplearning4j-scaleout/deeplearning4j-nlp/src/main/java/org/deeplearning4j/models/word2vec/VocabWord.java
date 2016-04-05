@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -86,82 +87,6 @@ public  class VocabWord extends SequenceElement implements Serializable {
 		this.word = word;
 	}
 
-    /*
-	public void increment() {
-		increment(1);
-	}
-
-	public void increment(int by) {
-		this.elementFrequency.getAndAdd(by);
-	}
-
-
-	public int getIndex() {
-		return index;
-	}
-
-	public void setIndex(int index) {
-		this.index = index;
-	}
-
-
-	public double getWordFrequency() {
-		if(this.elementFrequency == null)
-            return 0.0;
-
-        return elementFrequency.get();
-	}
-
-
-    public List<Integer> getCodes() {
-        return codes;
-    }
-
-    public void setCodes(List<Integer> codes) {
-        this.codes = codes;
-    }
-
-
-
-	public double getGradient(int index, double g) {
-		if(historicalGradient == null) {
-			historicalGradient = Nd4j.zeros(getCodes().size());
-		}
-
-		double pow =  Math.pow(g,2);
-		historicalGradient.putScalar(index, historicalGradient.getDouble(index) + pow);
-		double sqrt =  FastMath.sqrt(historicalGradient.getDouble(index));
-		double abs = FastMath.abs(g) / (sqrt + 1e-6f);
-		double ret = abs * 1e-1f;
-		return ret;
-
-	}
-
-    public List<Integer> getPoints() {
-        return points;
-    }
-
-    public void setPoints(List<Integer> points) {
-        this.points = points;
-    }
-
-    public int getCodeLength() {
-        return codeLength;
-    }
-
-    public void setCodeLength(int codeLength) {
-        this.codeLength = codeLength;
-        if(codes.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                codes.add(0);
-        }
-
-        if(points.size() < codeLength) {
-            for(int i = 0; i < codeLength; i++)
-                points.add(0);
-        }
-    }
-    */
 
     @Override
     public boolean equals(Object o) {
@@ -209,7 +134,15 @@ public  class VocabWord extends SequenceElement implements Serializable {
 
 	@Override
 	public String toJSON() {
-		return null;
+		ObjectMapper mapper = mapper();
+		try {
+            /*
+                we need JSON as single line to save it at first line of the CSV model file
+            */
+			return mapper.writeValueAsString(this);
+		} catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.spark.impl.common.misc.ScoreReport;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ import java.util.*;
 /**
  * Iterative reduce for ComputationGraph with flat map using map partitions
  */
-public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>,Tuple3<INDArray,ComputationGraphUpdater,Double>> {
+public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>,Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>> {
     protected static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMapCG.class);
 
     private String json;
@@ -58,7 +59,7 @@ public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiD
 
 
     @Override
-    public Iterable<Tuple3<INDArray, ComputationGraphUpdater, Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple3<INDArray, ComputationGraphUpdater, ScoreReport>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -82,7 +83,9 @@ public class IterativeReduceFlatMapCG implements FlatMapFunction<Iterator<MultiD
         network.setParams(val);
         network.setUpdater(upd);
         network.fit(data);
-
-        return Collections.singletonList(new Tuple3<>(network.params(false), network.getUpdater(), network.score()));
+        ScoreReport report = new ScoreReport();
+        report.setS(network.score());
+        report.setM(Runtime.getRuntime().maxMemory());
+        return Collections.singletonList(new Tuple3<>(network.params(false), network.getUpdater(), report));
     }
 }

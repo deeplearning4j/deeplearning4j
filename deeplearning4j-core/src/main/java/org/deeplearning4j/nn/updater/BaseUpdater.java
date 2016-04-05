@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.updater;
 
 import com.google.common.base.Function;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -28,7 +30,6 @@ import java.util.Map;
  */
 public abstract class BaseUpdater implements Updater {
     protected Map<String, GradientUpdater> updaterForVariable = new HashMap<>();
-
 
     @Override
     public void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize) {

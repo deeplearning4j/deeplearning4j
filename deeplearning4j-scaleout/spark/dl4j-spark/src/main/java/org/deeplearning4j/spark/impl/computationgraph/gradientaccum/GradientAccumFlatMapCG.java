@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.spark.impl.common.misc.ScoreReport;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -44,7 +45,7 @@ import java.util.List;
 /**
  * Iterative reduce with flat map using map partitions
  */
-public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>, Tuple3<Gradient,ComputationGraphUpdater,Double>> {
+public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDataSet>, Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>> {
 
     private String json;
     private Broadcast<INDArray> params;
@@ -65,9 +66,12 @@ public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDat
 
 
     @Override
-    public Iterable<Tuple3<Gradient,ComputationGraphUpdater,Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple3<Gradient,ComputationGraphUpdater,Double>(new DefaultGradient(),null,0.0));
+            ScoreReport report = new ScoreReport();
+            report.setS(0.0);
+            report.setM(Runtime.getRuntime().maxMemory());
+            return Collections.singletonList(new Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>(new DefaultGradient(),null,report));
         }
 
         List<MultiDataSet> collect = new ArrayList<>();
@@ -87,7 +91,9 @@ public class GradientAccumFlatMapCG implements FlatMapFunction<Iterator<MultiDat
         network.setParams(val);
         network.setUpdater(upd);
         network.fit(data);
-
-        return Collections.singletonList(new Tuple3<>(network.gradient(),network.getUpdater(),network.score()));
+        ScoreReport report = new ScoreReport();
+        report.setS(network.score());
+        report.setM(Runtime.getRuntime().maxMemory());
+        return Collections.singletonList(new Tuple3<>(network.gradient(),network.getUpdater(),report));
     }
 }

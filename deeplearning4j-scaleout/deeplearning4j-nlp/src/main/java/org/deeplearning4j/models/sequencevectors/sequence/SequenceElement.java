@@ -1,16 +1,20 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *  SequenceElement is basic building block for SequenceVectors. Any data sequence can be represented as ordered set of SequenceElements,
@@ -38,6 +42,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     // this var defines that we have label here
     protected boolean isLabel;
 
+    // this var defines how many documents/sequences contain this word
+    protected AtomicLong sequencesCount = new AtomicLong(0);
+
     protected AdaGrad adaGrad;
 
     /*
@@ -52,6 +59,38 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      */
     abstract public String getLabel();
 
+    /**
+     * This method returns number of documents/sequences where this element was evidenced
+     *
+     * @return
+     */
+    public long getSequencesCount() {
+        return sequencesCount.get();
+    }
+
+    /**
+     * This method sets documents count to specified value
+     *
+     * @param count
+     */
+    public void setSequencesCount(long count) {
+        this.sequencesCount.set(count);
+    }
+
+    /**
+     * Increments document count by one
+     */
+    public void incrementSequencesCount() {
+        this.sequencesCount.incrementAndGet();
+    }
+
+    /**
+     * Increments document count by specified value
+     * @param count
+     */
+    public void incrementSequencesCount(long count) {
+        this.sequencesCount.addAndGet(count);
+    }
 
     /**
      * Returns whether this element was defined as label, or no
@@ -172,6 +211,19 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     }
 
     /**
+     * Sets Huffman tree points
+     *
+     * @param points
+     */
+    @JsonIgnore
+    public void setPoints(int[] points) {
+        this.points = new ArrayList<>();
+        for (int i = 0; i < points.length; i++) {
+            this.points.add(points[i]);
+        }
+    }
+
+    /**
      * Returns Huffman code length.
      *
      * Please note: maximum vocabulary/tree size depends on code length
@@ -247,7 +299,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     public String toString() {
         return "SequenceElement: {label: '"+ this.getLabel() +"'," +
                                                                   " freq: '"+ elementFrequency.get()+"'," +
-                                                                    "index: '"+this.index+"'}";
+                                                                   " codes: " + codes.toString() +
+                                                                    " points: " + points.toString() +
+                                                                    " index: '"+this.index+"'}";
     }
 
     /**
@@ -255,4 +309,16 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @return
      */
     public abstract String toJSON();
+
+    public static ObjectMapper mapper() {
+        /*
+              DO NOT ENABLE INDENT_OUTPUT FEATURE
+              we need THIS json to be single-line
+          */
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        return ret;
+    }
 }

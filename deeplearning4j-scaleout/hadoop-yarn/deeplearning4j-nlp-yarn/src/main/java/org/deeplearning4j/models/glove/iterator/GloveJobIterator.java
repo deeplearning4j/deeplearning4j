@@ -63,7 +63,7 @@ public class GloveJobIterator implements JobIterator {
 
 
     public GloveJobIterator(TextVectorizer textVectorizer, GloveWeightLookupTable table, VocabCache cache, StateTracker stateTracker, int batchSize) {
-        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
+        this.sentenceIterator = textVectorizer.getIndex().batchIter(batchSize);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);
@@ -81,7 +81,7 @@ public class GloveJobIterator implements JobIterator {
 
 
     public GloveJobIterator(TextVectorizer textVectorizer, GloveWeightLookupTable table, VocabCache cache, StateTracker stateTracker) {
-        this.sentenceIterator = textVectorizer.index().batchIter(batchSize);
+        this.sentenceIterator = textVectorizer.getIndex().batchIter(batchSize);
         this.cache = cache;
         this.table = table;
         addListener(stateTracker);

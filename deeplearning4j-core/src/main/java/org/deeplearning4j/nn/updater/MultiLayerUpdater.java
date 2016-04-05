@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import java.util.Map;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -18,8 +19,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
  */
 @EqualsAndHashCode
 public class MultiLayerUpdater implements Updater {
-	
-	private final Updater[] layerUpdaters; 
+	private final Updater[] layerUpdaters;
 	
 	public MultiLayerUpdater( MultiLayerNetwork network ){
 		Layer[] layers = network.getLayers();

@@ -256,6 +256,7 @@ public class SparkComputationGraph implements Serializable {
 
         log.info("Broadcasting initial parameters of length " + network.numParams(false));
         int maxRep = 0;
+        long maxSm = 0;
         INDArray valToBroadcast = network.params(false);
         this.params = sc.broadcast(valToBroadcast);
         ComputationGraphUpdater updater = network.getUpdater();
@@ -271,7 +272,7 @@ public class SparkComputationGraph implements Serializable {
 
         if(accumGrad) {
             //Learning via averaging gradients
-            JavaRDD<Tuple3<Gradient,ComputationGraphUpdater,Double>> results = rdd.mapPartitions(new GradientAccumFlatMapCG(conf.toJson(),
+            JavaRDD<Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>> results = rdd.mapPartitions(new GradientAccumFlatMapCG(conf.toJson(),
                     this.params, this.updater),true).cache();
 
             JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunctionCG());
@@ -292,13 +293,12 @@ public class SparkComputationGraph implements Serializable {
 
             log.info("Processing updaters");
             JavaRDD<ComputationGraphUpdater> resultsUpdater = results.map(new UpdaterFromGradientTupleFunctionCG());
-            JavaDoubleRDD scores = results.mapToDouble(new DoubleFunction<Tuple3<Gradient, ComputationGraphUpdater, Double>>() {
-                @Override
-                public double call(Tuple3<Gradient, ComputationGraphUpdater, Double> t3) throws Exception {
-                    return t3._3();
-                }
-            });
-
+            // implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>>
+            JavaDoubleRDD scores = results.mapToDouble(new ScoreMappingG());
+            if (!initDone) {
+                JavaDoubleRDD sm = results.mapToDouble(new SMappingG());
+                maxSm = sm.mean().longValue();
+            }
             lastScore = scores.mean();
 
             ComputationGraphUpdater.Aggregator aggregator = resultsUpdater.aggregate(
@@ -312,7 +312,7 @@ public class SparkComputationGraph implements Serializable {
         }
         else {
             //Standard parameter averaging
-            JavaRDD<Tuple3<INDArray,ComputationGraphUpdater,Double>> results = rdd.mapPartitions(new IterativeReduceFlatMapCG(conf.toJson(),
+            JavaRDD<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>> results = rdd.mapPartitions(new IterativeReduceFlatMapCG(conf.toJson(),
                     this.params, this.updater),true).cache();
 
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunctionCG());
@@ -330,6 +330,10 @@ public class SparkComputationGraph implements Serializable {
 
             JavaRDD<ComputationGraphUpdater> resultsUpdater = results.map(new UpdaterFromTupleFunctionCG());
             JavaDoubleRDD scores = results.mapToDouble(new ScoreMapping());
+            if (!initDone) {
+                JavaDoubleRDD sm = results.mapToDouble(new SMapping());
+                maxSm = sm.mean().longValue();
+            }
 
             lastScore = scores.mean();
 
@@ -349,7 +353,7 @@ public class SparkComputationGraph implements Serializable {
         }
         if (!initDone) {
             initDone = true;
-            update(maxRep, 0);
+            update(maxRep, maxSm);
         }
     }
 
@@ -494,11 +498,35 @@ public class SparkComputationGraph implements Serializable {
                 includeRegularizationTerms, batchSize));
     }
 
-    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,Double>>  {
+    private static class ScoreMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>>  {
 
         @Override
-        public double call(Tuple3<INDArray, ComputationGraphUpdater, Double> t3) throws Exception {
-            return t3._3();
+        public double call(Tuple3<INDArray, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
+            return t3._3().getS();
+        }
+    }
+
+    private static class ScoreMappingG implements DoubleFunction<Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<Gradient, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
+            return t3._3().getS();
+        }
+    }
+
+    private static class SMapping implements DoubleFunction<Tuple3<INDArray,ComputationGraphUpdater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<INDArray, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
+            return t3._3().getM();
+        }
+    }
+
+    private static class SMappingG implements DoubleFunction<Tuple3<Gradient, ComputationGraphUpdater,ScoreReport>>  {
+
+        @Override
+        public double call(Tuple3<Gradient, ComputationGraphUpdater, ScoreReport> t3) throws Exception {
+            return t3._3().getM();
         }
     }
 }
