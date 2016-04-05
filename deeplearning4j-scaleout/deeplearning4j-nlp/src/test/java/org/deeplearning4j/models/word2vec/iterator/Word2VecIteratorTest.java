@@ -70,7 +70,7 @@ public class Word2VecIteratorTest {
     @Test
     public void testLabeledExample() throws Exception {
 
-        INDArray unk = vec.getWordVectorMatrix(Word2Vec.UNK);
+        INDArray unk = vec.getWordVectorMatrix(Word2Vec.DEFAULT_UNK);
         assertNotEquals(null, unk);
 
         unk = vec.getWordVectorMatrix("2131241sdasdas");

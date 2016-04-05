@@ -106,6 +106,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
             put("removeStop", removeStop);
             put("stopWords", stopWords);
             put("useUnk", useUnknown);
+            put("vectorsConfiguration", configuration);
         }};
     }
 

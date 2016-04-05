@@ -23,10 +23,11 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple2;
+import scala.Tuple3;
 
-public class GradientFromTupleFunction implements Function<Tuple2<Gradient,Updater>,Gradient> {
+public class GradientFromTupleFunction implements Function<Tuple3<Gradient,Updater, ScoreReport>,Gradient> {
     @Override
-    public Gradient call(Tuple2<Gradient, Updater> tuple2) throws Exception {
+    public Gradient call(Tuple3<Gradient, Updater, ScoreReport> tuple2) throws Exception {
         return tuple2._1();
     }
 }

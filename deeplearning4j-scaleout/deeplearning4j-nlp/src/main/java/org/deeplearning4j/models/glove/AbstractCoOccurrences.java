@@ -316,7 +316,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         if (otherWord < 0) continue;
                         String w2 = vocabCache.wordFor(tokens.get(j)).getLabel();
 
-                        if(w2.equals(Glove.UNK) || otherWord == wordIdx) {
+                        if(w2.equals(Glove.DEFAULT_UNK) || otherWord == wordIdx) {
                             continue;
                         }
 

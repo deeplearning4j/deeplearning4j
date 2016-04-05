@@ -32,9 +32,12 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,22 +55,8 @@ import static org.junit.Assert.assertEquals;
 public class BagOfWordsVectorizerTest {
 
     private static final Logger log = LoggerFactory.getLogger(BagOfWordsVectorizerTest.class);
-    private InvertedIndex index;
-    private VocabCache cache;
 
-    @Before
-    public void before() {
-        cache = new InMemoryLookupCache();
-        index = new LuceneInvertedIndex.Builder().indexDir(new File("bagofwords"))
-                .cache(cache).batchSize(5)
-                .cacheInRam(false).build();
 
-    }
-
-    @After
-    public void after() throws Exception {
-        FileUtils.deleteDirectory(new File("bagofwords"));
-    }
 
 
     @Test
@@ -76,17 +65,74 @@ public class BagOfWordsVectorizerTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
-        TextVectorizer vectorizer = new BagOfWordsVectorizer.Builder().index(index)
-                .cache(cache)
-                .minWords(1).stopWords(new ArrayList<String>()).cleanup(true)
-                .tokenize(tokenizerFactory).iterate(iter).labels(labels).build();
+
+        BagOfWordsVectorizer vectorizer = new BagOfWordsVectorizer.Builder()
+                .setMinWordFrequency(1)
+                .setStopWords(new ArrayList<String>())
+                .setTokenizerFactory(tokenizerFactory)
+                .setIterator(iter)
+//                .labels(labels)
+//                .cleanup(true)
+                .build();
+
         vectorizer.fit();
-        VocabWord word = (VocabWord) vectorizer.vocab().wordFor("file.");
+        VocabWord word =vectorizer.getVocabCache().wordFor("file.");
         assumeNotNull(word);
-        assertEquals(word,vectorizer.vocab().tokenFor("file."));
-        assertEquals(2,vectorizer.index().numDocuments());
+        assertEquals(word,vectorizer.getVocabCache().tokenFor("file."));
+        assertEquals(2,vectorizer.getVocabCache().totalNumberOfDocs());
 
+        assertEquals(2, word.getSequencesCount());
+        assertEquals(2, word.getElementFrequency(), 0.1);
 
+        VocabWord word1 =vectorizer.getVocabCache().wordFor("1");
+
+        assertEquals(1, word1.getSequencesCount());
+        assertEquals(1, word1.getElementFrequency(), 0.1);
+
+        log.info("Labels used: " + vectorizer.getLabelsSource().getLabels());
+        assertEquals(2, vectorizer.getLabelsSource().getNumberOfLabelsUsed());
+
+        ///////////////////
+        INDArray array = vectorizer.transform("This is 2 file.");
+        log.info("Transformed array: " + array);
+        assertEquals(5, array.columns());
+
+        assertEquals(2, array.getDouble(0), 0.1);
+        assertEquals(2, array.getDouble(1), 0.1);
+        assertEquals(2, array.getDouble(2), 0.1);
+        assertEquals(0, array.getDouble(3), 0.1);
+        assertEquals(1, array.getDouble(4), 0.1);
+
+        DataSet dataSet = vectorizer.vectorize("This is 2 file.", "label2");
+        assertEquals(array, dataSet.getFeatureMatrix());
+
+        INDArray labelz = dataSet.getLabels();
+        log.info("Labels array: " + labelz);
+        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
+        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
+
+        dataSet = vectorizer.vectorize("This is 1 file.", "label1");
+
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(0), 0.1);
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(1), 0.1);
+        assertEquals(2, dataSet.getFeatureMatrix().getDouble(2), 0.1);
+        assertEquals(1, dataSet.getFeatureMatrix().getDouble(3), 0.1);
+        assertEquals(0, dataSet.getFeatureMatrix().getDouble(4), 0.1);
+
+        assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
+        assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);
+
+        // Serialization check
+        File tempFile = File.createTempFile("fdsf", "fdfsdf");
+        tempFile.deleteOnExit();
+
+        SerializationUtils.saveObject(vectorizer, tempFile);
+
+        BagOfWordsVectorizer vectorizer2 = SerializationUtils.readObject(tempFile);
+        vectorizer2.setTokenizerFactory(tokenizerFactory);
+
+        dataSet = vectorizer2.vectorize("This is 2 file.", "label2");
+        assertEquals(array, dataSet.getFeatureMatrix());
     }
 
 
