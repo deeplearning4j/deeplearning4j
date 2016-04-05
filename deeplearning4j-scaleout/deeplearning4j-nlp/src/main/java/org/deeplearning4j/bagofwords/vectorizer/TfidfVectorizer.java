@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class TfIdfVectorizer extends BaseTextVectorizer {
+public class TfidfVectorizer extends BaseTextVectorizer {
     /**
      * Text coming from an input stream considered as one document
      *
@@ -176,8 +176,8 @@ public class TfIdfVectorizer extends BaseTextVectorizer {
             return this;
         }
 
-        public TfIdfVectorizer build() {
-            TfIdfVectorizer vectorizer = new TfIdfVectorizer();
+        public TfidfVectorizer build() {
+            TfidfVectorizer vectorizer = new TfidfVectorizer();
 
             vectorizer.tokenizerFactory = this.tokenizerFactory;
             vectorizer.iterator = this.iterator;
