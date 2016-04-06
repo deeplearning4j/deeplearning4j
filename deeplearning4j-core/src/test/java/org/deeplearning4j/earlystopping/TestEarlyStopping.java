@@ -92,6 +92,36 @@ public class TestEarlyStopping {
         assertEquals(result.getBestModelScore(), score, 1e-2);
     }
 
+    @Test
+    public void testEarlyStoppingEveryNEpoch(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .scoreCalculator(new DataSetLossCalculator(irisIter,true))
+                .evaluateEveryNEpochs(2)
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf,net,irisIter);
+
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+        System.out.println(result);
+
+        assertEquals(5, result.getTotalEpochs());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+    }
 
     @Test
     public void testEarlyStoppingIrisMultiEpoch(){
