@@ -11,7 +11,7 @@ import java.awt.*;
  * Created by Alex on 3/04/2016.
  */
 @AllArgsConstructor @Data
-public class ChartStyle extends Style {
+public class StyleChart extends Style {
 
     public static final Double DEFAULT_CHART_MARGIN_TOP = 60.0;
     public static final Double DEFAULT_CHART_MARGIN_BOTTOM = 20.0;
@@ -22,7 +22,7 @@ public class ChartStyle extends Style {
     protected String[] seriesColors;
     protected Double axisStrokeWidth;
 
-    private ChartStyle(Builder b){
+    private StyleChart(Builder b){
         super(b);
         this.strokeWidth = b.strokeWidth;
         this.seriesColors = b.seriesColors;
@@ -65,8 +65,8 @@ public class ChartStyle extends Style {
             return this;
         }
 
-        public ChartStyle build(){
-            return new ChartStyle(this);
+        public StyleChart build(){
+            return new StyleChart(this);
         }
     }
 

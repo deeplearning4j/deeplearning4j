@@ -20,7 +20,7 @@ package org.deeplearning4j.ui.components.text;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
-import org.deeplearning4j.ui.components.text.style.TextStyle;
+import org.deeplearning4j.ui.components.text.style.StyleText;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -34,7 +34,7 @@ public class ComponentText extends Component {
         string = null;
     }
 
-    public ComponentText(String string, TextStyle style){
+    public ComponentText(String string, StyleText style){
         super(COMPONENT_TYPE, style);
         this.string = string;
     }
@@ -47,10 +47,10 @@ public class ComponentText extends Component {
 
     public static class Builder {
 
-        private TextStyle style;
+        private StyleText style;
         private String text;
 
-        public Builder(String text, TextStyle style){
+        public Builder(String text, StyleText style){
             this.text = text;
             this.style = style;
         }

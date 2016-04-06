@@ -8,5 +8,6 @@ enum ComponentType {
     ChartHorizontalBar,
     ChartLine,
     ChartScatter,
-    ChartStackedArea
+    ChartStackedArea,
+    DecoratorAccordion
 }

@@ -2,7 +2,7 @@ package org.deeplearning4j.ui.components.chart;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.ui.components.chart.style.ChartStyle;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public class ChartHistogram extends Chart {
         private List<Double> upperBounds = new ArrayList<>();
         private List<Double> yValues = new ArrayList<>();
 
-        public Builder(String title, ChartStyle style) {
+        public Builder(String title, StyleChart style) {
             super(title, style);
         }
 
