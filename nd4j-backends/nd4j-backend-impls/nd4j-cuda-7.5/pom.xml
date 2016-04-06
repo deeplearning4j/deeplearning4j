@@ -28,6 +28,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <argLine>-Xmx4G</argLine>
                     <environmentVariables>
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${env.LIBND4J_HOME}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
                     </environmentVariables>

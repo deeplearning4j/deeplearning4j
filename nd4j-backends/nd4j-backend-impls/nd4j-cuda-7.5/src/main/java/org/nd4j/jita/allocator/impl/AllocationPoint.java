@@ -49,8 +49,6 @@ public class AllocationPoint {
     // corresponding access times in TimeProvider quants
     private final AtomicLong accessHostRead = new AtomicLong(0);
     private final AtomicLong accessDeviceRead = new AtomicLong(0);
-    private final AtomicLong accessHostWrite = new AtomicLong(0);
-    private final AtomicLong accessDeviceWrite = new AtomicLong(0);
 
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
@@ -72,7 +70,7 @@ public class AllocationPoint {
 
     private AtomicLong deviceTicks = new AtomicLong(0);
 
-    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
+//    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
     @Getter private AtomicState accessState = new AtomicState();
 
@@ -164,16 +162,6 @@ public class AllocationPoint {
         return deviceTicks.get();
     }
 
-    public long getDescendantTicks(@NonNull AllocationShape shape) {
-        if (usedChunks.containsKey(shape)) {
-            return usedChunks.get(shape).getTicks();
-        } else {
-            // FIXME: remove this in production use
-            //throw new IllegalStateException("Descendant shape not found: " + shape);
-            return -1;
-        }
-    }
-
     public void tickDevice() {
         this.deviceTicks.incrementAndGet();
         this.timerShort.triggerEvent();
@@ -186,66 +174,6 @@ public class AllocationPoint {
         //this.deviceTicks.incrementAndGet();
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-    }
-
-    public int getNumberOfDescendants() {
-        return usedChunks.size();
-    };
-
-    /**
-     * Adds suballocation shape to tracking list
-     *
-     * @param point
-     */
-    public void addShape(@NonNull NestedPoint point) {
-        if (!usedChunks.containsKey(point.getShape())) {
-            this.usedChunks.put(point.getShape(), point);
-        }
-    }
-
-    /**
-     * Removes suballocation shape from tracking list
-     *
-     * @param shape
-     */
-    public void dropShape(@NonNull AllocationShape shape) {
-        if (!usedChunks.containsKey(shape))
-            throw new IllegalStateException("Shape [" + shape + "] was NOT found on dropShape() call");
-
-        usedChunks.remove(shape);
-    }
-
-    /**
-     * Removes suballocation shape from tracking list
-     *
-     * @param point
-     */
-    public void dropShape(@NonNull NestedPoint point) {
-        if (!usedChunks.containsKey(point.getShape()))
-            throw new IllegalStateException("Shape [" + shape + "] was NOT found on dropShape() call");
-
-        usedChunks.remove(point.getShape());
-    }
-
-    /**
-     * Checks, if we have specific suballocation shape registered
-     * @param shape
-     * @return
-     */
-    public boolean containsShape(@NonNull AllocationShape shape) {
-        return usedChunks.containsKey(shape);
-    }
-
-    /**
-     * This method returns suballocation description for specific shape
-     *
-     * @param shape
-     * @return
-     */
-    public NestedPoint getNestedPoint(@NonNull AllocationShape shape) {
-        if (containsShape(shape))
-            return usedChunks.get(shape);
-        else  throw new IllegalStateException("Shape [" + shape + "] was NOT found on getNestedPoint() call");
     }
 
     /**
@@ -277,7 +205,7 @@ public class AllocationPoint {
      * @return
      */
     public long getDeviceWriteTime() {
-        return accessDeviceWrite.get();
+        return 0L;//accessDeviceWrite.get();
     }
 
     public void tickHostRead() {
@@ -290,14 +218,14 @@ public class AllocationPoint {
      */
     public void tickDeviceWrite() {
         deviceAccessTime.set(realTimeProvider.getCurrentTime());
-        accessDeviceWrite.set(timeProvider.getCurrentTime());
+//        accessDeviceWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
      * This method sets time when this point was changed on host
      */
     public void tickHostWrite() {
-        accessHostWrite.set(timeProvider.getCurrentTime());
+        //accessHostWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
@@ -315,7 +243,7 @@ public class AllocationPoint {
      * @return
      */
     public boolean isActualOnDeviceSide() {
-        return accessHostWrite.get() <= getDeviceAccessTime();
+        return false; //accessHostWrite.get() <= getDeviceAccessTime();
     }
 
     /**

@@ -184,11 +184,20 @@ public class ShapeOffsetResolution implements Serializable {
      *
      */
     public void exec(INDArrayIndex... indexes) {
+        int[] shape = arr.shape();
+
+        // Check that given point indexes are not out of bounds
+        for (int i = 0; i < indexes.length; i++) {
+            INDArrayIndex idx = indexes[i];
+            if(idx instanceof PointIndex && idx.current() >= shape[i]){
+                throw new IllegalArgumentException("INDArrayIndex["+i+"] is out of bounds (value: "+idx.current()+")");
+            }
+        }
+
         indexes = NDArrayIndex.resolve(arr.shapeInfo(),indexes);
         if(tryShortCircuit(indexes)) {
             return;
         }
-        int[] shape = arr.shape();
 
 
         int numIntervals = 0;
@@ -442,16 +451,18 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset = indexes[1].offset();
             else
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
+        } else {
+            this.offset = 0;
         }
-        else if(numIntervals > 0 && arr.rank() > 2) {
+        if(numIntervals > 0 && arr.rank() > 2) {
             if(encounteredAll && arr.size(0) != 1)
-                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
+                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides);
             else
-                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
 
         }
         else
-            this.offset = ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
+            this.offset += ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
     }
 
 

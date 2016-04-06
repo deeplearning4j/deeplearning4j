@@ -7,6 +7,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -14,7 +15,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -131,12 +131,109 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testOutOfRangeIndices2() {
+        INDArray arr = Nd4j.create(1,4, 4);
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
+        try {
+            resolution.exec(NDArrayIndex.point(1), NDArrayIndex.point(0), NDArrayIndex.point(0));
+            fail("Out of range index should throw an IllegalArgumentException");
+        }catch (IllegalArgumentException e){
+            //do nothing
+        }
+    }
+
+    @Test
     public void testIndexAll(){
         INDArray arr = Nd4j.create(2, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         resolution.exec(NDArrayIndex.all(),NDArrayIndex.all());
         assertEquals(resolution.getShapes()[0],2);
         assertEquals(resolution.getShapes()[1],2);
+    }
+
+    @Test
+    public void testIndexPointInterval(){
+        INDArray zeros = Nd4j.zeros(3, 3, 3);
+        INDArrayIndex x = NDArrayIndex.point(1);
+        INDArrayIndex y = NDArrayIndex.interval(1,2, true);
+        INDArrayIndex z = NDArrayIndex.point(1);
+        INDArray value = Nd4j.ones(1, 2);
+        zeros.put(new INDArrayIndex[]{x, y, z}, value);
+        assertEquals(
+                "[[[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]\n" +
+               "  [[0,00,0,00,0,00]\n" +
+                 " [0,00,1,00,0,00]\n" +
+                 " [0,00,1,00,0,00]]\n" +
+               "  [[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]]",
+                zeros.toString());
+
+    }
+
+    @Test
+    public void testIndexPointAll(){
+        INDArray zeros = Nd4j.zeros(3, 3, 3);
+        INDArrayIndex x = NDArrayIndex.point(1);
+        INDArrayIndex y = NDArrayIndex.all();
+        INDArrayIndex z = NDArrayIndex.point(1);
+        INDArray value = Nd4j.ones(1, 3);
+        zeros.put(new INDArrayIndex[]{x, y, z}, value);
+        assertEquals(
+                "[[[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]\n" +
+               "  [[0,00,1,00,0,00]\n" +
+                 " [0,00,1,00,0,00]\n" +
+                 " [0,00,1,00,0,00]]\n" +
+               "  [[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]]",
+                zeros.toString());
+    }
+
+    @Test
+    public void testIndexIntervalAll(){
+        INDArray zeros = Nd4j.zeros(3, 3, 3);
+        INDArrayIndex x = NDArrayIndex.interval(0, 1, true);
+        INDArrayIndex y = NDArrayIndex.all();
+        INDArrayIndex z = NDArrayIndex.interval(1, 2, true);
+        INDArray value = Nd4j.ones(2, 6);
+        zeros.put(new INDArrayIndex[]{x, y, z}, value);
+        assertEquals(
+                "[[[0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]]\n" +
+               "  [[0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]]\n" +
+               "  [[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]]",
+                zeros.toString());
+    }
+
+    @Test
+    public void testIndexPointIntervalAll(){
+        INDArray zeros = Nd4j.zeros(3, 3, 3);
+        INDArrayIndex x = NDArrayIndex.point(1);
+        INDArrayIndex y = NDArrayIndex.all();
+        INDArrayIndex z = NDArrayIndex.interval(1, 2, true);
+        INDArray value = Nd4j.ones(3, 2);
+        zeros.put(new INDArrayIndex[]{x, y, z}, value);
+        assertEquals(
+                "[[[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]\n" +
+               "  [[0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]\n" +
+                 " [0,00,1,00,1,00]]\n" +
+               "  [[0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]\n" +
+                 " [0,00,0,00,0,00]]]",
+                zeros.toString());
     }
 
     @Override

@@ -122,8 +122,8 @@ public class CudaPairwiseTrainformsTests {
 
         array1.muli(array2);
 
-        System.out.println("Array1: " + array1);
-        System.out.println("Array2: " + array2);
+     //   System.out.println("Array1: " + array1);
+       // System.out.println("Array2: " + array2);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class CudaPairwiseTrainformsTests {
 
 
 
-        System.out.println("Array1: " + array1);
+    //    System.out.println("Array1: " + array1);
 
         assertNotEquals(array1, arrayTest);
         //System.out.println("Array2: " + array2);
