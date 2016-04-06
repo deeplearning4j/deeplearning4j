@@ -42,15 +42,6 @@ class ChartScatter extends Chart implements Renderable {
 
         if (this.suppressAxisVertical === true) yAxis.tickValues([]);
 
-        // Define the line
-        var valueline = d3.svg.line()
-            .x(function (d:any) {
-                return xScale(d.xPos);
-            })
-            .y(function (d:any) {
-                return yScale(d.yPos);
-            });
-
         // Adds the svg canvas
         //TODO don't hardcode these colors/attributes...
         var svg = d3.select("#" + appendToObject.attr("id"))
@@ -96,7 +87,7 @@ class ChartScatter extends Chart implements Renderable {
                 .enter()
                 .append("circle")
                 .style("fill", (s && s.getSeriesColor(i) ? s.getSeriesColor(i) : defaultColor(String(i))))
-                .attr("r", 3.0)
+                .attr("r", (s && s.getPointSize() ? s.getPointSize() : ChartConstants.DEFAULT_CHART_POINT_SIZE))
                 .attr("cx", function (d) {
                     return xScale(d['xPos']);
                 })
@@ -105,7 +96,6 @@ class ChartScatter extends Chart implements Renderable {
                 });
         }
 
-        //TODO: Don't hard-code these values...
         // Add the X Axis
         var xAxisNode = svg.append("g")
             .attr("class", "x axis")
