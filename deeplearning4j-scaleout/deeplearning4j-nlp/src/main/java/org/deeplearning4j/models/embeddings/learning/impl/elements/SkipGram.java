@@ -125,7 +125,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (sampling > 0) tempSequence = applySubsampling(sequence, nextRandom);
 
         for(int i = 0; i < tempSequence.getElements().size(); i++) {
-            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
     }
@@ -215,7 +215,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 if (d == 0)
                     label = 1;
                 else {
-                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     int idx = Math.abs((int) (nextRandom.get() >> 16) % table.length());
 
                     target = table.getInt(idx);

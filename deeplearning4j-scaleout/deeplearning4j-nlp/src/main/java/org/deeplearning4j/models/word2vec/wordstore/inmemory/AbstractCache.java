@@ -253,8 +253,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int docAppearedIn(String word) {
-        // TODO: to be implemented
-        return 0;
+        if (vocabulary.containsKey(word)) {
+            return (int) vocabulary.get(word).getSequencesCount();
+        } else return -1;
     }
 
     /**
@@ -326,7 +327,10 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             vocabulary.put(element.getLabel(), element);
 
             // TODO: remove this stupid int limitation
-        } else vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());
+        } else {
+            vocabulary.get(element.getLabel()).incrementSequencesCount(element.getSequencesCount());
+            vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());
+        }
         totalWordCount.addAndGet((long) element.getElementFrequency());
     }
 
@@ -363,6 +367,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         for (T element: vocabCache.vocabWords()) {
             this.addToken(element);
         }
+        this.documentsCounter.addAndGet(vocabCache.totalNumberOfDocs());
     }
 
     @Override

@@ -22,7 +22,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+// FIXME: remove that
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,12 +35,15 @@ import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.glove.Glove;
+import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -60,9 +68,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Loads word 2 vec models
+ * This is utility class, providing various methods for WordVectors serialization
  *
  * @author Adam Gibson
+ * @author raver119
  */
 public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
@@ -753,6 +762,7 @@ public class WordVectorSerializer {
     }
 
     /**
+     * This method loads full w2v model, previously saved with writeFullMethod call
      *
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
@@ -1078,10 +1088,6 @@ public class WordVectorSerializer {
             String word = split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
-            if (cache.containsWord(word)) {
-                log.info("Word already exists: " + word);
-            }
-
             word1.setIndex(cache.numWords());
 
             cache.addToken(word1);
@@ -1120,6 +1126,59 @@ public class WordVectorSerializer {
         }
 
         return new Pair<>(lookupTable, cache);
+    }
+
+    /**
+     * This method can be used to load previously saved model from InputStream (like a HDFS-stream)
+     *
+     * @param stream InputStream that contains previously serialized model
+     * @param skipFirstLine Set this TRUE if first line contains csv header, FALSE otherwise
+     * @return
+     * @throws IOException
+     */
+    public static WordVectors loadTxtVectors(@NonNull InputStream stream, boolean skipFirstLine) throws IOException {
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        String line = "";
+        List<INDArray> arrays = new ArrayList<>();
+
+        if (skipFirstLine)
+            reader.readLine();
+
+        while((line = reader.readLine()) != null) {
+            String[] split = line.split(" ");
+            String word = split[0].replaceAll(whitespaceReplacement, " ");
+            VocabWord word1 = new VocabWord(1.0, word);
+
+            word1.setIndex(cache.numWords());
+
+            cache.addToken(word1);
+
+            cache.addWordToIndex(word1.getIndex(), word);
+
+            cache.putVocabWord(word);
+            INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
+            for (int i = 1; i < split.length; i++) {
+                row.putScalar(i - 1, Float.parseFloat(split[i]));
+            }
+            arrays.add(row);
+        }
+
+        InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                .vectorLength(arrays.get(0).columns())
+                .cache(cache)
+                .build();
+
+        INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
+        for (int i = 0; i < syn.rows(); i++) {
+            syn.putRow(i,arrays.get(i));
+        }
+
+        Nd4j.clearNans(syn);
+        lookupTable.setSyn0(syn);
+
+        return fromPair(Pair.makePair((InMemoryLookupTable) lookupTable, (VocabCache) cache));
     }
 
     /**
@@ -1253,5 +1312,234 @@ public class WordVectorSerializer {
             result.add(array[x]);
         }
         return result;
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  file path
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param path Target output file path
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory, @NonNull String path) throws IOException {
+        writeSequenceVectors(vectors, factory, new FileOutputStream(path));
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  file
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param file Target output file
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory,@NonNull  File file) throws IOException {
+        writeSequenceVectors(vectors, factory, new FileOutputStream(file));
+    }
+
+    /**
+     * This method saves specified SequenceVectors model to target  OutputStream
+     *
+     * @param vectors SequenceVectors model
+     * @param factory SequenceElementFactory implementation for your objects
+     * @param stream Target output stream
+     * @param <T>
+     */
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors, @NonNull SequenceElementFactory<T> factory, @NonNull OutputStream stream) throws IOException {
+        WeightLookupTable<T> lookupTable = vectors.getLookupTable();
+        VocabCache<T> vocabCache = vectors.getVocab();
+
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
+
+        // at first line we save VectorsConfiguration
+        writer.write(vectors.getConfiguration().toEncodedJson());
+
+        // now we have elements one by one
+        for (int x = 0; x < vocabCache.numWords();  x++) {
+            T element = vocabCache.elementAtIndex(x);
+            String json = factory.serialize(element);
+            double[] vector = lookupTable.vector(element.getLabel()).data().asDouble();
+
+            ElementPair pair = new ElementPair(json, vector);
+            writer.println(pair.toEncodedJson());
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    /**
+     * This method loads previously saved SequenceVectors model from File
+     *
+     * @param factory
+     * @param file
+     * @param <T>
+     * @return
+     */
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull SequenceElementFactory<T> factory, @NonNull File file) throws IOException {
+        return readSequenceVectors(factory, new FileInputStream(file));
+    }
+
+    /**
+     * This method loads previously saved SequenceVectors model from InputStream
+     *
+     * @param factory
+     * @param stream
+     * @param <T>
+     * @return
+     */
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull SequenceElementFactory<T> factory, @NonNull InputStream stream) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+
+        // at first we load vectors configuration
+        String line = reader.readLine();
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(new String(Base64.decodeBase64(line),"UTF-8"));
+
+        AbstractCache<T> vocabCache = new AbstractCache.Builder<T>().build();
+
+
+        List<INDArray> rows = new ArrayList<>();
+        while((line = reader.readLine()) != null) {
+            ElementPair pair = ElementPair.fromEncodedJson(line);
+            T element = factory.deserialize(pair.getObject());
+            rows.add(Nd4j.create(pair.getVector()));
+
+            vocabCache.addToken(element);
+            vocabCache.addWordToIndex(element.getIndex(), element.getLabel());
+        }
+
+        reader.close();
+
+        InMemoryLookupTable<T> lookupTable = (InMemoryLookupTable<T>)new InMemoryLookupTable.Builder<T>()
+                .vectorLength(rows.get(0).columns())
+                .build();
+
+        INDArray syn0 = Nd4j.create(rows.size(), rows.get(0).columns());
+        for (int x = 0; x < rows.size(); x++) {
+            syn0.putRow(x, rows.get(x));
+        }
+
+        lookupTable.setSyn0(syn0);
+
+        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>(configuration)
+                .vocabCache(vocabCache)
+                .lookupTable(lookupTable)
+                .resetModel(false)
+                .build();
+
+        return vectors;
+    }
+
+    /**
+     * This method saves vocab cache to provided File.
+     * Please note: it saves only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param vocabCache
+     * @param file
+     * @throws UnsupportedEncodingException
+     */
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull File file) throws IOException {
+        writeVocabCache(vocabCache, new FileOutputStream(file));
+    }
+
+    /**
+     * This method saves vocab cache to provided OutputStream.
+     * Please note: it saves only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param vocabCache
+     * @param stream
+     * @throws UnsupportedEncodingException
+     */
+    public static void writeVocabCache(@NonNull VocabCache<VocabWord> vocabCache, @NonNull OutputStream stream) throws IOException {
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, "UTF-8")));
+
+        for (int x = 0; x < vocabCache.numWords(); x++) {
+            VocabWord word = vocabCache.elementAtIndex(x);
+            writer.println(word.toJSON());
+        }
+
+        writer.flush();
+        writer.close();
+    }
+
+    /**
+     * This method reads vocab cache from provided file.
+     * Please note: it reads only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static VocabCache<VocabWord> readVocabCache(@NonNull File file) throws IOException {
+        return readVocabCache(new FileInputStream(file));
+    }
+
+    /**
+     * This method reads vocab cache from provided InputStream.
+     * Please note: it reads only vocab content, so it's suitable mostly for BagOfWords/TF-IDF vectorizers
+     *
+     * @param stream
+     * @return
+     * @throws IOException
+     */
+    public static VocabCache<VocabWord> readVocabCache(@NonNull InputStream stream) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
+
+        VocabWordFactory factory = new VocabWordFactory();
+
+        String line = "";
+        while((line = reader.readLine()) != null) {
+            VocabWord word = factory.deserialize(line);
+
+            vocabCache.addToken(word);
+            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+        }
+
+        return vocabCache;
+    }
+
+    /**
+     * This is utility holder class
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class ElementPair {
+        private String object;
+        private double[] vector;
+
+        /**
+         * This utility method serializes ElementPair into JSON + packs it into Base64-encoded string
+         *
+         * @return
+         */
+        protected String toEncodedJson() {
+            ObjectMapper mapper = SequenceElement.mapper();
+            Base64 base64 = new Base64(Integer.MAX_VALUE);
+            try {
+                String json = mapper.writeValueAsString(this);
+                String output = base64.encodeAsString(json.getBytes("UTF-8"));
+                return output;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /**
+         * This utility method returns ElementPair from Base64-encoded string
+         *
+         * @param encoded
+         * @return
+         */
+        protected static ElementPair fromEncodedJson(String encoded) {
+            ObjectMapper mapper = SequenceElement.mapper();
+            try {
+                String decoded = new String(Base64.decodeBase64(encoded), "UTF-8");
+                return mapper.readValue(decoded, ElementPair.class);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

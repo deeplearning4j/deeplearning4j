@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import lombok.NonNull;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
@@ -47,11 +48,19 @@ public class PosUimaTokenizer  implements Tokenizer {
     private Collection<String> allowedPosTags;
     private int index;
     private static CAS cas;
+    private TokenPreProcess preProcessor;
+    private boolean stripNones = false;
+
     public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags) {
-        if(engine == null)
+        this(tokens, engine, allowedPosTags, false);
+    }
+
+    public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags, boolean stripNones) {
+        if(PosUimaTokenizer.engine == null)
             PosUimaTokenizer.engine = engine;
         this.allowedPosTags = allowedPosTags;
         this.tokens = new ArrayList<String>();
+        this.stripNones = stripNones;
         try {
             if(cas == null)
                 cas = engine.newCAS();
@@ -106,7 +115,7 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     @Override
     public String nextToken() {
-        String ret = tokens.get(index);
+        String ret = tokens.get(index); // preProcessor != null ? preProcessor.preProcess(tokens.get(index)) : tokens.get(index);
         index++;
         return ret;
     }
@@ -115,7 +124,10 @@ public class PosUimaTokenizer  implements Tokenizer {
     public List<String> getTokens() {
         List<String> tokens = new ArrayList<String>();
         while(hasMoreTokens()) {
-            tokens.add(nextToken());
+            String nextT = nextToken();
+            if (stripNones && nextT.equals("NONE"))
+                continue;
+            tokens.add(preProcessor != null ? preProcessor.preProcess(nextT) : nextT);
         }
         return tokens;
     }
@@ -129,9 +141,8 @@ public class PosUimaTokenizer  implements Tokenizer {
     }
 
 	@Override
-	public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-		// TODO Auto-generated method stub
-		
+	public void setTokenPreProcessor(@NonNull TokenPreProcess tokenPreProcessor) {
+		this.preProcessor = tokenPreProcessor;
 	}
 
 
