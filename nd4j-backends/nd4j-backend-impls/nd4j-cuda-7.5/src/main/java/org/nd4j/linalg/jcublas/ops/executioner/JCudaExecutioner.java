@@ -865,7 +865,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                     nativeOps.execPairwiseTransformDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -891,7 +891,20 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             extraArgs);
                 }
             } else {
-                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+/*                    log.info("X: " + op.x());
+                    log.info("X length: " + op.x().length());
+                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
+                    log.info("X.ews: " +op.x().elementWiseStride());
+
+                    log.info("Y: " + op.y());
+                    log.info("Y length: " + op.y().length());
+                    log.info("Y shapeInfo: " + op.y().shapeInfoDataBuffer());
+                    log.info("Y.ews: " +op.y().elementWiseStride());
+
+                    log.info("extraArgs: " + op.extraArgsDataBuff());
+                    log.info("N: " + op.n());
+*/
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -905,6 +918,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             op.n()
                     );
                 } else {
+//                    log.info("PWT 2");
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),

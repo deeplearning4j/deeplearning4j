@@ -151,6 +151,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 zeroUseCounter.addAndGet(reqMemory);
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
+                JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+
                 int numBuckets = configuration.getNumberOfHostMemoryBuckets();
                 long bucketId = RandomUtils.nextInt(0, numBuckets);
                 point.setBucketId(bucketId);
@@ -200,6 +202,8 @@ public class CudaZeroHandler implements MemoryHandler {
                         }
                     }
                 }
+
+                JCuda.cudaMemsetAsync(new Pointer(returnPair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
 
                 return returnPair;
             }
