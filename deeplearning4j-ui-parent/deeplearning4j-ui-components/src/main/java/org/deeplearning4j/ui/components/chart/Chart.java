@@ -99,9 +99,9 @@ public abstract class Chart extends Component {
             return (T) this;
         }
 
-        public T setGridWidth(Double gridXStrokeWidth, Double gridYStrokeWidth){
-            this.gridVerticalStrokeWidth = gridXStrokeWidth;
-            this.gridHorizontalStrokeWidth = gridYStrokeWidth;
+        public T setGridWidth(Double gridVerticalStrokeWidth, Double gridHorizontalStrokeWidth){
+            this.gridVerticalStrokeWidth = gridVerticalStrokeWidth;
+            this.gridHorizontalStrokeWidth = gridHorizontalStrokeWidth;
             return (T) this;
         }
 

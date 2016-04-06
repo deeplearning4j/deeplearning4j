@@ -62,7 +62,7 @@ class ChartLine extends Chart implements Renderable {
         //TODO don't hardcode these colors/attributes...
         var svg = d3.select("#" + appendToObject.attr("id"))
             .append("svg")
-            .style("stroke-width", ( s && s.getStrokeWidth() ? s.getStrokeWidth() : 1))
+            .style("stroke-width", ( s && s.getStrokeWidth() ? s.getStrokeWidth() : ChartConstants.DEFAULT_CHART_STROKE_WIDTH))
             .style("fill", "none")
             .attr("width", s.getWidth())
             .attr("height", s.getHeight())
@@ -96,7 +96,6 @@ class ChartLine extends Chart implements Renderable {
                 return {'xPos': xVals[i], 'yPos': yVals[i]};
             });
 
-            //TODO allow user to specify colors...
             svg.append("path")
                 .attr("class", "line")
                 .style("stroke", (s && s.getSeriesColor(i) ? s.getSeriesColor(i) : defaultColor(String(i))))

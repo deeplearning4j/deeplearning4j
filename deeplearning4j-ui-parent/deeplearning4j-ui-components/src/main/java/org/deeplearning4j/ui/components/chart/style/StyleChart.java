@@ -22,7 +22,8 @@ public class StyleChart extends Style {
     public static final Double DEFAULT_CHART_MARGIN_LEFT = 60.0;
     public static final Double DEFAULT_CHART_MARGIN_RIGHT = 20.0;
 
-    protected double strokeWidth;
+    protected Double strokeWidth;
+    protected Double pointSize;
     protected String[] seriesColors;
     protected Double axisStrokeWidth;
     protected StyleText titleStyle;
@@ -30,6 +31,7 @@ public class StyleChart extends Style {
     private StyleChart(Builder b){
         super(b);
         this.strokeWidth = b.strokeWidth;
+        this.pointSize = b.pointSize;
         this.seriesColors = b.seriesColors;
         this.axisStrokeWidth = b.axisStrokeWidth;
         this.titleStyle = b.titleStyle;
@@ -39,7 +41,8 @@ public class StyleChart extends Style {
 
     public static class Builder extends Style.Builder<Builder>{
 
-        protected double strokeWidth = 1.0;
+        protected Double strokeWidth;
+        protected Double pointSize;
         protected String[] seriesColors;
         protected Double axisStrokeWidth;
         protected StyleText titleStyle;
@@ -53,6 +56,12 @@ public class StyleChart extends Style {
 
         public Builder strokeWidth(double strokeWidth){
             this.strokeWidth = strokeWidth;
+            return this;
+        }
+
+        /** Point size, for scatter plot etc */
+        public Builder pointSize(double pointSize){
+            this.pointSize = pointSize;
             return this;
         }
 

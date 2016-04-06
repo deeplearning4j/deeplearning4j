@@ -11,8 +11,6 @@ abstract class Style {
     private marginRight: number;
 
     constructor( jsonObj: any){
-        //var json = JSON.parse(jsonString)['StyleChart'];
-
         this.width = jsonObj['width'];
         this.height = jsonObj['height'];
         this.marginTop = jsonObj['marginTop'];
@@ -48,101 +46,4 @@ abstract class Style {
             widthExMargins: s.getWidth() - mLeft - mRight,
             heightExMargins: s.getHeight() - mTop - mBottom};
     }
-}
-
-class StyleChart extends Style {
-
-    protected strokeWidth: number;
-    protected seriesColors: string[];
-    protected axisStrokeWidth: number;
-    protected titleStyle: StyleText;
-
-    constructor( jsonObj: any ){
-        super(jsonObj['StyleChart']);
-
-        var style: any = jsonObj['StyleChart'];
-
-        if(style){
-            this.strokeWidth = style['strokeWidth'];
-            this.seriesColors = style['seriesColors'];
-            if(style['titleStyle']) this.titleStyle = new StyleText(style['titleStyle']);
-        }
-    }
-
-    getStrokeWidth = () => this.strokeWidth;
-    getSeriesColors = () => this.seriesColors;
-
-    getSeriesColor = (idx: number) => {
-        if(!this.seriesColors || idx < 0 || idx > this.seriesColors.length) return null;
-        return this.seriesColors[idx];
-    };
-
-    getAxisStrokeWidth = () => this.axisStrokeWidth;
-    getTitleStyle = () => this.titleStyle;
-}
-
-class StyleTable extends Style {
-
-    private columnWidths: number[];
-    private borderWidthPx: number;
-    private headerColor: string;
-    private backgroundColor: string;
-
-    constructor( jsonObj: any ){
-        super(jsonObj['StyleTable']);
-
-        var style: any = jsonObj['StyleTable'];
-        if(style){
-            this.columnWidths = jsonObj['StyleTable']['columnWidths'];
-            this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
-            this.headerColor = jsonObj['StyleTable']['headerColor'];
-            this.backgroundColor = jsonObj['StyleTable']['backgroundColor'];
-        }
-    }
-
-    getColumnWidths = () => this.columnWidths;
-
-    getBorderWidthPx = () => this.borderWidthPx;
-
-    getHeaderColor = () => this.headerColor;
-
-    getBackgroundColor = () => this.backgroundColor;
-
-}
-
-
-class StyleText extends Style {
-
-    private font: string;
-    private fontSize: number;
-    private underline: boolean;
-    private color: string;
-
-    constructor( jsonObj: any){
-        super(jsonObj['StyleText']);
-
-        var style: any = jsonObj['StyleText'];
-        if(style){
-            this.font = style['font'];
-            this.fontSize = style['fontSize'];
-            this.underline = style['underline'];
-            this.color = style['color'];
-        }
-    }
-
-    getFont = () => this.font;
-    getFontSize = () => this.fontSize;
-    getUnderline = () => this.underline;
-    getColor = () => this.color;
-}
-
-
-class StyleAccordion extends Style {
-
-    constructor( jsonObj: any){
-        super(jsonObj['StyleAccordion']);
-
-
-    }
-
 }
