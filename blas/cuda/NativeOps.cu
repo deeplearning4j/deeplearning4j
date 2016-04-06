@@ -1023,7 +1023,7 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[16], deviceProperties[(int) extraPointers[2]]);
 
-	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -1061,7 +1061,7 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[15], deviceProperties[(int) extraPointers[2]]);
 
-	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1101,7 +1101,7 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[14], deviceProperties[(int) extraPointers[2]]);
 
-	transformDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformDoubleIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1971,7 +1971,7 @@ void   NativeOps::execTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[2], deviceProperties[(int) extraPointers[2]]);
 
-	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -2008,7 +2008,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[(int) extraPointers[2]]);
 
-	transformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
+	transformFloat<<<1,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2049,7 +2049,7 @@ void   NativeOps::execTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[0], deviceProperties[(int) extraPointers[2]]);
 
-	transformFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformFloatIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
