@@ -60,7 +60,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+	printf("Params: gridSize: [1], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
@@ -283,7 +283,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[26], deviceProperties[(int) extraPointers[2]]);
 
-	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	broadcastDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -330,7 +330,7 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[25], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>> (
+	pairWiseTransformStridedDouble<<<1,launchDims.y,launchDims.z, *stream>>> (
 			opNum,
 			n,
 			xPointer,
@@ -387,7 +387,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[24], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformDoubleIndex <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+	pairWiseTransformDoubleIndex <<<1, launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -436,7 +436,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[23], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -480,7 +480,7 @@ void   NativeOps::execReduceDouble(
 
 	ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
 
-	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -528,7 +528,7 @@ void   NativeOps::execReduceDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[(int) extraPointers[2]]);
 
-	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -566,7 +566,7 @@ double NativeOps::execReduceScalarDouble(
 
 	ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
 
-	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -619,7 +619,7 @@ void   NativeOps::execReduce3Double(
 
 	ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
 
-	reduce3Double<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -666,7 +666,7 @@ double   NativeOps::execReduce3ScalarDouble(
 
 	ScalarInfo<double> *scalarInfo = new ScalarInfo<double>(*stream);
 
-	reduce3Double<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -723,7 +723,7 @@ void   NativeOps::execReduce3Double(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[21], deviceProperties[(int) extraPointers[2]]);
 
-	reduce3Double<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -768,7 +768,7 @@ void   NativeOps::execScalarDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[20], deviceProperties[(int) extraPointers[2]]);
 
-	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	scalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
@@ -810,7 +810,7 @@ void NativeOps::execScalarDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[19], deviceProperties[(int) extraPointers[2]]);
 
-	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	scalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			scalar,
 			xPointer,
@@ -856,7 +856,7 @@ void NativeOps::execScalarDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[18], deviceProperties[(int) extraPointers[2]]);
 
-	scalarDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	scalarDoubleIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
@@ -891,7 +891,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[(int) extraPointers[2]]);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -937,7 +937,7 @@ void   NativeOps::execSummaryStatsDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	ScalarInfo<double> *scalarShapeInformation = new ScalarInfo<double>(*stream);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -983,7 +983,7 @@ void   NativeOps::execSummaryStatsDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[(int) extraPointers[2]]);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1233,7 +1233,7 @@ void   NativeOps::execBroadcastFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[(int) extraPointers[2]]);
 
-	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	broadcastFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1280,7 +1280,7 @@ void   NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[11], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformStridedFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -1337,7 +1337,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[10], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformFloatIndex<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformFloatIndex<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -1387,7 +1387,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[9], deviceProperties[(int) extraPointers[2]]);
 
-	pairWiseTransformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -1713,7 +1713,7 @@ void   NativeOps::execScalarFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[6], deviceProperties[(int) extraPointers[2]]);
 
-	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	scalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
@@ -1758,7 +1758,7 @@ void NativeOps::execScalarFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
-	scalarFloat<<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
+	scalarFloat<<<1, launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			scalar,
 			xPointer,
@@ -1804,7 +1804,7 @@ void NativeOps::execScalarFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[4], deviceProperties[(int) extraPointers[2]]);
 
-	scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	scalarFloatIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
@@ -1839,7 +1839,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[(int) extraPointers[2]]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1884,7 +1884,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[(int) extraPointers[2]]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1930,7 +1930,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[(int) extraPointers[2]]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2008,7 +2008,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[(int) extraPointers[2]]);
 
-	transformFloat<<<1,launchDims.y, launchDims.z, *stream>>>(
+	transformFloat<<<1,launchDims.y, launchDims.z * 3, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
