@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.ui.components.text;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
@@ -24,25 +25,30 @@ import org.deeplearning4j.ui.components.text.style.StyleText;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentText extends Component {
-    public static final String COMPONENT_TYPE = "component_text";
-    private String string;
+    public static final String COMPONENT_TYPE = "ComponentText";
+    private String text;
 
     public ComponentText(){
         super(COMPONENT_TYPE, null);
         //No arg constructor for Jackson deserialization
-        string = null;
+        text = null;
     }
 
-    public ComponentText(String string, StyleText style){
+    public ComponentText(String text, StyleText style){
         super(COMPONENT_TYPE, style);
-        this.string = string;
+        this.text = text;
+    }
+
+    private ComponentText(Builder builder){
+        this(builder.text, builder.style);
     }
 
 
     @Override
     public String toString(){
-        return "ComponentText(" + string + ")";
+        return "ComponentText(" + text + ")";
     }
 
     public static class Builder {
@@ -55,7 +61,9 @@ public class ComponentText extends Component {
             this.style = style;
         }
 
-
+        public ComponentText build(){
+            return new ComponentText(this);
+        }
     }
 
 }

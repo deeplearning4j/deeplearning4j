@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui.components.table;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
@@ -25,6 +26,7 @@ import org.deeplearning4j.ui.components.table.style.StyleTable;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentTable extends Component {
     public static final String COMPONENT_TYPE = "component_table";
 

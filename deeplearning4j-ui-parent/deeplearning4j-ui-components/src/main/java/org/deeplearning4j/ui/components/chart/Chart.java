@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.components.chart;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.Getter;
 import org.deeplearning4j.ui.api.Component;
@@ -9,6 +10,7 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
  * Created by Alex on 3/04/2016.
  */
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Chart extends Component {
 
     private String title;
