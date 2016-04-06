@@ -451,16 +451,18 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset = indexes[1].offset();
             else
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
+        } else {
+            this.offset = 0;
         }
-        else if(numIntervals > 0 && arr.rank() > 2) {
+        if(numIntervals > 0 && arr.rank() > 2) {
             if(encounteredAll && arr.size(0) != 1)
-                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
+                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides);
             else
-                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
 
         }
         else
-            this.offset = ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
+            this.offset += ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
     }
 
 
