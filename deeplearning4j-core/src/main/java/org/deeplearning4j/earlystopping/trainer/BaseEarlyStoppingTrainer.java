@@ -251,9 +251,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
                     return result;
                 }
-
-                epochCount++;
             }
+            epochCount++;
+
         }
     }
 
