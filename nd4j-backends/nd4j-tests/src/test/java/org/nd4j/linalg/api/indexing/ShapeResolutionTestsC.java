@@ -174,6 +174,30 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testFlatIndexPointInterval(){
+        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArrayIndex x = NDArrayIndex.point(0);
+        INDArrayIndex y = NDArrayIndex.interval(1,2, true);
+        INDArray value = Nd4j.ones(1, 2);
+        zeros.put(new INDArrayIndex[]{x, y}, value);
+        assertEquals(
+                "[ 0,00, 1,00, 1,00, 0,00]",
+                zeros.toString());
+    }
+
+    @Test
+    public void testFlatIndexPointPoint(){
+        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArrayIndex x = NDArrayIndex.point(0);
+        INDArrayIndex y = NDArrayIndex.point(2);
+        INDArray value = Nd4j.ones(1, 1);
+        zeros.put(new INDArrayIndex[]{x, y}, value);
+        assertEquals(
+                "[ 0,00, 0,00, 1,00, 0,00]",
+                zeros.toString());
+    }
+
+    @Test
     public void testIndexPointAll(){
         INDArray zeros = Nd4j.zeros(3, 3, 3);
         INDArrayIndex x = NDArrayIndex.point(1);
@@ -235,6 +259,8 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
                  " [0,00,0,00,0,00]]]",
                 zeros.toString());
     }
+
+
 
     @Override
     public char ordering() {
