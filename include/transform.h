@@ -3568,7 +3568,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams) {
 
-// TODO: this kernel might use block-wise multireduce too
+		// TODO: this kernel might use block-wise multireduce too
 		if (blockIdx.x > 0)
 			return;
 
@@ -3612,7 +3612,7 @@ public:
 
 		if (threadIdx.x == 0)
 			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-//		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+		//		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
 		if (threadIdx.x < shape[0])
 			maxResult[threadIdx.x] = 0.0;
