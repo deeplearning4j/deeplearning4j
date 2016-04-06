@@ -685,7 +685,10 @@ var DecoratorAccordion = (function (_super) {
                 }
             }
             appendToObject.append(outerDiv);
-            outerDiv.accordion({ collapsible: true, heightStyle: "content" });
+            if (_this.defaultCollapsed)
+                outerDiv.accordion({ collapsible: true, heightStyle: "content", active: false });
+            else
+                outerDiv.accordion({ collapsible: true, heightStyle: "content" });
         };
         var json = JSON.parse(jsonStr)[ComponentType[ComponentType.DecoratorAccordion]];
         this.title = json['title'];
@@ -846,3 +849,4 @@ var StyleText = (function (_super) {
     }
     return StyleText;
 }(Style));
+//# sourceMappingURL=dl4j-ui.js.map
