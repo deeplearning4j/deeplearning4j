@@ -39,7 +39,6 @@ class DecoratorAccordion extends Component implements Renderable {
 
         var s:StyleAccordion = this.style;
 
-        //var elementdiv: HTMLDivElement = document.createElement("div");
         var outerDiv: JQuery = $('<div></div>');
         outerDiv.uniqueId();
 
@@ -63,12 +62,16 @@ class DecoratorAccordion extends Component implements Renderable {
 
         appendToObject.append(outerDiv);
 
-        outerDiv.accordion({collapsible: true, heightStyle: "content"});
+        if(this.defaultCollapsed) outerDiv.accordion({collapsible: true, heightStyle: "content", active: false});
+        else outerDiv.accordion({collapsible: true, heightStyle: "content"});
+
+
+
+
         //$(function(){outerDiv.accordion({collapsible: true, heightStyle: "content"})});
 
         //elementdiv.accordion();
         //$(function(){elementdiv.accordion()});
-
     }
 
 
