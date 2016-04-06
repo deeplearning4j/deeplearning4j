@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Data;
+import org.apache.commons.codec.binary.Base64;
 
 
 import java.io.IOException;
@@ -44,6 +45,9 @@ public class VectorsConfiguration implements Serializable {
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
 
+    private String UNK = "UNK";
+    private String STOP = "STOP";
+
     private List<String> stopList = new ArrayList<>();
 
     // overall model info
@@ -70,6 +74,15 @@ public class VectorsConfiguration implements Serializable {
             */
             return mapper.writeValueAsString(this);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toEncodedJson() {
+        Base64 base64 = new Base64(Integer.MAX_VALUE);
+        try {
+            return base64.encodeAsString(this.toJson().getBytes("UTF-8"));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -64,6 +65,7 @@ public class TextPipeline {
     private JavaRDD<AtomicLong> sentenceCountRDD;
     private long totalWordCount;
     private boolean useUnk;
+    private VectorsConfiguration configuration;
 
     // Empty Constructor
     public TextPipeline() {}
@@ -86,6 +88,7 @@ public class TextPipeline {
         this.tokenizer = (String) tokenizerVarMap.get("tokenizer");
         this.tokenizerPreprocessor = (String) tokenizerVarMap.get("tokenPreprocessor");
         this.useUnk = (boolean) tokenizerVarMap.get("useUnk");
+        this.configuration = (VectorsConfiguration) tokenizerVarMap.get("vectorsConfiguration");
         // Remove Stop words
        // if ((boolean) tokenizerVarMap.get("removeStop")) {
             stopWords = (List<String>) tokenizerVarMap.get("stopWords");
@@ -118,7 +121,7 @@ public class TextPipeline {
     }
 
     private String filterMinWord(String stringToken, double tokenCount) {
-        return (tokenCount < numWords) ? org.deeplearning4j.models.word2vec.Word2Vec.UNK : stringToken;
+        return (tokenCount < numWords) ? configuration.getUNK() : stringToken;
     }
 
     private void addTokenToVocabCache(String stringToken, Double tokenCount) {

@@ -1,15 +1,17 @@
 package org.deeplearning4j.models.sequencevectors;
 
+import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -29,10 +31,7 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,12 +57,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
 
-    public interface EpochListener {
-        void epochCompleted(int epoch, WordVectors wordVectors);
-    }
 
-    @Setter
-    protected EpochListener epochListener;
+
+    @Setter protected transient Set<VectorsListener<T>> eventListeners;
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -145,12 +141,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             lookupTable.resetWeights(true);
         }
 
-        if (trainSequenceVectors) {
-            log.info("Zfinance before fit(): " + this.getWordVectorMatrix("Zfinance"));
-            log.info("Zhealth before fit(): " + this.getWordVectorMatrix("Zhealth"));
-            log.info("Zscience before fit(): " + this.getWordVectorMatrix("Zscience"));
-        }
-
         log.info("Building learning algorithms:");
         if (trainElementsVectors && elementsLearningAlgorithm != null) {
             log.info("          building ElementsLearningAlgorithm: [" +elementsLearningAlgorithm.getCodeName()+ "]");
@@ -208,8 +198,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
             log.info("Epoch: [" + currentEpoch+ "]; Words vectorized so far: [" + wordsCounter.get() + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: [" + minLearningRate + "]");
 
-            if (epochListener != null) {
-                epochListener.epochCompleted(currentEpoch, this);
+            if (eventListeners != null && eventListeners.size() > 0) {
+                for (VectorsListener listener: eventListeners) {
+                    if (listener.validateEvent(ListenerEvent.EPOCH, currentEpoch))
+                        listener.processEvent(ListenerEvent.EPOCH, this, currentEpoch);
+                }
             }
         }
     }
@@ -268,10 +261,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected VectorsConfiguration configuration = new VectorsConfiguration();
 
         protected transient T unknownElement;
+        protected String UNK = configuration.getUNK();
+        protected String STOP = configuration.getSTOP();
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<T>();
         protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<T>();
+
+        protected Set<VectorsListener<T>> vectorsListeners = new HashSet<>();
 
         public Builder() {
 
@@ -293,6 +290,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.learningRateDecayWords = configuration.getLearningRateDecayWords();
             this.useAdaGrad = configuration.isUseAdaGrad();
             this.window = configuration.getWindow();
+            this.UNK = configuration.getUNK();
+            this.STOP = configuration.getSTOP();
 
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
@@ -632,8 +631,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param element
          * @return
          */
-        public Builder<T> unknownElement(T element) {
+        public Builder<T> unknownElement(@NonNull T element) {
             this.unknownElement = element;
+            this.UNK = element.getLabel();
             return this;
         }
 
@@ -678,6 +678,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
 
             this.modelUtils.init(lookupTable);
+        }
+
+        /**
+         * This method sets VectorsListeners for this SequenceVectors model
+         *
+         * @param listeners
+         * @return
+         */
+        public Builder<T> setVectorsListeners(@NonNull Collection<VectorsListener<T>> listeners) {
+            vectorsListeners.addAll(listeners);
+            return this;
         }
 
         /**
@@ -726,6 +737,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             vectors.existingModel = this.existingVectors;
 
+            vectors.setUNK(this.UNK);
+
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
             this.configuration.setHugeModelExpected(hugeModelExpected);
@@ -741,6 +754,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setNegative(negative);
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
+            this.configuration.setUNK(this.UNK);
 
             vectors.configuration = this.configuration;
 
@@ -762,7 +776,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
    //     private final AtomicLong linesCounter;
         private final int limitUpper = 10000;
         private final int limitLower = 5000;
-        private AtomicBoolean isRunning = new AtomicBoolean(false);
+        private AtomicBoolean isRunning = new AtomicBoolean(true);
         private AtomicLong nextRandom;
         private List<String> stopList;
 
@@ -774,6 +788,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.nextRandom = new AtomicLong(workers + 1);
             this.iterator.reset();
             this.stopList = stopList;
+            this.setDaemon(true);
         }
 
         @Override
@@ -910,6 +925,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             this.wordsCounter.addAndGet(sequence.getElements().size());
 
                             if (totalLines.get() % 100000 == 0) log.info("Epoch: [" + this.epochNumber+ "]; Words vectorized so far: [" + this.wordsCounter.get() + "];  Lines vectorized so far: [" + this.totalLines.get() + "]; learningRate: [" + alpha + "]");
+                            if (eventListeners != null && eventListeners.size() > 0) {
+                                for (VectorsListener listener: eventListeners) {
+                                    if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
+                                        listener.processEvent(ListenerEvent.LINE, SequenceVectors.this, totalLines.get());
+                                }
+                            }
                         }
                     }
 

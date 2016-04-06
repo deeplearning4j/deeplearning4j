@@ -39,20 +39,20 @@ public interface TextVectorizer extends Vectorizer {
      * Sampling for building mini batches
      * @return the sampling
      */
-    double sample();
+    //double sample();
 
     /**
      * For word vectors, this is the batch size for how to partition documents
      * in to workloads
      * @return the batchsize for partitioning documents in to workloads
      */
-    int batchSize();
+    //int batchSize();
 
     /**
      * The vocab sorted in descending order
      * @return the vocab sorted in descending order
      */
-    VocabCache vocab();
+    VocabCache<VocabWord> getVocabCache();
 
 
     /**
@@ -103,5 +103,5 @@ public interface TextVectorizer extends Vectorizer {
      * Inverted index
      * @return the inverted index for this vectorizer
      */
-    InvertedIndex<VocabWord> index();
+    InvertedIndex<VocabWord> getIndex();
 }

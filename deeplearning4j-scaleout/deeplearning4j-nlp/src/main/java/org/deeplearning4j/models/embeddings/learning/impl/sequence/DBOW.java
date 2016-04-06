@@ -67,9 +67,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public void learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
-        for(int i = 0; i < sequence.getElements().size(); i++) {
-            dbow(i, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
-        }
+  //      for(int i = 0; i < sequence.getElements().size(); i++) {
+            dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
+     //   }
     }
 
     /**
@@ -83,7 +83,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
 
-        final T word = sequence.getElements().get(i);
+        //final T word = sequence.getElements().get(i);
         List<T> sentence = sequence.getElements();
 
         List<T> labels = new ArrayList<>(); //(List<T>) sequence.getSequenceLabel();
@@ -92,11 +92,20 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
         if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
-        if(word == null || sentence.isEmpty())
+        if(sentence.isEmpty() || labels.isEmpty())
             return;
 
         //   log.info("Training word: " + word.getLabel() +  " against label: " + labels.get(0).getLabel());
 
+        for (T lastWord: labels) {
+            for (T word:  sentence) {
+                if (word == null) continue;
+
+                skipGram.iterateSample(word, lastWord,nextRandom,alpha);
+            }
+        }
+
+        /*
         int end =  window * 2 + 1 - b;
         for(int a = b; a < end; a++) {
             if(a != window) {
@@ -107,5 +116,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 }
             }
         }
+        */
     }
 }
