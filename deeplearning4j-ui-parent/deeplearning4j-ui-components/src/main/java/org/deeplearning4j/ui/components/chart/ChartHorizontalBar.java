@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -26,6 +27,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartHorizontalBar extends Chart {
     public static final String COMPONENT_TYPE = "ChartHorizontalBar";
 

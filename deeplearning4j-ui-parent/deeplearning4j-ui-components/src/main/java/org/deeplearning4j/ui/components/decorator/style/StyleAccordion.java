@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.components.decorator.style;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
@@ -8,6 +9,7 @@ import org.deeplearning4j.ui.api.Style;
  * Created by Alex on 6/04/2016.
  */
 @NoArgsConstructor @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleAccordion extends Style {
 
     private StyleAccordion(Builder builder){

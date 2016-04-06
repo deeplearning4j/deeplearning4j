@@ -26,8 +26,8 @@ abstract class Component {
 
         switch(key){
             case ComponentType[ComponentType.ComponentText]:
+                return new ComponentText(jsonStr);
 
-                break;
             case ComponentType[ComponentType.ComponentTable]:
                 return new ComponentTable(jsonStr);
 

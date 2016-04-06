@@ -1,16 +1,20 @@
 package org.deeplearning4j.ui.components.chart.style;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.ui.api.Style;
 import org.deeplearning4j.ui.api.Utils;
+import org.deeplearning4j.ui.components.text.style.StyleText;
 
 import java.awt.*;
+import java.time.format.TextStyle;
 
 /**
  * Created by Alex on 3/04/2016.
  */
 @AllArgsConstructor @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleChart extends Style {
 
     public static final Double DEFAULT_CHART_MARGIN_TOP = 60.0;
@@ -21,12 +25,14 @@ public class StyleChart extends Style {
     protected double strokeWidth;
     protected String[] seriesColors;
     protected Double axisStrokeWidth;
+    protected StyleText titleStyle;
 
     private StyleChart(Builder b){
         super(b);
         this.strokeWidth = b.strokeWidth;
         this.seriesColors = b.seriesColors;
         this.axisStrokeWidth = b.axisStrokeWidth;
+        this.titleStyle = b.titleStyle;
     }
 
 
@@ -36,6 +42,7 @@ public class StyleChart extends Style {
         protected double strokeWidth = 1.0;
         protected String[] seriesColors;
         protected Double axisStrokeWidth;
+        protected StyleText titleStyle;
 
         public Builder(){
             super.marginTop = DEFAULT_CHART_MARGIN_TOP;
@@ -62,6 +69,11 @@ public class StyleChart extends Style {
 
         public Builder axisStrokeWidth(double axisStrokeWidth){
             this.axisStrokeWidth = axisStrokeWidth;
+            return this;
+        }
+
+        public Builder titleStyle(StyleText style){
+            this.titleStyle = style;
             return this;
         }
 

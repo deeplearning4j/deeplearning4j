@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.ui.components.decorator;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
@@ -30,6 +31,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DecoratorAccordion extends Component {
     public static final String COMPONENT_TYPE = "DecoratorAccordion";
 

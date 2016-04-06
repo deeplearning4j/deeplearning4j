@@ -59,8 +59,12 @@ class StyleChart extends Style {
     constructor( jsonObj: any ){
         super(jsonObj['StyleChart']);
 
-        this.strokeWidth = jsonObj['StyleChart']['strokeWidth'];
-        this.seriesColors = jsonObj['StyleChart']['seriesColors'];
+        var style: any = jsonObj['StyleChart'];
+
+        if(style){
+            this.strokeWidth = style['strokeWidth'];
+            this.seriesColors = style['seriesColors'];
+        }
     }
 
     getStrokeWidth = () => this.strokeWidth;
@@ -85,10 +89,13 @@ class StyleTable extends Style {
     constructor( jsonObj: any ){
         super(jsonObj['StyleTable']);
 
-        this.columnWidths = jsonObj['StyleTable']['columnWidths'];
-        this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
-        this.headerColor = jsonObj['StyleTable']['headerColor'];
-        this.backgroundColor = jsonObj['StyleTable']['backgroundColor'];
+        var style: any = jsonObj['StyleTable'];
+        if(style){
+            this.columnWidths = jsonObj['StyleTable']['columnWidths'];
+            this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
+            this.headerColor = jsonObj['StyleTable']['headerColor'];
+            this.backgroundColor = jsonObj['StyleTable']['backgroundColor'];
+        }
     }
 
     getColumnWidths = () => this.columnWidths;
@@ -100,11 +107,29 @@ class StyleTable extends Style {
     getBackgroundColor = () => this.backgroundColor;
 
 }
-//
-//class StyleText extends Style {
-//
-//
-//}
+
+
+class StyleText extends Style {
+
+    private font: string;
+    private fontSize: number;
+    private underline: boolean;
+
+    constructor( jsonObj: any){
+        super(jsonObj['StyleText']);
+
+        var style: any = jsonObj['StyleText'];
+        if(style){
+            this.font = style['font'];
+            this.fontSize = style['fontSize'];
+            this.underline = style['underline'];
+        }
+    }
+
+    getFont = () => this.font;
+    getFontSize = () => this.fontSize;
+    getUnderline = () => this.underline;
+}
 
 
 class StyleAccordion extends Style {
