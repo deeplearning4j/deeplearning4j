@@ -3572,10 +3572,11 @@ public:
 		if (blockIdx.x > 0)
 			return;
 
-		SharedMemory<T> holder;
-		T *maxResult = holder.getPointer();
+
+
 
 		int *shape = shape::shapeOf(xShapeBuffer);
+		__shared__ T *maxResult;
 		__shared__ int *maxResultShapeBuffer;
 		__shared__ functions::reduce::ops::Max<T> *max;
 		__shared__ functions::transform::ops::Exp<T> *exp;
@@ -3597,8 +3598,7 @@ public:
 				scalarSub = new functions::scalar::ops::Subtract<T>();
 				scalarDiv = new functions::scalar::ops::Divide<T>();
 			}
-			for (int i = 0; i < shape[0]; i++)
-				maxResult[i] = 0.0;
+			maxResult = (T *) malloc(sizeof(T) * shape[0]);
 		}
 		__syncthreads();
 
