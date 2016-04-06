@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.common.BestScoreIterationListener;
+import org.deeplearning4j.spark.impl.common.misc.ScoreReport;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ import java.util.List;
  */
 
 
-public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,Tuple3<INDArray,Updater,Double>> {
+public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>,Tuple3<INDArray,Updater,ScoreReport>> {
     protected static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
 
     protected String json;
@@ -72,7 +73,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
     }
 
     @Override
-    public Iterable<Tuple3<INDArray, Updater, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple3<INDArray, Updater, ScoreReport>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -99,6 +100,9 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.setParameters(val);
         network.setUpdater(upd);
         network.fit(data);
-        return Collections.singletonList(new Tuple3<>(network.params(false), network.getUpdater(), network.score()));
+        ScoreReport report = new ScoreReport();
+        report.setS(network.score());
+        report.setM(Runtime.getRuntime().maxMemory());
+        return Collections.singletonList(new Tuple3<>(network.params(false), network.getUpdater(), report));
     }
 }

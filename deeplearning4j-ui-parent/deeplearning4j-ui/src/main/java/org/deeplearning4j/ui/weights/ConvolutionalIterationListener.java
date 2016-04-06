@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
+import org.deeplearning4j.ui.WebReporter;
 import org.deeplearning4j.ui.activation.PathUpdate;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
@@ -149,7 +150,8 @@ public class ConvolutionalIterationListener implements IterationListener {
                 //ensure path is set
                 update.setPath(tempFile.getPath());
                 //ensure the server is hooked up with the path
-                target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
+                //target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
+                WebReporter.getInstance().queueReport(target, Entity.entity(update, MediaType.APPLICATION_JSON));
                 if(openBrowser && firstIteration){
                     UiUtils.tryOpenBrowser(path, log);
                     firstIteration = false;

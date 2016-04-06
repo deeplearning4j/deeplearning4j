@@ -532,7 +532,7 @@ public class RNTN implements Layer {
             return word;
         }
         // TODO: go through unknown words here
-        return Word2Vec.UNK;
+        return Word2Vec.DEFAULT_UNK;
     }
 
     public String basicCategory(String category) {
@@ -808,7 +808,7 @@ public class RNTN implements Layer {
             String word = tree.children().get(0).value();
             INDArray wordVector = getFeatureVector(word);
             if(wordVector == null) {
-                wordVector = featureVectors.vector(Word2Vec.UNK);
+                wordVector = featureVectors.vector(Word2Vec.DEFAULT_UNK);
             }
 
 

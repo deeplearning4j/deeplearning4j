@@ -39,6 +39,14 @@ public class LabelsSource implements Serializable {
         if (this.template.contains("%d")) useFormatter = true;
     }
 
+    public int indexOf(String label) {
+        return labels.indexOf(label);
+    }
+
+    public int size() {
+        return labels.size();
+    }
+
     /**
      * Build LabelsSource using externally defined list of string labels.
      * Please note, in this case you have to make sure, the number of documents and number of labels match.

@@ -82,6 +82,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.directory.studio</groupId>
+			<artifactId>org.apache.commons.codec</artifactId>
+			<version>1.8</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>nd4j-native</artifactId>
 			<version>${nd4j.version}</version>

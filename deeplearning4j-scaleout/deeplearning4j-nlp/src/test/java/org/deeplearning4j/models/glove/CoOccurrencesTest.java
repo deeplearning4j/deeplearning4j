@@ -24,7 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.LegacyTfidfVectorizer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -68,7 +68,7 @@ public class CoOccurrencesTest {
         });
         vocabCache = new InMemoryLookupCache();
 
-        textVectorizer = new TfidfVectorizer.Builder().tokenize(tokenizerFactory)
+        textVectorizer = new LegacyTfidfVectorizer.Builder().tokenize(tokenizerFactory)
                 .cache(vocabCache).iterate(iter).minWords(1).stopWords(new ArrayList<String>())
                 .build();
 

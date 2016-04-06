@@ -25,9 +25,9 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import scala.Tuple2;
 import scala.Tuple3;
 
-public class GradientFromTupleFunctionCG implements Function<Tuple3<Gradient,ComputationGraphUpdater,Double>,Gradient> {
+public class GradientFromTupleFunctionCG implements Function<Tuple3<Gradient,ComputationGraphUpdater,ScoreReport>,Gradient> {
     @Override
-    public Gradient call(Tuple3<Gradient, ComputationGraphUpdater,Double> tuple3) throws Exception {
+    public Gradient call(Tuple3<Gradient, ComputationGraphUpdater,ScoreReport> tuple3) throws Exception {
         return tuple3._1();
     }
 }

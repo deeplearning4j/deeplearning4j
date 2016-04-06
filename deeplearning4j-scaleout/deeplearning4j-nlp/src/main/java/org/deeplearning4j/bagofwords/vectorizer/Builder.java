@@ -28,6 +28,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.util.List;
 
+@Deprecated
 public abstract class Builder {
     protected VocabCache cache = new InMemoryLookupCache();
     protected TokenizerFactory tokenizerFactory;

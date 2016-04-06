@@ -69,14 +69,14 @@ public class CoOccurrenceActor extends UntypedActor {
                 if (wordIdx < 0) continue;
                 String w1 = cache.wordFor(tokens.get(i)).getLabel();
 
-                if(w1.equals(Glove.UNK))
+                if(w1.equals(Glove.DEFAULT_UNK))
                     continue;
                 int windowStop = Math.min(i + windowSize + 1,tokens.size());
                 for(int j = i; j < windowStop; j++) {
                     int otherWord = cache.indexOf(tokens.get(j));
                     if (otherWord < 0) continue;
                     String w2 = cache.wordFor(tokens.get(j)).getLabel();
-                    if(w2.equals(Glove.UNK) || otherWord == wordIdx)
+                    if(w2.equals(Glove.DEFAULT_UNK) || otherWord == wordIdx)
                         continue;
                     if(wordIdx < otherWord) {
                         coOCurreneCounts.incrementCount(tokens.get(i), tokens.get(j), 1.0 / (j - i + Nd4j.EPS_THRESHOLD));
