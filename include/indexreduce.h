@@ -1299,13 +1299,17 @@ __device__ void indexReduceGeneric(
 	if(threadIdx.x == 0)
 		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
 	__syncthreads();
+
 	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
+
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(indexReduce);
-		free(newOpFactory);
+		delete indexReduce;
+		delete newOpFactory;
 	}
 }
 

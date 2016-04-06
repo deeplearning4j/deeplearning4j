@@ -3611,6 +3611,7 @@ public:
 		div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer,
 				dimension, 1);
 
+		__syncthreads();
 		if(threadIdx.x == 0) {
 			delete exp;
 			delete sub;
@@ -3858,6 +3859,7 @@ public:
 				dimension, 1);
 		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
 
+		__syncthreads();
 		if(threadIdx.x == 0) {
 			delete exp;
 			delete sub;
@@ -4822,9 +4824,11 @@ __device__ void transformGeneric(
 
 
 	op->transformCuda(n,dy,incy,params,result,resultStride);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(doubleTransformFactory);
+		delete op;
+		delete doubleTransformFactory;
 	}
 }
 
@@ -4929,9 +4933,11 @@ __device__ void transformGeneric(
 
 
 	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(doubleTransformFactory);
+		delete op;
+		delete doubleTransformFactory;
 	}
 }
 
@@ -5036,9 +5042,11 @@ __device__ void transformGenericIndexes(
 
 
 	op->transformCuda(dy,shapeInfo,params,result,indexes);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(doubleTransformFactory);
+		delete op;
+		delete doubleTransformFactory;
 	}
 }
 

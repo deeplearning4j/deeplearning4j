@@ -1950,9 +1950,11 @@ __device__ void pairWiseTransformGeneric(
 	__syncthreads();
 
 	op->transformCuda(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
+		delete op;
+		delete newOpFactory;
 	}
 
 }
@@ -2086,9 +2088,10 @@ __device__ void pairWiseTransformGeneric(
 			yIndexes,
 			resultIndexes);
 
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
+		delete op;
+		delete newOpFactory;
 	}
 
 }
@@ -2216,11 +2219,13 @@ __device__ void pairWiseTransformStridedGeneric(
 	if (threadIdx.x == 0)
 		op = newOpFactory->getOp(opNum);
 	__syncthreads();
+
 	op->transformCuda(n, dx, dy, incx, incy, params, result, incz);
 
+	__syncthreads();
 	if (threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
+		delete op;
+		delete newOpFactory;
 	}
 
 }

@@ -1543,10 +1543,13 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 	if(threadIdx.x == 0)
 		op = reduce3OpFactory->getOp(opNum);
 	__syncthreads();
+
 	op->transformNoElementWiseStride(dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(reduce3OpFactory);
+		delete op;
+		delete reduce3OpFactory;
 	}
 
 }
@@ -1638,6 +1641,7 @@ __device__ void reduce3Generic(
 	if(threadIdx.x == 0)
 		op = reduce3OpFactory->getOp(opNum);
 	__syncthreads();
+
 	op->transform(
 			dx,
 			xShapeInfo,
@@ -1648,9 +1652,11 @@ __device__ void reduce3Generic(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(reduce3OpFactory);
+		delete op;
+		delete reduce3OpFactory;
 	}
 
 }

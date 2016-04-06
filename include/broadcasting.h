@@ -243,7 +243,7 @@ public:
 
 		}
 
-
+		__syncthreads();
 		if(threadIdx.x == 0 && numOnes > 0)  {
 			free(xShapeInfo);
 		}
@@ -879,9 +879,9 @@ __device__ void broadcastGeneric(
 	if(threadIdx.x == 0)
 		newOpFactory =  new functions::broadcast::BroadcastOpFactory<T>();
 	__syncthreads();
-	if(threadIdx.x == 0) {
+
+	if(threadIdx.x == 0)
 		op = newOpFactory->getOp(opNum);
-	}
 	__syncthreads();
 
 
@@ -895,9 +895,10 @@ __device__ void broadcastGeneric(
 			dimension,
 			dimensionLength);
 
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(op);
-		free(newOpFactory);
+		delete op;
+		delete newOpFactory;
 	}
 }
 

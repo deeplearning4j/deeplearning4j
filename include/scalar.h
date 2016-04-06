@@ -1102,18 +1102,20 @@ __device__ void scalarGeneric(
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 	if(threadIdx.x == 0)
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-
 	__syncthreads();
+
 	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
 	__syncthreads();
 
 
-
-
 	op->transformCuda(n,dx,dy,incy,params,result,resultStride);
-	if(threadIdx.x == 0)
-		free(op);
+
+	__syncthreads();
+	if(threadIdx.x == 0) {
+		delete op;
+		delete scalarDoubleOpFactory;
+	}
 }
 
 __global__ void scalarDouble(
@@ -1158,18 +1160,19 @@ __device__ void scalarGenericIndexes(
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
     if(threadIdx.x == 0)
         scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-
     __syncthreads();
+
     if(threadIdx.x == 0)
         op = scalarDoubleOpFactory->getOp(opNum);
     __syncthreads();
 
-
-
-
     op->transform(n,dx,dy,params,result,indexes);
-    if(threadIdx.x == 0)
-        free(op);
+    __syncthreads();
+
+    if(threadIdx.x == 0) {
+        delete op;
+        delete scalarDoubleOpFactory;
+    }
 }
 
  __global__ void scalarDoubleIndexes(
@@ -1225,18 +1228,20 @@ __device__ void scalarGeneric(
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 	if(threadIdx.x == 0)
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-
 	__syncthreads();
+
 	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
 	__syncthreads();
 
 
-
-
 	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo);
-	if(threadIdx.x == 0)
-		free(op);
+	__syncthreads();
+
+	if(threadIdx.x == 0) {
+		delete op;
+		delete scalarDoubleOpFactory;
+	}
 }
 
 extern "C" __global__ void scalarDouble(

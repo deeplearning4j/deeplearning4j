@@ -1011,14 +1011,14 @@ struct SharedSummaryStatsData<double> {
                     int wholeRank = shape::rank(xShapeInfo);
                     bool squeezed = false;
                     bool newSqueezeDimensions = false;
-                    for(int i = 0; i < wholeRank; i++) {
-                        if(shape[i] == 1)
+                    for (int i = 0; i < wholeRank; i++) {
+                        if (shape[i] == 1)
                             numOnes++;
                     }
 
                     //squeeze the dimensions
-                    if(numOnes > 0) {
-                        xShapeInfo = shape::squeezeDimensions(
+                        if (numOnes > 0) {
+                            xShapeInfo = shape::squeezeDimensions(
                                 xShapeInfo,
                                 &dimension,
                                 &dimensionLength,
@@ -1026,7 +1026,7 @@ struct SharedSummaryStatsData<double> {
                                 &newSqueezeDimensions,
                                 wholeRank,
                                 numOnes);
-                    }
+                        }
 
                     /**
                      * The element wise stride belong longs to a reduction index.
@@ -1039,6 +1039,7 @@ struct SharedSummaryStatsData<double> {
                      */
 
                     int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'f');
+
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
@@ -1086,17 +1087,16 @@ struct SharedSummaryStatsData<double> {
 
                     }
 
-                    free(tadShapeShapeInfo);
 
-                    if(newSqueezeDimensions) {
-                        free(dimension);
-                    }
+                        free(tadShapeShapeInfo);
 
-                    if(numOnes > 0) {
-                        free(xShapeInfo);
-                    }
+                        if (newSqueezeDimensions) {
+                            free(dimension);
+                        }
 
-
+                        if (numOnes > 0) {
+                            free(xShapeInfo);
+                        }
                 }
 
                 else {
@@ -1522,10 +1522,13 @@ __device__ void summaryStatsReduceGeneric(
 	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op,biasCorrected);
 	__syncthreads();
+
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		free(indexReduce);
-		free(newOpFactory);
+		delete indexReduce;
+		delete newOpFactory;
 	}
 }
 

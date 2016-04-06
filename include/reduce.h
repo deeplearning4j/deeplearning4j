@@ -336,16 +336,12 @@ public:
 						if(shape[i] == 1)
 							numOnes++;
 					}
-				}
 
-				__syncthreads();
-
-
-				//squeeze the dimensions
-				if(numOnes > 0) {
-					squeezed = false;
-					newSqueezeDimensions = false;
-					inputShapeInfo = shape::squeezeDimensions(
+					//squeeze the dimensions
+					if(numOnes > 0) {
+						squeezed = false;
+						newSqueezeDimensions = false;
+						inputShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
 							&dimension,
 							&dimensionLength,
@@ -353,6 +349,7 @@ public:
 							&newSqueezeDimensions,
 							wholeRank,
 							numOnes);
+					}
 				}
 
 				__syncthreads();
@@ -407,19 +404,17 @@ public:
 				}
 
 
-				free(tadShapeShapeInfo);
+				if (tid == 0) {
+					free(tadShapeShapeInfo);
 
+					if(newSqueezeDimensions) {
+						free(dimension);
+					}
 
-
-				if(newSqueezeDimensions) {
-					free(dimension);
+					if(numOnes > 0) {
+						free(xShapeInfo);
+					}
 				}
-
-				if(numOnes > 0) {
-					free(xShapeInfo);
-				}
-
-
 			}
 			else {
 
@@ -806,23 +801,23 @@ public:
 			int wholeRank = shape::rank(xShapeInfo);
 			bool squeezed = false;
 			bool newSqueezeDimensions = false;
-			for(int i = 0; i < wholeRank; i++) {
-				if(shape[i] == 1)
-					numOnes++;
-			}
 
-			//squeeze the dimensions
-			if(numOnes > 0) {
-				xShapeInfo = shape::squeezeDimensions(
-						xShapeInfo,
-						&dimension,
-						&dimensionLength,
-						&squeezed,
-						&newSqueezeDimensions,
-						wholeRank,
-						numOnes);
-			}
+				for (int i = 0; i < wholeRank; i++) {
+					if (shape[i] == 1)
+						numOnes++;
+				}
 
+				//squeeze the dimensions
+				if (numOnes > 0) {
+					xShapeInfo = shape::squeezeDimensions(
+							xShapeInfo,
+							&dimension,
+							&dimensionLength,
+							&squeezed,
+							&newSqueezeDimensions,
+							wholeRank,
+							numOnes);
+				}
 
 			//decompose in to several sub tads after
 			//moving all dimensions (in sorted order)
@@ -873,18 +868,16 @@ public:
 			}
 
 
-			free(tadShapeShapeInfo);
+				free(tadShapeShapeInfo);
 
 
+				if (newSqueezeDimensions) {
+					free(dimension);
+				}
 
-			if(newSqueezeDimensions) {
-				free(dimension);
-			}
-
-			if(numOnes > 0) {
-				free(xShapeInfo);
-			}
-
+				if (numOnes > 0) {
+					free(xShapeInfo);
+				}
 		}
 
 		else {
