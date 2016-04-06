@@ -13,7 +13,7 @@ class ChartConstants {
 
 abstract class Chart extends Component {
 
-    protected style: ChartStyle;
+    protected style: StyleChart;
 
     protected title: string;
     protected suppressAxisHorizontal: boolean;
@@ -47,10 +47,10 @@ abstract class Chart extends Component {
         this.gridVerticalStrokeWidth = json['gridVerticalStrokeWidth'];
         this.gridHorizontalStrokeWidth = json['gridHorizontalStrokeWidth'];
 
-        if(json['style']) this.style = new ChartStyle(json['style']);
+        if(json['style']) this.style = new StyleChart(json['style']);
     }
 
-    getStyle(): ChartStyle {
+    getStyle(): StyleChart {
         return this.style;
     }
 }

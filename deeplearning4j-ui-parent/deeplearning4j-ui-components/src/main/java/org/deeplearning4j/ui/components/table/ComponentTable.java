@@ -21,7 +21,7 @@ package org.deeplearning4j.ui.components.table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
-import org.deeplearning4j.ui.components.table.style.TableStyle;
+import org.deeplearning4j.ui.components.table.style.StyleTable;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -43,7 +43,7 @@ public class ComponentTable extends Component {
         this.content = builder.content;
     }
 
-    public ComponentTable(String[] header, String[][] table, TableStyle style){
+    public ComponentTable(String[] header, String[][] table, StyleTable style){
         super(COMPONENT_TYPE, style);
         this.header = header;
         this.content = table;
@@ -51,11 +51,11 @@ public class ComponentTable extends Component {
 
     public static class Builder {
 
-        private TableStyle style;
+        private StyleTable style;
         private String[] header;
         private String[][] content;
 
-        public Builder(TableStyle style){
+        public Builder(StyleTable style){
             this.style = style;
         }
 

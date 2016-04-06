@@ -2,11 +2,11 @@
 /// <reference path="../../api/Margin.ts" />
 /// <reference path="../../util/TSUtils.ts" />
 
-class Table extends Component implements Renderable {
+class ComponentTable extends Component implements Renderable {
 
     private header: string[];
     private content: string[][];
-    private style: TableStyle;
+    private style: StyleTable;
 
 
     constructor(jsonStr: string){
@@ -16,12 +16,12 @@ class Table extends Component implements Renderable {
 
         this.header = json['header'];
         this.content = json['content'];
-        if(json['style']) this.style = new TableStyle(json['style']);
+        if(json['style']) this.style = new StyleTable(json['style']);
     }
 
     render = (appendToObject: JQuery) => {
 
-        var s: TableStyle = this.style;
+        var s: StyleTable = this.style;
         var margin: Margin = Style.getMargins(s);
 
         var tbl = document.createElement('table');

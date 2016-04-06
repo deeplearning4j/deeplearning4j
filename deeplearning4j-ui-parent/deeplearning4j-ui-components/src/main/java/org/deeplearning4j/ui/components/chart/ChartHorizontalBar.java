@@ -19,7 +19,7 @@ package org.deeplearning4j.ui.components.chart;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.ui.components.chart.style.ChartStyle;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,7 @@ public class ChartHorizontalBar extends Chart {
         private Double xMin;
         private Double xMax;
 
-        public Builder(String title, ChartStyle style) {
+        public Builder(String title, StyleChart style) {
             super(title, style);
         }
 

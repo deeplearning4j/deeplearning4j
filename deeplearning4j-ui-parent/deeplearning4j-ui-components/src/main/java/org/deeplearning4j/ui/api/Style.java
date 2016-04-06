@@ -5,13 +5,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.ui.components.chart.style.ChartStyle;
-import org.deeplearning4j.ui.components.table.style.TableStyle;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
+import org.deeplearning4j.ui.components.table.style.StyleTable;
+import org.deeplearning4j.ui.components.text.style.StyleText;
 
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
-        @JsonSubTypes.Type(value = ChartStyle.class, name = "StyleChart"),
-        @JsonSubTypes.Type(value = TableStyle.class, name = "StyleTable")
+        @JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),
+        @JsonSubTypes.Type(value = StyleTable.class, name = "StyleTable"),
+        @JsonSubTypes.Type(value = StyleText.class, name = "StyleText"),
+        @JsonSubTypes.Type(value = StyleAccordion.class, name = "StyleAccordion")
 })
 @Data @AllArgsConstructor @NoArgsConstructor
 public abstract class Style {
