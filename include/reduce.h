@@ -134,6 +134,7 @@ public:
 			T *result,
 			int *resultShapeInfo) {
 		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
+
 		int resultLength = shape::length(resultShapeInfo);
 		int n = shape::length(xShapeInfo);
 
@@ -147,8 +148,8 @@ public:
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		for (int i = tid; i < numElements; i += blockDim.x)
-			sPartials[i] = init;
+		if (tid < numElements)
+			sPartials[tid] = init;
 		__syncthreads();
 
 		if(elementWiseStride >= 1) {
@@ -164,16 +165,18 @@ public:
 #pragma unroll
 				for(int i = elementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
 					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
-					__syncthreads();
 				}
 			}
 
 
-
+			__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
 			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
 
 
+			__syncthreads();
+			if (tid == 0)
+				result[0] = postProcess(sPartials[0],numElements,extraParams);
 		}
 		else {
 			int rank = shape::rank(xShapeInfo);
@@ -186,14 +189,18 @@ public:
 			}
 
 
+			__syncthreads();
+			T **sPartialsRef = (T **) &sPartials;
+			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
+
+
+			__syncthreads();
 			// write result for this block to global mem
 			if (tid == 0) {
 				result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
 			}
 
 			free(ind2sub);
-
-
 		}
 
 	}
