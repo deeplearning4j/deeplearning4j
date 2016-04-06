@@ -55,6 +55,7 @@ class StyleChart extends Style {
     protected strokeWidth: number;
     protected seriesColors: string[];
     protected axisStrokeWidth: number;
+    protected titleStyle: StyleText;
 
     constructor( jsonObj: any ){
         super(jsonObj['StyleChart']);
@@ -64,11 +65,11 @@ class StyleChart extends Style {
         if(style){
             this.strokeWidth = style['strokeWidth'];
             this.seriesColors = style['seriesColors'];
+            if(style['titleStyle']) this.titleStyle = new StyleText(style['titleStyle']);
         }
     }
 
     getStrokeWidth = () => this.strokeWidth;
-
     getSeriesColors = () => this.seriesColors;
 
     getSeriesColor = (idx: number) => {
@@ -77,6 +78,7 @@ class StyleChart extends Style {
     };
 
     getAxisStrokeWidth = () => this.axisStrokeWidth;
+    getTitleStyle = () => this.titleStyle;
 }
 
 class StyleTable extends Style {
@@ -114,6 +116,7 @@ class StyleText extends Style {
     private font: string;
     private fontSize: number;
     private underline: boolean;
+    private color: string;
 
     constructor( jsonObj: any){
         super(jsonObj['StyleText']);
@@ -123,12 +126,14 @@ class StyleText extends Style {
             this.font = style['font'];
             this.fontSize = style['fontSize'];
             this.underline = style['underline'];
+            this.color = style['color'];
         }
     }
 
     getFont = () => this.font;
     getFontSize = () => this.fontSize;
     getUnderline = () => this.underline;
+    getColor = () => this.color;
 }
 
 
