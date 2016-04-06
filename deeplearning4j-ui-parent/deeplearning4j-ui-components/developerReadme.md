@@ -24,7 +24,8 @@ Some design principles here:
 - At present: behaviour (on click events, etc) cannot be defined in Java (this has to be done in TS/JS)
 
 
-Some additional setup that is required for developing/maintaining the TypeScript code:
+
+**Setup for developing TypeScript code**
 
 - Install [node.js](https://nodejs.org/en/) and [TypeScript compiler](https://www.typescriptlang.org/#download-links)
 - Then, in IntelliJ
@@ -41,5 +42,10 @@ After the above setup, all TypeScript files will be compiled to a single javascr
 - Location: /deeplearning4j-ui-components/src/main/resources/assets/dl4j-ui.js
 - A source map file (dl4j-ui.js.map) will also be produced; this aids with debugging (can see/debug original typescript code, even after it is converted to JavaScript)
 - File name, location, and other options are defined in the tsconfig.json
-  
-  
+
+
+**Note:** A rendering test is available in *test.java.org.deeplearning4j.ui.TestRendering.java* that generates a HTML file with some sample graphs.
+It is recommended to open this via IntelliJ (right click -> Open In Browser)
+
+**Note 2:** The *src/main/typescript/typedefs/* folder contains type definitions for some javascript libraries, from [https://github.com/DefinitelyTyped/DefinitelyTyped](DefinitelyTyped).
+These allow us to use javascript libraries in typescript, whilst having type information.
