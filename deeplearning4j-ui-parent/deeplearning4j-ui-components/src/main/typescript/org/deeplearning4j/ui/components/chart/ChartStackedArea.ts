@@ -154,14 +154,9 @@ class ChartStackedArea extends Chart implements Renderable {
 
         //Add title (if present)
         if (this.title) {
-            svg.append("text")
-                .attr("x", (margin.widthExMargins / 2))
-                .attr("y", 0 - ((margin.top - 30) / 2))
-                .attr("fill","#000000")
-                .attr("text-anchor", "middle")
-                //.style("font-fontSize", "13px")
-                .style("text-decoration", "underline")
-                .text(this.title);
+            var titleStyle: StyleText;
+            if(this.style) titleStyle = this.style.getTitleStyle();
+            Chart.appendTitle(svg, this.title, margin, titleStyle);
         }
     }
 }
