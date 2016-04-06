@@ -134,20 +134,34 @@ class ChartStackedArea extends Chart implements Renderable {
                 });
 
         //Add the x axis:
-        svg.append("g")
+        var xAxisNode = svg.append("g")
             .attr("class", "x axis")
             .style("stroke","#000")
             .style("stroke-width", (s != null && s.getAxisStrokeWidth() != null ? s.getAxisStrokeWidth() : ChartConstants.DEFAULT_AXIS_STROKE_WIDTH))
             .style("fill","none")
             .attr("transform", "translate(0," + margin.heightExMargins + ")")
             .call(xAxis);
+        xAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
 
         //Add the y axis
-        svg.append("g")
+        var yAxisNode = svg.append("g")
             .attr("class", "y axis")
             .style("stroke","#000")
             .style("stroke-width", (s != null && s.getAxisStrokeWidth() != null ? s.getAxisStrokeWidth() : ChartConstants.DEFAULT_AXIS_STROKE_WIDTH))
             .style("fill","none")
             .call(yAxis);
+        yAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
+
+        //Add title (if present)
+        if (this.title) {
+            svg.append("text")
+                .attr("x", (margin.widthExMargins / 2))
+                .attr("y", 0 - ((margin.top - 30) / 2))
+                .attr("fill","#000000")
+                .attr("text-anchor", "middle")
+                //.style("font-size", "13px")
+                .style("text-decoration", "underline")
+                .text(this.title);
+        }
     }
 }

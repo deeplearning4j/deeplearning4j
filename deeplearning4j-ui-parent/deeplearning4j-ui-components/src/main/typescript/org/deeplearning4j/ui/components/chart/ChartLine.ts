@@ -111,6 +111,7 @@ class ChartLine extends Chart implements Renderable {
             .style("stroke-width", (s != null && s.getAxisStrokeWidth() != null ? s.getAxisStrokeWidth() : ChartConstants.DEFAULT_AXIS_STROKE_WIDTH))
             .style("fill","none")
             .call(xAxis);
+        xAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
 
         if(this.gridVerticalStrokeWidth != null) xAxisNode.selectAll('.axis line').style({'stroke-width': this.gridVerticalStrokeWidth});
 
@@ -121,6 +122,7 @@ class ChartLine extends Chart implements Renderable {
             .style("stroke-width", (s != null && s.getAxisStrokeWidth() != null ? s.getAxisStrokeWidth() : ChartConstants.DEFAULT_AXIS_STROKE_WIDTH))
             .style("fill","none")
             .call(yAxis);
+        yAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
 
         if(this.gridHorizontalStrokeWidth != null) yAxisNode.selectAll('.axis line').style({'stroke-width': this.gridHorizontalStrokeWidth});
 
@@ -149,8 +151,8 @@ class ChartLine extends Chart implements Renderable {
             svg.append("text")
                 .attr("x", (margin.widthExMargins / 2))
                 .attr("y", 0 - ((margin.top - 30) / 2))
+                .attr("fill","#000000")
                 .attr("text-anchor", "middle")
-                .style("font-size", "13px")
                 .style("text-decoration", "underline")
                 .text(this.title);
         }
