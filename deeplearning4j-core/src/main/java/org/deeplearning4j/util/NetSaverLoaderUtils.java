@@ -3,6 +3,7 @@ package org.deeplearning4j.util;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +40,7 @@ public class NetSaverLoaderUtils {
             dos.flush();
 
             // save model configuration
-            FileUtils.write(new File(confPath), net.conf().toJson());
+            FileUtils.write(new File(confPath), net.getLayerWiseConfigurations().toJson());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -70,6 +71,38 @@ public class NetSaverLoaderUtils {
         return savedNetwork;
     }
 
+    /**
+     * Save model updators
+     * @param net trained network | model
+     * @param basePath path to store configuration
+     */
+    public static void saveUpdators(MultiLayerNetwork net, String basePath){
+        String paramPath = FilenameUtils.concat(basePath, net.toString() + "updators.bin");
+        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(paramPath)))){
+            oos.writeObject(net.getUpdater());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Load model updators
+     * @param updatorPath path of the updators
+     * Returns saved updaters
+     */
+    public static Updater loadUpdators(String updatorPath){
+        Updater updater = null;
+        try(ObjectInputStream oos = new ObjectInputStream(new FileInputStream(new File(updatorPath)))){
+            updater = (Updater) oos.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return updater;
+    }
+    
     /**
      * Save existing parameters for the layer
      * @param param layer parameters in INDArray format
