@@ -16,7 +16,6 @@ public class ChartStackedArea extends Chart {
 
     public static final String COMPONENT_TYPE = "ChartStackedArea";
 
-    private String title;
     private double[] x = new double[0];
     private List<double[]> y = new ArrayList<>();
     private List<String> labels = new ArrayList<>();
