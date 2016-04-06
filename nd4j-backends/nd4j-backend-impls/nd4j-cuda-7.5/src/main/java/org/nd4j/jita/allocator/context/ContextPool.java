@@ -76,8 +76,7 @@ public class ContextPool {
                 if (result != CUresult.CUDA_SUCCESS) {
                     throw new RuntimeException("Failed to set context on assigner");
                 }
-                */
-
+*/
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
                 }
@@ -103,6 +102,7 @@ public class ContextPool {
                         cublasPool.put(deviceId, handle);
                     } else {
                         // just pick handle out there
+                        logger.info("Reusing blas here...");
                         cublasHandle handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
@@ -138,6 +138,7 @@ public class ContextPool {
     }
 
     private CudaContext createNewStream(Integer deviceId) {
+        logger.info("Creating new stream for device ["+deviceId+"]...");
         JCuda.cudaSetDevice(deviceId);
 
         CudaContext context = new CudaContext();
@@ -163,7 +164,7 @@ public class ContextPool {
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
 
-        JCuda.cudaSetDevice(deviceId);
+        //JCuda.cudaSetDevice(deviceId);
 
 
         int result = cuDeviceGet(device, deviceId);

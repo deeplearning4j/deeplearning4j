@@ -56,6 +56,49 @@ public class CudaIndexReduceTests {
     }
 
     @Test
+    public void testIMax() {
+        INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
+
+        int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+
+        assertEquals(127999, idx);
+    }
+
+    @Test
+    public void testIMax2() {
+        INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
+
+        INDArray  argMax = Nd4j.argMax(array1, 1);
+
+        for (int i = 0; i < 128; i++) {
+            assertEquals(999f, argMax.getFloat(i), 0.0001f);
+        }
+    }
+
+    @Test
+    public void testIMax3() {
+        INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
+
+        INDArray  argMax = Nd4j.argMax(array1, 0);
+
+
+        System.out.println("ARgmax length: " + argMax.length());
+        for (int i = 0; i < 1000; i++) {
+            assertEquals("Failed iteration: ["+ i +"]", 127, argMax.getFloat(i), 0.0001f);
+        }
+    }
+
+    @Test
+    public void testIMax4() {
+        INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
+
+        INDArray  argMax = Nd4j.argMax(array1, 0,1);
+
+
+        assertEquals(127999f, argMax.getFloat(0), 0.001f);
+    }
+
+    @Test
     public void testIMaxDimensional() throws Exception {
         INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
         INDArray valueArray = Nd4j.valueArrayOf(new int[]{4, 2}, 2.0);

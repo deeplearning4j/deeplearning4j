@@ -20,15 +20,30 @@ public class CudaBroadcastTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.zeros(15,15);
-        INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
+        for (int iter = 0; iter < 100; iter++) {
 
-        array1.addiRowVector(array2);
+            INDArray array1 = Nd4j.zeros(15, 15);
 
-        System.out.println("Array1: " + array1);
-        System.out.println("Array2: " + array2);
+            for (int y = 0; y < 15; y++) {
+                for (int x = 0; x < 15; x++) {
+                    assertEquals("Failed on iteration: ["+iter+"], y.x: ["+y+"."+x+"]", 0.0f, array1.getRow(y).getFloat(x), 0.01);
+                }
+            }
+            INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
 
-        assertEquals(2.0f, array1.getRow(0).getFloat(0), 0.01);
+            for (int i = 0; i < 30; i++) {
+                array1.addiRowVector(array2);
+            }
+
+            //System.out.println("Array1: " + array1);
+            //System.out.println("Array2: " + array2);
+
+            for (int y = 0; y < 15; y++) {
+                for (int x = 0; x < 15; x++) {
+                    assertEquals("Failed on iteration: ["+iter+"], y.x: ["+y+"."+x+"]", 60.0f, array1.getRow(y).getFloat(x), 0.01);
+                }
+            }
+        }
     }
 
     @Test

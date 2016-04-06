@@ -1996,6 +1996,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void applyBroadcastOp(INDArray vector, final char operation) {
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
+
+        // FIXME: probably this is wrong, because strict equality is always false in current DataBuffer mechanics
         if(this.data() == vector.data())
             vector = vector.dup();
         switch(operation) {
