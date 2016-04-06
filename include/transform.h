@@ -3567,6 +3567,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams) {
 
+		int *shape = shape::shapeOf(xShapeBuffer);
 		__shared__ functions::reduce::ops::Max<T> *max;
 		__shared__ functions::transform::ops::Exp<T> *exp;
 		__shared__ functions::broadcast::ops::Subtract<T> *sub;
@@ -3584,7 +3585,7 @@ public:
 				maxResult[i] = 0.0;
 
 		}
-		int *shape = shape::shapeOf(xShapeBuffer);
+
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
 		int dimension[1] = {0};
