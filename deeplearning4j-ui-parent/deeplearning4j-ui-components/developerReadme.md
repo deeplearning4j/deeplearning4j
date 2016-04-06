@@ -15,7 +15,8 @@ Some design principles here:
     - The goal is to have style information as an *optional* component on the Java side
     - In principle styling can be done entirely in Java, entirely in JavaScript/CSS, or via a mixture of both (style options defined in Java will override those defined in CSS)
     - In both the Java and TypeScript, there are Style objects; these define properties such as colors or line widths
-- Java objects for UI components are created; these are converted to JSON using Jackson (typically posted to a web server)
+- Java objects for UI components are created; these are converted to JSON using Jackson (typically to be posted to a web server)
+    - Jackson is configured to ignore null elements when encoding JSON (and the TypeScript code should handle missing values) 
 - JSON is converted back into JavaScript/TypeScript objects using the TS object constructors (i.e., these parse the JSON)
     - Consequently, any changes made to the Java UI component classes should be mirrored
 - After the JS/TS versions of the UI objects are created, they can be added to an existing component using the .render(addToObject: JQuery) method

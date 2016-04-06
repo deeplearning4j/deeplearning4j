@@ -159,7 +159,7 @@ class ChartStackedArea extends Chart implements Renderable {
                 .attr("y", 0 - ((margin.top - 30) / 2))
                 .attr("fill","#000000")
                 .attr("text-anchor", "middle")
-                //.style("font-size", "13px")
+                //.style("font-fontSize", "13px")
                 .style("text-decoration", "underline")
                 .text(this.title);
         }

@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.components.table.style;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.api.Style;
@@ -12,6 +13,7 @@ import java.awt.*;
  * Created by Alex on 3/04/2016.
  */
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleTable extends Style {
 
     private double[] columnWidths;
