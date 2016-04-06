@@ -22,7 +22,7 @@ class ChartHistogram extends Chart implements Renderable {
 
 
     render = (appendToObject: JQuery) => {
-        var s: ChartStyle = this.getStyle();
+        var s: StyleChart = this.getStyle();
         var margin: Margin = Style.getMargins(s);
 
         // Add the bins.

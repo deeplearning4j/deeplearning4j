@@ -12,7 +12,7 @@ import java.awt.*;
  * Created by Alex on 3/04/2016.
  */
 @Data
-public class TableStyle extends Style {
+public class StyleTable extends Style {
 
     private double[] columnWidths;
     private LengthUnit columnWidthUnit;
@@ -20,7 +20,7 @@ public class TableStyle extends Style {
     private String headerColor;
     private String backgroundColor;
 
-    private TableStyle(Builder builder){
+    private StyleTable(Builder builder){
         super(builder);
         this.columnWidths = builder.columnWidths;
         this.columnWidthUnit = builder.columnWidthUnit;
@@ -72,8 +72,8 @@ public class TableStyle extends Style {
             return this;
         }
 
-        public TableStyle build(){
-            return new TableStyle(this);
+        public StyleTable build(){
+            return new StyleTable(this);
         }
     }
 

@@ -50,7 +50,7 @@ abstract class Style {
     }
 }
 
-class ChartStyle extends Style {
+class StyleChart extends Style {
 
     protected strokeWidth: number;
     protected seriesColors: string[];
@@ -75,7 +75,7 @@ class ChartStyle extends Style {
     getAxisStrokeWidth = () => this.axisStrokeWidth;
 }
 
-class TableStyle extends Style {
+class StyleTable extends Style {
 
     private columnWidths: number[];
     private borderWidthPx: number;
@@ -101,7 +101,18 @@ class TableStyle extends Style {
 
 }
 //
-//class TextStyle extends Style {
+//class StyleText extends Style {
 //
 //
 //}
+
+
+class StyleAccordion extends Style {
+
+    constructor( jsonObj: any){
+        super(jsonObj['StyleAccordion']);
+
+
+    }
+
+}

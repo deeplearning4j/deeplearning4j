@@ -3,7 +3,7 @@ package org.deeplearning4j.ui.components.chart;
 import lombok.Data;
 import lombok.Getter;
 import org.deeplearning4j.ui.api.Component;
-import org.deeplearning4j.ui.components.chart.style.ChartStyle;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 /**
  * Created by Alex on 3/04/2016.
@@ -44,7 +44,7 @@ public abstract class Chart extends Component {
     public static abstract class Builder<T extends Builder<T>> {
 
         private String title;
-        private ChartStyle style;
+        private StyleChart style;
         private Boolean suppressAxisHorizontal;
         private Boolean suppressAxisVertical;
         private boolean showLegend;
@@ -57,7 +57,7 @@ public abstract class Chart extends Component {
         private Double gridVerticalStrokeWidth;
         private Double gridHorizontalStrokeWidth;
 
-        public Builder(String title, ChartStyle style) {
+        public Builder(String title, StyleChart style) {
             this.title = title;
             this.style = style;
         }

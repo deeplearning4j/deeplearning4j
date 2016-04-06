@@ -23,7 +23,7 @@ class ChartScatter extends Chart implements Renderable {
     render = (appendToObject:JQuery) => {
 
         var nSeries:number = (!this.xData ? 0 : this.xData.length);
-        var s:ChartStyle = this.getStyle();
+        var s:StyleChart = this.getStyle();
         var margin:Margin = Style.getMargins(s);
 
         // Set the ranges
