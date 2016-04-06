@@ -118,23 +118,23 @@ public class LayerVertex extends GraphVertex {
             int inWidth = afterPreProcessor.getWidth();
             int inHeight = afterPreProcessor.getHeight();
             //Check filter > size + padding
-            if (kernel[0] > inWidth + padding[0] || kernel[1] > inHeight + padding[1]) {
+            if (kernel[1] > inWidth + padding[1] || kernel[0] > inHeight + padding[0]) {
                 throw new InvalidInputTypeException("Invalid input: activations into layer are w=" + inWidth + ", h=" + inHeight
                         + " but kernel size is " + Arrays.toString(kernel) + " with padding " + Arrays.toString(padding));
             }
 
             //Check proposed filter/padding size actually works:
-            if ((inWidth - kernel[0] + 2 * padding[0]) % stride[0] != 0) {
-                throw new InvalidInputTypeException("Invalid input/configuration: activations into layer are inputWidth=" + inWidth + ", widthPadding=" + padding[0]
-                        + ", kernelWidth = " + kernel[0] + ", strideWidth = " + stride[0] + ". (inputWidth-kernelWidth+2*widthPadding)/strideWidth is not an integer");
+            if ((inWidth - kernel[1] + 2 * padding[1]) % stride[1] != 0) {
+                throw new InvalidInputTypeException("Invalid input/configuration: activations into layer are inputWidth=" + inWidth + ", widthPadding=" + padding[1]
+                        + ", kernelWidth = " + kernel[1] + ", strideWidth = " + stride[1] + ". (inputWidth-kernelWidth+2*widthPadding)/strideWidth is not an integer");
             }
-            if ((inHeight - kernel[1] + 2 * padding[1]) % stride[1] != 0) {
-                throw new InvalidInputTypeException("Invalid input/configuration: activations into layer are inputHeight=" + inHeight + ", heightPadding=" + padding[1]
-                        + ", kernelHeight = " + kernel[1] + ", strideHeight = " + stride[1] + ". (inputHeight-kernelHeight+2*heightPadding)/strideHeight is not an integer");
+            if ((inHeight - kernel[0] + 2 * padding[0]) % stride[0] != 0) {
+                throw new InvalidInputTypeException("Invalid input/configuration: activations into layer are inputHeight=" + inHeight + ", heightPadding=" + padding[0]
+                        + ", kernelHeight = " + kernel[0] + ", strideHeight = " + stride[0] + ". (inputHeight-kernelHeight+2*heightPadding)/strideHeight is not an integer");
             }
 
-            int outWidth = (inWidth - kernel[0] + 2 * padding[0]) / stride[0] + 1;
-            int outHeight = (inHeight - kernel[1] + 2 * padding[1]) / stride[1] + 1;
+            int outWidth = (inWidth - kernel[1] + 2 * padding[1]) / stride[1] + 1;
+            int outHeight = (inHeight - kernel[0] + 2 * padding[0]) / stride[0] + 1;
 
             return InputType.convolutional(channelsOut,outWidth,outHeight);
         } else if (layer instanceof BaseRecurrentLayer) {
