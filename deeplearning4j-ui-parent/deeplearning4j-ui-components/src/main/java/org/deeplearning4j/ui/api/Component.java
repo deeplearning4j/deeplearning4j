@@ -25,6 +25,11 @@ import org.deeplearning4j.ui.components.decorator.DecoratorAccordion;
 import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 
+/**
+ * A component is anything that can be rendered, such at charts, text or tables.
+ *
+ * @author Alex Black
+ */
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = ComponentText.class, name = "ComponentText"),

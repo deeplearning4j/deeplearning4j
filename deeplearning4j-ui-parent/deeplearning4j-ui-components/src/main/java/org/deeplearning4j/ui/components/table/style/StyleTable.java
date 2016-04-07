@@ -22,7 +22,7 @@ public class StyleTable extends Style {
     private String headerColor;
     private String backgroundColor;
 
-    private StyleTable(Builder builder){
+    private StyleTable(Builder builder) {
         super(builder);
         this.columnWidths = builder.columnWidths;
         this.columnWidthUnit = builder.columnWidthUnit;
@@ -32,7 +32,7 @@ public class StyleTable extends Style {
     }
 
 
-    public static class Builder extends Style.Builder<Builder>{
+    public static class Builder extends Style.Builder<Builder> {
 
         private double[] columnWidths;
         private LengthUnit columnWidthUnit;
@@ -40,41 +40,63 @@ public class StyleTable extends Style {
         private String headerColor;
         private String backgroundColor;
 
-
-        public Builder columnWidths(LengthUnit unit, double... widths){
+        /**
+         * Specify the widths for the columns
+         *
+         * @param unit   Unit that the widths are specified in
+         * @param widths Width values for the columns
+         */
+        public Builder columnWidths(LengthUnit unit, double... widths) {
             this.columnWidthUnit = unit;
             this.columnWidths = widths;
             return this;
         }
 
-        public Builder borderWidth(int borderWidthPx){
+        /**
+         * @param borderWidthPx    Width of the border, in px
+         */
+        public Builder borderWidth(int borderWidthPx) {
             this.borderWidthPx = borderWidthPx;
             return this;
         }
 
-        public Builder headerColor(Color color){
+        /**
+         * @param color    Background color for the header row
+         */
+        public Builder headerColor(Color color) {
             String hex = Utils.colorToHex(color);
             return headerColor(hex);
         }
 
-        public Builder headerColor(String color){
-            if(!color.matches("#[a-f0-9]{6}")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
+        /**
+         * @param color    Background color for the header row
+         */
+        public Builder headerColor(String color) {
+            if (!color.matches("#[a-f0-9]{6}"))
+                throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
             this.headerColor = color;
             return this;
         }
 
-        public Builder backgroundColor(Color color){
+        /**
+         * @param color    Background color for the table cells (ex. header row)
+         */
+        public Builder backgroundColor(Color color) {
             String hex = Utils.colorToHex(color);
             return backgroundColor(hex);
         }
 
-        public Builder backgroundColor(String color){
-            if(!color.matches("#[a-f0-9]{6}")) throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
+        /**
+         * @param color    Background color for the table cells (ex. header row)
+         */
+        public Builder backgroundColor(String color) {
+            if (!color.matches("#[a-f0-9]{6}"))
+                throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
             this.backgroundColor = color;
             return this;
         }
 
-        public StyleTable build(){
+        public StyleTable build() {
             return new StyleTable(this);
         }
     }

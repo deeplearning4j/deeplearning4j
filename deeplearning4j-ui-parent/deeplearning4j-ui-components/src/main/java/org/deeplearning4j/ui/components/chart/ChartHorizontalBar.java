@@ -74,14 +74,6 @@ public class ChartHorizontalBar extends Chart {
             return this;
         }
 
-//        public Builder margins(int top, int bottom, int left, int right){
-//            this.marginTop = top;
-//            this.marginBottom = bottom;
-//            this.marginLeft = left;
-//            this.marginRight = right;
-//            return this;
-//        }
-
         public Builder xMin(double xMin) {
             this.xMin = xMin;
             return this;

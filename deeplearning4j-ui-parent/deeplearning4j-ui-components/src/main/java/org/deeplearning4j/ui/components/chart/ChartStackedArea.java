@@ -9,7 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Alex on 15/03/2016.
+ * Stacked area chart (no normalization), with multiple series.
+ * Note that in the current implementation, the x values for each series must be the same
+ *
+ * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -44,11 +47,20 @@ public class ChartStackedArea extends Chart {
             super(title, style);
         }
 
+        /**
+         * Set the x-axis values
+         */
         public Builder setXValues(double[] x) {
             this.x = x;
             return this;
         }
 
+        /**
+         * Add a single series.
+         *
+         * @param seriesName Name of the series
+         * @param yValues    length of the yValues array must be same as the x-values array
+         */
         public Builder addSeries(String seriesName, double[] yValues) {
             y.add(yValues);
             seriesNames.add(seriesName);

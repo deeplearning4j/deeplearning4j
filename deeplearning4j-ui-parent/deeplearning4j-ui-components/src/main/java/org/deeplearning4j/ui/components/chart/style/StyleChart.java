@@ -11,7 +11,9 @@ import java.awt.*;
 import java.time.format.TextStyle;
 
 /**
- * Created by Alex on 3/04/2016.
+ * Style for charts
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

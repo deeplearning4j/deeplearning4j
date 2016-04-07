@@ -24,6 +24,11 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 
+/**
+ * Simple 2d table for text
+ *
+ * @author Alex Black
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -34,18 +39,18 @@ public class ComponentTable extends Component {
     private String[] header;
     private String[][] content;
 
-    public ComponentTable(){
+    public ComponentTable() {
         super(COMPONENT_TYPE, null);
         //No arg constructor for Jackson
     }
 
-    public ComponentTable(Builder builder){
+    public ComponentTable(Builder builder) {
         super(COMPONENT_TYPE, builder.style);
         this.header = builder.header;
         this.content = builder.content;
     }
 
-    public ComponentTable(String[] header, String[][] table, StyleTable style){
+    public ComponentTable(String[] header, String[][] table, StyleTable style) {
         super(COMPONENT_TYPE, style);
         this.header = header;
         this.content = table;
@@ -57,26 +62,31 @@ public class ComponentTable extends Component {
         private String[] header;
         private String[][] content;
 
-        public Builder(StyleTable style){
+        public Builder(StyleTable style) {
             this.style = style;
         }
 
-        public Builder header(String... header){
+        /**
+         * @param header Header values for the table
+         */
+        public Builder header(String... header) {
             this.header = header;
             return this;
         }
 
-        public Builder content(String[][] content){
+        /**
+         * Content for the table, as 2d String[]
+         */
+        public Builder content(String[][] content) {
             this.content = content;
             return this;
         }
 
-        public ComponentTable build(){
+        public ComponentTable build() {
             return new ComponentTable(this);
         }
 
     }
-
 
 
 }
