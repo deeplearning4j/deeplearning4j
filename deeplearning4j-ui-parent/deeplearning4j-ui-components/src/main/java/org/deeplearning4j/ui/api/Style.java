@@ -10,6 +10,8 @@ import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 
+import java.awt.*;
+
 /**
  * Style defines things such as size of elements, an their margins.
  * Subclasses/concrete implementations have additional settings specific to the type of component
@@ -37,6 +39,8 @@ public abstract class Style {
     protected Double marginLeft;
     protected Double marginRight;
 
+    protected String backgroundColor;
+
     public Style(Builder b){
         this.width = b.width;
         this.height = b.height;
@@ -48,6 +52,8 @@ public abstract class Style {
         this.marginBottom = b.marginBottom;
         this.marginLeft = b.marginLeft;
         this.marginRight = b.marginRight;
+
+        this.backgroundColor = b.backgroundColor;
     }
 
 
@@ -63,6 +69,8 @@ public abstract class Style {
         protected Double marginBottom;
         protected Double marginLeft;
         protected Double marginRight;
+
+        protected String backgroundColor;
 
         public T width(double width, LengthUnit widthUnit){
             this.width = width;
@@ -89,6 +97,15 @@ public abstract class Style {
             this.marginBottom = marginBottom;
             this.marginLeft = marginLeft;
             this.marginRight = marginRight;
+            return (T)this;
+        }
+
+        public T backgroundColor(Color color){
+            return backgroundColor(Utils.colorToHex(color));
+        }
+
+        public T backgroundColor(String color){
+            this.backgroundColor = color;
             return (T)this;
         }
     }

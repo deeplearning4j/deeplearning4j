@@ -10,6 +10,8 @@ import org.deeplearning4j.ui.components.chart.ChartLine;
 import org.deeplearning4j.ui.components.chart.ChartScatter;
 import org.deeplearning4j.ui.components.chart.ChartStackedArea;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.deeplearning4j.ui.components.component.ComponentDiv;
+import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.decorator.DecoratorAccordion;
 import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
 import org.deeplearning4j.ui.components.table.ComponentTable;
@@ -111,9 +113,20 @@ public class TestRendering {
         list.add(c6);
 
         //Text with styling
-        Component c7 = new ComponentText.Builder("Here's some text!",
+        Component c7 = new ComponentText.Builder("Here's some blue text in a green div!",
                 new StyleText.Builder().font("courier").fontSize(30).underline(true).color(Color.BLUE).build()).build();
-        list.add(c7);
+//        list.add(c7);
+
+        //Div, with a chart inside
+        Style divStyle = new StyleDiv.Builder()
+                .width(30,LengthUnit.Percent).height(200,LengthUnit.Px)
+                .backgroundColor(Color.GREEN)
+                .floatValue(StyleDiv.FloatValue.right)
+                .build();
+        Component c8 = new ComponentDiv(divStyle, c7, new ComponentText("(Also: it's float right, 30% width, 200 px high )",null));
+        list.add(c8);
+
+
 
 
         //Generate HTML

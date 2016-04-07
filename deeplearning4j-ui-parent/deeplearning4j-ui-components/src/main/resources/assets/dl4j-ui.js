@@ -8,16 +8,22 @@ var Style = (function () {
         var _this = this;
         this.getWidth = function () { return _this.width; };
         this.getHeight = function () { return _this.height; };
+        this.getWidthUnit = function () { return _this.widthUnit; };
+        this.getHeightUnit = function () { return _this.heightUnit; };
         this.getMarginTop = function () { return _this.marginTop; };
         this.getMarginBottom = function () { return _this.marginBottom; };
         this.getMarginLeft = function () { return _this.marginLeft; };
         this.getMarginRight = function () { return _this.marginRight; };
+        this.getBackgroundColor = function () { return _this.backgroundColor; };
         this.width = jsonObj['width'];
         this.height = jsonObj['height'];
+        this.widthUnit = TSUtils.normalizeLengthUnit(jsonObj['widthUnit']);
+        this.heightUnit = TSUtils.normalizeLengthUnit(jsonObj['heightUnit']);
         this.marginTop = jsonObj['marginTop'];
         this.marginBottom = jsonObj['marginBottom'];
         this.marginLeft = jsonObj['marginLeft'];
         this.marginRight = jsonObj['marginRight'];
+        this.backgroundColor = jsonObj['backgroundColor'];
     }
     Style.getMargins = function (s) {
         var mTop = (s ? s.getMarginTop() : 0);
@@ -37,12 +43,13 @@ var ComponentType;
 (function (ComponentType) {
     ComponentType[ComponentType["ComponentText"] = 0] = "ComponentText";
     ComponentType[ComponentType["ComponentTable"] = 1] = "ComponentTable";
-    ComponentType[ComponentType["ChartHistogram"] = 2] = "ChartHistogram";
-    ComponentType[ComponentType["ChartHorizontalBar"] = 3] = "ChartHorizontalBar";
-    ComponentType[ComponentType["ChartLine"] = 4] = "ChartLine";
-    ComponentType[ComponentType["ChartScatter"] = 5] = "ChartScatter";
-    ComponentType[ComponentType["ChartStackedArea"] = 6] = "ChartStackedArea";
-    ComponentType[ComponentType["DecoratorAccordion"] = 7] = "DecoratorAccordion";
+    ComponentType[ComponentType["ComponentDiv"] = 2] = "ComponentDiv";
+    ComponentType[ComponentType["ChartHistogram"] = 3] = "ChartHistogram";
+    ComponentType[ComponentType["ChartHorizontalBar"] = 4] = "ChartHorizontalBar";
+    ComponentType[ComponentType["ChartLine"] = 5] = "ChartLine";
+    ComponentType[ComponentType["ChartScatter"] = 6] = "ChartScatter";
+    ComponentType[ComponentType["ChartStackedArea"] = 7] = "ChartStackedArea";
+    ComponentType[ComponentType["DecoratorAccordion"] = 8] = "DecoratorAccordion";
 })(ComponentType || (ComponentType = {}));
 var Component = (function () {
     function Component(componentType) {
@@ -71,6 +78,8 @@ var Component = (function () {
                 return new ChartStackedArea(jsonStr);
             case ComponentType[ComponentType.DecoratorAccordion]:
                 return new DecoratorAccordion(jsonStr);
+            case ComponentType[ComponentType.ComponentDiv]:
+                return new ComponentDiv(jsonStr);
             default:
                 throw new Error("Unknown component type \"" + key + "\" or invalid JSON: \"" + jsonStr + "\"");
         }
@@ -106,6 +115,25 @@ var TSUtils = (function () {
             }
         }
         return min;
+    };
+    TSUtils.normalizeLengthUnit = function (input) {
+        if (input == null)
+            return input;
+        switch (input.toLowerCase()) {
+            case "px":
+                return "px";
+            case "percent":
+            case "%":
+                return "%";
+            case "cm":
+                return "cm";
+            case "mm":
+                return "mm";
+            case "in":
+                return "in";
+            default:
+                return input;
+        }
     };
     return TSUtils;
 }());
@@ -660,6 +688,60 @@ var StyleChart = (function (_super) {
     }
     return StyleChart;
 }(Style));
+var ComponentDiv = (function (_super) {
+    __extends(ComponentDiv, _super);
+    function ComponentDiv(jsonStr) {
+        var _this = this;
+        _super.call(this, ComponentType.ComponentDiv);
+        this.render = function (appendToObject) {
+            var newDiv = $('<div></div>');
+            newDiv.uniqueId();
+            if (_this.style) {
+                if (_this.style.getWidth()) {
+                    var unit = _this.style.getWidthUnit();
+                    newDiv.width(_this.style.getWidth() + (unit ? unit : ""));
+                }
+                if (_this.style.getHeight()) {
+                    var unit = _this.style.getHeightUnit();
+                    newDiv.height(_this.style.getHeight() + (unit ? unit : ""));
+                }
+                if (_this.style.getBackgroundColor())
+                    newDiv.css("background-color", _this.style.getBackgroundColor());
+                if (_this.style.getFloatValue())
+                    newDiv.css("float", _this.style.getFloatValue());
+            }
+            if (_this.components) {
+                for (var i = 0; i < _this.components.length; i++) {
+                    _this.components[i].render(newDiv);
+                }
+            }
+            appendToObject.append(newDiv);
+        };
+        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ComponentDiv]];
+        var components = json['components'];
+        if (components) {
+            this.components = [];
+            for (var i = 0; i < components.length; i++) {
+                var asStr = JSON.stringify(components[i]);
+                this.components.push(Component.getComponent(asStr));
+            }
+        }
+        if (json['style'])
+            this.style = new StyleDiv(json['style']);
+    }
+    return ComponentDiv;
+}(Component));
+var StyleDiv = (function (_super) {
+    __extends(StyleDiv, _super);
+    function StyleDiv(jsonObj) {
+        var _this = this;
+        _super.call(this, jsonObj['StyleDiv']);
+        this.getFloatValue = function () { return _this.floatValue; };
+        if (jsonObj && jsonObj['StyleDiv'])
+            this.floatValue = jsonObj['StyleDiv']['floatValue'];
+    }
+    return StyleDiv;
+}(Style));
 var DecoratorAccordion = (function (_super) {
     __extends(DecoratorAccordion, _super);
     function DecoratorAccordion(jsonStr) {
@@ -785,13 +867,11 @@ var StyleTable = (function (_super) {
         this.getColumnWidths = function () { return _this.columnWidths; };
         this.getBorderWidthPx = function () { return _this.borderWidthPx; };
         this.getHeaderColor = function () { return _this.headerColor; };
-        this.getBackgroundColor = function () { return _this.backgroundColor; };
         var style = jsonObj['StyleTable'];
         if (style) {
             this.columnWidths = jsonObj['StyleTable']['columnWidths'];
             this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
             this.headerColor = jsonObj['StyleTable']['headerColor'];
-            this.backgroundColor = jsonObj['StyleTable']['backgroundColor'];
         }
     }
     return StyleTable;
@@ -804,9 +884,6 @@ var ComponentText = (function (_super) {
         this.render = function (appendToObject) {
             var textNode = document.createTextNode(_this.text);
             if (_this.style) {
-                var temp1 = _this.style.getFont();
-                var temp2 = _this.style.getFontSize();
-                var temp3 = _this.style.getUnderline();
                 var newSpan = document.createElement('span');
                 if (_this.style.getFont())
                     newSpan.style.font = _this.style.getFont();
@@ -814,13 +891,15 @@ var ComponentText = (function (_super) {
                     newSpan.style.fontSize = _this.style.getFontSize() + "pt";
                 if (_this.style.getUnderline() != null)
                     newSpan.style.textDecoration = 'underline';
-                newSpan.style.setProperty("font", _this.style.getFont());
-                newSpan.style.fontSize = String(_this.style.getFontSize());
+                if (_this.style.getColor())
+                    newSpan.style.color = _this.style.getColor();
                 newSpan.appendChild(textNode);
                 appendToObject.append(newSpan);
             }
             else {
-                appendToObject.append(textNode);
+                var newSpan = document.createElement('span');
+                newSpan.appendChild(textNode);
+                appendToObject.append(newSpan);
             }
         };
         var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ComponentText]];

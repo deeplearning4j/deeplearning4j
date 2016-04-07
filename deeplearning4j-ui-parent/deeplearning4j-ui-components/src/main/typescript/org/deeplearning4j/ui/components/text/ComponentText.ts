@@ -20,23 +20,19 @@ class ComponentText extends Component implements Renderable {
 
         var textNode: Text = document.createTextNode(this.text);
         if(this.style){
-            var temp1 = this.style.getFont();
-            var temp2 = this.style.getFontSize();
-            var temp3 = this.style.getUnderline();
-
             var newSpan: HTMLSpanElement = document.createElement('span');
             if(this.style.getFont()) newSpan.style.font = this.style.getFont();
             if(this.style.getFontSize() != null) newSpan.style.fontSize = this.style.getFontSize() + "pt";
             if(this.style.getUnderline() != null) newSpan.style.textDecoration='underline';
-
-            newSpan.style.setProperty("font",this.style.getFont());
-
-            newSpan.style.fontSize = String(this.style.getFontSize());
+            if(this.style.getColor()) newSpan.style.color = this.style.getColor();
 
             newSpan.appendChild(textNode);
             appendToObject.append(newSpan);
         } else {
-            appendToObject.append(textNode);
+            var newSpan: HTMLSpanElement = document.createElement('span');
+            //appendToObject.append(textNode);
+            newSpan.appendChild(textNode);
+            appendToObject.append(newSpan);
         }
     }
 

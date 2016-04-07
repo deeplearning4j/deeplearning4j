@@ -49,6 +49,9 @@ abstract class Component {
             case ComponentType[ComponentType.DecoratorAccordion]:
                 return new DecoratorAccordion(jsonStr);
 
+            case ComponentType[ComponentType.ComponentDiv]:
+                return new ComponentDiv(jsonStr);
+
             default:
                 throw new Error("Unknown component type \"" + key + "\" or invalid JSON: \"" + jsonStr + "\"");
         }
