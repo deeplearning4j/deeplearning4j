@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 
 
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -347,6 +348,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int... indices) {
+        
         return super.getDouble(indices);
     }
 
@@ -358,37 +360,44 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int index) {
+        
         return super.getDouble(index);
     }
 
     @Override
     public INDArray putScalar(int i, double value) {
-            return super.putScalar(i, value);
+        
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int i, float value) {
-            return super.putScalar(i, value);
+        
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int i, int value) {
-            return super.putScalar(i, value);
+        
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
-            return super.putScalar(indexes, value);
+        
+        return super.putScalar(indexes, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, float value) {
-            return super.putScalar(indexes, value);
+        
+        return super.putScalar(indexes, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, int value) {
-            return super.putScalar(indexes, value);
+        
+        return super.putScalar(indexes, value);
     }
 
     /**
@@ -400,7 +409,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int[] indices, INDArray element) {
-            return super.put(indices, element);
+        
+        return super.put(indices, element);
     }
 
     /**
@@ -413,7 +423,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int i, int j, INDArray element) {
-            return super.put(i, j, element);
+        
+        return super.put(i, j, element);
     }
 
     /**
@@ -426,7 +437,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int i, int j, Number element) {
-            return super.put(i, j, element);
+        
+        return super.put(i, j, element);
     }
 
     /**
@@ -438,7 +450,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putSlice(int slice, INDArray put) {
-            return super.putSlice(slice, put);
+        
+        return super.putSlice(slice, put);
     }
 
     /**
@@ -449,16 +462,19 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public float getFloat(int... indices) {
+        
         return super.getFloat(indices);
     }
 
     @Override
     public INDArray dup() {
+        
         return super.dup();
     }
 
     @Override
     public INDArray dup(char order) {
+        
         return super.dup(order);
     }
 
@@ -470,21 +486,25 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public int getInt(int... indices) {
+        
         return super.getInt(indices);
     }
 
     @Override
     public INDArray put(INDArrayIndex[] indices, Number element) {
-            return super.put(indices, element);
+        
+        return super.put(indices, element);
     }
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-            return super.put(indices, element);
+        
+        return super.put(indices, element);
     }
 
     @Override
     public INDArray getScalar(int i) {
+        
         return super.getScalar(i);
     }
 
@@ -496,26 +516,31 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray getScalar(int... indexes) {
+        
         return super.getScalar(indexes);
     }
 
     @Override
     public double getDoubleUnsafe(int offset) {
+        
         return super.getDoubleUnsafe(offset);
     }
 
     @Override
     public double getDouble(int i, int j) {
+        
         return super.getDouble(i, j);
     }
 
     @Override
     public float getFloat(int i) {
+        
         return super.getFloat(i);
     }
 
     @Override
     public float getFloat(int i, int j) {
+        
         return super.getFloat(i, j);
     }
 
@@ -529,6 +554,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray getScalar(int row, int column) {
+        
         return super.getScalar(row, column);
     }
 
@@ -543,7 +569,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-            return super.putRow(row, toPut);
+        
+        return super.putRow(row, toPut);
     }
 
     /**
@@ -557,7 +584,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-            return super.putColumn(column, toPut);
+        
+        return super.putColumn(column, toPut);
     }
 
     @Override
@@ -570,6 +598,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public String toString() {
+        
         return super.toString();
     }
 }

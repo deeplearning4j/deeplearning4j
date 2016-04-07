@@ -52,7 +52,7 @@ public class CudaContext {
 
 
     public CudaContext() {
-        //ContextHolder.getInstance().setContext();
+     //   ContextHolder.getInstance().setContext();
     }
 
     /**
@@ -67,7 +67,7 @@ public class CudaContext {
      * on the old stream
      */
     public void syncOldStream() {
-        //ContextHolder.getInstance().setContext();
+//        ContextHolder.getInstance().setContext();
         JCuda.cudaStreamSynchronize(oldStream);
 
         syncCublasStream();
@@ -96,7 +96,7 @@ public class CudaContext {
      * Initializes the stream
      */
     public void initStream() {
-        //ContextHolder.getInstance().setContext();
+//        ContextHolder.getInstance().setContext();
         if(stream == null) {
             stream = new CUstream();
             JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
@@ -109,7 +109,7 @@ public class CudaContext {
      * Initializes the old stream
      */
     public void initOldStream() {
-        //ContextHolder.getInstance().setContext();
+//        ContextHolder.getInstance().setContext();
         if(oldStream == null)  {
             oldStreamFromPool = false;
             oldStream = new cudaStream_t();

@@ -3,6 +3,7 @@ package org.nd4j.jita.handler.impl;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
+import jcuda.driver.CUcontext;
 import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -152,6 +153,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
                 JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+
+                JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
                 int numBuckets = configuration.getNumberOfHostMemoryBuckets();
                 long bucketId = RandomUtils.nextInt(0, numBuckets);
@@ -463,7 +466,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );
         }
-
+        context.syncOldStream();
     }
 
     /**
@@ -923,6 +926,10 @@ public class CudaZeroHandler implements MemoryHandler {
                         context.getOldStream()
                 );
             }
+//            System.out.println("Synchronizing...");
+//            CUcontext cUcontext = contextPool.getCuContextForDevice(deviceId);
+//            JCudaDriver.cuCtxSetCurrent(cUcontext);
+
             context.syncOldStream();
 
             point.tickHostRead();

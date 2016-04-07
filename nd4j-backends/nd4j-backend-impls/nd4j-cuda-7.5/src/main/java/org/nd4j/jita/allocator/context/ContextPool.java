@@ -31,7 +31,7 @@ import static jcuda.driver.JCudaDriver.cuDeviceGet;
  */
 public class ContextPool {
     // TODO: number of max threads should be device-dependant
-    private static final int MAX_STREAMS_PER_DEVICE = 4;
+    private static final int MAX_STREAMS_PER_DEVICE = 16;
 
     private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 

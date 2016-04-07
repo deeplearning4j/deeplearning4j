@@ -24,6 +24,15 @@ import static org.junit.Assert.*;
 public class CudaFloatDataBufferTest {
 
     @Test
+    public void testDoubleDimJava1() throws Exception {
+        INDArray sliceZero = Nd4j.create(new double[][]{{1, 7}, {4, 10}});
+
+        System.out.println("Slice: " + sliceZero);
+        assertEquals(1f, sliceZero.getFloat(0), 0.01f);
+        assertEquals(7f, sliceZero.getFloat(1), 0.01f);
+    }
+
+    @Test
     public void getDouble() throws Exception {
         DataBuffer buffer = Nd4j.createBuffer(new float[]{1f,2f,3f,4f});
 
