@@ -4370,36 +4370,194 @@ private:
 			int *resultShapeBuffer,
 			T *extraParams) {
 
-		__shared__ functions::indexreduce::ops::IMax<T> *max;
-		__shared__ int maxIdx;
-		if(threadIdx.x == 0) {
-			max = new functions::indexreduce::ops::IMax<T>();
+		int length = shape::length(xShapeBuffer);
+		if (dx == result) {
+			int eleStride = shape::elementWiseStride(xShapeBuffer);
+			if (eleStride == 1) {
+				int maxIdx = 0;
+				T currMax = dx[0];
+				if (length < 8000) {
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						dx[i] = 0.0;
+
+					}
+				}
+				else {
+#pragma omp parallel for shared(maxIdx,currMax)
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						result[i] = 0.0;
+
+					}
+				}
+
+				result[maxIdx] = 1.0;
+
+
+			}
+			else {
+				int maxIdx = 0;
+				T currMax = dx[0];
+				if (length < 8000) {
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						dx[i * eleStride] = 0.0;
+
+					}
+
+					dx[maxIdx * eleStride] = 1.0;
+				}
+				else {
+#pragma omp parallel for shared(maxIdx,currMax)
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i * eleStride]) {
+							currMax = dx[i * eleStride];
+							maxIdx = i;
+						}
+						dx[i * eleStride] = 0.0;
+
+					}
+				}
+
+				dx[maxIdx * eleStride] = 1.0;
+
+			}
 		}
+		else {
+			int eleStride = shape::elementWiseStride(xShapeBuffer);
+			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
+			char xOrder = shape::order(xShapeBuffer);
+			char resultOrder = shape::order(resultShapeBuffer);
+			if (xOrder == resultOrder) {
+				if (eleStride == 1 && resultEleStride == 1) {
+					if (length < 8000) {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp simd
+						for (int i = 0; i < length; i++) {
+							if (currMax < dx[i]) {
+								currMax = dx[i];
+								maxIdx = i;
+							}
+							result[i] = 0.0;
 
-		__syncthreads();
+						}
 
-		max->transform(
-				dx,
-				xShapeBuffer,
-				extraParams,
-				result,
-				resultShapeBuffer,
-				NULL,
-				1,
-				1);
+						result[maxIdx] = 1.0;
 
-		__syncthreads();
-		if(threadIdx.x == 0)
-			maxIdx = (int) result[0];
-		__syncthreads();
+					}
+					else {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
+						for (int i = 0; i < length; i++) {
+							if (currMax < dx[i]) {
+								currMax = dx[i];
+								maxIdx = i;
+							}
+							result[i] = 0.0;
 
-		if (threadIdx.x < shape::length(resultShapeBuffer))
-			result[threadIdx.x] = 0;
-		__syncthreads();
+						}
 
-		if (threadIdx.x == 0) {
-			result[maxIdx] = 1.0;
-			delete max;
+						result[maxIdx] = 1.0;
+					}
+
+				}
+				else {
+					if (length < 8000) {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp simd
+						for (int i = 0; i < length; i++) {
+							result[i * resultEleStride] = 0.0;
+							if (currMax < dx[i * eleStride]) {
+								currMax = dx[i * eleStride];
+								maxIdx = i;
+							}
+						}
+
+						result[maxIdx * resultEleStride] = 1.0;
+
+					}
+					else {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
+						for (int i = 0; i < length; i++) {
+							result[i * resultEleStride] = 0.0;
+							if (currMax < dx[i * eleStride]) {
+								currMax = dx[i * eleStride];
+								maxIdx = i;
+							}
+						}
+
+						result[maxIdx * resultEleStride] = 1.0;
+					}
+
+				}
+			}
+
+
+			else {
+				int shapeIter[MAX_RANK];
+				int coord[MAX_RANK];
+				int dim;
+				int xStridesIter[MAX_RANK];
+				int resultStridesIter[MAX_RANK];
+				int *xShape = shape::shapeOf(xShapeBuffer);
+				int *xStride = shape::stride(xShapeBuffer);
+				int *resultStride = shape::stride(resultShapeBuffer);
+				int rank = shape::rank(xShapeBuffer);
+				if (PrepareTwoRawArrayIter<T>(rank,
+											  xShape,
+											  dx,
+											  xStride,
+											  result,
+											  resultStride,
+											  &rank,
+											  shapeIter,
+											  &dx,
+											  xStridesIter,
+											  &result,
+											  resultStridesIter) >= 0) {
+					T *maxCursor = result;
+					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
+					{
+
+						result[0] = 0.0;
+						if(dx[0] > maxCursor[0]) {
+							maxCursor = result;
+						}
+					}
+					ND4J_RAW_ITER_TWO_NEXT(dim,
+										   rank,
+										   coord,
+										   shapeIter,
+										   dx,
+										   xStridesIter,
+										   result,
+										   resultStridesIter);
+
+					//pointer to where max value would be
+					maxCursor[0] = 1.0;
+				}
+			}
+
 		}
 	}
 
