@@ -4369,6 +4369,7 @@ private:
 			int *resultShapeBuffer,
 			T *extraParams) {
 		__shared__ functions::indexreduce::ops::IMax<T> *max;
+		__shared__ int maxIdx;
 		if(threadIdx.x == 0) {
 			max = new functions::indexreduce::ops::IMax<T>();
 		}
@@ -4386,15 +4387,18 @@ private:
 				1);
 
 		__syncthreads();
+		if(threadIdx.x == 0)
+			maxIdx = (int) result[0];
+		__syncthreads();
 
-		if(threadIdx.x == 0) {
-			int maxIdx = (int) result[0];
-			result[0] = 0;
+		if (threadIdx.x < shape::length(resultShapeBuffer))
+			result[threadIdx.x] = 0;
+		__syncthreads();
+
+		if (threadIdx.x == 0) {
 			result[maxIdx] = 1.0;
+			delete max;
 		}
-
-
-
 	}
 
 
@@ -4617,10 +4621,9 @@ public:
 			T *extraParams) {
 		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
 			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
-		}
-
-		else {
+		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
+			__shared__ int maxIdx;
 			if(threadIdx.x == 0) {
 				max = new functions::indexreduce::ops::IMax<T>();
 			}
@@ -4645,18 +4648,22 @@ public:
 					dimensionLength,
 					1);
 
+			__syncthreads();
+			if(threadIdx.x == 0)
+				maxIdx = (int) result[0];
+			__syncthreads();
 
-			if(threadIdx.x == 0) {
-				int maxIdx = (int) result[0];
-				result[0] = 0;
+			if (threadIdx.x < shape::length(resultShapeBuffer))
+				result[threadIdx.x] = 0;
+			__syncthreads();
+
+			if (threadIdx.x == 0) {
 				result[maxIdx] = 1.0;
+
 				free(dimension);
+				delete max;
 			}
 		}
-
-
-
-
 	}
 #endif
 

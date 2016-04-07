@@ -988,8 +988,12 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value > old.value)
+		if (opOutput.value > old.value) {
 			return opOutput;
+			// workaround for cuda race condition at merge phase
+		} else if (opOutput.value == old.value && opOutput.index < old.index)
+			return opOutput;
+
 		return old;
 	}
 
@@ -1140,9 +1144,10 @@ public:
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
 		if (opOutput.value < old.value) {
 			return opOutput;
-		}
 
-
+		// workaround for cuda race condition at merge phase
+		} else if (opOutput.value == old.value && opOutput.index < old.index)
+			return opOutput;
 		return old;
 	}
 
