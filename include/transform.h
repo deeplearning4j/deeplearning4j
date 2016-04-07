@@ -15,6 +15,7 @@
 #include <dll.h>
 #include "reduce.h"
 #include "scalar.h"
+#include "indexreduce.h"
 #include "broadcasting.h"
 #include <shape.h>
 #ifdef __CUDACC__
@@ -3568,7 +3569,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams) {
 
-// TODO: this kernel might use block-wise multireduce too
+		// TODO: this kernel might use block-wise multireduce too
 		if (blockIdx.x > 0)
 			return;
 
@@ -3612,7 +3613,7 @@ public:
 
 		if (threadIdx.x == 0)
 			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-//		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+		//		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
 		if (threadIdx.x < shape[0])
 			maxResult[threadIdx.x] = 0.0;
@@ -4320,6 +4321,49 @@ public:
 template<typename T>
 class IsMax : public Transform<T> {
 private:
+
+#ifdef __CUDACC__
+	inline  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+	void doAllCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams) {
+		__shared__ functions::indexreduce::ops::IMax<T> *max;
+		if(threadIdx.x == 0) {
+			max = new functions::indexreduce::ops::IMax<T>();
+		}
+
+		__syncthreads();
+
+		max->transform(
+				dx,
+				xShapeBuffer,
+				extraParams,
+				result,
+				resultShapeBuffer,
+				NULL,
+				1,
+				1);
+
+
+		if(threadIdx.x == 0) {
+			int maxIdx = (int) result[0];
+			result[0] = 0;
+			result[maxIdx] = 1.0;
+		}
+
+
+
+	}
+
+
 #ifdef __CUDACC__
 	inline __host__  __device__
 
@@ -4536,7 +4580,50 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
+			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+		}
+
+		else {
+			__shared__ functions::indexreduce::ops::IMax<T> *max;
+			if(threadIdx.x == 0) {
+				max = new functions::indexreduce::ops::IMax<T>();
+			}
+
+			__syncthreads();
+
+			int dimensionLength = (int) extraParams[0];
+			__shared__ int *dimension;
+			if(threadIdx.x == 0) {
+				dimension = (int *) malloc(sizeof(int) * dimensionLength);
+			}
+
+			__syncthreads();
+
+			max->transform(
+					dx,
+					xShapeBuffer,
+					extraParams,
+					result,
+					resultShapeBuffer,
+					dimension,
+					dimensionLength,
+					1);
+
+
+			if(threadIdx.x == 0) {
+				int maxIdx = (int) result[0];
+				result[0] = 0;
+				result[maxIdx] = 1.0;
+				free(dimension);
+			}
+		}
+
+
+
+
+	}
 #endif
 
 	/**
