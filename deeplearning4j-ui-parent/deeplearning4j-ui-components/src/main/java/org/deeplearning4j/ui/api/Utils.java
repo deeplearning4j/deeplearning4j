@@ -2,9 +2,6 @@ package org.deeplearning4j.ui.api;
 
 import java.awt.*;
 
-/**
- * Created by Alex on 4/04/2016.
- */
 public class Utils {
 
     public static String colorToHex(Color color){

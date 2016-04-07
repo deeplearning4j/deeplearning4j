@@ -10,6 +10,12 @@ import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 
+/**
+ * Style defines things such as size of elements, an their margins.
+ * Subclasses/concrete implementations have additional settings specific to the type of component
+ *
+ * @author Alex Black
+ */
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),

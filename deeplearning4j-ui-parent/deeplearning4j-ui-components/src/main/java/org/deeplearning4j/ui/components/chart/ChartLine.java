@@ -26,6 +26,11 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Line chart with multiple independent series
+ *
+ * @author Alex Black
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
