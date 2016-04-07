@@ -67,6 +67,7 @@ public class CudaTransformsTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(2.0f, array2.getFloat(0), 0.01);
+
     }
 
     @Test
@@ -84,6 +85,22 @@ public class CudaTransformsTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(2.75f, array2.getFloat(0), 0.01);
+    }
+
+    @Test
+    public void testPinnedExp2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
+
+        INDArray array1 = Nd4j.create(new float[]{0.9f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f});
+
+
+        Nd4j.getExecutioner().exec(new Exp(array1));
+
+        System.out.println("Array1: " + array1);
+
+        assertEquals(2.45f, array1.getFloat(0), 0.01);
+        assertEquals(1.0f, array1.getFloat(1), 0.01);
     }
 
     @Test
@@ -355,9 +372,66 @@ public class CudaTransformsTests {
         System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
         System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
 
-        assertEquals(array1, array2);
+        //assertEquals(array1, array2);
 
         assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
         assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
+    }
+
+    @Test
+    public void testIsMaxEqualValues(){
+        //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
+
+        //[1 1 1] -> [1 0 0]
+        //Loop to double check against any threading weirdness...
+        for( int i=0; i<10; i++ ) {
+            assertEquals(Nd4j.create(new double[]{1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.ones(3))));
+        }
+
+        //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
+        assertEquals(Nd4j.create(new double[]{0, 0, 0, 1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.create(new double[]{0, 0, 0, 2, 2, 0}))));
+
+        //[0 2]    [0 1]
+        //[2 1] -> [0 0]
+        INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
+        INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
+        INDArray outc = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('c')));
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+
+        assertEquals(exp, outc);
+        assertEquals(exp, outf);
+    }
+
+    @Test
+    public void testSoftmaxSmall()  throws Exception {
+        INDArray array1 = Nd4j.zeros(15);
+        array1.putScalar(0, 0.9f);
+
+        Nd4j.getExecutioner().exec(new SoftMax(array1));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+
+        assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
+        assertEquals(0.14f, array1.getFloat(0), 0.01f);
+     }
+
+    @Test
+    public void testClassificationSoftmax() {
+        INDArray input = Nd4j.zeros(150, 3);
+        input.putScalar(0, 0.9);
+        input.putScalar(3, 0.2);
+        input.putScalar(152, 0.9);
+        input.putScalar(157, 0.11);
+        input.putScalar(310, 0.9);
+        input.putScalar(317, 0.1);
+
+        System.out.println("Data:" + input.data().length());
+
+        SoftMax softMax = new SoftMax(input);
+        Nd4j.getExecutioner().exec(softMax);
+        assertEquals(0.5515296f,input.getFloat(0), 0.01f);
+        assertEquals(0.5515296f,input.getFloat(152), 0.01f);
+        assertEquals(0.5515296f,input.getFloat(310), 0.01f);
+
     }
 }

@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
@@ -607,6 +608,26 @@ public class AtomicAllocatorTest {
      */
     @Test
     @Ignore
+    public void testGpuBlas9AkaMultipleDevicesDeallocationSynthethicReduce3() throws Exception {
+
+        log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
+        // GpuThreadSyntheticData
+        GpuThreadOpsIndexReduce3Data[] threads = new GpuThreadOpsIndexReduce3Data[2];
+        for (int x =0; x< threads.length; x++) {
+            GpuThreadOpsIndexReduce3Data thread = new GpuThreadOpsIndexReduce3Data(x);
+            thread.start();
+            threads[x] = thread;
+        }
+
+        for (int x = 0; x < threads.length; x++) {
+            threads[x].join();
+        }
+
+        log.info("Finished");
+    }
+
+    @Test
+    @Ignore
     public void testGpuBlas9AkaMultipleDevicesDeallocationSynthethicBroadcast() throws Exception {
 
         log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
@@ -916,6 +937,49 @@ public class AtomicAllocatorTest {
                             assertEquals(60.0f, array1.getRow(y).getFloat(x), 0.01);
                         }
                     }
+                    if (threadId == 0) {
+                        log.info("Total calls: " + cntX.get() * 4);
+                        log.info("Total memory allocated on device [0]: " + allocator.getTotalAllocatedDeviceMemory(0));
+                    }
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (Exception e) {
+                        throw  new RuntimeException(e);
+                    }
+                }
+            }
+        }
+    }
+
+    private class GpuThreadOpsIndexReduce3Data extends GpuThreadSyntheticData {
+        public GpuThreadOpsIndexReduce3Data(int threadId) {
+            super(threadId);
+        }
+
+        @Override
+        public void run() {
+            AtomicLong cnt = new AtomicLong(0);
+            AtomicLong cntX = new AtomicLong(0);
+            while(true) {
+                INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
+                INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
+
+                float result = 0;
+                long time1 = 0;
+                long time2 = 0;
+                for (int x = 0; x < 30; x++) {
+                    time1 = System.nanoTime();
+                    result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().floatValue();
+                    time2 = System.nanoTime();
+                    cntX.incrementAndGet();
+                }
+
+                if (cnt.incrementAndGet() % 1000 == 0) {
+                    log.info("Reduce3 execution time: [" + (time2 - time1) + "] ns on device ["+ allocator.getDeviceId(array1)+"]");
+
+                    assertEquals(2.5, result, 0.001f);
+
                     if (threadId == 0) {
                         log.info("Total calls: " + cntX.get() * 4);
                         log.info("Total memory allocated on device [0]: " + allocator.getTotalAllocatedDeviceMemory(0));
