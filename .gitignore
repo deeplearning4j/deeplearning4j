@@ -8,8 +8,6 @@ README.md~
 *.png
 *.bin
 *.releaseBackup
-*.png
-*.bin
 *.out
 *~
 .pydevproject
