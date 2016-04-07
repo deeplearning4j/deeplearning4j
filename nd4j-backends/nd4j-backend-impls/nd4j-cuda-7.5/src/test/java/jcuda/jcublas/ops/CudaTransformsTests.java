@@ -379,6 +379,30 @@ public class CudaTransformsTests {
     }
 
     @Test
+    public void testIsMaxEqualValues(){
+        //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
+
+        //[1 1 1] -> [1 0 0]
+        //Loop to double check against any threading weirdness...
+        for( int i=0; i<10; i++ ) {
+            assertEquals(Nd4j.create(new double[]{1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.ones(3))));
+        }
+
+        //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
+        assertEquals(Nd4j.create(new double[]{0, 0, 0, 1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.create(new double[]{0, 0, 0, 2, 2, 0}))));
+
+        //[0 2]    [0 1]
+        //[2 1] -> [0 0]
+        INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
+        INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
+        INDArray outc = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('c')));
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+
+        assertEquals(exp, outc);
+        assertEquals(exp, outf);
+    }
+
+    @Test
     public void testSoftmaxSmall()  throws Exception {
         INDArray array1 = Nd4j.zeros(15);
         array1.putScalar(0, 0.9f);

@@ -38,6 +38,20 @@ public class CudaIndexReduceTests {
     }
 
     @Test
+    public void testPinnedIMax4() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+
+        INDArray array1 = Nd4j.create(new float[]{0.0f, 0.0f, 0.0f, 2.0f, 2.0f, 0.0f});
+
+        int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
+
+        System.out.println("Array1: " + array1);
+
+        assertEquals(3, idx);
+    }
+
+    @Test
     public void testPinnedIMaxLarge() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
 

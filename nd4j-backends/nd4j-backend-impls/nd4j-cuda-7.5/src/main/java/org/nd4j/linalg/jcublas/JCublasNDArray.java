@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 
 
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -347,6 +348,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int... indices) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDouble(indices);
     }
 
@@ -358,37 +360,44 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public double getDouble(int index) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDouble(index);
     }
 
     @Override
     public INDArray putScalar(int i, double value) {
-            return super.putScalar(i, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int i, float value) {
-            return super.putScalar(i, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int i, int value) {
-            return super.putScalar(i, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(i, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
-            return super.putScalar(indexes, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(indexes, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, float value) {
-            return super.putScalar(indexes, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(indexes, value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, int value) {
-            return super.putScalar(indexes, value);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putScalar(indexes, value);
     }
 
     /**
@@ -400,7 +409,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int[] indices, INDArray element) {
-            return super.put(indices, element);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.put(indices, element);
     }
 
     /**
@@ -413,7 +423,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int i, int j, INDArray element) {
-            return super.put(i, j, element);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.put(i, j, element);
     }
 
     /**
@@ -426,7 +437,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray put(int i, int j, Number element) {
-            return super.put(i, j, element);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.put(i, j, element);
     }
 
     /**
@@ -438,7 +450,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putSlice(int slice, INDArray put) {
-            return super.putSlice(slice, put);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putSlice(slice, put);
     }
 
     /**
@@ -449,16 +462,19 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public float getFloat(int... indices) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getFloat(indices);
     }
 
     @Override
     public INDArray dup() {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.dup();
     }
 
     @Override
     public INDArray dup(char order) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.dup(order);
     }
 
@@ -470,21 +486,25 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public int getInt(int... indices) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getInt(indices);
     }
 
     @Override
     public INDArray put(INDArrayIndex[] indices, Number element) {
-            return super.put(indices, element);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.put(indices, element);
     }
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-            return super.put(indices, element);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.put(indices, element);
     }
 
     @Override
     public INDArray getScalar(int i) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getScalar(i);
     }
 
@@ -496,26 +516,31 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray getScalar(int... indexes) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getScalar(indexes);
     }
 
     @Override
     public double getDoubleUnsafe(int offset) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDoubleUnsafe(offset);
     }
 
     @Override
     public double getDouble(int i, int j) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getDouble(i, j);
     }
 
     @Override
     public float getFloat(int i) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getFloat(i);
     }
 
     @Override
     public float getFloat(int i, int j) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getFloat(i, j);
     }
 
@@ -529,6 +554,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray getScalar(int row, int column) {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.getScalar(row, column);
     }
 
@@ -543,7 +569,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-            return super.putRow(row, toPut);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putRow(row, toPut);
     }
 
     /**
@@ -557,7 +584,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-            return super.putColumn(column, toPut);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.putColumn(column, toPut);
     }
 
     @Override
@@ -570,6 +598,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public String toString() {
+        AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.toString();
     }
 }

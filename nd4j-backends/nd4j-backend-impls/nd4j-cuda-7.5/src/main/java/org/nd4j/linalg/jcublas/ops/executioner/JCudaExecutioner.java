@@ -968,7 +968,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             op.n()
                     );
                 } else {
-                    log.info("X: " + Arrays.toString(op.x().data().asFloat()));
+                    /*log.info("X: " + Arrays.toString(op.x().data().asFloat()));
                     log.info("X length: " + op.x().length());
                     log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
                     log.info("X.ews: " +op.x().elementWiseStride());
@@ -979,6 +979,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     log.info("Z.ews: " +op.z().elementWiseStride());
 
                     log.info("extraArgs: " + op.extraArgsDataBuff());
+                    */
                     nativeOps.execTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
