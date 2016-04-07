@@ -447,7 +447,7 @@ public class ShapeOffsetResolution implements Serializable {
                 pointOffsets.add(0);
             }
             //special case where offsets aren't caught
-            if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0)
+            if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0 && !(indexes[1] instanceof IntervalIndex))
                 this.offset = indexes[1].offset();
             else
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
@@ -463,6 +463,7 @@ public class ShapeOffsetResolution implements Serializable {
         }
         else
             this.offset += ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
+
     }
 
 
