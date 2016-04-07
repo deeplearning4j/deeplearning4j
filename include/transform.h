@@ -4320,6 +4320,211 @@ public:
 template<typename T>
 class IsMax : public Transform<T> {
 private:
+
+#ifdef __CUDACC__
+	inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+	void doAllCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams) {
+		int length = shape::length(xShapeBuffer);
+		if (dx == result) {
+			int eleStride = shape::elementWiseStride(xShapeBuffer);
+			if (eleStride == 1) {
+				int maxIdx = 0;
+				T currMax = dx[0];
+				if (length < 8000) {
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						dx[i] = 0.0;
+
+					}
+				}
+				else {
+#pragma omp parallel for shared(maxIdx,currMax)
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						result[i] = 0.0;
+
+					}
+				}
+
+				result[maxIdx] = 1.0;
+
+
+			}
+			else {
+				int maxIdx = 0;
+				T currMax = dx[0];
+				if (length < 8000) {
+#pragma omp simd
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i]) {
+							currMax = dx[i];
+							maxIdx = i;
+						}
+
+						dx[i * eleStride] = 0.0;
+
+					}
+
+					dx[maxIdx * eleStride] = 1.0;
+				}
+				else {
+#pragma omp parallel for shared(maxIdx,currMax)
+					for (int i = 0; i < length; i++) {
+						if (currMax < dx[i * eleStride]) {
+							currMax = dx[i * eleStride];
+							maxIdx = i;
+						}
+						dx[i * eleStride] = 0.0;
+
+					}
+				}
+
+				dx[maxIdx * eleStride] = 1.0;
+
+			}
+		}
+		else {
+			int eleStride = shape::elementWiseStride(xShapeBuffer);
+			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
+			char xOrder = shape::order(xShapeBuffer);
+			char resultOrder = shape::order(resultShapeBuffer);
+			if (xOrder == resultOrder) {
+				if (eleStride == 1 && resultEleStride == 1) {
+					if (length < 8000) {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp simd
+						for (int i = 0; i < length; i++) {
+							if (currMax < dx[i]) {
+								currMax = dx[i];
+								maxIdx = i;
+							}
+							result[i] = 0.0;
+
+						}
+
+						result[maxIdx] = 1.0;
+
+					}
+					else {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
+						for (int i = 0; i < length; i++) {
+							if (currMax < dx[i]) {
+								currMax = dx[i];
+								maxIdx = i;
+							}
+							result[i] = 0.0;
+
+						}
+
+						result[maxIdx] = 1.0;
+					}
+
+				}
+				else {
+					if (length < 8000) {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp simd
+						for (int i = 0; i < length; i++) {
+							result[i * resultEleStride] = 0.0;
+							if (currMax < dx[i * eleStride]) {
+								currMax = dx[i * eleStride];
+								maxIdx = i;
+							}
+						}
+
+						result[maxIdx * resultEleStride] = 1.0;
+
+					}
+					else {
+						int maxIdx = 0;
+						T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
+						for (int i = 0; i < length; i++) {
+							result[i * resultEleStride] = 0.0;
+							if (currMax < dx[i * eleStride]) {
+								currMax = dx[i * eleStride];
+								maxIdx = i;
+							}
+						}
+
+						result[maxIdx * resultEleStride] = 1.0;
+					}
+
+				}
+			}
+
+
+			else {
+				int shapeIter[MAX_RANK];
+				int coord[MAX_RANK];
+				int dim;
+				int xStridesIter[MAX_RANK];
+				int resultStridesIter[MAX_RANK];
+				int *xShape = shape::shapeOf(xShapeBuffer);
+				int *xStride = shape::stride(xShapeBuffer);
+				int *resultStride = shape::stride(resultShapeBuffer);
+				int rank = shape::rank(xShapeBuffer);
+				if (PrepareTwoRawArrayIter<T>(rank,
+						xShape,
+						dx,
+						xStride,
+						result,
+						resultStride,
+						&rank,
+						shapeIter,
+						&dx,
+						xStridesIter,
+						&result,
+						resultStridesIter) >= 0) {
+					T *maxCursor = result;
+					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
+					{
+
+						result[0] = 0.0;
+						if(dx[0] > maxCursor[0]) {
+							maxCursor = result;
+						}
+					}
+					ND4J_RAW_ITER_TWO_NEXT(dim,
+							rank,
+							coord,
+							shapeIter,
+							dx,
+							xStridesIter,
+							result,
+							resultStridesIter);
+
+					//pointer to where max value would be
+					maxCursor[0] = 1.0;
+				}
+			}
+
+		}
+	}
+
 #ifdef __CUDACC__
 	inline __host__  __device__
 
@@ -4536,7 +4741,26 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+		if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
+			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+		}
+		else {
+			int dimensionLength = (int) extraParams[0];
+			std::vector<int> dimension(dimensionLength);
+			for(int i = 0; i < dimensionLength; i++) {
+				dimension[i] = (int) extraParams[i + 1];
+			}
+
+			int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension.data(),dimensionLength);
+			int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension.data(),dimensionLength);
+			for(int i = 0; i < tads; i++) {
+				int offset = shape::tadOffset(i,xShapeBuffer,dimension.data(),dimensionLength);
+				this->doAll(dx + offset,tadShapeInfo,result + offset,tadShapeInfo,extraParams);
+			}
+		}
+
+	}
 #endif
 
 	/**
