@@ -3864,52 +3864,80 @@ public:
 		__shared__ functions::broadcast::ops::Divide<T> *div;
 		__shared__ functions::transform::ops::Log<T> *log;
 		__shared__ functions::reduce::ops::Sum<T> *sum;
+		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
 		__shared__ T *maxResult;
+		__shared__ int isVector;
 		if(threadIdx.x == 0) {
+			isVector = shape::isVector(xShapeBuffer);
 			max = new functions::reduce::ops::Max<T>();
 			exp = new functions::transform::ops::Exp<T>();
-			sub = new functions::broadcast::ops::Subtract<T>();
-			div = new functions::broadcast::ops::Divide<T>();
+			if (isVector) {
+				scalarSub = new functions::scalar::ops::Subtract<T>();
+				scalarDiv = new functions::scalar::ops::Divide<T>();
+			} else {
+				sub = new functions::broadcast::ops::Subtract<T>();
+				div = new functions::broadcast::ops::Divide<T>();
+			}
 			log = new functions::transform::ops::Log<T>();
 			sum = new functions::reduce::ops::Sum<T>();
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			for (int i = 0; i < shape[0]; i++)
-				maxResult[i] = 0.0;
-
 		}
+		__syncthreads();
 		//compute the row wise maxes
-		for (int i = 0; i < shape[0]; i++)
-			maxResult[i] = 0.0;
+
+		if (threadIdx.x < shape[0])
+			maxResult[threadIdx.x] = 0.0;
+		__syncthreads();
+
 		int maxShape[2] = {shape[0], 1};
 		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
 		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		__syncthreads();
+
 		//subtract max of each row
-		sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer,
-				dimension, 1);
+		if (isVector) {
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
 		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		__syncthreads();
 
 		//take the sum for the exponential
 		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		__syncthreads();
 
 		//divide by the sum
+		if (isVector) {
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
 
-		div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer,
-				dimension, 1);
+
 		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
 
 		__syncthreads();
 		if(threadIdx.x == 0) {
 			delete exp;
-			delete sub;
 			delete sum;
 			delete max;
-			delete div;
 			delete log;
+			if (isVector) {
+				delete scalarDiv;
+				delete scalarSub;
+			} else {
+				delete div;
+				delete sub;
+			}
 			free(maxResult);
-			delete[] maxResultShapeBuffer;
+			free(maxResultShapeBuffer);
 		}
 
 
@@ -4357,6 +4385,7 @@ private:
 				1,
 				1);
 
+		__syncthreads();
 
 		if(threadIdx.x == 0) {
 			int maxIdx = (int) result[0];
