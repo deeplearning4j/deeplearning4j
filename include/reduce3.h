@@ -253,7 +253,6 @@ public:
 			if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 				for(int i = 0; i < length; i+= gridDim.x * blockDim.x) {
 					startingVal = update(startingVal, this->opAtomic(dx[i], dy[i], &extraParams), &extraParams);
-
 				}
 
 				sPartials[tid] = startingVal;
@@ -268,15 +267,15 @@ public:
 				 *This will be used in summary stats too.
 				 */
 				// write result for this block to global mem
+				__syncthreads();
 				if (tid == 0) {
-					result[blockIdx.x] = postProcess(sPartials[0], length,&extraParams);
+					result[threadIdx.x] = postProcess(sPartials[0], length,&extraParams);
 
 				}
 			}
 			else {
 				for(int i = 0; i < length; i+= gridDim.x * blockDim.x) {
 					startingVal = update(startingVal, this->opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
-
 				}
 
 				sPartials[tid] = startingVal;
@@ -291,8 +290,9 @@ public:
 				 *This will be used in summary stats too.
 				 */
 				// write result for this block to global mem
+				__syncthreads();
 				if (tid == 0) {
-					result[blockIdx.x] = postProcess(sPartials[0], length,&extraParams);
+					result[threadIdx.x] = postProcess(sPartials[0], length,&extraParams);
 
 				}
 			}
@@ -324,7 +324,7 @@ public:
 
 			int numElements = gridDim.x;
 			for (int i = threadIdx.x; i < numElements; i += blockDim.x)
-				sPartials[i] = startingVal;
+				sPartials[threadIdx.x] = startingVal;
 			__syncthreads();
 
 
@@ -338,7 +338,7 @@ public:
 
 			free(idx);
 
-
+			__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
 			aggregatePartials(sPartialsRef, threadIdx.x, &extraParams);
 			/**
@@ -347,6 +347,7 @@ public:
 			 *This will be used in summary stats too.
 			 */
 			// write result for this block to global mem
+			__syncthreads();
 			if (threadIdx.x == 0) {
 				result[blockIdx.x] = postProcess(sPartials[0], n,&extraParams);
 			}
@@ -546,7 +547,7 @@ public:
 								dy,
 								yStridesIter);
 
-						result[0] = postProcess(startingVal,n,&extraParams);
+						result[i] = postProcess(startingVal,n,&extraParams);
 					}
 					else {
 						printf("Unable to prepare array\n");
