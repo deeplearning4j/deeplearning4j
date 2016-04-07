@@ -229,7 +229,7 @@ public:
 			T *extraParams,
 			int *indexes) {
 		int n = shape::length(xShapeInfo);
-#pragma simd
+#pragma omp simd
 		for (int i = 0; i < n; i++) {
 			result[indexes[i]] = op(dx[indexes[i]], extraParams);
 		}
@@ -352,7 +352,7 @@ public:
 			int n) {
 		if (xStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-#pragma simd 
+#pragma omp simd 
 				for (int i = 0; i < n; i++) {
 					result[i] = op(dx[i], extraParams);
 				}
@@ -369,6 +369,7 @@ public:
 
 		else {
 			if(n < 8000) {
+#pragma omp simd 
 				for (int i = 0; i < n; i++) {
 					result[i * resultStride] = op(dx[i * xStride],
 							extraParams);

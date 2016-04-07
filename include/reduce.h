@@ -600,7 +600,7 @@ public:
 		if (xElementWiseStride == 1) {
 			if(length < 8000) {
 				T local = this->startingValue(x);
-#pragma simd
+#pragma omp simd
 				for(int i = 0; i < length; i++) {
 					T curr = op(x[i], extraParams);
 					local = update(local, curr, extraParams);
@@ -656,7 +656,7 @@ public:
 		else {
 			if(length < 8000) {
 				T local = this->startingValue(x);
-#pragma simd
+#pragma omp simd
 				for(int i = 0; i < length; i++) {
 					T curr = op(x[i *xElementWiseStride], extraParams);
 					local = update(local, curr, extraParams);

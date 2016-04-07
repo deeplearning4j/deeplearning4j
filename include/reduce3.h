@@ -663,10 +663,10 @@ public:
 		if(xOrder == yOrder) {
 			if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 				if(length < 8000) {
-#pragma simd
-for(int i = 0; i < length; i++) {
-	startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
-}
+#pragma omp simd
+					for(int i = 0; i < length; i++) {
+						startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
+					}
 
 				}
 				else {

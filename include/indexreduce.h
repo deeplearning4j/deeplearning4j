@@ -670,7 +670,7 @@ public:
 
 			if (xElementWiseStride == 1) {
 				if(length < 8000) {
-#pragma  simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						IndexValue<T> curr;
 						curr.value = x[i];
