@@ -123,8 +123,7 @@ public:
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
 		if(threadIdx.x == 0) {
-			tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo, dimension, dimensionLength,
-					false);
+			tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo, dimension, dimensionLength, false);
 			tads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 		}
 
