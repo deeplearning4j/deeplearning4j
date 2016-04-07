@@ -79,6 +79,22 @@ public class CudaBroadcastTests {
     }
 
     @Test
+    public void testPinnedSubiColumnVector() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.zeros(150,3);
+        INDArray array2 = Nd4j.linspace(1, 150, 150).reshape(150,1);
+
+        array1.subiColumnVector(array2);
+
+        System.out.println("Array1: " + array1);
+        System.out.println("Array2: " + array2);
+
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-2.0f, array1.getRow(1).getFloat(0), 0.01);
+        assertEquals(-3.0f, array1.getRow(2).getFloat(0), 0.01);
+    }
+
+    @Test
     public void testPinnedMulRowVector() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
@@ -132,3 +148,4 @@ public class CudaBroadcastTests {
         assertEquals(0.5f, array1.getRow(0).getFloat(0), 0.01);
     }
 }
+

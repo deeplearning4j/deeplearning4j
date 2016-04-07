@@ -136,6 +136,15 @@ public class CudaAccumTests {
     }
 
     @Test
+    public void testMax() {
+        INDArray n = Nd4j.linspace(1, 15, 15);
+
+        float max = n.maxNumber().floatValue();
+
+        assertEquals(15f, max, 0.001f);
+    }
+
+    @Test
     public void testSum3() {
         INDArray n = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
