@@ -3069,6 +3069,13 @@ public:
 template<typename T>
 class Im2col : public Transform<T> {
 public:
+
+	virtual
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
 	int outSize(int size, int k, int s, int p, bool coverAll) {
 		if (coverAll)
 			return (size + p * 2 - k + s - 1) / s + 1;
@@ -3077,9 +3084,9 @@ public:
 	}
 
 #ifdef __CUDACC__
-/**
- *
- */
+	/**
+	 *
+	 */
 
 	virtual __device__ void execSpecialCuda(
 			T *dx,
@@ -3152,103 +3159,103 @@ public:
 		T *dIn = dx;
 		T *dOut = result;
 		//#pragma omp parallel for collapse(2)
-							for (int ex = exampleFrom; ex < exampleTo; ex++) {
-								for (int d = depthFrom; d < depthTo; d++) {
-									inIndices[0] = ex;
-									inIndices[1] = d;
-									outIndices[0] = ex;
-									outIndices[1] = d;
+		for (int ex = exampleFrom; ex < exampleTo; ex++) {
+			for (int d = depthFrom; d < depthTo; d++) {
+				inIndices[0] = ex;
+				inIndices[1] = d;
+				outIndices[0] = ex;
+				outIndices[1] = d;
 
-									for (int x = xOutFrom; x < xOutTo; x++) {  //Along width
-										for (int y = yOutFrom; y < yOutTo; y++) {  //along height
-											outIndices[4] = y;
-											outIndices[5] = x;
-											int baseOffsetOut = this->getOffsetUnsafe6(outArrayOffset, outShape, outStride,
-													outIndices);
+				for (int x = xOutFrom; x < xOutTo; x++) {  //Along width
+					for (int y = yOutFrom; y < yOutTo; y++) {  //along height
+						outIndices[4] = y;
+						outIndices[5] = x;
+						int baseOffsetOut = this->getOffsetUnsafe6(outArrayOffset, outShape, outStride,
+								outIndices);
 
-											if (padding) {
-												int i = y * strideY -
-														padHeight;    //index along height of first element of patch in original img
-												int j = x * strideX -
-														padWidth;     //index along width of first element in patch in original img
-												inIndices[2] = i;   //along height
-												inIndices[3] = j;   //along width
+						if (padding) {
+							int i = y * strideY -
+									padHeight;    //index along height of first element of patch in original img
+							int j = x * strideX -
+									padWidth;     //index along width of first element in patch in original img
+							inIndices[2] = i;   //along height
+							inIndices[3] = j;   //along width
 
-												int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-														inIndices);
-												if (outStride2 <= outStride3) {
-													//Want dimension 2 (along height) in inner loop for cache reasons
-													for (int patchX = 0; patchX < kernelWidth; patchX++) {
-														int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-														int inBufferIdxX = baseOffsetIn + patchX * inStride3;
-														for (int patchY = 0; patchY < kernelHeight; patchY++) {
-															if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 ||
-																	j + patchX >= inShape3)
-																dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
-															else {
-																dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-																                                                patchY *
-																                                                inStride2];
-															}
-														}
-													}
-												} else {
-													//Want dimension 3 in inner loop for cache reasons
-													for (int patchY = 0; patchY < kernelHeight; patchY++) {
-														int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-														int inBufferIdxY = baseOffsetIn + patchY * inStride2;
-														for (int patchX = 0; patchX < kernelWidth; patchX++) {
-															if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
-																	j + patchX >= inShape[3])
-																dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
-															else {
-																dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-																                                                patchX *
-																                                                inStride3];
-															}
-														}
-													}
-												}
-											} else {
-												//No padding
-												int i = y *
-														strideY;    //index along height of first element of patch in original img
-												int j = x *
-														strideX;     //index along width of first element in patch in original img
-												inIndices[2] = i;   //along height
-												inIndices[3] = j;   //along width
-
-												int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-														inIndices);
-												if (outStride2 <= outStride3) {
-													//Want dimension 2 (along height) in inner loop for cache reasons
-													for (int patchX = 0; patchX < kernelWidth; patchX++) {
-														int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-														int inBufferIdxX = baseOffsetIn + patchX * inStride3;
-														for (int patchY = 0; patchY < kernelHeight; patchY++) {
-															dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-															                                                patchY * inStride2];
-														}
-													}
-												} else {
-													//Want dimension 3 in inner loop for cache reasons
-													for (int patchY = 0; patchY < kernelHeight; patchY++) {
-														int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-														int inBufferIdxY = baseOffsetIn + patchY * inStride2;
-														for (int patchX = 0; patchX < kernelWidth; patchX++) {
-															dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-															                                                patchX * inStride3];
-														}
-													}
-												}
+							int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
+									inIndices);
+							if (outStride2 <= outStride3) {
+								//Want dimension 2 (along height) in inner loop for cache reasons
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+									int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 ||
+												j + patchX >= inShape3)
+											dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
+											else {
+												dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
+												                                                patchY *
+												                                                inStride2];
 											}
-										}
+									}
+								}
+							} else {
+								//Want dimension 3 in inner loop for cache reasons
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+									int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
+												j + patchX >= inShape[3])
+											dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
+											else {
+												dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
+												                                                patchX *
+												                                                inStride3];
+											}
 									}
 								}
 							}
+						} else {
+							//No padding
+							int i = y *
+									strideY;    //index along height of first element of patch in original img
+							int j = x *
+									strideX;     //index along width of first element in patch in original img
+							inIndices[2] = i;   //along height
+							inIndices[3] = j;   //along width
 
-							delete[] inIndices;
-							delete[] outIndices;
+							int baseOffsetIn = this->getOffsetUnsafe4(inArrayOffset, inShape, inStride,
+									inIndices);
+							if (outStride2 <= outStride3) {
+								//Want dimension 2 (along height) in inner loop for cache reasons
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									int outBufferIdxX = baseOffsetOut + patchX * outStride3;
+									int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
+										                                                patchY * inStride2];
+									}
+								}
+							} else {
+								//Want dimension 3 in inner loop for cache reasons
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									int outBufferIdxY = baseOffsetOut + patchY * outStride2;
+									int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
+										                                                patchX * inStride3];
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		delete[] inIndices;
+		delete[] outIndices;
 
 	}
 
@@ -3330,7 +3337,141 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+		int inOffset = 0;
+		int *inShape = shape::shapeOf(xShapeBuffer);
+		int *inStride = shape::stride(xShapeBuffer);
+
+		int kernelHeight = inShape[2];
+		int kernelWidth = inShape[3];
+		/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
+		int strideX = (int) extraParams[0];
+		int strideY = (int) extraParams[1];
+		int padWidth = (int) extraParams[2];
+		int padHeight = (int) extraParams[3];
+		int imgHeight = (int) extraParams[4];
+		int imgWidth = (int) extraParams[5];
+
+
+		int exampleFrom = 0;
+		int exampleTo = inShape[0];
+		int depthFrom = 0;
+		int depthTo = inShape[1];
+
+		int outArrayOffset = 0;
+		int *outShape = shape::shapeOf(resultShapeBuffer);
+		int *outStride = shape::stride(resultShapeBuffer);
+
+
+		int *outIndices = new int[4];
+		int *inIndices = new int[6];
+
+		int inStride2 = inStride[2];
+		int inStride3 = inStride[3];
+		int outStride2 = outStride[2];
+		int outStride3 = outStride[3];
+		int outShape2 = outShape[2];
+		int outShape3 = outShape[3];
+
+		int yOutTo = inShape[4];
+		int xOutTo = inShape[5];
+
+
+		const bool padding = padHeight > 0 || padWidth > 0;
+
+		T *fIn = dx;
+		T *fOut = result;
+		//#pragma omp parallel for collapse(2)
+		for (int ex = exampleFrom; ex < exampleTo; ex++) {
+			for (int d = depthFrom; d < depthTo; d++) {
+				inIndices[0] = ex;
+				inIndices[1] = d;
+				outIndices[0] = ex;
+				outIndices[1] = d;
+
+				for (int x = 0; x < xOutTo; x++) {  //Patch number along width
+					for (int y = 0; y < yOutTo; y++) {  //Patch number along height
+						inIndices[4] = y;   //patch number (along height)
+						inIndices[5] = x;   //patch number (along width)
+						int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
+
+						if (padding) {
+							int i = y * strideY -
+									padHeight;    //index along height of first element of patch in original img
+							int j = x * strideX -
+									padWidth;     //index along width of first element in patch in original img
+							outIndices[2] = i;  //along height
+							outIndices[3] = j;  //along width
+
+							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+									outIndices);
+
+							if (inStride2 <= inStride3) {
+								//Want dimension 2 (along height) in inner loop for cache efficiency
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									if (j + patchX < 0 || j + patchX >= outShape3)
+										continue;
+
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										if (i + patchY < 0 || i + patchY >= outShape2)
+											continue;
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							} else {
+								//Want dimension 3 (along width) in inner loop for cache efficiency
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									if (i + patchY < 0 || i + patchY >= outShape2)
+										continue;
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										if (j + patchX < 0 || j + patchX >= outShape3)
+											continue;
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							}
+						} else {
+							//No padding
+							int i = y *
+									strideY;    //index along height of first element of patch in output img
+							int j = x *
+									strideX;     //index along width of first element in patch in output img
+
+							outIndices[2] = i;
+							outIndices[3] = j;
+
+							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+									outIndices);
+
+							if (inStride2 <= inStride3) {
+								//Want dimension 2 (along height) in inner loop for cache efficiency
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							} else {
+								//Want dimension 3 (along width) in inner loop for cache efficiency
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+		delete[] outIndices;
+		delete[] inIndices;
+	}
 #endif
 
 	/**
@@ -3397,95 +3538,95 @@ public:
 		T *fIn = dx;
 		T *fOut = result;
 		//#pragma omp parallel for collapse(2)
-							for (int ex = exampleFrom; ex < exampleTo; ex++) {
-								for (int d = depthFrom; d < depthTo; d++) {
-									inIndices[0] = ex;
-									inIndices[1] = d;
-									outIndices[0] = ex;
-									outIndices[1] = d;
+		for (int ex = exampleFrom; ex < exampleTo; ex++) {
+			for (int d = depthFrom; d < depthTo; d++) {
+				inIndices[0] = ex;
+				inIndices[1] = d;
+				outIndices[0] = ex;
+				outIndices[1] = d;
 
-									for (int x = 0; x < xOutTo; x++) {  //Patch number along width
-										for (int y = 0; y < yOutTo; y++) {  //Patch number along height
-											inIndices[4] = y;   //patch number (along height)
-											inIndices[5] = x;   //patch number (along width)
-											int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
+				for (int x = 0; x < xOutTo; x++) {  //Patch number along width
+					for (int y = 0; y < yOutTo; y++) {  //Patch number along height
+						inIndices[4] = y;   //patch number (along height)
+						inIndices[5] = x;   //patch number (along width)
+						int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
 
-											if (padding) {
-												int i = y * strideY -
-														padHeight;    //index along height of first element of patch in original img
-												int j = x * strideX -
-														padWidth;     //index along width of first element in patch in original img
-												outIndices[2] = i;  //along height
-												outIndices[3] = j;  //along width
+						if (padding) {
+							int i = y * strideY -
+									padHeight;    //index along height of first element of patch in original img
+							int j = x * strideX -
+									padWidth;     //index along width of first element in patch in original img
+							outIndices[2] = i;  //along height
+							outIndices[3] = j;  //along width
 
-												int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-														outIndices);
+							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+									outIndices);
 
-												if (inStride2 <= inStride3) {
-													//Want dimension 2 (along height) in inner loop for cache efficiency
-													for (int patchX = 0; patchX < kernelWidth; patchX++) {
-														if (j + patchX < 0 || j + patchX >= outShape3)
-															continue;
+							if (inStride2 <= inStride3) {
+								//Want dimension 2 (along height) in inner loop for cache efficiency
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									if (j + patchX < 0 || j + patchX >= outShape3)
+										continue;
 
-														for (int patchY = 0; patchY < kernelHeight; patchY++) {
-															if (i + patchY < 0 || i + patchY >= outShape2)
-																continue;
-															fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-																	fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-														}
-													}
-												} else {
-													//Want dimension 3 (along width) in inner loop for cache efficiency
-													for (int patchY = 0; patchY < kernelHeight; patchY++) {
-														if (i + patchY < 0 || i + patchY >= outShape2)
-															continue;
-														for (int patchX = 0; patchX < kernelWidth; patchX++) {
-															if (j + patchX < 0 || j + patchX >= outShape3)
-																continue;
-															fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-																	fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-														}
-													}
-												}
-											} else {
-												//No padding
-												int i = y *
-														strideY;    //index along height of first element of patch in output img
-												int j = x *
-														strideX;     //index along width of first element in patch in output img
-
-												outIndices[2] = i;
-												outIndices[3] = j;
-
-												int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-														outIndices);
-
-												if (inStride2 <= inStride3) {
-													//Want dimension 2 (along height) in inner loop for cache efficiency
-													for (int patchX = 0; patchX < kernelWidth; patchX++) {
-														for (int patchY = 0; patchY < kernelHeight; patchY++) {
-															fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-																	fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-														}
-													}
-												} else {
-													//Want dimension 3 (along width) in inner loop for cache efficiency
-													for (int patchY = 0; patchY < kernelHeight; patchY++) {
-														for (int patchX = 0; patchX < kernelWidth; patchX++) {
-															fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-																	fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-														}
-													}
-												}
-											}
-										}
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										if (i + patchY < 0 || i + patchY >= outShape2)
+											continue;
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							} else {
+								//Want dimension 3 (along width) in inner loop for cache efficiency
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									if (i + patchY < 0 || i + patchY >= outShape2)
+										continue;
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										if (j + patchX < 0 || j + patchX >= outShape3)
+											continue;
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 									}
 								}
 							}
+						} else {
+							//No padding
+							int i = y *
+									strideY;    //index along height of first element of patch in output img
+							int j = x *
+									strideX;     //index along width of first element in patch in output img
+
+							outIndices[2] = i;
+							outIndices[3] = j;
+
+							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+									outIndices);
+
+							if (inStride2 <= inStride3) {
+								//Want dimension 2 (along height) in inner loop for cache efficiency
+								for (int patchX = 0; patchX < kernelWidth; patchX++) {
+									for (int patchY = 0; patchY < kernelHeight; patchY++) {
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							} else {
+								//Want dimension 3 (along width) in inner loop for cache efficiency
+								for (int patchY = 0; patchY < kernelHeight; patchY++) {
+									for (int patchX = 0; patchX < kernelWidth; patchX++) {
+										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
 
-							delete[] outIndices;
-							delete[] inIndices;
+		delete[] outIndices;
+		delete[] inIndices;
 	}
 
 
@@ -4524,17 +4665,17 @@ private:
 				int *resultStride = shape::stride(resultShapeBuffer);
 				int rank = shape::rank(xShapeBuffer);
 				if (PrepareTwoRawArrayIter<T>(rank,
-											  xShape,
-											  dx,
-											  xStride,
-											  result,
-											  resultStride,
-											  &rank,
-											  shapeIter,
-											  &dx,
-											  xStridesIter,
-											  &result,
-											  resultStridesIter) >= 0) {
+						xShape,
+						dx,
+						xStride,
+						result,
+						resultStride,
+						&rank,
+						shapeIter,
+						&dx,
+						xStridesIter,
+						&result,
+						resultStridesIter) >= 0) {
 					T *maxCursor = result;
 					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
 					{
@@ -4545,13 +4686,13 @@ private:
 						}
 					}
 					ND4J_RAW_ITER_TWO_NEXT(dim,
-										   rank,
-										   coord,
-										   shapeIter,
-										   dx,
-										   xStridesIter,
-										   result,
-										   resultStridesIter);
+							rank,
+							coord,
+							shapeIter,
+							dx,
+							xStridesIter,
+							result,
+							resultStridesIter);
 
 					//pointer to where max value would be
 					maxCursor[0] = 1.0;
