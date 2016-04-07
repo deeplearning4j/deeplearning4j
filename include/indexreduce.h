@@ -412,9 +412,6 @@ public:
 
 
 				int resultLength = shape::length(resultShapeInfo);
-				if(tid >= resultLength) {
-					return;
-				}
 
 
 				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;

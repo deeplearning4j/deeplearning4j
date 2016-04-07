@@ -410,7 +410,7 @@ public:
 
 				}
 
-
+				__syncthreads();
 				if (tid == 0) {
 					free(tadShapeShapeInfo);
 
@@ -432,9 +432,6 @@ public:
 
 
 				int resultLength = shape::length(resultShapeInfo);
-				if(tid >= resultLength) {
-					return;
-				}
 
 				/**
 				 * The element wise stride belong longs to a reduction index.
@@ -455,22 +452,16 @@ public:
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
-
-					//				printf("Initial Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad, offsetForTad, dx[offsetForTad]);
-
 					sPartials[tid] = op(dx[offsetForTad], extraParams);
-					__syncthreads();
-					for(j = 1; j < elementsPerReductionIndex; j++) {
-						//					printf("Cycled Tid: [%i], index: [%i], offsetForTad: [%i], value: [%f] \n", tid, offsetForTad + xElementWiseStride * j , offsetForTad, dx[offsetForTad + xElementWiseStride * j]);
 
+					for(j = 1; j < elementsPerReductionIndex; j++) {
 						sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
-						__syncthreads();
 					}
 
 					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
 				}
 
-
+				__syncthreads();
 				if(tid == 0) {
 					shape::freePermuteInfo(xTadInfo);
 				}
@@ -515,6 +506,7 @@ public:
 			}
 			__syncthreads();
 		}
+
 
 #pragma unroll
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {

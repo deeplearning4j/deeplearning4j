@@ -577,9 +577,6 @@ public:
 
 
 				int resultLength = shape::length(resultShapeInfo);
-				if(tid >= resultLength) {
-					return;
-				}
 
 				/**
 				 * The element wise stride belong longs to a reduction index.
