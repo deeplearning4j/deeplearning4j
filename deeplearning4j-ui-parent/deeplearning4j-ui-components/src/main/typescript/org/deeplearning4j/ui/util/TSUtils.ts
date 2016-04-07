@@ -23,4 +23,26 @@ class TSUtils {
         }
         return min;
     }
+
+    //Normalize the length unit (for example, parse the LengthUnit enum values)
+    static normalizeLengthUnit(input: string): string{
+        if(input == null) return input;
+
+        switch(input.toLowerCase()){
+            case "px":
+                return "px";
+            case "percent":
+            case "%":
+                return "%";
+            case "cm":
+                return "cm";
+            case "mm":
+                return "mm";
+            case "in":
+                return "in";
+            default:
+                return input;
+        }
+
+    }
 }
