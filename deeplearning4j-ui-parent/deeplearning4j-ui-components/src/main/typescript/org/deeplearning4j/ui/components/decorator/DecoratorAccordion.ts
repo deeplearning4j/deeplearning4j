@@ -23,8 +23,6 @@ class DecoratorAccordion extends Component implements Renderable {
         var innerCs: any[] = json['innerComponents'];
 
         if(innerCs){
-            //this.innerComponents = new Renderable[innerCs.length];
-            //this.innerComponents = new Array<Renderable>(innerCs.length);
             this.innerComponents = [];
             for( var i=0; i<innerCs.length; i++ ){
                 var asStr: string = JSON.stringify(innerCs[i]);

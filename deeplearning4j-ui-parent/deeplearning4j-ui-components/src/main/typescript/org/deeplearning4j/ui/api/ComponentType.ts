@@ -4,6 +4,7 @@
 enum ComponentType {
     ComponentText,
     ComponentTable,
+    ComponentDiv,
     ChartHistogram,
     ChartHorizontalBar,
     ChartLine,

@@ -17,8 +17,8 @@ Some design principles here:
     - In both the Java and TypeScript, there are Style objects; these define properties such as colors or line widths
 - Java objects for UI components are created; these are converted to JSON using Jackson (typically to be posted to a web server)
     - Jackson is configured to ignore null elements when encoding JSON (and the TypeScript code should handle missing values) 
-- JSON is converted back into JavaScript/TypeScript objects using the TS object constructors (i.e., these parse the JSON)
-    - Consequently, any changes made to the Java UI component classes should be mirrored
+- JSON is converted back into JavaScript/TypeScript objects using the Component.getComponent(jsonStr: string) method, or using the TS object constructors directly (i.e., these parse the JSON)
+    - Consequently, any changes made to the Java UI component classes should be mirrored in both the Java and TS code 
 - After the JS/TS versions of the UI objects are created, they can be added to an existing component using the .render(addToObject: JQuery) method
     - For charts, d3.js is used
 - At present: behaviour (on click events, etc) cannot be defined in Java (this has to be done in TS/JS)
