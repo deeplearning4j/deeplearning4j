@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui.api;
 
 /**
- * Created by Alex on 3/04/2016.
+ * LengthUnit: an enum for specifying units for things such as width and height
  */
 public enum LengthUnit {
     Px, Percent, CM, MM, In

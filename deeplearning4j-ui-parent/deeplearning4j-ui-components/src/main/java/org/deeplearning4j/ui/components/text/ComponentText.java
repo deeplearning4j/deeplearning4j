@@ -23,6 +23,11 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 
+/**
+ * Simple text component with styling
+ *
+ * @author Alex Black
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -30,24 +35,24 @@ public class ComponentText extends Component {
     public static final String COMPONENT_TYPE = "ComponentText";
     private String text;
 
-    public ComponentText(){
+    public ComponentText() {
         super(COMPONENT_TYPE, null);
         //No arg constructor for Jackson deserialization
         text = null;
     }
 
-    public ComponentText(String text, StyleText style){
+    public ComponentText(String text, StyleText style) {
         super(COMPONENT_TYPE, style);
         this.text = text;
     }
 
-    private ComponentText(Builder builder){
+    private ComponentText(Builder builder) {
         this(builder.text, builder.style);
     }
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "ComponentText(" + text + ")";
     }
 
@@ -56,12 +61,12 @@ public class ComponentText extends Component {
         private StyleText style;
         private String text;
 
-        public Builder(String text, StyleText style){
+        public Builder(String text, StyleText style) {
             this.text = text;
             this.style = style;
         }
 
-        public ComponentText build(){
+        public ComponentText build() {
             return new ComponentText(this);
         }
     }

@@ -7,7 +7,9 @@ import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 /**
- * Created by Alex on 3/04/2016.
+ * Abstract class for charts
+ *
+ * @author Alex BLack
  */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -59,55 +61,94 @@ public abstract class Chart extends Component {
         private Double gridVerticalStrokeWidth;
         private Double gridHorizontalStrokeWidth;
 
+        /**
+         * @param title Title for the chart (may be null)
+         * @param style Style for the chart (may be null)
+         */
         public Builder(String title, StyleChart style) {
             this.title = title;
             this.style = style;
         }
 
-        public T suppressAxisHorizontal(Boolean suppressAxisHorizontal) {
+        /**
+         * @param suppressAxisHorizontal if true: don't show the horizontal axis (default: show)
+         */
+        public T suppressAxisHorizontal(boolean suppressAxisHorizontal) {
             this.suppressAxisHorizontal = suppressAxisHorizontal;
             return (T) this;
         }
 
-        public T suppressAxisVertical(Boolean suppressAxisVertical) {
+        /**
+         * @param suppressAxisVertical if true: don't show the vertical axis (default: show)
+         */
+        public T suppressAxisVertical(boolean suppressAxisVertical) {
             this.suppressAxisVertical = suppressAxisVertical;
             return (T) this;
         }
 
+        /**
+         * @param showLegend if true: show the legend. (default: no legend)
+         */
         public T showLegend(boolean showLegend) {
             this.showLegend = showLegend;
             return (T) this;
         }
 
+        /**
+         * Used to override/set the minimum value for the x axis. If this is not set, x axis minimum is set based on the data
+         * @param xMin Minimum value to use for the x axis
+         */
         public T setXMin(Double xMin) {
             this.setXMin = xMin;
             return (T) this;
         }
 
+        /**
+         * Used to override/set the maximum value for the x axis. If this is not set, x axis maximum is set based on the data
+         * @param xMax Maximum value to use for the x axis
+         */
         public T setXMax(Double xMax) {
             this.setXMax = xMax;
             return (T) this;
         }
 
+        /**
+         * Used to override/set the minimum value for the y axis. If this is not set, y axis minimum is set based on the data
+         * @param yMin Minimum value to use for the y axis
+         */
         public T setYMin(Double yMin) {
             this.setYMin = yMin;
             return (T) this;
         }
 
+        /**
+         * Used to override/set the maximum value for the y axis. If this is not set, y axis minimum is set based on the data
+         * @param yMax Minimum value to use for the y axis
+         */
         public T setYMax(Double yMax) {
             this.setYMax = yMax;
             return (T) this;
         }
 
-        public T setGridWidth(Double gridVerticalStrokeWidth, Double gridHorizontalStrokeWidth){
+        /**
+         * Set the grid lines to be enabled, and if enabled: set the grid.
+         * @param gridVerticalStrokeWidth      If null (or 0): show no vertical grid. Otherwise: width in px
+         * @param gridHorizontalStrokeWidth    If null (or 0): show no horizontal grid. Otherwise: width in px
+         */
+        public T setGridWidth(Double gridVerticalStrokeWidth, Double gridHorizontalStrokeWidth) {
             this.gridVerticalStrokeWidth = gridVerticalStrokeWidth;
             this.gridHorizontalStrokeWidth = gridHorizontalStrokeWidth;
             return (T) this;
         }
 
-        public T setGridWidth(Integer gridXStrokeWidth, Integer gridYStrokeWidth){
-            return setGridWidth((gridXStrokeWidth != null ? gridXStrokeWidth.doubleValue() : null),
-                    (gridYStrokeWidth != null ? gridYStrokeWidth.doubleValue() : null));
+        /**
+         * Set the grid lines to be enabled, and if enabled: set the grid.
+         * @param gridVerticalStrokeWidth      If null (or 0): show no vertical grid. Otherwise: width in px
+         * @param gridHorizontalStrokeWidth    If null (or 0): show no horizontal grid. Otherwise: width in px
+         */
+        public T setGridWidth(Integer gridVerticalStrokeWidth, Integer gridHorizontalStrokeWidth) {
+            return setGridWidth((gridVerticalStrokeWidth != null ? gridVerticalStrokeWidth.doubleValue() : null),
+                    (gridHorizontalStrokeWidth != null ? gridHorizontalStrokeWidth.doubleValue() : null));
         }
 
     }

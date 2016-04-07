@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Alex on 25/03/2016.
+ * Histogram chart, with pre-binned values. Supports variable width bins
+ *
+ * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -38,6 +40,13 @@ public class ChartHistogram extends Chart {
             super(title, style);
         }
 
+        /**
+         * Add a single bin
+         *
+         * @param lower  Lower (minimum/left) value for the bin (x axis)
+         * @param upper  Upper (maximum/right) value for the bin (x axis)
+         * @param yValue The height of the bin
+         */
         public Builder addBin(double lower, double upper, double yValue) {
             lowerBounds.add(lower);
             upperBounds.add(upper);

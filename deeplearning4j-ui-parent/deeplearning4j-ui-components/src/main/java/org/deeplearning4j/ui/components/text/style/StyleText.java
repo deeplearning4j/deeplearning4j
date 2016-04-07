@@ -36,25 +36,30 @@ public class StyleText extends Style {
         private Boolean underline;
         private String color;
 
+        /** Specify the font to be used for the text */
         public Builder font(String font){
             this.font = font;
             return this;
         }
 
+        /** Size of the font (pt) */
         public Builder fontSize(double size){
             this.fontSize = size;
             return this;
         }
 
+        /** If true: text should be underlined (default: not) */
         public Builder underline(boolean underline){
             this.underline = underline;
             return this;
         }
 
+        /** Color for the text */
         public Builder color(Color color){
             return color(Utils.colorToHex(color));
         }
 
+        /** Color for the text */
         public Builder color(String color){
             this.color = color;
             return this;
