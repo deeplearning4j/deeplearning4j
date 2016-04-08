@@ -37,6 +37,8 @@ public class CudaIndexReduceTests {
         assertEquals(5, idx);
     }
 
+
+
     @Test
     public void testPinnedIMax4() throws Exception {
         // simple way to stop test if we're not on CUDA backend here

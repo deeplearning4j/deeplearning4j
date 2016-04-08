@@ -159,17 +159,29 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex z = NDArrayIndex.point(1);
         INDArray value = Nd4j.ones(1, 2);
         zeros.put(new INDArrayIndex[]{x, y, z}, value);
-        assertEquals(
-                "[[[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]\n" +
-               "  [[0,00,0,00,0,00]\n" +
-                 " [0,00,1,00,0,00]\n" +
-                 " [0,00,1,00,0,00]]\n" +
-               "  [[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]]",
-                zeros.toString());
+
+        String f1 = "[[[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]\n" +
+                "  [[0,00,0,00,0,00]\n" +
+                " [0,00,1,00,0,00]\n" +
+                " [0,00,1,00,0,00]]\n" +
+                "  [[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]]";
+
+        String f2 = "[[[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]\n" +
+                "  [[0.00,0.00,0.00]\n" +
+                " [0.00,1.00,0.00]\n" +
+                " [0.00,1.00,0.00]]\n" +
+                "  [[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]]";
+
+        if (!zeros.toString().equals(f2) && zeros.toString().equals(f1))
+        assertEquals(f2, zeros.toString());
 
     }
 
@@ -180,9 +192,9 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex y = NDArrayIndex.interval(1,2, true);
         INDArray value = Nd4j.ones(1, 2);
         zeros.put(new INDArrayIndex[]{x, y}, value);
-        assertEquals(
-                "[ 0,00, 1,00, 1,00, 0,00]",
-                zeros.toString());
+
+        INDArray assertion = Nd4j.create(new double[]{0.0, 1.0, 1.0, 0.0});
+        assertEquals(assertion,zeros);
     }
 
     @Test
@@ -192,9 +204,9 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex y = NDArrayIndex.point(2);
         INDArray value = Nd4j.ones(1, 1);
         zeros.put(new INDArrayIndex[]{x, y}, value);
-        assertEquals(
-                "[ 0,00, 0,00, 1,00, 0,00]",
-                zeros.toString());
+
+        INDArray assertion = Nd4j.create(new double[]{0.0, 0.0, 1.0, 0.0});
+        assertEquals(assertion, zeros);
     }
 
     @Test
@@ -233,17 +245,29 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex z = NDArrayIndex.point(1);
         INDArray value = Nd4j.ones(1, 3);
         zeros.put(new INDArrayIndex[]{x, y, z}, value);
-        assertEquals(
-                "[[[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]\n" +
-               "  [[0,00,1,00,0,00]\n" +
-                 " [0,00,1,00,0,00]\n" +
-                 " [0,00,1,00,0,00]]\n" +
-               "  [[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]]",
-                zeros.toString());
+
+        String f1 = "[[[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]\n" +
+                "  [[0,00,1,00,0,00]\n" +
+                " [0,00,1,00,0,00]\n" +
+                " [0,00,1,00,0,00]]\n" +
+                "  [[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]]";
+
+        String f2 = "[[[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]\n" +
+                "  [[0.00,1.00,0.00]\n" +
+                " [0.00,1.00,0.00]\n" +
+                " [0.00,1.00,0.00]]\n" +
+                "  [[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]]";
+
+        if (!zeros.toString().equals(f1) && !zeros.toString().equals(f2))
+            assertEquals(f2, zeros.toString());
     }
 
     @Test
@@ -254,17 +278,29 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex z = NDArrayIndex.interval(1, 2, true);
         INDArray value = Nd4j.ones(2, 6);
         zeros.put(new INDArrayIndex[]{x, y, z}, value);
-        assertEquals(
-                "[[[0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]]\n" +
-               "  [[0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]]\n" +
-               "  [[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]]",
-                zeros.toString());
+
+        String f1 = "[[[0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]]\n" +
+                "  [[0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]]\n" +
+                "  [[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]]";
+
+        String f2 = "[[[0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]]\n" +
+                "  [[0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]]\n" +
+                "  [[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]]";
+
+        if (!zeros.toString().equals(f1) && !zeros.toString().equals(f2))
+            assertEquals(f2, zeros.toString());
     }
 
     @Test
@@ -275,17 +311,29 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArrayIndex z = NDArrayIndex.interval(1, 2, true);
         INDArray value = Nd4j.ones(3, 2);
         zeros.put(new INDArrayIndex[]{x, y, z}, value);
-        assertEquals(
-                "[[[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]\n" +
-               "  [[0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]\n" +
-                 " [0,00,1,00,1,00]]\n" +
-               "  [[0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]\n" +
-                 " [0,00,0,00,0,00]]]",
-                zeros.toString());
+
+        String f1 = "[[[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]\n" +
+                "  [[0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]\n" +
+                " [0,00,1,00,1,00]]\n" +
+                "  [[0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]\n" +
+                " [0,00,0,00,0,00]]]";
+
+        String f2 = "[[[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]\n" +
+                "  [[0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]\n" +
+                " [0.00,1.00,1.00]]\n" +
+                "  [[0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]\n" +
+                " [0.00,0.00,0.00]]]";
+
+        if (!zeros.toString().equals(f1) && !zeros.toString().equals(f2))
+            assertEquals(f2, zeros.toString());
     }
 
 
