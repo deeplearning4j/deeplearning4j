@@ -350,8 +350,6 @@ public:
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int tadLength = shape::length(tadShapeShapeInfo);
 				int rank = shape::rank(tadShapeShapeInfo);
-				if (tid == 0)
-					printf("Going wild on dimensions\n");
 
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
@@ -410,7 +408,6 @@ public:
 			} else {
 				if(tid == 0) {
 					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-					printf("Peeeew...\n");
 				}
 				__syncthreads();
 
@@ -524,8 +521,6 @@ public:
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
-					if (threadIdx.x == 0)
-						printf("Stride == 1\n");
 #pragma unroll
 					for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 						int currIdx = i;
@@ -533,8 +528,6 @@ public:
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				} else {
-					if (threadIdx.x ==0)
-						printf("Stride != 1\n");
 #pragma unroll
 					for(int i = xElementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
 						int currIdx = i;
@@ -543,8 +536,6 @@ public:
 					}
 				}
 			} else {
-				if (threadIdx.x == 0)
-						printf("Stride undefined\n");
 				int rank = shape::rank(xShapeInfo);
 				int *ind2sub = (int *) malloc(sizeof(int) * rank);
 #pragma unroll
@@ -561,7 +552,6 @@ public:
 
 
 			sPartials[tid] = reduction;
-			printf("sParitals[%i] -> value: [%f], index: [%i]\n", tid, sPartials[tid].value, sPartials[tid].index);
 
 			__syncthreads();
 			aggregatePartials(&sPartials, tid,numElements ,extraParams);
@@ -570,7 +560,6 @@ public:
 			__syncthreads();
 			if (tid == 0) {
 				result[0] = sPartials[0].index;
-				printf("Result -> value: [%f], index: [%i]\n", sPartials[0].value, sPartials[0].index);
 			}
 
 			/*
