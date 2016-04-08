@@ -2062,6 +2062,18 @@ void   NativeOps::execTransformFloat(
 
 }
 
+
+template <typename T>
+void flattenGeneric(Nd4jPointer *extraPointers,
+					int offset,
+					char order,
+					Nd4jPointer result,
+					Nd4jPointer resultShapeInfo,
+					Nd4jPointer input,
+					Nd4jPointer inputShapeInfo) {
+
+}
+
 /**
  * Append an input array
  * to the end of a flat array
@@ -2074,13 +2086,14 @@ void   NativeOps::execTransformFloat(
  * @param inputShapeInfo the shape information for that array
  */
 void NativeOps::flattenFloat(
+		Nd4jPointer *extraPointers,
 		int offset,
 		char order,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer input,
 		Nd4jPointer inputShapeInfo) {
-	printf("Cuda no op atm\n");
+	flattenGeneric<float>(extraPointers, offset, order, result, resultShapeInfo, input, inputShapeInfo);
 }
 /**
  * Append an input array
@@ -2094,13 +2107,14 @@ void NativeOps::flattenFloat(
  * @param inputShapeInfo the shape information for that array
  */
 void NativeOps::flattenDouble(
+		Nd4jPointer *extraPointers,
 		int offset,
 		char order,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer input,
 		Nd4jPointer inputShapeInfo) {
-	printf("Cuda no op atm\n");
+	flattenGeneric<double>(extraPointers, offset, order, result, resultShapeInfo, input, inputShapeInfo);
 }
 
 void NativeOps::initializeDevicesAndFunctions() {
