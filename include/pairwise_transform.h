@@ -170,7 +170,7 @@ public:
 
 
 		Nd4jIndex n = shape::length(xShapeBuffer);
-		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
+		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == yOrder && resultOrder == xOrder) {
 			transformCuda(
 					n,
 					dx,
@@ -183,18 +183,46 @@ public:
 		}
 
 		else {
-			int *xIdx = (int *) malloc(sizeof(int) * xRank);
-			for (; i < n; i += totalThreads) {
-				shape::ind2sub(xRank,xShape,i,&xIdx);
-				Nd4jIndex xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-				Nd4jIndex yOffset2 = shape::getOffset(0, yShape, yStride, xIdx, yRank);
-				Nd4jIndex resultOffset2 = shape::getOffset(0, resultShape, resultStride, xIdx, resultRank);
-				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+			//int *xIdx = (int *) malloc(sizeof(int) * xRank);
+			int *xCoord = (int *) malloc(sizeof(int) * xRank);
+			int *yCoord = (int *) malloc(sizeof(int) * yRank);
+			int *resultCoord = (int *) malloc(sizeof(int) * resultRank);
 
+			if (dx == result) {
+				for (; i < n; i += totalThreads) {
+					shape::ind2subC(xRank,xShape, i, &xCoord);
+					shape::ind2subC(yRank,yShape, i, &yCoord);
+
+					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
+				}
+			} else {
+				for (; i < n; i += totalThreads) {
+					shape::ind2subC(xRank,xShape, i, &xCoord);
+					shape::ind2subC(yRank,yShape, i, &yCoord);
+					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+
+					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
+				/*
+					shape::ind2subC(xRank,xShape,i,&xIdx);
+					Nd4jIndex xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+					Nd4jIndex yOffset2 = shape::getOffset(0, yShape, yStride, xIdx, yRank);
+					Nd4jIndex resultOffset2 = shape::getOffset(0, resultShape, resultStride, xIdx, resultRank);
+					result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
+				*/
+				}
 			}
 
-			free(xIdx);
+//			free(xIdx);
+			free(xCoord);
+			free(yCoord);
+			free(resultCoord);
 
+			__syncthreads();
 		}
 
 
@@ -419,7 +447,6 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
-
 		Nd4jIndex n = shape::length(xShapeBuffer);
 		int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
 		int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
