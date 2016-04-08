@@ -37,8 +37,8 @@ namespace nd4j {
                 if (rank != other.rank)
                     return 0;
 
-                int length = shape::prod(shape->data, rank);
-                int otherLength = shape::prod(other.shape->data, other.rank);
+                Nd4jIndex length = shape::prodLong(shape->data, rank);
+                Nd4jIndex otherLength = shape::prodLong(other.shape->data, other.rank);
                 if (length != otherLength)
                     return 0;
                 if (ordering != other.ordering)
@@ -49,7 +49,7 @@ namespace nd4j {
                     if (shape->data[i] != other.shape->data[i] || stride->data[i] != other.stride->data[i])
                         return 0;
                 }
-                for (int i = 0; i < length; i++) {
+                for (Nd4jIndex i = 0; i < length; i++) {
                     T diff = (T) data[i] - other.data[i];
                     if (abs(diff) >= EPSILON)
                         return 0;
@@ -82,7 +82,7 @@ namespace nd4j {
             __device__  __host__
 
 #endif
-            int length(NDArray<T> *arr);
+            Nd4jIndex length(NDArray<T> *arr);
 
             /**
              * Returns the length of
@@ -94,7 +94,7 @@ namespace nd4j {
             __device__  __host__
 
 #endif
-            int lengthInBytes(NDArray<T> *arr);
+            Nd4jIndex lengthInBytes(NDArray<T> *arr);
 
             /**
              * Creates an ndarray
@@ -224,8 +224,8 @@ namespace nd4j {
         __host__ __device__
 #endif
 
-        int NDArrays<T>::length(NDArray<T> *arr) {
-            int size = shape::prod(arr->shape->data, arr->rank);
+        Nd4jIndex NDArrays<T>::length(NDArray<T> *arr) {
+            Nd4jIndex size = shape::prodLong(arr->shape->data, arr->rank);
             return size;
         }
 
@@ -239,8 +239,8 @@ namespace nd4j {
         __host__ __device__
 #endif
 
-        int NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
-            int size = shape::prod(arr->shape->data, arr->rank) * sizeof(T);
+        Nd4jIndex NDArrays<T>::lengthInBytes(NDArray<T> *arr) {
+            Nd4jIndex size = shape::prodLong(arr->shape->data, arr->rank) * sizeof(T);
             return size;
         }
 
@@ -269,8 +269,8 @@ namespace nd4j {
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
             ret->offset = offset;
-            int size = lengthInBytes(ret);
-            int length = size / sizeof(T);
+            Nd4jIndex size = lengthInBytes(ret);
+            Nd4jIndex length = size / sizeof(T);
             ret->data = nd4j::buffer::createBuffer<T>(data, length);
             return ret;
         }
@@ -294,9 +294,9 @@ namespace nd4j {
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
             ret->offset = offset;
-            int size = lengthInBytes(ret);
-            int length = size / sizeof(T);
-            int realSize = shape::prod(shape,rank);
+            Nd4jIndex size = lengthInBytes(ret);
+            Nd4jIndex length = size / sizeof(T);
+            Nd4jIndex realSize = shape::prodLong(shape,rank);
             if(realSize < 2)
                 realSize = 2;
             T * data = (T *) malloc(realSize * sizeof(T));
@@ -320,7 +320,7 @@ __host__
 
 void NDArrays<T>::allocateNDArrayOnGpu(NDArray <T> **arr) {
 	NDArray <T> *arrRef = *arr;
-	int size = lengthInBytes(arrRef);
+	Nd4jIndex size = lengthInBytes(arrRef);
 	nd4j::buffer::copyDataToGpu(&((*arr)->data));
 	nd4j::buffer::copyDataToGpu(&((*arr)->shape));
 	nd4j::buffer::copyDataToGpu(&((*arr)->stride));
@@ -383,7 +383,7 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
 
         void NDArrays<T>::allocArrayData(NDArray<T> * *arr) {
             NDArray<T> * arrRef = *arr;
-            int dataLength = shape::prod(arrRef->shape->data,arrRef->rank);
+            Nd4jIndex dataLength = shape::prodLong(arrRef->shape->data,arrRef->rank);
             arrRef->data = (T *) malloc(sizeof(T) * dataLength);
         }
 
