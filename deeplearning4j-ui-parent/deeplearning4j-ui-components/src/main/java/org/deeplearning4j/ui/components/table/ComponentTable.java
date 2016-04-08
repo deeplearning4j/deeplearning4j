@@ -25,7 +25,7 @@ import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 
 /**
- * Simple 2d table for text
+ * Simple 2d table for text,
  *
  * @author Alex Black
  */

@@ -25,6 +25,10 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import java.util.ArrayList;
 import java.util.List;
 
+/**Scatter chart
+ *
+ * @author Alex Black
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -58,6 +62,13 @@ public class ChartScatter extends Chart {
             super(title, style);
         }
 
+        /**
+         *
+         * @param seriesName    Name of the series
+         * @param xValues       Array of x values
+         * @param yValues       Array of y values (such that a single point i has coordinates (x[i],y[i]))
+         * @return
+         */
         public Builder addSeries(String seriesName, double[] xValues, double[] yValues){
             x.add(xValues);
             y.add(yValues);
