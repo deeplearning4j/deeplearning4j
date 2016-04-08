@@ -481,7 +481,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data, shape, offset);
     }
 
-
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         int length = 0;

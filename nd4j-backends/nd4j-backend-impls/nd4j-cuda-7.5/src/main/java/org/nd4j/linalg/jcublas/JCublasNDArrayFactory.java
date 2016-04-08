@@ -19,6 +19,9 @@
 
 package org.nd4j.linalg.jcublas;
 
+import jcuda.Pointer;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -32,9 +35,12 @@ import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
+import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
+import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 
@@ -48,7 +54,7 @@ import java.util.List;
  * @author mjk
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
-    private NativeOps nativeOps = new NativeOps();
+    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
 
     public JCublasNDArrayFactory() {
@@ -437,38 +443,47 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
 
     @Override
+    public INDArray toFlattened(Collection<INDArray> matrices) {
+        return this.toFlattened(order(),matrices);
+    }
+
+    @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         int length = 0;
         for (INDArray m : matrices)
             length += m.length();
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
         for(INDArray m : matrices) {
 
-            if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride()) {
+            if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
-
+                allocator.memcpyAsync(ret.data(),new Pointer(allocator.getPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
             } else {
-                long[] dummy = new long[1];
+                long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), m.length()};
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
-                            dummy,
+                            extras,
                             linearIndex,
                             order,
-                            ret.data().address(),
-                            ret.shapeInfoDataBuffer().address(),
-                            m.data().address(),
-                            m.shapeInfoDataBuffer().address());
+                            allocator.getPointer(ret).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
+                            allocator.getPointer(m).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
                 } else if (m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
-                            dummy,
+                            extras,
                             linearIndex,
                             order,
-                            ret.data().address(),
-                            ret.shapeInfoDataBuffer().address(),
-                            m.data().address(),
-                            m.shapeInfoDataBuffer().address());
+                            allocator.getPointer(ret).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
+                            allocator.getPointer(m).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
 
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
