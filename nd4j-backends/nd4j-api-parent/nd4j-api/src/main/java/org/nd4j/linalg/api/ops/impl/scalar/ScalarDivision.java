@@ -33,7 +33,7 @@ public class ScalarDivision extends BaseScalarOp {
     public ScalarDivision() {
     }
 
-    public ScalarDivision(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarDivision(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -41,7 +41,7 @@ public class ScalarDivision extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarDivision(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarDivision(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 

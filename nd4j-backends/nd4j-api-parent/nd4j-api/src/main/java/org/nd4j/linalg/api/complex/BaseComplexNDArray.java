@@ -107,7 +107,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param ordering
      */
     public BaseComplexNDArray(int[] shape, int offset, char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),
+        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2),
                 shape, Nd4j.getComplexStrides(shape, ordering),
                 offset, ordering);
     }
@@ -117,7 +117,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param shape
      */
     public BaseComplexNDArray(int[] shape) {
-        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, Nd4j.getComplexStrides(shape));
+        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2), shape, Nd4j.getComplexStrides(shape));
     }
 
 
@@ -133,7 +133,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     public BaseComplexNDArray(int[] shape, char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
+        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2), shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
     }
 
 
@@ -591,7 +591,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray linearViewColumnOrder() {
-        return Nd4j.createComplex(data, new int[]{length, 1}, offset());
+        if(length >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
+        return Nd4j.createComplex(data, new int[]{(int)length, 1}, offset());
     }
 
     /**
@@ -3390,7 +3392,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray ravel() {
 
-        IComplexNDArray ret = Nd4j.createComplex(length, ordering());
+        if(length >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
+        IComplexNDArray ret = Nd4j.createComplex((int)length, ordering());
         IComplexNDArray linear = linearView();
         for(int i = 0; i < length(); i++) {
             ret.putScalar(i,linear.getComplex(i));
@@ -3412,13 +3416,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         } else if (isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
+            if(length >= Integer.MAX_VALUE)
+                throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
+            long numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
             for (int i = 0; i < length; i++) {
                 sb.append(getComplex(i));
                 if (i < length - 1)
                     sb.append(" ,");
                 if (i >= numElementsToPrint) {
-                    int numElementsLeft = length - i;
+                    long numElementsLeft = length - i;
                     //set towards the end of the buffer
                     if (numElementsLeft > numElementsToPrint) {
                         i += numElementsLeft - numElementsToPrint - 1;

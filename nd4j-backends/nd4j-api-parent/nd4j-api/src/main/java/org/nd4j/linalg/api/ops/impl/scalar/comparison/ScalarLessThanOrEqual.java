@@ -36,7 +36,7 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
     public ScalarLessThanOrEqual() {
     }
 
-    public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -44,7 +44,7 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 

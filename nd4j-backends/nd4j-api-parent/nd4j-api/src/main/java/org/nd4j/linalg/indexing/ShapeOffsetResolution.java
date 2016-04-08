@@ -23,7 +23,7 @@ public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
     private int[] offsets,shapes,strides;
-    private int offset = -1;
+    private long offset = -1;
 
     /**
      * Specify the array to use for resolution
@@ -64,7 +64,7 @@ public class ShapeOffsetResolution implements Serializable {
             int[] stride = new int[minDimensions];
             Arrays.fill(stride,arr.elementStride());
             int[] offsets = new int[minDimensions];
-            int offset = 0;
+            long offset = 0;
             //used for filling in elements of the actual shape stride and offsets
             int currIndex = 0;
             //used for array item access
@@ -450,20 +450,19 @@ public class ShapeOffsetResolution implements Serializable {
             if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0 && !(indexes[1] instanceof IntervalIndex))
                 this.offset = indexes[1].offset();
             else
-                this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
+                this.offset = ArrayUtil.dotProductLong(pointOffsets, pointStrides);
         } else {
             this.offset = 0;
         }
         if(numIntervals > 0 && arr.rank() > 2) {
             if(encounteredAll && arr.size(0) != 1)
-                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides);
+                this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides);
             else
-                this.offset += ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+                this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides) / numIntervals;
 
         }
         else
-            this.offset += ArrayUtil.calcOffset(accumShape, accumOffsets, accumStrides);
-
+            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides);
     }
 
 
@@ -501,11 +500,11 @@ public class ShapeOffsetResolution implements Serializable {
         this.strides = strides;
     }
 
-    public int getOffset() {
+    public long getOffset() {
         return offset;
     }
 
-    public void setOffset(int offset) {
+    public void setOffset(long offset) {
         this.offset = offset;
     }
 }

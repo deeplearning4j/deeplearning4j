@@ -151,7 +151,7 @@ public class TadCollapseAccumulation extends BaseOp {
         this.accum = accum;
     }
 
-    public TadCollapseAccumulation(INDArray x, INDArray y, INDArray z, int n, Op accum) {
+    public TadCollapseAccumulation(INDArray x, INDArray y, INDArray z, long n, Op accum) {
         super(x, y, z, n);
         this.accum = accum;
     }
@@ -161,7 +161,7 @@ public class TadCollapseAccumulation extends BaseOp {
         this.accum = accum;
     }
 
-    public TadCollapseAccumulation(INDArray x, INDArray z, int n, Op accum) {
+    public TadCollapseAccumulation(INDArray x, INDArray z, long n, Op accum) {
         super(x, z, n);
         this.accum = accum;
     }

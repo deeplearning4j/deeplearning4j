@@ -38,11 +38,11 @@ public class Bias extends BaseAccumulation {
     public Bias() {
     }
 
-    public Bias(INDArray x, INDArray y, INDArray z, int n) {
+    public Bias(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Bias(INDArray x, INDArray y, int n) {
+    public Bias(INDArray x, INDArray y, long n) {
         this(x, y, x, n);
     }
 
@@ -164,7 +164,7 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
     }
 
@@ -199,7 +199,7 @@ public class Bias extends BaseAccumulation {
     @Override
     public void exec(int... dimension) {
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
-        int nOps = x.tensorssAlongDimension(dimension);
+        long nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
         for( int i = 0; i < nOps; i++ ){
             double d = Nd4j.getExecutioner().execAndReturn((Bias)opForDimension(i,dimension)).getFinalResult().doubleValue();

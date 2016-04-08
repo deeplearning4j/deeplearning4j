@@ -853,7 +853,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, complexStrides, offset, ordering);
+        return createComplex(Nd4j.createBuffer(ArrayUtil.prodLong(shape) * 2), shape, complexStrides, offset, ordering);
     }
 
     /**
@@ -889,7 +889,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return create(Nd4j.createBuffer(ArrayUtil.prod(shape)),shape,stride,offset,ordering);
+        return create(Nd4j.createBuffer(ArrayUtil.prodLong(shape)),shape,stride,offset,ordering);
     }
 
     /**
@@ -1504,7 +1504,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        DataBuffer buffer = Nd4j.createBuffer(ArrayUtil.prod(shape));
+        DataBuffer buffer = Nd4j.createBuffer(ArrayUtil.prodLong(shape));
         return create(buffer, shape, stride, offset);
 
     }

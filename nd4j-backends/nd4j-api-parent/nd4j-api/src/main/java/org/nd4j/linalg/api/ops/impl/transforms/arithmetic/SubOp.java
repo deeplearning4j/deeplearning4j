@@ -33,7 +33,7 @@ public class SubOp extends BaseTransformOp {
     public SubOp() {
     }
 
-    public SubOp(INDArray x, INDArray y, INDArray z, int n) {
+    public SubOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -45,12 +45,12 @@ public class SubOp extends BaseTransformOp {
         super(x, z);
     }
 
-    public SubOp(INDArray x, INDArray z, int n) {
+    public SubOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
     public SubOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     @Override
@@ -130,7 +130,7 @@ public class SubOp extends BaseTransformOp {
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to subtract");

@@ -17,11 +17,11 @@ public class Set extends BaseTransformOp {
     public Set() {
     }
 
-    public Set(INDArray x, INDArray z, int n) {
+    public Set(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Set(INDArray x, INDArray y, INDArray z, int n) {
+    public Set(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

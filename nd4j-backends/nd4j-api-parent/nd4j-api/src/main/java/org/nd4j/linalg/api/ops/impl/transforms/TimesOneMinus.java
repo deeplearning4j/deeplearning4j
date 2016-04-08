@@ -37,11 +37,11 @@ public class TimesOneMinus extends BaseTransformOp {
         super(x, z);
     }
 
-    public TimesOneMinus(INDArray x, INDArray z, int n) {
+    public TimesOneMinus(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public TimesOneMinus(INDArray x, INDArray y, INDArray z, int n) {
+    public TimesOneMinus(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -109,7 +109,7 @@ public class TimesOneMinus extends BaseTransformOp {
         if (y() != null)
             return new TimesOneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new TimesOneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
+            return new TimesOneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
     }
 
     @Override
@@ -119,6 +119,6 @@ public class TimesOneMinus extends BaseTransformOp {
         if (y() != null)
             return new TimesOneMinus(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new TimesOneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+            return new TimesOneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
     }
 }

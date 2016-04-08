@@ -39,16 +39,16 @@ public class LogSoftMax extends BaseTransformOp {
         super(x, z);
     }
 
-    public LogSoftMax(INDArray x, INDArray z, int n) {
+    public LogSoftMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public LogSoftMax(INDArray x, INDArray y, INDArray z, int n) {
+    public LogSoftMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public LogSoftMax(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public LogSoftMax(INDArray x) {
@@ -133,7 +133,7 @@ public class LogSoftMax extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
     }
 

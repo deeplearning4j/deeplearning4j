@@ -40,16 +40,16 @@ public class Sigmoid extends BaseTransformOp {
         super(x, z);
     }
 
-    public Sigmoid(INDArray x, INDArray z, int n) {
+    public Sigmoid(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Sigmoid(INDArray x, INDArray y, INDArray z, int n) {
+    public Sigmoid(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public Sigmoid(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public Sigmoid(INDArray ndArray) {

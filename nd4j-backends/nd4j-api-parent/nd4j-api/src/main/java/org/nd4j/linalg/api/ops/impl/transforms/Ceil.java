@@ -39,11 +39,11 @@ public class Ceil extends BaseTransformOp {
         super(x, z);
     }
 
-    public Ceil(INDArray x, INDArray z, int n) {
+    public Ceil(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Ceil(INDArray x, INDArray y, INDArray z, int n) {
+    public Ceil(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

@@ -40,7 +40,7 @@ public class NotEqualTo extends BaseTransformOp {
         super(x);
     }
 
-    public NotEqualTo(INDArray x, INDArray y, INDArray z, int n) {
+    public NotEqualTo(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -48,7 +48,7 @@ public class NotEqualTo extends BaseTransformOp {
         super(x, z);
     }
 
-    public NotEqualTo(INDArray x, INDArray z, int n) {
+    public NotEqualTo(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

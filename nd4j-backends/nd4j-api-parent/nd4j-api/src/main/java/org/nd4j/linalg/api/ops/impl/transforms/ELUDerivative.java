@@ -46,16 +46,16 @@ public class ELUDerivative extends BaseTransformOp {
         super(x, z);
     }
 
-    public ELUDerivative(INDArray x, INDArray z, int n) {
+    public ELUDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public ELUDerivative(INDArray x, INDArray y, INDArray z, int n) {
+    public ELUDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public ELUDerivative(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public ELUDerivative(INDArray x) {

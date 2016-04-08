@@ -40,11 +40,11 @@ public class Abs extends BaseTransformOp {
         super(x, z);
     }
 
-    public Abs(INDArray x, INDArray z, int n) {
+    public Abs(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Abs(INDArray x, INDArray y, INDArray z, int n) {
+    public Abs(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

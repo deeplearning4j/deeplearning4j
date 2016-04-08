@@ -36,11 +36,11 @@ public class NormMax extends BaseAccumulation {
     public NormMax() {
     }
 
-    public NormMax(INDArray x, INDArray y, INDArray z, int n) {
+    public NormMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public NormMax(INDArray x, INDArray y, int n) {
+    public NormMax(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

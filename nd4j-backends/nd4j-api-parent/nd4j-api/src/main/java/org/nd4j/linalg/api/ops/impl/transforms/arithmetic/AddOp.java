@@ -34,7 +34,7 @@ public class AddOp extends BaseTransformOp {
     public AddOp() {
     }
 
-    public AddOp(INDArray x, INDArray y, INDArray z, int n) {
+    public AddOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -42,7 +42,7 @@ public class AddOp extends BaseTransformOp {
         super(x, z);
     }
 
-    public AddOp(INDArray x, INDArray z, int n) {
+    public AddOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
@@ -51,7 +51,7 @@ public class AddOp extends BaseTransformOp {
     }
 
     public AddOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     @Override
@@ -127,7 +127,7 @@ public class AddOp extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to add");

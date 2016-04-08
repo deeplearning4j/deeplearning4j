@@ -39,11 +39,11 @@ public class TanhDerivative extends BaseTransformOp {
         super(x, z);
     }
 
-    public TanhDerivative(INDArray x, INDArray z, int n) {
+    public TanhDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public TanhDerivative(INDArray x, INDArray y, INDArray z, int n) {
+    public TanhDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

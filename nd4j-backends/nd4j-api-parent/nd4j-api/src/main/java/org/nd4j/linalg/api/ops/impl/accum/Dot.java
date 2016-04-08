@@ -33,11 +33,11 @@ public class Dot extends BaseAccumulation {
     public Dot() {
     }
 
-    public Dot(INDArray x, INDArray y, INDArray z, int n) {
+    public Dot(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Dot(INDArray x, INDArray y, int n) {
+    public Dot(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

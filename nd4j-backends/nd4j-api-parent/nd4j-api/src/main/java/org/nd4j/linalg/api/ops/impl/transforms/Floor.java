@@ -40,11 +40,11 @@ public class Floor extends BaseTransformOp {
         super(x, z);
     }
 
-    public Floor(INDArray x, INDArray z, int n) {
+    public Floor(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Floor(INDArray x, INDArray y, INDArray z, int n) {
+    public Floor(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -109,7 +109,7 @@ public class Floor extends BaseTransformOp {
         if (y() != null)
             return new Floor(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Floor(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
+            return new Floor(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
     }
 
@@ -120,7 +120,7 @@ public class Floor extends BaseTransformOp {
         if (y() != null)
             return new Floor(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Floor(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+            return new Floor(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
 }

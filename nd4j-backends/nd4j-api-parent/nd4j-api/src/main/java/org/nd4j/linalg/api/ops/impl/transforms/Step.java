@@ -41,12 +41,12 @@ public class Step extends BaseTransformOp {
         cutoff = 0.0;
     }
 
-    public Step(INDArray x, INDArray z, int n) {
+    public Step(INDArray x, INDArray z, long n) {
         super(x, z, n);
         cutoff = 0.0;
     }
 
-    public Step(INDArray x, INDArray y, INDArray z, int n) {
+    public Step(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         cutoff = 0.0;
     }
@@ -61,12 +61,12 @@ public class Step extends BaseTransformOp {
         this.cutoff = cutoff;
     }
 
-    public Step(INDArray x, INDArray z, int n, double cutoff) {
+    public Step(INDArray x, INDArray z, long n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
     }
 
-    public Step(INDArray x, INDArray y, INDArray z, int n, double cutoff) {
+    public Step(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
     }
@@ -149,7 +149,7 @@ public class Step extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {cutoff};
     }

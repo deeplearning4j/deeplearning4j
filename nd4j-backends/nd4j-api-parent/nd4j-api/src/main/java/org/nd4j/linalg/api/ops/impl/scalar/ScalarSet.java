@@ -35,7 +35,7 @@ public class  ScalarSet extends BaseScalarOp {
     public ScalarSet() {
     }
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -43,7 +43,7 @@ public class  ScalarSet extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 
@@ -122,7 +122,7 @@ public class  ScalarSet extends BaseScalarOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (num != null)
             this.extraArgs = new Object[]{num};

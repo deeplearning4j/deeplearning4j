@@ -33,7 +33,7 @@ public class IMin extends BaseIndexAccumulation {
     public IMin() {
     }
 
-    public IMin(INDArray x, INDArray y, int n) {
+    public IMin(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

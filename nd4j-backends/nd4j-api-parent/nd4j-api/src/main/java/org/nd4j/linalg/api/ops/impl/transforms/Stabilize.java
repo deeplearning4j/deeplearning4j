@@ -44,12 +44,12 @@ public class Stabilize extends BaseTransformOp {
         this.k = k;
     }
 
-    public Stabilize(INDArray x, INDArray z, int n, double k) {
+    public Stabilize(INDArray x, INDArray z, long n, double k) {
         super(x, z, n);
         this.k = k;
     }
 
-    public Stabilize(INDArray x, INDArray y, INDArray z, int n, double k) {
+    public Stabilize(INDArray x, INDArray y, INDArray z, long n, double k) {
         super(x, y, z, n);
         this.k = k;
     }
@@ -139,7 +139,7 @@ public class Stabilize extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[]{k};
     }

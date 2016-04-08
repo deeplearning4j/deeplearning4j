@@ -37,11 +37,11 @@ public class Norm2 extends BaseAccumulation {
     public Norm2() {
     }
 
-    public Norm2(INDArray x, INDArray y, INDArray z, int n) {
+    public Norm2(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Norm2(INDArray x, INDArray y, int n) {
+    public Norm2(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 
@@ -224,14 +224,14 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n) {
+    public double calculateFinalResult(double accum, long n) {
         if(applyFinalTransform())
             return FastMath.sqrt(accum);
         return accum;
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n) {
+    public float calculateFinalResult(float accum, long n) {
         if(applyFinalTransform())
             return (float)FastMath.sqrt(accum);
         return accum;

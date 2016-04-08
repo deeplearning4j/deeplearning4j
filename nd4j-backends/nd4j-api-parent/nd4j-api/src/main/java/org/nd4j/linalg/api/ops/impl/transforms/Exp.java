@@ -41,11 +41,11 @@ public class Exp extends BaseTransformOp {
         super(x, z);
     }
 
-    public Exp(INDArray x, INDArray z, int n) {
+    public Exp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Exp(INDArray x, INDArray y, INDArray z, int n) {
+    public Exp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

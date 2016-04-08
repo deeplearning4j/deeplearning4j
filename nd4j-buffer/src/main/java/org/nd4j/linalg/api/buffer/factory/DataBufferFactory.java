@@ -54,7 +54,7 @@ public interface DataBufferFactory {
      * @param length the length of the buffer
      * @return the databuffer as a view
      */
-    DataBuffer create(DataBuffer underlyingBuffer, int offset, int length);
+    DataBuffer create(DataBuffer underlyingBuffer, long offset, long length);
 
     /**
      * Create int buffer
@@ -296,7 +296,7 @@ public interface DataBufferFactory {
      *
      * @return the new data buffer
      */
-    DataBuffer createDouble(int length);
+    DataBuffer createDouble(long length);
 
     /**
      * Create a float data buffer
@@ -304,7 +304,7 @@ public interface DataBufferFactory {
      * @param length the length of the buffer
      * @return the new data buffer
      */
-    DataBuffer createFloat(int length);
+    DataBuffer createFloat(long length);
 
     /**
      * Create an int data buffer
@@ -312,7 +312,7 @@ public interface DataBufferFactory {
      * @param length the length of the data buffer
      * @return the create data buffer
      */
-    DataBuffer createInt(int length);
+    DataBuffer createInt(long length);
 
 
     /**
