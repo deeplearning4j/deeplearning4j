@@ -189,7 +189,9 @@ public class ShapeOffsetResolution implements Serializable {
         // Check that given point indexes are not out of bounds
         for (int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
-            if(idx instanceof PointIndex && idx.current() >= shape[i]){
+            // On vectors, the first dimension can be ignored when indexing them with a single point index
+            if(idx instanceof PointIndex &&
+                    arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i+1] : idx.current() >= shape[i]){
                 throw new IllegalArgumentException("INDArrayIndex["+i+"] is out of bounds (value: "+idx.current()+")");
             }
         }
