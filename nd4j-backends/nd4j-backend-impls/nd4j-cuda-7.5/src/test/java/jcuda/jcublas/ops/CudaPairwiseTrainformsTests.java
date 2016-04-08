@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -177,5 +178,27 @@ public class CudaPairwiseTrainformsTests {
         array3.muli(array4);
 
         assertEquals(array3, array1);
+    }
+
+    @Test
+    public void testAssign(){
+        int[] shape1 = {3,2,2,2,2,2};
+        int[] shape2 = {12,8};
+        int length = ArrayUtil.prod(shape1);
+
+        assertEquals(ArrayUtil.prod(shape1),ArrayUtil.prod(shape2));
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape1);
+        INDArray arr2c = Nd4j.create(shape2,'c');
+        INDArray arr2f = Nd4j.create(shape2,'f');
+
+        arr2c.assign(arr);
+        System.out.println("--------------");
+        arr2f.assign(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
+
+        assertEquals(exp,arr2c);
+        assertEquals(exp,arr2f);
     }
 }

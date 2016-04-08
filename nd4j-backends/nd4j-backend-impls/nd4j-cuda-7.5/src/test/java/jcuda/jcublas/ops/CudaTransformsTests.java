@@ -450,4 +450,45 @@ public class CudaTransformsTests {
         assertEquals(0.5515296f,input.getFloat(310), 0.01f);
 
     }
+
+    @Test
+    public void testTanhXZ(){
+        INDArray arrC = Nd4j.linspace(-6,6,12).reshape('c',4,3);
+        INDArray arrF = Nd4j.create(new int[]{4,3},'f').assign(arrC);
+        double[] d = arrC.data().asDouble();
+        double[] e = new double[d.length];
+        for(int i=0; i<e.length; i++ ) e[i] = Math.tanh(d[i]);
+
+        INDArray exp = Nd4j.create(e, new int[]{4,3}, 'c');
+
+        //First: do op with just x (inplace)
+        INDArray arrFCopy = arrF.dup('f');
+        INDArray arrCCopy = arrF.dup('c');
+        Nd4j.getExecutioner().exec(new Tanh(arrFCopy));
+        Nd4j.getExecutioner().exec(new Tanh(arrCCopy));
+        assertEquals(exp, arrFCopy);
+        assertEquals(exp, arrCCopy);
+
+        //Second: do op with both x and z:
+
+
+
+        INDArray zOutFC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutFF = Nd4j.create(new int[]{4,3},'f');
+        INDArray zOutCC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutCF = Nd4j.create(new int[]{4,3},'f');
+
+        System.out.println("arrF order: " + arrF.ordering());
+        System.out.println("zOutFC order: " + zOutFC.ordering());
+
+        Nd4j.getExecutioner().exec(new Tanh(arrF, zOutFC));
+//        Nd4j.getExecutioner().exec(new Tanh(arrF, zOutFF));
+//        Nd4j.getExecutioner().exec(new Tanh(arrC, zOutCC));
+//        Nd4j.getExecutioner().exec(new Tanh(arrC, zOutCF));
+
+        assertEquals(exp, zOutFC);  //fails
+        //assertEquals(exp, zOutFF);  //pass
+        //assertEquals(exp, zOutCC);  //pass
+        //assertEquals(exp, zOutCF);  //fails
+    }
 }
