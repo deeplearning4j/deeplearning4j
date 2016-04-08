@@ -348,7 +348,7 @@ public:
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						xShapeInfo = shape::squeezeDimensions(
+						inputShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
 							&dimension,
 							&dimensionLength,
@@ -366,7 +366,7 @@ public:
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				if(tid == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -375,7 +375,7 @@ public:
 				int rank = shape::rank(tadShapeShapeInfo);
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-					int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
@@ -418,7 +418,7 @@ public:
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						free(inputShapeInfo);
 					}
 				}
 			}
