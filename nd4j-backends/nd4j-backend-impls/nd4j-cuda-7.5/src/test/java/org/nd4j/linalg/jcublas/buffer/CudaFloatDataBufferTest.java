@@ -8,12 +8,15 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -307,5 +310,73 @@ public class CudaFloatDataBufferTest {
         DataInputStream dis = new DataInputStream(bis);
         INDArray read = Nd4j.read(dis);
         assertEquals(write, read);
+    }
+
+    @Test
+    public void testFlattened1() throws Exception {
+        List<INDArray> test = new ArrayList<>();
+        for (int x = 0; x < 100; x++) {
+            INDArray array = Nd4j.linspace(0, 99, 100);
+            test.add(array);
+        }
+
+        INDArray ret = Nd4j.toFlattened(test);
+
+        assertEquals(10000, ret.length());
+        for (int x = 0; x < 100; x++) {
+            for (int y = 0; y < 100; y++) {
+                assertEquals("X: ["+x+"], Y: ["+y+"] failed: ",y, ret.getFloat((x * 100) + y), 0.01f);
+            }
+        }
+    }
+
+    @Test
+    public void testToFlattenedOrder() {
+        INDArray concatC = Nd4j.linspace(1,4,4).reshape('c',2,2);
+        INDArray concatF = Nd4j.create(new int[]{2,2},'f');
+        concatF.assign(concatC);
+        INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
+        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
+        assertEquals(assertionC,testC);
+        INDArray test = Nd4j.toFlattened('f',concatC,concatF);
+        INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
+        assertEquals(assertion,test);
+    }
+
+    @Test
+    public void testToFlattenedWithOrder(){
+        int[] firstShape = {10,3};
+        int firstLen = ArrayUtil.prod(firstShape);
+        int[] secondShape = {2,7};
+        int secondLen = ArrayUtil.prod(secondShape);
+        int[] thirdShape = {3,3};
+        int thirdLen = ArrayUtil.prod(thirdShape);
+        INDArray firstC = Nd4j.linspace(1,firstLen,firstLen).reshape('c',firstShape);
+        INDArray firstF = Nd4j.create(firstShape,'f').assign(firstC);
+        INDArray secondC = Nd4j.linspace(1,secondLen,secondLen).reshape('c',secondShape);
+        INDArray secondF = Nd4j.create(secondShape,'f').assign(secondC);
+        INDArray thirdC = Nd4j.linspace(1,thirdLen,thirdLen).reshape('c',thirdShape);
+        INDArray thirdF = Nd4j.create(thirdShape,'f').assign(thirdC);
+
+
+        assertEquals(firstC,firstF);
+        assertEquals(secondC,secondF);
+        assertEquals(thirdC,thirdF);
+
+        INDArray cc = Nd4j.toFlattened('c',firstC,secondC,thirdC);
+        INDArray cf = Nd4j.toFlattened('c',firstF,secondF,thirdF);
+        assertEquals(cc,cf);
+
+        INDArray cmixed = Nd4j.toFlattened('c',firstC,secondF,thirdF);
+        assertEquals(cc,cmixed);
+
+        INDArray fc = Nd4j.toFlattened('f',firstC,secondC,thirdC);
+        assertNotEquals(cc,fc);
+
+        INDArray ff = Nd4j.toFlattened('f',firstF,secondF,thirdF);
+        assertEquals(fc,ff);
+
+        INDArray fmixed = Nd4j.toFlattened('f',firstC,secondF,thirdF);
+        assertEquals(fc,fmixed);
     }
 }

@@ -2667,6 +2667,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr2f = Nd4j.create(shape2,'f');
 
         arr2c.assign(arr);
+        System.out.println("--------------");
         arr2f.assign(arr);
 
         INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);

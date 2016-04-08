@@ -481,7 +481,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data, shape, offset);
     }
 
-
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         int length = 0;
@@ -489,6 +488,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             length += m.length();
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
+        long[] dummy = new long[1];
         for(INDArray m : matrices) {
             if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
                     && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
@@ -510,6 +510,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             } else {
                 if(m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
+                            dummy,
                             linearIndex,
                             order,
                             ret.data().address(),
@@ -519,6 +520,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                 }
                 else if(m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
+                            dummy,
                             linearIndex,
                             order,
                             ret.data().address(),
