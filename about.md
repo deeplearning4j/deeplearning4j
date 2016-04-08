@@ -55,3 +55,10 @@ We hire from our open-source contributors. The best way to apply for a job build
 If you plan to publish an academic paper and wish to cite Deeplearning4j, please use this format:
 
 Deeplearning4j Development Team. Deeplearning4j: Open-source distributed deep learning for the JVM, Apache Software Foundation License 2.0. [http://deeplearning4j.org](http://deeplearning4j.org)
+
+## Acknowledgements
+
+**YourKit** supports open-source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of <a href="https://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a>
+and <a href="https://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>,
+innovative and intelligent tools for profiling Java and .NET applications.
