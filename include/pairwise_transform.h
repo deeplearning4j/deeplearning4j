@@ -63,7 +63,7 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int n,
+			Nd4jIndex n,
 			int *indexes) {
 		transform(dx,
 				xShapeBuffer,
@@ -93,8 +93,8 @@ public:
 			int *resultIndexes) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
-		int n = shape::length(xShapeBuffer);
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex n = shape::length(xShapeBuffer);
 		for (; i < n; i += totalThreads) {
 			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 		}
@@ -139,7 +139,7 @@ public:
 			T *extraParams) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 
 		int *xShape = shape::shapeOf(xShapeBuffer);
@@ -169,7 +169,7 @@ public:
 
 
 
-		int n = shape::length(xShapeBuffer);
+		Nd4jIndex n = shape::length(xShapeBuffer);
 		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
 			transformCuda(
 					n,
@@ -186,9 +186,9 @@ public:
 			int *xIdx = (int *) malloc(sizeof(int) * xRank);
 			for (; i < n; i += totalThreads) {
 				shape::ind2sub(xRank,xShape,i,&xIdx);
-				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-				int yOffset2 = shape::getOffset(0, yShape, yStride, xIdx, yRank);
-				int resultOffset2 = shape::getOffset(0, resultShape, resultStride, xIdx, resultRank);
+				Nd4jIndex xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+				Nd4jIndex yOffset2 = shape::getOffset(0, yShape, yStride, xIdx, yRank);
+				Nd4jIndex resultOffset2 = shape::getOffset(0, resultShape, resultStride, xIdx, resultRank);
 				result[resultOffset2] = op(dx[xOffset2],y[yOffset2], extraParams);
 
 			}
@@ -218,7 +218,7 @@ public:
 	 * @param blockSize
 	 */
 	virtual __inline__ __device__ void transformCuda(
-			int n,
+			Nd4jIndex n,
 			T *dx,
 			T *dy,
 			int incx,
@@ -228,7 +228,7 @@ public:
 			int incz) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		if (incy == 0) {
 			if ((blockIdx.x == 0) && (tid == 0)) {
@@ -331,9 +331,9 @@ public:
 			int *indexes,
 			int *yIndexes,
 			int *resultIndexes) {
-		int n = shape::length(xShapeBuffer);
+		Nd4jIndex n = shape::length(xShapeBuffer);
 #pragma omp parallel for
-		for (int i = 0; i < n; i++) {
+		for (Nd4jIndex i = 0; i < n; i++) {
 			result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
 		}
@@ -366,9 +366,9 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *indexes) {
-		int n = shape::length(xShapeBuffer);
+		Nd4jIndex n = shape::length(xShapeBuffer);
 #pragma omp parallel for
-		for (int i = 0; i < n; i++) {
+		for (Nd4jIndex i = 0; i < n; i++) {
 			result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
 
 		}
@@ -420,7 +420,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams) {
 
-		int n = shape::length(xShapeBuffer);
+		Nd4jIndex n = shape::length(xShapeBuffer);
 		int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
 		int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
@@ -534,7 +534,7 @@ public:
 			char xOrder = shape::order(xShapeBuffer);
 			char yOrder = shape::order(yShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
-			int len = shape::length(xShapeBuffer);
+			Nd4jIndex len = shape::length(xShapeBuffer);
 			int xRank = shape::rank(xShapeBuffer);
 			int yRank = shape::rank(yShapeBuffer);
 			int resultRank = shape::rank(resultShapeBuffer);
@@ -551,26 +551,26 @@ public:
 			int *resultShape = shape::shapeOf(resultShapeBuffer);
 			int *resultStride = shape::stride(resultShapeBuffer);
 			if(dx == result) {
-				for (int i = 0; i < len; i++) {
+				for (Nd4jIndex i = 0; i < len; i++) {
 					shape::ind2subC(xRank,xShape, i, &xCoord);
 					shape::ind2subC(yRank,yShape, i, &yCoord);
 					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
 
-					int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-					int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 					result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
 
 				}
 			}
 			else {
-				for (int i = 0; i < len; i++) {
+				for (Nd4jIndex i = 0; i < len; i++) {
 					shape::ind2subC(xRank,xShape, i, &xCoord);
 					shape::ind2subC(yRank,yShape, i, &yCoord);
 					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
 
-					int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-					int yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-					int resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
 					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
 
 				}
@@ -600,16 +600,16 @@ public:
 	 * @param n the length of the input
 	 */
 	virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
-			int resultStride, T *extraParams, const int n) {
+			int resultStride, T *extraParams, const Nd4jIndex n) {
 		if (xStride == 1 && yStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[i] = op(dx[i], y[i], extraParams);
 				}
 			}
 			else {
 #pragma omp parallel for
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[i] = op(dx[i], y[i], extraParams);
 				}
 			}
@@ -620,14 +620,14 @@ public:
 
 		else {
 			if(n < 8000) {
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[i * resultStride] = op(dx[i * xStride],
 							y[i * yStride], extraParams);
 				}
 			}
 			else {
 #pragma omp parallel for
-				for (int i = 0; i < n; i++) {
+				for (Nd4jIndex i = 0; i < n; i++) {
 					result[i * resultStride] = op(dx[i * xStride],
 							y[i * yStride], extraParams);
 				}
@@ -2203,7 +2203,7 @@ __global__ void pairWiseTransformFloatIndex(
 template<typename T>
 __device__ void pairWiseTransformStridedGeneric(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		T *dx,
 		T *dy,
 		int incx,
@@ -2250,7 +2250,7 @@ __device__ void pairWiseTransformStridedGeneric(
  */
 __global__ void pairWiseTransformStridedDouble(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		double *dx,
 		double *dy,
 		int incx,
@@ -2287,7 +2287,7 @@ __global__ void pairWiseTransformStridedDouble(
  */
 __global__ void pairWiseTransformStridedFloat(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		float *dx,
 		float *dy,
 		int incx,

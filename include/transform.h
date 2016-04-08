@@ -93,10 +93,10 @@ public:
 			T *params,
 			T *result,
 			int *indexes) {
-		int n = shape::length(shapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -132,7 +132,7 @@ public:
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
 		char resultOrder = shape::order(resultShapeInfo);
-		int n = shape::length(shapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
 
@@ -140,7 +140,7 @@ public:
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
 		if(tid == 0)
 			length = shape::length(shapeInfo);
@@ -162,8 +162,8 @@ public:
 			for (; i < n; i+= totalThreads) {
 				int *xIdx = shape::ind2sub(xRank, xShape, i);
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,&xIdx);
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				int resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
 
 			}
@@ -182,7 +182,7 @@ public:
 	 * @param n
 	 */
 	virtual  __inline__ __device__ void transformCuda(
-			int n,
+			Nd4jIndex n,
 			T *dy,
 			int incy,
 			T *params,
@@ -190,7 +190,7 @@ public:
 			int resultStride) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		if(incy == 1 && resultStride == 1) {
 			/* equal, positive, non-unit increments. */
@@ -229,7 +229,7 @@ public:
 			T *extraParams,
 			int *indexes) {
 		int n = shape::length(xShapeInfo);
-#pragma simd
+#pragma omp simd
 		for (int i = 0; i < n; i++) {
 			result[indexes[i]] = op(dx[indexes[i]], extraParams);
 		}
@@ -352,7 +352,7 @@ public:
 			int n) {
 		if (xStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-#pragma simd 
+#pragma omp simd 
 				for (int i = 0; i < n; i++) {
 					result[i] = op(dx[i], extraParams);
 				}
@@ -369,6 +369,7 @@ public:
 
 		else {
 			if(n < 8000) {
+#pragma omp simd 
 				for (int i = 0; i < n; i++) {
 					result[i * resultStride] = op(dx[i * xStride],
 							extraParams);
@@ -5124,7 +5125,7 @@ public:
 template <typename T>
 __device__ void transformGeneric(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		T *dy,
 		int incy,
 		T *params,
@@ -5172,7 +5173,7 @@ __device__ void transformGeneric(
  */
 __global__ void transformDouble(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		double *dy,
 		int incy,
 		double *params,
@@ -5203,7 +5204,7 @@ __global__ void transformDouble(
  */
 __global__ void transformFloat(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		float *dy,
 		int incy,
 		float *params,

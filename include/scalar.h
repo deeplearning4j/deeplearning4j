@@ -55,7 +55,7 @@ namespace functions {
 	 * @param n
 	 */
 	virtual __inline__ __device__ void transform(
-			int n,
+			Nd4jIndex n,
 			T scalar,
 			T *dy,
 			T *params,
@@ -63,7 +63,7 @@ namespace functions {
 			int *indexes) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -95,10 +95,10 @@ namespace functions {
 		int xOffset = shape::offset(shapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
         int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		int n = shape::length(shapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
 		if(tid == 0)
 			length = shape::length(shapeInfo);
@@ -147,7 +147,7 @@ namespace functions {
 	 */
 	virtual
 	__inline__ __device__ void transformCuda(
-			int n,
+			Nd4jIndex n,
 			T dx,
 			T *dy,
 			int incy,
@@ -155,7 +155,7 @@ namespace functions {
 			T *result,int resultStride) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		if(incy == 1) {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
@@ -192,9 +192,9 @@ namespace functions {
                            T *extraParams,
                            int *indexes,
                            int *resultIndexes) {
-                int n = shape::length(xShapeInfo);
+                Nd4jIndex n = shape::length(xShapeInfo);
 #pragma omp parallel for
-                for (int i = 0; i < n; i++) {
+                for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
                 }
             }
@@ -288,7 +288,7 @@ namespace functions {
 
                 }
                 else {
-                    int n = shape::length(xShapeInfo);
+                    Nd4jIndex n = shape::length(xShapeInfo);
 
 
                     if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
@@ -307,7 +307,7 @@ namespace functions {
                         int resultOffset = shape::offset(resultShapeInfo);
 
 #pragma omp parallel for
-                        for (int i = 0; i < n; i++) {
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
                             int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
@@ -338,17 +338,17 @@ namespace functions {
              * @param n the number of elements to loop over
              */
             void transform(T *x, int xStride, T *result, int resultStride,
-                           T scalar, T *extraParams, const int n) {
+                           T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
+                    for (Nd4jIndex i = 0; i < n; i++) {
                         result[i] = op(x[i], scalar, extraParams);
                     }
                 }
 
                 else {
 #pragma omp parallel for
-                    for (int i = 0; i < n; i++) {
+                    for (Nd4jIndex i = 0; i < n; i++) {
                         result[i * resultStride] = op(x[i * xStride], scalar,
                                                       extraParams);
 
@@ -1093,7 +1093,7 @@ namespace functions {
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		T dx,
 		T *dy,
 		int incy, T *params,
@@ -1120,7 +1120,7 @@ __device__ void scalarGeneric(
 
 __global__ void scalarDouble(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		double dx,
 		double *dy,
 		int incy, double *params,
@@ -1136,7 +1136,7 @@ __global__ void scalarDouble(
 }
 
  __global__ void scalarFloat(int opNum,
-		int n,float dx, float *dy, int incy, float *params, float *result,int resultStride) {
+		Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride) {
 	scalarGeneric<float>(
 			opNum,
 			n,
@@ -1151,7 +1151,7 @@ __global__ void scalarDouble(
 template <typename T>
 __device__ void scalarGenericIndexes(
         int opNum,
-        int n,
+        Nd4jIndex n,
         T dx,
         T *dy,
         T *params,
@@ -1177,7 +1177,7 @@ __device__ void scalarGenericIndexes(
 
  __global__ void scalarDoubleIndexes(
         int opNum,
-        int n,
+        Nd4jIndex n,
         double dx,
         double *dy,
         double *params,
@@ -1193,7 +1193,7 @@ __device__ void scalarGenericIndexes(
 
  __global__ void scalarFloatIndexes(
         int opNum,
-        int n,
+        Nd4jIndex n,
         float dx,
         float *dy,
         float *params,

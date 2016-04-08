@@ -131,7 +131,7 @@ public:
                                int yStride,
                                T *result,
                                int resultStride,
-                               T *extraParams, int n) {
+                               T *extraParams, Nd4jIndex n) {
         functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
         op->exec(
                 dx,
@@ -352,7 +352,7 @@ public:
                     int resultStride,
                     T scalar,
                     T *extraParams,
-                    int n) {
+                    Nd4jIndex n) {
         functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
         scalarTransform->transform(x,xStride,result,resultStride,scalar,extraParams,n);
         delete scalarTransform;
@@ -511,7 +511,7 @@ public:
                        T *result,
                        int resultStride,
                        T *extraParams,
-                       int n) {
+                       Nd4jIndex n) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
         transform->exec(dx,
                         xStride,

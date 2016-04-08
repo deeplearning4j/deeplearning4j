@@ -304,11 +304,11 @@ int PrepareOneRawArrayIter(int ndim, int *shape,
 
 class BlockInformation {
 public:
-    int items;
+    Nd4jIndex items;
     int threads;
-    int chunks;
-    int modulo;
-    BlockInformation(int length) {
+    Nd4jIndex chunks;
+    Nd4jIndex modulo;
+    BlockInformation(Nd4jIndex length) {
 
 #pragma omp parallel
         {
