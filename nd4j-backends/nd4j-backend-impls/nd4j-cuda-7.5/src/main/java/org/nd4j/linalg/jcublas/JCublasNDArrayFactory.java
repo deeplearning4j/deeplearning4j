@@ -444,35 +444,25 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
         for(INDArray m : matrices) {
-            if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
-                    && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
-                //Can do array copy
-                int retFrom = linearIndex;
-                int mFrom = m.offset();
-                Object arr = m.data().array();
-                if(arr instanceof float[]) {
-                    float[] mData = (float[]) arr;
-                    float[] retData = (float[])ret.data().array();
-                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
-                }
-                else {
-                    double[] mData = (double[])arr;
-                    double[] retData = (double[])ret.data().array();
-                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
-                }
+
+            if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride()) {
+                // do memcpy in proper direction and forget about that
+
                 linearIndex += m.length();
             } else {
-                if(m.data().dataType() == DataBuffer.Type.DOUBLE) {
+                long[] dummy = new long[1];
+                if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
+                            dummy,
                             linearIndex,
                             order,
                             ret.data().address(),
                             ret.shapeInfoDataBuffer().address(),
                             m.data().address(),
                             m.shapeInfoDataBuffer().address());
-                }
-                else if(m.data().dataType() == DataBuffer.Type.FLOAT) {
+                } else if (m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
+                            dummy,
                             linearIndex,
                             order,
                             ret.data().address(),
@@ -480,8 +470,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                             m.data().address(),
                             m.shapeInfoDataBuffer().address());
 
-                }
-                else {
+                } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
                 //Works for all cases...
@@ -492,7 +481,6 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 }*/
 
                 linearIndex += m.length();
-
             }
         }
         return ret;

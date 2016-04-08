@@ -806,12 +806,14 @@ public class NativeOps extends Pointer {
      * @param input the input for the array
      * @param inputShapeInfo the shape information for that array
      */
-    public native void flattenFloat(int offset,
-                               char order,
-                               long result,
-                               long resultShapeInfo,
-                               long input,
-                               long inputShapeInfo);
+    public native void flattenFloat(
+                        long[] extraPointers,
+                        int offset,
+                        char order,
+                        long result,
+                        long resultShapeInfo,
+                        long input,
+                        long inputShapeInfo);
 
 
     /**
@@ -825,7 +827,8 @@ public class NativeOps extends Pointer {
      * @param input the input for the array
      * @param inputShapeInfo the shape information for that array
      */
-    public native void flattenDouble(int offset,
+    public native void flattenDouble(long[] extraPointers,
+                                    int offset,
                                     char order,
                                     long result,
                                     long resultShapeInfo,
