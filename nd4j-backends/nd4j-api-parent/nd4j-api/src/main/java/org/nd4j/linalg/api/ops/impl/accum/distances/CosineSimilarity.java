@@ -188,7 +188,7 @@ public class CosineSimilarity extends BaseAccumulation {
     @Override
     public void exec(int... dimension){
         int[] retShape = ArrayUtil.removeIndex(x.shape(), dimension);
-        long nOps = x.tensorssAlongDimension(dimension);
+        int nOps = x.tensorssAlongDimension(dimension);
         z = Nd4j.create(retShape);
         for( int i = 0; i < nOps; i++ ){
             double d = Nd4j.getExecutioner().execAndReturn((CosineSimilarity) opForDimension(i,dimension)).getFinalResult().doubleValue();
