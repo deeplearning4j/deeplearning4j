@@ -143,6 +143,7 @@ public class TestDerivatives extends BaseNd4jTest {
 		for( int i=0; i < 20; i++) {
 			for( int j=0; j < 5; j++) {
 				double relError = Math.abs(expOut[i][j]-zPrime.getDouble(i,j)) / (Math.abs(expOut[i][j]) + Math.abs(zPrime.getDouble(i,j)));
+				System.out.println("Error: " + relError);
 				assertTrue(relError < REL_ERROR_TOLERANCE);
 			}
 		}
