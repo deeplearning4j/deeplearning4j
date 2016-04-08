@@ -35,7 +35,7 @@ public class LessThan extends BaseTransformOp {
     public LessThan() {
     }
 
-    public LessThan(INDArray x, INDArray y, INDArray z, int n) {
+    public LessThan(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -47,7 +47,7 @@ public class LessThan extends BaseTransformOp {
         super(ndArray, dup);
     }
 
-    public LessThan(INDArray x, INDArray z, int n) {
+    public LessThan(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

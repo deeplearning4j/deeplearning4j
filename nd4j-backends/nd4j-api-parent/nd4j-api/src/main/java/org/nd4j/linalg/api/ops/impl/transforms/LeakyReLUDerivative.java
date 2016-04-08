@@ -36,11 +36,11 @@ public class LeakyReLUDerivative extends BaseTransformOp {
         super(x, z);
     }
 
-    public LeakyReLUDerivative(INDArray x, INDArray z, int n) {
+    public LeakyReLUDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, int n) {
+    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -54,13 +54,13 @@ public class LeakyReLUDerivative extends BaseTransformOp {
         alphaSpecified = true;
     }
 
-    public LeakyReLUDerivative(INDArray x, INDArray z, int n, double alpha) {
+    public LeakyReLUDerivative(INDArray x, INDArray z, long n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
         alphaSpecified = true;
     }
 
-    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, int n, double alpha) {
+    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
         alphaSpecified = true;
@@ -142,7 +142,7 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if(!alphaSpecified)
             alpha = 0.01;

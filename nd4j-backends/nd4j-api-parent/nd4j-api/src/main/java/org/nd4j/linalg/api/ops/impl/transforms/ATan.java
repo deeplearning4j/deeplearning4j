@@ -39,11 +39,11 @@ public class ATan extends BaseTransformOp {
         super(x, z);
     }
 
-    public ATan(INDArray x, INDArray z, int n) {
+    public ATan(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public ATan(INDArray x, INDArray y, INDArray z, int n) {
+    public ATan(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -108,7 +108,7 @@ public class ATan extends BaseTransformOp {
         if (y() != null)
             return new ATan(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new ATan(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
+            return new ATan(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
     }
 
@@ -119,7 +119,7 @@ public class ATan extends BaseTransformOp {
         if (y() != null)
             return new ATan(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new ATan(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+            return new ATan(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
 }

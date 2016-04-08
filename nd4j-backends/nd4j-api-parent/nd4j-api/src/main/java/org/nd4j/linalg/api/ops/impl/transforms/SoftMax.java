@@ -48,16 +48,16 @@ public class SoftMax extends BaseTransformOp {
         super(x, z);
     }
 
-    public SoftMax(INDArray x, INDArray z, int n) {
+    public SoftMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftMax(INDArray x, INDArray y, INDArray z, int n) {
+    public SoftMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public SoftMax(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public SoftMax(INDArray x) {
@@ -82,7 +82,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        IComplexNumber ret = arr.getComplex(numProcessed);
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        IComplexNumber ret = arr.getComplex((int)numProcessed);
         numProcessed++;
         return ret;
     }
@@ -90,7 +92,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        IComplexNumber ret = arr.getComplex(numProcessed);
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        IComplexNumber ret = arr.getComplex((int)numProcessed);
         numProcessed++;
         return ret;
     }
@@ -98,7 +102,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        IComplexNumber ret = arr.getComplex(numProcessed);
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        IComplexNumber ret = arr.getComplex((int)numProcessed);
         numProcessed++;
         return ret;
     }
@@ -119,14 +125,18 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public double op(double origin) {
-        double ret = y.getDouble(numProcessed);
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        double ret = y.getDouble((int)numProcessed);
         numProcessed++;
         return ret;
     }
 
     @Override
     public float op(float origin) {
-        float ret = (y.getFloat(numProcessed));
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        float ret = (y.getFloat((int)numProcessed));
         numProcessed++;
         return ret;
     }
@@ -134,7 +144,9 @@ public class SoftMax extends BaseTransformOp {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         IComplexNDArray arr = (IComplexNDArray) y;
-        IComplexNumber ret = arr.getComplex(numProcessed);
+        if(numProcessed >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of processed elements can not be >= Integer.MAX_VALUE");
+        IComplexNumber ret = arr.getComplex((int)numProcessed);
         numProcessed++;
         return ret;
     }
@@ -171,7 +183,7 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         passThrough = true;
     }

@@ -35,7 +35,7 @@ public class IAMax extends BaseIndexAccumulation {
     public IAMax() {
     }
 
-    public IAMax(INDArray x, INDArray y, int n) {
+    public IAMax(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

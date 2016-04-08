@@ -39,11 +39,11 @@ public class Ones extends BaseTransformOp {
         super(x, z);
     }
 
-    public Ones(INDArray x, INDArray z, int n) {
+    public Ones(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Ones(INDArray x, INDArray y, INDArray z, int n) {
+    public Ones(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

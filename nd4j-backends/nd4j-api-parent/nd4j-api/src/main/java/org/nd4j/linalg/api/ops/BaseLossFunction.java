@@ -6,11 +6,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public abstract class BaseLossFunction extends BaseAccumulation implements LossFunction {
-    public BaseLossFunction(INDArray x, INDArray y, INDArray z, int n) {
+    public BaseLossFunction(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public BaseLossFunction(INDArray x, INDArray y, int n) {
+    public BaseLossFunction(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

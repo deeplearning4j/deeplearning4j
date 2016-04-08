@@ -21,21 +21,21 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
      * @param z the result
      * @param n the number of elements
      */
-    public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, int n) {
+    public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
     }
 
-    public BaseIndexAccumulation(INDArray x, INDArray y, int n) {
+    public BaseIndexAccumulation(INDArray x, INDArray y, long n) {
         this(x, y, x, n);
     }
 
     public BaseIndexAccumulation(INDArray x) {
-        this(x, null, x, x.length());
+        this(x, null, x, x.lengthLong());
     }
 
     public BaseIndexAccumulation(INDArray x, INDArray y) {
-        this(x, y, x, x.length());
+        this(x, y, x, x.lengthLong());
     }
 
     @Override
@@ -59,11 +59,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
     private void init() {
-        init(x, y, x, x.length());
+        init(x, y, x, x.lengthLong());
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[]{zeroDouble()};
     }

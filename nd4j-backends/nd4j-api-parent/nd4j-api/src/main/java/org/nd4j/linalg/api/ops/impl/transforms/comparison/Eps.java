@@ -37,7 +37,7 @@ public class Eps extends BaseTransformOp {
     public Eps() {
     }
 
-    public Eps(INDArray x, INDArray y, INDArray z, int n) {
+    public Eps(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -49,7 +49,7 @@ public class Eps extends BaseTransformOp {
         super(x, z);
     }
 
-    public Eps(INDArray x, INDArray z, int n) {
+    public Eps(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

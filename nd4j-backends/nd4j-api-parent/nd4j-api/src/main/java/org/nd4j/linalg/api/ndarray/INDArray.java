@@ -1979,6 +1979,13 @@ public interface INDArray extends Serializable  {
      */
     int length();
 
+    /**
+     * Returns the total number of elements in the ndarray
+     *
+     * @return the number of elements in the ndarray
+     */
+    long lengthLong();
+
 
     /**
      * Broadcasts this ndarray to be the specified shape

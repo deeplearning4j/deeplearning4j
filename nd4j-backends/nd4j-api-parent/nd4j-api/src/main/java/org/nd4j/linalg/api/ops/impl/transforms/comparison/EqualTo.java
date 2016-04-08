@@ -35,7 +35,7 @@ public class EqualTo extends BaseTransformOp {
     public EqualTo() {
     }
 
-    public EqualTo(INDArray x, INDArray y, INDArray z, int n) {
+    public EqualTo(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -47,7 +47,7 @@ public class EqualTo extends BaseTransformOp {
         super(x, z);
     }
 
-    public EqualTo(INDArray x, INDArray z, int n) {
+    public EqualTo(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

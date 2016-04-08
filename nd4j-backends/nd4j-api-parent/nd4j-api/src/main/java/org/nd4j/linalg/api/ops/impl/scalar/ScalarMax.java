@@ -36,7 +36,7 @@ public class ScalarMax extends BaseScalarOp {
     public ScalarMax() {
     }
 
-    public ScalarMax(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarMax(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -44,7 +44,7 @@ public class ScalarMax extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarMax(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarMax(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 
@@ -129,7 +129,7 @@ public class ScalarMax extends BaseScalarOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (num != null)
             this.extraArgs = new Object[]{num};

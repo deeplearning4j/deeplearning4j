@@ -57,7 +57,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer create(DataBuffer underlyingBuffer, int offset, int length) {
+    public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
         if(underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
             return new DoubleBuffer(underlyingBuffer,length,offset);
         }
@@ -218,17 +218,17 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer createDouble(int length) {
+    public DataBuffer createDouble(long length) {
         return new DoubleBuffer(length);
     }
 
     @Override
-    public DataBuffer createFloat(int length) {
+    public DataBuffer createFloat(long length) {
         return new FloatBuffer(length);
     }
 
     @Override
-    public DataBuffer createInt(int length) {
+    public DataBuffer createInt(long length) {
         return new IntBuffer(length);
     }
 

@@ -36,11 +36,11 @@ public class Norm1 extends BaseAccumulation {
     public Norm1() {
     }
 
-    public Norm1(INDArray x, INDArray y, INDArray z, int n) {
+    public Norm1(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Norm1(INDArray x, INDArray y, int n) {
+    public Norm1(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

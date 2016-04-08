@@ -33,7 +33,7 @@ public class MulOp extends BaseTransformOp {
     public MulOp() {
     }
 
-    public MulOp(INDArray x, INDArray y, INDArray z, int n) {
+    public MulOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -45,12 +45,12 @@ public class MulOp extends BaseTransformOp {
         super(x, z);
     }
 
-    public MulOp(INDArray x, INDArray z, int n) {
+    public MulOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
     public MulOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     @Override
@@ -128,7 +128,7 @@ public class MulOp extends BaseTransformOp {
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to multiply");

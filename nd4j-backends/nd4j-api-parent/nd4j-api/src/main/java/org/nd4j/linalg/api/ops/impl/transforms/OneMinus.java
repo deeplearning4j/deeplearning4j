@@ -39,11 +39,11 @@ public class OneMinus extends BaseTransformOp {
         super(x, z);
     }
 
-    public OneMinus(INDArray x, INDArray z, int n) {
+    public OneMinus(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public OneMinus(INDArray x, INDArray y, INDArray z, int n) {
+    public OneMinus(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -111,7 +111,7 @@ public class OneMinus extends BaseTransformOp {
         if (y() != null)
             return new OneMinus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new OneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
+            return new OneMinus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
     }
 
@@ -122,7 +122,7 @@ public class OneMinus extends BaseTransformOp {
         if (y() != null)
             return new OneMinus(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new OneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+            return new OneMinus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
 }

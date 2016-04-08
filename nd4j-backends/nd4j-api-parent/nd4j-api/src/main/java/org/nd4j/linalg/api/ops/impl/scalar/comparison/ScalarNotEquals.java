@@ -35,7 +35,7 @@ public class ScalarNotEquals extends BaseScalarOp {
     public ScalarNotEquals() {
     }
 
-    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -43,7 +43,7 @@ public class ScalarNotEquals extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 

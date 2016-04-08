@@ -154,7 +154,7 @@ public class ContextHolder {
         int maxThreads = ContextHolder.getInstance().getInfoFor(ContextHolder.getInstance().getDeviceForThread()).getMaxThreadsPerBlock();
 
         if(threadsForFunction == null)
-            return PointerUtil.getNumThreads(op.n(), maxThreads);
+            return PointerUtil.getNumThreads((int)Math.min(op.n(), Integer.MAX_VALUE), maxThreads);
         return threadsForFunction;
 
     }

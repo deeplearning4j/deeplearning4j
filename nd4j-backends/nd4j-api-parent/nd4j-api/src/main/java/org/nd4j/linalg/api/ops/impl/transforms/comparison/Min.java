@@ -36,7 +36,7 @@ public class Min extends BaseTransformOp {
     public Min() {
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, int n) {
+    public Min(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -48,7 +48,7 @@ public class Min extends BaseTransformOp {
         super(x, z);
     }
 
-    public Min(INDArray x, INDArray z, int n) {
+    public Min(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

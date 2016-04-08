@@ -185,10 +185,10 @@ public interface Accumulation extends Op {
      * @param n the number of elements accumulated
      * @return calculated final result
      */
-    double calculateFinalResult(double accum, int n);
+    double calculateFinalResult(double accum, long n);
 
     /** @see #calculateFinalResult(double, int) */
-    float calculateFinalResult(float accum, int n);
+    float calculateFinalResult(float accum, long n);
 
 
     IComplexNumber op(IComplexNumber origin, double other);

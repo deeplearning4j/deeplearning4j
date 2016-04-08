@@ -42,12 +42,12 @@ public class CosineSimilarity extends BaseAccumulation {
         passThrough = true;
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, int n) {
+    public CosineSimilarity(INDArray x, INDArray y, long n) {
         super(x, y, n);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
     }
@@ -221,12 +221,12 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n){
+    public double calculateFinalResult(double accum, long n){
         throw new UnsupportedOperationException("Not supported for passthrough op");
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n){
+    public float calculateFinalResult(float accum, long n){
         throw new UnsupportedOperationException("Not supported for passthrough op");
     }
 }

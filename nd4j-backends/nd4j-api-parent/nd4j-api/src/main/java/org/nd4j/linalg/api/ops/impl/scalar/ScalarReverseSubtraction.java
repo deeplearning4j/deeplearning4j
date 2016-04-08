@@ -34,7 +34,7 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
     public ScalarReverseSubtraction() {
     }
 
-    public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, int n, Number num) {
+    public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
@@ -42,7 +42,7 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
         super(x, num);
     }
 
-    public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, int n, IComplexNumber num) {
+    public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, long n, IComplexNumber num) {
         super(x, y, z, n, num);
     }
 

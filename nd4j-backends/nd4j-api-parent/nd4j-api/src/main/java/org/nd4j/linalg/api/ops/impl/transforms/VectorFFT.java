@@ -52,14 +52,14 @@ public class VectorFFT extends BaseTransformOp {
         exec();
     }
 
-    public VectorFFT(INDArray x, INDArray z, int n,int fftLength) {
+    public VectorFFT(INDArray x, INDArray z, long n,int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
         this.n = fftLength;
         exec();
     }
 
-    public VectorFFT(INDArray x, INDArray y, INDArray z, int n,int fftLength) {
+    public VectorFFT(INDArray x, INDArray y, INDArray z, long n,int fftLength) {
         super(x, y, z, n);
         this.z = z;
         this.fftLength = fftLength;

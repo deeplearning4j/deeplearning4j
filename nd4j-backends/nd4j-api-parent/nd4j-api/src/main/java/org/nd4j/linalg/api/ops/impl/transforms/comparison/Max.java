@@ -35,7 +35,7 @@ public class Max extends BaseTransformOp {
     public Max() {
     }
 
-    public Max(INDArray x, INDArray y, INDArray z, int n) {
+    public Max(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -47,7 +47,7 @@ public class Max extends BaseTransformOp {
         super(ndArray, dup);
     }
 
-    public Max(INDArray x, INDArray z, int n) {
+    public Max(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 

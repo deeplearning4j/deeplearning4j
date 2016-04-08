@@ -35,7 +35,7 @@ public class Max extends BaseAccumulation {
     public Max() {
     }
 
-    public Max(INDArray x, INDArray y, int n) {
+    public Max(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 
