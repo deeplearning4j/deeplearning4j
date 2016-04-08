@@ -60,7 +60,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-//	printf("Params: gridSize: [1], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+	//printf("Params: gridSize: [1], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
@@ -2062,6 +2062,95 @@ void   NativeOps::execTransformFloat(
 
 }
 
+
+template <typename T>
+__device__ void flattenKernelGeneric(int dOffset,
+					char order,
+					T *result,
+					int *resultShapeInfo,
+					T *input,
+					int *inputShapeInfo) {
+	int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+	int *zShape = shape::shapeOf(resultShapeInfo);
+	int *zStride = shape::stride(resultShapeInfo);
+
+
+	int *yShape = shape::shapeOf(inputShapeInfo);
+	int *yStride = shape::stride(inputShapeInfo);
+	char yOrder = shape::order(inputShapeInfo);
+
+	int len = shape::length(inputShapeInfo);
+
+	int resultEWS = shape::elementWiseStride(resultShapeInfo);
+	int inputEWS = shape::elementWiseStride(inputShapeInfo);
+	if (yOrder == order) {
+		if (resultEWS >= 1 && inputEWS >= 1) {
+			for (int i = tid; i < len; i+= gridDim.x * blockDim.x) {
+				result[i * resultEWS + dOffset] = input[i * inputEWS];
+			}
+		} else {
+			int idx = 0;
+			int rank = shape::rank(inputShapeInfo);
+			int *coord = (int *) malloc(sizeof(int) * rank);
+			if(order == 'f') {
+				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
+					shape::ind2sub(rank,yShape,i,&coord);
+					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
+					result[i + dOffset] = input[offset];
+				}
+			}
+			else {
+				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
+					shape::ind2subC(rank,yShape,i,&coord);
+					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
+					result[i + dOffset] = input[offset];
+				}
+			}
+			free(coord);
+		}
+	} else {
+		int idx = 0;
+		int rank = shape::rank(inputShapeInfo);
+		int *coord = (int *) malloc(sizeof(int) * rank);
+		if(order == 'f') {
+			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
+				shape::ind2sub(rank,yShape,i,&coord);
+				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
+				result[i+dOffset] = input[offset];
+			}
+		}
+		else {
+			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
+				shape::ind2subC(rank,yShape,i,&coord);
+				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
+				result[i+dOffset] = input[offset];
+			}
+		}
+		free(coord);
+	}
+
+}
+
+extern "C" __global__ void flattenKernelDouble(int offset,
+											  char order,
+											  double *result,
+											  int *resultShapeInfo,
+											  double *input,
+											  int *inputShapeInfo) {
+	flattenKernelGeneric<double>(offset, order, result, resultShapeInfo, input, inputShapeInfo);
+}
+
+extern "C" __global__ void flattenKernelFloat(int offset,
+											  char order,
+											  float *result,
+											  int *resultShapeInfo,
+											  float *input,
+											  int *inputShapeInfo) {
+
+	flattenKernelGeneric<float>(offset, order, result, resultShapeInfo, input, inputShapeInfo);
+}
+
 /**
  * Append an input array
  * to the end of a flat array
@@ -2074,13 +2163,27 @@ void   NativeOps::execTransformFloat(
  * @param inputShapeInfo the shape information for that array
  */
 void NativeOps::flattenFloat(
+		Nd4jPointer *extraPointers,
 		int offset,
 		char order,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer input,
 		Nd4jPointer inputShapeInfo) {
-	printf("Cuda no op atm\n");
+	float *xPointer = reinterpret_cast<float *>(result);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+	float *yPointer = reinterpret_cast<float *>(input);
+	int *yShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int length = (int) extraPointers[2];
+
+	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
+
+	flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer);
+
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  * Append an input array
@@ -2094,13 +2197,27 @@ void NativeOps::flattenFloat(
  * @param inputShapeInfo the shape information for that array
  */
 void NativeOps::flattenDouble(
+		Nd4jPointer *extraPointers,
 		int offset,
 		char order,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
 		Nd4jPointer input,
 		Nd4jPointer inputShapeInfo) {
-	printf("Cuda no op atm\n");
+	double *xPointer = reinterpret_cast<double *>(result);
+	int *xShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+	double *yPointer = reinterpret_cast<double *>(input);
+	int *yShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	int length = (int) extraPointers[2];
+
+	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
+
+	flattenKernelDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer);
+
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::initializeDevicesAndFunctions() {

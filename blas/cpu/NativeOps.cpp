@@ -1378,7 +1378,8 @@ void   NativeOps::execTransformFloat(
 
 
 template <typename T>
-void flattenGeneric(int offset,
+void flattenGeneric(Nd4jPointer *extraPointers,
+                    int offset,
                     char order,
                     Nd4jPointer result,
                     Nd4jPointer resultShapeInfo,
@@ -1499,13 +1500,14 @@ void flattenGeneric(int offset,
 * @param inputShapeInfo the shape information for that array
 */
 void NativeOps::flattenFloat(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    flattenGeneric<float>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
+    flattenGeneric<float>(extraPointers, offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 
@@ -1521,13 +1523,14 @@ void NativeOps::flattenFloat(
 * @param inputShapeInfo the shape information for that array
 */
 void NativeOps::flattenDouble(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    flattenGeneric<double>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
+    flattenGeneric<double>(extraPointers, offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 /**

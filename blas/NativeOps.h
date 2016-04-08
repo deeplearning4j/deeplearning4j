@@ -813,6 +813,7 @@ class ND4J_EXPORT NativeOps {
     * @param inputShapeInfo the shape information for that array
     */
         void flattenFloat(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
@@ -832,6 +833,7 @@ class ND4J_EXPORT NativeOps {
 * @param inputShapeInfo the shape information for that array
 */
         void flattenDouble(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
