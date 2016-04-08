@@ -21,25 +21,28 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import org.deeplearning4j.ui.components.chart.*;
+import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.decorator.DecoratorAccordion;
 import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 
 /**
  * A component is anything that can be rendered, such at charts, text or tables.
+ * The intended use of these components is for Java -> JavaScript interop for UIs
  *
  * @author Alex Black
  */
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
-        @JsonSubTypes.Type(value = ComponentText.class, name = "ComponentText"),
+        @JsonSubTypes.Type(value = ChartHistogram.class, name = "ChartHistogram"),
+        @JsonSubTypes.Type(value = ChartHorizontalBar.class, name = "ChartHorizontalBar"),
         @JsonSubTypes.Type(value = ChartLine.class, name = "ChartLine"),
         @JsonSubTypes.Type(value = ChartScatter.class, name = "ChartScatter"),
-        @JsonSubTypes.Type(value = ComponentTable.class, name = "ComponentTable"),
-        @JsonSubTypes.Type(value = DecoratorAccordion.class, name = "DecoratorAccordion"),
-        @JsonSubTypes.Type(value = ChartHorizontalBar.class, name = "RenderableComponentBarChart"),
         @JsonSubTypes.Type(value = ChartStackedArea.class, name = "ChartStackedArea"),
-        @JsonSubTypes.Type(value = ChartHistogram.class, name = "ChartHistogram")
+        @JsonSubTypes.Type(value = ComponentDiv.class, name = "ComponentDiv"),
+        @JsonSubTypes.Type(value = DecoratorAccordion.class, name = "DecoratorAccordion"),
+        @JsonSubTypes.Type(value = ComponentTable.class, name = "ComponentTable"),
+        @JsonSubTypes.Type(value = ComponentText.class, name = "ComponentText")
 })
 @Data
 public abstract class Component {
