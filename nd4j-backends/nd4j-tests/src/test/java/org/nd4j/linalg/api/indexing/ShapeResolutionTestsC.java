@@ -186,7 +186,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testFlatIndexPointPoint(){
+    public void testVectorIndexPointPoint(){
         INDArray zeros = Nd4j.zeros(1, 4);
         INDArrayIndex x = NDArrayIndex.point(0);
         INDArrayIndex y = NDArrayIndex.point(2);
@@ -195,6 +195,34 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         assertEquals(
                 "[ 0,00, 0,00, 1,00, 0,00]",
                 zeros.toString());
+    }
+
+    @Test
+    public void testVectorIndexPointPointOutOfRange(){
+        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArrayIndex x = NDArrayIndex.point(0);
+        INDArrayIndex y = NDArrayIndex.point(4);
+        INDArray value = Nd4j.ones(1, 1);
+        try {
+            zeros.put(new INDArrayIndex[]{x, y}, value);
+            fail("Out of range index should throw an IllegalArgumentException");
+        }catch (IllegalArgumentException e){
+            //do nothing
+        }
+    }
+
+    @Test
+    public void testVectorIndexPointPointOutOfRange2(){
+        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArrayIndex x = NDArrayIndex.point(1);
+        INDArrayIndex y = NDArrayIndex.point(2);
+        INDArray value = Nd4j.ones(1, 1);
+        try {
+            zeros.put(new INDArrayIndex[]{x, y}, value);
+            fail("Out of range index should throw an IllegalArgumentException");
+        }catch (IllegalArgumentException e){
+            //do nothing
+        }
     }
 
     @Test
