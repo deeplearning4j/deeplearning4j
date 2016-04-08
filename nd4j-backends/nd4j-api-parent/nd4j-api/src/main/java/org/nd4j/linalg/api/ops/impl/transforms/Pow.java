@@ -40,17 +40,17 @@ public class Pow extends BaseTransformOp {
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
         this.pow = pow;
-        init(x, null, z, x.length());
+        init(x, null, z, x.lengthLong());
     }
 
-    public Pow(INDArray x, INDArray z, int n, double pow) {
+    public Pow(INDArray x, INDArray z, long n, double pow) {
         super(x, z, n);
         this.pow = pow;
         init(x, null, z, n);
 
     }
 
-    public Pow(INDArray x, INDArray y, INDArray z, int n, double pow) {
+    public Pow(INDArray x, INDArray y, INDArray z, long n, double pow) {
         super(x, y, z, n);
         this.pow = pow;
         init(x, y, z, n);
@@ -60,7 +60,7 @@ public class Pow extends BaseTransformOp {
     public Pow(INDArray x, double pow) {
         super(x);
         this.pow = pow;
-        init(x, null, x, x.length());
+        init(x, null, x, x.lengthLong());
     }
 
     @Override
@@ -137,7 +137,7 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x,y,z,n);
         this.extraArgs = new Object[]{pow};
     }

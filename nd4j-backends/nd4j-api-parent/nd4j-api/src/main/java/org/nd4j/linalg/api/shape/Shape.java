@@ -159,7 +159,7 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr, int... indices) {
-        int offset = getOffset(0, arr.shape(), arr.stride(), indices);
+        long offset = getOffset(0, arr.shape(), arr.stride(), indices);
         return arr.data().getDouble(offset);
     }
 
@@ -279,11 +279,11 @@ public class Shape {
      * @param indices the indices to iterate over
      * @return the double at the specified index
      */
-    public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
+    public static long getOffset(long baseOffset,int[] shape,int[] stride,int...indices) {
         //int ret =  mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
         if(shape.length != stride.length || indices.length != shape.length)
             throw new IllegalArgumentException("Indexes, shape, and stride must be the same length");
-        int offset = baseOffset;
+        long offset = baseOffset;
         for(int i = 0; i < shape.length; i++) {
             if(indices[i] >= shape[i])
                 throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[d].",i));
@@ -336,7 +336,7 @@ public class Shape {
         if (shape.length > 2 || shape.length < 1)
             return false;
         else {
-            int len = ArrayUtil.prod(shape);
+            long len = ArrayUtil.prodLong(shape);
             return shape[0] == len || shape[1] == len;
         }
     }
@@ -526,15 +526,15 @@ public class Shape {
         int oldnd;
         int[] olddims = ArrayUtil.copy(shape);
         int [] oldstrides = ArrayUtil.copy(stride);
-        int np, op, last_stride;
+        long np, op, last_stride;
         int oi, oj, ok, ni, nj, nk;
-        int [] newStrides = new int[stride.length];
+        long [] newStrides = new long[stride.length];
         oldnd = 0;
         //set the shape to be 1 x length
         int newShapeRank = 2;
-        int [] newShape = new int[shape.length];
+        long [] newShape = new long[shape.length];
         newShape[0] = 1;
-        newShape[1] = ArrayUtil.prod(shape);
+        newShape[1] = ArrayUtil.prodLong(shape);
 
         /*
          * Remove axes with dimension 1 from the old array. They have no effect
@@ -632,8 +632,10 @@ public class Shape {
         for (nk = ni; nk < newShapeRank; nk++) {
             newStrides[nk] = last_stride;
         }
+        if(newStrides[newShapeRank - 1] >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Element size can not be >= Integer.MAX_VALUE");
         //returns the last element of the new stride array
-        return newStrides[newShapeRank - 1];
+        return (int)newStrides[newShapeRank - 1];
     }
 
     /**
@@ -888,8 +890,8 @@ public class Shape {
      * @return the linear index given the shape
      * and indices
      */
-    public static int sub2Ind(int[] shape,int[] indices) {
-        int index = 0;
+    public static long sub2Ind(int[] shape,int[] indices) {
+        long index = 0;
         int shift = 1;
         for(int i = 0; i < shape.length; i++) {
             index += shift * indices[i];
@@ -906,12 +908,14 @@ public class Shape {
      * @param numIndices the number of total indices (typically prod of shape(
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2sub(int[] shape,int index,int numIndices) {
-        int denom = numIndices;
+    public static int[] ind2sub(int[] shape,long index,long numIndices) {
+        long denom = numIndices;
         int[] ret = new int[shape.length];
         for(int i = ret.length - 1; i >= 0; i--) {
             denom /= shape[i];
-            ret[i] = index / denom;
+            if(index / denom >= Integer.MAX_VALUE)
+                throw new IllegalArgumentException("Dimension can not be >= Integer.MAX_VALUE");
+            ret[i] = (int)(index / denom);
             index %= denom;
 
         }
@@ -927,8 +931,8 @@ public class Shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2sub(int[] shape,int index) {
-        return ind2sub(shape, index, ArrayUtil.prod(shape));
+    public static int[] ind2sub(int[] shape,long index) {
+        return ind2sub(shape, index, ArrayUtil.prodLong(shape));
     }
 
     /**
@@ -941,8 +945,8 @@ public class Shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2sub(INDArray arr,int index) {
-        return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
+    public static int[] ind2sub(INDArray arr,long index) {
+        return ind2sub(arr.shape(), index, ArrayUtil.prodLong(arr.shape()));
     }
 
 
@@ -956,12 +960,14 @@ public class Shape {
      * @param numIndices the number of total indices (typically prod of shape(
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2subC(int[] shape,int index,int numIndices) {
-        int denom = numIndices;
+    public static int[] ind2subC(int[] shape,long index,long numIndices) {
+        long denom = numIndices;
         int[] ret = new int[shape.length];
         for(int i = 0; i < shape.length; i++) {
             denom /= shape[i];
-            ret[i] = index / denom;
+            if(index / denom >= Integer.MAX_VALUE)
+                throw new IllegalArgumentException("Dimension can not be >= Integer.MAX_VALUE");
+            ret[i] = (int)(index / denom);
             index %= denom;
 
         }
@@ -980,8 +986,8 @@ public class Shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2subC(int[] shape,int index) {
-        return ind2subC(shape, index, ArrayUtil.prod(shape));
+    public static int[] ind2subC(int[] shape,long index) {
+        return ind2subC(shape, index, ArrayUtil.prodLong(shape));
     }
 
     /**
@@ -994,8 +1000,8 @@ public class Shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    public static int[] ind2subC(INDArray arr,int index) {
-        return ind2subC(arr.shape(), index, ArrayUtil.prod(arr.shape()));
+    public static int[] ind2subC(INDArray arr,long index) {
+        return ind2subC(arr.shape(), index, ArrayUtil.prodLong(arr.shape()));
     }
 
     /**
@@ -1005,7 +1011,7 @@ public class Shape {
      * @param indexes the indexes along each dimension to create the offset for
      * @return the offset for the given array and indexes
      */
-    public static int offsetFor(INDArray arr,int[] indexes) {
+    public static long offsetFor(INDArray arr,int[] indexes) {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         resolution.exec(Shape.toIndexes(indexes));
         return resolution.getOffset();

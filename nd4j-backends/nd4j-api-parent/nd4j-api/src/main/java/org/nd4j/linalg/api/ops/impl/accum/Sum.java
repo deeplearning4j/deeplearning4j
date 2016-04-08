@@ -34,11 +34,11 @@ public class Sum extends BaseAccumulation {
     public Sum() {
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z, int n) {
+    public Sum(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Sum(INDArray x, INDArray y, int n) {
+    public Sum(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

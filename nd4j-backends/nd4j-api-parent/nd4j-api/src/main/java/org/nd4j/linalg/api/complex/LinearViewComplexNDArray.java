@@ -176,6 +176,11 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
     }
 
     @Override
+    public long lengthLong() {
+        return wrapped.length();
+    }
+
+    @Override
     public double getDouble(int i) {
         if(wrapped.isVector())
             return wrapped.getDouble(i);

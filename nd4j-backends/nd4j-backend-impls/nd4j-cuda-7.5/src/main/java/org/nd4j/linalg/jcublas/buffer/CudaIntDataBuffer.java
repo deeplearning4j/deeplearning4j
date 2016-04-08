@@ -49,7 +49,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize, offset);
     }
 
-    public CudaIntDataBuffer(DataBuffer underlyingBuffer, int length, int offset) {
+    public CudaIntDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
 

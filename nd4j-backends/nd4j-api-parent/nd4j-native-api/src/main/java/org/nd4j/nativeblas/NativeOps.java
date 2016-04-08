@@ -101,7 +101,7 @@ public class NativeOps extends Pointer {
                                                      int yStride,
                                                      long result,
                                                      int resultStride,
-                                                     long extraParams, int n);
+                                                     long extraParams, long n);
 
     /**
      *
@@ -274,7 +274,7 @@ public class NativeOps extends Pointer {
                                           int resultStride,
                                           double scalar,
                                           long extraParams,
-                                          int n);
+                                          long n);
 
     /**
      *
@@ -314,7 +314,7 @@ public class NativeOps extends Pointer {
                                         long resultShapeInfo,
                                         double scalar,
                                         long extraParams,
-                                        int n,
+                                        long n,
                                         long xIndexes,
                                         long resultIndexes);
     /**
@@ -374,7 +374,7 @@ public class NativeOps extends Pointer {
                                              int xStride,
                                              long result,
                                              int resultStride,
-                                             long extraParams, int n);
+                                             long extraParams, long n);
 
     /**
      *
@@ -485,7 +485,7 @@ public class NativeOps extends Pointer {
                                                     int yStride,
                                                     long result,
                                                     int resultStride,
-                                                    long extraParams, int n);
+                                                    long extraParams, long n);
 
     /**
      *
@@ -655,7 +655,7 @@ public class NativeOps extends Pointer {
                                          int resultStride,
                                          double scalar,
                                          long extraParams,
-                                         int n);
+                                         long n);
 
     /**
      *
@@ -754,7 +754,7 @@ public class NativeOps extends Pointer {
                                             int xStride,
                                             long result,
                                             int resultStride,
-                                            long extraParams, int n);
+                                            long extraParams, long n);
 
     /**
      *

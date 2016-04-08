@@ -183,6 +183,36 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
+    public static long prodLong(List<Integer> mult) {
+        if (mult.size() < 1)
+            return 0;
+        long ret = 1;
+        for (int i = 0; i < mult.size(); i++)
+            ret *= mult.get(i);
+        return ret;
+    }
+
+
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
+    public static long prodLong(int...mult) {
+        if (mult.length < 1)
+            return 0;
+        long ret = 1;
+        for (int i = 0; i < mult.length; i++)
+            ret *= mult[i];
+        return ret;
+    }
 
     public static boolean equals(float[] data, double[] data2) {
         if (data.length != data2.length)
@@ -285,6 +315,53 @@ public class ArrayUtil {
     }
 
     /**
+     * Compute the offset
+     * based on teh shape strides and offsets
+     * @param shape the shape to compute
+     * @param offsets the offsets to compute
+     * @param strides the strides to compute
+     * @return the offset for the given shape,offset,and strides
+     */
+    public static long calcOffsetLong(List<Integer> shape,List<Integer> offsets,List<Integer> strides) {
+        if(shape.size() != offsets.size() || shape.size() != strides.size())
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+        long ret = 0;
+        for(int i = 0; i < offsets.size(); i++) {
+            //we should only do this in the general case, not on vectors
+            //the reason for this is we force everything including scalars
+            //to be 2d
+            if(shape.get(i) == 1 && offsets.size() > 2 && i > 0)
+                continue;
+            ret += (long)offsets.get(i) * strides.get(i);
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Compute the offset
+     * based on teh shape strides and offsets
+     * @param shape the shape to compute
+     * @param offsets the offsets to compute
+     * @param strides the strides to compute
+     * @return the offset for the given shape,offset,and strides
+     */
+    public static long calcOffsetLong(int[] shape,int[] offsets,int[] strides) {
+        if(shape.length != offsets.length || shape.length!= strides.length)
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+
+        long ret = 0;
+        for(int i = 0; i < offsets.length; i++) {
+            if(shape[i] == 1)
+                continue;
+            ret += (long)offsets[i] * strides[i];
+        }
+
+        return ret;
+    }
+
+    /**
      *
      * @param xs
      * @param ys
@@ -318,6 +395,44 @@ public class ArrayUtil {
 
         for (int i = 0; i < n; i++) {
             result += xs[i] * ys[i];
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
+    public static long dotProductLong(List<Integer> xs, List<Integer> ys) {
+        long result = 0;
+        int n = xs.size();
+
+        if (ys.size() != n)
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i = 0; i < n; i++) {
+            result += (long)xs.get(i) * ys.get(i);
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
+    public static long dotProductLong(int[] xs, int[] ys) {
+        long result = 0;
+        int n = xs.length;
+
+        if (ys.length != n)
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i = 0; i < n; i++) {
+            result += (long)xs[i] * ys[i];
         }
         return result;
     }

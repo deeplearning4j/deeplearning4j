@@ -48,25 +48,25 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
      * @param z the result
      * @param n the number of elements
      */
-    public BaseAccumulation(INDArray x, INDArray y, INDArray z, int n) {
+    public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
     }
 
-    public BaseAccumulation(INDArray x, INDArray y, int n) {
+    public BaseAccumulation(INDArray x, INDArray y, long n) {
         this(x, y, x, n);
     }
 
     public BaseAccumulation(INDArray x) {
-        this(x, null, x, x.length());
+        this(x, null, x, x.lengthLong());
     }
 
     public BaseAccumulation(INDArray x, INDArray y) {
-        this(x, y, x, x.length());
+        this(x, y, x, x.lengthLong());
     }
 
     private void init() {
-        init(x, y, x, x.length());
+        init(x, y, x, x.lengthLong());
     }
 
     @Override
@@ -148,12 +148,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public int numProcessed() {
+    public long numProcessed() {
         return numProcessed;
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[]{zeroDouble()};
     }
@@ -192,12 +192,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n) {
+    public double calculateFinalResult(double accum, long n) {
         return accum;
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n) {
+    public float calculateFinalResult(float accum, long n) {
         return accum;
     }
 

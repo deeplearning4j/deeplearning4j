@@ -956,7 +956,7 @@ public class Nd4j {
      * @param offset the offset for the view
      * @return the new view of the data buffer
      */
-    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,int offset,int length) {
+    public static DataBuffer createBuffer(DataBuffer underlyingBuffer,long offset,long length) {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer,offset,length);
     }
 
@@ -1151,7 +1151,7 @@ public class Nd4j {
      * @param length the length of te buffer
      * @return the buffer to create
      */
-    public static DataBuffer createBuffer(int length) {
+    public static DataBuffer createBuffer(long length) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
@@ -1863,7 +1863,7 @@ public class Nd4j {
         int count = 0;
 
         if(read == 'c') {
-            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape) * 2);
+            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prodLong(shape) * 2);
             for(int i = 0; i < ArrayUtil.prod(shape); i+= 2) {
                 String val = dis.readUTF();
                 IComplexNumber num = Nd4j.parseComplexNumber(val);
@@ -1877,7 +1877,7 @@ public class Nd4j {
 
         }
         else {
-            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape));
+            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prodLong(shape));
             for(int i = 0; i < ArrayUtil.prod(shape); i++) {
                 String val = dis.readUTF();
                 buf.put(i,Double.valueOf(val));
@@ -3947,7 +3947,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
-        IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prod(shape) * 2), shape, 0, ordering);
+        IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prodLong(shape) * 2), shape, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }

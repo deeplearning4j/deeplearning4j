@@ -34,11 +34,11 @@ public class Prod extends BaseAccumulation {
     public Prod() {
     }
 
-    public Prod(INDArray x, INDArray y, INDArray z, int n) {
+    public Prod(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Prod(INDArray x, INDArray y, int n) {
+    public Prod(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

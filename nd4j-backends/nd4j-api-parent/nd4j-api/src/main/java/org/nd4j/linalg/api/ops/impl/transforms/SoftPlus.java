@@ -19,11 +19,11 @@ public class SoftPlus extends BaseTransformOp {
     public SoftPlus() {
     }
 
-    public SoftPlus(INDArray x, INDArray z, int n) {
+    public SoftPlus(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftPlus(INDArray x, INDArray y, INDArray z, int n) {
+    public SoftPlus(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -87,7 +87,7 @@ public class SoftPlus extends BaseTransformOp {
         if (y() != null)
             return new SoftPlus(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new SoftPlus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
+            return new SoftPlus(xAlongDimension, z.vectorAlongDimension(index, dimension), x.lengthLong());
 
     }
 
@@ -103,7 +103,7 @@ public class SoftPlus extends BaseTransformOp {
         if (y() != null)
             return new SoftPlus(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new SoftPlus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+            return new SoftPlus(xAlongDimension, z.tensorAlongDimension(index, dimension), x.lengthLong());
 
     }
 }

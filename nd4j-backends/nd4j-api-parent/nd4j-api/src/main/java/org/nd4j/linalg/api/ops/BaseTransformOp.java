@@ -35,11 +35,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public BaseTransformOp() {
     }
 
-    public BaseTransformOp(INDArray x, INDArray z, int n) {
+    public BaseTransformOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public BaseTransformOp(INDArray x, INDArray y, INDArray z, int n) {
+    public BaseTransformOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

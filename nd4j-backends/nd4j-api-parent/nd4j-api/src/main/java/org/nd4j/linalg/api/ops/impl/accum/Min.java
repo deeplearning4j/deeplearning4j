@@ -36,11 +36,11 @@ public class Min extends BaseAccumulation {
     public Min() {
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, int n) {
+    public Min(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Min(INDArray x, INDArray y, int n) {
+    public Min(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 

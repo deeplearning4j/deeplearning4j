@@ -468,7 +468,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6s = arr6.sum(2,3);
         for( int i = 0; i < arr6s.length(); i++)
-            assertEquals(arr6s.getDouble(i),16,1e-1);
+            assertEquals(16, arr6s.getDouble(i),1e-1);
 
     }
 
@@ -521,8 +521,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1,1,4,4,4);
         INDArray arr5s = arr5.sum(2,3);
+        System.out.println("5d length: " + arr5s.length());
         for(int i = 0; i < arr5s.length(); i++)
-            assertEquals(arr5s.getDouble(i),16,1e-1);
+            assertEquals(16, arr5s.getDouble(i),1e-1);
     }
 
 

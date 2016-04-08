@@ -33,7 +33,7 @@ public class RDivOp extends BaseTransformOp {
     public RDivOp() {
     }
 
-    public RDivOp(INDArray x, INDArray y, INDArray z, int n) {
+    public RDivOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -45,12 +45,12 @@ public class RDivOp extends BaseTransformOp {
         super(x, z);
     }
 
-    public RDivOp(INDArray x, INDArray z, int n) {
+    public RDivOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
     public RDivOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     @Override
@@ -127,7 +127,7 @@ public class RDivOp extends BaseTransformOp {
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
             throw new IllegalArgumentException("No components to divide");

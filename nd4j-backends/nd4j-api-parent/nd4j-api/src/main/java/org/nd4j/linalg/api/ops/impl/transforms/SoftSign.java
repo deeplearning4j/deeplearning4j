@@ -43,11 +43,11 @@ public class SoftSign extends BaseTransformOp {
         super(x, z);
     }
 
-    public SoftSign(INDArray x, INDArray z, int n) {
+    public SoftSign(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftSign(INDArray x, INDArray y, INDArray z, int n) {
+    public SoftSign(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

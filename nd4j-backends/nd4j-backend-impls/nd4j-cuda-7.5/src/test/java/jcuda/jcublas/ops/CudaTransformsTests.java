@@ -398,7 +398,23 @@ public class CudaTransformsTests {
         INDArray outc = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('c')));
         INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
 
+
+        System.out.println("Exp: " + Arrays.toString(exp.data().asFloat()));
+        System.out.println("OutC: " + Arrays.toString(outc.data().asFloat()));
+        System.out.println("OutF: " + Arrays.toString(outf.data().asFloat()));
+        System.out.println("outC shapeInfo: " + outc.shapeInfoDataBuffer());
+        System.out.println("outF shapeInfo: " + outf.shapeInfoDataBuffer());
         assertEquals(exp, outc);
+        assertEquals(exp, outf);
+    }
+
+    @Test
+    public void testIsMaxMinimized() throws Exception {
+        INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+        INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
+
+
         assertEquals(exp, outf);
     }
 

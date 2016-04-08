@@ -43,12 +43,12 @@ public class RectifedLinear extends BaseTransformOp {
         this.cutoff = cutoff;
     }
 
-    public RectifedLinear(INDArray x, INDArray z, int n, double cutoff) {
+    public RectifedLinear(INDArray x, INDArray z, long n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
     }
 
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, int n, double cutoff) {
+    public RectifedLinear(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
     }
@@ -62,16 +62,16 @@ public class RectifedLinear extends BaseTransformOp {
         super(x, z);
     }
 
-    public RectifedLinear(INDArray x, INDArray z, int n) {
+    public RectifedLinear(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, int n) {
+    public RectifedLinear(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public RectifedLinear(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public RectifedLinear(INDArray x) {
@@ -157,7 +157,7 @@ public class RectifedLinear extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[] {cutoff};
     }

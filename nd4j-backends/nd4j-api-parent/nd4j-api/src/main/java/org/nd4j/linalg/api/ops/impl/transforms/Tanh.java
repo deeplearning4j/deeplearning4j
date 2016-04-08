@@ -41,16 +41,16 @@ public class Tanh extends BaseTransformOp {
         super(x, z);
     }
 
-    public Tanh(INDArray x, INDArray z, int n) {
+    public Tanh(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Tanh(INDArray x, INDArray y, INDArray z, int n) {
+    public Tanh(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
     public Tanh(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z, x.lengthLong());
     }
 
     public Tanh(INDArray x) {

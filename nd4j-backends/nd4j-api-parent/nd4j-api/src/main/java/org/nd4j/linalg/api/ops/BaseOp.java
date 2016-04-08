@@ -34,8 +34,8 @@ import java.nio.Buffer;
 public abstract class BaseOp implements Op {
 
     protected INDArray x, y, z;
-    protected int n;
-    protected int numProcessed;
+    protected long n;
+    protected long numProcessed;
     protected Object[] extraArgs;
     protected boolean passThrough;
 
@@ -136,7 +136,7 @@ public abstract class BaseOp implements Op {
      * @param z the output array
      */
     public BaseOp(INDArray x, INDArray z) {
-        this(x, z, x.length());
+        this(x, z, x.lengthLong());
     }
 
     /**
@@ -146,12 +146,12 @@ public abstract class BaseOp implements Op {
      * @param z the output
      * @param n the number of elements to iterate on
      */
-    public BaseOp(INDArray x, INDArray z, int n) {
+    public BaseOp(INDArray x, INDArray z, long n) {
         this(x, null, z, n);
     }
 
 
-    public BaseOp(INDArray x, INDArray y, INDArray z, int n) {
+    public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
         this.n = n;
         init(x, y, z, n);
     }
@@ -164,7 +164,7 @@ public abstract class BaseOp implements Op {
      * @param x the ndarray
      */
     public BaseOp(INDArray x) {
-        this(x, null, x, x.length());
+        this(x, null, x, x.lengthLong());
     }
 
     @Override
@@ -189,13 +189,13 @@ public abstract class BaseOp implements Op {
     }
 
     @Override
-    public int n() {
+    public long n() {
         return n;
     }
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -204,12 +204,12 @@ public abstract class BaseOp implements Op {
     }
 
     @Override
-    public void setN(int n) {
+    public void setN(long n) {
         this.n = n;
     }
 
     @Override
-    public int numProcessed() {
+    public long numProcessed() {
         return numProcessed;
     }
 

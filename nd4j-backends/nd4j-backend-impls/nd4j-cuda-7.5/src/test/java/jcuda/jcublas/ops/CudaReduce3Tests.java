@@ -81,12 +81,12 @@ public class CudaReduce3Tests {
     @Test
     public void testPinnedManhattanDistance2() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
-        INDArray array1 = Nd4j.linspace(1, 10000, 10000);
-        INDArray array2 = Nd4j.linspace(1, 9000, 10000);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000);
+        INDArray array2 = Nd4j.linspace(1, 900, 1000);
 
-        float result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().floatValue();
+        double result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().doubleValue();
 
-        assertEquals(5000003.0, result, 0.001f);
+        assertEquals(50000.0, result, 0.001f);
     }
 
     @Test

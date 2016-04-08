@@ -33,11 +33,11 @@ public class Mean extends Sum {
     public Mean() {
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z, int n) {
+    public Mean(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Mean(INDArray x, INDArray y, int n) {
+    public Mean(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 
@@ -116,14 +116,14 @@ public class Mean extends Sum {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n) {
+    public double calculateFinalResult(double accum, long n) {
         if(applyFinalTransform())
             return accum / n;
         return accum;
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n) {
+    public float calculateFinalResult(float accum, long n) {
         if(applyFinalTransform())
             return accum / n;
         return accum;

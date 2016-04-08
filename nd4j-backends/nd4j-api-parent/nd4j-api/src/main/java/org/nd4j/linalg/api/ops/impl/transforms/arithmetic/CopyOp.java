@@ -33,7 +33,7 @@ public class CopyOp extends BaseTransformOp {
     public CopyOp() {
     }
 
-    public CopyOp(INDArray x, INDArray y, INDArray z, int n) {
+    public CopyOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
@@ -41,7 +41,7 @@ public class CopyOp extends BaseTransformOp {
         super(x, z);
     }
 
-    public CopyOp(INDArray x, INDArray z, int n) {
+    public CopyOp(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
@@ -50,7 +50,7 @@ public class CopyOp extends BaseTransformOp {
     }
 
     public CopyOp(INDArray x, INDArray xDup, INDArray z) {
-        super(x, xDup, z, x.length());
+        super(x, xDup, z, x.lengthLong());
     }
 
     @Override
@@ -142,7 +142,7 @@ public class CopyOp extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
     }
 }

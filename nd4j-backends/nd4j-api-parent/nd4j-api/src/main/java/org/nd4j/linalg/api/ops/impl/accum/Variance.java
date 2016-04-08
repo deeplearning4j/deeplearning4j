@@ -42,30 +42,30 @@ public class Variance extends BaseAccumulation {
     public Variance() {
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, int n) {
+    public Variance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init(x, y, z, n);
     }
 
-    public Variance(INDArray x, INDArray y, int n) {
+    public Variance(INDArray x, INDArray y, long n) {
         this(x, y, x, n);
     }
 
     public Variance(INDArray x) {
-        this(x, null, x, x.length(), true);
+        this(x, null, x, x.lengthLong(), true);
     }
 
     public Variance(INDArray x, INDArray y) {
         super(x, y);
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, int n, boolean biasCorrected) {
+    public Variance(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
         super(x, y, z, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
     }
 
-    public Variance(INDArray x, INDArray y, int n, boolean biasCorrected) {
+    public Variance(INDArray x, INDArray y, long n, boolean biasCorrected) {
         super(x, y, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
@@ -80,7 +80,7 @@ public class Variance extends BaseAccumulation {
     public Variance(INDArray x, INDArray y, boolean biasCorrected) {
         super(x, y);
         this.biasCorrected = biasCorrected;
-        init(x, y, x, x.length());
+        init(x, y, x, x.lengthLong());
     }
 
     @Override
@@ -187,7 +187,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, int n) {
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if(Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
             if (biasCorrected)
@@ -275,7 +275,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public double calculateFinalResult(double accum, int n) {
+    public double calculateFinalResult(double accum, long n) {
         //accumulation is sum_i (x_i-mean)^2
         double result;
         if (biasCorrected)
@@ -287,7 +287,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public float calculateFinalResult(float accum, int n) {
+    public float calculateFinalResult(float accum, long n) {
         //accumulation is sum_i (x_i-mean)^2
         return (float) calculateFinalResult((double) accum, n);
     }

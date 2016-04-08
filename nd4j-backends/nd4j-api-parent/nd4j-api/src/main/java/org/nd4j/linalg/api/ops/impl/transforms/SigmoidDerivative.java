@@ -41,11 +41,11 @@ public class SigmoidDerivative extends BaseTransformOp {
         super(x, z);
     }
 
-    public SigmoidDerivative(INDArray x, INDArray z, int n) {
+    public SigmoidDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SigmoidDerivative(INDArray x, INDArray y, INDArray z, int n) {
+    public SigmoidDerivative(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

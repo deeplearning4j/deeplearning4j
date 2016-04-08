@@ -39,11 +39,11 @@ public class Cos extends BaseTransformOp {
         super(x, z);
     }
 
-    public Cos(INDArray x, INDArray z, int n) {
+    public Cos(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Cos(INDArray x, INDArray y, INDArray z, int n) {
+    public Cos(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 

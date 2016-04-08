@@ -36,7 +36,7 @@ public class ACos extends BaseTransformOp {
     public ACos() {
     }
 
-    public ACos(INDArray x, INDArray y, INDArray z, int n) {
+    public ACos(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
