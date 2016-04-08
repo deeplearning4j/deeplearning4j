@@ -2,7 +2,8 @@
  * transform.h
  *
  *  Created on: Dec 28, 2015
- *      Author: agibsonccc
+ *  @author: agibsonccc
+ *  @author: raver119@gmail.com
  */
 
 #ifndef TRANSFORM_H_
@@ -3603,7 +3604,6 @@ public:
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			printf("maxResult length: [%i], isVector: [%i]\n", shape[0], isVector);
 		}
 		__syncthreads();
 
@@ -4142,7 +4142,117 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+
+
+		// TODO: this kernel might use block-wise multireduce too
+		if (blockIdx.x > 0)
+			return;
+
+
+
+
+		int *shape = shape::shapeOf(xShapeBuffer);
+		__shared__ T *maxResult;
+		__shared__ int *maxResultShapeBuffer;
+		__shared__ int resultEWS;
+		__shared__ functions::reduce::ops::Max<T> *max;
+		__shared__ functions::transform::ops::Exp<T> *exp;
+		__shared__ functions::broadcast::ops::Subtract<T> *sub;
+		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+		__shared__ functions::broadcast::ops::Divide<T> *div;
+		__shared__ functions::reduce::ops::Sum<T> *sum;
+		__shared__ int isVector;
+
+		int length = shape::length(xShapeBuffer);
+
+		if(threadIdx.x == 0) {
+			isVector = shape::isVector(xShapeBuffer);
+			resultEWS = shape::elementWiseStride(resultShapeBuffer);
+			max = new functions::reduce::ops::Max<T>();
+			sum = new functions::reduce::ops::Sum<T>();
+			exp = new functions::transform::ops::Exp<T>();
+			if (isVector) {
+				scalarSub = new functions::scalar::ops::Subtract<T>();
+				scalarDiv = new functions::scalar::ops::Divide<T>();
+			} else {
+				sub = new functions::broadcast::ops::Subtract<T>();
+				div = new functions::broadcast::ops::Divide<T>();
+			}
+			maxResult = (T *) malloc(sizeof(T) * shape[0]);
+		}
+		__syncthreads();
+
+		int *stride = shape::stride(xShapeBuffer);
+		//iterate along rows
+		int dimension[1] = {0};
+		int maxDimension[1] = {1};
+		//compute the row wise maxes
+
+		int maxShape[2] = {shape[0], 1};
+
+		if (threadIdx.x == 0)
+			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+
+		if (threadIdx.x < shape[0])
+			maxResult[threadIdx.x] = (T) 0.0;
+		__syncthreads();
+
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		__syncthreads();
+
+		if (threadIdx.x == 0) delete max;
+		__syncthreads();
+
+		//subtract max of each row
+		if (isVector) {
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
+
+		//after subtracting the row wise maxes take the exp
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		__syncthreads();
+
+
+		//take the sum for the exponential
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		__syncthreads();
+
+		//divide by the sum
+		if (isVector) {
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
+
+		if (resultEWS >= 1) {
+			for (int i = threadIdx.x; i < length; i += blockDim.x) {
+				result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
+			}
+		} else {
+				printf("Non element wise stride not supported right now\n");
+		}
+
+		__syncthreads();
+		if(threadIdx.x == 0) {
+			delete sum;
+			delete exp;
+			if (isVector) {
+				delete scalarDiv;
+				delete scalarSub;
+			} else {
+				delete div;
+				delete sub;
+			}
+			free(maxResult);
+			free(maxResultShapeBuffer);
+		}
+	}
 #endif
 
 

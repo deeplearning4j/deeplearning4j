@@ -446,8 +446,6 @@ public:
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
-				//            if (threadIdx.x == 0)
-				//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
@@ -470,9 +468,6 @@ public:
 
 		}
 		else {
-			if(tid == 0) {
-				printf("Scalar!\n");
-			}
 			this->execScalarCuda(
 					dx,
 					xShapeInfo,
@@ -480,7 +475,6 @@ public:
 					result,
 					resultShapeInfo);
 		}
-
 	}
 
 	/**
