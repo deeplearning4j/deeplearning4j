@@ -348,7 +348,7 @@ public:
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
+						xShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
 							&dimension,
 							&dimensionLength,
@@ -373,11 +373,9 @@ public:
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int tadLength = shape::length(tadShapeShapeInfo);
 				int rank = shape::rank(tadShapeShapeInfo);
-				if (tid == 0)
-					printf("Going wild on dimensions now\n");
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+					int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
@@ -409,7 +407,6 @@ public:
 					}
 
 					result[i] = start;
-					printf("result[%i] = [%f]\n", i, result[i]);
 				}
 
 				__syncthreads();
