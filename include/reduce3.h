@@ -268,8 +268,9 @@ public:
 				 *This will be used in summary stats too.
 				 */
 				// write result for this block to global mem
+				__syncthreads();
 				if (tid == 0) {
-					result[blockIdx.x] = postProcess(sPartials[0], length,&extraParams);
+					result[tid] = postProcess(sPartials[0], length,&extraParams);
 
 				}
 			}
@@ -291,8 +292,9 @@ public:
 				 *This will be used in summary stats too.
 				 */
 				// write result for this block to global mem
+				__syncthreads();
 				if (tid == 0) {
-					result[blockIdx.x] = postProcess(sPartials[0], length,&extraParams);
+					result[tid] = postProcess(sPartials[0], length,&extraParams);
 
 				}
 			}
@@ -347,8 +349,9 @@ public:
 			 *This will be used in summary stats too.
 			 */
 			// write result for this block to global mem
-			if (threadIdx.x == 0) {
-				result[blockIdx.x] = postProcess(sPartials[0], n,&extraParams);
+			__syncthreads();
+			if (tid == 0) {
+				result[tid] = postProcess(sPartials[0], n,&extraParams);
 			}
 		}
 
@@ -546,7 +549,7 @@ public:
 								dy,
 								yStridesIter);
 
-						result[0] = postProcess(startingVal,n,&extraParams);
+						result[i] = postProcess(startingVal,n,&extraParams);
 					}
 					else {
 						printf("Unable to prepare array\n");

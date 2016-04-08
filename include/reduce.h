@@ -295,7 +295,7 @@ public:
 			 */
 			//				int
 
-			if (dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1) {
 				xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -366,7 +366,7 @@ public:
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				if(tid == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -407,7 +407,6 @@ public:
 					}
 
 					result[i] = start;
-
 				}
 
 				__syncthreads();
@@ -419,7 +418,7 @@ public:
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						free(inputShapeInfo);
 					}
 				}
 			}
@@ -447,8 +446,6 @@ public:
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
-				//            if (threadIdx.x == 0)
-				//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
@@ -471,9 +468,6 @@ public:
 
 		}
 		else {
-			if(tid == 0) {
-				printf("Scalar!\n");
-			}
 			this->execScalarCuda(
 					dx,
 					xShapeInfo,
@@ -481,7 +475,6 @@ public:
 					result,
 					resultShapeInfo);
 		}
-
 	}
 
 	/**
@@ -1863,8 +1856,10 @@ __global__ void reduceGenericGlobal(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		delete  reduceFunctionToInvoke;
+		delete reduceFunctionToInvoke;
 		delete newOpFactory;
 	}
 
@@ -1914,6 +1909,8 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
 		delete reduceFunctionToInvoke;
 		delete newOpFactory;

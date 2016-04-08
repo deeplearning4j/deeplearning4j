@@ -343,13 +343,16 @@ public:
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				if(tid == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int tadLength = shape::length(tadShapeShapeInfo);
 				int rank = shape::rank(tadShapeShapeInfo);
+				if (tid == 0)
+					printf("Going wild on dimensions\n");
+
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
@@ -401,14 +404,16 @@ public:
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						free(inputShapeInfo);
 					}
 				}
 			} else {
 				if(tid == 0) {
 					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
+					printf("Peeeew...\n");
 				}
 				__syncthreads();
+
 
 
 				int resultLength = shape::length(resultShapeInfo);
@@ -503,8 +508,14 @@ public:
 			if(blockIdx.x >= resultLength)
 				return;
 
-			if (threadIdx.x == 0)
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			if (threadIdx.x == 0) {
+				if (dimension != NULL && (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1)) {
+					int *xStride = shape::stride(xShapeInfo);
+					xElementWiseStride =  xStride[dimension[0]];
+				} else {
+					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				}
+			}
 
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
@@ -513,6 +524,8 @@ public:
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
+					if (threadIdx.x == 0)
+						printf("Stride == 1\n");
 #pragma unroll
 					for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 						int currIdx = i;
@@ -520,6 +533,8 @@ public:
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				} else {
+					if (threadIdx.x ==0)
+						printf("Stride != 1\n");
 #pragma unroll
 					for(int i = xElementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
 						int currIdx = i;
@@ -528,6 +543,8 @@ public:
 					}
 				}
 			} else {
+				if (threadIdx.x == 0)
+						printf("Stride undefined\n");
 				int rank = shape::rank(xShapeInfo);
 				int *ind2sub = (int *) malloc(sizeof(int) * rank);
 #pragma unroll
@@ -544,6 +561,7 @@ public:
 
 
 			sPartials[tid] = reduction;
+			printf("sParitals[%i] -> value: [%f], index: [%i]\n", tid, sPartials[tid].value, sPartials[tid].index);
 
 			__syncthreads();
 			aggregatePartials(&sPartials, tid,numElements ,extraParams);
@@ -552,6 +570,7 @@ public:
 			__syncthreads();
 			if (tid == 0) {
 				result[0] = sPartials[0].index;
+				printf("Result -> value: [%f], index: [%i]\n", sPartials[0].value, sPartials[0].index);
 			}
 
 			/*
@@ -988,12 +1007,16 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value > old.value) {
-			return opOutput;
-			// workaround for cuda race condition at merge phase
-		} else if (opOutput.value == old.value && opOutput.index < old.index)
+		if (opOutput.value > old.value)
 			return opOutput;
 
+#ifdef __CUDACC__
+		// workaround for cuda race condition at merge phase
+		else if (opOutput.value == old.value && opOutput.index < old.index)
+			return opOutput;
+#elif defined(__GNUC__)
+
+#endif
 		return old;
 	}
 
@@ -1142,12 +1165,16 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value < old.value) {
+		if (opOutput.value < old.value)
 			return opOutput;
 
+#ifdef __CUDACC__
 		// workaround for cuda race condition at merge phase
-		} else if (opOutput.value == old.value && opOutput.index < old.index)
+		 else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
+#elif defined(__GNUC__)
+
+#endif
 		return old;
 	}
 
