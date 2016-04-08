@@ -251,6 +251,10 @@ public:
 		char yOrder = shape::order(yShapeInfo);
 		if(xOrder == yOrder) {
 			if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+
+				if (threadIdx.x == 0)
+					printf("Going for scalar reduce3\n");
+
 				for(int i = 0; i < length; i+= gridDim.x * blockDim.x) {
 					startingVal = update(startingVal, this->opAtomic(dx[i], dy[i], &extraParams), &extraParams);
 				}
@@ -269,8 +273,7 @@ public:
 				// write result for this block to global mem
 				__syncthreads();
 				if (tid == 0) {
-					result[threadIdx.x] = postProcess(sPartials[0], length,&extraParams);
-
+					result[tid] = postProcess(sPartials[0], length,&extraParams);
 				}
 			}
 			else {
@@ -292,7 +295,7 @@ public:
 				// write result for this block to global mem
 				__syncthreads();
 				if (tid == 0) {
-					result[threadIdx.x] = postProcess(sPartials[0], length,&extraParams);
+					result[tid] = postProcess(sPartials[0], length,&extraParams);
 
 				}
 			}
@@ -324,7 +327,7 @@ public:
 
 			int numElements = gridDim.x;
 			for (int i = threadIdx.x; i < numElements; i += blockDim.x)
-				sPartials[threadIdx.x] = startingVal;
+				sPartials[i] = startingVal;
 			__syncthreads();
 
 
@@ -333,7 +336,7 @@ public:
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&idx);
 				int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 				int yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-				sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
+				sPartials[i] = update(sPartials[i], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
 			}
 
 			free(idx);
@@ -349,7 +352,7 @@ public:
 			// write result for this block to global mem
 			__syncthreads();
 			if (threadIdx.x == 0) {
-				result[blockIdx.x] = postProcess(sPartials[0], n,&extraParams);
+				result[0] = postProcess(sPartials[0], n,&extraParams);
 			}
 		}
 
@@ -441,10 +444,6 @@ public:
 			//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i], dimensionLength: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0], dimensionLength);
 		}
 		__syncthreads();
-
-
-
-
 
 		if (!resultScalar) {
 			if(dimensionLength > 1) {

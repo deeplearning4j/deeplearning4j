@@ -295,7 +295,7 @@ public:
 			 */
 			//				int
 
-			if (dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1) {
 				xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -373,6 +373,8 @@ public:
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int tadLength = shape::length(tadShapeShapeInfo);
 				int rank = shape::rank(tadShapeShapeInfo);
+				if (tid == 0)
+					printf("Going wild on dimensions now\n");
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
@@ -407,7 +409,7 @@ public:
 					}
 
 					result[i] = start;
-
+					printf("result[%i] = [%f]\n", i, result[i]);
 				}
 
 				__syncthreads();
@@ -1863,8 +1865,10 @@ __global__ void reduceGenericGlobal(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		delete  reduceFunctionToInvoke;
+		delete reduceFunctionToInvoke;
 		delete newOpFactory;
 	}
 
@@ -1914,6 +1918,8 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
 		delete reduceFunctionToInvoke;
 		delete newOpFactory;
