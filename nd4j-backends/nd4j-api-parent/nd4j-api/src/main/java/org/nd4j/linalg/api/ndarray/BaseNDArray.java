@@ -3797,9 +3797,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int size(int dimension) {
         if (isScalar()) {
-            if(length >= Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return (int)length;
             else
@@ -3827,7 +3824,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int length() {
         if(length >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
+            throw new IllegalArgumentException("Length is >= Integer.MAX_VALUE: lengthLong() must be called instead");
         return (int)length;
     }
 
