@@ -62,7 +62,6 @@ public  class ConvolutionTests extends BaseNd4jTest {
 
 
     @Test
-    @Ignore
     public void testCompareIm2ColImpl() {
 
         int[] miniBatches = {1, 3, 5};
@@ -214,7 +213,7 @@ public  class ConvolutionTests extends BaseNd4jTest {
         int pw = 2;
         INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
         INDArray ret = Convolution.im2col(linspaced, kh, kw, sy, sx, ph, pw, 0, false);
-        INDArray reversed = Convolution.col2im(ret,sy,sx,ph,pw,kh,kw);
+        INDArray reversed = Convolution.col2im(ret,sy,sx,ph,pw,2,2);
         assertEquals(linspaced,reversed);
     }
 
