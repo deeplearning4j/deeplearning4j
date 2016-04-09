@@ -33,7 +33,7 @@ import org.deeplearning4j.ui.components.table.style.StyleTable;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentTable extends Component {
-    public static final String COMPONENT_TYPE = "component_table";
+    public static final String COMPONENT_TYPE = "ComponentTable";
 
     private String title;
     private String[] header;
