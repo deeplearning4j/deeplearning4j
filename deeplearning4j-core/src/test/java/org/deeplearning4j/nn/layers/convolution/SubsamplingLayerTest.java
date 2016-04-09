@@ -6,12 +6,17 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -235,6 +240,56 @@ public class SubsamplingLayerTest {
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
         return gradient;
     }
+
+    //////////////////////////////////////////////////////////////////////////////////
+
+    @Test(expected = InvalidInputTypeException.class)
+    public void testSubTooLargeKernel(){
+        int imageHeight= 20;
+        int imageWidth= 23;
+        int nChannels = 1;
+        int classes = 2;
+        int numSamples = 200;
+
+        int kernelHeight = 3;
+        int kernelWidth = 3;
+
+        DataSet trainInput;
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(kernelHeight, kernelWidth)
+                        .stride(1,1)
+                        .nOut(2)
+                        .activation("relu")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder()
+                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(imageHeight-kernelHeight+1,1)
+                        .stride(1,1)
+                        .build())
+                .layer(2, new OutputLayer.Builder()
+                        .nOut(classes)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
+                .backprop(true).pretrain(false);
+        new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);
+
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        INDArray emptyFeatures = Nd4j.zeros(numSamples,imageWidth*imageHeight*nChannels);
+        INDArray emptyLables = Nd4j.zeros(numSamples,classes);
+
+        trainInput = new DataSet(emptyFeatures,emptyLables);
+        model.fit(trainInput);
+    }
+
+
 
 
 }
