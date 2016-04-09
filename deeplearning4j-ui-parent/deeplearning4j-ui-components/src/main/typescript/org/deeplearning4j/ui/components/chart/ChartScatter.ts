@@ -29,7 +29,8 @@ class ChartScatter extends Chart implements Renderable {
     constructor(jsonStr:string) {
         super(ComponentType.ChartScatter, jsonStr);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ChartScatter]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ChartScatter]];
 
         this.xData = json['x'];
         this.yData = json['y'];

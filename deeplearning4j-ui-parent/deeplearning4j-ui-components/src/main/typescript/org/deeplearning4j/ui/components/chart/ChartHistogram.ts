@@ -29,7 +29,8 @@ class ChartHistogram extends Chart implements Renderable {
     constructor(jsonStr: string){
         super(ComponentType.ChartHistogram, jsonStr);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ChartHistogram]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ChartHistogram]];
 
 
         this.lowerBounds = json['lowerBounds'];
