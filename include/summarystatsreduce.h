@@ -630,9 +630,12 @@ struct SharedSummaryStatsData<double> {
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
 		if (tid == 0) {
-			resultLength = shape::length(resultShapeInfo);
+		    if (resultShapeInfo != NULL)
+			    resultLength = shape::length(resultShapeInfo);
+			else resultLength = 1;
+
 			if (dimensionLength == 1) {
-				if (dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -646,7 +649,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension != NULL && dimension[0] != shape::MAX_DIMENSION) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);

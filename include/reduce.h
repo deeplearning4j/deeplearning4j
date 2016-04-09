@@ -135,21 +135,19 @@ public:
 			int *resultShapeInfo) {
 		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-		int resultLength = shape::length(resultShapeInfo);
+		int resultLength = 1; //shape::length(resultShapeInfo);
 		int n = shape::length(xShapeInfo);
 
-		if(blockIdx.x >= resultLength)
-			return;
 
-		int tid = threadIdx.x;
+		int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		if (tid < numElements)
-			sPartials[tid] = init;
+		for(int i = threadIdx.x; i < numElements; i+= blockDim.x)
+			sPartials[i] = init;
 		__syncthreads();
 
 		if(elementWiseStride >= 1) {
@@ -158,8 +156,6 @@ public:
 				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				}
-
-
 			}
 			else {
 #pragma unroll
@@ -167,16 +163,6 @@ public:
 					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
 				}
 			}
-
-
-			__syncthreads();
-			T **sPartialsRef = (T **) &sPartials;
-			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
-
-
-			__syncthreads();
-			if (tid == 0)
-				result[0] = postProcess(sPartials[0],numElements,extraParams);
 		}
 		else {
 			int rank = shape::rank(xShapeInfo);
@@ -187,9 +173,10 @@ public:
 				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				__syncthreads();
 			}
+			free(ind2sub);
+		}
 
-
-			__syncthreads();
+				__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
 			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
 
@@ -197,12 +184,8 @@ public:
 			__syncthreads();
 			// write result for this block to global mem
 			if (tid == 0) {
-				result[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+				result[0] = this->postProcess(sPartials[0],n,extraParams);
 			}
-
-			free(ind2sub);
-		}
-
 	}
 	/**
 	 * Kernel invocation for reduce
@@ -230,7 +213,7 @@ public:
 		/**
 		 * Gpu information for the problem
 		 */
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		__shared__ volatile int resultScalar;
 
@@ -241,7 +224,7 @@ public:
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		for (int i = tid; i < numElements; i += blockDim.x)
+		for (int i = threadIdx.x; i < numElements; i += blockDim.x)
 			sPartials[i] = init;
 		__syncthreads();
 
@@ -259,10 +242,13 @@ public:
 		__syncthreads();
 
 		T reduction = this->startingValue(dx);
-		if (tid == 0) {
-			resultLength = shape::length(resultShapeInfo);
+		if (threadIdx.x == 0) {
+			if (resultShapeInfo != NULL)
+				resultLength = shape::length(resultShapeInfo);
+			else resultLength = 1;
+
 			if (dimensionLength == 1) {
-				if (dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -295,7 +281,7 @@ public:
 			 */
 			//				int
 
-			if (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1) {
+			if (dimension != NULL && (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1)) {
 				xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -327,7 +313,7 @@ public:
 
 				__shared__ int *tadShapeShapeInfo;
 
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					inputShapeInfo = xShapeInfo;
 				}
 
@@ -337,7 +323,7 @@ public:
 				int *stride = shape::stride(inputShapeInfo);
 				int wholeRank = shape::rank(inputShapeInfo);
 
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					numOnes = 0;
 					for(int i = 0; i < wholeRank; i++) {
 						if(shape[i] == 1)
@@ -365,7 +351,7 @@ public:
 				//moving all dimensions (in sorted order)
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
-				if(tid == 0)
+				if(threadIdx.x == 0)
 					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
@@ -410,7 +396,7 @@ public:
 				}
 
 				__syncthreads();
-				if (tid == 0) {
+				if (threadIdx.x == 0) {
 					free(tadShapeShapeInfo);
 
 					if(newSqueezeDimensions) {
@@ -424,7 +410,7 @@ public:
 			}
 			else {
 
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 				}
 				__syncthreads();
@@ -459,7 +445,7 @@ public:
 				}
 
 				__syncthreads();
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					shape::freePermuteInfo(xTadInfo);
 				}
 
