@@ -2617,7 +2617,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.muli(getDouble(0), result);
         }
 
-        LinAlgExceptions.assertSameShape(other,result);
+        LinAlgExceptions.assertSameLength(other,result);
 
         Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
 
@@ -2654,7 +2654,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.subi(getDouble(0), result);
         }
 
-        LinAlgExceptions.assertSameShape(other,result);
+        LinAlgExceptions.assertSameLength(other,result);
 
 
         Nd4j.getExecutioner().exec(new SubOp(this, other, result, length()));
@@ -2694,7 +2694,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        LinAlgExceptions.assertSameShape(other,result);
+        LinAlgExceptions.assertSameLength(other,result);
 
         Nd4j.getExecutioner().exec(new AddOp(this, other, result));
 

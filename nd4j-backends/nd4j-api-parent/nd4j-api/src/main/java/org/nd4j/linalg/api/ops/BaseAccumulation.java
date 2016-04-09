@@ -52,8 +52,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        LinAlgExceptions.assertSameShape(x,y);
-        LinAlgExceptions.assertSameShape(x,z);
+        if(y != null)
+            LinAlgExceptions.assertSameLength(x,y);
+        LinAlgExceptions.assertSameLength(x,z);
 
     }
 
@@ -67,7 +68,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation(INDArray x, INDArray y) {
         this(x, y, x, x.lengthLong());
-        LinAlgExceptions.assertSameShape(x,y);
+        if(y != null)
+            LinAlgExceptions.assertSameLength(x,y);
     }
 
     private void init() {
@@ -86,7 +88,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     @Override
     public void setApplyFinalTransform(boolean applyFinalTransform) {
-       this.applyFinalTransform = applyFinalTransform;
+        this.applyFinalTransform = applyFinalTransform;
     }
 
     @Override
