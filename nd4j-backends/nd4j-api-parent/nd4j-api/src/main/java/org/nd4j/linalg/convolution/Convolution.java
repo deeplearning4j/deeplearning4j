@@ -24,11 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
-import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +80,8 @@ public class Convolution {
      * @return
      */
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
+        if(col.rank() < 6)
+            throw new IllegalArgumentException("Col 2 im input array must be at least rank 6");
         Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w);
         return Nd4j.getExecutioner().exec(col2Im).z();
     }

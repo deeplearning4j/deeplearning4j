@@ -329,6 +329,23 @@ public class Shape {
     /**
      * Returns whether the given shape is a vector
      *
+     * @param shapeInfo the shapeinfo to test
+     * @return whether the given shape is a vector
+     */
+    public static boolean isVector(DataBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        if (rank > 2 || rank < 1)
+            return false;
+        else {
+            int len = Shape.length(shapeInfo);
+            DataBuffer shape = Shape.shapeOf(shapeInfo);
+            return shape.getInt(0) == len || shape.getInt(1) == len;
+        }
+    }
+
+    /**
+     * Returns whether the given shape is a vector
+     *
      * @param shape the shape to test
      * @return whether the given shape is a vector
      */
@@ -349,6 +366,20 @@ public class Shape {
      * @return true if the shape is a matrix false otherwise
      */
     public static boolean isMatrix(IntBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        if (rank != 2)
+            return false;
+        return !isVector(shapeInfo);
+    }
+
+
+    /**
+     * Returns whether the passed in shape is a matrix
+     *
+     * @param shapeInfo whether the passed in shape is a matrix
+     * @return true if the shape is a matrix false otherwise
+     */
+    public static boolean isMatrix(DataBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
         if (rank != 2)
             return false;
@@ -439,7 +470,22 @@ public class Shape {
         return false;
     }
 
+    /**
+     * Returns true if the given shape is of length 1
+     * or provided the shape length is 2:
+     * element 0 is 1
+     * @param shapeInfo the shape info to check
+     * @return true if the above conditions hold,false otherwise
+     */
+    public static boolean isRowVectorShape(DataBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        DataBuffer shape = Shape.shapeOf(shapeInfo);
+        return
+                (rank== 2
+                        && shape.getInt(0)== 1) ||
+                        rank == 1;
 
+    }
     /**
      * Returns true if the given shape is of length 1
      * or provided the shape length is 2:
