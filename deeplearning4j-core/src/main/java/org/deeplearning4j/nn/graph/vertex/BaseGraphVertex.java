@@ -161,4 +161,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
         this.epsilons = errors;
     }
 
+    @Override
+    public abstract String toString();
 }

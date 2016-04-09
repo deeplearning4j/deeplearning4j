@@ -119,7 +119,7 @@ public class MergeVertex extends GraphVertex {
                 depthSum += od;
             }
 
-            return InputType.convolutional(depthSum,fw,fh);
+            return InputType.convolutional(fh,fw,depthSum);
         }
     }
 }
