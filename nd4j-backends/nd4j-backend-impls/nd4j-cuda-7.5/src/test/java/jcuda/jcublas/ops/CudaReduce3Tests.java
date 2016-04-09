@@ -59,8 +59,8 @@ public class CudaReduce3Tests {
     public void testPinnedEuclideanDistance() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
         INDArray array1 = Nd4j.create(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f});
-        INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
 
+        INDArray array2 = Nd4j.create(new float[]{0.5f, 1.5f, 2.5f, 3.5f, 4.5f});
         double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(array1,array2)).getFinalResult().doubleValue();
 
         System.out.println("Distance: " + result);

@@ -588,7 +588,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         //[1 1 1] -> [1 0 0]
         //Loop to double check against any threading weirdness...
-        for( int i=0; i<10; i++ ) {
+        for( int i = 0 ; i < 10; i++) {
             assertEquals(Nd4j.create(new double[]{1, 0, 0}), Nd4j.getExecutioner().execAndReturn(new IsMax(Nd4j.ones(3))));
         }
 
