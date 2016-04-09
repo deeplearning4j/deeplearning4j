@@ -24,7 +24,8 @@ class ComponentDiv extends Component implements Renderable {
     constructor(jsonStr: string){
         super(ComponentType.ComponentDiv);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ComponentDiv]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ComponentDiv]];
 
         var components: any[] = json['components'];
 
