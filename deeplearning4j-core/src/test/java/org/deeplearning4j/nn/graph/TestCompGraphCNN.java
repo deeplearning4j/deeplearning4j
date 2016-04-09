@@ -2,9 +2,9 @@ package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -19,6 +19,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -33,7 +36,7 @@ public class TestCompGraphCNN {
 
     protected ComputationGraphConfiguration conf;
     protected ComputationGraph graph;
-    protected DataSetIterator cifar;
+    protected DataSetIterator dataSetIterator;
     protected DataSet ds;
 
     protected static ComputationGraphConfiguration getMultiInputGraphConfig() {
@@ -41,26 +44,33 @@ public class TestCompGraphCNN {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
+                .setInputTypes(InputType.convolutional(32,32,3))
                 .addLayer("cnn1", new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3).build(), "input")
                 .addLayer("cnn2", new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3).build(), "input")
-                .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn1", "cnn2")
-                .addLayer("dnn1", new DenseLayer.Builder().nIn(15 * 15 * 3).nOut(7).build(), "max1")
+                .addLayer("max1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).stride(1,1).kernelSize(2, 2).build(), "cnn1", "cnn2")
+                .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
                 .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1")
                 .setOutputs("output")
                 .pretrain(false).backprop(true)
                 .build();
 
-        conf.addPreProcessors(InputType.convolutional(32,32,3));
-
         return conf;
     }
 
     protected static DataSetIterator getDS() {
-        return new CifarDataSetIterator(5, 5);
+
+        List<DataSet> list = new ArrayList<>(5);
+        for( int i=0; i<5; i++ ){
+            INDArray f = Nd4j.create(1,32*32*3);
+            INDArray l = Nd4j.create(1,10);
+            l.putScalar(i,1.0);
+            list.add(new DataSet(f,l));
+        }
+        return new ListDataSetIterator(list,5);
     }
 
     protected static int getNumParams() {
-        return (3 * 1 * 4 * 4 + 3) + (3 * 1 * 4 * 4 + 3) + (7 * 15 * 15 * 3 + 7) + (7 * 10 + 10);
+        return 2*(3 * 1 * 4 * 4 * 3 + 3) + (7 * 14 * 14 * 6 + 7) + (7 * 10 + 10);
     }
 
     @Before
@@ -70,17 +80,19 @@ public class TestCompGraphCNN {
         graph = new ComputationGraph(conf);
         graph.init();
 
-        cifar = getDS();
-        ds = cifar.next();
+        dataSetIterator = getDS();
+        ds = dataSetIterator.next();
 
     }
 
     @Test
     public void testConfigBasic() {
-
+        //Check the order. there are 2 possible valid orders here
         int[] order = graph.topologicalSortOrder();
-        int[] expOrder = new int[]{0, 1, 2, 4, 3, 5, 6, 8, 7};
-        assertArrayEquals(expOrder, order);  //Only one valid order: 0 (input) -> 1 (firstlayer) -> 2 (outputlayer)
+        int[] expOrder1 = new int[]{0, 1, 2, 4, 3, 5, 6};   //First of 2 possible valid orders
+        int[] expOrder2 = new int[]{0, 2, 1, 4, 3, 5, 6};   //Second of 2 possible valid orders
+        boolean orderOK = Arrays.equals(expOrder1,order) || Arrays.equals(expOrder2,order);
+        assertTrue(orderOK);
 
         INDArray params = graph.params();
         assertNotNull(params);
@@ -104,23 +116,20 @@ public class TestCompGraphCNN {
     }
 
     @Test
-    @Ignore
     public void testForwardBasic() {
 
         graph.setInput(0, ds.getFeatureMatrix());
-        // TODO issue combining two different CNN layers of different shapes - look how to merge (esp weight and bias) - error on 327 in Base Layer
         Map<String, INDArray> activations = graph.feedForward(true);
-        assertEquals(7, activations.size()); //2 layers + 1 input node
+        assertEquals(6, activations.size()); //1 input, 2 CNN layers, 1 subsampling, 1 dense, 1 output -> 6
         assertTrue(activations.containsKey("input"));
         assertTrue(activations.containsKey("cnn1"));
-        assertTrue(activations.containsKey("outputLayer"));
+        assertTrue(activations.containsKey("output"));
 
         // Check feedforward activations
 
     }
 
     @Test
-    @Ignore
     public void testBackwardIrisBasic() {
 
         //Now: set parameters of both networks to be identical. Then feedforward, and check we get the same outputs
@@ -170,7 +179,7 @@ public class TestCompGraphCNN {
                 .seed(123)
                 .graphBuilder()
                 .addInputs("input")
-                .setInputTypes(InputType.convolutional(nChannels, imageWidth, imageHeight))
+                .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
                 .addLayer("conv1", new ConvolutionLayer.Builder()
                         .kernelSize(kernelHeight, kernelWidth)
                         .stride(1, 1)
@@ -261,6 +270,7 @@ public class TestCompGraphCNN {
     }
 
     @Test
+    @Ignore
     public void testCNNComputationGraphSingleOutFeatureMap() {
         int imageWidth = 23;
         int imageHeight = 23;
@@ -280,7 +290,7 @@ public class TestCompGraphCNN {
                 .seed(123)
                 .graphBuilder()
                 .addInputs("input")
-                .setInputTypes(InputType.convolutional(nChannels, imageWidth, imageHeight))
+                .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
                 .addLayer("conv1", new ConvolutionLayer.Builder()
                         .kernelSize(kernelHeight, kernelWidth)
                         .stride(1, 1)

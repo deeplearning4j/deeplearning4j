@@ -124,7 +124,7 @@ public class LayerVertex extends GraphVertex {
             int outWidth = (inWidth - kernel[1] + 2 * padding[1]) / stride[1] + 1;
             int outHeight = (inHeight - kernel[0] + 2 * padding[0]) / stride[0] + 1;
 
-            return InputType.convolutional(channelsOut,outWidth,outHeight);
+            return InputType.convolutional(outHeight,outWidth,channelsOut);
         } else if (layer instanceof BaseRecurrentLayer) {
             return InputType.recurrent(((BaseRecurrentLayer) layer).getNOut());
         } else if (layer instanceof FeedForwardLayer) {
