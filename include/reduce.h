@@ -295,7 +295,7 @@ public:
 			 */
 			//				int
 
-			if (dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1) {
 				xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -366,7 +366,7 @@ public:
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				if(tid == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -407,7 +407,6 @@ public:
 					}
 
 					result[i] = start;
-
 				}
 
 				__syncthreads();
@@ -419,7 +418,7 @@ public:
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						free(inputShapeInfo);
 					}
 				}
 			}
@@ -447,8 +446,6 @@ public:
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
-				//            if (threadIdx.x == 0)
-				//            	printf("ElementsPerReduction: [%i], tadLength: [%i]\n", elementsPerReductionIndex, tadLength);
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
@@ -471,9 +468,6 @@ public:
 
 		}
 		else {
-			if(tid == 0) {
-				printf("Scalar!\n");
-			}
 			this->execScalarCuda(
 					dx,
 					xShapeInfo,
@@ -481,7 +475,6 @@ public:
 					result,
 					resultShapeInfo);
 		}
-
 	}
 
 	/**
@@ -526,7 +519,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n, T *extraParams)  {
+	T postProcess(T reduction, Nd4jIndex n, T *extraParams)  {
 		return reduction;
 	}
 
@@ -595,13 +588,13 @@ public:
 #ifdef __CUDACC__
 	__host__
 #endif
-	T execScalar(T *x,int xElementWiseStride,int length,T *extraParams) {
+	T execScalar(T *x,int xElementWiseStride,Nd4jIndex length,T *extraParams) {
 		T startingVal = this->startingValue(x);
 		if (xElementWiseStride == 1) {
 			if(length < 8000) {
 				T local = this->startingValue(x);
-#pragma simd
-				for(int i = 0; i < length; i++) {
+#pragma omp simd
+				for(Nd4jIndex i = 0; i < length; i++) {
 					T curr = op(x[i], extraParams);
 					local = update(local, curr, extraParams);
 
@@ -619,9 +612,9 @@ public:
 				{
 					T local = this->startingValue(x);
 					for(int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-						int newOffset = (i * info.items);
+						Nd4jIndex newOffset = (i * info.items);
 						T *chunk = x + newOffset;
-						int itemsToLoop = info.items;
+						Nd4jIndex itemsToLoop = info.items;
 						if(newOffset >= length) {
 							break;
 						}
@@ -631,7 +624,7 @@ public:
 							itemsToLoop = length - newOffset;
 						}
 
-						for (int j = 0; j < itemsToLoop; j++) {
+						for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
 							T curr = op(chunk[j], extraParams);
 							local = update(local, curr, extraParams);
 						}
@@ -656,8 +649,8 @@ public:
 		else {
 			if(length < 8000) {
 				T local = this->startingValue(x);
-#pragma simd
-				for(int i = 0; i < length; i++) {
+#pragma omp simd
+				for(Nd4jIndex i = 0; i < length; i++) {
 					T curr = op(x[i *xElementWiseStride], extraParams);
 					local = update(local, curr, extraParams);
 
@@ -675,12 +668,12 @@ public:
 			{
 				T local = this->startingValue(x);
 				for(int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-					int newOffset = (i * info.items) * xElementWiseStride;
+					Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
 					T *chunk = x + newOffset;
-					int itemsToLoop = info.items;
+					Nd4jIndex itemsToLoop = info.items;
 
 
-					for (int i = 0; i < itemsToLoop; i++) {
+					for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
 						T curr = op(chunk[i * xElementWiseStride], extraParams);
 						local = update(local, curr, extraParams);
 					}
@@ -717,7 +710,7 @@ public:
 	__host__
 #endif
 	T execScalar(T *x, int *xShapeInfo,T *extraParams) {
-		const int length = shape::length(xShapeInfo);
+		const Nd4jIndex length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		if(xElementWiseStride >= 1) {
 			return execScalar(x, xElementWiseStride, length, extraParams);
@@ -1017,7 +1010,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1091,7 +1084,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1182,7 +1175,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction / (T) n;
 	}
 
@@ -1258,7 +1251,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1344,7 +1337,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1436,7 +1429,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return reduction;
 	}
 
@@ -1519,7 +1512,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return nd4j::math::nd4j_sqrt<T>(reduction);
 	}
 
@@ -1604,7 +1597,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
 				nd4j::math::nd4j_abs<T>(reduction));
 	}
@@ -1689,7 +1682,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		T bias = extraParams[1];
 		return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T) n))
 				/ (T) (n - 1.0);
@@ -1725,7 +1718,7 @@ public:
 
 
 #endif
-	T postProcess(T reduction, int n,T *extraParams) override {
+	T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
 		T ret = Variance<T>::postProcess(reduction,n,extraParams);
 		T sqrtRet = nd4j::math::nd4j_sqrt<T>(ret);
 		return sqrtRet;
@@ -1863,8 +1856,10 @@ __global__ void reduceGenericGlobal(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
-		delete  reduceFunctionToInvoke;
+		delete reduceFunctionToInvoke;
 		delete newOpFactory;
 	}
 
@@ -1914,6 +1909,8 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot);
+
+	__syncthreads();
 	if(threadIdx.x == 0) {
 		delete reduceFunctionToInvoke;
 		delete newOpFactory;

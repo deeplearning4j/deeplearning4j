@@ -146,7 +146,7 @@ void   NativeOps::execPairwiseTransformDouble(Nd4jPointer *extraPointers,int opN
                                               int yStride,
                                               Nd4jPointer result,
                                               int resultStride,
-                                              Nd4jPointer extraParams, int n) {
+                                              Nd4jPointer extraParams, Nd4jIndex n) {
     double *xPointer = reinterpret_cast<double *>(dx);
     double *yPointer = reinterpret_cast<double *>(y);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -433,7 +433,7 @@ void   NativeOps::execScalarDouble(
         int resultStride,
         double scalar,
         Nd4jPointer extraParams,
-        int n) {
+        Nd4jIndex n) {
     double *xPointer = reinterpret_cast<double *>(x);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -506,7 +506,7 @@ void NativeOps::execScalarDouble(
         Nd4jPointer resultShapeInfo,
         double scalar,
         Nd4jPointer extraParams,
-        int n,
+        Nd4jIndex n,
         Nd4jPointer xIndexes,
         Nd4jPointer resultIndexes) {
     double *xPointer = reinterpret_cast<double *>(x);
@@ -625,7 +625,7 @@ void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers,int opNum,
                                       int xStride,
                                       Nd4jPointer result,
                                       int resultStride,
-                                      Nd4jPointer extraParams, int n) {
+                                      Nd4jPointer extraParams, Nd4jIndex n) {
     double *xPointer = reinterpret_cast<double *>(dx);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -802,7 +802,7 @@ void   NativeOps::execPairwiseTransformFloat(
         int yStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n) {
+        Nd4jPointer extraParams, Nd4jIndex n) {
     float *xPointer = reinterpret_cast<float *>(dx);
     float *yPointer = reinterpret_cast<float *>(y);
     float *resultPointer = reinterpret_cast<float *>(result);
@@ -1112,7 +1112,7 @@ void   NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
                                   int resultStride,
                                   double scalar,
                                   Nd4jPointer extraParams,
-                                  int n) {
+                                  Nd4jIndex n) {
     float *xPointer = reinterpret_cast<float *>(x);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
@@ -1297,7 +1297,7 @@ void   NativeOps::execTransformFloat(
         int xStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n) {
+        Nd4jPointer extraParams, Nd4jIndex n) {
     float *xPointer = reinterpret_cast<float *>(dx);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
@@ -1378,7 +1378,8 @@ void   NativeOps::execTransformFloat(
 
 
 template <typename T>
-void flattenGeneric(int offset,
+void flattenGeneric(Nd4jPointer *extraPointers,
+                    int offset,
                     char order,
                     Nd4jPointer result,
                     Nd4jPointer resultShapeInfo,
@@ -1499,13 +1500,14 @@ void flattenGeneric(int offset,
 * @param inputShapeInfo the shape information for that array
 */
 void NativeOps::flattenFloat(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    flattenGeneric<float>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
+    flattenGeneric<float>(extraPointers, offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 
@@ -1521,13 +1523,14 @@ void NativeOps::flattenFloat(
 * @param inputShapeInfo the shape information for that array
 */
 void NativeOps::flattenDouble(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo,
         Nd4jPointer input,
         Nd4jPointer inputShapeInfo) {
-    flattenGeneric<double>(offset, order,result,resultShapeInfo,input,inputShapeInfo);
+    flattenGeneric<double>(extraPointers, offset, order,result,resultShapeInfo,input,inputShapeInfo);
 }
 
 /**

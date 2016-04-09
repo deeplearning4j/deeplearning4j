@@ -103,7 +103,7 @@ class ND4J_EXPORT NativeOps {
         int yStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n);
+        Nd4jPointer extraParams, Nd4jIndex n);
 
         /**
          *
@@ -278,7 +278,7 @@ class ND4J_EXPORT NativeOps {
         int resultStride,
         double scalar,
         Nd4jPointer extraParams,
-        int n);
+        Nd4jIndex n);
 
         /**
          *
@@ -319,7 +319,7 @@ class ND4J_EXPORT NativeOps {
         Nd4jPointer resultShapeInfo,
         double scalar,
         Nd4jPointer extraParams,
-        int n,
+        Nd4jIndex n,
         Nd4jPointer xIndexes,
         Nd4jPointer resultIndexes);
         /**
@@ -379,7 +379,7 @@ class ND4J_EXPORT NativeOps {
         int xStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n);
+        Nd4jPointer extraParams, Nd4jIndex n);
 
         /**
          *
@@ -490,7 +490,7 @@ class ND4J_EXPORT NativeOps {
         int yStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n);
+        Nd4jPointer extraParams, Nd4jIndex n);
 
         /**
          *
@@ -662,7 +662,7 @@ class ND4J_EXPORT NativeOps {
         int resultStride,
         double scalar,
         Nd4jPointer extraParams,
-        int n);
+        Nd4jIndex n);
 
         /**
          *
@@ -762,7 +762,7 @@ class ND4J_EXPORT NativeOps {
         int xStride,
         Nd4jPointer result,
         int resultStride,
-        Nd4jPointer extraParams, int n);
+        Nd4jPointer extraParams, Nd4jIndex n);
 
         /**
          *
@@ -813,6 +813,7 @@ class ND4J_EXPORT NativeOps {
     * @param inputShapeInfo the shape information for that array
     */
         void flattenFloat(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,
@@ -832,6 +833,7 @@ class ND4J_EXPORT NativeOps {
 * @param inputShapeInfo the shape information for that array
 */
         void flattenDouble(
+        Nd4jPointer *extraPointers,
         int offset,
         char order,
         Nd4jPointer result,

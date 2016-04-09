@@ -2,7 +2,8 @@
  * transform.h
  *
  *  Created on: Dec 28, 2015
- *      Author: agibsonccc
+ *  @author: agibsonccc
+ *  @author: raver119@gmail.com
  */
 
 #ifndef TRANSFORM_H_
@@ -93,10 +94,10 @@ public:
 			T *params,
 			T *result,
 			int *indexes) {
-		int n = shape::length(shapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -132,7 +133,7 @@ public:
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
 		char resultOrder = shape::order(resultShapeInfo);
-		int n = shape::length(shapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
 
@@ -140,7 +141,7 @@ public:
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
 		if(tid == 0)
 			length = shape::length(shapeInfo);
@@ -162,8 +163,8 @@ public:
 			for (; i < n; i+= totalThreads) {
 				int *xIdx = shape::ind2sub(xRank, xShape, i);
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,&xIdx);
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				int resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
+				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
 
 			}
@@ -182,7 +183,7 @@ public:
 	 * @param n
 	 */
 	virtual  __inline__ __device__ void transformCuda(
-			int n,
+			Nd4jIndex n,
 			T *dy,
 			int incy,
 			T *params,
@@ -190,7 +191,7 @@ public:
 			int resultStride) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		if(incy == 1 && resultStride == 1) {
 			/* equal, positive, non-unit increments. */
@@ -229,7 +230,7 @@ public:
 			T *extraParams,
 			int *indexes) {
 		int n = shape::length(xShapeInfo);
-#pragma simd
+#pragma omp simd
 		for (int i = 0; i < n; i++) {
 			result[indexes[i]] = op(dx[indexes[i]], extraParams);
 		}
@@ -352,7 +353,7 @@ public:
 			int n) {
 		if (xStride == 1 && resultStride == 1) {
 			if(n < 8000) {
-#pragma simd 
+#pragma omp simd
 				for (int i = 0; i < n; i++) {
 					result[i] = op(dx[i], extraParams);
 				}
@@ -369,6 +370,7 @@ public:
 
 		else {
 			if(n < 8000) {
+#pragma omp simd
 				for (int i = 0; i < n; i++) {
 					result[i * resultStride] = op(dx[i * xStride],
 							extraParams);
@@ -3085,7 +3087,7 @@ public:
 
 #ifdef __CUDACC__
 	/**
-	 *
+	 * Based on:  https://github.com/pjreddie/darknet/blob/master/src/im2col_kernels.cu
 	 */
 
 	virtual __device__ void execSpecialCuda(
@@ -3093,7 +3095,49 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+		/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
+		int n = shape::length(xShapeBuffer);
+		int kernelWidth = (int) extraParams[0];
+		int kernelHeight = (int) extraParams[1];
+		int strideX = (int) extraParams[2];
+		int strideY = (int) extraParams[3];
+		int padWidth = (int) extraParams[4];
+		int padHeight = (int) extraParams[5];
+
+		int outArrayOffset = 0;
+		int *outShape = shape::shapeOf(resultShapeBuffer);
+		int *outStride = shape::stride(resultShapeBuffer);
+
+		int inArrayOffset = 0;
+		int *inShape = shape::shapeOf(xShapeBuffer);
+		int *inStride = shape::stride(xShapeBuffer);
+
+
+		int index = blockIdx.x * blockDim.x + threadIdx.x;
+		for(; index < n; index += blockDim.x*gridDim.x) {
+			int wOut = index % kernelWidth;
+			int hIndex = index / kernelWidth;
+			int hOut = hIndex % kernelHeight;
+			int channelIn = hIndex / kernelHeight;
+			int channelOut = channelIn * kernelHeight * kernelWidth;
+			int hIn = hOut * strideX - padHeight;
+			int wIn = wOut * strideY - padWidth;
+			T* data_col_ptr = dx;
+			data_col_ptr += (channelOut * kernelHeight + hOut) * kernelHeight + wOut;
+			const T* data_im_ptr = dx;
+			data_im_ptr += (channelIn * kernelHeight + hIn) * kernelWidth + wIn;
+			for (int i = 0; i < kernelHeight; i++) {
+				for (int j = 0; j < kernelWidth; j++) {
+					int h = hIn + i;
+					int w = wIn + j;
+					*data_col_ptr = (h >= 0 && w >= 0 && h < kernelHeight && w < kernelWidth) ?
+							data_im_ptr[i * kernelWidth + j] : 0;
+					data_col_ptr += kernelHeight * kernelWidth;
+				}
+			}
+		}
+	}
 #endif
 
 	/**
@@ -3296,6 +3340,12 @@ public:
 	 *  normally negative indices are bad, OK here because of other checks on input indices
 	 *  Uses unrolled loop specifically for length 4
 	 */
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
 	int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 		int offset = baseOffset;
 		if (shape[0] != 1) offset += indices[0] * stride[0];
@@ -3311,6 +3361,12 @@ public:
 	 * normally negative indices are bad, OK here because of other checks on input indices
 	 * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 	 */
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
 	int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 		int offset = baseOffset;
 		if (shape[0] != 1) offset += indices[0] * stride[0];
@@ -3329,7 +3385,7 @@ public:
 
 #ifdef __CUDACC__
 	/**
-	 *
+	 * https://github.com/pjreddie/darknet/blob/master/src/col2im_kernels.cu
 	 */
 
 	virtual __device__ void execSpecialCuda(
@@ -3344,133 +3400,36 @@ public:
 
 		int kernelHeight = inShape[2];
 		int kernelWidth = inShape[3];
-		/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
 		int strideX = (int) extraParams[0];
 		int strideY = (int) extraParams[1];
 		int padWidth = (int) extraParams[2];
 		int padHeight = (int) extraParams[3];
 		int imgHeight = (int) extraParams[4];
 		int imgWidth = (int) extraParams[5];
-
-
-		int exampleFrom = 0;
-		int exampleTo = inShape[0];
-		int depthFrom = 0;
-		int depthTo = inShape[1];
-
-		int outArrayOffset = 0;
-		int *outShape = shape::shapeOf(resultShapeBuffer);
-		int *outStride = shape::stride(resultShapeBuffer);
-
-
-		int *outIndices = new int[4];
-		int *inIndices = new int[6];
-
-		int inStride2 = inStride[2];
-		int inStride3 = inStride[3];
-		int outStride2 = outStride[2];
-		int outStride3 = outStride[3];
-		int outShape2 = outShape[2];
-		int outShape3 = outShape[3];
-
-		int yOutTo = inShape[4];
-		int xOutTo = inShape[5];
-
-
-		const bool padding = padHeight > 0 || padWidth > 0;
-
-		T *fIn = dx;
-		T *fOut = result;
-		//#pragma omp parallel for collapse(2)
-		for (int ex = exampleFrom; ex < exampleTo; ex++) {
-			for (int d = depthFrom; d < depthTo; d++) {
-				inIndices[0] = ex;
-				inIndices[1] = d;
-				outIndices[0] = ex;
-				outIndices[1] = d;
-
-				for (int x = 0; x < xOutTo; x++) {  //Patch number along width
-					for (int y = 0; y < yOutTo; y++) {  //Patch number along height
-						inIndices[4] = y;   //patch number (along height)
-						inIndices[5] = x;   //patch number (along width)
-						int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
-
-						if (padding) {
-							int i = y * strideY -
-									padHeight;    //index along height of first element of patch in original img
-							int j = x * strideX -
-									padWidth;     //index along width of first element in patch in original img
-							outIndices[2] = i;  //along height
-							outIndices[3] = j;  //along width
-
-							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-							if (inStride2 <= inStride3) {
-								//Want dimension 2 (along height) in inner loop for cache efficiency
-								for (int patchX = 0; patchX < kernelWidth; patchX++) {
-									if (j + patchX < 0 || j + patchX >= outShape3)
-										continue;
-
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										if (i + patchY < 0 || i + patchY >= outShape2)
-											continue;
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							} else {
-								//Want dimension 3 (along width) in inner loop for cache efficiency
-								for (int patchY = 0; patchY < kernelHeight; patchY++) {
-									if (i + patchY < 0 || i + patchY >= outShape2)
-										continue;
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										if (j + patchX < 0 || j + patchX >= outShape3)
-											continue;
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							}
-						} else {
-							//No padding
-							int i = y *
-									strideY;    //index along height of first element of patch in output img
-							int j = x *
-									strideX;     //index along width of first element in patch in output img
-
-							outIndices[2] = i;
-							outIndices[3] = j;
-
-							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-							if (inStride2 <= inStride3) {
-								//Want dimension 2 (along height) in inner loop for cache efficiency
-								for (int patchX = 0; patchX < kernelWidth; patchX++) {
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							} else {
-								//Want dimension 3 (along width) in inner loop for cache efficiency
-								for (int patchY = 0; patchY < kernelHeight; patchY++) {
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							}
-						}
-					}
+		int n = shape::length(xShapeBuffer);
+		for(int i = (blockDim.x * gridDim.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+			T val = 0;
+			int w = i % imgWidth + padWidth;
+			int h = (i / imgWidth) % imgWidth + padHeight;
+			int c = i / (imgWidth * imgWidth);
+			// compute the start and end of the output
+			int w_col_start = (w < kernelHeight) ? 0 : (w - kernelHeight) / strideY + 1;
+			int w_col_end = nd4j::math::nd4j_min<int>(w / strideY + 1, imgWidth);
+			int h_col_start = (h < kernelHeight) ? 0 : (h - kernelHeight) / strideX + 1;
+			int h_col_end = nd4j::math::nd4j_min<int>(h / strideX + 1, imgHeight);
+			// equivalent implementation
+			int offset =
+					(c * kernelHeight * kernelHeight + h * kernelHeight + w) * imgHeight * imgWidth;
+			int coeff_h_col = (1 - strideX * kernelHeight * imgHeight) * imgWidth;
+			int coeffWcol = (1 - strideY * imgHeight * imgWidth);
+			for (int h_col = h_col_start; h_col < h_col_end; h_col++) {
+				for (int w_col = w_col_start; w_col < w_col_end; w_col++) {
+					val += dx[offset + h_col * coeff_h_col + w_col * coeffWcol];
 				}
 			}
+
+			dx[i] += val;
 		}
-
-
-		delete[] outIndices;
-		delete[] inIndices;
 	}
 #endif
 
@@ -3666,6 +3625,12 @@ public:
 	 *  normally negative indices are bad, OK here because of other checks on input indices
 	 *  Uses unrolled loop specifically for length 4
 	 */
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
 	int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 		int offset = baseOffset;
 		if (shape[0] != 1) offset += indices[0] * stride[0];
@@ -3679,6 +3644,12 @@ public:
 	 * normally negative indices are bad, OK here because of other checks on input indices
 	 * Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 	 */
+#ifdef __CUDACC__
+	inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
 	int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 		int offset = baseOffset;
 		if (shape[0] != 1) offset += indices[0] * stride[0];
@@ -4282,7 +4253,117 @@ public:
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams) {
+
+
+		// TODO: this kernel might use block-wise multireduce too
+		if (blockIdx.x > 0)
+			return;
+
+
+
+
+		int *shape = shape::shapeOf(xShapeBuffer);
+		__shared__ T *maxResult;
+		__shared__ int *maxResultShapeBuffer;
+		__shared__ int resultEWS;
+		__shared__ functions::reduce::ops::Max<T> *max;
+		__shared__ functions::transform::ops::Exp<T> *exp;
+		__shared__ functions::broadcast::ops::Subtract<T> *sub;
+		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+		__shared__ functions::broadcast::ops::Divide<T> *div;
+		__shared__ functions::reduce::ops::Sum<T> *sum;
+		__shared__ int isVector;
+
+		int length = shape::length(xShapeBuffer);
+
+		if(threadIdx.x == 0) {
+			isVector = shape::isVector(xShapeBuffer);
+			resultEWS = shape::elementWiseStride(resultShapeBuffer);
+			max = new functions::reduce::ops::Max<T>();
+			sum = new functions::reduce::ops::Sum<T>();
+			exp = new functions::transform::ops::Exp<T>();
+			if (isVector) {
+				scalarSub = new functions::scalar::ops::Subtract<T>();
+				scalarDiv = new functions::scalar::ops::Divide<T>();
+			} else {
+				sub = new functions::broadcast::ops::Subtract<T>();
+				div = new functions::broadcast::ops::Divide<T>();
+			}
+			maxResult = (T *) malloc(sizeof(T) * shape[0]);
+		}
+		__syncthreads();
+
+		int *stride = shape::stride(xShapeBuffer);
+		//iterate along rows
+		int dimension[1] = {0};
+		int maxDimension[1] = {1};
+		//compute the row wise maxes
+
+		int maxShape[2] = {shape[0], 1};
+
+		if (threadIdx.x == 0)
+			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+
+		if (threadIdx.x < shape[0])
+			maxResult[threadIdx.x] = (T) 0.0;
+		__syncthreads();
+
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		__syncthreads();
+
+		if (threadIdx.x == 0) delete max;
+		__syncthreads();
+
+		//subtract max of each row
+		if (isVector) {
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
+
+		//after subtracting the row wise maxes take the exp
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		__syncthreads();
+
+
+		//take the sum for the exponential
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		__syncthreads();
+
+		//divide by the sum
+		if (isVector) {
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer );
+		} else {
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+		}
+		__syncthreads();
+
+		if (resultEWS >= 1) {
+			for (int i = threadIdx.x; i < length; i += blockDim.x) {
+				result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
+			}
+		} else {
+			printf("Non element wise stride not supported right now\n");
+		}
+
+		__syncthreads();
+		if(threadIdx.x == 0) {
+			delete sum;
+			delete exp;
+			if (isVector) {
+				delete scalarDiv;
+				delete scalarSub;
+			} else {
+				delete div;
+				delete sub;
+			}
+			free(maxResult);
+			free(maxResultShapeBuffer);
+		}
+	}
 #endif
 
 
@@ -4498,213 +4579,52 @@ private:
 
 #ifdef __CUDACC__
 
-	inline  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-	void doAllCuda(
+	inline  __device__ void doAllCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
 
-		int length = shape::length(xShapeBuffer);
-		if (dx == result) {
-			int eleStride = shape::elementWiseStride(xShapeBuffer);
-			if (eleStride == 1) {
-				int maxIdx = 0;
-				T currMax = dx[0];
-				if (length < 8000) {
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						if (currMax < dx[i]) {
-							currMax = dx[i];
-							maxIdx = i;
-						}
-
-						dx[i] = 0.0;
-
-					}
-				}
-				else {
-#pragma omp parallel for shared(maxIdx,currMax)
-					for (int i = 0; i < length; i++) {
-						if (currMax < dx[i]) {
-							currMax = dx[i];
-							maxIdx = i;
-						}
-
-						result[i] = 0.0;
-
-					}
-				}
-
-				result[maxIdx] = 1.0;
-
-
-			}
-			else {
-				int maxIdx = 0;
-				T currMax = dx[0];
-				if (length < 8000) {
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						if (currMax < dx[i]) {
-							currMax = dx[i];
-							maxIdx = i;
-						}
-
-						dx[i * eleStride] = 0.0;
-
-					}
-
-					dx[maxIdx * eleStride] = 1.0;
-				}
-				else {
-#pragma omp parallel for shared(maxIdx,currMax)
-					for (int i = 0; i < length; i++) {
-						if (currMax < dx[i * eleStride]) {
-							currMax = dx[i * eleStride];
-							maxIdx = i;
-						}
-						dx[i * eleStride] = 0.0;
-
-					}
-				}
-
-				dx[maxIdx * eleStride] = 1.0;
-
-			}
+		__shared__ functions::indexreduce::ops::IMax<T> *max;
+		__shared__ int maxIdx;
+		__shared__ int length;
+		if(threadIdx.x == 0) {
+			max = new functions::indexreduce::ops::IMax<T>();
+			length = shape::length(resultShapeBuffer);
 		}
-		else {
-			int eleStride = shape::elementWiseStride(xShapeBuffer);
-			int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
-			char xOrder = shape::order(xShapeBuffer);
-			char resultOrder = shape::order(resultShapeBuffer);
-			if (xOrder == resultOrder) {
-				if (eleStride == 1 && resultEleStride == 1) {
-					if (length < 8000) {
-						int maxIdx = 0;
-						T currMax = dx[0];
-#pragma omp simd
-						for (int i = 0; i < length; i++) {
-							if (currMax < dx[i]) {
-								currMax = dx[i];
-								maxIdx = i;
-							}
-							result[i] = 0.0;
+		__syncthreads();
 
-						}
+		max->transform(
+				dx,
+				xShapeBuffer,
+				extraParams,
+				result,
+				resultShapeBuffer,
+				NULL,
+				1,
+				1);
 
-						result[maxIdx] = 1.0;
+		__syncthreads();
+		if(threadIdx.x == 0)
+			maxIdx = (int) result[0];
+		__syncthreads();
 
-					}
-					else {
-						int maxIdx = 0;
-						T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax)
-						for (int i = 0; i < length; i++) {
-							if (currMax < dx[i]) {
-								currMax = dx[i];
-								maxIdx = i;
-							}
-							result[i] = 0.0;
+		for (int i = threadIdx.x; i < length ; i+= blockDim.x)
+			result[i] = 0;
+		__syncthreads();
 
-						}
+		if (threadIdx.x == 0) {
+			result[maxIdx] = 1.0;
 
-						result[maxIdx] = 1.0;
-					}
-
-				}
-				else {
-					if (length < 8000) {
-						int maxIdx = 0;
-						T currMax = dx[0];
-#pragma omp simd
-						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
-							if (currMax < dx[i * eleStride]) {
-								currMax = dx[i * eleStride];
-								maxIdx = i;
-							}
-						}
-
-						result[maxIdx * resultEleStride] = 1.0;
-
-					}
-					else {
-						int maxIdx = 0;
-						T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax)
-						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
-							if (currMax < dx[i * eleStride]) {
-								currMax = dx[i * eleStride];
-								maxIdx = i;
-							}
-						}
-
-						result[maxIdx * resultEleStride] = 1.0;
-					}
-
-				}
-			}
-
-
-			else {
-				int shapeIter[MAX_RANK];
-				int coord[MAX_RANK];
-				int dim;
-				int xStridesIter[MAX_RANK];
-				int resultStridesIter[MAX_RANK];
-				int *xShape = shape::shapeOf(xShapeBuffer);
-				int *xStride = shape::stride(xShapeBuffer);
-				int *resultStride = shape::stride(resultShapeBuffer);
-				int rank = shape::rank(xShapeBuffer);
-				if (PrepareTwoRawArrayIter<T>(rank,
-						xShape,
-						dx,
-						xStride,
-						result,
-						resultStride,
-						&rank,
-						shapeIter,
-						&dx,
-						xStridesIter,
-						&result,
-						resultStridesIter) >= 0) {
-					T *maxCursor = result;
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-					{
-
-						result[0] = 0.0;
-						if(dx[0] > maxCursor[0]) {
-							maxCursor = result;
-						}
-					}
-					ND4J_RAW_ITER_TWO_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							dx,
-							xStridesIter,
-							result,
-							resultStridesIter);
-
-					//pointer to where max value would be
-					maxCursor[0] = 1.0;
-				}
-			}
-
+			delete max;
 		}
+
 	}
-
+#endif
 
 #ifdef __CUDACC__
-	inline __host__  __device__
+	inline __host__
 
 #elif defined(__GNUC__)
 
@@ -4920,14 +4840,15 @@ public:
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
-
 		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
 			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
 			__shared__ int maxIdx;
+			__shared__ int length;
 			if(threadIdx.x == 0) {
 				max = new functions::indexreduce::ops::IMax<T>();
+				length = shape::length(resultShapeBuffer);
 			}
 
 			__syncthreads();
@@ -4936,6 +4857,9 @@ public:
 			__shared__ int *dimension;
 			if(threadIdx.x == 0) {
 				dimension = (int *) malloc(sizeof(int) * dimensionLength);
+				for(int i = 0; i < dimensionLength; i++) {
+					dimension[i] = (int) extraParams[i + 1];
+				}
 			}
 
 			__syncthreads();
@@ -4951,12 +4875,13 @@ public:
 					1);
 
 			__syncthreads();
-			if(threadIdx.x == 0)
+			if(threadIdx.x == 0) {
 				maxIdx = (int) result[0];
+			}
 			__syncthreads();
 
-			if (threadIdx.x < shape::length(resultShapeBuffer))
-				result[threadIdx.x] = 0;
+			for (int i = threadIdx.x; i < length; i+= blockDim.x)
+				result[i] = 0;
 			__syncthreads();
 
 			if (threadIdx.x == 0) {
@@ -4966,7 +4891,6 @@ public:
 				delete max;
 			}
 		}
-
 	}
 #endif
 
@@ -5260,12 +5184,12 @@ public:
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 template <typename T>
 __device__ void transformGeneric(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		T *dy,
 		int incy,
 		T *params,
@@ -5309,11 +5233,11 @@ __device__ void transformGeneric(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 __global__ void transformDouble(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		double *dy,
 		int incy,
 		double *params,
@@ -5340,11 +5264,11 @@ __global__ void transformDouble(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 __global__ void transformFloat(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		float *dy,
 		int incy,
 		float *params,
@@ -5371,7 +5295,7 @@ __global__ void transformFloat(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 template <typename T>
 __device__ void transformGeneric(
@@ -5420,7 +5344,7 @@ __device__ void transformGeneric(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformDouble(
 		int opNum,
@@ -5448,7 +5372,7 @@ extern "C" __global__ void transformDouble(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformFloat(
 		int opNum,
@@ -5480,7 +5404,7 @@ extern "C" __global__ void transformFloat(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 template <typename T>
 __device__ void transformGenericIndexes(
@@ -5529,7 +5453,7 @@ __device__ void transformGenericIndexes(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformDoubleIndexes(
 		int opNum,
@@ -5557,7 +5481,7 @@ extern "C" __global__ void transformDoubleIndexes(
  * @param incy the stride for the vector
  * @param params the extra parameters for the problem
  * @param result the result storage
- * @param blockSize the block size for the problem
+ * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformFloatIndexes(
 		int opNum,

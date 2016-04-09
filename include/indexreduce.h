@@ -343,13 +343,14 @@ public:
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				if(tid == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int tadLength = shape::length(tadShapeShapeInfo);
 				int rank = shape::rank(tadShapeShapeInfo);
+
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
@@ -401,7 +402,7 @@ public:
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						free(inputShapeInfo);
 					}
 				}
 			} else {
@@ -409,6 +410,7 @@ public:
 					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
 				}
 				__syncthreads();
+
 
 
 				int resultLength = shape::length(resultShapeInfo);
@@ -503,8 +505,14 @@ public:
 			if(blockIdx.x >= resultLength)
 				return;
 
-			if (threadIdx.x == 0)
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+			if (threadIdx.x == 0) {
+				if (dimension != NULL && (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1)) {
+					int *xStride = shape::stride(xShapeInfo);
+					xElementWiseStride =  xStride[dimension[0]];
+				} else {
+					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				}
+			}
 
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
@@ -670,7 +678,7 @@ public:
 
 			if (xElementWiseStride == 1) {
 				if(length < 8000) {
-#pragma  simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						IndexValue<T> curr;
 						curr.value = x[i];
@@ -988,12 +996,16 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value > old.value) {
-			return opOutput;
-			// workaround for cuda race condition at merge phase
-		} else if (opOutput.value == old.value && opOutput.index < old.index)
+		if (opOutput.value > old.value)
 			return opOutput;
 
+#ifdef __CUDACC__
+		// workaround for cuda race condition at merge phase
+		else if (opOutput.value == old.value && opOutput.index < old.index)
+			return opOutput;
+#elif defined(__GNUC__)
+
+#endif
 		return old;
 	}
 
@@ -1142,12 +1154,16 @@ public:
 	functions::indexreduce::IndexValue<T> update(
 			functions::indexreduce::IndexValue<T> old,
 			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value < old.value) {
+		if (opOutput.value < old.value)
 			return opOutput;
 
+#ifdef __CUDACC__
 		// workaround for cuda race condition at merge phase
-		} else if (opOutput.value == old.value && opOutput.index < old.index)
+		 else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
+#elif defined(__GNUC__)
+
+#endif
 		return old;
 	}
 
