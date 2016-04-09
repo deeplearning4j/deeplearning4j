@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.style.StyleText;
@@ -40,7 +41,8 @@ import java.awt.*;
         @JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),
         @JsonSubTypes.Type(value = StyleTable.class, name = "StyleTable"),
         @JsonSubTypes.Type(value = StyleText.class, name = "StyleText"),
-        @JsonSubTypes.Type(value = StyleAccordion.class, name = "StyleAccordion")
+        @JsonSubTypes.Type(value = StyleAccordion.class, name = "StyleAccordion"),
+        @JsonSubTypes.Type(value = StyleDiv.class, name = "StyleDiv")
 })
 @Data @AllArgsConstructor @NoArgsConstructor
 public abstract class Style {

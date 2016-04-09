@@ -31,6 +31,11 @@ public class StyleTable extends Style {
         this.backgroundColor = builder.backgroundColor;
     }
 
+    //No arg constructor for Jackson
+    private StyleTable(){
+
+    }
+
 
     public static class Builder extends Style.Builder<Builder> {
 
