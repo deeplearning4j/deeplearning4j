@@ -43,6 +43,7 @@ public class CudaContext {
     private boolean free = true;
     private boolean oldEventDestroyed = true;
     private boolean eventDestroyed = true;
+    private long bufferPointer;
 
 
     public CudaContext(boolean free) {
