@@ -253,50 +253,30 @@ public:
 			if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 				for(Nd4jIndex i = 0; i < length; i+= gridDim.x * blockDim.x) {
 					startingVal = update(startingVal, this->opAtomic(dx[i], dy[i], &extraParams), &extraParams);
-
-				}
-
-				sPartials[tid] = startingVal;
-				__syncthreads();
-
-
-				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, tid, &extraParams);
-				/**
-				 * Look at something that uses the extra params
-				 * and aggregates the extra values properly.
-				 *This will be used in summary stats too.
-				 */
-				// write result for this block to global mem
-				__syncthreads();
-				if (tid == 0) {
-					result[tid] = postProcess(sPartials[0], length,&extraParams);
-
 				}
 			}
 			else {
 				for(int i = 0; i < length; i+= gridDim.x * blockDim.x) {
 					startingVal = update(startingVal, this->opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
-
 				}
+			}
 
-				sPartials[tid] = startingVal;
-				__syncthreads();
+			sPartials[tid] = startingVal;
+			__syncthreads();
 
 
-				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, tid, &extraParams);
-				/**
-				 * Look at something that uses the extra params
-				 * and aggregates the extra values properly.
-				 *This will be used in summary stats too.
-				 */
-				// write result for this block to global mem
-				__syncthreads();
-				if (tid == 0) {
-					result[tid] = postProcess(sPartials[0], length,&extraParams);
+			T **sPartialsRef = (T **) &sPartials;
+			aggregatePartials(sPartialsRef, tid, &extraParams);
 
-				}
+			/**
+			 * Look at something that uses the extra params
+			 * and aggregates the extra values properly.
+			 *This will be used in summary stats too.
+			 */
+			// write result for this block to global mem
+			__syncthreads();
+			if (tid == 0) {
+				result[0] = postProcess(sPartials[0], length,&extraParams);
 			}
 		}
 
@@ -408,9 +388,12 @@ public:
 
 		T reduction = this->startingValue(dx);
 		if (tid == 0) {
-			resultLength = shape::length(resultShapeInfo);
+			if (resultShapeInfo != NULL)
+				resultLength = shape::length(resultShapeInfo);
+			else resultLength = 1;
+
 			if (dimensionLength == 1) {
-				if (dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;

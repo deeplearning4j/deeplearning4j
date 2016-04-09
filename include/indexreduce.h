@@ -272,7 +272,10 @@ public:
 
 		IndexValue <T> reduction = {startingVal, 0};
 		if (tid == 0) {
-			resultLength = shape::length(resultShapeInfo);
+			if (resultShapeInfo != NULL)
+				resultLength = shape::length(resultShapeInfo);
+			else resultLength = 1;
+
 			if (dimensionLength == 1) {
 				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
 					resultScalar = 1;
