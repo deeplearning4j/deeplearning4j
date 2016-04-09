@@ -340,7 +340,7 @@ public class TestComputationGraphNetwork {
         ComputationGraphConfiguration conf3 = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .setInputTypes(InputType.convolutional(1,28,28))
+                .setInputTypes(InputType.convolutional(28,28,1))
                 .addLayer("cnn",new ConvolutionLayer.Builder().kernelSize(2,2).padding(0,0).stride(2,2).nOut(3).build(),"in")   //(28-2+0)/2+1 = 14
                 .addLayer("pool", new SubsamplingLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2).build(), "cnn")   //(14-2+0)/2+1=7
                 .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
@@ -371,7 +371,7 @@ public class TestComputationGraphNetwork {
         ComputationGraphConfiguration conf4 = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("inCNN", "inRNN")
-                .setInputTypes(InputType.convolutional(1, 28, 28), InputType.recurrent(5))
+                .setInputTypes(InputType.convolutional(28, 28, 1), InputType.recurrent(5))
                 .addLayer("cnn", new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2).nOut(3).build(), "inCNN")   //(28-2+0)/2+1 = 14
                 .addLayer("pool", new SubsamplingLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2).build(), "cnn")   //(14-2+0)/2+1=7
                 .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
@@ -412,7 +412,7 @@ public class TestComputationGraphNetwork {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
-                .setInputTypes(InputType.convolutional(1,28,28))
+                .setInputTypes(InputType.convolutional(28,28,1))
                 .addLayer("cnn_1", new ConvolutionLayer.Builder(2,2).stride(2, 2).nIn(1).nOut(3).build(), "input")
                 .addLayer("cnn_2", new ConvolutionLayer.Builder(4,4).stride(2,2).padding(1,1).nIn(1).nOut(3).build(), "input")
                 .addLayer("max_1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2).build(), "cnn_1", "cnn_2")
