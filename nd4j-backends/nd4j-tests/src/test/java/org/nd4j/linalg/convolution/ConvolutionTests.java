@@ -204,6 +204,19 @@ public  class ConvolutionTests extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testCol2Im() {
+        int kh = 1;
+        int kw = 1;
+        int sy = 1;
+        int sx = 1;
+        int ph = 2;
+        int pw = 2;
+        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        INDArray ret = Convolution.im2col(linspaced, kh, kw, sy, sx, ph, pw, 0, false);
+        INDArray reversed = Convolution.col2im(ret,sy,sx,ph,pw,kh,kw);
+        assertEquals(linspaced,reversed);
+    }
 
     @Override
     public char ordering() {

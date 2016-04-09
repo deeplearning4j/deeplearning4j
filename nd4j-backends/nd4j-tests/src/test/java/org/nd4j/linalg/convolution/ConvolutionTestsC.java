@@ -93,6 +93,126 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testCol2Im() {
+        int kh = 1;
+        int kw = 1;
+        int sy = 1;
+        int sx = 1;
+        int ph = 2;
+        int pw = 2;
+        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        INDArray ret = Convolution.im2col(linspaced, kh, kw, sy, sx, ph, pw, 0, false);
+        INDArray reversed = Convolution.col2im(ret,sy,sx,ph,pw,kh,kw);
+        assertEquals(linspaced,reversed);
+    }
+
+
+    @Test
+    @Ignore
+    public void testCompareIm2Col() throws Exception {
+
+        int[] miniBatches = {1, 3, 5};
+        int[] depths = {1, 3, 5};
+        int[] inHeights = {5,21};
+        int[] inWidths = {5,21};
+        int[] strideH = {1,2};
+        int[] strideW = {1,2};
+        int[] sizeW = {1,2,3};
+        int[] sizeH = {1,2,3};
+        int[] padH = {0,1,2};
+        int[] padW = {0,1,2};
+
+
+
+        for (int m : miniBatches) {
+            for (int d : depths) {
+                for (int h : inHeights) {
+                    for (int w : inWidths) {
+                        for (int sh : strideH) {
+                            for (int sw : strideW) {
+                                for (int kh : sizeH) {
+                                    for (int kw : sizeW) {
+                                        for (int ph : padH) {
+                                            for (int pw : padW) {
+                                                if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
+                                                    continue;   //(w-kp+2*pw)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
+
+                                                INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+                                                INDArray im2col = Convolution.im2col(in, kh, kw, sh, sw, ph, pw, false);    //Cheating, to get correct shape for input
+
+                                                INDArray imgOutOld = OldConvolution.col2im(im2col, sh, sw, ph, pw, h, w);
+                                                INDArray imgOutNew = Convolution.col2im(im2col, sh, sw, ph, pw, h, w);
+                                                assertEquals(imgOutOld, imgOutNew);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+
+
+    @Test
+    public void testCompareIm2ColImpl() {
+
+        int[] miniBatches = {1, 3, 5};
+        int[] depths = {1, 3, 5};
+        int[] inHeights = {5,21};
+        int[] inWidths = {5,21};
+        int[] strideH = {1,2};
+        int[] strideW = {1,2};
+        int[] sizeW = {1,2,3};
+        int[] sizeH = {1,2,3};
+        int[] padH = {0,1,2};
+        int[] padW = {0,1,2};
+        boolean[] coverall = {false,true};
+
+
+
+        for (int m : miniBatches) {
+            for (int d : depths) {
+                for (int h : inHeights) {
+                    for (int w : inWidths) {
+                        for (int sh : strideH) {
+                            for (int sw : strideW) {
+                                for (int kh : sizeH) {
+                                    for (int kw : sizeW) {
+                                        for (int ph : padH) {
+                                            for (int pw : padW) {
+                                                if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
+                                                    continue;   //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
+
+                                                for(boolean cAll : coverall) {
+
+                                                    INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+
+
+                                                    INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph, pw, -1, cAll); //Old implementation
+                                                    INDArray outNew = Convolution.im2col(in, kh, kw, sh, sw, ph, pw, cAll);         //Current implementation
+
+                                                    assertEquals(outOrig,outNew);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void testMoreIm2Col2() {
         int kh = 2;
         int kw = 2;
@@ -115,148 +235,6 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    @Ignore
-    public void testCompareIm2ColImpl() {
-
-        int[] miniBatches = {1, 3, 5};
-        int[] depths = {1, 3, 5};
-        int[] inHeights = {5,21};
-        int[] inWidths = {5,21};
-        int[] strideH = {1,2};
-        int[] strideW = {1,2};
-        int[] sizeW = {1,2,3};
-        int[] sizeH = {1,2,3};
-        int[] padH = {0,1,2};
-        int[] padW = {0,1,2};
-        boolean[] coverall = {false,true};
-
-        DataBuffer.Type[] types = new DataBuffer.Type[]{DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
-        DataBuffer.AllocationMode[] modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.HEAP, DataBuffer.AllocationMode.HEAP,
-                DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
-
-        String factoryClassName = Nd4j.factory().getClass().toString().toLowerCase();
-        if( factoryClassName.contains("jcublas") || factoryClassName.contains("cuda") || factoryClassName.contains("native")){
-            //Only test direct for CUDA; test all for CPU
-            types = new DataBuffer.Type[]{DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
-            modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
-        }
-
-        for( int i = 0; i<types.length; i++ ) {
-            DataBuffer.Type type = types[i];
-            DataBuffer.AllocationMode mode = modes[i];
-
-            Nd4j.factory().setDType(type);
-            Nd4j.dtype = type;
-            Nd4j.alloc = mode;
-            AllocUtil.setAllocationModeForContext(mode);
-
-
-            for (int m : miniBatches) {
-                for (int d : depths) {
-                    for (int h : inHeights) {
-                        for (int w : inWidths) {
-                            for (int sh : strideH) {
-                                for (int sw : strideW) {
-                                    for (int kh : sizeH) {
-                                        for (int kw : sizeW) {
-                                            for (int ph : padH) {
-                                                for (int pw : padW) {
-                                                    if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue;   //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
-
-                                                    for(boolean cAll : coverall) {
-
-                                                        INDArray in = Nd4j.rand(new int[]{m, d, h, w});
-                                                        assertEquals(in.data().allocationMode(), mode);
-                                                        assertEquals(in.data().dataType(), type);
-
-                                                        INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph, pw, -1, cAll); //Old implementation
-                                                        INDArray outNew = Convolution.im2col(in, kh, kw, sh, sw, ph, pw, cAll);         //Current implementation
-
-                                                        assertEquals(outOrig,outNew);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
-    @Ignore
-    public void testCompareIm2Col() throws Exception {
-
-        int[] miniBatches = {1, 3, 5};
-        int[] depths = {1, 3, 5};
-        int[] inHeights = {5,21};
-        int[] inWidths = {5,21};
-        int[] strideH = {1,2};
-        int[] strideW = {1,2};
-        int[] sizeW = {1,2,3};
-        int[] sizeH = {1,2,3};
-        int[] padH = {0,1,2};
-        int[] padW = {0,1,2};
-
-        DataBuffer.Type[] types = new DataBuffer.Type[]{DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
-        DataBuffer.AllocationMode[] modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.HEAP, DataBuffer.AllocationMode.HEAP,
-                DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
-
-        String factoryClassName = Nd4j.factory().getClass().toString().toLowerCase();
-        if( factoryClassName.contains("jcublas") || factoryClassName.contains("cuda") ){
-            //Only test direct for CUDA; test all for CPU
-            types = new DataBuffer.Type[]{DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
-            modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
-        }
-
-        for( int i=0; i<types.length; i++ ) {
-            DataBuffer.Type type = types[i];
-            DataBuffer.AllocationMode mode = modes[i];
-
-            Nd4j.factory().setDType(type);
-            Nd4j.dtype = type;
-            Nd4j.alloc = mode;
-            AllocUtil.setAllocationModeForContext(mode);
-
-            for (int m : miniBatches) {
-                for (int d : depths) {
-                    for (int h : inHeights) {
-                        for (int w : inWidths) {
-                            for (int sh : strideH) {
-                                for (int sw : strideW) {
-                                    for (int kh : sizeH) {
-                                        for (int kw : sizeW) {
-                                            for (int ph : padH) {
-                                                for (int pw : padW) {
-                                                    if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue;   //(w-kp+2*pw)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
-
-                                                    INDArray in = Nd4j.rand(new int[]{m, d, h, w});
-                                                    assertEquals(in.data().allocationMode(), mode);
-                                                    assertEquals(in.data().dataType(), type);
-                                                    INDArray im2col = Convolution.im2col(in, kh, kw, sh, sw, ph, pw, false);    //Cheating, to get correct shape for input
-
-                                                    INDArray imgOutOld = OldConvolution.col2im(im2col, sh, sw, ph, pw, h, w);
-                                                    INDArray imgOutNew = Convolution.col2im(im2col, sh, sw, ph, pw, h, w);
-                                                    assertEquals(imgOutOld, imgOutNew);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
 
 
