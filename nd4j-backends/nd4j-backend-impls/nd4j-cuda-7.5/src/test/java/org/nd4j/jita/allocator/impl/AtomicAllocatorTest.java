@@ -612,7 +612,7 @@ public class AtomicAllocatorTest {
 
         log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
         // GpuThreadSyntheticData
-        GpuThreadOpsIndexReduce3Data[] threads = new GpuThreadOpsIndexReduce3Data[2];
+        GpuThreadOpsIndexReduce3Data[] threads = new GpuThreadOpsIndexReduce3Data[4];
         for (int x =0; x< threads.length; x++) {
             GpuThreadOpsIndexReduce3Data thread = new GpuThreadOpsIndexReduce3Data(x);
             thread.start();
@@ -653,9 +653,9 @@ public class AtomicAllocatorTest {
 
         log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
         // GpuThreadSyntheticData
-        GpuThreadOpsReduceData[] threads = new GpuThreadOpsReduceData[4];
+        GpuThreadOpsReduceData2[] threads = new GpuThreadOpsReduceData2[4];
         for (int x =0; x< threads.length; x++) {
-            GpuThreadOpsReduceData thread = new GpuThreadOpsReduceData(x);
+            GpuThreadOpsReduceData2 thread = new GpuThreadOpsReduceData2(x);
             thread.start();
             threads[x] = thread;
         }
@@ -814,6 +814,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             Random rnd = new Random(42);
 
             INDArray array1 = Nd4j.create(100, 757);
@@ -875,7 +876,7 @@ public class AtomicAllocatorTest {
             /*
 
             */
-
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             double results[] = new double[] {196.73057556152344,187.9628448486328,185.44927978515625,195.71868896484375,201.3914031982422,206.9940948486328,186.59426879882812,178.36427307128906,188.29483032226562,183.08912658691406,193.56333923339844,189.89263916015625,189.0192108154297,193.63824462890625,201.99197387695312,187.71295166015625,197.52166748046875,180.9663848876953,189.44374084472656,186.75148010253906};
 
             INDArray slice1 = null;
@@ -912,6 +913,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -959,6 +961,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -1002,6 +1005,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -1043,6 +1047,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -1085,6 +1090,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -1120,6 +1126,50 @@ public class AtomicAllocatorTest {
         }
     }
 
+    private class GpuThreadOpsReduceData2 extends GpuThreadSyntheticData {
+        public GpuThreadOpsReduceData2(int threadId) {
+            super(threadId);
+        }
+
+        @Override
+        public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
+            AtomicLong cnt = new AtomicLong(0);
+            AtomicLong cntX = new AtomicLong(0);
+            while(true) {
+                Number sum = null;
+                INDArray array1 = Nd4j.create(new float[]{2.01f, 2.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+
+
+                long time1 = 0;
+                long time2 = 0;
+                for (int x = 0; x < 30; x++) {
+                    time1 = System.nanoTime();
+                    sum = array1.sumNumber();
+                    time2 = System.nanoTime();
+                    cntX.incrementAndGet();
+                }
+
+                if (cnt.incrementAndGet() % 1000 == 0) {
+                    log.info("SUM(-1) execution time: [" + (time2 - time1) + "] ns on device ["+ allocator.getDeviceId(array1)+"]");
+
+                    assertEquals(17.15f, sum.floatValue(), 0.01f);
+
+                    if (threadId == 0) {
+                        log.info("Total calls: " + cntX.get() * 4);
+                        log.info("Total memory allocated on device [0]: " + allocator.getTotalAllocatedDeviceMemory(0));
+                    }
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (Exception e) {
+                        throw  new RuntimeException(e);
+                    }
+                }
+            }
+        }
+    }
+
 
     private class GpuThreadOpsReduceData extends GpuThreadSyntheticData {
         public GpuThreadOpsReduceData(int threadId) {
@@ -1128,6 +1178,7 @@ public class AtomicAllocatorTest {
 
         @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while(true) {
@@ -1175,6 +1226,7 @@ public class AtomicAllocatorTest {
 
           @Override
         public void run() {
+            log.info(this.getName() + "/"+ this.getId() + " started on device ["+AtomicAllocator.getInstance().getDeviceId()+"]");
             AtomicLong cnt = new AtomicLong(0);
             AtomicLong cntX = new AtomicLong(0);
             while (true) {

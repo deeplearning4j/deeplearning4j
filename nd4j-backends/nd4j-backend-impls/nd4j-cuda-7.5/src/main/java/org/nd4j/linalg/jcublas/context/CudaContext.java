@@ -44,6 +44,10 @@ public class CudaContext {
     private boolean oldEventDestroyed = true;
     private boolean eventDestroyed = true;
 
+    private long bufferReduction;
+    private long bufferAllocation;
+    private long bufferScalar;
+
 
     public CudaContext(boolean free) {
         this();
