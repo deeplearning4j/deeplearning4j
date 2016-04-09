@@ -969,7 +969,9 @@ namespace shape {
 #endif
 
     int prod(int *data, int length);
-
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     Nd4jIndex prodLong(int *data, int length);
 
     /**

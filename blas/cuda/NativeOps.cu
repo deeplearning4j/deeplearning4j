@@ -2090,7 +2090,6 @@ __device__ void flattenKernelGeneric(int dOffset,
 				result[i * resultEWS + dOffset] = input[i * inputEWS];
 			}
 		} else {
-			int idx = 0;
 			int rank = shape::rank(inputShapeInfo);
 			int *coord = (int *) malloc(sizeof(int) * rank);
 			if(order == 'f') {
@@ -2110,7 +2109,6 @@ __device__ void flattenKernelGeneric(int dOffset,
 			free(coord);
 		}
 	} else {
-		int idx = 0;
 		int rank = shape::rank(inputShapeInfo);
 		int *coord = (int *) malloc(sizeof(int) * rank);
 		if(order == 'f') {
@@ -2211,7 +2209,6 @@ void NativeOps::flattenDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int length = (int) extraPointers[2];
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
