@@ -3423,37 +3423,50 @@ public:
 
 		int kernelHeight = inShape[2];
 		int kernelWidth = inShape[3];
+
 		int strideX = (int) extraParams[0];
 		int strideY = (int) extraParams[1];
 		int padWidth = (int) extraParams[2];
 		int padHeight = (int) extraParams[3];
 		int imgHeight = (int) extraParams[4];
 		int imgWidth = (int) extraParams[5];
-		int n = shape::length(xShapeBuffer);
+
+
+		int *outShape = shape::shapeOf(resultShapeBuffer);
+
+		int samples = outShape[0];
+		int depth = outShape[1];
+		//int height = outShape[2];
+		//int width = outShape[3];
+
 
 		int height_col = (imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
     	int width_col = (imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
+    	int n = samples * depth * imgHeight * imgWidth;
+
 		for(int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 			T val = 0;
-			int w = i % imgWidth + padWidth;
-			int h = (i / imgWidth) % imgWidth + padHeight;
-			int c = i / (imgWidth * imgWidth);
-			// compute the start and end of the output
-			int w_col_start = (w < kernelWidth) ? 0 : (w - kernelWidth) / strideY + 1;
-			int w_col_end = nd4j::math::nd4j_min<int>(w / strideY + 1, width_col);
-			int h_col_start = (h < kernelHeight) ? 0 : (h - kernelHeight) / strideX + 1;
-			int h_col_end = nd4j::math::nd4j_min<int>(h / strideX + 1, height_col);
-			// equivalent implementation
-			int offset = (c * kernelHeight * kernelHeight + h * kernelHeight + w) * height_col * width_col;
+			int w_im = i % imgWidth + padWidth;
+			int h_im = (i / imgWidth) % imgHeight + padHeight;
+			int c_im = i / (imgWidth * imgWidth);
 
-			int coeff_h_col = (1 - strideX * kernelHeight * height_col) * width_col;
-			int coeff_w_col = (1 - strideY * height_col * width_col);
-			for (int h_col = h_col_start; h_col < h_col_end; h_col++) {
-				for (int w_col = w_col_start; w_col < w_col_end; w_col++) {
-					val += dx[offset + h_col * coeff_h_col + w_col * coeff_w_col];
-				}
-			}
+			// compute the start and end of the output
+			int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
+			int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
+
+			int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
+			int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
+
+			for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
+      			for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
+        			int h_k = (h_im - h_col * strideY);
+        			int w_k = (w_im - w_col * strideX);
+
+	       			int data_col_index = (((c_im * kernelHeight + h_k) * kernelWidth + w_k) * height_col + h_col) * width_col + w_col;
+			        val += dx[data_col_index];
+      			}
+		    }
 			result[i] += val;
 		}
 	}
