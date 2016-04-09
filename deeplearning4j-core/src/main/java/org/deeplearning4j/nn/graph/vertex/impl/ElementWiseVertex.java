@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 public class ElementWiseVertex extends BaseGraphVertex {
+
     public enum Op {Add, Subtract, Product};
 
     private Op op;
@@ -109,5 +110,10 @@ public class ElementWiseVertex extends BaseGraphVertex {
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op + ")";
     }
 }
