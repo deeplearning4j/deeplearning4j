@@ -152,14 +152,14 @@ public class ShapeTestsC extends BaseNd4jTest {
     @Test
     public void testReshapePermute(){
         INDArray arrNoPermute = Nd4j.ones(5,3,4);
-        INDArray reshaped2dNoPermute = arrNoPermute.reshape(5*3,4); //OK
-        assertArrayEquals(reshaped2dNoPermute.shape(),new int[]{5*3,4});
+        INDArray reshaped2dNoPermute = arrNoPermute.reshape(5 * 3,4); //OK
+        assertArrayEquals(reshaped2dNoPermute.shape(),new int[]{5 * 3,4});
 
         INDArray arr = Nd4j.ones(5,4,3);
         INDArray permuted = arr.permute(0,2,1);
         assertArrayEquals(arrNoPermute.shape(),permuted.shape());
-        INDArray reshaped2D = permuted.reshape(5*3,4);  //NullPointerException
-        assertArrayEquals(reshaped2D.shape(),new int[]{5*3,4});
+        INDArray reshaped2D = permuted.reshape(5 * 3,4);  //NullPointerException
+        assertArrayEquals(reshaped2D.shape(),new int[]{5 * 3,4});
     }
 
 

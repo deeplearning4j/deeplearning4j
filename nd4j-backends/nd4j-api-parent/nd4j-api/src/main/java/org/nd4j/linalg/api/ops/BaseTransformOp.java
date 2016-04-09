@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Ones;
+import org.nd4j.linalg.util.LinAlgExceptions;
 
 /**
  * A base op for basic getters and setters
@@ -30,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Ones;
 public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public BaseTransformOp(INDArray x, INDArray z) {
         super(x, z);
+        LinAlgExceptions.assertSameLength(x,z);
     }
 
     public BaseTransformOp() {
@@ -41,6 +43,10 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     public BaseTransformOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
+        if(y != null)
+            LinAlgExceptions.assertSameLength(x,y);
+        LinAlgExceptions.assertSameLength(x,z);
+
     }
 
     public BaseTransformOp(INDArray x) {

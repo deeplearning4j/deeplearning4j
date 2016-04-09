@@ -1729,7 +1729,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray assign(IComplexNDArray arr) {
         if (!arr.isScalar())
-            LinAlgExceptions.assertSameShape(this, arr);
+            LinAlgExceptions.assertSameLength(this, arr);
         IComplexNDArray linear = linearView();
         IComplexNDArray otherLinear = arr.linearView();
         for (int i = 0; i < linear.length(); i++) {

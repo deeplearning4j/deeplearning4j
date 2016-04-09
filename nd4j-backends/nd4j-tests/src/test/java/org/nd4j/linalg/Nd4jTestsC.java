@@ -127,6 +127,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testShapeEqualsOnElementWise() {
+        Nd4j.ones(10000, 1).sub(Nd4j.ones(1, 2));
+    }
+
     @Test
     public void testIsMax() {
         INDArray arr = Nd4j.create(new double[]{1,2,4,3},new int[]{2,2});

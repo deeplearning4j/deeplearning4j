@@ -47,7 +47,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray axpy(Number da, INDArray dx, INDArray dy) {
         if(!dx.isVector())
             throw new IllegalArgumentException("Unable to use axpy on a non vector");
-        LinAlgExceptions.assertSameShape(dx,dy);
+        LinAlgExceptions.assertSameLength(dx,dy);
         level1().axpy(dx.length(),da.doubleValue(),dx,dy);
         return dy;
     }
