@@ -18,12 +18,11 @@
 package org.deeplearning4j.ui.components.chart;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,7 +30,6 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartLine extends Chart {
@@ -49,10 +47,9 @@ public class ChartLine extends Chart {
     }
 
     public ChartLine(){
-        super(COMPONENT_TYPE,null);
+        super(COMPONENT_TYPE);
         //no-arg constructor for Jackson
     }
-
 
 
     public static class Builder extends Chart.Builder<Builder> {
@@ -77,6 +74,33 @@ public class ChartLine extends Chart {
             return new ChartLine(this);
         }
 
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("ChartLine(x=[");
+        boolean first = true;
+        if(x != null) {
+            for (double[] d : x) {
+                if (!first) sb.append(",");
+                sb.append(Arrays.toString(d));
+                first = false;
+            }
+        }
+        sb.append("],y=[");
+        first = true;
+        if(y != null) {
+            for (double[] d : y) {
+                if (!first) sb.append(",");
+                sb.append(Arrays.toString(d));
+                first = false;
+            }
+        }
+        sb.append("],seriesNames=");
+        if(seriesNames != null) sb.append(seriesNames);
+        sb.append(")");
+        return sb.toString();
     }
 
 }

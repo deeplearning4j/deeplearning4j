@@ -29,7 +29,8 @@ class ComponentTable extends Component implements Renderable {
     constructor(jsonStr: string){
         super(ComponentType.ComponentTable);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ComponentTable]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ComponentTable]];
 
         this.header = json['header'];
         this.content = json['content'];

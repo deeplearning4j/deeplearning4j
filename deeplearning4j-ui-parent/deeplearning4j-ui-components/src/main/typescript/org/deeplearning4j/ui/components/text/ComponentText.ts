@@ -26,7 +26,8 @@ class ComponentText extends Component implements Renderable {
 
     constructor(jsonStr: string){
         super(ComponentType.ComponentText);
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ComponentText]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ComponentText]];
 
         this.text = json['text'];
 
