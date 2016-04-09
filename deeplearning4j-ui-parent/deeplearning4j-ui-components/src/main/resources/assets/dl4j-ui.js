@@ -830,9 +830,10 @@ var ComponentTable = (function (_super) {
                 tbl.style.backgroundColor = s.getBackgroundColor();
             if (s && s.getColumnWidths()) {
                 var colWidths = s.getColumnWidths();
+                var unit = TSUtils.normalizeLengthUnit(s.getColumnWidthUnit());
                 for (var i = 0; i < colWidths.length; i++) {
                     var col = document.createElement('col');
-                    col.setAttribute('width', colWidths[i] + '%');
+                    col.setAttribute('width', colWidths[i] + unit);
                     tbl.appendChild(col);
                 }
             }
@@ -885,6 +886,7 @@ var StyleTable = (function (_super) {
         var _this = this;
         _super.call(this, jsonObj['StyleTable']);
         this.getColumnWidths = function () { return _this.columnWidths; };
+        this.getColumnWidthUnit = function () { return _this.columnWidthUnit; };
         this.getBorderWidthPx = function () { return _this.borderWidthPx; };
         this.getHeaderColor = function () { return _this.headerColor; };
         var style = jsonObj['StyleTable'];
@@ -892,6 +894,7 @@ var StyleTable = (function (_super) {
             this.columnWidths = jsonObj['StyleTable']['columnWidths'];
             this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
             this.headerColor = jsonObj['StyleTable']['headerColor'];
+            this.columnWidthUnit = jsonObj['StyleTable']['columnWidthUnit'];
         }
     }
     return StyleTable;
