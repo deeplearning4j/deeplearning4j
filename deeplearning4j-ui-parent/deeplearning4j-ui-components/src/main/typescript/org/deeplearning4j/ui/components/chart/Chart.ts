@@ -43,7 +43,8 @@ abstract class Chart extends Component {
         super(componentType);
 
         var jsonOrig: any = JSON.parse(jsonStr);
-        var json: any = jsonOrig[ComponentType[componentType]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[componentType]];   //Usually: expect type as wrapper object
 
         this.suppressAxisHorizontal = json['suppressAxisHorizontal'];
         this.suppressAxisVertical = json['suppressAxisVertical'];
