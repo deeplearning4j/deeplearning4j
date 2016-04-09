@@ -833,7 +833,7 @@ public class CudaZeroHandler implements MemoryHandler {
             } finally {
                 deviceLock.writeLock().unlock();
             }
-        } else devicesAffinity.get(Thread.currentThread().getId());
+        };
 
         return devicesAffinity.get(threadId);
     }
