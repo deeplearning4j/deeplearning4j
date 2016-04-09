@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
+import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
 import org.deeplearning4j.nn.layers.normalization.*;
 
 import java.util.HashMap;
@@ -329,10 +330,13 @@ public class ConvolutionLayerSetup {
     }
 
 
-    private void getConvolutionOutputSize(int[] inputWidthAndHeight, int[] kernelWidthAndHeight, int[] padding, int[] stride) {
-        int[] ret = new int[inputWidthAndHeight.length];
+    private void getConvolutionOutputSize(int[] input, int[] kernel, int[] padding, int[] stride) {
+        int[] ret = new int[input.length];
+        new KernelValidationUtil().validateShapes(input[0], input[1],
+                kernel[0], kernel[1], stride[0], stride[1],padding[0], padding[1]);
+
         for(int i = 0; i < ret.length; i++) {
-            ret[i] = (inputWidthAndHeight[i] - kernelWidthAndHeight[i] + (2 * padding[i])) / stride[i] + 1;
+            ret[i] = (input[i] - kernel[i] + (2 * padding[i])) / stride[i] + 1;
         }
         lastHeight = ret[0];
         lastWidth = ret[1];
