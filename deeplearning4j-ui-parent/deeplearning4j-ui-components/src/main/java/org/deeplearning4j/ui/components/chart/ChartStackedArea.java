@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +44,7 @@ public class ChartStackedArea extends Chart {
     private List<String> labels = new ArrayList<>();
 
     public ChartStackedArea() {
-        super(COMPONENT_TYPE, null);
+        super(COMPONENT_TYPE);
     }
 
     public ChartStackedArea(Builder builder) {
@@ -87,5 +88,29 @@ public class ChartStackedArea extends Chart {
         public ChartStackedArea build() {
             return new ChartStackedArea(this);
         }
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("ChartStackedArea(x=");
+        if(x != null) {
+            sb.append(Arrays.toString(x));
+        } else {
+            sb.append("[]");
+        }
+        sb.append(",y=[");
+        boolean first = true;
+        if(y != null) {
+            for (double[] d : y) {
+                if (!first) sb.append(",");
+                sb.append(Arrays.toString(d));
+                first = false;
+            }
+        }
+        sb.append("],labels=");
+        if(labels != null) sb.append(labels);
+        sb.append(")");
+        return sb.toString();
     }
 }

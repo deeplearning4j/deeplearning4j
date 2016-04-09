@@ -32,7 +32,8 @@ class DecoratorAccordion extends Component implements Renderable {
     constructor(jsonStr: string){
         super(ComponentType.DecoratorAccordion);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.DecoratorAccordion]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.DecoratorAccordion]];
 
         this.title = json['title'];
         this.defaultCollapsed = json['defaultCollapsed'];
