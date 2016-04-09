@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui.components.component;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.Style;

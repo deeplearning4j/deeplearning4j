@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -94,7 +95,28 @@ public class ChartHorizontalBar extends Chart {
         public ChartHorizontalBar build() {
             return new ChartHorizontalBar(this);
         }
+    }
 
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("ChartHorizontalBar(labels=");
+        if(labels != null){
+            sb.append(labels);
+        } else {
+            sb.append("[]");
+        }
+        sb.append(",values=");
+        if(values != null){
+            sb.append(values);
+        } else {
+            sb.append("[]");
+        }
+        if(xmin != null) sb.append(",xMin=").append(xmin);
+        if(xmax != null) sb.append(",xMax=").append(xmax);
+
+        sb.append(")");
+        return sb.toString();
     }
 
 }
