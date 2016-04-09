@@ -28,9 +28,13 @@ import org.nd4j.linalg.api.shape.Shape;
  * @author Adam Gibson
  */
 public class LinAlgExceptions {
-
-    public static void assertSameShape(INDArray n, INDArray n2) {
-        if (!Shape.shapeEquals(n.shape(), n2.shape()))
+    /**
+     * Asserts both arrays be the same length
+     * @param n
+     * @param n2
+     */
+    public static void assertSameLength(INDArray n, INDArray n2) {
+        if (n.length() != n2.length())
             throw new IllegalStateException("Mis matched shapes");
     }
 

@@ -31,7 +31,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public BaseTransformOp(INDArray x, INDArray z) {
         super(x, z);
-        LinAlgExceptions.assertSameShape(x,y);
+        LinAlgExceptions.assertSameLength(x,z);
     }
 
     public BaseTransformOp() {
@@ -43,8 +43,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     public BaseTransformOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
-        LinAlgExceptions.assertSameShape(x,y);
-        LinAlgExceptions.assertSameShape(x,z);
+        if(y != null)
+            LinAlgExceptions.assertSameLength(x,y);
+        LinAlgExceptions.assertSameLength(x,z);
 
     }
 
