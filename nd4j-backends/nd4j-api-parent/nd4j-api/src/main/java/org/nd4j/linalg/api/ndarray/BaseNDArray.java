@@ -2610,13 +2610,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muli(INDArray other, INDArray result) {
-
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
         }
         if (isScalar()) {
             return other.muli(getDouble(0), result);
         }
+
+        LinAlgExceptions.assertSameShape(other,result);
 
         Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
 
@@ -2652,6 +2653,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isScalar()) {
             return other.subi(getDouble(0), result);
         }
+
+        LinAlgExceptions.assertSameShape(other,result);
+
 
         Nd4j.getExecutioner().exec(new SubOp(this, other, result, length()));
 
@@ -2689,6 +2693,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.addi(getDouble(0), result);
         }
 
+
+        LinAlgExceptions.assertSameShape(other,result);
 
         Nd4j.getExecutioner().exec(new AddOp(this, other, result));
 
@@ -4309,7 +4315,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
-
         return Nd4j.createComplex(this).addi(n, result);
 
     }
