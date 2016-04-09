@@ -44,6 +44,8 @@ public class CudaEnvironment extends Environment {
             cudaDeviceProp deviceProperties = new cudaDeviceProp();
             JCuda.cudaGetDeviceProperties(deviceProperties, x);
 
+
+
             DeviceInformation information = new DeviceInformation();
             information.setTotalMemory(deviceProperties.totalGlobalMem);
             information.setDeviceId(x);
@@ -57,6 +59,10 @@ public class CudaEnvironment extends Environment {
             information.setWarpSize(deviceProperties.warpSize);
 
             JCuda.cudaSetDevice(x);
+
+            // FIXME: remove this later
+            JCuda.cudaDeviceSetLimit(0,10000);
+            JCuda.cudaDeviceSetLimit(2,10000);
 
             long[] freemem = new long[1];
             long[] totalmem = new long[1];

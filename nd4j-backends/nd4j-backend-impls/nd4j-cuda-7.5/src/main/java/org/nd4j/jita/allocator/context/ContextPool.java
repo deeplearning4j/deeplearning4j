@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.context;
 
+import jcuda.Pointer;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
 import jcuda.driver.CUresult;
@@ -9,7 +10,12 @@ import jcuda.jcublas.cublasHandle;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 import org.apache.commons.lang3.RandomUtils;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +37,7 @@ import static jcuda.driver.JCudaDriver.cuDeviceGet;
  */
 public class ContextPool {
     // TODO: number of max threads should be device-dependant
-    private static final int MAX_STREAMS_PER_DEVICE = 16;
+    private static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
 
     private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
@@ -86,12 +92,11 @@ public class ContextPool {
                     logger.info("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
+                    getDeviceBuffers(context, deviceId);
+
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
                         logger.info("Creating new cuBLAS handle for device ["+deviceId+"]...");
-
-                        // FIXME: remove this later
-                        JCuda.cudaDeviceSetLimit(deviceId,6144);
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -202,5 +207,38 @@ public class ContextPool {
 
     public CUcontext getCuContextForDevice(Integer deviceId) {
         return cuPool.get(deviceId);
+    }
+
+    /**
+     * This method is used to allocate
+     * @param context
+     * @param deviceId
+     */
+    private void getDeviceBuffers(CudaContext context, int deviceId) {
+        NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
+        long  reductionPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
+        if (reductionPointer == 0)
+            throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
+
+        long  allocationPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
+        if (allocationPointer == 0)
+            throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
+
+        long  scalarPointer = nativeOps.mallocHost(1 * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4), 0);
+        if (scalarPointer == 0)
+            throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
+
+        Pointer dPtr = new Pointer();
+        Pointer hPtr = new Pointer(scalarPointer);
+
+        JCuda.cudaHostGetDevicePointer(
+                dPtr,
+                hPtr,
+                0);
+
+        context.setBufferScalar(dPtr.getNativePointer());
+        context.setBufferAllocation(allocationPointer);
+        context.setBufferReduction(reductionPointer);
     }
 }
