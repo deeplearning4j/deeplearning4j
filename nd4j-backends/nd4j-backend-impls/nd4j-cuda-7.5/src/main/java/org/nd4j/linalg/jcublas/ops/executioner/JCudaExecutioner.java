@@ -116,7 +116,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
 
-        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("A2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 //        log.info("op.x shape: " + Arrays.toString(op.x().shape()));
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -152,8 +152,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
-        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
-        log.info("X: " + x);
+//        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
+//        log.info("X: " + x);
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
