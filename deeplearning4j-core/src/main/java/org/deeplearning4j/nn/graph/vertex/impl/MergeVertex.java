@@ -53,6 +53,11 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     @Override
+    public String toString() {
+        return "MergeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\")";
+    }
+
+    @Override
     public boolean hasLayer() {
         return false;
     }
