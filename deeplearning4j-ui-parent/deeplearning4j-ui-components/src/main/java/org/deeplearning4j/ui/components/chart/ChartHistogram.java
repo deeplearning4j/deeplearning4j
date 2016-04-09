@@ -47,6 +47,11 @@ public class ChartHistogram extends Chart {
         this.yValues = builder.yValues;
     }
 
+    //No arg constructor for Jackson
+    public ChartHistogram(){
+        super(COMPONENT_TYPE);
+    }
+
 
     public static class Builder extends Chart.Builder<Builder> {
         private List<Double> lowerBounds = new ArrayList<>();
@@ -74,5 +79,31 @@ public class ChartHistogram extends Chart {
         public ChartHistogram build() {
             return new ChartHistogram(this);
         }
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("ChartHistogram(lowerBounds=");
+        if(lowerBounds != null){
+            sb.append(lowerBounds);
+        } else {
+            sb.append("[]");
+        }
+        sb.append(",upperBounds=");
+        if(upperBounds!= null){
+            sb.append(upperBounds);
+        } else {
+            sb.append("[]");
+        }
+        sb.append(",yValues=");
+        if(yValues != null){
+            sb.append(yValues);
+        } else {
+            sb.append("[]");
+        }
+
+        sb.append(")");
+        return sb.toString();
     }
 }

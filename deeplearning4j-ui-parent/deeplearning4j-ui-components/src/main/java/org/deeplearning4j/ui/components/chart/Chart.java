@@ -45,6 +45,10 @@ public abstract class Chart extends Component {
     private Double gridVerticalStrokeWidth;
     private Double gridHorizontalStrokeWidth;
 
+    public Chart(String componentType){
+        super(componentType, null);
+    }
+
     public Chart(String componentType, Builder builder) {
         super(componentType, builder.getStyle());
         this.title = builder.title;

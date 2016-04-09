@@ -38,8 +38,11 @@ abstract class Component {
     public static getComponent(jsonStr: string): Renderable {
 
         var json: any = JSON.parse(jsonStr);
+        var key: string;
+        if(json["componentType"]) key = json["componentType"];  //No wrapper object case...
+        else key = Object.keys(json)[0];    //Typical wrapper object case
 
-        var key: string = Object.keys(json)[0];
+
 
         switch(key){
             case ComponentType[ComponentType.ComponentText]:
@@ -72,7 +75,6 @@ abstract class Component {
             default:
                 throw new Error("Unknown component type \"" + key + "\" or invalid JSON: \"" + jsonStr + "\"");
         }
-
     }
 }
 

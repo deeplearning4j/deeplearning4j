@@ -30,7 +30,8 @@ class ChartStackedArea extends Chart implements Renderable {
     constructor(jsonStr: string){
         super(ComponentType.ChartStackedArea, jsonStr);
 
-        var json = JSON.parse(jsonStr)[ComponentType[ComponentType.ChartStackedArea]];
+        var json = JSON.parse(jsonStr);
+        if(!json["componentType"]) json = json[ComponentType[ComponentType.ChartStackedArea]];
 
 
         this.xData = json['x'];
