@@ -210,11 +210,11 @@ public  class ConvolutionTests extends BaseNd4jTest {
         int kw = 1;
         int sy = 1;
         int sx = 1;
-        int ph = 2;
-        int pw = 2;
-        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
-        INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,kh,kw);
-        INDArray newTest = Convolution.col2im(linspaced,sy,sx,ph,pw,kh,kw);
+        int ph = 1;
+        int pw = 1;
+        INDArray linspaced = Nd4j.linspace(1,64,64).reshape(2,2,2,2,2,2);
+        INDArray newTest = Convolution.col2im(linspaced,sy,sx,ph,pw,2,2);
+        INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,2,2);
         assertEquals(assertion,newTest);
     }
 

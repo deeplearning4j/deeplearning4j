@@ -20,6 +20,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -271,28 +272,28 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the resolved indexes (containing all where nothing is specified, and the intended index
      * for a particular dimension otherwise)
      */
-    public static INDArrayIndex[] resolve(IntBuffer shapeInfo, INDArrayIndex... intendedIndexes) {
+    public static INDArrayIndex[] resolve(DataBuffer shapeInfo, INDArrayIndex... intendedIndexes) {
         /**
          * If it's a vector and index asking for a scalar just return the array
          */
         int rank = Shape.rank(shapeInfo);
-        IntBuffer shape = Shape.shapeOf(shapeInfo);
+        DataBuffer shape = Shape.shapeOf(shapeInfo);
         if(intendedIndexes.length >= rank || Shape.isVector(shapeInfo) && intendedIndexes.length == 1) {
             if (Shape.isRowVectorShape(shapeInfo) && intendedIndexes.length == 1) {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
                 int size;
-                if(1 == shape.get(0) && rank == 2)
-                    size = shape.get(1);
+                if(1 == shape.getInt(0) && rank == 2)
+                    size = shape.getInt(1);
                 else
-                    size = shape.get(0);
+                    size = shape.getInt(0);
                 ret[1] = validate(size , intendedIndexes[0]);
                 return ret;
             }
             List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length);
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if(i < rank)
-                    retList.add(validate(shape.get(i), intendedIndexes[i]));
+                    retList.add(validate(shape.getInt(i), intendedIndexes[i]));
                 else
                     retList.add(intendedIndexes[i]);
             }
@@ -303,12 +304,12 @@ public class NDArrayIndex implements INDArrayIndex {
         int numNewAxes = 0;
 
         if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
-            retList.add(validate(shape.get(0), intendedIndexes[0]));
+            retList.add(validate(shape.getInt(0), intendedIndexes[0]));
             retList.add(NDArrayIndex.all());
         }
         else {
             for (int i = 0; i < intendedIndexes.length; i++) {
-                retList.add(validate(shape.get(i), intendedIndexes[i]));
+                retList.add(validate(shape.getInt(i), intendedIndexes[i]));
                 if (intendedIndexes[i] instanceof NewAxis)
                     numNewAxes++;
             }
