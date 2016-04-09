@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.LinAlgExceptions;
 
 /**
  * Base class for accumulation, initiates the initial entry
@@ -51,6 +52,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
+        LinAlgExceptions.assertSameShape(x,y);
+        LinAlgExceptions.assertSameShape(x,z);
+
     }
 
     public BaseAccumulation(INDArray x, INDArray y, long n) {
@@ -63,6 +67,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation(INDArray x, INDArray y) {
         this(x, y, x, x.lengthLong());
+        LinAlgExceptions.assertSameShape(x,y);
     }
 
     private void init() {
