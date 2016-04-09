@@ -51,9 +51,10 @@ class ComponentTable extends Component implements Renderable {
         if (s && s.getColumnWidths()) {
             //TODO allow other than percentage
             var colWidths: number[] = s.getColumnWidths();
+            var unit: string = TSUtils.normalizeLengthUnit(s.getColumnWidthUnit());
             for (var i = 0; i < colWidths.length; i++) {
                 var col = document.createElement('col');
-                col.setAttribute('width', colWidths[i] + '%');
+                col.setAttribute('width', colWidths[i] + unit);
                 tbl.appendChild(col);
             }
         }

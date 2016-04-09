@@ -18,6 +18,7 @@
 class StyleTable extends Style {
 
     private columnWidths: number[];
+    private columnWidthUnit: string;
     private borderWidthPx: number;
     private headerColor: string;
 
@@ -29,13 +30,13 @@ class StyleTable extends Style {
             this.columnWidths = jsonObj['StyleTable']['columnWidths'];
             this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
             this.headerColor = jsonObj['StyleTable']['headerColor'];
+            this.columnWidthUnit = jsonObj['StyleTable']['columnWidthUnit'];
         }
     }
 
     getColumnWidths = () => this.columnWidths;
-
+    getColumnWidthUnit = () => this.columnWidthUnit;
     getBorderWidthPx = () => this.borderWidthPx;
-
     getHeaderColor = () => this.headerColor;
 
 }
