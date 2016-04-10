@@ -5,7 +5,6 @@
 #ifndef NATIVEOPERATIONS_NATIVEBLAS_H
 #define NATIVEOPERATIONS_NATIVEBLAS_H
 
-#include <dll.h>
 #include <pointercast.h>
 
 #ifdef  _WIN32
@@ -13,6 +12,7 @@
 #else
 #define ND4J_EXPORT
 #endif
+#include <dll.h>
 
 class ND4J_EXPORT Nd4jBlas {
 public:

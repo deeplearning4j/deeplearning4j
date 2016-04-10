@@ -4,11 +4,7 @@
 
 #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 #define NATIVEOPERATIONS_NATIVEOPS_H
-#ifdef  _WIN32
-#define ND4J_EXPORT ND4J_EXPORT
-#else
-#define ND4J_EXPORT
-#endif
+
 #ifndef thread_local
 # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #  define thread_local _Thread_local
@@ -28,9 +24,15 @@
 # endif
 #endif
 
-#include <dll.h>
 #include <pointercast.h>
 #include "optype.h"
+#ifdef  _WIN32
+#define ND4J_EXPORT ND4J_EXPORT
+#else
+#define ND4J_EXPORT
+#endif
+#include <dll.h>
+
 class ND4J_EXPORT NativeOps {
 
 
