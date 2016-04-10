@@ -26,8 +26,7 @@
 
 #include <dll.h>
 #include <pointercast.h>
-
-
+#include "optype.h"
 
 class ND4J_EXPORT NativeOps {
         public:
@@ -38,7 +37,7 @@ class ND4J_EXPORT NativeOps {
            * @param xShapeInfo
            * @param extraParams
            */
-        double   execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        double   execIndexReduceScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams);
@@ -54,7 +53,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execIndexReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -73,7 +72,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execBroadcastDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer y,
@@ -96,7 +95,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execPairwiseTransformDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execPairwiseTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         int xStride,
         Nd4jPointer y,
@@ -121,7 +120,7 @@ class ND4J_EXPORT NativeOps {
          * @param resultIndexes
          */
         void execPairwiseTransformDouble(Nd4jPointer *extraPointers,
-        int opNum,
+        OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer y,
@@ -147,7 +146,7 @@ class ND4J_EXPORT NativeOps {
          */
         void execPairwiseTransformDouble(
         Nd4jPointer *extraPointers,
-        int opNum,
+        OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer  xShapeInfo,
         Nd4jPointer y,
@@ -165,7 +164,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduceDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -181,7 +180,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduceDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -197,7 +196,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @return
          */
-        double execReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        double execReduceScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams);
@@ -213,7 +212,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduce3Double(Nd4jPointer *extraPointers,int opNum,
+        void   execReduce3Double(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -231,7 +230,7 @@ class ND4J_EXPORT NativeOps {
          * @param y
          * @param yShapeInfo
          */
-        double   execReduce3ScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        double   execReduce3ScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -250,7 +249,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execReduce3Double(Nd4jPointer *extraPointers,int opNum,
+        void   execReduce3Double(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -271,7 +270,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         int xStride,
         Nd4jPointer result,
@@ -291,7 +290,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        void execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -312,7 +311,7 @@ class ND4J_EXPORT NativeOps {
          * @param xIndexes
          * @param resultIndexes
          */
-        void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+        void execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -329,7 +328,7 @@ class ND4J_EXPORT NativeOps {
          * @param xShapeInfo
          * @param extraParams
          */
-        double   execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+        double   execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,bool biasCorrected);
         /**
@@ -341,7 +340,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -358,7 +357,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
         Nd4jPointer result,
@@ -374,7 +373,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         int xStride,
         Nd4jPointer result,
@@ -391,7 +390,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -408,7 +407,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -425,7 +424,7 @@ class ND4J_EXPORT NativeOps {
         * @param extraParams
         */
         float   execIndexReduceScalarFloat(Nd4jPointer *extraPointers,
-        int opNum,
+        OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams);
@@ -441,7 +440,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execIndexReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -460,13 +459,12 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execBroadcastFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer y,
         Nd4jPointer yShapeInfo,
         Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
         Nd4jPointer dimension, int dimensionLength);
 
 
@@ -483,7 +481,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         int xStride,
         Nd4jPointer y,
@@ -507,7 +505,7 @@ class ND4J_EXPORT NativeOps {
          * @param yIndexes
          * @param resultIndexes
          */
-        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer y,
@@ -531,7 +529,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer  xShapeInfo,
         Nd4jPointer y,
@@ -549,7 +547,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduceFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -565,7 +563,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduceFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -581,7 +579,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @return
          */
-        float execReduceScalarFloat(Nd4jPointer *extraPointers,int opNum,
+        float execReduceScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams);
@@ -597,7 +595,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execReduce3Float(Nd4jPointer *extraPointers,int opNum,
+        void   execReduce3Float(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -615,7 +613,7 @@ class ND4J_EXPORT NativeOps {
          * @param y
          * @param yShapeInfo
          */
-        float   execReduce3ScalarFloat(Nd4jPointer *extraPointers,int opNum,
+        float   execReduce3ScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -634,7 +632,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execReduce3Float(Nd4jPointer *extraPointers,int opNum,
+        void   execReduce3Float(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParamsVals,
@@ -655,7 +653,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         int xStride,
         Nd4jPointer result,
@@ -675,7 +673,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+        void execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -696,7 +694,7 @@ class ND4J_EXPORT NativeOps {
          * @param xIndexes
          * @param resultIndexes
          */
-        void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+        void execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -712,7 +710,7 @@ class ND4J_EXPORT NativeOps {
          * @param xShapeInfo
          * @param extraParams
          */
-        float   execSummaryStatsScalarFloat(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+        float   execSummaryStatsScalarFloat(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,bool biasCorrected);
         /**
@@ -724,7 +722,7 @@ class ND4J_EXPORT NativeOps {
          * @param result
          * @param resultShapeInfo
          */
-        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
@@ -741,7 +739,7 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer extraParams,
         Nd4jPointer result,
@@ -757,7 +755,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         int xStride,
         Nd4jPointer result,
@@ -774,7 +772,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -791,7 +789,7 @@ class ND4J_EXPORT NativeOps {
          * @param extraParams
          * @param n
          */
-        void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,

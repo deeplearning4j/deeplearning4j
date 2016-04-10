@@ -880,17 +880,16 @@ public:
 						x,
 						xStridesIter,
 						y,
-						yStridesIter);
+                                                yStridesIter);
+
+
 #pragma  omp parallel for
 for(Nd4jIndex i = 0; i < resultLength ;i++) {
 	result[i] = postProcess(result[i],tadLength,&extraParamsVals);
-}
-
-			}
+}}
 			else {
 				printf("Unable to prepare array\n");
-			}
-
+                        }
 		}
 		else {
 			T startingVal = this->startingValue(x);

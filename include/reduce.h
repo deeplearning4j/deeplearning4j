@@ -775,7 +775,6 @@ public:
 		if(dimensionLength > 1) {
 			int numOnes = 0;
 			int *shape = shape::shapeOf(xShapeInfo);
-			int *stride = shape::stride(xShapeInfo);
 			int wholeRank = shape::rank(xShapeInfo);
 			bool squeezed = false;
 			bool newSqueezeDimensions = false;

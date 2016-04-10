@@ -103,11 +103,10 @@ public:
                        T *y,
                        int *yShapeInfo,
                        T *result,
-                       int *resultShapeInfo,
                        int *dimension, int dimensionLength) {
 
         functions::broadcast::Broadcast<T> *broadcast = broadcastOpFactory->getOp(opNum);
-        broadcast->exec(x,xShapeInfo,y,yShapeInfo,result,resultShapeInfo,dimension,dimensionLength);
+        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength);
         delete broadcast;
     }
 
@@ -434,7 +433,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void execSummaryStats(int opNum,
+    void execSummaryStats(OpType opNum,
                           T *x,
                           int *xShapeInfo,
                           T *extraParams,
@@ -454,7 +453,7 @@ public:
     * @param result
     * @param resultShapeInfo
     */
-    T execSummaryStatsScalar(int opNum,
+    T execSummaryStatsScalar(OpType opNum,
                              T *x,
                              int *xShapeInfo,
                              T *extraParams,bool biasCorrected) {
@@ -565,8 +564,8 @@ public:
                        T *result,
                        int *resultShapeInfo,
                        T *extraParams,
-                       int *xIndexes,
-                       int *resultIndexes) {
+                       Nd4jIndex *xIndexes,
+                       Nd4jIndex *resultIndexes) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
         transform->exec(dx,
                         xShapeInfo,

@@ -383,7 +383,7 @@ public:
 	 * to store the result in
 	 * @param resultStride the stride for the buffer
 	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
+         * @param indexes which indexes to copy
 	 */
 	virtual void exec(
 			T *dx,
@@ -415,7 +415,6 @@ public:
 	 * to store the result in
 	 * @param resultStride the stride for the buffer
 	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
 	 */
 	virtual void execSpecial(
 			T *dx,
@@ -437,7 +436,6 @@ public:
 	 * to store the result in
 	 * @param resultStride the stride for the buffer
 	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
 	 */
 	virtual void exec(
 			T *dx,
@@ -493,22 +491,11 @@ public:
 
 		else if (sameShape) {
 			int rank = shape::rank(xShapeBuffer);
-			int *xShape = shape::shapeOf(xShapeBuffer);
-			int *yShape = shape::shapeOf(yShapeBuffer);
-			int *resultShape = shape::shapeOf(resultShapeBuffer);
+                        int *xShape = shape::shapeOf(xShapeBuffer);
 
 			int *xStride = shape::stride(xShapeBuffer);
 			int *yStride = shape::stride(yShapeBuffer);
-			int *resultStride = shape::stride(resultShapeBuffer);
-
-			int xRank = shape::rank(xShapeBuffer);
-			int yRank = shape::rank(yShapeBuffer);
-			int resultRank = shape::rank(resultShapeBuffer);
-
-
-			char xOrder = shape::order(xShapeBuffer);
-			char yOrder = shape::order(yShapeBuffer);
-			char resultOrder = shape::order(resultShapeBuffer);
+                        int *resultStride = shape::stride(resultShapeBuffer);
 
 			int shapeIter[MAX_RANK];
 			int coord[MAX_RANK];
@@ -524,7 +511,7 @@ public:
 					yStride,
 					result,
 					resultStride,
-					&rank,
+                                        rank,
 					shapeIter,
 					&dx,
 					xStridesIter,
@@ -557,17 +544,14 @@ public:
 
 		}
 
-		else {
-			char xOrder = shape::order(xShapeBuffer);
-			char yOrder = shape::order(yShapeBuffer);
-			char resultOrder = shape::order(resultShapeBuffer);
+                else {
 			Nd4jIndex len = shape::length(xShapeBuffer);
 			int xRank = shape::rank(xShapeBuffer);
 			int yRank = shape::rank(yShapeBuffer);
 			int resultRank = shape::rank(resultShapeBuffer);
 			int *xCoord = (int *) malloc(sizeof(int) * xRank);
 			int *yCoord = (int *) malloc(sizeof(int) * yRank);
-			int *resultCoord = (int *) malloc(sizeof(int) * resultRank);
+                        int *resultCoord = new int[resultRank];
 
 			int *xShape = shape::shapeOf(xShapeBuffer);
 			int *xStride = shape::stride(xShapeBuffer);
@@ -575,13 +559,12 @@ public:
 			int *yShape = shape::shapeOf(yShapeBuffer);
 			int *yStride = shape::stride(yShapeBuffer);
 
-			int *resultShape = shape::shapeOf(resultShapeBuffer);
-			int *resultStride = shape::stride(resultShapeBuffer);
+                        int *resultShape = shape::shapeOf(resultShapeBuffer);
 			if(dx == result) {
 				for (Nd4jIndex i = 0; i < len; i++) {
-					shape::ind2subC(xRank,xShape, i, &xCoord);
-					shape::ind2subC(yRank,yShape, i, &yCoord);
-					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+                                        shape::ind2subC(xRank,xShape, i, xCoord);
+                                        shape::ind2subC(yRank,yShape, i, yCoord);
+                                        shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
 					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -591,9 +574,9 @@ public:
 			}
 			else {
 				for (Nd4jIndex i = 0; i < len; i++) {
-					shape::ind2subC(xRank,xShape, i, &xCoord);
-					shape::ind2subC(yRank,yShape, i, &yCoord);
-					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+                                        shape::ind2subC(xRank,xShape, i, xCoord);
+                                        shape::ind2subC(yRank,yShape, i, yCoord);
+                                        shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
 					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -607,7 +590,8 @@ public:
 
 			free(xCoord);
 			free(yCoord);
-			free(resultCoord);
+
+                        delete []resultCoord;
 		}
 	}
 
@@ -800,6 +784,8 @@ public:
 
 #endif
 	T op(T d1, T d2, T *params) {
+                (void)d1;
+                (void)params;
 		return d2;
 	}
 
@@ -810,6 +796,7 @@ public:
 
 #endif
 	T op(T d1, T *params) {
+                (void)params;
 		return d1;
 	}
 #ifdef __CUDACC__

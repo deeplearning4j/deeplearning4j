@@ -23,8 +23,11 @@
 #include <jni.h>
 #endif
 
+#include "optype.h"
+
 namespace functions {
     namespace summarystats {
+
 
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
@@ -1010,7 +1013,6 @@ struct SharedSummaryStatsData<double> {
                 if (dimensionLength > 1) {
                     int numOnes = 0;
                     int *shape = shape::shapeOf(xShapeInfo);
-                    int *stride = shape::stride(xShapeInfo);
                     int wholeRank = shape::rank(xShapeInfo);
                     bool squeezed = false;
                     bool newSqueezeDimensions = false;
@@ -1046,7 +1048,6 @@ struct SharedSummaryStatsData<double> {
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-                    int tadLength = shape::length(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
@@ -1470,12 +1471,11 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
             __inline__ __host__ __device__
 #endif
-            functions::summarystats::SummaryStatsReduce<T> * getOp(int op,bool biasCorrected) {
-                if (op == 0) {
-                    return new functions::summarystats::ops::Variance<T>(biasCorrected);
-                } else if (op == 1) {
-                    return new functions::summarystats::ops::StandardDeviation<T>(biasCorrected);
-
+            functions::summarystats::SummaryStatsReduce<T> * getOp(OpType op, bool biasCorrected) {
+                if (op == op_type::Variance) {
+                    return new ops::Variance<T>(biasCorrected);
+                } else if (op == op_type::StandardDeviation) {
+                    return new ops::StandardDeviation<T>(biasCorrected);
                 }
                 return NULL;
             }

@@ -110,7 +110,6 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
     DoubleNativeOpExecutioner::getInstance()->execBroadcast(
             opNum,
@@ -119,7 +118,6 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
             yPointer,
             yShapeInfoPointer,
             resultPointer,
-            resultShapeInfoPointer,
             dimensionPointer,
             dimensionLength);
 
@@ -535,7 +533,7 @@ void NativeOps::execScalarDouble(
  * @param xShapeInfo
  * @param extraParams
  */
-double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, OpType opNum,Nd4jPointer x,
                                                  Nd4jPointer xShapeInfo,
                                                  Nd4jPointer extraParams,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
@@ -556,7 +554,7 @@ double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,int 
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,
+void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNum,
                                          Nd4jPointer x,
                                          Nd4jPointer xShapeInfo,
                                          Nd4jPointer extraParams,
@@ -587,7 +585,7 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNum,Nd4jPointer x,
                                          Nd4jPointer xShapeInfo,
                                          Nd4jPointer extraParams,
                                          Nd4jPointer result,
@@ -620,7 +618,7 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,Nd
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers, OpType opNum,
                                       Nd4jPointer dx,
                                       int xStride,
                                       Nd4jPointer result,
@@ -644,7 +642,7 @@ void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers,int opNum,
  */
 void   NativeOps::execTransformDouble(
         Nd4jPointer *extraPointers
-        ,int opNum,
+        , OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -676,7 +674,7 @@ void   NativeOps::execTransformDouble(
  */
 void   NativeOps::execTransformDouble(
         Nd4jPointer *extraPointers,
-        int opNum,
+        OpType opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -689,8 +687,8 @@ void   NativeOps::execTransformDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
-    int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
+    Nd4jIndex *xIndexesPointer = reinterpret_cast<Nd4jIndex*>(xIndexes);
+    Nd4jIndex *resultIndexesPointer = reinterpret_cast<Nd4jIndex *>(resultIndexes);
     DoubleNativeOpExecutioner::getInstance()->execTransform(
             opNum,
             xPointer,
@@ -710,7 +708,7 @@ void   NativeOps::execTransformDouble(
  * @param xShapeInfo
  * @param extraParams
  */
-float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers,int opNum,
+float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, OpType opNum,
                                               Nd4jPointer x,
                                               Nd4jPointer xShapeInfo,
                                               Nd4jPointer extraParams) {
@@ -731,7 +729,7 @@ float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers,int opN
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
+void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, OpType opNum,
                                        Nd4jPointer x,
                                        Nd4jPointer xShapeInfo,
                                        Nd4jPointer extraParams,
@@ -760,22 +758,20 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
+void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,OpType opNum,
                                      Nd4jPointer x,
                                      Nd4jPointer xShapeInfo,
                                      Nd4jPointer y,
                                      Nd4jPointer yShapeInfo,
                                      Nd4jPointer result,
-                                     Nd4jPointer resultShapeInfo,
                                      Nd4jPointer dimension, int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
-    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+    FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength);
 
 }
 
@@ -1361,8 +1357,8 @@ void   NativeOps::execTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
-    int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
+    Nd4jIndex *xIndexesPointer = reinterpret_cast<Nd4jIndex*>(xIndexes);
+    Nd4jIndex *resultIndexesPointer = reinterpret_cast<Nd4jIndex *>(resultIndexes);
     FloatNativeOpExecutioner::getInstance()->execTransform(
             opNum,
             xPointer,
@@ -1391,9 +1387,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
     int *inputShapeInfoPointer = reinterpret_cast<int *>(inputShapeInfo);
     int numOnes = 0;
     int *shape = shape::shapeOf(inputShapeInfoPointer);
-    int *stride = shape::stride(inputShapeInfoPointer);
     int wholeRank = shape::rank(inputShapeInfoPointer);
-    bool squeezed = false;
     for(int i = 0; i < wholeRank; i++) {
         if(shape[i] == 1)
             numOnes++;
@@ -1404,11 +1398,6 @@ void flattenGeneric(Nd4jPointer *extraPointers,
     //start at the given offset
     resultPointer += offset;
     char inputOrder = shape::order(inputShapeInfoPointer);
-    int rank = shape::rank(inputShapeInfoPointer);
-    int *coord = (int *) malloc(sizeof(int) * rank);
-    int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    int *xStride = shape::stride(inputShapeInfoPointer);
-    char resultOrder = shape::order(inputShapeInfoPointer);
     int len = shape::length(inputShapeInfoPointer);
     int resultEleStride = shape::elementWiseStride(resultShapeInfoBufferPointer);
     int inputEleStride = shape::elementWiseStride(inputShapeInfoPointer);
@@ -1430,16 +1419,15 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             }
         }
         else {
-            char inputOrder = shape::order(inputShapeInfoPointer);
             int idx = 0;
             int rank = shape::rank(inputShapeInfoPointer);
-            int *coord = (int *) malloc(sizeof(int) * rank);
+            int *coord = new int[rank];
             int *xShape = shape::shapeOf(inputShapeInfoPointer);
             int *xStride = shape::stride(inputShapeInfoPointer);
             int len = shape::length(inputShapeInfoPointer);
             if(order == 'f') {
                 for(int i = 0; i < len; i++) {
-                    shape::ind2sub(rank,xShape,i,&coord);
+                    shape::ind2sub(rank, xShape, i, coord);
                     int offset = shape::getOffset(0,xShape,xStride,coord,rank);
                     resultPointer[idx++] = inputPointer[offset];
 
@@ -1447,7 +1435,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             }
             else {
                 for(int i = 0; i < len; i++) {
-                    shape::ind2subC(rank,xShape,i,&coord);
+                    shape::ind2subC(rank, xShape, i, coord);
                     int offset = shape::getOffset(0,xShape,xStride,coord,rank);
                     resultPointer[idx++] = inputPointer[offset];
 
@@ -1457,16 +1445,15 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
     }
     else {
-        char inputOrder = shape::order(inputShapeInfoPointer);
         int idx = 0;
         int rank = shape::rank(inputShapeInfoPointer);
-        int *coord = (int *) malloc(sizeof(int) * rank);
+        int *coord = new int[rank];
         int *xShape = shape::shapeOf(inputShapeInfoPointer);
         int *xStride = shape::stride(inputShapeInfoPointer);
         int len = shape::length(inputShapeInfoPointer);
         if(order == 'f') {
             for(int i = 0; i < len; i++) {
-                shape::ind2sub(rank,xShape,i,&coord);
+                shape::ind2sub(rank, xShape, i, coord);
                 int offset = shape::getOffset(0,xShape,xStride,coord,rank);
                 resultPointer[idx++] = inputPointer[offset];
 
@@ -1474,7 +1461,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
         else {
             for(int i = 0; i < len; i++) {
-                shape::ind2subC(rank,xShape,i,&coord);
+                shape::ind2subC(rank, xShape, i, coord);
                 int offset = shape::getOffset(0,xShape,xStride,coord,rank);
                 resultPointer[idx++] = inputPointer[offset];
 
@@ -1550,7 +1537,7 @@ void NativeOps::initializeDevicesAndFunctions() {
        */
 Nd4jPointer NativeOps::mallocHost(long memorySize, int flags) {
     Nd4jPointer pointer = (Nd4jPointer) malloc(memorySize);
-    if (pointer == NULL)
+    if (pointer == 0)
         return 0L;
     return pointer;
 }
