@@ -15,9 +15,9 @@
 #include <dll.h>
 
 //#include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include <fstream>
-//#include <string>
+#include <cstring>
 
 #ifdef _WIN32
 #ifndef STRCASECMP

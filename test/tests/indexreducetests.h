@@ -43,7 +43,6 @@ static Data<T> * getDataIndexReduce(T *assertion,T startingVal) {
 
     ret->assertion = (T *) malloc(sizeof(T) * 4);
     for(int i = 0; i < 1; i++) {
-        printf("Assertion value %f\n",assertion[i]);
         ret->assertion[i] = assertion[i];
     }
 
@@ -79,7 +78,6 @@ static Data<T> * getDataIndexReduceDimension(T *assertion,T startingVal) {
 
     ret->assertion = (T *) malloc(sizeof(T) * 4);
     for(int i = 0; i < 2; i++) {
-        printf("Assertion value %f\n",assertion[i]);
         ret->assertion[i] = assertion[i];
     }
 
@@ -119,7 +117,6 @@ static Data<T> * getDataIndexReduceDimensionMulti(T *assertion,T startingVal) {
 
     ret->assertion = (T *) malloc(sizeof(T) * resultLength);
     for(int i = 0; i < resultLength; i++) {
-        printf("Assertion value %f\n",assertion[i]);
         ret->assertion[i] = assertion[i];
     }
 
@@ -373,27 +370,25 @@ TEST(IndexReduce,ObjectOrientedFloatIMin) {
     int rank = 2;
     int opNum = 1;
     float assertion[1] = {0};
+
     Data<float> *data = getDataIndexReduce<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
+
     delete data;
     delete test;
-
 }
-
-
-
-
-
 
 TEST(IndexReduce,ObjectOrientedFloatDimensionIMax) {
     int rank = 2;
     int opNum = 0;
     float assertion[2] = {1,1};
+
     Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
-    freeData(&data);
+
+    delete data;
     delete test;
 }
 
@@ -401,9 +396,11 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMin) {
     int rank = 2;
     int opNum = 1;
     float assertion[2] = {0,0};
+
     Data<float> *data = getDataIndexReduceDimension<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
+
     delete data;
     delete test;
 }
@@ -416,6 +413,7 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMinMulti) {
     Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
+
     delete data;
     delete test;
 }
@@ -425,9 +423,11 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMaxMulti) {
     int rank = 2;
     int opNum = 0;
     float assertion[3] = {3,3,3};
+
     Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
     FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
     test->run();
+
     delete data;
     delete test;
 }

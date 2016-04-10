@@ -269,13 +269,11 @@ public:
 			int *xShapeInfo,
 			T *y,
 			int *yShapeInfo,
-			T *result,
-			int *resultShapeInfo,
+                        T *result,
 			int *dimension,
 			int dimensionLength) {
 		int numOnes = 0;
-		int *shape = shape::shapeOf(xShapeInfo);
-		int *stride = shape::stride(xShapeInfo);
+                int *shape = shape::shapeOf(xShapeInfo);
 		int wholeRank = shape::rank(xShapeInfo);
 		bool newSqueezeDimensions = false;
 		for (int i = 0; i < wholeRank; i++) {
@@ -286,8 +284,7 @@ public:
 		//squeeze the dimensions
 		if (numOnes > 0 && wholeRank > 2) {
 			int numOnes = 0;
-			int *shape = shape::shapeOf(xShapeInfo);
-			int *stride = shape::stride(xShapeInfo);
+                        int *shape = shape::shapeOf(xShapeInfo);
 			int wholeRank = shape::rank(xShapeInfo);
 			bool squeezed = false;
 			bool newSqueezeDimensions = false;
@@ -300,8 +297,8 @@ public:
 			if (numOnes > 0) {
 				xShapeInfo = shape::squeezeDimensions(
 						xShapeInfo,
-						&dimension,
-						&dimensionLength,
+                                                dimension,
+                                                dimensionLength,
 						&squeezed,
 						&newSqueezeDimensions,
 						wholeRank,
@@ -317,9 +314,7 @@ public:
 				false);
 		int tads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
 		int *xShape = shape::shapeOf(tadShapeShapeInfo);
-		int *xStride = shape::stride(tadShapeShapeInfo);
-		int tadLength = shape::length(tadShapeShapeInfo);
-		int rank = shape::rank(tadShapeShapeInfo);
+                int *xStride = shape::stride(tadShapeShapeInfo);
 		int *resultStride = shape::stride(tadShapeShapeInfo);
 
 		if (result == x) {
