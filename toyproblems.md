@@ -12,12 +12,17 @@ your beginning experience with toy problems goes well. We often advocate for beg
 due to the fact that deeplearning4j assumes a very different audience.
 
 
-      1. minibatch(false) in your config - this will prevent the gradient from being normalized minibatch learning
-          performs a divide by n which normalizes the learned gradient. When you have the whole problem in memory
+      1. minibatch(false) in your config - this will prevent the 
+      gradient from being normalized minibatch learning
+          performs a divide by n which normalizes the learned gradient. 
+          When you have the whole problem in memory
           there is no reason to do this.
       
-      2. double precision: Neural nets can learn from 32 bit when exposed to lots of data. Use 64 bit (double precision for 
+      2. double precision: Neural nets can learn from 32 bit when 
+          exposed to lots of data. Use 64 bit (double precision for 
           better results): http://nd4j.org/userguide#miscdatatype
           
-      3. Use the sgd updater with the sgd optimization algo. This will prevent complicated things like the line search
+      3. Use the sgd updater with the sgd optimization algo. 
+         This will prevent complicated things 
+         like the line search
          from being activated.
