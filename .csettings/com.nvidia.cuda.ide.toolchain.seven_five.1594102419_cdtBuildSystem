@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 5.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage2">
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<configuration buildProperties="" id="com.nvidia.cuda.ide.toolchain.seven_five.1594102419" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+			<folderInfo id="com.nvidia.cuda.ide.toolchain.seven_five.1594102419.1654659464" name="/" resourcePath="">
+				<toolChain id="com.nvidia.cuda.ide.toolchain.seven_five.1983341989" name="CUDA Toolkit 7.5" superClass="com.nvidia.cuda.ide.toolchain.seven_five">
+					<targetPlatform archList="all" binaryParser="com.nvidia.cuda.ide.elf;com.nvidia.cuda.ide.macho;com.nvidia.cuda.ide.cubin" id="com.nvidia.cuda.ide.targetPlatform.823649314" isAbstract="false" name="Debug Platform" osList="linux,macosx" superClass="com.nvidia.cuda.ide.targetPlatform"/>
+					<builder id="com.nvidia.cuda.ide.builder.45043846" managedBuildOn="false" name="CUDA Toolkit 7.5 Builder.Default" superClass="com.nvidia.cuda.ide.builder"/>
+					<tool id="nvcc.compiler.base.147974849" name="NVCC Compiler" superClass="nvcc.compiler.base">
+						<option id="nvcc.compiler.pic.1230401607" superClass="nvcc.compiler.pic"/>
+					</tool>
+					<tool id="nvcc.linker.base.613424354" name="NVCC Linker" superClass="nvcc.linker.base"/>
+					<tool id="nvcc.archiver.base.1054490345" name="NVCC Archiver" superClass="nvcc.archiver.base"/>
+					<tool id="com.nvidia.host.assembler.1085632063" name="Host Assembler" superClass="com.nvidia.host.assembler"/>
+				</toolChain>
+			</folderInfo>
+		</configuration>
+	</storageModule>
+</cproject>
