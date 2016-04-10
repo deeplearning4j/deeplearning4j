@@ -614,7 +614,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testIsMaxAlongDimension(){
-        //1d
+        //1d: row vector
         INDArray orig = Nd4j.create(new double[]{1,2,3,1});
 
         INDArray alongDim0 = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup(),0));
@@ -625,6 +625,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(expAlong0, alongDim0);
         assertEquals(expAlong1, alongDim1);
+
+        //1d: col vector
+        INDArray col = Nd4j.create(new double[]{1,2,3,1},new int[]{4,1});
+        INDArray alongDim0col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(),0));
+        INDArray alongDim1col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(),1));
+
+        INDArray expAlong0col = Nd4j.create(new double[]{0,0,1,0}, new int[]{4,1});
+        INDArray expAlong1col = Nd4j.ones(new int[]{4,1});
+
+        assertEquals(expAlong0col, alongDim0col);
+        assertEquals(expAlong1col, alongDim1col);
+
 
         //2d:
         //[1 0 2]
