@@ -234,13 +234,13 @@ public:
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot) {
+			int postProcessOrNot, int *allocationBuffer) {
 
 
 		/**
 		 * Gpu information for the problem
 		 */
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
@@ -540,7 +540,8 @@ public:
 				}
 			} else {
 				int rank = shape::rank(xShapeInfo);
-				int *ind2sub = (int *) malloc(sizeof(int) * rank);
+				long allocSize = sizeof(int) * rank;
+				int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
 				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
@@ -550,7 +551,9 @@ public:
 					reduction = update(reduction, indexVal, extraParams);
 				}
 
-				free(ind2sub);
+				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                	free(ind2sub);
+            	}
 			}
 
 
@@ -1314,7 +1317,7 @@ __device__ void indexReduceGeneric(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationBuffer) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0)
@@ -1325,7 +1328,7 @@ __device__ void indexReduceGeneric(
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
 
-	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1358,7 +1361,7 @@ __global__ void indexReduceDouble(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationBuffer) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
@@ -1368,7 +1371,7 @@ __global__ void indexReduceDouble(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot, allocationBuffer);
 
 }
 
@@ -1396,7 +1399,7 @@ __global__ void indexReduceFloat(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot,  int *allocationBuffer) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
@@ -1406,7 +1409,7 @@ __global__ void indexReduceFloat(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot, allocationBuffer);
 
 }
 

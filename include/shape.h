@@ -12,6 +12,11 @@
 #include <dll.h>
 #include <nd4jmalloc.h>
 #include <templatemath.h>
+
+#ifdef __CUDACC__
+    #define PREALLOC_SIZE (5 * 1024 * 1024)
+#endif
+
 namespace shape {
     const int MAX_DIMENSION = 0x7fffffff;
     const int MAX_NUM_THREADS = 1024;
@@ -70,6 +75,18 @@ namespace shape {
     bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
 
 
+#ifdef __CUDACC__
+    __inline__ __device__ int *cuMalloc(int *buffer, long size) {
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
+        if (tid * size > PREALLOC_SIZE - size) {
+            return (int *) malloc(size);
+        } else {
+            int *ret = buffer;
+            ret += (tid * size);
+            return ret;
+        }
+    }
+#endif
 
 #ifdef __CUDACC__
     __inline__ __host__ __device__

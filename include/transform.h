@@ -60,7 +60,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) = 0;
+			T *extraParams, int *allocationPointer) = 0;
 #endif
             /**
              * The op for transforms
@@ -122,10 +122,11 @@ namespace functions {
 			int *shapeInfo,
 			T *params,
 			T *result,
-			int *resultShapeInfo) {
+			int *resultShapeInfo,
+			int *allocationPointer) {
 
 		if(this->requiresSpecial) {
-			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params);
+			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer);
 			return;
 		}
 
@@ -140,7 +141,7 @@ namespace functions {
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
 		if(tid == 0)
@@ -154,11 +155,12 @@ namespace functions {
 					xElementWiseStride,
 					params,
 					result,
-					resultElementWiseStride);
+					resultElementWiseStride, allocationPointer);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
-			int *xIdx = (int *) malloc(sizeof(int) * xRank);
+			long allocSize = sizeof(int) * xRank;
+			int *xIdx = shape::cuMalloc(allocationPointer, allocSize);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
 				int *xIdx = shape::ind2sub(xRank, xShape, i);
@@ -168,8 +170,9 @@ namespace functions {
 				result[resultOffset2] = op(dy[xOffset2], params);
 
 			}
-
-			free(xIdx);
+            if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(xIdx);
+            }
 		}
 	}
 
@@ -188,7 +191,8 @@ namespace functions {
 			int incy,
 			T *params,
 			T *result,
-			int resultStride) {
+			int resultStride,
+			int *allocationPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -453,7 +457,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -525,7 +529,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -597,7 +601,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -670,7 +674,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -744,7 +748,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -816,7 +820,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -890,7 +894,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -961,7 +965,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1033,7 +1037,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1105,7 +1109,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1186,7 +1190,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1258,7 +1262,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1331,7 +1335,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1405,7 +1409,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1487,7 +1491,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -1560,7 +1564,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1632,7 +1636,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1705,7 +1709,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1777,7 +1781,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1849,7 +1853,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1921,7 +1925,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -1994,7 +1998,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2067,7 +2071,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2141,7 +2145,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2216,7 +2220,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2290,7 +2294,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2364,7 +2368,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2437,7 +2441,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2511,7 +2515,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2585,7 +2589,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2658,7 +2662,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2731,7 +2735,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2804,7 +2808,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2879,7 +2883,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2959,7 +2963,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -3033,7 +3037,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -3095,7 +3099,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
 		/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 		int kernelWidth = (int) extraParams[0];
 		int kernelHeight = (int) extraParams[1];
@@ -3416,7 +3420,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
 		int inOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
@@ -3726,7 +3730,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 		// TODO: this kernel might use block-wise multireduce too
 		if (blockIdx.x > 0)
 			return;
@@ -3761,7 +3766,6 @@ namespace functions {
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			printf("maxResult length: [%i], isVector: [%i]\n", shape[0], isVector);
 		}
 		__syncthreads();
 
@@ -3780,7 +3784,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -3795,12 +3799,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -4011,7 +4015,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 		int *shape = shape::shapeOf(xShapeBuffer);
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
@@ -4052,7 +4057,7 @@ namespace functions {
 		int maxShape[2] = {shape[0], 1};
 		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4064,11 +4069,11 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -4080,7 +4085,7 @@ namespace functions {
 		__syncthreads();
 
 
-		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 
 		__syncthreads();
 		if(threadIdx.x == 0) {
@@ -4300,7 +4305,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 
 
 		// TODO: this kernel might use block-wise multireduce too
@@ -4357,7 +4363,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4372,12 +4378,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -4631,7 +4637,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 
 		__shared__ functions::indexreduce::ops::IMax<T> *max;
 		__shared__ int maxIdx;
@@ -4650,7 +4657,7 @@ namespace functions {
 				resultShapeBuffer,
 				NULL,
 				1,
-				1);
+				1, allocationPointer);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4900,9 +4907,9 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
 		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
-			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
 			__shared__ int maxIdx;
@@ -4933,7 +4940,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1);
+					1, allocationPointer);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {
@@ -5255,7 +5262,7 @@ __device__ void transformGeneric(
 		int incy,
 		T *params,
 		T *result,
-		int resultStride) {
+		int resultStride, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5274,7 +5281,7 @@ __device__ void transformGeneric(
 	__syncthreads();
 
 
-	op->transformCuda(n,dy,incy,params,result,resultStride);
+	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5302,7 +5309,7 @@ __global__ void transformDouble(
 		double *dy,
 		int incy,
 		double *params,
-		double *result,int resultStride) {
+		double *result,int resultStride, int *allocationPointer) {
 
 	transformGeneric<double>(
 			opNum,
@@ -5311,7 +5318,7 @@ __global__ void transformDouble(
 			incy,
 			params,
 			result,
-			resultStride);
+			resultStride, allocationPointer);
 }
 
 /**
@@ -5333,7 +5340,7 @@ __global__ void transformFloat(
 		float *dy,
 		int incy,
 		float *params,
-		float *result,int resultStride) {
+		float *result,int resultStride, int *allocationPointer) {
 
 	transformGeneric<float>(
 			opNum,
@@ -5341,7 +5348,7 @@ __global__ void transformFloat(
 			dy,
 			incy,
 			params,
-			result,resultStride);
+			result,resultStride, allocationPointer);
 
 }
 
@@ -5364,7 +5371,7 @@ __device__ void transformGeneric(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result,int *resultShapeInfo) {
+		T *result,int *resultShapeInfo, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5383,7 +5390,7 @@ __device__ void transformGeneric(
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo);
+	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo, allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5412,14 +5419,14 @@ extern "C" __global__ void transformDouble(
 		double *dy,
 		int *shapeInfo,
 		double *params,
-		double *result,int *resultShapeInfo) {
+		double *result,int *resultShapeInfo, int *allocationPointer) {
 
 	transformGeneric<double>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,resultShapeInfo);
+			result,resultShapeInfo, allocationPointer);
 }
 
 /**
@@ -5440,7 +5447,7 @@ extern "C" __global__ void transformFloat(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result,int *resultShapeInfo) {
+		float *result,int *resultShapeInfo, int *allocationPointer) {
 
 	transformGeneric<float>(
 			opNum,
@@ -5448,7 +5455,7 @@ extern "C" __global__ void transformFloat(
 			shapeInfo,
 			params,
 			result,
-			resultShapeInfo);
+			resultShapeInfo,allocationPointer);
 
 }
 
@@ -5473,7 +5480,7 @@ __device__ void transformGenericIndexes(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result,int *indexes) {
+		T *result,int *indexes, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5492,7 +5499,7 @@ __device__ void transformGenericIndexes(
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,indexes);
+	op->transformCuda(dy,shapeInfo,params,result,indexes,allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5521,14 +5528,14 @@ extern "C" __global__ void transformDoubleIndexes(
 		double *dy,
 		int *shapeInfo,
 		double *params,
-		double *result,int *indexes) {
+		double *result,int *indexes, int *allocationPointer) {
 
 	transformGenericIndexes<double>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,indexes);
+			result,indexes, allocationPointer);
 }
 
 /**
@@ -5549,14 +5556,14 @@ extern "C" __global__ void transformFloatIndexes(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result,int *indexes) {
+		float *result,int *indexes, int *allocationPointer) {
 
 	transformGenericIndexes<float>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,indexes);
+			result,indexes, allocationPointer);
 
 }
 

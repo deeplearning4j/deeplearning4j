@@ -174,7 +174,7 @@ public:
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int postProcessOrNot) {
+			int postProcessOrNot, int *allocationPointer) {
 		Nd4jIndex n = shape::length(xShapeInfo);
 		int rank = shape::rank(xShapeInfo);
 		//shared memory space for storing intermediate results
@@ -236,7 +236,7 @@ public:
 			int *yShapeInfo,
 			T *extraParams,
 			T *result,
-			int *resultShapeInfo) {
+			int *resultShapeInfo, int *allocationBuffer) {
 
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
@@ -246,7 +246,7 @@ public:
 		Nd4jIndex length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		char xOrder = shape::order(xShapeInfo);
 		char yOrder = shape::order(yShapeInfo);
 		if(xOrder == yOrder) {
@@ -298,13 +298,14 @@ public:
 			char yOrder = shape::order(yShapeInfo);
 
 
-			int *idx = (int *) malloc(sizeof(int) * shape::rank(xShapeInfo));
+			//int *idx = (int *) malloc(sizeof(int) * shape::rank(xShapeInfo));
 			int rank = shape::rank(xShapeInfo);
+
+			long allocSize = sizeof(int) * rank;
+			int *idx = shape::cuMalloc(allocationBuffer, allocSize);
+
 			//shared memory space for storing intermediate results
-
-
-
-			int numElements = gridDim.x;
+			int numElements = blockDim.x;
 			for (int i = threadIdx.x; i < numElements; i += blockDim.x)
 				sPartials[i] = startingVal;
 			__syncthreads();
@@ -318,7 +319,9 @@ public:
 				sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
 			}
 
-			free(idx);
+			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(idx);
+            }
 
 
 			T **sPartialsRef = (T **) &sPartials;
@@ -356,7 +359,8 @@ public:
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot) {
+			int postProcessOrNot,
+			int *allocationPointer) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -606,7 +610,7 @@ public:
 					yShapeInfo,
 					extraParams,
 					result,
-					resultShapeInfo);
+					resultShapeInfo, allocationPointer);
 		}
 
 	}
@@ -1515,7 +1519,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
@@ -1527,7 +1531,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		op = reduce3OpFactory->getOp(opNum);
 	__syncthreads();
 
-	op->transformNoElementWiseStride(dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,postProcessOrNot);
+	op->transformNoElementWiseStride(dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,postProcessOrNot, allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1547,7 +1551,7 @@ __global__ void reduce3NoElementWiseStrideDouble(
 		double *extraParams,
 		double *result,
 		int *resultShapeInfo,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	reduce3NoElementWiseStrideGeneric<double>(
 			opNum,
 			dx,
@@ -1557,7 +1561,7 @@ __global__ void reduce3NoElementWiseStrideDouble(
 			extraParams,
 			result,
 			resultShapeInfo,
-			postProcessOrNot
+			postProcessOrNot, allocationPointer
 	);
 }
 
@@ -1571,7 +1575,7 @@ __global__ void reduce3NoElementWiseStrideFloat(
 		float *extraParams,
 		float *result,
 		int *resultShapeInfo,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	reduce3NoElementWiseStrideGeneric<float>(
 			opNum,
 			dx,
@@ -1581,7 +1585,7 @@ __global__ void reduce3NoElementWiseStrideFloat(
 			extraParams,
 			result,
 			resultShapeInfo,
-			postProcessOrNot
+			postProcessOrNot, allocationPointer
 	);
 }
 
@@ -1613,7 +1617,7 @@ __device__ void reduce3Generic(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
@@ -1634,7 +1638,7 @@ __device__ void reduce3Generic(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot, allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1671,7 +1675,7 @@ __global__ void reduce3Double(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	reduce3Generic<double>(
 			opNum,
 			dx,
@@ -1683,7 +1687,7 @@ __global__ void reduce3Double(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot, allocationPointer);
 
 }
 
@@ -1715,7 +1719,7 @@ __global__ void reduce3Float(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot, int *allocationPointer) {
 	reduce3Generic<float>(
 			opNum,
 			dx,
@@ -1727,7 +1731,7 @@ __global__ void reduce3Float(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot, allocationPointer);
 
 }
 

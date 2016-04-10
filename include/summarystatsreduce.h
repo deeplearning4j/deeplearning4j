@@ -588,7 +588,7 @@ struct SharedSummaryStatsData<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot) {
+			int postProcessOrNot, int *allocationBuffer) {
 
 
 		/**
@@ -850,7 +850,8 @@ struct SharedSummaryStatsData<double> {
 	    		}
             } else {
                 int rank = shape::rank(xShapeInfo);
-    			int *ind2sub = (int *) malloc(sizeof(int) * rank);
+                long allocSize = sizeof(int) * rank;
+    			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize); //(int *) malloc(sizeof(int) * rank);
 #pragma unroll
 	    		for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
     				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
@@ -860,7 +861,9 @@ struct SharedSummaryStatsData<double> {
     				reduction =  update(reduction,indexVal2, extraParams);
 			    }
 
-                free(ind2sub);
+                if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                    free(ind2sub);
+                }
             }
 
             __syncthreads();
@@ -1516,7 +1519,7 @@ __device__ void summaryStatsReduceGeneric(
 		T *result,
 		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot,bool biasCorrected) {
+		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer) {
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0)
@@ -1526,7 +1529,7 @@ __device__ void summaryStatsReduceGeneric(
 		indexReduce = newOpFactory->getOp(op,biasCorrected);
 	__syncthreads();
 
-	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1559,7 +1562,7 @@ __global__ void summaryStatsReduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		bool biasCorrected) {
+		bool biasCorrected, int *allocationBuffer) {
 	summaryStatsReduceGeneric<double>(
 			op,
 			dx,
@@ -1569,7 +1572,7 @@ __global__ void summaryStatsReduceDouble(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot,biasCorrected);
+			postProcessOrNot,biasCorrected, allocationBuffer);
 
 }
 
@@ -1596,7 +1599,7 @@ __global__ void summaryStatsReduceDouble(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,bool biasCorrected) {
+		int postProcessOrNot,bool biasCorrected,int *allocationBuffer) {
 	summaryStatsReduceGeneric<float>(
 			op,
 			dx,
@@ -1606,7 +1609,7 @@ __global__ void summaryStatsReduceDouble(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot,biasCorrected);
+			postProcessOrNot,biasCorrected, allocationBuffer);
 
 }
 
