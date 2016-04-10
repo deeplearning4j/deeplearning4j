@@ -559,6 +559,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr2d = Nd4j.create(new double[][]{{0,1,2},{2,9,1}});
         INDArray exp2d = Nd4j.create(new double[][]{{0,0,0},{0,1,0}});
 
+        INDArray f = arr2d.dup('f');
         INDArray out2dc = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('c')));
         INDArray out2df = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('f')));
         assertEquals(exp2d, out2dc);
@@ -784,7 +785,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 {1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0},
                 {1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0}};
 
-        double[][] expLinspaced = new double[][]{
+        double[][] expLinspaced = new double[][] {
                 {2.0,3.0,4.0,5.0,6.0,7.0,9.0,10.0,11.0,12.0,13.0,14.0,16.0,17.0,18.0,19.0,20.0,21.0,23.0,24.0,25.0,26.0,27.0,28.0},
                 {2.0,3.0,5.0,6.0,8.0,9.0,8.0,9.0,11.0,12.0,14.0,15.0,14.0,15.0,17.0,18.0,20.0,21.0,20.0,21.0,23.0,24.0,26.0,27.0},
                 {2.0,4.0,4.0,6.0,6.0,8.0,8.0,10.0,10.0,12.0,12.0,14.0,14.0,16.0,16.0,18.0,18.0,20.0,20.0,22.0,22.0,24.0,24.0,26.0}
