@@ -29,6 +29,24 @@ public class IsMax extends BaseTransformOp {
         super(x);
     }
 
+    public IsMax(INDArray x, INDArray z, long n, int... dimensions) {
+        super(x, z, n);
+        this.extraArgs = new Object[dimensions.length];
+        for( int i=0; i<dimensions.length; i++ ) this.extraArgs[i] = dimensions[i];
+    }
+
+    public IsMax(INDArray x, INDArray y, INDArray z, long n, int... dimensions) {
+        super(x, y, z, n);
+        this.extraArgs = new Object[dimensions.length];
+        for( int i=0; i<dimensions.length; i++ ) this.extraArgs[i] = dimensions[i];
+    }
+
+    public IsMax(INDArray x, int... dimensions) {
+        super(x);
+        this.extraArgs = new Object[dimensions.length];
+        for( int i=0; i<dimensions.length; i++ ) this.extraArgs[i] = dimensions[i];
+    }
+
     @Override
     public int opNum() {
         return 41;
