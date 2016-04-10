@@ -8,7 +8,11 @@
 #include <dll.h>
 #include <pointercast.h>
 
-
+#ifdef  _WIN32
+#define ND4J_EXPORT ND4J_EXPORT
+#else
+#define ND4J_EXPORT
+#endif
 
 class ND4J_EXPORT Nd4jBlas {
 public:

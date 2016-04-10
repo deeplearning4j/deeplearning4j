@@ -4,7 +4,11 @@
 
 #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 #define NATIVEOPERATIONS_NATIVEOPS_H
-
+#ifdef  _WIN32
+#define ND4J_EXPORT ND4J_EXPORT
+#else
+#define ND4J_EXPORT
+#endif
 #ifndef thread_local
 # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #  define thread_local _Thread_local
@@ -27,8 +31,9 @@
 #include <dll.h>
 #include <pointercast.h>
 #include "optype.h"
-
 class ND4J_EXPORT NativeOps {
+
+
         public:
         /**
            *
@@ -72,7 +77,9 @@ class ND4J_EXPORT NativeOps {
          * @param dimension
          * @param dimensionLength
          */
-        void   execBroadcastDouble(Nd4jPointer *extraPointers,OpType opNum,
+        void   execBroadcastDouble(
+        Nd4jPointer *extraPointers,
+        OpType opNum,
         Nd4jPointer x,
         Nd4jPointer xShapeInfo,
         Nd4jPointer y,
