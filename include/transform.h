@@ -15,6 +15,7 @@
 #include <pairwise_util.h>
 #include <dll.h>
 #include "reduce.h"
+#include "pointercast.h"
 #include "scalar.h"
 #include "indexreduce.h"
 #include "broadcasting.h"
@@ -93,7 +94,7 @@ namespace functions {
 			int *shapeInfo,
 			T *params,
 			T *result,
-			int *indexes) {
+			Nd4jIndex *indexes) {
 		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
@@ -228,7 +229,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int *indexes) {
+                    Nd4jIndex *indexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
@@ -252,8 +253,8 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int *indexes,
-                    int *resultIndexes) {
+                    Nd4jIndex *indexes,
+                    Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
@@ -4140,13 +4141,12 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
                         div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                                  dimension);
 
                         functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
                         log->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);

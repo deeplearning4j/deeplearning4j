@@ -13,7 +13,7 @@
 #include <summarystatsreduce.h>
 #include <transform.h>
 #include <scalar.h>
-
+#include <pointercast.h>
 /**
  * Native op executioner:
  *
