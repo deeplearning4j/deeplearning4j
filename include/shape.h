@@ -189,7 +189,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength,bool reverseCopyStride);
+    inline int *shapeInfoOnlyShapeAndStride(const int *shapeInfo, const int *dimension, size_t dimensionLength,bool reverseCopyStride);
 /**
  *
  * @param length
@@ -209,7 +209,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int * squeezeDimensions(int *shapeInfo,int **dimensionRef,int *dimensionLengthRef,bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes);
+    inline int* squeezeDimensions(const int *shapeInfo, int* dimension, size_t dimensionLength, bool *squeezedRef, bool *squeezeDimensionsRef,int wholeRank,int numOnes);
 
 /**
  * In place permute swap
@@ -496,7 +496,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int reductionIndexElementWiseStride(int *buffer,int *dimension,int dimensionLength);
+    inline int reductionIndexElementWiseStride(const int *buffer, const int *dimension, size_t dimensionLength);
 
 /**
  * Returns whether
@@ -614,7 +614,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int* tad2Sub(int index,int *dimension,int dimensionLength,int *shapeInfo);
+    inline int* tad2Sub(int index, const int *dimension, size_t dimensionLength, const int *shapeInfo);
 
 
 /**l
@@ -752,8 +752,8 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int offset(int index, int rank, shape::ShapeInformation *info, int *dimension,
-               int dimensionLength);
+    inline int offset(Nd4jIndex index, int rank, shape::ShapeInformation *info, const int *dimension,
+               size_t dimensionLength);
 
 /**
  * Given the shape information and dimensions
@@ -765,7 +765,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength);
+    inline TADPermuteInfo tadInfo(const int *xShapeInfo, const int *dimension, int dimensionLength);
 
 /**
  * Frees the permute information
@@ -856,8 +856,8 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int * tadShapeInfo(int index, int *xShapeInfo, int *dimension,
-                       int dimensionLength);
+    inline const int *tadShapeInfo(int index, const int *xShapeInfo, const int *dimension,
+                       size_t dimensionLength);
 
 /**
  * Returns a shape buffer
@@ -1203,7 +1203,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength);
+    int tadElementWiseStride(const int *shapeInfo, const int *dimension, size_t dimensionLength);
 
     /**
      * Length of a tad given
@@ -1212,7 +1212,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    Nd4jIndex tadLength(int *shapeInfo,int *dimension,int dimensionLength);
+    Nd4jIndex tadLength(const int *shapeInfo, const int *dimension, size_t dimensionLength);
     /**
      * Compute the tad offset given a dimension.
      *
@@ -1257,7 +1257,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    Nd4jIndex tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength);
+    Nd4jIndex tadOffset(int index, const int *shapeInfo, const int *dimension, size_t dimensionLength);
 
 
     /**
@@ -1267,7 +1267,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline Nd4jIndex tadLength(int *shapeInfo,int *dimension,int dimensionLength) {
+    inline Nd4jIndex tadLength(const int *shapeInfo, const int *dimension, size_t dimensionLength) {
         const int *shapeTwo = shape::shapeOf(shapeInfo);
         int rank = shape::rank(shapeInfo);
         if(dimensionLength == 1) {
@@ -1291,10 +1291,10 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int * tad2Sub(int index,int *dimension,int dimensionLength,int *shapeInfo) {
+    inline int * tad2Sub(int index, const int *dimension, size_t dimensionLength, const int *shapeInfo) {
         const int *shape = shape::shapeOf(shapeInfo);
         //shape of the tad
-        int *tadShape = (int *) malloc(sizeof(int) * dimensionLength);
+        int *tadShape = new int[dimensionLength];
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - dimensionLength;
         int *ret = (int *) malloc(sizeof(int) * rank);
@@ -1313,7 +1313,7 @@ namespace shape {
         for(int i = 0; i < rank; i++) {
             //look for dimensions NOT found in dimension length (basically compute shape - dimension (set difference)
             bool found = false;
-            for(int j = 0; j < dimensionLength; j++) {
+            for(size_t j = 0; j < dimensionLength; j++) {
                 //skip over specified dimensions when computing left over length
                 if(i == dimension[j]) {
                     found = true;
@@ -1432,12 +1432,12 @@ namespace shape {
     * had a stride of 6, we never need to do a major stride jump.
     *
     */
-    inline Nd4jIndex tadOffset(int index,int *shapeInfo,int *dimension,int dimensionLength) {
+    inline Nd4jIndex tadOffset(int index, const int *shapeInfo, const int *dimension, size_t dimensionLength) {
         if(dimensionLength > 1) {
             int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
             int rank = shape::rank(shapeInfo);
             const int *shape = shape::shapeOf(shapeInfo);
-            int *stride = shape::stride(shapeInfo);
+            const int *stride = shape::stride(shapeInfo);
             Nd4jIndex ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
             free(tad2Sub);
             return ret;
@@ -1445,7 +1445,7 @@ namespace shape {
         }
         else {
             if(shape::order(shapeInfo) == 'c') {
-                int *stride = shape::stride(shapeInfo);
+                const int *stride = shape::stride(shapeInfo);
                 int innerMostStride = stride[dimension[dimensionLength - 1]];
                 int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
                 if(index >= innerMostStride) {
@@ -1470,7 +1470,7 @@ namespace shape {
                 int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
                 int rank = shape::rank(shapeInfo);
                 const int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
+                const int *stride = shape::stride(shapeInfo);
                 Nd4jIndex ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
                 free(tad2Sub);
                 return ret;
@@ -1502,9 +1502,9 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo,int *dimension,int dimensionLength,bool reverseCopyStride) {
-        int *theShape = shape::shapeOf(shapeInfo);
-        int *theStride = shape::stride(shapeInfo);
+    inline int *shapeInfoOnlyShapeAndStride(const int *shapeInfo, const int *dimension, size_t dimensionLength,bool reverseCopyStride) {
+        const int *theShape = shape::shapeOf(shapeInfo);
+        const int *theStride = shape::stride(shapeInfo);
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
         int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(rank));
         //set the rank
@@ -1544,7 +1544,7 @@ namespace shape {
 
         }
         else {
-            int *newIndexes = dimension;
+            const int *newIndexes = dimension;
             if(reverseCopyStride)
                 shape::reverseCopyTo(theStride, retStride, newIndexes, len);
             else
@@ -1561,8 +1561,8 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int * createShapeInfo(int *shape,int *stride,int rank) {
-        int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(rank));
+    inline int * createShapeInfo(const int *shape, const int *stride, int rank) {
+        int *ret = new int[shape::shapeInfoLength(rank)];
         ret[0] = rank;
         int *retShape = shape::shapeOf(ret);
         int *retStride = shape::stride(ret);
@@ -2187,16 +2187,13 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int * squeezeDimensions(int *shapeInfo,int **dimensionRef,int *dimensionLengthRef,bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes) {
-        int *squeezeShape = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
-        int *squeezeStride = (int *) malloc(sizeof(int) * (wholeRank - numOnes));
-        int *dimension = *dimensionRef;
-        int dimensionLength = *dimensionLengthRef;
+    inline int* squeezeDimensions(const int *shapeInfo, int *dimension, size_t dimensionLength, bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes) {
+        int *squeezeShape = new int[wholeRank - numOnes];
+        int *squeezeStride = new int[wholeRank - numOnes];
         *squeezedRef = true;
 
-        int *shape = shape::shapeOf(shapeInfo);
-        int *stride = shape::stride(shapeInfo);
-
+        const int *shape = shape::shapeOf(shapeInfo);
+        const int *stride = shape::stride(shapeInfo);
 
         int numEncountered = 0;
         for(int i = 0; i < wholeRank; i++) {
@@ -2207,10 +2204,9 @@ namespace shape {
             }
         }
 
-
         //for any dimensions specified that are 1,ignore them
         int numDimensionsOne = 0;
-        for(int i = 0; i < dimensionLength; i++) {
+        for(size_t i = 0; i < dimensionLength; i++) {
             if(shape[dimension[i]] == 1)
                 numDimensionsOne++;
         }
@@ -2218,7 +2214,7 @@ namespace shape {
         if(numDimensionsOne > 0) {
             int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
             int newDimensionIdx = 0;
-            for(int i = 0; i < dimensionLength; i++) {
+            for(size_t i = 0; i < dimensionLength; i++) {
                 if(shape[dimension[i]] != 1)
                     newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
             }
@@ -2692,7 +2688,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int reductionIndexElementWiseStride(int *buffer,int *dimension,int dimensionLength) {
+    inline int reductionIndexElementWiseStride(const int *buffer, const int *dimension, size_t dimensionLength) {
         if(dimensionLength > 1) {
             char order = shape::order(buffer);
             if(order == 'f') {
@@ -2982,9 +2978,9 @@ namespace shape {
     inline int *keep(volatile const int *data, const int *index, size_t indexLength, size_t dataLength) {
         int *ret = new int[indexLength];
         int count = 0;
-        for (int i = 0; i < dataLength; i++) {
+        for (size_t i = 0; i < dataLength; i++) {
             int contains = 0;
-            for (int j = 0; j < indexLength; j++) {
+            for (size_t j = 0; j < indexLength; j++) {
                 if (i == index[j]) {
                     contains = 1;
                     break;
@@ -3167,8 +3163,8 @@ __device__ Nd4jIndex tadOffset(int *xInfo, Nd4jIndex offset) {
     __host__ __device__
 #endif
 
-    inline int offset(int index, int rank, ShapeInformation *info, int *dimension,
-               int dimensionLength) {
+    inline int offset(Nd4jIndex index, int rank, ShapeInformation *info, const int *dimension,
+               size_t dimensionLength) {
         int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
         if (dimensionLength == 1) {
             int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
@@ -3306,8 +3302,8 @@ __device__ Nd4jIndex tadOffset(int *xInfo, Nd4jIndex offset) {
     __host__ __device__
 #endif
 
-    inline TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
-        int *shapeOfX = shape::shapeOf(xShapeInfo);
+    inline TADPermuteInfo tadInfo(const int *xShapeInfo, const int *dimension, int dimensionLength) {
+        const int *shapeOfX = shape::shapeOf(xShapeInfo);
         int xRank = shape::rank(xShapeInfo);
         int *tensorShape = shape::keep(shapeOfX, dimension, dimensionLength, xRank);
         if (dimensionLength == 1) {
@@ -3444,8 +3440,8 @@ __device__ Nd4jIndex tadOffset(int *xInfo, Nd4jIndex offset) {
     __host__ __device__
 #endif
 
-    inline int * tadShapeInfo(int index, int *xShapeInfo, int *dimension,
-                       int dimensionLength) {
+    inline int * tadShapeInfo(int index, int *xShapeInfo, const int *dimension,
+                        size_t dimensionLength) {
         TADPermuteInfo tadInfo = shape::tadInfo(xShapeInfo, dimension,
                                                 dimensionLength);
         int sliceIdx = shape::sliceOffsetForTensor(rank(xShapeInfo), index,

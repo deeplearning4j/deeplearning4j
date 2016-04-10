@@ -574,7 +574,7 @@ public:
 #ifdef __CUDACC__
 	__host__
 #endif
-	T execScalar(T *x,int xElementWiseStride,Nd4jIndex length,T *extraParams) {
+        T execScalar(const T *x,int xElementWiseStride,Nd4jIndex length,T *extraParams) {
 		T startingVal = this->startingValue(x);
 		if (xElementWiseStride == 1) {
 			if(length < 8000) {
@@ -599,7 +599,7 @@ public:
 					T local = this->startingValue(x);
 					for(int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
 						Nd4jIndex newOffset = (i * info.items);
-						T *chunk = x + newOffset;
+                                                const T *chunk = x + newOffset;
 						Nd4jIndex itemsToLoop = info.items;
 						if(newOffset >= length) {
 							break;
@@ -655,7 +655,7 @@ public:
 				T local = this->startingValue(x);
 				for(int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
 					Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
-					T *chunk = x + newOffset;
+                                        const T *chunk = x + newOffset;
 					Nd4jIndex itemsToLoop = info.items;
 
 
@@ -695,11 +695,11 @@ public:
 #ifdef __CUDACC__
 	__host__
 #endif
-	T execScalar(T *x, int *xShapeInfo,T *extraParams) {
+        T execScalar(T *x, const int *xShapeInfo,T *extraParams) {
 		const Nd4jIndex length = shape::length(xShapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 		if(xElementWiseStride >= 1) {
-			return execScalar(x, xElementWiseStride, length, extraParams);
+                        return execScalar(x, xElementWiseStride, length, extraParams);
 		}
 		else {
 			int shapeIter[MAX_RANK];
@@ -707,13 +707,14 @@ public:
 			int dim;
 			int xStridesIter[MAX_RANK];
 
-			int *xShape = shape::shapeOf(xShapeInfo);
-			int *xStride = shape::stride(xShapeInfo);
-			T start = this->startingValue(x);
+                        const int *xShape = shape::shapeOf(xShapeInfo);
+                        const int *xStride = shape::stride(xShapeInfo);
+                        T start = this->startingValue(x);
 			int rank = shape::rank(xShapeInfo);
+
 			if(PrepareOneRawArrayIter<T>(rank,
 					xShape,
-					x,
+                                        x,
 					xStride,
 					&rank,
 					shapeIter,
@@ -722,7 +723,7 @@ public:
 
 				ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
 					/* Process the innermost dimension */
-					T *xIter = x;
+                                        const T *xIter = x;
 					start = update(start,op(xIter[0],extraParams),extraParams);
 				} ND4J_RAW_ITER_ONE_NEXT(dim,
 						rank,
@@ -758,8 +759,8 @@ public:
 #ifdef __CUDACC__
 	__host__
 #endif
-	void exec(T *x,
-			int *xShapeInfo,
+        void exec(T *x,
+                        const int *xShapeInfo,
 			T *extraParams,
 			T *result,
 			int *resultShapeInfoBuffer,
@@ -774,7 +775,7 @@ public:
 
 		if(dimensionLength > 1) {
 			int numOnes = 0;
-			int *shape = shape::shapeOf(xShapeInfo);
+                        const int *shape = shape::shapeOf(xShapeInfo);
 			int wholeRank = shape::rank(xShapeInfo);
 			bool squeezed = false;
 			bool newSqueezeDimensions = false;
@@ -788,8 +789,8 @@ public:
 				if (numOnes > 0) {
 					xShapeInfo = shape::squeezeDimensions(
 							xShapeInfo,
-							&dimension,
-							&dimensionLength,
+                                                        dimension,
+                                                        dimensionLength,
 							&squeezed,
 							&newSqueezeDimensions,
 							wholeRank,
@@ -800,9 +801,9 @@ public:
 			//moving all dimensions (in sorted order)
 			//to the back.
 			//permuted version of the x shape info for setting up the tad problem
-			int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
-			int *xShape = shape::shapeOf(tadShapeShapeInfo);
-			int *xStride = shape::stride(tadShapeShapeInfo);
+                        const int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+                        const int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                        const int *xStride = shape::stride(tadShapeShapeInfo);
 			int tadLength = shape::length(tadShapeShapeInfo);
 			int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
@@ -815,11 +816,12 @@ public:
 				int dim;
 				int rankIter = rank;
 				int xStridesIter[MAX_RANK];
-				T *xPointer = x + offset;
+                                T *xPointer = x + offset;
+
 				T start = this->startingValue(xPointer);
 				if(PrepareOneRawArrayIter<T>(rankIter,
 						xShape,
-						xPointer,
+                                                xPointer,
 						xStride,
 						&rankIter,
 						shapeIter,
@@ -845,16 +847,16 @@ public:
 			}
 
 
-				free(tadShapeShapeInfo);
+                        //	free(tadShapeShapeInfo);
 
 
 				if (newSqueezeDimensions) {
 					free(dimension);
 				}
 
-				if (numOnes > 0) {
-					free(xShapeInfo);
-				}
+                        //	if (numOnes > 0) {
+                        //		free(xShapeInfo);
+                        //	}
 		}
 
 		else {
@@ -906,7 +908,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) = 0;
+        T startingValue(const T *input) = 0;
 
 
 
@@ -942,7 +944,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return (T) 0.0;
 	}
 	virtual
@@ -1077,7 +1080,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return 1.0;
 	}
 
@@ -1112,7 +1116,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return 0.0;
 	}
 
@@ -1245,7 +1250,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
 		return input[0];
 	}
 
@@ -1330,7 +1335,7 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
 		return input[0];
 	}
 
@@ -1366,7 +1371,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return 0.0;
 	}
 
@@ -1439,7 +1445,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return 0.0;
 	}
 	virtual
@@ -1524,7 +1531,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) {
+                (void)input;
 		return 0.0;
 	}
 	virtual
@@ -1608,7 +1616,8 @@ public:
 #ifdef __CUDACC__
 	__host__ __device__
 #endif
-	T startingValue(T *input) {
+        T startingValue(const T *input) override {
+                (void)input;
 		return 0.0;
 	}
 	virtual

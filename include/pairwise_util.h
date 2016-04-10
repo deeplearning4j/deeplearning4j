@@ -188,7 +188,7 @@ __host__ __device__
 inline int PrepareOneRawArrayIter(int ndim, const int shape[],
                            T data[], const int strides[],
                            int *out_ndim, int outShape[],
-                           T *out_data[], int *outStrides) {
+                           T **out_data, int *outStrides) {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
 
@@ -411,7 +411,7 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int PrepareTwoRawArrayIter(int ndim, int *shape,
+int PrepareTwoRawArrayIter(int ndim, const int *shape,
                            T *dataA, int *stridesA,
                            T *dataB, int *stridesB,
                            int *out_ndim, int *outShape,
