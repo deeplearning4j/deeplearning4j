@@ -4868,7 +4868,9 @@ namespace functions {
                                         resultStridesIter);
 
                                 //pointer to where max value would be
-                                if(shape::order(resultShapeBuffer) == 'c')
+                                if(shape::order(resultShapeBuffer) == 'c' || shape::order(resultShapeBuffer) == 'f' &&
+                                                                                     maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
+                                                                                             shape::length(resultShapeBuffer))
                                     originalResult[maxIdx] = 1.0;
                                 else
                                     originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
