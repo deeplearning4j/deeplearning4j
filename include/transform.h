@@ -3424,13 +3424,14 @@ namespace functions {
 		int kernelHeight = inShape[2];
 		int kernelWidth = inShape[3];
 
+        // C
+
 		int strideX = (int) extraParams[0];
 		int strideY = (int) extraParams[1];
-		int padWidth = (int) extraParams[2];
+		int padWidth= (int) extraParams[2];
 		int padHeight = (int) extraParams[3];
 		int imgHeight = (int) extraParams[4];
 		int imgWidth = (int) extraParams[5];
-
 
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 
@@ -3439,11 +3440,16 @@ namespace functions {
 		//int height = outShape[2];
 		//int width = outShape[3];
 
-
-		int height_col = (imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
-    	int width_col = (imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+        int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+    	int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
     	int n = samples * depth * imgHeight * imgWidth;
+
+        if (threadIdx.x == 0)
+			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
+			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);
+
+
 
 		for(int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 			T val = 0;
@@ -3458,6 +3464,7 @@ namespace functions {
 			int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
 			int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
 
+
 			for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       			for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
         			int h_k = (h_im - h_col * strideY);
@@ -3467,6 +3474,7 @@ namespace functions {
 			        val += dx[data_col_index];
       			}
 		    }
+
 			result[i] += val;
 		}
 	}
