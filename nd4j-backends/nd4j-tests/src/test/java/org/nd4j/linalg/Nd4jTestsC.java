@@ -668,7 +668,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outDesc = Nd4j.sortColumns(in, i, false);
 
             for( int j = 0; j < nCols; j++ ){
-                assertTrue(outAsc.getDouble(i,j)==j);
+                assertTrue(outAsc.getDouble(i,j) == j);
                 int origColIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getColumn(j).equals(in.getColumn(origColIdxAsc)));
 
