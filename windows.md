@@ -143,3 +143,12 @@ This is usually due to an incorrectly setup PATH (see "I'm getting other errors 
     }
     
 If this also crashes with the `Can't find dependent libraries` error, then you have to setup your PATH correctly (see the introduction to this document).
+
+
+**Note**: Another possible cause of "...jniNativeOps.dll: Can't find dependent libraries" seems to be having an old or incompatible version of libstc++-6.dll on your PATH. You want this file to be pulled in from mingw via you PATH environment variable.
+To check your PATH/environment, run "where libstdc++-6.dll" and "where libgcc_s_seh-1.dll"; these should list the msys/mingw directories (and/or list them first, if there are other copies on the PATH).
+
+
+Finally, using dumpbin (from Visual Studio) can help to show required dependencies for jniNativeOps.dll:
+
+	dumpbin /dependents [path to jniNativeOps.dll]
