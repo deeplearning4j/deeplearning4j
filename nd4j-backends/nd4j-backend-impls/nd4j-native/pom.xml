@@ -66,6 +66,7 @@
                 </dependencies>
                 <configuration>
                     <copyLibs>true</copyLibs>
+                    <compilerOptions>-std=c++11</compilerOptions>
                     <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>

@@ -3,6 +3,7 @@ package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.linalg.api.buffer.util.LibUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,7 +18,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
  * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include="NativeOps.h", preload="libnd4j", link = "nd4j")
+@Platform(include={"NativeOps.h"}, preload="libnd4j", link = "nd4j")
 public class NativeOps extends Pointer {
     static {
         Loader.load();
@@ -36,7 +37,7 @@ public class NativeOps extends Pointer {
      * @param xShapeInfo
      * @param extraParams
      */
-    public native double   execIndexReduceScalarDouble(long[]extraPointers,int opNum,
+    public native double   execIndexReduceScalarDouble(long[]extraPointers, int opNum,
                                                        long x,
                                                        long xShapeInfo,
                                                        long extraParams);
@@ -52,7 +53,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execIndexReduceDouble(long[]extraPointers,int opNum,
+    public native void   execIndexReduceDouble(long[]extraPointers, int opNum,
                                                long x,
                                                long xShapeInfo,
                                                long extraParams,
@@ -71,7 +72,8 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execBroadcastDouble(long[]extraPointers,int opNum,
+    public native void   execBroadcastDouble(long[]extraPointers,
+                                             int opNum,
                                              long x,
                                              long xShapeInfo,
                                              long y,
@@ -94,7 +96,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execPairwiseTransformDouble(long[]extraPointers,int opNum,
+    public native void   execPairwiseTransformDouble(long[]extraPointers, int opNum,
                                                      long dx,
                                                      int xStride,
                                                      long y,
@@ -161,7 +163,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduceDouble(long[]extraPointers,int opNum,
+    public native void   execReduceDouble(long[]extraPointers, int opNum,
                                           long x,
                                           long xShapeInfo,
                                           long extraParams,
@@ -177,7 +179,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduceDouble(long[]extraPointers,int opNum,
+    public native void   execReduceDouble(long[]extraPointers, int opNum,
                                           long x,
                                           long xShapeInfo,
                                           long extraParams,
@@ -193,7 +195,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @return
      */
-    public native  double execReduceScalarDouble(long[]extraPointers,int opNum,
+    public native  double execReduceScalarDouble(long[]extraPointers, int opNum,
                                                  long x,
                                                  long xShapeInfo,
                                                  long extraParams);
@@ -209,7 +211,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduce3Double(long[]extraPointers,int opNum,
+    public native void   execReduce3Double(long[]extraPointers, int opNum,
                                            long x,
                                            long xShapeInfo,
                                            long extraParamsVals,
@@ -227,7 +229,7 @@ public class NativeOps extends Pointer {
      * @param y
      * @param yShapeInfo
      */
-    public native double   execReduce3ScalarDouble(long[]extraPointers,int opNum,
+    public native double   execReduce3ScalarDouble(long[]extraPointers, int opNum,
                                                    long x,
                                                    long xShapeInfo,
                                                    long extraParamsVals,
@@ -246,7 +248,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execReduce3Double(long[]extraPointers,int opNum,
+    public native void   execReduce3Double(long[]extraPointers, int opNum,
                                            long x,
                                            long xShapeInfo,
                                            long extraParamsVals,
@@ -267,7 +269,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execScalarDouble(long[]extraPointers,int opNum,
+    public native void   execScalarDouble(long[]extraPointers, int opNum,
                                           long x,
                                           int xStride,
                                           long result,
@@ -286,7 +288,7 @@ public class NativeOps extends Pointer {
      * @param scalar
      * @param extraParams
      */
-    public native void execScalarDouble(long[]extraPointers,int opNum,
+    public native void execScalarDouble(long[]extraPointers, int opNum,
                                         long x,
                                         long xShapeInfo,
                                         long result,
@@ -307,7 +309,7 @@ public class NativeOps extends Pointer {
      * @param xIndexes
      * @param resultIndexes
      */
-    public native void execScalarDouble(long[]extraPointers,int opNum,
+    public native void execScalarDouble(long[]extraPointers, int opNum,
                                         long x,
                                         long xShapeInfo,
                                         long result,
@@ -324,7 +326,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param biasCorrected
      */
-    public native double   execSummaryStatsScalarDouble(long[] extraPointers, int opNum, long x,
+    public native double   execSummaryStatsScalarDouble(long[] extraPointers,  int opNum, long x,
                                                         long xShapeInfo,
                                                         long extraParams, boolean biasCorrected);
     /**
@@ -336,7 +338,7 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      * @param biasCorrected
      */
-    public native void   execSummaryStatsDouble(long[] extraPointers, int opNum,
+    public native void   execSummaryStatsDouble(long[] extraPointers,  int opNum,
                                                 long x,
                                                 long xShapeInfo,
                                                 long extraParams,
@@ -353,7 +355,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStatsDouble(long[]extraPointers,int opNum,long x,
+    public native void   execSummaryStatsDouble(long[]extraPointers, int opNum,long x,
                                                 long xShapeInfo,
                                                 long extraParams,
                                                 long result,
@@ -369,7 +371,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execTransformDouble(long[]extraPointers,int opNum,
+    public native void   execTransformDouble(long[]extraPointers, int opNum,
                                              long dx,
                                              int xStride,
                                              long result,
@@ -386,7 +388,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execTransformDouble(long[]extraPointers,int opNum,
+    public native void   execTransformDouble(long[]extraPointers, int opNum,
                                              long dx,
                                              long xShapeInfo,
                                              long result,
@@ -403,7 +405,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execTransformDouble(long[]extraPointers,int opNum,
+    public native void   execTransformDouble(long[]extraPointers, int opNum,
                                              long dx,
                                              long xShapeInfo,
                                              long result,
@@ -436,7 +438,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execIndexReduceFloat(long[]extraPointers,int opNum,
+    public native void   execIndexReduceFloat(long[]extraPointers, int opNum,
                                               long x,
                                               long xShapeInfo,
                                               long extraParams,
@@ -455,14 +457,16 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execBroadcastFloat(long[]extraPointers,int opNum,
+    public native void   execBroadcastFloat(long[]extraPointers,
+                                            int opNum,
                                             long x,
                                             long xShapeInfo,
                                             long y,
                                             long yShapeInfo,
                                             long result,
                                             long resultShapeInfo,
-                                            long dimension, int dimensionLength);
+                                            long dimension,
+                                            int dimensionLength);
 
 
 
@@ -478,7 +482,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execPairwiseTransformFloat(long[]extraPointers,int opNum,
+    public native void   execPairwiseTransformFloat(long[]extraPointers, int opNum,
                                                     long dx,
                                                     int xStride,
                                                     long y,
@@ -501,7 +505,7 @@ public class NativeOps extends Pointer {
      * @param yIndexes
      * @param resultIndexes
      */
-    public native void execPairwiseTransformFloat(long[]extraPointers,int opNum,
+    public native void execPairwiseTransformFloat(long[]extraPointers, int opNum,
                                                   long dx,
                                                   long xShapeInfo,
                                                   long y,
@@ -524,7 +528,7 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      * @param extraParams
      */
-    public native void execPairwiseTransformFloat(long[]extraPointers,int opNum,
+    public native void execPairwiseTransformFloat(long[]extraPointers, int opNum,
                                                   long dx,
                                                   long  xShapeInfo,
                                                   long y,
@@ -542,7 +546,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduceFloat(long[]extraPointers,int opNum,
+    public native void   execReduceFloat(long[]extraPointers, int opNum,
                                          long x,
                                          long xShapeInfo,
                                          long extraParams,
@@ -558,7 +562,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduceFloat(long[]extraPointers,int opNum,
+    public native void   execReduceFloat(long[]extraPointers, int opNum,
                                          long x,
                                          long xShapeInfo,
                                          long extraParams,
@@ -574,7 +578,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @return
      */
-    public native float execReduceScalarFloat(long[]extraPointers,int opNum,
+    public native float execReduceScalarFloat(long[]extraPointers, int opNum,
                                               long x,
                                               long xShapeInfo,
                                               long extraParams);
@@ -590,7 +594,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execReduce3Float(long[]extraPointers,int opNum,
+    public native void   execReduce3Float(long[]extraPointers, int opNum,
                                           long x,
                                           long xShapeInfo,
                                           long extraParamsVals,
@@ -608,7 +612,7 @@ public class NativeOps extends Pointer {
      * @param y
      * @param yShapeInfo
      */
-    public native float   execReduce3ScalarFloat(long[]extraPointers,int opNum,
+    public native float   execReduce3ScalarFloat(long[]extraPointers, int opNum,
                                                  long x,
                                                  long xShapeInfo,
                                                  long extraParamsVals,
@@ -627,7 +631,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execReduce3Float(long[]extraPointers,int opNum,
+    public native void   execReduce3Float(long[]extraPointers, int opNum,
                                           long x,
                                           long xShapeInfo,
                                           long extraParamsVals,
@@ -648,7 +652,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execScalarFloat(long[]extraPointers,int opNum,
+    public native void   execScalarFloat(long[]extraPointers, int opNum,
                                          long x,
                                          int xStride,
                                          long result,
@@ -668,7 +672,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void execScalarFloat(long[]extraPointers,int opNum,
+    public native void execScalarFloat(long[]extraPointers, int opNum,
                                        long x,
                                        long xShapeInfo,
                                        long result,
@@ -688,7 +692,7 @@ public class NativeOps extends Pointer {
      * @param xIndexes
      * @param resultIndexes
      */
-    public native void execScalarFloat(long[]extraPointers,int opNum,
+    public native void execScalarFloat(long[]extraPointers, int opNum,
                                        long x,
                                        long xShapeInfo,
                                        long result,
@@ -704,7 +708,7 @@ public class NativeOps extends Pointer {
      * @param xShapeInfo
      * @param extraParams
      */
-    public native float   execSummaryStatsScalarFloat(long[]extraPointers,int opNum,long x,
+    public native float   execSummaryStatsScalarFloat(long[]extraPointers, int opNum,long x,
                                                       long xShapeInfo,
                                                       long extraParams,boolean biasCorrected);
     /**
@@ -716,7 +720,7 @@ public class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public native void   execSummaryStatsFloat(long[]extraPointers,int opNum,
+    public native void   execSummaryStatsFloat(long[]extraPointers, int opNum,
                                                long x,
                                                long xShapeInfo,
                                                long extraParams,
@@ -733,7 +737,7 @@ public class NativeOps extends Pointer {
      * @param dimension
      * @param dimensionLength
      */
-    public native void   execSummaryStatsFloat(long[]extraPointers,int opNum,long x,
+    public native void   execSummaryStatsFloat(long[]extraPointers, int opNum,long x,
                                                long xShapeInfo,
                                                long extraParams,
                                                long result,
@@ -749,7 +753,7 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execTransformFloat(long[]extraPointers,int opNum,
+    public native void   execTransformFloat(long[]extraPointers, int opNum,
                                             long dx,
                                             int xStride,
                                             long result,
@@ -766,12 +770,14 @@ public class NativeOps extends Pointer {
      * @param extraParams
      * @param n
      */
-    public native void   execTransformFloat(long[]extraPointers,int opNum,
-                                            long dx,
-                                            long xShapeInfo,
-                                            long result,
-                                            long resultShapeInfo,
-                                            long extraParams);
+    public native void   execTransformFloat(
+            long[]extraPointers,
+            int opNum,
+            long dx,
+            long xShapeInfo,
+            long result,
+            long resultShapeInfo,
+            long extraParams);
 
     /**
      *
@@ -785,7 +791,8 @@ public class NativeOps extends Pointer {
      * @param xIndexes
      * @param resultIndexes
      */
-    public native void   execTransformFloat(long[]extraPointers,int opNum,
+    public native void   execTransformFloat(long[]extraPointers,
+                                            int opNum,
                                             long dx,
                                             long xShapeInfo,
                                             long result,
@@ -807,13 +814,13 @@ public class NativeOps extends Pointer {
      * @param inputShapeInfo the shape information for that array
      */
     public native void flattenFloat(
-                        long[] extraPointers,
-                        int offset,
-                        char order,
-                        long result,
-                        long resultShapeInfo,
-                        long input,
-                        long inputShapeInfo);
+            long[] extraPointers,
+            int offset,
+            char order,
+            long result,
+            long resultShapeInfo,
+            long input,
+            long inputShapeInfo);
 
 
     /**
@@ -828,12 +835,12 @@ public class NativeOps extends Pointer {
      * @param inputShapeInfo the shape information for that array
      */
     public native void flattenDouble(long[] extraPointers,
-                                    int offset,
-                                    char order,
-                                    long result,
-                                    long resultShapeInfo,
-                                    long input,
-                                    long inputShapeInfo);
+                                     int offset,
+                                     char order,
+                                     long result,
+                                     long resultShapeInfo,
+                                     long input,
+                                     long inputShapeInfo);
 
     /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
