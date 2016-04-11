@@ -98,7 +98,7 @@ namespace functions {
 		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = tid;
 		__shared__ int length;
 		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
@@ -159,7 +159,7 @@ namespace functions {
 			T *result,int resultStride, int *allocationBuffer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = tid;
 		if(incy == 1) {
 #pragma unroll
 			for (; i < n; i += totalThreads) {

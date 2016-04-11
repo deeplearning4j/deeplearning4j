@@ -159,7 +159,7 @@ namespace functions {
 			else {
 #pragma unroll
 				for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams);
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams); //  i * elementWiseStride
 				}
 			}
 		}
@@ -170,7 +170,8 @@ namespace functions {
 #pragma unroll
 			for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-				sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams);
+				int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
+				sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[offset],extraParams),extraParams);
 				__syncthreads();
 			}
 

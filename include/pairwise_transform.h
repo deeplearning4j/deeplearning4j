@@ -253,13 +253,10 @@ public:
 		Nd4jIndex i = tid;
 
 		if (incy == 0) {
-			if ((blockIdx.x == 0) && (tid == 0)) {
 #pragma unroll
 				for (; i < n; i++) {
 					result[i * incz] = op(dx[i * incx], params);
 				}
-
-			}
 		} else if ((incx == incy) && (incx > 0)) {
 			/* equal, positive, increments */
 			if (incx == 1) {
