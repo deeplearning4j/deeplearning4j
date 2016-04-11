@@ -61,6 +61,17 @@ public class CudaAccumTests {
     }
 
     @Test
+    public void testPinnedSumNumber() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.linspace(1, 10000, 10000);
+
+        float sum = array1.sumNumber().floatValue();
+
+        assertEquals(5.0005E7, sum, 1f);
+    }
+
+    @Test
     public void testStdev0(){
         double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
         INDArray in = Nd4j.create(ind);
