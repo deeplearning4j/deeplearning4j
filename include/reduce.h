@@ -173,7 +173,7 @@ namespace functions {
 #pragma unroll
 			for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
+				sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams);
 				__syncthreads();
 			}
 
@@ -184,71 +184,48 @@ namespace functions {
 
 				__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
-			aggregatePartials(sPartialsRef, threadIdx.x, numElements,extraParams);
+			aggregatePartials(sPartialsRef, threadIdx.x, blockDim.x,extraParams);
 
 
 			__syncthreads();
-			// if we have blocks > 1, we'll do blockwise reduce
+
 			if (gridDim.x > 1) {
-				/*
-			 	at this point we have everything stored at sPartials[0]
-				 so, we just need to store our partials result
-				*/
+				unsigned int *tc = (unsigned *) reductionBuffer;
+				__shared__ bool amLast;
 				int rank = shape::rank(xShapeInfo);
+				tid = threadIdx.x;
 				if (threadIdx.x == 0) {
 					reductionBuffer[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+				}
+				__syncthreads();
+				__threadfence();
 
-					// we mark this block as finished
-					allocationBuffer[tid * rank] = 119120121;
-					__threadfence();
+				if (tid==0) {
+					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+				    amLast = (ticket == gridDim.x-1);
 				}
 
 				__syncthreads();
 
-				if (blockIdx.x == 0) {
-
-					// now we must ensure, that all other blocks are finished
-					__shared__ int finisher;
-					clock_t *globalClock;
-					if (tid == 0)
-							finisher = 0;
-					__syncthreads();
-
-					while (finisher != gridDim.x) {
-						if (tid == 0)
-							finisher = 0;
-						__syncthreads();
-
-						if (threadIdx.x < gridDim.x) {
-							if (allocationBuffer[threadIdx.x * blockDim.x * rank] == 119120121) {
-								atomicAdd(&finisher, 1);
-								sPartials[threadIdx.x] =  reductionBuffer[threadIdx.x];
-							}
-						}
-						__syncthreads();
-
-						if (finisher != gridDim.x) {
-							// TODO: sleep here
-						}
-						__syncthreads();
-					}
-
+				if (amLast) {
+					tc[4096] = 0;
+					if (threadIdx.x < gridDim.x)
+						sPartials[threadIdx.x] =  reductionBuffer[threadIdx.x];
 					__syncthreads();
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x,extraParams);
+					aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x, extraParams);
 
 					__syncthreads();
-					// write result for this block to global mem
 					if (tid == 0) {
-						result[0] = this->postProcess(sPartials[0],n,extraParams);
+						result[0] = sPartials[0];
 					}
 				}
 			} else {
-				__syncthreads();
-				// write result for this block to global mem
 				if (tid == 0) {
-					result[0] = this->postProcess(sPartials[0],n,extraParams);
+					unsigned int *tc = (unsigned *) reductionBuffer;
+					tc[4096] = 0;
+					result[0] = sPartials[0];
 				}
 			}
 	}
@@ -486,13 +463,13 @@ namespace functions {
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);
-					sPartials[tid] = op(dx[offsetForTad], extraParams);
+					sPartials[threadIdx.x] = op(dx[offsetForTad], extraParams);
 
 					for(j = 1; j < elementsPerReductionIndex; j++) {
-						sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
 					}
 
-					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
+					result[i] = postProcess(sPartials[threadIdx.x],tadLength,extraParams);
 				}
 
 

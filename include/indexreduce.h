@@ -25,7 +25,6 @@
 #endif
 #include <pairwise_util.h>
 
-
 namespace functions {
 	namespace indexreduce {
 		template<typename T>
@@ -234,7 +233,7 @@ struct SharedIndexValue<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 
 
 		/**
@@ -254,7 +253,7 @@ struct SharedIndexValue<double> {
 		T startingVal = this->startingValue(dx);
 
 #pragma unroll
-		for (int i = tid; i < numElements; i += blockDim.x) {
+		for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
 			IndexValue <T> val = {startingVal, i};
 			sPartials[i] = val;
 		}
@@ -270,7 +269,7 @@ struct SharedIndexValue<double> {
 		//only compute the tad indexes once
 		IndexValue <T> reduction = {startingVal, 0};
 
-		if (tid == 0) {
+		if (threadIdx.x == 0) {
 			if (resultShapeInfo != NULL)
 				resultLength = shape::length(resultShapeInfo);
 			else resultLength = 1;
@@ -306,7 +305,7 @@ struct SharedIndexValue<double> {
 
 				__shared__ int *tadShapeShapeInfo;
 
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					inputShapeInfo = xShapeInfo;
 				}
 
@@ -316,7 +315,7 @@ struct SharedIndexValue<double> {
 				int *stride = shape::stride(inputShapeInfo);
 				int wholeRank = shape::rank(inputShapeInfo);
 
-				if(tid == 0) {
+				if(threadIdx.x == 0) {
 					numOnes = 0;
 					for(int i = 0; i < wholeRank; i++) {
 						if(shape[i] == 1)
@@ -344,7 +343,7 @@ struct SharedIndexValue<double> {
 				//moving all dimensions (in sorted order)
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
-				if(tid == 0)
+				if(threadIdx.x == 0)
 					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
 				__syncthreads();
 
@@ -396,7 +395,7 @@ struct SharedIndexValue<double> {
 				}
 
 				__syncthreads();
-				if (tid == 0) {
+				if (threadIdx.x == 0) {
 					free(tadShapeShapeInfo);
 
 					if(newSqueezeDimensions) {
@@ -421,90 +420,35 @@ struct SharedIndexValue<double> {
 
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);
+					int offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
 					IndexValue<T> comp2;
 					comp2.value = dx[offsetForTad];
 					comp2.index = 0;
-					sPartials[tid] = comp2;
+					sPartials[threadIdx.x] = comp2;
 
 					for(j = 1; j < elementsPerReductionIndex; j++) {
 						IndexValue<T> comp;
 						comp.value = dx[offsetForTad + xElementWiseStride * j];
 						comp.index =  j;
-						sPartials[tid] =  update(sPartials[tid],comp, extraParams);
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x],comp, extraParams);
 					}
 
-					result[i] = sPartials[tid].index;
+					result[i] = sPartials[threadIdx.x].index;
 				}
 
 				__syncthreads();
-
-
 			}
-			/*
-                    if(tid == 0) {
-                        xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-                    }
-                    __syncthreads();
-
-                    int resultLength = shape::length(resultShapeInfo);
-                    if(tid >= resultLength)
-                        return;
-			 */
-			/**
-			 * The element wise stride belong longs to a reduction index.
-			 * When used out of order, we can get rid of the data
-			 * dependencies and rely on using the max dimension
-			 * specified for stride instead.
-			 * Say we take the sum(0,1) along long arr
-			 * we can use arr.stride(1) as a representation
-			 * along long which to iterate.
-			 */
-			/*
-                    int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                    int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                    int tadLength = xTadInfo.tensorShapeProd;
-                    int xLength = shape::length(xShapeInfo);
-                    int i = 0,j = 0;
-                    int n = shape::length(xShapeInfo);
-
-#pragma unroll
-                    for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-                        int offset = dimensionLength > 1 ? i : tadLength * i;
-                        IndexValue<T> comp2;
-                        comp2.value = dx[offset];
-                        comp2.index = 0;
-                        sPartials[tid] = comp2;
-                        __syncthreads();
-                        for(j = 1; j < elementsPerReductionIndex; j++) {
-                            IndexValue<T> comp;
-                            comp.value = dx[offset + tadElementWiseStride * j];
-                            comp.index =  j;
-                            sPartials[tid] =  update(sPartials[tid],comp, extraParams);
-                            __syncthreads();
-                            result[i] = sPartials[tid].index;
-
-                        }
-
-                    }
-
-
-                    if(tid == 0) {
-                        shape::freePermuteInfo(xTadInfo);
-                    }
-			 */
 		}
 
 
 		//reduce to 1 result
 		else if (resultScalar) {
-
-			if(blockIdx.x >= resultLength)
-				return;
-
 			if (threadIdx.x == 0) {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		}
+			}
+
+			if (threadIdx.x == 0)
+				printf("Starting scalarIndexReduce block: [%i]\n", blockIdx.x);
 
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
@@ -514,14 +458,14 @@ struct SharedIndexValue<double> {
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
 #pragma unroll
-					for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+					for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 						int currIdx = i;
 						IndexValue <T> indexVal = {dx[i], currIdx};
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				} else {
 #pragma unroll
-					for(int i = xElementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
+					for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
 						int currIdx = i;
 						IndexValue <T> indexVal = {dx[i * xElementWiseStride], currIdx};
 						reduction = update(reduction, indexVal, extraParams);
@@ -532,7 +476,7 @@ struct SharedIndexValue<double> {
 				long allocSize = sizeof(int) * rank;
 				int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
-				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 					int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
 					int currIdx = i;
@@ -541,65 +485,60 @@ struct SharedIndexValue<double> {
 				}
 
 				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+					printf("overhead!\n");
                 	free(ind2sub);
             	}
 			}
 
 
-			sPartials[tid] = reduction;
-
+			sPartials[threadIdx.x] = reduction;
 			__syncthreads();
-			aggregatePartials(&sPartials, tid,numElements ,extraParams);
 
-
+			aggregatePartials(&sPartials, threadIdx.x, blockDim.x,extraParams);
 			__syncthreads();
-			if (tid == 0) {
-				result[0] = sPartials[0].index;
+
+			if (gridDim.x > 1) {
+				__shared__ bool amLast;
+				unsigned int *tc = (unsigned *) reductionBuffer;
+				int rank = shape::rank(xShapeInfo);
+				tid = threadIdx.x;
+				if (threadIdx.x == 0) {
+					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+					pBuffer[blockIdx.x] = {sPartials[0].value, sPartials[0].index};
+				}
+				__syncthreads();
+				__threadfence();
+
+				if (tid==0) {
+					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+				    amLast = (ticket == gridDim.x-1);
+				}
+
+				__syncthreads();
+
+				if (amLast) {
+					tc[4096] = 0;
+					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+
+					if (threadIdx.x < gridDim.x)
+						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
+
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x,gridDim.x,extraParams);
+
+					__syncthreads();
+					if (tid == 0) {
+						result[0] = sPartials[0].index;
+					}
+				}
+			} else {
+				if (tid == 0) {
+					unsigned int *tc = (unsigned *) reductionBuffer;
+					tc[4096] = 0;
+					result[0] = sPartials[0].index;
+				}
 			}
-
-			/*
-                    //don't need any more blocks than the result length
-                    if(blockIdx.x >= resultLength)
-                        return;
-
-                    int n = shape::length(xShapeInfo);
-                    unsigned int i = blockIdx.x * xElementWiseStride + tid;
-                    unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-                    if(xOffset == 0) {
-                        // we reduce multiple elements per thread.  The number is determined by the
-                        // number of active thread blocks (via gridDim).  More blocks will result
-                        // in a larger gridSize and therefore fewer elements per thread
-#pragma unroll
-                        while (i < n) {
-                            int currIdx = i;
-                            IndexValue <T> indexVal = {dx[i], currIdx};
-                            reduction = update(reduction, indexVal, extraParams);
-                            i += gridSize;
-                        }
-                    }
-                    else {
-                        // we reduce multiple elements per thread.  The number is determined by the
-                        // number of active thread blocks (via gridDim).  More blocks will result
-                        // in a larger gridSize and therefore fewer elements per thread
-                        while (xOffset + i < n) {
-                            int currIdx = xOffset + i;
-                            IndexValue <T> indexVal = {dx[xOffset + i], currIdx};
-                            reduction = update(reduction, indexVal, extraParams);
-                            i += gridSize;
-                        }
-                    }
-
-                    // each thread puts its local sum into shared memory
-                    sPartials[tid] = reduction;
-                    __syncthreads();
-
-                    aggregatePartials(&sPartials, tid,numElements ,extraParams);
-
-                    // write result for this block to global mem
-                    if (tid == 0) {
-                        result[blockIdx.x] = sPartials[0].index;
-                    }
-			 */
 		}
 	}
 
@@ -1306,7 +1245,7 @@ __device__ void indexReduceGeneric(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer) {
+		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0)
@@ -1317,7 +1256,7 @@ __device__ void indexReduceGeneric(
 		indexReduce = newOpFactory->getOp(op);
 	__syncthreads();
 
-	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer);
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1350,7 +1289,7 @@ __global__ void indexReduceDouble(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer) {
+		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
@@ -1360,7 +1299,7 @@ __global__ void indexReduceDouble(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationBuffer);
+			postProcessOrNot, allocationBuffer, reductionBuffer);
 
 }
 
@@ -1388,7 +1327,7 @@ __global__ void indexReduceFloat(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer) {
+		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
@@ -1398,7 +1337,7 @@ __global__ void indexReduceFloat(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationBuffer);
+			postProcessOrNot, allocationBuffer, reductionBuffer);
 
 }
 

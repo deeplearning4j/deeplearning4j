@@ -30,6 +30,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+
+
 namespace functions {
     namespace transform {
 
@@ -4649,7 +4651,7 @@ namespace functions {
 				resultShapeBuffer,
 				NULL,
 				1,
-				1, allocationPointer);
+				1, allocationPointer, reductionPointer);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4932,7 +4934,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1, allocationPointer);
+					1, allocationPointer, reductionPointer);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {
