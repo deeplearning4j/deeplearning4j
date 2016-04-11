@@ -138,9 +138,6 @@ namespace functions {
 
 		int n = shape::length(xShapeInfo);
 
-		if (threadIdx.x == 0)
-			printf("Starting scalarReduce block: [%i]\n", blockIdx.x);
-
 		int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
 		//shared memory space for storing intermediate results
@@ -148,8 +145,8 @@ namespace functions {
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
-			sPartials[i] = init;
+		//for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
+		sPartials[threadIdx.x] = init;
 		__syncthreads();
 
 		if(elementWiseStride >= 1) {
@@ -182,7 +179,7 @@ namespace functions {
             }
 		}
 
-				__syncthreads();
+			__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
 			aggregatePartials(sPartialsRef, threadIdx.x, blockDim.x,extraParams);
 
@@ -209,8 +206,12 @@ namespace functions {
 
 				if (amLast) {
 					tc[4096] = 0;
-					if (threadIdx.x < gridDim.x)
-						sPartials[threadIdx.x] =  reductionBuffer[threadIdx.x];
+
+					sPartials[threadIdx.x] = 0;
+
+					if (threadIdx.x < gridDim.x) {
+						sPartials[threadIdx.x] = reductionBuffer[threadIdx.x];
+					}
 					__syncthreads();
 
 					T **sPartialsRef = (T **) &sPartials;
@@ -511,7 +512,7 @@ namespace functions {
 			}
 			__syncthreads();
 		}
-
+		__syncthreads();
 
 #pragma unroll
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
@@ -1864,7 +1865,6 @@ __global__ void reduceGenericGlobal(
 	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
 		reduceFunctionToInvoke = newOpFactory->create(op);
-		printf("Creating op A: [%i]\n", op);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1918,7 +1918,6 @@ __device__ void reduceGeneric(
 	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
 		reduceFunctionToInvoke = newOpFactory->create(op);
-		printf("Creating op B: [%i]\n", op);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
