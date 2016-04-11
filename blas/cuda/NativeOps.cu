@@ -2223,8 +2223,6 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int length = (int) extraPointers[2];
-
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
