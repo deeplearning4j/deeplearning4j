@@ -159,7 +159,7 @@ namespace functions {
 			else {
 #pragma unroll
 				for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams); //  i * elementWiseStride
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
 				}
 			}
 		}

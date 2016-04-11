@@ -829,7 +829,7 @@ struct SharedSummaryStatsData<double> {
 #pragma unroll
 				    for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
                         SummaryStatsData <T> indexVal2;
-					    indexVal2.initWithValue(dx[i ]); //* xElementWiseStride
+					    indexVal2.initWithValue(dx[i * xElementWiseStride]);
 						reduction =  update(reduction,indexVal2, extraParams);
     				}
 	    		}
