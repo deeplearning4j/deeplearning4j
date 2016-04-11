@@ -206,6 +206,7 @@ namespace functions {
 
 					// now we must ensure, that all other blocks are finished
 					__shared__ int finisher;
+					clock_t *globalClock;
 					if (tid == 0)
 							finisher = 0;
 					__syncthreads();
@@ -222,6 +223,21 @@ namespace functions {
 							}
 						}
 						__syncthreads();
+
+						if (finisher != gridDim.x) {
+							// TODO: sleep here
+							clock_t start = clock();
+							clock_t now;
+							for (;;) {
+  								now = clock();
+  								clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
+  								if (cycles >= 10000) {
+    								break;
+  								}
+							}
+
+							*globalClock = now;
+						}
 					}
 
 					__syncthreads();
