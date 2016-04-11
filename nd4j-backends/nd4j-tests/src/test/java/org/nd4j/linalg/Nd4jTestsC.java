@@ -663,6 +663,41 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testIsMaxAlongDimensionSimple(){
+        //Simple test: when doing IsMax along a dimension, we expect all values to be either 0 or 1
+        //Do IsMax along dims 0&1 for rank 2, along 0,1&2 for rank 3, etc
+
+        for( int rank = 2; rank <= 6; rank++) {
+
+            int[] shape = new int[rank];
+            for( int i = 0; i < rank; i++ ) shape[i] = 2;
+            int length = ArrayUtil.prod(shape);
+
+
+            for( int alongDimension = 0; alongDimension<rank; alongDimension++) {
+                System.out.println("Testing rank " + rank + " along dimension " + alongDimension + ", (shape=" + Arrays.toString(shape) + ")");
+                INDArray arrC = Nd4j.linspace(1,length, length).reshape('c',shape);
+                INDArray arrF = arrC.dup('f');
+                Nd4j.getExecutioner().execAndReturn(new IsMax(arrC, alongDimension));
+                Nd4j.getExecutioner().execAndReturn(new IsMax(arrF, alongDimension));
+
+                double[] cBuffer = arrC.data().asDouble();
+                double[] fBuffer = arrF.data().asDouble();
+                for( int i = 0; i<length; i++ ){
+                    assertTrue("c buffer value at ["+i+"]="+cBuffer[i] + ", expected 0 or 1; dimension = " + alongDimension
+                                    + ", rank = " + rank + ", shape=" + Arrays.toString(shape),
+                            cBuffer[i]==0.0 || cBuffer[i] == 1.0);
+                }
+                for( int i = 0; i < length; i++) {
+                    assertTrue("f buffer value at ["+i+"]="+fBuffer[i] + ", expected 0 or 1; dimension = " + alongDimension
+                                    + ", rank = " + rank + ", shape=" + Arrays.toString(shape),
+                            fBuffer[i]== 0.0 || fBuffer[i] == 1.0);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testSortColumns() {
         int nRows = 5;
         int nCols = 10;
