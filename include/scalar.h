@@ -116,7 +116,7 @@ namespace functions {
 		}
 		else {
 			/* equal, positive, non-unit increments. */
-			int *xIdx = (int *) malloc(sizeof(int) * xRank);
+			int *xIdx = new int[xRank];
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
 				shape::ind2sub(xRank, xShape, i,xIdx);
@@ -125,7 +125,7 @@ namespace functions {
 				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
 
-			free(xIdx);
+			delete[] xIdx;
 
 		}
 
@@ -314,8 +314,8 @@ namespace functions {
                             int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
                             result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                            free(xIdx);
-                            free(resultIdx);
+                            delete[] xIdx;
+                            delete[] resultIdx;
 
                         }
 
