@@ -2285,7 +2285,7 @@ namespace shape {
         int *stride = shape::stride(shapeRef);
         int *rearrangeCopy1 = shape::copyOf(rearrageRank,rearrange);
         shape::doPermuteSwap(rearrageRank,&shape,rearrangeCopy1);
-        delete[] earrangeCopy1;
+        delete[] rearrangeCopy1;
         int *rearrangeCopy2 = shape::copyOf(rearrageRank,rearrange);
         shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
         delete[] rearrangeCopy2;
