@@ -156,7 +156,7 @@ namespace __cuda_launch_config_detail
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int reg_allocation_unit(const cudaDeviceProp &properties, const int regsPerThread)
+    int reg_allocation_unit(const cudaDeviceProp &properties, int regsPerThread)
     {
         switch(properties.major)
         {
@@ -233,29 +233,29 @@ namespace __cuda_launch_config_detail
         //////////////////////////////////////////
         // Limits due to threads/SM or blocks/SM
         //////////////////////////////////////////
-        const int maxThreadsPerSM = properties.maxThreadsPerMultiProcessor;  // 768, 1024, 1536, etc.
-        const int maxBlocksPerSM  = max_blocks_per_multiprocessor(properties);
+        int maxThreadsPerSM = properties.maxThreadsPerMultiProcessor;  // 768, 1024, 1536, etc.
+        int maxBlocksPerSM  = max_blocks_per_multiprocessor(properties);
 
         // Calc limits
-        const int ctaLimitThreads = (CTA_SIZE <= properties.maxThreadsPerBlock) ? maxThreadsPerSM / CTA_SIZE : 0;
-        const int ctaLimitBlocks  = maxBlocksPerSM;
+        int ctaLimitThreads = (CTA_SIZE <= properties.maxThreadsPerBlock) ? maxThreadsPerSM / CTA_SIZE : 0;
+        int ctaLimitBlocks  = maxBlocksPerSM;
 
         //////////////////////////////////////////
         // Limits due to shared memory/SM
         //////////////////////////////////////////
-        const int smemAllocationUnit     = smem_allocation_unit(properties);
-        const int smemBytes  = attributes.sharedSizeBytes + dynamic_smem_bytes;
-        const int smemPerCTA = util::round_i(smemBytes, smemAllocationUnit);
+        int smemAllocationUnit     = smem_allocation_unit(properties);
+        int smemBytes  = attributes.sharedSizeBytes + dynamic_smem_bytes;
+        int smemPerCTA = util::round_i(smemBytes, smemAllocationUnit);
 
         // Calc limit
-        const int ctaLimitSMem = smemPerCTA > 0 ? properties.sharedMemPerBlock / smemPerCTA : maxBlocksPerSM;
+        int ctaLimitSMem = smemPerCTA > 0 ? properties.sharedMemPerBlock / smemPerCTA : maxBlocksPerSM;
 
         //////////////////////////////////////////
         // Limits due to registers/SM
         //////////////////////////////////////////
-        const int regAllocationUnit      = reg_allocation_unit(properties, attributes.numRegs);
-        const int warpAllocationMultiple = warp_allocation_multiple(properties);
-        const int numWarps = util::round_i(util::divide_ri(CTA_SIZE, properties.warpSize), warpAllocationMultiple);
+        int regAllocationUnit      = reg_allocation_unit(properties, attributes.numRegs);
+        int warpAllocationMultiple = warp_allocation_multiple(properties);
+        int numWarps = util::round_i(util::divide_ri(CTA_SIZE, properties.warpSize), warpAllocationMultiple);
 
         // Calc limit
         int ctaLimitRegs;
@@ -263,16 +263,16 @@ namespace __cuda_launch_config_detail
         {
             // GPUs of compute capability 1.x allocate registers to CTAs
             // Number of regs per block is regs per thread times number of warps times warp size, rounded up to allocation unit
-            const int regsPerCTA = util::round_i(attributes.numRegs * properties.warpSize * numWarps, regAllocationUnit);
+            int regsPerCTA = util::round_i(attributes.numRegs * properties.warpSize * numWarps, regAllocationUnit);
             ctaLimitRegs = regsPerCTA > 0 ? properties.regsPerBlock / regsPerCTA : maxBlocksPerSM;
         }
         else
         {
             // GPUs of compute capability 2.x and higher allocate registers to warps
             // Number of regs per warp is regs per thread times times warp size, rounded up to allocation unit
-            const int regsPerWarp = util::round_i(attributes.numRegs * properties.warpSize, regAllocationUnit);
-            const int numSides = num_sides_per_multiprocessor(properties);
-            const int numRegsPerSide = properties.regsPerBlock / numSides;
+            int regsPerWarp = util::round_i(attributes.numRegs * properties.warpSize, regAllocationUnit);
+            int numSides = num_sides_per_multiprocessor(properties);
+            int numRegsPerSide = properties.regsPerBlock / numSides;
             ctaLimitRegs = regsPerWarp > 0 ? ((numRegsPerSide / regsPerWarp) * numSides) / numWarps : maxBlocksPerSM;
         }
 

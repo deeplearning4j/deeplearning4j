@@ -72,7 +72,7 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                         Nd4jPointer extraParams,
                                         Nd4jPointer result,
                                         Nd4jPointer resultShapeInfoBuffer,
-                                        Nd4jPointer dimension, int dimensionLength) {
+                                        int *dimension, int dimensionLength) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -104,7 +104,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
                                       Nd4jPointer yShapeInfo,
                                       Nd4jPointer result,
                                       Nd4jPointer resultShapeInfo,
-                                      Nd4jPointer dimension, int dimensionLength) {
+                                      int *dimension, int dimensionLength) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *yPointer = reinterpret_cast<double *>(y);
@@ -288,7 +288,7 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                    Nd4jPointer extraParams,
                                    Nd4jPointer result,
                                    Nd4jPointer resultShapeInfo,
-                                   Nd4jPointer dimension,int dimensionLength) {
+                                   int *dimension,int dimensionLength) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -389,7 +389,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
                                     Nd4jPointer yShapeInfo,
                                     Nd4jPointer result,
                                     Nd4jPointer resultShapeInfoBuffer,
-                                    Nd4jPointer dimension,
+                                    int *dimension,
                                     int dimensionLength) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -533,7 +533,7 @@ void NativeOps::execScalarDouble(
  * @param xShapeInfo
  * @param extraParams
  */
-double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, OpType opNum,Nd4jPointer x,
+double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, int opNum,Nd4jPointer x,
                                                  Nd4jPointer xShapeInfo,
                                                  Nd4jPointer extraParams,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
@@ -554,7 +554,7 @@ double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, OpT
  * @param result
  * @param resultShapeInfo
  */
-void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNum,
+void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, int opNum,
                                          Nd4jPointer x,
                                          Nd4jPointer xShapeInfo,
                                          Nd4jPointer extraParams,
@@ -585,12 +585,12 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNu
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNum,Nd4jPointer x,
+void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, int opNum,Nd4jPointer x,
                                          Nd4jPointer xShapeInfo,
                                          Nd4jPointer extraParams,
                                          Nd4jPointer result,
                                          Nd4jPointer resultShapeInfoBuffer,
-                                         Nd4jPointer dimension, int dimensionLength,bool biasCorrected) {
+                                         int *dimension, int dimensionLength,bool biasCorrected) {
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
@@ -618,7 +618,7 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, OpType opNu
  * @param extraParams
  * @param n
  */
-void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers, OpType opNum,
+void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers, int opNum,
                                       Nd4jPointer dx,
                                       int xStride,
                                       Nd4jPointer result,
@@ -642,7 +642,7 @@ void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers, OpType opNum,
  */
 void   NativeOps::execTransformDouble(
         Nd4jPointer *extraPointers
-        , OpType opNum,
+        , int opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -674,7 +674,7 @@ void   NativeOps::execTransformDouble(
  */
 void   NativeOps::execTransformDouble(
         Nd4jPointer *extraPointers,
-        OpType opNum,
+        int opNum,
         Nd4jPointer dx,
         Nd4jPointer xShapeInfo,
         Nd4jPointer result,
@@ -708,7 +708,7 @@ void   NativeOps::execTransformDouble(
  * @param xShapeInfo
  * @param extraParams
  */
-float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, OpType opNum,
+float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, int opNum,
                                               Nd4jPointer x,
                                               Nd4jPointer xShapeInfo,
                                               Nd4jPointer extraParams) {
@@ -729,13 +729,13 @@ float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, OpType
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, OpType opNum,
+void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
                                        Nd4jPointer x,
                                        Nd4jPointer xShapeInfo,
                                        Nd4jPointer extraParams,
                                        Nd4jPointer result,
                                        Nd4jPointer resultShapeInfoBuffer,
-                                       Nd4jPointer dimension, int dimensionLength) {
+                                       int *dimension, int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
@@ -758,13 +758,13 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, OpType opNum,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,OpType opNum,
+void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
                                      Nd4jPointer x,
                                      Nd4jPointer xShapeInfo,
                                      Nd4jPointer y,
                                      Nd4jPointer yShapeInfo,
                                      Nd4jPointer result,
-                                     Nd4jPointer dimension, int dimensionLength) {
+                                     int *dimension, int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *yPointer = reinterpret_cast<float *>(y);
@@ -922,7 +922,7 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,int opNum,
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimension = (int *) malloc(sizeof(int));
-    dimension[0] = shape::MAX_DIMENSION;
+    dimension[0] = MAX_DIMENSION;
     FloatNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimension,1);
     free(dimension);
 }
@@ -944,7 +944,7 @@ void   NativeOps::execReduceFloat(
         Nd4jPointer extraParams,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo,
-        Nd4jPointer dimension,
+        int *dimension,
         int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -1067,7 +1067,7 @@ void   NativeOps::execReduce3Float(Nd4jPointer *extraPointers,int opNum,
                                    Nd4jPointer yShapeInfo,
                                    Nd4jPointer result,
                                    Nd4jPointer resultShapeInfoBuffer,
-                                   Nd4jPointer dimension,
+                                   int *dimension,
                                    int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -1257,7 +1257,7 @@ void   NativeOps::execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,Nd4
                                         Nd4jPointer extraParams,
                                         Nd4jPointer result,
                                         Nd4jPointer resultShapeInfoBuffer,
-                                        Nd4jPointer dimension, int dimensionLength,bool biasCorrected) {
+                                        int *dimension, int dimensionLength,bool biasCorrected) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);

@@ -47,7 +47,7 @@ static Data<T> * getDataIndexReduce(T *assertion,T startingVal) {
     }
 
     ret->dimension = (int *) malloc(sizeof(int) * 2);
-    ret->dimension[0] = shape::MAX_DIMENSION;
+    ret->dimension[0] = MAX_DIMENSION;
 
     ret->result = (T *) malloc(sizeof(T));
     ret->resultRank = 2;

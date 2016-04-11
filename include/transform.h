@@ -161,8 +161,7 @@ namespace functions {
 			int *xIdx = (int *) malloc(sizeof(int) * xRank);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,&xIdx);
+				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,xIdx);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
 				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
@@ -212,49 +211,49 @@ namespace functions {
 	}
 #endif
 
-	/**
-	 * CPU execution
-	 * @param dx the input
-	 * @param xStride the stride to iterate for the input
-	 * @param result the result buffer
-	 * @param resultStride the stride for result
-	 * storage
-	 * @param extraParams the extra parameters
-	 * @param n the number of elements to iterate on
-	 */
-	virtual void exec(
-			T *dx,
-                        const int *xShapeInfo,
-			T *result,
-			int *resultShapeInfo,
-			T *extraParams,
-                        const Nd4jIndex *indexes) {
-		int n = shape::length(xShapeInfo);
+            /**
+             * CPU execution
+             * @param dx the input
+             * @param xStride the stride to iterate for the input
+             * @param result the result buffer
+             * @param resultStride the stride for result
+             * storage
+             * @param extraParams the extra parameters
+             * @param n the number of elements to iterate on
+             */
+            virtual void exec(
+                    T *dx,
+                    int *xShapeInfo,
+                    T *result,
+                    int *resultShapeInfo,
+                    T *extraParams,
+                    const Nd4jIndex *indexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp simd
-		for (int i = 0; i < n; i++) {
-			result[indexes[i]] = op(dx[indexes[i]], extraParams);
-		}
-	}
+                for (int i = 0; i < n; i++) {
+                    result[indexes[i]] = op(dx[indexes[i]], extraParams);
+                }
+            }
 
-	/**
-	 * CPU execution
-	 * @param dx the input
-	 * @param xStride the stride to iterate for the input
-	 * @param result the result buffer
-	 * @param resultStride the stride for result
-	 * storage
-	 * @param extraParams the extra parameters
-	 * @param n the number of elements to iterate on
-	 */
-	virtual void exec(
-			T *dx,
-                        const int *xShapeInfo,
-			T *result,
-			int *resultShapeInfo,
-			T *extraParams,
-                        const Nd4jIndex *indexes,
-                        const Nd4jIndex *resultIndexes) {
-		int n = shape::length(xShapeInfo);
+            /**
+             * CPU execution
+             * @param dx the input
+             * @param xStride the stride to iterate for the input
+             * @param result the result buffer
+             * @param resultStride the stride for result
+             * storage
+             * @param extraParams the extra parameters
+             * @param n the number of elements to iterate on
+             */
+            virtual void exec(
+                    T *dx,
+                    int *xShapeInfo,
+                    T *result,
+                    int *resultShapeInfo,
+                    T *extraParams,
+                    const Nd4jIndex *indexes,
+                    const Nd4jIndex *resultIndexes) {
+                int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], extraParams);
@@ -3105,11 +3104,9 @@ namespace functions {
 		int padHeight = (int) extraParams[5];
 		int kSize = kernelWidth * kernelHeight;
 
-		int outArrayOffset = 0;
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 		int *outStride = shape::stride(resultShapeBuffer);
 
-		int inArrayOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3197,8 +3194,8 @@ namespace functions {
                     int *outStride = shape::stride(resultShapeBuffer);
 
                     int inArrayOffset = 0;
-                    const int *inShape = shape::shapeOf(xShapeBuffer);
-                    const int *inStride = shape::stride(xShapeBuffer);
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
 
 
                     int exampleFrom = 0;
@@ -3369,7 +3366,7 @@ namespace functions {
 
 
 #endif
-                int getOffsetUnsafe4(int baseOffset, const int *shape, const int *stride, const int *indices) {
+                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
                     if (shape[0] != 1) offset += indices[0] * stride[0];
                     if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -3417,7 +3414,6 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
-		int inOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3472,157 +3468,157 @@ namespace functions {
 	}
 #endif
 
-         /**
-	 * CPU operation execution
-	 * @param dx the input data
-	 * @param xStride the stride to iterate over
-	 * the x input
-	 * @param y the y data
-	 * @param yStride the stride to iterate
-	 * over the y buffer
-	 * @param result the buffer
-	 * to store the result in
-	 * @param resultStride the stride for the buffer
-	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
-	 */
-	virtual void execSpecial(
-			T *dx,
+                /**
+            * CPU operation execution
+            * @param dx the input data
+            * @param xStride the stride to iterate over
+            * the x input
+            * @param y the y data
+            * @param yStride the stride to iterate
+            * over the y buffer
+            * @param result the buffer
+            * to store the result in
+            * @param resultStride the stride for the buffer
+            * @param extraParams the extra parameters for the transform
+            * @param n the length of the input
+            */
+                virtual void execSpecial(
+                        T *dx,
                         int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
                         T *extraParams) override {
-		int inOffset = 0;
-                const int *inShape = shape::shapeOf(xShapeBuffer);
-                const int *inStride = shape::stride(xShapeBuffer);
+                    int inOffset = 0;
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
 
-		int kernelHeight = inShape[2];
-		int kernelWidth = inShape[3];
-		/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
-		int strideX = (int) extraParams[0];
-		int strideY = (int) extraParams[1];
-		int padWidth = (int) extraParams[2];
-		int padHeight = (int) extraParams[3];
+                    int kernelHeight = inShape[2];
+                    int kernelWidth = inShape[3];
+                    /* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
+                    int strideX = (int) extraParams[0];
+                    int strideY = (int) extraParams[1];
+                    int padWidth = (int) extraParams[2];
+                    int padHeight = (int) extraParams[3];
 
-		int exampleFrom = 0;
-		int exampleTo = inShape[0];
-		int depthFrom = 0;
-		int depthTo = inShape[1];
+                    int exampleFrom = 0;
+                    int exampleTo = inShape[0];
+                    int depthFrom = 0;
+                    int depthTo = inShape[1];
 
-		int outArrayOffset = 0;
-		int *outShape = shape::shapeOf(resultShapeBuffer);
-		int *outStride = shape::stride(resultShapeBuffer);
-
-
-                Nd4jIndex *outIndices = new Nd4jIndex[4];
-                Nd4jIndex *inIndices = new Nd4jIndex[6];
-
-		int inStride2 = inStride[2];
-		int inStride3 = inStride[3];
-		int outStride2 = outStride[2];
-		int outStride3 = outStride[3];
-		int outShape2 = outShape[2];
-		int outShape3 = outShape[3];
-
-		int yOutTo = inShape[4];
-		int xOutTo = inShape[5];
+                    int outArrayOffset = 0;
+                    int *outShape = shape::shapeOf(resultShapeBuffer);
+                    int *outStride = shape::stride(resultShapeBuffer);
 
 
-		const bool padding = padHeight > 0 || padWidth > 0;
+                    Nd4jIndex *outIndices = new Nd4jIndex[4];
+                    Nd4jIndex *inIndices = new Nd4jIndex[6];
 
-		T *fIn = dx;
-		T *fOut = result;
-		//#pragma omp parallel for collapse(2)
-		for (int ex = exampleFrom; ex < exampleTo; ex++) {
-			for (int d = depthFrom; d < depthTo; d++) {
-				inIndices[0] = ex;
-				inIndices[1] = d;
-				outIndices[0] = ex;
-				outIndices[1] = d;
+                    int inStride2 = inStride[2];
+                    int inStride3 = inStride[3];
+                    int outStride2 = outStride[2];
+                    int outStride3 = outStride[3];
+                    int outShape2 = outShape[2];
+                    int outShape3 = outShape[3];
 
-				for (int x = 0; x < xOutTo; x++) {  //Patch number along width
-					for (int y = 0; y < yOutTo; y++) {  //Patch number along height
-						inIndices[4] = y;   //patch number (along height)
-						inIndices[5] = x;   //patch number (along width)
-						int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
-
-						if (padding) {
-							int i = y * strideY -
-									padHeight;    //index along height of first element of patch in original img
-							int j = x * strideX -
-									padWidth;     //index along width of first element in patch in original img
-							outIndices[2] = i;  //along height
-							outIndices[3] = j;  //along width
-
-							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-							if (inStride2 <= inStride3) {
-								//Want dimension 2 (along height) in inner loop for cache efficiency
-								for (int patchX = 0; patchX < kernelWidth; patchX++) {
-									if (j + patchX < 0 || j + patchX >= outShape3)
-										continue;
-
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										if (i + patchY < 0 || i + patchY >= outShape2)
-											continue;
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							} else {
-								//Want dimension 3 (along width) in inner loop for cache efficiency
-								for (int patchY = 0; patchY < kernelHeight; patchY++) {
-									if (i + patchY < 0 || i + patchY >= outShape2)
-										continue;
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										if (j + patchX < 0 || j + patchX >= outShape3)
-											continue;
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							}
-						} else {
-							//No padding
-							int i = y *
-									strideY;    //index along height of first element of patch in output img
-							int j = x *
-									strideX;     //index along width of first element in patch in output img
-
-							outIndices[2] = i;
-							outIndices[3] = j;
-
-							int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-							if (inStride2 <= inStride3) {
-								//Want dimension 2 (along height) in inner loop for cache efficiency
-								for (int patchX = 0; patchX < kernelWidth; patchX++) {
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							} else {
-								//Want dimension 3 (along width) in inner loop for cache efficiency
-								for (int patchY = 0; patchY < kernelHeight; patchY++) {
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+                    int yOutTo = inShape[4];
+                    int xOutTo = inShape[5];
 
 
-		delete[] outIndices;
-		delete[] inIndices;
-            }
+                    const bool padding = padHeight > 0 || padWidth > 0;
+
+                    T *fIn = dx;
+                    T *fOut = result;
+                    //#pragma omp parallel for collapse(2)
+                    for (int ex = exampleFrom; ex < exampleTo; ex++) {
+                        for (int d = depthFrom; d < depthTo; d++) {
+                            inIndices[0] = ex;
+                            inIndices[1] = d;
+                            outIndices[0] = ex;
+                            outIndices[1] = d;
+
+                            for (int x = 0; x < xOutTo; x++) {  //Patch number along width
+                                for (int y = 0; y < yOutTo; y++) {  //Patch number along height
+                                    inIndices[4] = y;   //patch number (along height)
+                                    inIndices[5] = x;   //patch number (along width)
+                                    int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
+
+                                    if (padding) {
+                                        int i = y * strideY -
+                                                padHeight;    //index along height of first element of patch in original img
+                                        int j = x * strideX -
+                                                padWidth;     //index along width of first element in patch in original img
+                                        outIndices[2] = i;  //along height
+                                        outIndices[3] = j;  //along width
+
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+                                                                                   outIndices);
+
+                                        if (inStride2 <= inStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache efficiency
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                if (j + patchX < 0 || j + patchX >= outShape3)
+                                                    continue;
+
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    if (i + patchY < 0 || i + patchY >= outShape2)
+                                                        continue;
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 (along width) in inner loop for cache efficiency
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                if (i + patchY < 0 || i + patchY >= outShape2)
+                                                    continue;
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    if (j + patchX < 0 || j + patchX >= outShape3)
+                                                        continue;
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        //No padding
+                                        int i = y *
+                                                strideY;    //index along height of first element of patch in output img
+                                        int j = x *
+                                                strideX;     //index along width of first element in patch in output img
+
+                                        outIndices[2] = i;
+                                        outIndices[3] = j;
+
+                                        int baseOffsetOut = this->getOffsetUnsafe4(outArrayOffset, outShape, outStride,
+                                                                                   outIndices);
+
+                                        if (inStride2 <= inStride3) {
+                                            //Want dimension 2 (along height) in inner loop for cache efficiency
+                                            for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        } else {
+                                            //Want dimension 3 (along width) in inner loop for cache efficiency
+                                            for (int patchY = 0; patchY < kernelHeight; patchY++) {
+                                                for (int patchX = 0; patchX < kernelWidth; patchX++) {
+                                                    fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+                                                            fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    delete[] outIndices;
+                    delete[] inIndices;
+                }
 
 #ifdef __CUDACC__
                 inline __host__ __device__
@@ -3665,7 +3661,7 @@ namespace functions {
 
 
 #endif
-                int getOffsetUnsafe4(int baseOffset, const int *shape, const int *stride, const Nd4jIndex *indices) {
+                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, const Nd4jIndex *indices) {
                     int offset = baseOffset;
                     if (shape[0] != 1) offset += indices[0] * stride[0];
                     if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -3684,7 +3680,7 @@ namespace functions {
 
 
 #endif
-                int getOffsetUnsafe6(int baseOffset, const int *shape, const int *stride, const Nd4jIndex *indices) {
+                int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, const Nd4jIndex *indices) {
                     int offset = baseOffset;
                     if (shape[0] != 1) offset += indices[0] * stride[0];
                     if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -3814,135 +3810,135 @@ namespace functions {
 	}
 #endif
 
-	/**
-	 * CPU operation execution
-	 * @param dx the input data
-	 * @param xStride the stride to iterate over
-	 * the x input
-	 * @param y the y data
-	 * @param yStride the stride to iterate
-	 * over the y buffer
-	 * @param result the buffer
-	 * to store the result in
-	 * @param resultStride the stride for the buffer
-	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
-	 */
-	virtual void execSpecial(
-			T *dx,
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
                         int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
                         T *extraParams) override {
-		if (shape::isMatrix(xShapeBuffer)) {
-                        const int *shape = shape::shapeOf(xShapeBuffer);
+                    if (shape::isMatrix(xShapeBuffer)) {
+                        int *shape = shape::shapeOf(xShapeBuffer);
 
-			//iterate along rows
-			int dimension[1] = {0};
-			int maxDimension[1] = {1};
-			//compute the row wise maxes
-			functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-			std::vector <T> maxResult(shape[0]);
-			for (int i = 0; i < shape[0]; i++)
-				maxResult[i] = 0.0;
-			int maxShape[2] = {shape[0], 1};
-			int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-			max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        std::vector <T> maxResult(shape[0]);
+                        for (int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
+                        int maxShape[2] = {shape[0], 1};
+                        int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
-			//subtract max of each row
-			functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
                         sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
-			//after subtracting the row wise maxes take the exp
-			functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
-			exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
-			//take the sum for the exponential
-			functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-			sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-					1);
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
+                                  1);
 
-			//divide by the sum
-			functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
                         div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
 
-			delete exp;
-			delete sub;
-			delete sum;
-			delete max;
-			delete div;
+                        delete exp;
+                        delete sub;
+                        delete sum;
+                        delete max;
+                        delete div;
 
-			delete[] maxResultShapeBuffer;
-		}
-		else if (shape::isVector(xShapeBuffer)) {
-			T max = 0;
-			T sum = 0;
-			int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-			int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
-			int length = shape::length(xShapeBuffer);
-			if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
-				if (elementWiseStride == 1 && resultElementWiseStride == 1) {
-					for (int i = 0; i < length; i++) {
-						max = nd4j::math::nd4j_max<T>(max, dx[i]);
-					}
-
-
-					for (int i = 0; i < length; i++) {
-						result[i] = dx[i] - max;
-					}
-
-					for (int i = 0; i < length; i++) {
-						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
-					}
+                        delete[] maxResultShapeBuffer;
+                    }
+                    else if (shape::isVector(xShapeBuffer)) {
+                        T max = 0;
+                        T sum = 0;
+                        int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                        int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
+                        int length = shape::length(xShapeBuffer);
+                        if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                            if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+                                for (int i = 0; i < length; i++) {
+                                    max = nd4j::math::nd4j_max<T>(max, dx[i]);
+                                }
 
 
-					for (int i = 0; i < length; i++) {
-						sum += result[i];
-					}
+                                for (int i = 0; i < length; i++) {
+                                    result[i] = dx[i] - max;
+                                }
+
+                                for (int i = 0; i < length; i++) {
+                                    result[i] = nd4j::math::nd4j_exp<T>(result[i]);
+                                }
 
 
-					for (int i = 0; i < length; i++) {
-						result[i] /= sum;
-					}
+                                for (int i = 0; i < length; i++) {
+                                    sum += result[i];
+                                }
 
 
-				}
-				else {
-
-					for (int i = 0; i < length; i++) {
-						max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
-					}
-					for (int i = 0; i < length; i++) {
-						result[i * resultElementWiseStride] = dx[i * elementWiseStride] - max;
-					}
-					for (int i = 0; i < length; i++) {
-						result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(
-								result[i * resultElementWiseStride]);
-					}
-					for (int i = 0; i < length; i++) {
-						sum += result[i * resultElementWiseStride];
-					}
-					for (int i = 0; i < length; i++) {
-						result[i * resultElementWiseStride] /= sum;
-					}
-				}
-
-			}
+                                for (int i = 0; i < length; i++) {
+                                    result[i] /= sum;
+                                }
 
 
-		}
-	}
+                            }
+                            else {
 
-	/**
-	 * The op for transforms
-	 * @param d1
-	 * @param params
-	 * @return
-	 */
-	virtual
+                                for (int i = 0; i < length; i++) {
+                                    max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
+                                }
+                                for (int i = 0; i < length; i++) {
+                                    result[i * resultElementWiseStride] = dx[i * elementWiseStride] - max;
+                                }
+                                for (int i = 0; i < length; i++) {
+                                    result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(
+                                            result[i * resultElementWiseStride]);
+                                }
+                                for (int i = 0; i < length; i++) {
+                                    sum += result[i * resultElementWiseStride];
+                                }
+                                for (int i = 0; i < length; i++) {
+                                    result[i * resultElementWiseStride] /= sum;
+                                }
+                            }
+
+                        }
+
+
+                    }
+                }
+
+                /**
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
+                virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
 
@@ -4088,77 +4084,77 @@ namespace functions {
 	}
 #endif
 
-	/**
-	 * CPU operation execution
-	 * @param dx the input data
-	 * @param xStride the stride to iterate over
-	 * the x input
-	 * @param y the y data
-	 * @param yStride the stride to iterate
-	 * over the y buffer
-	 * @param result the buffer
-	 * to store the result in
-	 * @param resultStride the stride for the buffer
-	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
-	 */
-	virtual void execSpecial(
-			T *dx,
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
                         int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
                         T *extraParams) override {
-		if (shape::isMatrix(xShapeBuffer, 2)) {
-                        const int *shape = shape::shapeOf(xShapeBuffer);
-			//iterate along rows
-			int dimension[1] = {0};
-			int maxDimension[1] = {1};
-			//compute the row wise maxes
-			functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-			std::vector <T> maxResult(shape[0]);
-			for (int i = 0; i < shape[0]; i++)
-                                maxResult[i] = 0.0;
+                    if (shape::isMatrix(xShapeBuffer, 2)) {
+                        int *shape = shape::shapeOf(xShapeBuffer);
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        std::vector <T> maxResult(shape[0]);
+                        for (int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
 
                         int maxShape[2] = {shape[0], 1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-			max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
-			//subtract max of each row
-			functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
                         sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
-			//after subtracting the row wise maxes take the exp
-			functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
-			exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
-			//take the sum for the exponential
-			functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-			sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-					1);
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
+                                  1);
 
-			//divide by the sum
-			functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
                         div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
-			functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
-			log->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+                        functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
+                        log->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
-			delete exp;
-			delete sub;
-			delete sum;
-			delete max;
-			delete div;
-			delete log;
+                        delete exp;
+                        delete sub;
+                        delete sum;
+                        delete max;
+                        delete div;
+                        delete log;
 
-			delete[] maxResultShapeBuffer;
-		}
-		else if (shape::isVector(xShapeBuffer, 2)) {
-			T max = 0;
-			T sum = 0;
+                        delete[] maxResultShapeBuffer;
+                    }
+                    else if (shape::isVector(xShapeBuffer, 2)) {
+                        T max = 0;
+                        T sum = 0;
 
-			int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-			int length = shape::length(xShapeBuffer);
-			if (elementWiseStride == 1) {
+                        int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                        int length = shape::length(xShapeBuffer);
+                        if (elementWiseStride == 1) {
 #pragma omp parallel for shared(max)
                             for (int i = 0; i < length; i++) {
 #pragma omp critical
@@ -4398,64 +4394,64 @@ namespace functions {
 #endif
 
 
-	/**
-	 * CPU operation execution
-	 * @param dx the input data
-	 * @param xStride the stride to iterate over
-	 * the x input
-	 * @param y the y data
-	 * @param yStride the stride to iterate
-	 * over the y buffer
-	 * @param result the buffer
-	 * to store the result in
-	 * @param resultStride the stride for the buffer
-	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
-	 */
-	virtual void execSpecial(
-			T *dx,
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
                         int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
                         T *extraParams) override {
-		if (shape::isMatrix(xShapeBuffer, 2)) {
-                        const int *shape = shape::shapeOf(xShapeBuffer);
+                    if (shape::isMatrix(xShapeBuffer, 2)) {
+                        int *shape = shape::shapeOf(xShapeBuffer);
 
-			int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
+                        int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
-			//iterate along rows
-			int dimension[1] = {0};
-			int maxDimension[1] = {1};
-			int len = shape::length(xShapeBuffer);
-			//compute the row wise maxes
-			functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
-			std::vector <T> maxResult(shape[0]);
+                        //iterate along rows
+                        int dimension[1] = {0};
+                        int maxDimension[1] = {1};
+                        int len = shape::length(xShapeBuffer);
+                        //compute the row wise maxes
+                        functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
+                        std::vector <T> maxResult(shape[0]);
 #pragma omp parallel for
-			for (int i = 0; i < shape[0]; i++)
-				maxResult[i] = 0.0;
-			int maxShape[2] = {shape[0], 1};
-			int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-			max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        for (int i = 0; i < shape[0]; i++)
+                            maxResult[i] = 0.0;
+                        int maxShape[2] = {shape[0], 1};
+                        int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
-			//subtract max of each row
-			functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
+                        //subtract max of each row
+                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
                         sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
-			//after subtracting the row wise maxes take the exp
-			functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
-			exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
+                        //after subtracting the row wise maxes take the exp
+                        functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
+                        exp->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
-			//take the sum for the exponential
-			functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-			sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-					1);
+                        //take the sum for the exponential
+                        functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
+                                  1);
 
-			//divide by the sum
-			functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
+                        //divide by the sum
+                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
                         div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
-			if (resultEleStide >= 1) {
-				if (resultEleStide == 1) {
+                        if (resultEleStide >= 1) {
+                            if (resultEleStide == 1) {
 #pragma omp parallel for
                                 for (int i = 0; i < len; i++) {
                                     result[i] = result[i] * (1 - result[i]);
@@ -4831,13 +4827,11 @@ namespace functions {
                                                           xStridesIter,
                                                           &result,
                                                           resultStridesIter) >= 0) {
-                                T *maxCursor = result;
                                 T value = dx[0];
                                 int idx = 0;
                                 int maxIdx = 0;
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                     if(dx[0] > value) {
-                                        maxCursor = result;
                                         value = dx[0];
                                         maxIdx = idx;
                                     }
@@ -4858,8 +4852,8 @@ namespace functions {
 
                                 //pointer to where max value would be
                                 if(shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
-                                                                             maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-                                                                             shape::length(resultShapeBuffer)))
+                                                                              maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
+                                                                              shape::length(resultShapeBuffer)))
                                     originalResult[maxIdx] = 1.0;
                                 else
                                     originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
@@ -4882,7 +4876,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams) {
-		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
+		if(extraParams == NULL || extraParams[0] == MAX_DIMENSION) {
 			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
@@ -4936,28 +4930,28 @@ namespace functions {
 	}
 #endif
 
-	/**
-	 * CPU operation execution
-	 * @param dx the input data
-	 * @param xStride the stride to iterate over
-	 * the x input
-	 * @param y the y data
-	 * @param yStride the stride to iterate
-	 * over the y buffer
-	 * @param result the buffer
-	 * to store the result in
-	 * @param resultStride the stride for the buffer
-	 * @param extraParams the extra parameters for the transform
-	 * @param n the length of the input
-	 */
-	virtual void execSpecial(
-			T *dx,
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
                     if (extraParams == NULL || extraParams[0] == 0 ||
-                        extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
+                        extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
                         this->doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
                     }
                     else if(shape::isVector(xShapeBuffer)) {
@@ -5147,15 +5141,15 @@ namespace functions {
                     }
                 }
 
-         /**
-	 * The op for transforms
-	 * @param d1
-	 * @param params
-	 * @return
-	 */
-	virtual
+                /**
+            * The op for transforms
+            * @param d1
+            * @param params
+            * @return
+            */
+                virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+                inline __host__  __device__
 
 #elif defined(__GNUC__)
 

@@ -638,7 +638,7 @@ struct SharedSummaryStatsData<double> {
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -652,7 +652,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension != NULL && dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension != NULL && dimension[0] != MAX_DIMENSION) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -700,8 +700,8 @@ struct SharedSummaryStatsData<double> {
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
-							&dimension,
-							&dimensionLength,
+							dimension,
+							dimensionLength,
 							&squeezed,
 							&newSqueezeDimensions,
 							wholeRank,
@@ -856,7 +856,7 @@ struct SharedSummaryStatsData<double> {
     			int *ind2sub = (int *) malloc(sizeof(int) * rank);
 #pragma unroll
 	    		for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-    				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
+    				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
                     int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
     				SummaryStatsData <T> indexVal2;
 					indexVal2.initWithValue(dx[offset]);

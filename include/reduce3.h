@@ -312,7 +312,7 @@ public:
 
 #pragma unroll
 			for(unsigned int i = blockIdx.x * gridDim.x + threadIdx.x;i < n; i += gridDim.x * blockDim.x) {
-				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&idx);
+				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
 				Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 				Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
 				sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
@@ -393,7 +393,7 @@ public:
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -467,8 +467,8 @@ public:
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 								inputShapeInfo,
-								&dimension,
-								&dimensionLength,
+								dimension,
+								dimensionLength,
 								&squeezed,
 								&newSqueezeDimensions,
 								wholeRank,

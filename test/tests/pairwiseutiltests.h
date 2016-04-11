@@ -132,16 +132,16 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistance) {
 
 TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
     int shapeArr[2] = {2,2};
-    constexpr size_t rank = 2;
-    constexpr size_t length = 4;
+    constexpr int rank = 2;
+    constexpr int length = 4;
 
     double data[length];
     double yData[length];
 
-    for(size_t i = 0; i < length; i++)
+    for(int i = 0; i < length; i++)
         data[i] = i + 1;
 
-    for(size_t i = 0; i < length; i++) {
+    for(int i = 0; i < length; i++) {
         yData[i] = i + 1;
     }
 
@@ -154,7 +154,7 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
     resultShape[0] = 1;
     resultShape[1] = 2;
 
-    constexpr size_t dimensionLength = 1;
+    constexpr int dimensionLength = 1;
     int dimension[dimensionLength];
     dimension[0] = 0;
 
@@ -168,7 +168,7 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
 }
 
 TEST(PairWiseUtil,IterationTwo) {
-    constexpr size_t RANK = 3;
+    constexpr int RANK = 3;
 
     int shapeIter[MAX_RANK];
     int coord[MAX_RANK];

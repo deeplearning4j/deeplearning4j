@@ -40,799 +40,782 @@
 class ND4J_EXPORT NativeOps {
 
 
-        public:
-        /**
-           *
-           * @param opNum
-           * @param x
-           * @param xShapeInfo
-           * @param extraParams
-           */
-        double   execIndexReduceScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams);
+public:
+    /**
+       *
+       * @param opNum
+       * @param x
+       * @param xShapeInfo
+       * @param extraParams
+       */
+    double   execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                                         Nd4jPointer x,
+                                         Nd4jPointer xShapeInfo,
+                                         Nd4jPointer extraParams);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execIndexReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension, int dimensionLength);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execBroadcastDouble(
-        Nd4jPointer *extraPointers,
-        OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer dimension, int dimensionLength);
-
-
-
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xStride
-         * @param y
-         * @param yStride
-         * @param result
-         * @param resultStride
-         * @param extraParams
-         * @param n
-         */
-        void   execPairwiseTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        int xStride,
-        Nd4jPointer y,
-        int yStride,
-        Nd4jPointer result,
-        int resultStride,
-        Nd4jPointer extraParams, Nd4jIndex n);
-
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         * @param xIndexes
-         * @param yIndexes
-         * @param resultIndexes
-         */
-        void execPairwiseTransformDouble(Nd4jPointer *extraPointers,
-        OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer xIndexes,
-        Nd4jPointer yIndexes,
-        Nd4jPointer resultIndexes);
-
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void execPairwiseTransformDouble(
-        Nd4jPointer *extraPointers,
-        OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer  xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer  yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer  resultShapeInfo,
-        Nd4jPointer extraParams);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduceDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer dimension,int dimensionLength);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @return
-         */
-        double execReduceScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduce3Double(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         */
-        double   execReduce3ScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execReduce3Double(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension,
-        int dimensionLength);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xStride
-         * @param result
-         * @param resultStride
-         * @param scalar
-         * @param extraParams
-         * @param n
-         */
-        void   execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        int xStride,
-        Nd4jPointer result,
-        int resultStride,
-        double scalar,
-        Nd4jPointer extraParams,
-        Nd4jIndex n);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param scalar
-         * @param extraParams
-         * @param n
-         */
-        void execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        double scalar,
-        Nd4jPointer extraParams);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param scalar
-         * @param extraParams
-         * @param n
-         * @param xIndexes
-         * @param resultIndexes
-         */
-        void execScalarDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        double scalar,
-        Nd4jPointer extraParams,
-        Nd4jIndex n,
-        Nd4jPointer xIndexes,
-        Nd4jPointer resultIndexes);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         */
-        double   execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execSummaryStatsDouble(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xStride
-         * @param result
-         * @param resultStride
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        int xStride,
-        Nd4jPointer result,
-        int resultStride,
-        Nd4jPointer extraParams, Nd4jIndex n);
-
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams);
-
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformDouble(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer xIndexes,
-        Nd4jPointer resultIndexes);
-
-        /**
-        *
-        * @param opNum
-        * @param x
-        * @param xShapeInfo
-        * @param extraParams
-        */
-        float   execIndexReduceScalarFloat(Nd4jPointer *extraPointers,
-        OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams);
-
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execIndexReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension, int dimensionLength);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execBroadcastFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer dimension, int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
+                                 Nd4jPointer x,
+                                 Nd4jPointer xShapeInfo,
+                                 Nd4jPointer extraParams,
+                                 Nd4jPointer result,
+                                 Nd4jPointer resultShapeInfoBuffer,
+                                 int *dimension, int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execBroadcastDouble(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            Nd4jPointer x,
+            Nd4jPointer xShapeInfo,
+            Nd4jPointer y,
+            Nd4jPointer yShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            int *dimension, int dimensionLength);
 
 
 
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xStride
-         * @param y
-         * @param yStride
-         * @param result
-         * @param resultStride
-         * @param extraParams
-         * @param n
-         */
-        void   execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        int xStride,
-        Nd4jPointer y,
-        int yStride,
-        Nd4jPointer result,
-        int resultStride,
-        Nd4jPointer extraParams, Nd4jIndex n);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xStride
+     * @param y
+     * @param yStride
+     * @param result
+     * @param resultStride
+     * @param extraParams
+     * @param n
+     */
+    void   execPairwiseTransformDouble(Nd4jPointer *extraPointers,int opNum,
+                                       Nd4jPointer dx,
+                                       int xStride,
+                                       Nd4jPointer y,
+                                       int yStride,
+                                       Nd4jPointer result,
+                                       int resultStride,
+                                       Nd4jPointer extraParams, Nd4jIndex n);
 
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         * @param xIndexes
-         * @param yIndexes
-         * @param resultIndexes
-         */
-        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer xIndexes,
-        Nd4jPointer yIndexes,
-        Nd4jPointer resultIndexes);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    void execPairwiseTransformDouble(Nd4jPointer *extraPointers,
+                                     int opNum,
+                                     Nd4jPointer dx,
+                                     Nd4jPointer xShapeInfo,
+                                     Nd4jPointer y,
+                                     Nd4jPointer yShapeInfo,
+                                     Nd4jPointer result,
+                                     Nd4jPointer resultShapeInfo,
+                                     Nd4jPointer extraParams,
+                                     Nd4jPointer xIndexes,
+                                     Nd4jPointer yIndexes,
+                                     Nd4jPointer resultIndexes);
 
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void execPairwiseTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer  xShapeInfo,
-        Nd4jPointer y,
-        Nd4jPointer  yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer  resultShapeInfo,
-        Nd4jPointer extraParams);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void execPairwiseTransformDouble(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            Nd4jPointer dx,
+            Nd4jPointer  xShapeInfo,
+            Nd4jPointer y,
+            Nd4jPointer  yShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer  resultShapeInfo,
+            Nd4jPointer extraParams);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduceDouble(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParams,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfo);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduceFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer dimension,int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduceDouble(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParams,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfo,
+                            int *dimension,int dimensionLength);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @return
-         */
-        float execReduceScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @return
+     */
+    double execReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                                  Nd4jPointer x,
+                                  Nd4jPointer xShapeInfo,
+                                  Nd4jPointer extraParams);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execReduce3Float(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduce3Double(Nd4jPointer *extraPointers,int opNum,
+                             Nd4jPointer x,
+                             Nd4jPointer xShapeInfo,
+                             Nd4jPointer extraParamsVals,
+                             Nd4jPointer y,
+                             Nd4jPointer yShapeInfo,
+                             Nd4jPointer result,
+                             Nd4jPointer resultShapeInfo);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         */
-        float   execReduce3ScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParamsVals
-         * @param y
-         * @param yShapeInfo
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execReduce3Float(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParamsVals,
-        Nd4jPointer y,
-        Nd4jPointer yShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension,
-        int dimensionLength);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xStride
-         * @param result
-         * @param resultStride
-         * @param scalar
-         * @param extraParams
-         * @param n
-         */
-        void   execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        int xStride,
-        Nd4jPointer result,
-        int resultStride,
-        double scalar,
-        Nd4jPointer extraParams,
-        Nd4jIndex n);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     */
+    double   execReduce3ScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                                     Nd4jPointer x,
+                                     Nd4jPointer xShapeInfo,
+                                     Nd4jPointer extraParamsVals,
+                                     Nd4jPointer y,
+                                     Nd4jPointer yShapeInfo);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execReduce3Double(Nd4jPointer *extraPointers,int opNum,
+                             Nd4jPointer x,
+                             Nd4jPointer xShapeInfo,
+                             Nd4jPointer extraParamsVals,
+                             Nd4jPointer y,
+                             Nd4jPointer yShapeInfo,
+                             Nd4jPointer result,
+                             Nd4jPointer resultShapeInfoBuffer,
+                             int *dimension,
+                             int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    void   execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            int xStride,
+                            Nd4jPointer result,
+                            int resultStride,
+                            double scalar,
+                            Nd4jPointer extraParams,
+                            Nd4jIndex n);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param scalar
-         * @param extraParams
-         * @param n
-         */
-        void execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        float scalar,
-        Nd4jPointer extraParams);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                          Nd4jPointer x,
+                          Nd4jPointer xShapeInfo,
+                          Nd4jPointer result,
+                          Nd4jPointer resultShapeInfo,
+                          double scalar,
+                          Nd4jPointer extraParams);
 
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param scalar
-         * @param extraParams
-         * @param n
-         * @param xIndexes
-         * @param resultIndexes
-         */
-        void execScalarFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        double scalar,
-        Nd4jPointer extraParams,
-        Nd4jPointer xIndexes,
-        Nd4jPointer resultIndexes);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         */
-        float   execSummaryStatsScalarFloat(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfo
-         */
-        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param x
-         * @param xShapeInfo
-         * @param extraParams
-         * @param result
-         * @param resultShapeInfoBuffer
-         * @param dimension
-         * @param dimensionLength
-         */
-        void   execSummaryStatsFloat(Nd4jPointer *extraPointers,OpType opNum,Nd4jPointer x,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfoBuffer,
-        Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xStride
-         * @param result
-         * @param resultStride
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        int xStride,
-        Nd4jPointer result,
-        int resultStride,
-        Nd4jPointer extraParams, Nd4jIndex n);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param resultIndexes
+     */
+    void execScalarDouble(Nd4jPointer *extraPointers,int opNum,
+                          Nd4jPointer x,
+                          Nd4jPointer xShapeInfo,
+                          Nd4jPointer result,
+                          Nd4jPointer resultShapeInfo,
+                          double scalar,
+                          Nd4jPointer extraParams,
+                          Nd4jIndex n,
+                          Nd4jPointer xIndexes,
+                          Nd4jPointer resultIndexes);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     */
+    double   execSummaryStatsScalarDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                          Nd4jPointer xShapeInfo,
+                                          Nd4jPointer extraParams,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,
+                                  Nd4jPointer x,
+                                  Nd4jPointer xShapeInfo,
+                                  Nd4jPointer extraParams,
+                                  Nd4jPointer result,
+                                  Nd4jPointer resultShapeInfo,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execSummaryStatsDouble(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                  Nd4jPointer xShapeInfo,
+                                  Nd4jPointer extraParams,
+                                  Nd4jPointer result,
+                                  Nd4jPointer resultShapeInfoBuffer,
+                                  int *dimension, int dimensionLength,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+                               Nd4jPointer dx,
+                               int xStride,
+                               Nd4jPointer result,
+                               int resultStride,
+                               Nd4jPointer extraParams, Nd4jIndex n);
 
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+                               Nd4jPointer dx,
+                               Nd4jPointer xShapeInfo,
+                               Nd4jPointer result,
+                               Nd4jPointer resultShapeInfo,
+                               Nd4jPointer extraParams);
 
-        /**
-         *
-         * @param opNum
-         * @param dx
-         * @param xShapeInfo
-         * @param result
-         * @param resultShapeInfo
-         * @param extraParams
-         * @param n
-         */
-        void   execTransformFloat(Nd4jPointer *extraPointers,OpType opNum,
-        Nd4jPointer dx,
-        Nd4jPointer xShapeInfo,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer extraParams,
-        Nd4jPointer xIndexes,
-        Nd4jPointer resultIndexes);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformDouble(Nd4jPointer *extraPointers,int opNum,
+                               Nd4jPointer dx,
+                               Nd4jPointer xShapeInfo,
+                               Nd4jPointer result,
+                               Nd4jPointer resultShapeInfo,
+                               Nd4jPointer extraParams,
+                               Nd4jPointer xIndexes,
+                               Nd4jPointer resultIndexes);
 
-
-        /**
-    * Append an input array
-    * to the end of a flat array
-    * in a particular order
-    * @param offset the offset of the array to start at
-    * @param order the order
-    * @param result the result array
-    * @param resultShapeInfo the shape info for te array
-    * @param input the input for the array
-    * @param inputShapeInfo the shape information for that array
+    /**
+    *
+    * @param opNum
+    * @param x
+    * @param xShapeInfo
+    * @param extraParams
     */
-        void flattenFloat(
-        Nd4jPointer *extraPointers,
-        int offset,
-        char order,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer input,
-        Nd4jPointer inputShapeInfo);
+    float   execIndexReduceScalarFloat(Nd4jPointer *extraPointers,
+                                       int opNum,
+                                       Nd4jPointer x,
+                                       Nd4jPointer xShapeInfo,
+                                       Nd4jPointer extraParams);
 
-        /**
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execIndexReduceFloat(Nd4jPointer *extraPointers,int opNum,
+                                Nd4jPointer x,
+                                Nd4jPointer xShapeInfo,
+                                Nd4jPointer extraParams,
+                                Nd4jPointer result,
+                                Nd4jPointer resultShapeInfoBuffer,
+                                int *dimension, int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execBroadcastFloat(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            Nd4jPointer x,
+            Nd4jPointer xShapeInfo,
+            Nd4jPointer y,
+            Nd4jPointer yShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            int *dimension, int dimensionLength);
+
+
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xStride
+     * @param y
+     * @param yStride
+     * @param result
+     * @param resultStride
+     * @param extraParams
+     * @param n
+     */
+    void   execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                                      Nd4jPointer dx,
+                                      int xStride,
+                                      Nd4jPointer y,
+                                      int yStride,
+                                      Nd4jPointer result,
+                                      int resultStride,
+                                      Nd4jPointer extraParams, Nd4jIndex n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param yIndexes
+     * @param resultIndexes
+     */
+    void execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                                    Nd4jPointer dx,
+                                    Nd4jPointer xShapeInfo,
+                                    Nd4jPointer y,
+                                    Nd4jPointer yShapeInfo,
+                                    Nd4jPointer result,
+                                    Nd4jPointer resultShapeInfo,
+                                    Nd4jPointer extraParams,
+                                    Nd4jPointer xIndexes,
+                                    Nd4jPointer yIndexes,
+                                    Nd4jPointer resultIndexes);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void execPairwiseTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                                    Nd4jPointer dx,
+                                    Nd4jPointer  xShapeInfo,
+                                    Nd4jPointer y,
+                                    Nd4jPointer  yShapeInfo,
+                                    Nd4jPointer result,
+                                    Nd4jPointer  resultShapeInfo,
+                                    Nd4jPointer extraParams);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduceFloat(Nd4jPointer *extraPointers,int opNum,
+                           Nd4jPointer x,
+                           Nd4jPointer xShapeInfo,
+                           Nd4jPointer extraParams,
+                           Nd4jPointer result,
+                           Nd4jPointer resultShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduceFloat(Nd4jPointer *extraPointers,int opNum,
+                           Nd4jPointer x,
+                           Nd4jPointer xShapeInfo,
+                           Nd4jPointer extraParams,
+                           Nd4jPointer result,
+                           Nd4jPointer resultShapeInfo,
+                           int *dimension,int dimensionLength);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @return
+     */
+    float execReduceScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                                Nd4jPointer x,
+                                Nd4jPointer xShapeInfo,
+                                Nd4jPointer extraParams);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execReduce3Float(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParamsVals,
+                            Nd4jPointer y,
+                            Nd4jPointer yShapeInfo,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     */
+    float   execReduce3ScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                                   Nd4jPointer x,
+                                   Nd4jPointer xShapeInfo,
+                                   Nd4jPointer extraParamsVals,
+                                   Nd4jPointer y,
+                                   Nd4jPointer yShapeInfo);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execReduce3Float(Nd4jPointer *extraPointers,int opNum,
+                            Nd4jPointer x,
+                            Nd4jPointer xShapeInfo,
+                            Nd4jPointer extraParamsVals,
+                            Nd4jPointer y,
+                            Nd4jPointer yShapeInfo,
+                            Nd4jPointer result,
+                            Nd4jPointer resultShapeInfoBuffer,
+                            int *dimension,
+                            int dimensionLength);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    void   execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                           Nd4jPointer x,
+                           int xStride,
+                           Nd4jPointer result,
+                           int resultStride,
+                           double scalar,
+                           Nd4jPointer extraParams,
+                           Nd4jIndex n);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                         Nd4jPointer x,
+                         Nd4jPointer xShapeInfo,
+                         Nd4jPointer result,
+                         Nd4jPointer resultShapeInfo,
+                         float scalar,
+                         Nd4jPointer extraParams);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param scalar
+     * @param extraParams
+     * @param n
+     * @param xIndexes
+     * @param resultIndexes
+     */
+    void execScalarFloat(Nd4jPointer *extraPointers,int opNum,
+                         Nd4jPointer x,
+                         Nd4jPointer xShapeInfo,
+                         Nd4jPointer result,
+                         Nd4jPointer resultShapeInfo,
+                         double scalar,
+                         Nd4jPointer extraParams,
+                         Nd4jPointer xIndexes,
+                         Nd4jPointer resultIndexes);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     */
+    float   execSummaryStatsScalarFloat(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                        Nd4jPointer xShapeInfo,
+                                        Nd4jPointer extraParams,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    void   execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,
+                                 Nd4jPointer x,
+                                 Nd4jPointer xShapeInfo,
+                                 Nd4jPointer extraParams,
+                                 Nd4jPointer result,
+                                 Nd4jPointer resultShapeInfo,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    void   execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,Nd4jPointer x,
+                                 Nd4jPointer xShapeInfo,
+                                 Nd4jPointer extraParams,
+                                 Nd4jPointer result,
+                                 Nd4jPointer resultShapeInfoBuffer,
+                                 int *dimension, int dimensionLength,bool biasCorrected);
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              int xStride,
+                              Nd4jPointer result,
+                              int resultStride,
+                              Nd4jPointer extraParams, Nd4jIndex n);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              Nd4jPointer xShapeInfo,
+                              Nd4jPointer result,
+                              Nd4jPointer resultShapeInfo,
+                              Nd4jPointer extraParams);
+
+    /**
+     *
+     * @param opNum
+     * @param dx
+     * @param xShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param extraParams
+     * @param n
+     */
+    void   execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                              Nd4jPointer dx,
+                              Nd4jPointer xShapeInfo,
+                              Nd4jPointer result,
+                              Nd4jPointer resultShapeInfo,
+                              Nd4jPointer extraParams,
+                              Nd4jPointer xIndexes,
+                              Nd4jPointer resultIndexes);
+
+
+    /**
 * Append an input array
 * to the end of a flat array
 * in a particular order
@@ -843,55 +826,75 @@ class ND4J_EXPORT NativeOps {
 * @param input the input for the array
 * @param inputShapeInfo the shape information for that array
 */
-        void flattenDouble(
-        Nd4jPointer *extraPointers,
-        int offset,
-        char order,
-        Nd4jPointer result,
-        Nd4jPointer resultShapeInfo,
-        Nd4jPointer input,
-        Nd4jPointer inputShapeInfo);
+    void flattenFloat(
+            Nd4jPointer *extraPointers,
+            int offset,
+            char order,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            Nd4jPointer input,
+            Nd4jPointer inputShapeInfo);
 
-        /**
-         * This method implementation exists only for cuda.
-         * The other backends should have dummy method for JNI compatibility reasons.
-         */
-        void initializeDevicesAndFunctions();
+    /**
+* Append an input array
+* to the end of a flat array
+* in a particular order
+* @param offset the offset of the array to start at
+* @param order the order
+* @param result the result array
+* @param resultShapeInfo the shape info for te array
+* @param input the input for the array
+* @param inputShapeInfo the shape information for that array
+*/
+    void flattenDouble(
+            Nd4jPointer *extraPointers,
+            int offset,
+            char order,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo,
+            Nd4jPointer input,
+            Nd4jPointer inputShapeInfo);
+
+    /**
+     * This method implementation exists only for cuda.
+     * The other backends should have dummy method for JNI compatibility reasons.
+     */
+    void initializeDevicesAndFunctions();
 
 
-        /**
-         * This method acquires memory chunk of requested size on host side
-         *
-         * @param pointer pointer that'll be used for allocation
-         * @param memorySize memory size, in bytes
-         * @param flags optional parameter
-         */
-        Nd4jPointer mallocHost(long memorySize, int flags);
+    /**
+     * This method acquires memory chunk of requested size on host side
+     *
+     * @param pointer pointer that'll be used for allocation
+     * @param memorySize memory size, in bytes
+     * @param flags optional parameter
+     */
+    Nd4jPointer mallocHost(long memorySize, int flags);
 
-        /**
-         * This method acquires memory chunk of requested size on specified device
-         *
-         * @param pointer pointer that'll be used for allocation
-         * @param memorySize memory size, in bytes
-         * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
-         * @param flags optional parameter
-         */
-        Nd4jPointer mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags);
+    /**
+     * This method acquires memory chunk of requested size on specified device
+     *
+     * @param pointer pointer that'll be used for allocation
+     * @param memorySize memory size, in bytes
+     * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
+     * @param flags optional parameter
+     */
+    Nd4jPointer mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags);
 
-        /**
-         * This method releases previously allocated host memory space
-         *
-         * @param pointer pointer that'll be freed
-         */
-        Nd4jPointer freeHost(Nd4jPointer pointer);
+    /**
+     * This method releases previously allocated host memory space
+     *
+     * @param pointer pointer that'll be freed
+     */
+    Nd4jPointer freeHost(Nd4jPointer pointer);
 
-        /**
-         * This method releases previously allocated memory space on device
-         *
-         * @param pointer pointer that'll be freed
-         * @param ptrToDeviceId pointer to deviceId.
-         */
-        Nd4jPointer freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
+    /**
+     * This method releases previously allocated memory space on device
+     *
+     * @param pointer pointer that'll be freed
+     * @param ptrToDeviceId pointer to deviceId.
+     */
+    Nd4jPointer freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
 };
 
 

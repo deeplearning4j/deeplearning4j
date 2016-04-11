@@ -714,7 +714,7 @@ bool check(T result, char const *const func, const char *const file, int const l
 // This will output the proper error string when calling cudaGetLastError
 #define getLastCudaError(msg)      __getLastCudaError (msg, __FILE__, __LINE__)
 
-inline void __getLastCudaError(const char *errorMessage, const char *file, const int line)
+inline void __getLastCudaError(const char *errorMessage, const char *file, int line)
 {
 	cudaError_t err = cudaGetLastError();
 

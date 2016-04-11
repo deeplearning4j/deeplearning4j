@@ -30,8 +30,8 @@ template <typename T>
 static Data<T> * getDataReduce3(const T assertion[1], T startingVal) {
     Data<T> *ret = new Data<T>();
 
-    constexpr size_t rank = 2;
-    constexpr size_t length = 4;
+    constexpr int rank = 2;
+    constexpr int length = 4;
 
     int *shape = new int[rank];
     shape[0] = 1;
@@ -60,7 +60,7 @@ static Data<T> * getDataReduce3(const T assertion[1], T startingVal) {
     }
 
     ret->dimension = new int[rank];
-    ret->dimension[0] = shape::MAX_DIMENSION;
+    ret->dimension[0] = MAX_DIMENSION;
     ret->dimensionLength = 1;
     ret->result = new T;
     ret->resultRank = 2;

@@ -16,8 +16,8 @@
 #include "optype.h"
 
 template<typename T>
-inline int arrsEquals(size_t rank, const T comp1[], const T comp2[]) {
-    for (size_t i = 0; i < rank; i++) {
+inline int arrsEquals(int rank, const T comp1[], const T comp2[]) {
+    for (int i = 0; i < rank; i++) {
         DOUBLES_EQUAL(comp1[i],comp2[i],1e-1);
     }
 
@@ -100,7 +100,7 @@ inline int *shapeBuffer(int rank, int *shape) {
     return shapeInfoBuffer;
 }
 
-inline void assertBufferProperties(const int *shapeBuffer) {
+inline void assertBufferProperties(int *shapeBuffer) {
     CHECK(shape::rank(shapeBuffer) >= 2);
     CHECK(shape::length(shapeBuffer) >= 1);
     CHECK(shape::elementWiseStride(shapeBuffer) >= 1);
@@ -131,7 +131,7 @@ class BaseTest {
 public:
     BaseTest() {
     }
-    BaseTest(int rank, OpType opNum,Data<T> *data,int extraParamsLength) {
+    BaseTest(int rank, int opNum,Data<T> *data,int extraParamsLength) {
         this->rank = rank;
         this->baseData = data;
         this->opNum = opNum;
@@ -167,7 +167,7 @@ protected:
     int sMemSize = 3000;
     nd4j::buffer::Buffer<T> *extraParamsBuff = NULL;
     int length;
-    OpType opNum;
+    int opNum;
     int extraParamsLength;
     virtual void executeCudaKernel() = 0;
     virtual void execCpuKernel() = 0;
@@ -224,7 +224,7 @@ public:
     PairWiseTest() {
     }
     //BaseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-    PairWiseTest(int rank, OpType opNum, Data<T> *data, int extraParamsLength)
+    PairWiseTest(int rank, int opNum, Data<T> *data, int extraParamsLength)
             :BaseTest<T>(rank,opNum,data,extraParamsLength)  {
         init();
     }
@@ -245,8 +245,8 @@ template <typename T>
 class TwoByTwoTest : public BaseTest<T> {
 public:
     virtual ~TwoByTwoTest() {}
-    TwoByTwoTest(int rank, OpType opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(rank,opNum,data,extraParamsLength) {}
-    TwoByTwoTest(OpType opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(2,opNum,data,extraParamsLength) {}
+    TwoByTwoTest(int rank, int opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(rank,opNum,data,extraParamsLength) {}
+    TwoByTwoTest(int opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(2,opNum,data,extraParamsLength) {}
     virtual void initShape() override {
         for(int i = 0; i < 2; i++) {
             this->shape[i] = 2;
