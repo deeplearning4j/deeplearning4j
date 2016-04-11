@@ -133,11 +133,13 @@ namespace functions {
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *allocationBuffer) {
+			int *allocationBuffer, T *reductionBuffer) {
 		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 		int n = shape::length(xShapeInfo);
 
+		if (threadIdx.x == 0)
+			printf("Starting scalarReduce block: [%i]\n", blockIdx.x);
 
 		int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -146,21 +148,21 @@ namespace functions {
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		for(int i = threadIdx.x; i < numElements; i+= blockDim.x)
+		for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
 			sPartials[i] = init;
 		__syncthreads();
 
 		if(elementWiseStride >= 1) {
 			if(elementWiseStride == 1) {
 #pragma unroll
-				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
+				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams);
 				}
 			}
 			else {
 #pragma unroll
-				for(int i = elementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
+				for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams);
 				}
 			}
 		}
@@ -169,7 +171,7 @@ namespace functions {
 			long allocSize = sizeof(int) * rank;
 			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
-			for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+			for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				__syncthreads();
@@ -182,13 +184,63 @@ namespace functions {
 
 				__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
-			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
+			aggregatePartials(sPartialsRef, threadIdx.x, numElements,extraParams);
 
 
 			__syncthreads();
-			// write result for this block to global mem
-			if (tid == 0) {
-				result[0] = this->postProcess(sPartials[0],n,extraParams);
+			// if we have blocks > 1, we'll do blockwise reduce
+			if (gridDim.x > 1) {
+				/*
+			 	at this point we have everything stored at sPartials[0]
+				 so, we just need to store our partials result
+				*/
+				int rank = shape::rank(xShapeInfo);
+				if (threadIdx.x == 0) {
+					reductionBuffer[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+
+					// we mark this block as finished
+					allocationBuffer[tid * rank] = 119120121;
+				}
+
+				if (blockIdx.x == 0) {
+
+					// now we must ensure, that all other blocks are finished
+					__shared__ int finisher;
+					if (tid == 0)
+							finisher = 0;
+					__syncthreads();
+
+					while (finisher != gridDim.x) {
+						if (tid == 0)
+							finisher = 0;
+						__syncthreads();
+
+						if (threadIdx.x < gridDim.x) {
+							if (allocationBuffer[threadIdx.x * blockDim.x * rank] == 119120121) {
+								atomicAdd(&finisher, 1);
+								sPartials[threadIdx.x] =  reductionBuffer[threadIdx.x];
+							}
+						}
+						__syncthreads();
+					}
+
+					__syncthreads();
+
+					T **sPartialsRef = (T **) &sPartials;
+					aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x,extraParams);
+
+					__syncthreads();
+					// write result for this block to global mem
+					if (tid == 0) {
+						result[0] = this->postProcess(sPartials[0],n,extraParams);
+					}
+				}
+			} else {
+				__syncthreads();
+				// write result for this block to global mem
+				if (tid == 0) {
+					result[0] = this->postProcess(sPartials[0],n,extraParams);
+				}
 			}
 	}
 	/**
@@ -213,7 +265,7 @@ namespace functions {
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot,
-			int *allocationBuffer) {
+			int *allocationBuffer,T *reductionBuffer) {
 
 		/**
 		 * Gpu information for the problem
@@ -447,7 +499,7 @@ namespace functions {
 					extraParams,
 					result,
 					resultShapeInfo,
-					allocationBuffer);
+					allocationBuffer, reductionBuffer);
 		}
 	}
 
@@ -1818,7 +1870,7 @@ __global__ void reduceGenericGlobal(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, T *reductionBuffer) {
 
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
@@ -1839,7 +1891,7 @@ __global__ void reduceGenericGlobal(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1874,7 +1926,7 @@ __device__ void reduceGeneric(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
@@ -1894,7 +1946,7 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1928,7 +1980,7 @@ extern "C" __global__ void reduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, double *reductionBuffer) {
 	reduceGeneric<double>(
 			op,
 			dx,
@@ -1939,7 +1991,7 @@ extern "C" __global__ void reduceDouble(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 }
 
@@ -1967,7 +2019,8 @@ extern "C" __global__ void reduceFloat(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer
+		int *allocationBuffer,
+		float *reductionBuffer
 		) {
 	reduceGeneric<float>(
 			op,
@@ -1979,7 +2032,7 @@ extern "C" __global__ void reduceFloat(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 }
 
 
