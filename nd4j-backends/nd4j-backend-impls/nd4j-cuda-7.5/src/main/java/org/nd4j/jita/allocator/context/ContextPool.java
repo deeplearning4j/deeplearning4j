@@ -217,11 +217,11 @@ public class ContextPool {
     private void getDeviceBuffers(CudaContext context, int deviceId) {
         NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
-        long  reductionPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
+        long  reductionPointer = nativeOps.mallocDevice(32 * 1024 * 1024, deviceId, 0);
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        long  allocationPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
+        long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 

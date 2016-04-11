@@ -4,10 +4,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -490,5 +493,21 @@ public class CudaTransformsTests {
         //assertEquals(exp, zOutFF);  //pass
         //assertEquals(exp, zOutCC);  //pass
         //assertEquals(exp, zOutCF);  //fails
+    }
+
+    @Test
+    public void testCol2Im2() {
+        int kh = 1;
+        int kw = 1;
+        int sy = 1;
+        int sx = 1;
+        int ph = 1;
+        int pw = 1;
+        INDArray linspaced = Nd4j.linspace(1,64,64).reshape(2,2,2,2,2,2);
+        INDArray newTest = Convolution.col2im(linspaced,sy,sx,ph,pw,2,2);
+        INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,2,2);
+
+        System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
+        assertEquals(assertion,newTest);
     }
 }
