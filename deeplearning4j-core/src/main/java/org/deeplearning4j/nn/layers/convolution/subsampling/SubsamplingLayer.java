@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.convolution.Convolution;
@@ -85,31 +87,51 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         switch(layerConf().getPoolingType()) {
             case MAX:
-                int n = epsilon.size(0);
-                int c = epsilon.size(1);
-                int outH = epsilon.size(2);
-                int outW = epsilon.size(3);
-                //compute backwards kernel based on rearranging the given error
-                retE = Nd4j.zeros(n, c, layerConf().getKernelSize()[0], layerConf().getKernelSize()[1], outH, outW);
-                reshaped = retE.reshape(n, c, -1, outH, outW);
-                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
-                final INDArray finalEps = epsilon;
-                final INDArray reshapedEps = reshapeEpsilon;
 
-                NdIndexIterator iter = new NdIndexIterator(maxIndexes.shape());
-                while(iter.hasNext()) {
-                    int[] i = iter.next();
-                    // recover the index to put epsilon on new shape
-                    int idx = maxIndexes.getInt(i);
-                    double epsGet = finalEps.getDouble(i);
-                    INDArrayIndex t = NDArrayIndex.point(idx);
-                    INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
-                    sliceToGetFrom.putScalar(i, epsGet);
-                }
+                //Approach here: do im2col, then IsMax, then broadcast muli
 
-                reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
-                return new Pair<>(retGradient,reshapeEpsilon);
+                //Shape: [numExamples,depth,kernelHeight,kernelWidth,outHeight,outWidth]
+                INDArray im2col = Convolution.im2col(input,layerConf().getKernelSize(),layerConf().getStride(),layerConf().getPadding());
+                int[] s6d = im2col.shape();
+
+                    //Assuming c order and sensible strides, we can treat the 6d matrix as 5d, and do IsMax along 1d, instead of on 2d...
+                INDArray im2col5d = im2col.reshape(im2col.ordering(), s6d[0], s6d[1], s6d[2]*s6d[3], s6d[4], s6d[5]);
+                Nd4j.getExecutioner().exec(new IsMax(im2col5d,2));
+
+                    //Broadcast muli of epsilons:
+                    //Shape of eps: [numExamples, depth, outH, outW]
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(im2col5d,epsilon,im2col5d,0,1,3,4));
+
+                //Do col2im
+                INDArray outEpsilon = Convolution.col2im(im2col,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
+                return new Pair<>(retGradient,outEpsilon);
+
+//                int n = epsilon.size(0);
+//                int c = epsilon.size(1);
+//                int outH = epsilon.size(2);
+//                int outW = epsilon.size(3);
+//                //compute backwards kernel based on rearranging the given error
+//                retE = Nd4j.zeros(n, c, layerConf().getKernelSize()[0], layerConf().getKernelSize()[1], outH, outW);
+//                reshaped = retE.reshape(n, c, -1, outH, outW);
+//                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
+//
+//                final INDArray finalEps = epsilon;
+//                final INDArray reshapedEps = reshapeEpsilon;
+//
+//                NdIndexIterator iter = new NdIndexIterator(maxIndexes.shape());
+//                while(iter.hasNext()) {
+//                    int[] i = iter.next();
+//                    // recover the index to put epsilon on new shape
+//                    int idx = maxIndexes.getInt(i);
+//                    double epsGet = finalEps.getDouble(i);
+//                    INDArrayIndex t = NDArrayIndex.point(idx);
+//                    INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
+//                    sliceToGetFrom.putScalar(i, epsGet);
+//                }
+//
+//                reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
+//                return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
                 retE = epsilon.get(
@@ -124,7 +146,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 return new Pair<>(retGradient, reshapeEpsilon);
             case NONE:
                 return new Pair<>(retGradient, epsilon);
-            default: throw new IllegalStateException("Un supported pooling type");
+            default: throw new IllegalStateException("Unsupported pooling type");
         }
     }
 
