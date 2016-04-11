@@ -190,8 +190,8 @@ public:
 
 			if (dx == result) {
 				for (; i < n; i += totalThreads) {
-					shape::ind2subC(xRank,xShape, i, &xCoord);
-					shape::ind2subC(yRank,yShape, i, &yCoord);
+					shape::ind2subC(xRank,xShape, i, xCoord);
+					shape::ind2subC(yRank,yShape, i, yCoord);
 
 					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
@@ -199,9 +199,9 @@ public:
 				}
 			} else {
 				for (; i < n; i += totalThreads) {
-					shape::ind2subC(xRank,xShape, i, &xCoord);
-					shape::ind2subC(yRank,yShape, i, &yCoord);
-					shape::ind2subC(resultRank,resultShape, i, &resultCoord);
+					shape::ind2subC(xRank,xShape, i, xCoord);
+					shape::ind2subC(yRank,yShape, i, yCoord);
+					shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
 					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);

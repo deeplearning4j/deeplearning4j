@@ -83,7 +83,7 @@ private:
 public:
 	ScalarShapeInformation(cudaStream_t stream) {
 		int *scalarDimensionBuff = (int *) malloc(sizeof(int));
-		scalarDimensionBuff[0] = shape::MAX_DIMENSION;
+		scalarDimensionBuff[0] = MAX_DIMENSION;
 		scalarDimension = nd4j::buffer::createBuffer(scalarDimensionBuff,1, stream);
 		scalarShapeInfo = createScalarBuffer(stream);
 		threadId = std::this_thread::get_id();
@@ -223,7 +223,7 @@ void   NativeOps::execIndexReduceDouble(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension, int dimensionLength) {
+		int *dimension, int dimensionLength) {
 	double *xPointer = reinterpret_cast<double *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
@@ -270,7 +270,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 		Nd4jPointer yShapeInfo,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
-		Nd4jPointer dimension, int dimensionLength){
+		int *dimension, int dimensionLength){
 	double *xPointer = reinterpret_cast<double *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	double *yPointer = reinterpret_cast<double *>(y);
@@ -507,7 +507,7 @@ void   NativeOps::execReduceDouble(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
-		Nd4jPointer dimension,
+		int *dimension,
 		int dimensionLength) {
 	double *xPointer = reinterpret_cast<double *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -694,7 +694,7 @@ void   NativeOps::execReduce3Double(
 		Nd4jPointer yShapeInfo,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension,
+		int *dimension,
 		int dimensionLength){
 	double *xPointer = reinterpret_cast<double *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -954,7 +954,7 @@ void   NativeOps::execSummaryStatsDouble(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension, int dimensionLength,bool biasCorrected){
+		int *dimension, int dimensionLength,bool biasCorrected){
 	double *xPointer = reinterpret_cast<double *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	double *resultPointer = reinterpret_cast<double *>(result);
@@ -1155,7 +1155,7 @@ void   NativeOps::execIndexReduceFloat(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension,
+		int *dimension,
 		int dimensionLength){
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -1203,7 +1203,7 @@ void   NativeOps::execBroadcastFloat(
 		Nd4jPointer yShapeInfo,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
-		Nd4jPointer dimension, int dimensionLength){
+		int  *dimension, int dimensionLength){
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *yPointer = reinterpret_cast<float *>(y);
@@ -1441,7 +1441,7 @@ void   NativeOps::execReduceFloat(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfo,
-		Nd4jPointer dimension,int dimensionLength){
+		int *dimension,int dimensionLength){
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
 	float *resultPointer = reinterpret_cast<float *>(result);
@@ -1629,7 +1629,7 @@ void   NativeOps::execReduce3Float(
 		Nd4jPointer yShapeInfo,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension,
+		int *dimension,
 		int dimensionLength){
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -1890,7 +1890,7 @@ void   NativeOps::execSummaryStatsFloat(
 		Nd4jPointer extraParams,
 		Nd4jPointer result,
 		Nd4jPointer resultShapeInfoBuffer,
-		Nd4jPointer dimension,
+		int *dimension,
 		int dimensionLength,bool biasCorrected){
 	float *xPointer = reinterpret_cast<float *>(x);
 	int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
@@ -2066,14 +2066,14 @@ __device__ void flattenKernelGeneric(int dOffset,
 			int *coord = (int *) malloc(sizeof(int) * rank);
 			if(order == 'f') {
 				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2sub(rank,yShape,i,&coord);
+					shape::ind2sub(rank,yShape,i,coord);
 					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 					result[i + dOffset] = input[offset];
 				}
 			}
 			else {
 				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2subC(rank,yShape,i,&coord);
+					shape::ind2subC(rank,yShape,i,coord);
 					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 					result[i + dOffset] = input[offset];
 				}
@@ -2085,14 +2085,14 @@ __device__ void flattenKernelGeneric(int dOffset,
 		int *coord = (int *) malloc(sizeof(int) * rank);
 		if(order == 'f') {
 			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2sub(rank,yShape,i,&coord);
+				shape::ind2sub(rank,yShape,i,coord);
 				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 				result[i+dOffset] = input[offset];
 			}
 		}
 		else {
 			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2subC(rank,yShape,i,&coord);
+				shape::ind2subC(rank,yShape,i,coord);
 				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 				result[i+dOffset] = input[offset];
 			}
@@ -2147,7 +2147,6 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int length = (int) extraPointers[2];
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 

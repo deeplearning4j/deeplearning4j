@@ -151,7 +151,7 @@ void quickSort(StridePermutation *arr, int elements);
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-inline void  SortStrideArray(int ndim, const int strides[],
+inline void  SortStrideArray(int ndim, int strides[],
                       StridePermutation *out_strideperm) {
 
     /* Set up the strideperm values */
@@ -185,8 +185,8 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-inline int PrepareOneRawArrayIter(int ndim, const int shape[],
-                           T data[], const int strides[],
+inline int PrepareOneRawArrayIter(int ndim, int shape[],
+                           T data[], int strides[],
                            int *out_ndim, int outShape[],
                            T **out_data, int *outStrides) {
     StridePermutation strideperm[MAX_RANK];
@@ -411,7 +411,7 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int PrepareTwoRawArrayIter(int ndim, const int *shape,
+int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataA, int *stridesA,
                            T *dataB, int *stridesB,
                            int *out_ndim, int *outShape,
@@ -585,10 +585,10 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int  PrepareThreeRawArrayIter(int ndim, const int shape[],
-                              T *dataA, const int *stridesA,
-                              T *dataB, const int *stridesB,
-                              T *dataC, const int *stridesC,
+int  PrepareThreeRawArrayIter(int ndim, int shape[],
+                              T *dataA, int *stridesA,
+                              T *dataB, int *stridesB,
+                              T *dataC, int *stridesC,
                               int &out_ndim, int *outShape,
                               T **out_dataA, int outStridesA[],
                               T **out_dataB, int outStridesB[],

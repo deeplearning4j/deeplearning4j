@@ -47,12 +47,12 @@ int opSize() {
             int * outIndices = new int[6];
             int * inIndices = new int[4];
 
-            const int inStride2 = inStride[2];
-            const int inStride3 = inStride[3];
-            const int outStride2 = outStride[2];
-            const int outStride3 = outStride[3];
-            const int inShape2 = inShape[2];
-            const int inShape3 = inShape[3];
+            int inStride2 = inStride[2];
+            int inStride3 = inStride[3];
+            int outStride2 = outStride[2];
+            int outStride3 = outStride[3];
+            int inShape2 = inShape[2];
+            int inShape3 = inShape[3];
 
             const boolean padding = padHeight > 0 || padWidth > 0;
 
@@ -193,15 +193,15 @@ private:
             int* outIndices = new int[4];
             int* inIndices = new int[6];
 
-            const int inStride2 = inStride[2];
-            const int inStride3 = inStride[3];
-            const int outStride2 = outStride[2];
-            const int outStride3 = outStride[3];
-            const int outShape2 = outShape[2];
-            const int outShape3 = outShape[3];
+            int inStride2 = inStride[2];
+            int inStride3 = inStride[3];
+            int outStride2 = outStride[2];
+            int outStride3 = outStride[3];
+            int outShape2 = outShape[2];
+            int outShape3 = outShape[3];
 
-            const int yOutTo = inShape[4];
-            const int xOutTo = inShape[5];
+            int yOutTo = inShape[4];
+            int xOutTo = inShape[5];
 
 
             const boolean padding = padHeight > 0 || padWidth > 0;

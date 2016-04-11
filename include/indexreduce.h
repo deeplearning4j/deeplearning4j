@@ -277,7 +277,7 @@ public:
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -330,8 +330,8 @@ public:
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 								inputShapeInfo,
-								&dimension,
-								&dimensionLength,
+								dimension,
+								dimensionLength,
 								&squeezed,
 								&newSqueezeDimensions,
 								wholeRank,
@@ -509,7 +509,7 @@ public:
 				return;
 
 			if (threadIdx.x == 0) {
-				if (dimension != NULL && (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1)) {
+				if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
 					int *xStride = shape::stride(xShapeInfo);
 					xElementWiseStride =  xStride[dimension[0]];
 				} else {
@@ -543,7 +543,7 @@ public:
 				int *ind2sub = (int *) malloc(sizeof(int) * rank);
 #pragma unroll
 				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
+					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 					int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
 					int currIdx = i;
 					IndexValue <T> indexVal = {dx[offset], currIdx};
@@ -822,7 +822,7 @@ public:
 		}
 
 
-		const int resultLength = shape::length(resultShapeInfoBuffer);
+		int resultLength = shape::length(resultShapeInfoBuffer);
 		IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
 #pragma omp parallel for

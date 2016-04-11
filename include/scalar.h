@@ -119,7 +119,7 @@ namespace functions {
 			int *xIdx = (int *) malloc(sizeof(int) * xRank);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				shape::ind2sub(xRank, xShape, i,&xIdx);
+				shape::ind2sub(xRank, xShape, i,xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 				int resultOffset = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset] = op(dy[xOffset2],scalar, params);
