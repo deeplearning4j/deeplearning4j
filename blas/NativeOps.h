@@ -70,7 +70,7 @@ public:
                                  Nd4jPointer extraParams,
                                  Nd4jPointer result,
                                  Nd4jPointer resultShapeInfoBuffer,
-                                 int *dimension, int dimensionLength);
+                                 Nd4jPointer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -92,7 +92,7 @@ public:
             Nd4jPointer yShapeInfo,
             Nd4jPointer result,
             Nd4jPointer resultShapeInfo,
-            int *dimension, int dimensionLength);
+            Nd4jPointer dimension, int dimensionLength);
 
 
 
@@ -199,7 +199,7 @@ public:
                             Nd4jPointer extraParams,
                             Nd4jPointer result,
                             Nd4jPointer resultShapeInfo,
-                            int *dimension,int dimensionLength);
+                            Nd4jPointer dimension,int dimensionLength);
 
     /**
      *
@@ -270,7 +270,7 @@ public:
                              Nd4jPointer yShapeInfo,
                              Nd4jPointer result,
                              Nd4jPointer resultShapeInfoBuffer,
-                             int *dimension,
+                             Nd4jPointer dimension,
                              int dimensionLength);
     /**
      *
@@ -375,7 +375,7 @@ public:
                                   Nd4jPointer extraParams,
                                   Nd4jPointer result,
                                   Nd4jPointer resultShapeInfoBuffer,
-                                  int *dimension, int dimensionLength,bool biasCorrected);
+                                  Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum
@@ -459,7 +459,7 @@ public:
                                 Nd4jPointer extraParams,
                                 Nd4jPointer result,
                                 Nd4jPointer resultShapeInfoBuffer,
-                                int *dimension, int dimensionLength);
+                                Nd4jPointer dimension, int dimensionLength);
     /**
      *
      * @param opNum
@@ -481,7 +481,7 @@ public:
             Nd4jPointer yShapeInfo,
             Nd4jPointer result,
             Nd4jPointer resultShapeInfo,
-            int *dimension, int dimensionLength);
+            Nd4jPointer dimension, int dimensionLength);
 
 
 
@@ -585,7 +585,7 @@ public:
                            Nd4jPointer extraParams,
                            Nd4jPointer result,
                            Nd4jPointer resultShapeInfo,
-                           int *dimension,int dimensionLength);
+                           Nd4jPointer dimension,int dimensionLength);
 
     /**
      *
@@ -656,7 +656,7 @@ public:
                             Nd4jPointer yShapeInfo,
                             Nd4jPointer result,
                             Nd4jPointer resultShapeInfoBuffer,
-                            int *dimension,
+                            Nd4jPointer dimension,
                             int dimensionLength);
     /**
      *
@@ -760,7 +760,7 @@ public:
                                  Nd4jPointer extraParams,
                                  Nd4jPointer result,
                                  Nd4jPointer resultShapeInfoBuffer,
-                                 int *dimension, int dimensionLength,bool biasCorrected);
+                                 Nd4jPointer dimension, int dimensionLength,bool biasCorrected);
     /**
      *
      * @param opNum

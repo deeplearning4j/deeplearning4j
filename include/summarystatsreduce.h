@@ -1471,7 +1471,7 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
             __inline__ __host__ __device__
 #endif
-            functions::summarystats::SummaryStatsReduce<T> * getOp(OpType op, bool biasCorrected) {
+            functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected) {
                 if (op == op_type::Variance) {
                     return new ops::Variance<T>(biasCorrected);
                 } else if (op == op_type::StandardDeviation) {
