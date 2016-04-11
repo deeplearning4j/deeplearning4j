@@ -564,8 +564,8 @@ public:
                        T *result,
                        int *resultShapeInfo,
                        T *extraParams,
-                       Nd4jIndex *xIndexes,
-                       Nd4jIndex *resultIndexes) {
+                       int *xIndexes,
+                       int *resultIndexes) {
         functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
         transform->exec(dx,
                         xShapeInfo,

@@ -83,7 +83,7 @@ private:
 public:
 	ScalarShapeInformation(cudaStream_t stream) {
 		int *scalarDimensionBuff = (int *) malloc(sizeof(int));
-		scalarDimensionBuff[0] = shape::MAX_DIMENSION;
+		scalarDimensionBuff[0] = MAX_DIMENSION;
 		scalarDimension = nd4j::buffer::createBuffer(scalarDimensionBuff,1, stream);
 		scalarShapeInfo = createScalarBuffer(stream);
 		threadId = std::this_thread::get_id();
@@ -333,6 +333,8 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[25], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformStridedDouble<<<1,launchDims.y,launchDims.z, *stream>>> (
 			opNum,
 			n,
@@ -342,7 +344,7 @@ void   NativeOps::execPairwiseTransformDouble(
 			yStride,
 			extraParamsPointer,
 			resultPointer,
-			resultStride);
+			resultStride, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -390,6 +392,8 @@ void NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[24], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformDoubleIndex <<<1, launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -401,7 +405,7 @@ void NativeOps::execPairwiseTransformDouble(
 			resultShapeInfoPointer,
 			xIndexesPointer,
 			yIndexesPointer,
-			resultIndexesPointer);
+			resultIndexesPointer, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -439,6 +443,8 @@ void NativeOps::execPairwiseTransformDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[23], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -447,7 +453,7 @@ void NativeOps::execPairwiseTransformDouble(
 			resultPointer,
 			xShapeInfoPointer,
 			yShapeInfoPointer,
-			resultShapeInfoPointer);
+			resultShapeInfoPointer, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1294,6 +1300,8 @@ void   NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[11], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformStridedFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
@@ -1303,7 +1311,7 @@ void   NativeOps::execPairwiseTransformFloat(
 			yStride,
 			extraParamsPointer,
 			resultPointer,
-			resultStride);
+			resultStride, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1351,6 +1359,8 @@ void NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[10], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformFloatIndex<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -1362,7 +1372,7 @@ void NativeOps::execPairwiseTransformFloat(
 			resultShapeInfoPointer,
 			xIndexesPointer,
 			yIndexesPointer,
-			resultIndexesPointer);
+			resultIndexesPointer, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1401,6 +1411,8 @@ void NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[9], deviceProperties[(int) extraPointers[2]]);
 
+	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
 	pairWiseTransformFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -1409,7 +1421,7 @@ void NativeOps::execPairwiseTransformFloat(
 			resultPointer,
 			xShapeInfoPointer,
 			yShapeInfoPointer,
-			resultShapeInfoPointer);
+			resultShapeInfoPointer, allocationPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }

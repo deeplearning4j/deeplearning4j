@@ -3868,8 +3868,7 @@ namespace functions {
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
                         //after subtracting the row wise maxes take the exp
                         functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
@@ -3877,13 +3876,11 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
 
                         delete exp;
@@ -4144,8 +4141,7 @@ namespace functions {
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
                         //after subtracting the row wise maxes take the exp
                         functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
@@ -4153,13 +4149,11 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
                         functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
                         log->exec(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
@@ -4462,8 +4456,7 @@ namespace functions {
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
                         //after subtracting the row wise maxes take the exp
                         functions::transform::ops::Exp<T> *exp = new functions::transform::ops::Exp<T>();
@@ -4476,8 +4469,7 @@ namespace functions {
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer,
-                                  dimension, 1);
+                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1);
 
                         if (resultEleStide >= 1) {
                             if (resultEleStide == 1) {
@@ -4908,7 +4900,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer) {
-		if(extraParams == NULL || extraParams[0] == shape::MAX_DIMENSION) {
+		if(extraParams == NULL || extraParams[0] == MAX_DIMENSION) {
 			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
@@ -4982,7 +4974,7 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == shape::MAX_DIMENSION) {
+                    if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
                         this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
                     }
                     else {
