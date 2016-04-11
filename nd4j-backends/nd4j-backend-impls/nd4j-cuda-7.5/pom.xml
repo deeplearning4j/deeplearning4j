@@ -57,6 +57,11 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <compilerOptions>
+                        <compilerOption>
+                            -std=c++11
+                        </compilerOption>
+                    </compilerOptions>
                     <copyLibs>true</copyLibs>
                     <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
