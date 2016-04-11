@@ -763,7 +763,7 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
                                      Nd4jPointer xShapeInfo,
                                      Nd4jPointer y,
                                      Nd4jPointer yShapeInfo,
-                                     Nd4jPointer result,
+                                     Nd4jPointer result,Nd4jPointer resultShapeInfo,
                                      int *dimension, int dimensionLength) {
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
