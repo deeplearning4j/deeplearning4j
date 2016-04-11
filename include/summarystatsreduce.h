@@ -882,6 +882,13 @@ struct SharedSummaryStatsData<double> {
 					tc[4096] = 0;
 					SummaryStatsData<T> *pBuffer = (SummaryStatsData<T> *) reductionBuffer;
 
+                    T startingVal = this->startingValue(dx);
+
+        			SummaryStatsData<T> val;
+		        	val.initWithValue(startingVal);
+			        val.n = 0;
+                    sPartials[threadIdx.x] =  val;
+
 					if (threadIdx.x < gridDim.x)
 						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
 
