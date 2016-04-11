@@ -70,7 +70,6 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testIm2Col2() {
-        // n, c, h, w = new_val.shape
         int kh = 2;
         int kw = 2;
         int ph = 0;
