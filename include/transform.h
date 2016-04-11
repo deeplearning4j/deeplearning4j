@@ -5124,18 +5124,17 @@ namespace functions {
                                 maxCursor[0] = 1.0;
                             }
 
-                            printf("After loop\n");
 
-                               free(tadShapeShapeInfo);
+                            free(tadShapeShapeInfo);
 
 
-                               if (newSqueezeDimensions) {
-                                   free(dimension);
-                               }
+                            if (newSqueezeDimensions) {
+                                free(dimension);
+                            }
 
-                               if (numOnes > 0) {
-                                   free(xShapeBuffer);
-                               }
+                            if (numOnes > 0) {
+                                free(xShapeBuffer);
+                            }
                         }
 
                     }
