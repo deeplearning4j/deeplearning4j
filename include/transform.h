@@ -3109,11 +3109,9 @@ namespace functions {
 		int padHeight = (int) extraParams[5];
 		int kSize = kernelWidth * kernelHeight;
 
-		int outArrayOffset = 0;
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 		int *outStride = shape::stride(resultShapeBuffer);
 
-		int inArrayOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3421,7 +3419,6 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer) {
-		int inOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3515,8 +3512,6 @@ namespace functions {
                     int strideY = (int) extraParams[1];
                     int padWidth = (int) extraParams[2];
                     int padHeight = (int) extraParams[3];
-                    int imgHeight = (int) extraParams[4];
-                    int imgWidth = (int) extraParams[5];
 
 
                     int exampleFrom = 0;
@@ -3765,7 +3760,7 @@ namespace functions {
 				sub = new functions::broadcast::ops::Subtract<T>();
 				div = new functions::broadcast::ops::Divide<T>();
 			}
-			maxResult = new t[shape[0]];
+			maxResult = new T[shape[0]];
 		}
 		__syncthreads();
 
@@ -4851,13 +4846,11 @@ namespace functions {
                                                           xStridesIter,
                                                           &result,
                                                           resultStridesIter) >= 0) {
-                                T *maxCursor = result;
                                 T value = dx[0];
                                 int idx = 0;
                                 int maxIdx = 0;
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                     if(dx[0] > value) {
-                                        maxCursor = result;
                                         value = dx[0];
                                         maxIdx = idx;
                                     }
