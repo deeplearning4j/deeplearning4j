@@ -47,7 +47,7 @@ Here's some basics to get you started:
 
 - Score vs. iteration should (overall) go down over time. If the score increases, your learning rate may be set too high
 - The histograms of parameters (top right) and the updates (bottom left) should  have an approximately Gaussian (normal) distribution. Keep an eye out for parameters that are diverging to +/- infinity: this may be due to too high a learning rate, or insufficient regularization (try adding some L2 regularization to your network).
-- For tuning the learning rate, the ratio of parameters to updates should be somewhere in the order of 1000:1 - but note that is is a rough guide only, and may not be appropriate for all networks.
+- For tuning the learning rate, the ratio of parameters to updates should be somewhere in the order of 1000:1 - but note that is a rough guide only, and may not be appropriate for all networks.
   - If the ratio diverges significantly from this, your parameters may be too unstabe to learn useful features, or may change too slowly to learn useful features
   - To change this ratio, adjust your learning rate (or sometimes, parameter initialization). In some networks, you may need to set the learning rate differently for different layers.
 
