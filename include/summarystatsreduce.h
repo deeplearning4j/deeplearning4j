@@ -625,10 +625,6 @@ struct SharedSummaryStatsData<double> {
 
 
 
-		//only compute the tad indexes once
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
-
 		SummaryStatsData <T> reduction;
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
@@ -777,13 +773,7 @@ struct SharedSummaryStatsData<double> {
 					}
 				}
 		    } else {
-                if(tid == 0) {
-					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-				}
-				__syncthreads();
-
-
-				int resultLength = shape::length(resultShapeInfo);
+             	int resultLength = shape::length(resultShapeInfo);
 				if(tid >= resultLength) {
 					return;
 				}
@@ -818,9 +808,7 @@ struct SharedSummaryStatsData<double> {
 				}
 
 				__syncthreads();
-				if(tid == 0) {
-					shape::freePermuteInfo(xTadInfo);
-				}
+
 		    }
 		}
 		else if (resultScalar) {
@@ -1022,8 +1010,8 @@ struct SharedSummaryStatsData<double> {
                     }
 
                     //squeeze the dimensions
-                        if (numOnes > 0) {
-                            xShapeInfo = shape::squeezeDimensions(
+                    if (numOnes > 0) {
+                        xShapeInfo = shape::squeezeDimensions(
                                 xShapeInfo,
                                 dimension,
                                 dimensionLength,
@@ -1031,7 +1019,7 @@ struct SharedSummaryStatsData<double> {
                                 &newSqueezeDimensions,
                                 wholeRank,
                                 numOnes);
-                        }
+                    }
 
                     /**
                      * The element wise stride belong longs to a reduction index.
@@ -1092,15 +1080,15 @@ struct SharedSummaryStatsData<double> {
                     }
 
 
-                        free(tadShapeShapeInfo);
+                    free(tadShapeShapeInfo);
 
-                        if (newSqueezeDimensions) {
-                            free(dimension);
-                        }
+                    if (newSqueezeDimensions) {
+                        free(dimension);
+                    }
 
-                        if (numOnes > 0) {
-                            free(xShapeInfo);
-                        }
+                    if (numOnes > 0) {
+                        free(xShapeInfo);
+                    }
                 }
 
                 else {

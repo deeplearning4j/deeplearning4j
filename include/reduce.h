@@ -234,10 +234,6 @@ namespace functions {
 
 
 		//only compute the tad indexes once
-		__shared__ shape::TADPermuteInfo xTadInfo;
-
-		__syncthreads();
-
 		T reduction = this->startingValue(dx);
 		if (threadIdx.x == 0) {
 			if (resultShapeInfo != NULL)
@@ -404,12 +400,6 @@ namespace functions {
 			}
 			else {
 
-				if(threadIdx.x == 0) {
-					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-				}
-				__syncthreads();
-
-
 				int resultLength = shape::length(resultShapeInfo);
 
 				/**
@@ -422,13 +412,13 @@ namespace functions {
 				 * along long which to iterate.
 				 */
 				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-				int tadLength = xTadInfo.tensorShapeProd;
+				int tadLength = elementsPerReductionIndex;
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
 
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);//shape::offset(i, xShapeInfo, dimension,dimensionLength, xTadInfo);
+					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);
 					sPartials[tid] = op(dx[offsetForTad], extraParams);
 
 					for(j = 1; j < elementsPerReductionIndex; j++) {
@@ -438,10 +428,7 @@ namespace functions {
 					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
 				}
 
-				__syncthreads();
-				if(threadIdx.x == 0) {
-					shape::freePermuteInfo(xTadInfo);
-				}
+
 
 			}
 
