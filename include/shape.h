@@ -18,6 +18,8 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define PREALLOC_SIZE 5242880
+
 namespace shape {
 
 /**
@@ -68,14 +70,14 @@ namespace shape {
     };
 
 #ifdef __CUDACC__
-     __host__ __device__
+    __host__ __device__
 #endif
     inline bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
 
 
 
 #ifdef __CUDACC__
-     __host__ __device__
+    __host__ __device__
 #endif
 
     inline int tadIndexForLinear(int linearIndex, int tadLength);
@@ -95,6 +97,12 @@ namespace shape {
     __host__ __device__
 #endif
     inline int *shapeBufferFortran(int rank, int *shape);
+
+
+#ifdef __CUDACC__
+    __inline__ __device__ int *cuMalloc(int *buffer, long size);
+#endif
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -184,7 +192,7 @@ namespace shape {
     __host__ __device__
 #endif
     inline int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
-                                 int *dimension, int dimensionLength);
+                                        int *dimension, int dimensionLength);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -265,7 +273,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline char getOrder(int length, int *shape, int *stride, int elementStride);
+    inline char getOrder(int length, int *shape, int *stride, int elementStride);
 
 /**
  * Ensure that every value in the re arrange
@@ -280,7 +288,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int checkArrangeArray(int *arr, int arrLength, int shapeLength);
+    inline int checkArrangeArray(int *arr, int arrLength, int shapeLength);
 
 /**
  * Permute the shape information
@@ -292,7 +300,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline void permute(ShapeInformation **info, int *rearrange, int rank);
+    inline void permute(ShapeInformation **info, int *rearrange, int rank);
 
 /**
  * Returns whether the
@@ -304,12 +312,12 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int isVector(int *shape, int rank);
+    inline int isVector(int *shape, int rank);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-   inline int isVector(int *shapeInfo);
+    inline int isVector(int *shapeInfo);
 
     /**
  * Returns whether the
@@ -321,13 +329,13 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int isMatrix(int *shape, int rank);
+    inline int isMatrix(int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-   inline int isMatrix(int *shapeInfo);
+    inline int isMatrix(int *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -359,7 +367,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline void copyTo(int length, int *from, int *to);
+    inline void copyTo(int length, int *from, int *to);
     /**
 * Return a copy of a buffer.
 * This buffer allocates memory
@@ -368,7 +376,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-  inline void copyTo(int length, int *from, int *to, int *indexes);
+    inline void copyTo(int length, int *from, int *to, int *indexes);
 
 /**
  * Permute the given strides
@@ -473,7 +481,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline char order(int *buffer);
+    inline char order(int *buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -505,7 +513,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-   inline int isScalar(int *info);
+    inline int isScalar(int *info);
 
 /**
  * Returns whether
@@ -517,7 +525,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int isScalar(volatile ShapeInformation *info);
+    inline int isScalar(volatile ShapeInformation *info);
 
 /**
  * Return a copy of this array with the
@@ -536,7 +544,7 @@ namespace shape {
 #endif
 
     inline void removeIndex(int *data, int *indexes, int dataLength, int indexesLength,
-                     int *out);
+                            int *out);
 
     /**
      * Iterate over a given set of indexes
@@ -636,7 +644,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int *range(int from, int to);
+    inline int *range(int from, int to);
 
 /**
  * Keep the given indexes
@@ -646,7 +654,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-   inline int *keep(volatile int *data, int *index, int indexLength, int dataLength);
+    inline int *keep(volatile int *data, int *index, int indexLength, int dataLength);
 
 /**
  * Generate reverse copy of the data
@@ -727,7 +735,7 @@ namespace shape {
 #endif
 
     inline int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape,
-                             int tensorShapeLength, int *dimension, int dimensionLength);
+                                    int tensorShapeLength, int *dimension, int dimensionLength);
 
 /**
  * Computes the offset for accessing
@@ -752,7 +760,7 @@ namespace shape {
 #endif
 
     inline int offset(int index, int rank, shape::ShapeInformation *info, int *dimension,
-               int dimensionLength);
+                      int dimensionLength);
 
 /**
  * Given the shape information and dimensions
@@ -786,7 +794,7 @@ namespace shape {
 #endif
 
     inline int tensorsAlongDimension(int rank, volatile int length, volatile int *shape,
-                              int *dimension, int dimensionLength);
+                                     int *dimension, int dimensionLength);
 
 /**
  * Computes the number
@@ -825,7 +833,7 @@ namespace shape {
 #endif
 
     inline int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
-               TADPermuteInfo info);
+                      TADPermuteInfo info);
 
 /**
  * Returns the tensor along dimension
@@ -856,7 +864,7 @@ namespace shape {
 #endif
 
     inline int *tadShapeInfo(int index, int *xShapeInfo, int *dimension,
-                       int dimensionLength);
+                             int dimensionLength);
 
 /**
  * Returns a shape buffer
@@ -869,7 +877,6 @@ namespace shape {
     inline int *toShapeBuffer(const ShapeInformation *info);
 
 /**
-
  * Returns the number of elements per thread
  */
 #ifdef __CUDACC__
@@ -1075,7 +1082,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-   inline int* ind2subC(int rank, int *shape, int index);
+    inline int* ind2subC(int rank, int *shape, int index);
     /**
   * Convert a linear index to
   * the equivalent nd index
@@ -1114,16 +1121,16 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-   inline void ind2subC(int rank, int *shape, int index, int *out);
+    inline void ind2subC(int rank, int *shape, int index, int *out);
 
-  /**
-* Convert the given index (such as 1,1)
-* to a linear index
-* @param shape the shape of the indexes to convert
-* @param indices the index to convert
-* @return the linear index given the shape
-* and indices
-*/
+    /**
+  * Convert the given index (such as 1,1)
+  * to a linear index
+  * @param shape the shape of the indexes to convert
+  * @param indices the index to convert
+  * @return the linear index given the shape
+  * and indices
+  */
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1258,6 +1265,19 @@ namespace shape {
 #endif
     int tadOffset(int index, int *shapeInfo, int *dimension, int dimensionLength);
 
+
+#ifdef __CUDACC__
+    __inline__ __device__ int *cuMalloc(int *buffer, long size) {
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
+        if (tid * size > PREALLOC_SIZE - size) {
+            return (int *) malloc(size);
+        } else {
+            int *ret = buffer;
+            ret += (tid * size);
+            return ret;
+        }
+    }
+#endif
 
     /**
    * Length of a tad given
@@ -1483,7 +1503,7 @@ namespace shape {
 
 
 #ifdef __CUDACC__
-     __host__ __device__
+    __host__ __device__
 #endif
     inline bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2) {
         if(shape1Rank != shape2Rank)
@@ -1812,7 +1832,7 @@ namespace shape {
     __host__ __device__
 #endif
     inline int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder,
-                                 int *dimension, int dimensionLength) {
+                                        int *dimension, int dimensionLength) {
         if(dimensionLength == 1) {
             return stride[dimension[0]];
         }
@@ -2802,7 +2822,7 @@ namespace shape {
 #endif
 
     inline void removeIndex(int *data, int *indexes, int dataLength, int indexesLength,
-                     int *ret) {
+                            int *ret) {
         int count = 0;
         int absLength = dataLength - indexesLength;
         for (int i = 0; i < dataLength && count < absLength; i++) {
@@ -3121,7 +3141,7 @@ namespace shape {
 #endif
 
     inline int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape,
-                             int tensorShapeLength, int *dimension, int dimensionLength) {
+                                    int tensorShapeLength, int *dimension, int dimensionLength) {
         int tensorLength = prodLong(tensorShape, tensorShapeLength);
         int lengthPerSlice2 = lengthPerSlice(rank, shape, dimension,
                                              dimensionLength);
@@ -3158,7 +3178,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int offset(int index, int rank, ShapeInformation *info, int *dimension,
-               int dimensionLength) {
+                      int dimensionLength) {
         int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
         if (dimensionLength == 1) {
             int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
@@ -3385,7 +3405,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int tensorsAlongDimension(volatile int rank, volatile int length,
-                              volatile int *shape, int *dimension, int dimensionLength) {
+                                     volatile int *shape, int *dimension, int dimensionLength) {
         int *tensorShape = shape::keep(shape, dimension, dimensionLength, rank);
         int ret = length / shape::prodLong(tensorShape, dimensionLength);
         free(tensorShape);
@@ -3435,7 +3455,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int * tadShapeInfo(int index, int *xShapeInfo, int *dimension,
-                        int dimensionLength) {
+                              int dimensionLength) {
         TADPermuteInfo tadInfo = shape::tadInfo(xShapeInfo, dimension,
                                                 dimensionLength);
         int sliceIdx = shape::sliceOffsetForTensor(rank(xShapeInfo), index,
@@ -3646,7 +3666,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
-               TADPermuteInfo info) {
+                      TADPermuteInfo info) {
         int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index,
                                             info.permutedShape, info.tensorShape, info.tensorShapeLength,
                                             info.zeroDimension, 1);
@@ -3840,7 +3860,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
-                             int tadsForOriginal) {
+                                    int tadsForOriginal) {
         if (tadIndexForOriginal == 0)
             return 0;
         return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
@@ -3853,7 +3873,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
  * @return
  */
 #ifdef __CUDACC__
-     __host__ __device__
+    __host__ __device__
 #endif
 
     inline int tadIndexForLinear(int linearIndex, int tadLength) {
@@ -3885,7 +3905,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
     inline int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
-                                int tadNum, int originalTadNum) {
+                                       int tadNum, int originalTadNum) {
         int tad = tadIndex(i, elementWiseStride, numElementsPerTad);
         return reductionIndexForTad(tad, tadNum, originalTadNum);
     }

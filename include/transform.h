@@ -60,7 +60,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) = 0;
+			T *extraParams, int *allocationPointer) = 0;
 #endif
             /**
              * The op for transforms
@@ -122,10 +122,11 @@ namespace functions {
 			int *shapeInfo,
 			T *params,
 			T *result,
-			int *resultShapeInfo) {
+			int *resultShapeInfo,
+			int *allocationPointer) {
 
 		if(this->requiresSpecial) {
-			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params);
+			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer);
 			return;
 		}
 
@@ -140,7 +141,7 @@ namespace functions {
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
 		if(tid == 0)
@@ -154,21 +155,24 @@ namespace functions {
 					xElementWiseStride,
 					params,
 					result,
-					resultElementWiseStride);
+					resultElementWiseStride, allocationPointer);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
-			int *xIdx = (int *) malloc(sizeof(int) * xRank);
+			long allocSize = sizeof(int) * xRank;
+			int *xIdx = shape::cuMalloc(allocationPointer, allocSize);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,xIdx);
+				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
+				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xIdx);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
 				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
 
 			}
-
-			free(xIdx);
+            if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(xIdx);
+            }
 		}
 	}
 
@@ -187,7 +191,8 @@ namespace functions {
 			int incy,
 			T *params,
 			T *result,
-			int resultStride) {
+			int resultStride,
+			int *allocationPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -227,7 +232,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const Nd4jIndex *indexes) {
+                    int *indexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
@@ -251,8 +256,8 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const Nd4jIndex *indexes,
-                    const Nd4jIndex *resultIndexes) {
+                    Nd4jIndex *indexes,
+                    Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {
@@ -276,7 +281,7 @@ namespace functions {
                     int *xShapeInfo,
                     T *result,
                     int *resultShapeInfo,
-                    T *extraParams)  {
+                    T *extraParams) {
 
                 if(this->requiresSpecial) {
                     this->execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
@@ -344,7 +349,7 @@ namespace functions {
              * @param extraParams the extra parameters
              * @param n the number of elements to iterate on
              */
-            virtual void exec(const T *dx,
+            virtual void exec(T *dx,
                               int xStride,
                               T *result,
                               int resultStride,
@@ -439,7 +444,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -452,7 +457,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -510,7 +515,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -524,7 +529,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -583,7 +588,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -596,7 +601,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -656,7 +661,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -669,7 +674,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -729,7 +734,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -743,7 +748,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -802,7 +807,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -815,7 +820,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -876,7 +881,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -889,7 +894,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -947,7 +952,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -960,7 +965,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1019,7 +1024,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1032,7 +1037,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1091,7 +1096,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1104,7 +1109,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1172,7 +1177,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1185,7 +1190,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1244,7 +1249,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1257,7 +1262,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1316,7 +1321,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -1330,7 +1335,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1391,7 +1396,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1404,7 +1409,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1473,7 +1478,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1486,7 +1491,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -1546,7 +1551,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1559,7 +1564,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1618,7 +1623,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1631,7 +1636,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1691,7 +1696,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1704,7 +1709,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1763,7 +1768,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1776,7 +1781,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1835,7 +1840,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1848,7 +1853,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -1907,7 +1912,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1920,7 +1925,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -1980,7 +1985,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -1993,7 +1998,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2053,7 +2058,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2066,7 +2071,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2127,7 +2132,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2140,7 +2145,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2202,7 +2207,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2215,7 +2220,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2275,7 +2280,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -2289,7 +2294,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2350,7 +2355,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2363,7 +2368,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2422,7 +2427,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -2436,7 +2441,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2497,7 +2502,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2510,7 +2515,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2571,7 +2576,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2584,7 +2589,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2644,7 +2649,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2657,7 +2662,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2717,7 +2722,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2730,7 +2735,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2790,7 +2795,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2803,7 +2808,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -2865,7 +2870,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -2878,7 +2883,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -2944,7 +2949,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 
@@ -2958,7 +2963,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
 
@@ -3019,7 +3024,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {//no-op
+                        T *extraParams) {//no-op
                 }
 
 #ifdef __CUDACC__
@@ -3032,7 +3037,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {}
+			T *extraParams, int *allocationPointer) {}
 #endif
 
                 /**
@@ -3094,7 +3099,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
 		/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 		int kernelWidth = (int) extraParams[0];
 		int kernelHeight = (int) extraParams[1];
@@ -3104,9 +3109,11 @@ namespace functions {
 		int padHeight = (int) extraParams[5];
 		int kSize = kernelWidth * kernelHeight;
 
+		int outArrayOffset = 0;
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 		int *outStride = shape::stride(resultShapeBuffer);
 
+		int inArrayOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3179,7 +3186,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {
+                        T *extraParams) {
                     /*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
                     int kernelWidth = (int) extraParams[0];
                     int kernelHeight = (int) extraParams[1];
@@ -3413,20 +3420,22 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
+		int inOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
 		int kernelHeight = inShape[2];
 		int kernelWidth = inShape[3];
 
+        // C
+
 		int strideX = (int) extraParams[0];
 		int strideY = (int) extraParams[1];
-		int padWidth = (int) extraParams[2];
+		int padWidth= (int) extraParams[2];
 		int padHeight = (int) extraParams[3];
 		int imgHeight = (int) extraParams[4];
 		int imgWidth = (int) extraParams[5];
-
 
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 
@@ -3435,11 +3444,16 @@ namespace functions {
 		//int height = outShape[2];
 		//int width = outShape[3];
 
-
-		int height_col = (imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
-    	int width_col = (imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+        int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+    	int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
     	int n = samples * depth * imgHeight * imgWidth;
+
+        if (threadIdx.x == 0)
+			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
+			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);
+
+
 
 		for(int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 			T val = 0;
@@ -3454,6 +3468,7 @@ namespace functions {
 			int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
 			int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
 
+
 			for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       			for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
         			int h_k = (h_im - h_col * strideY);
@@ -3463,31 +3478,32 @@ namespace functions {
 			        val += dx[data_col_index];
       			}
 		    }
+
 			result[i] += val;
 		}
 	}
 #endif
 
                 /**
-            * CPU operation execution
-            * @param dx the input data
-            * @param xStride the stride to iterate over
-            * the x input
-            * @param y the y data
-            * @param yStride the stride to iterate
-            * over the y buffer
-            * @param result the buffer
-            * to store the result in
-            * @param resultStride the stride for the buffer
-            * @param extraParams the extra parameters for the transform
-            * @param n the length of the input
-            */
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
                 virtual void execSpecial(
                         T *dx,
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {
+                        T *extraParams) {
                     int inOffset = 0;
                     int *inShape = shape::shapeOf(xShapeBuffer);
                     int *inStride = shape::stride(xShapeBuffer);
@@ -3499,6 +3515,9 @@ namespace functions {
                     int strideY = (int) extraParams[1];
                     int padWidth = (int) extraParams[2];
                     int padHeight = (int) extraParams[3];
+                    int imgHeight = (int) extraParams[4];
+                    int imgWidth = (int) extraParams[5];
+
 
                     int exampleFrom = 0;
                     int exampleTo = inShape[0];
@@ -3510,8 +3529,8 @@ namespace functions {
                     int *outStride = shape::stride(resultShapeBuffer);
 
 
-                    Nd4jIndex *outIndices = new Nd4jIndex[4];
-                    Nd4jIndex *inIndices = new Nd4jIndex[6];
+                    int *outIndices = new int[4];
+                    int *inIndices = new int[6];
 
                     int inStride2 = inStride[2];
                     int inStride3 = inStride[3];
@@ -3620,6 +3639,8 @@ namespace functions {
                     delete[] inIndices;
                 }
 
+
+                virtual
 #ifdef __CUDACC__
                 inline __host__ __device__
 #elif defined(__GNUC__)
@@ -3661,7 +3682,7 @@ namespace functions {
 
 
 #endif
-                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, const Nd4jIndex *indices) {
+                int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
                     if (shape[0] != 1) offset += indices[0] * stride[0];
                     if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -3680,7 +3701,7 @@ namespace functions {
 
 
 #endif
-                int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, const Nd4jIndex *indices) {
+                int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
                     int offset = baseOffset;
                     if (shape[0] != 1) offset += indices[0] * stride[0];
                     if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -3709,7 +3730,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 		// TODO: this kernel might use block-wise multireduce too
 		if (blockIdx.x > 0)
 			return;
@@ -3744,7 +3766,6 @@ namespace functions {
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			printf("maxResult length: [%i], isVector: [%i]\n", shape[0], isVector);
 		}
 		__syncthreads();
 
@@ -3763,7 +3784,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -3778,12 +3799,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -3829,10 +3850,10 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {
+                        T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
-
+                        int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
                         int dimension[1] = {0};
                         int maxDimension[1] = {1};
@@ -3855,8 +3876,7 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
@@ -3992,7 +4012,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 		int *shape = shape::shapeOf(xShapeBuffer);
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
@@ -4033,7 +4054,7 @@ namespace functions {
 		int maxShape[2] = {shape[0], 1};
 		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4045,11 +4066,11 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -4061,7 +4082,7 @@ namespace functions {
 		__syncthreads();
 
 
-		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 
 		__syncthreads();
 		if(threadIdx.x == 0) {
@@ -4103,7 +4124,7 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {
+                        T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer, 2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
                         //iterate along rows
@@ -4114,7 +4135,6 @@ namespace functions {
                         std::vector <T> maxResult(shape[0]);
                         for (int i = 0; i < shape[0]; i++)
                             maxResult[i] = 0.0;
-
                         int maxShape[2] = {shape[0], 1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
                         max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
@@ -4129,8 +4149,7 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
@@ -4280,7 +4299,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 
 
 		// TODO: this kernel might use block-wise multireduce too
@@ -4337,7 +4357,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4352,12 +4372,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer);
 		__syncthreads();
 
 		//divide by the sum
@@ -4413,9 +4433,10 @@ namespace functions {
                         int *xShapeBuffer,
                         T *result,
                         int *resultShapeBuffer,
-                        T *extraParams) override {
+                        T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer, 2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
+                        int *stride = shape::stride(xShapeBuffer);
 
                         int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
@@ -4608,7 +4629,8 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams,
+			int *allocationPointer) {
 
 		__shared__ functions::indexreduce::ops::IMax<T> *max;
 		__shared__ int maxIdx;
@@ -4627,7 +4649,7 @@ namespace functions {
 				resultShapeBuffer,
 				NULL,
 				1,
-				1);
+				1, allocationPointer);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4827,11 +4849,13 @@ namespace functions {
                                                           xStridesIter,
                                                           &result,
                                                           resultStridesIter) >= 0) {
+                                T *maxCursor = result;
                                 T value = dx[0];
                                 int idx = 0;
                                 int maxIdx = 0;
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                     if(dx[0] > value) {
+                                        maxCursor = result;
                                         value = dx[0];
                                         maxIdx = idx;
                                     }
@@ -4851,9 +4875,9 @@ namespace functions {
                                         resultStridesIter);
 
                                 //pointer to where max value would be
-                                if(shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
-                                                                              maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-                                                                              shape::length(resultShapeBuffer)))
+                                if(shape::order(resultShapeBuffer) == 'c' || shape::order(resultShapeBuffer) == 'f' &&
+                                                                                     maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
+                                                                                             shape::length(resultShapeBuffer))
                                     originalResult[maxIdx] = 1.0;
                                 else
                                     originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
@@ -4875,9 +4899,9 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams) {
+			T *extraParams, int *allocationPointer) {
 		if(extraParams == NULL || extraParams[0] == MAX_DIMENSION) {
-			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
 			__shared__ int maxIdx;
@@ -4908,7 +4932,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1);
+					1, allocationPointer);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {
@@ -4950,202 +4974,32 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if (extraParams == NULL || extraParams[0] == 0 ||
-                        extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
-                        this->doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
-                    }
-                    else if(shape::isVector(xShapeBuffer)) {
-                        int dimensionLength = (int) extraParams[0];
-                        int *dimension = (int *) malloc(sizeof(int) *dimensionLength);
-                        int length = shape::length(xShapeBuffer);
-                        for (int i = 0; i < dimensionLength; i++) {
-                            dimension[i] = (int) extraParams[i + 1];
-                        }
-                        if (shape::shapeOf(xShapeBuffer)[dimension[0]] == 1) {
-                            for(int i = 0; i < length; i++) {
-                                result[i] = 1.0;
-                            }
-                        }
-                        else {
-                            int eleStride = shape::elementWiseStride(xShapeBuffer);
-                            if (eleStride == 1) {
-                                int maxIdx = 0;
-                                T currMax = dx[0];
-                                if (length < 8000) {
-#pragma omp simd
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i]) {
-                                            currMax = dx[i];
-                                            maxIdx = i;
-                                        }
-
-                                        dx[i] = 0.0;
-
-                                    }
-                                }
-                                else {
-#pragma omp parallel for shared(maxIdx,currMax)
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i]) {
-                                            currMax = dx[i];
-                                            maxIdx = i;
-                                        }
-
-                                        result[i] = 0.0;
-
-                                    }
-                                }
-
-                                result[maxIdx] = 1.0;
-
-                            }
-
-
-                            else {
-                                int maxIdx = 0;
-                                T currMax = dx[0];
-                                if (length < 8000) {
-#pragma omp simd
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i * eleStride]) {
-                                            currMax = dx[i * eleStride];
-                                            maxIdx = i;
-                                        }
-
-                                        dx[i] = 0.0;
-
-                                    }
-                                }
-                                else {
-#pragma omp parallel for shared(maxIdx,currMax)
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i * eleStride]) {
-                                            currMax = dx[i * eleStride];
-                                            maxIdx = i;
-                                        }
-
-                                        result[i] = 0.0;
-
-                                    }
-                                }
-
-                                result[maxIdx] = 1.0;
-
-                            }
-                        }
-
-
+                    if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
+                        this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
                     }
                     else {
                         int dimensionLength = (int) extraParams[0];
-                        int *dimension = (int *) malloc(sizeof(int) *dimensionLength);
-                        for (int i = 0; i < dimensionLength; i++) {
+                        std::vector<int> dimension(dimensionLength);
+                        for(int i = 0; i < dimensionLength; i++) {
                             dimension[i] = (int) extraParams[i + 1];
                         }
 
-                        int numOnes = 0;
-                        int *shape = shape::shapeOf(xShapeBuffer);
-                        int wholeRank = shape::rank(xShapeBuffer);
-                        bool squeezed = false;
-                        bool newSqueezeDimensions = false;
-
-                        for (int i = 0; i < wholeRank; i++) {
-                            if (shape[i] == 1)
-                                numOnes++;
+                        int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension.data(),dimensionLength);
+                        int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension.data(),dimensionLength);
+                        for(int i = 0; i < tads; i++) {
+                            int offset = shape::tadOffset(i,xShapeBuffer,dimension.data(),dimensionLength);
+                            this->doAll(dx + offset,tadShapeInfo,result + offset,tadShapeInfo,extraParams);
                         }
-
-                        //squeeze the dimensions
-                        if (numOnes > 0 && wholeRank > 2) {
-                            xShapeBuffer = shape::squeezeDimensions(
-                                    xShapeBuffer,
-                                    dimension,
-                                    dimensionLength,
-                                    &squeezed,
-                                    &newSqueezeDimensions,
-                                    wholeRank,
-                                    numOnes);
-                        }
-
-                        int tads = shape::tensorsAlongDimension(xShapeBuffer, dimension, dimensionLength);
-                        //decompose in to several sub tads after
-                        //moving all dimensions (in sorted order)
-                        //to the back.
-                        //permuted version of the x shape info for setting up the tad problem
-                        int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeBuffer, dimension,
-                                                                                    dimensionLength, false);
-#pragma omp  parallel  for
-                        for (int i = 0; i < tads; i++) {
-                            int offset = shape::tadOffset(i, xShapeBuffer, dimension, dimensionLength);
-                            int shapeIter[MAX_RANK];
-                            int coord[MAX_RANK];
-                            int dim;
-                            int xStridesIter[MAX_RANK];
-                            int resultStridesIter[MAX_RANK];
-                            int *xShape = shape::shapeOf(tadShapeShapeInfo);
-                            int *xStride = shape::stride(tadShapeShapeInfo);
-                            int *resultStride = shape::stride(tadShapeShapeInfo);
-                            int rank = shape::rank(tadShapeShapeInfo);
-                            T *xPointer = dx + offset;
-                            T *resultPointer = result + offset;
-                            T maxValue = xPointer[0];
-
-                            T *maxCursor = resultPointer;
-                            Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
-                            if (PrepareTwoRawArrayIter<T>(rank,
-                                                          xShape,
-                                                          xPointer,
-                                                          xStride,
-                                                          resultPointer,
-                                                          resultStride,
-                                                          &rank,
-                                                          shapeIter,
-                                                          &xPointer,
-                                                          xStridesIter,
-                                                          &resultPointer,
-                                                          resultStridesIter) >= 0) {
-                                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                    if (maxValue < xPointer[0]) {
-                                        maxCursor = resultPointer;
-                                        maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
-                                        maxValue = xPointer[0];
-                                    }
-
-                                    resultPointer[0] = 0.0;
-                                }
-                                ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                       rank,
-                                                       coord,
-                                                       shapeIter,
-                                                       xPointer,
-                                                       xStridesIter,
-                                                       resultPointer,
-                                                       resultStridesIter);
-                                maxCursor = reinterpret_cast<T *>(maxCursorLong);
-                                maxCursor[0] = 1.0;
-                            }
-
-
-                            free(tadShapeShapeInfo);
-
-
-                            if (newSqueezeDimensions) {
-                                free(dimension);
-                            }
-
-                            if (numOnes > 0) {
-                                free(xShapeBuffer);
-                            }
-                        }
-
                     }
+
                 }
 
                 /**
-            * The op for transforms
-            * @param d1
-            * @param params
-            * @return
-            */
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
                 virtual
 #ifdef __CUDACC__
                 inline __host__  __device__
@@ -5400,7 +5254,7 @@ __device__ void transformGeneric(
 		int incy,
 		T *params,
 		T *result,
-		int resultStride) {
+		int resultStride, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5419,7 +5273,7 @@ __device__ void transformGeneric(
 	__syncthreads();
 
 
-	op->transformCuda(n,dy,incy,params,result,resultStride);
+	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5447,7 +5301,7 @@ __global__ void transformDouble(
 		double *dy,
 		int incy,
 		double *params,
-		double *result,int resultStride) {
+		double *result,int resultStride, int *allocationPointer) {
 
 	transformGeneric<double>(
 			opNum,
@@ -5456,7 +5310,7 @@ __global__ void transformDouble(
 			incy,
 			params,
 			result,
-			resultStride);
+			resultStride, allocationPointer);
 }
 
 /**
@@ -5478,7 +5332,7 @@ __global__ void transformFloat(
 		float *dy,
 		int incy,
 		float *params,
-		float *result,int resultStride) {
+		float *result,int resultStride, int *allocationPointer) {
 
 	transformGeneric<float>(
 			opNum,
@@ -5486,7 +5340,7 @@ __global__ void transformFloat(
 			dy,
 			incy,
 			params,
-			result,resultStride);
+			result,resultStride, allocationPointer);
 
 }
 
@@ -5509,7 +5363,7 @@ __device__ void transformGeneric(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result,int *resultShapeInfo) {
+		T *result,int *resultShapeInfo, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5528,7 +5382,7 @@ __device__ void transformGeneric(
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo);
+	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo, allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5557,14 +5411,14 @@ extern "C" __global__ void transformDouble(
 		double *dy,
 		int *shapeInfo,
 		double *params,
-		double *result,int *resultShapeInfo) {
+		double *result,int *resultShapeInfo, int *allocationPointer) {
 
 	transformGeneric<double>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,resultShapeInfo);
+			result,resultShapeInfo, allocationPointer);
 }
 
 /**
@@ -5585,7 +5439,7 @@ extern "C" __global__ void transformFloat(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result,int *resultShapeInfo) {
+		float *result,int *resultShapeInfo, int *allocationPointer) {
 
 	transformGeneric<float>(
 			opNum,
@@ -5593,7 +5447,7 @@ extern "C" __global__ void transformFloat(
 			shapeInfo,
 			params,
 			result,
-			resultShapeInfo);
+			resultShapeInfo,allocationPointer);
 
 }
 
@@ -5618,7 +5472,7 @@ __device__ void transformGenericIndexes(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result,int *indexes) {
+		T *result,int *indexes, int *allocationPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5637,7 +5491,7 @@ __device__ void transformGenericIndexes(
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,indexes);
+	op->transformCuda(dy,shapeInfo,params,result,indexes,allocationPointer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -5666,14 +5520,14 @@ extern "C" __global__ void transformDoubleIndexes(
 		double *dy,
 		int *shapeInfo,
 		double *params,
-		double *result,int *indexes) {
+		double *result,int *indexes, int *allocationPointer) {
 
 	transformGenericIndexes<double>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,indexes);
+			result,indexes, allocationPointer);
 }
 
 /**
@@ -5694,16 +5548,17 @@ extern "C" __global__ void transformFloatIndexes(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result,int *indexes) {
+		float *result,int *indexes, int *allocationPointer) {
 
 	transformGenericIndexes<float>(
 			opNum,
 			dy,
 			shapeInfo,
 			params,
-			result,indexes);
+			result,indexes, allocationPointer);
 
 }
+
 
 #endif
 

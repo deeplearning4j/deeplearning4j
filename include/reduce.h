@@ -132,7 +132,8 @@ namespace functions {
 			int *xShapeInfo,
 			T *extraParams,
 			T *result,
-			int *resultShapeInfo) {
+			int *resultShapeInfo,
+			int *allocationBuffer) {
 		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 		int n = shape::length(xShapeInfo);
@@ -165,14 +166,18 @@ namespace functions {
 		}
 		else {
 			int rank = shape::rank(xShapeInfo);
-			int *ind2sub = (int *) malloc(sizeof(int) * rank);
+			long allocSize = sizeof(int) * rank;
+			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
 			for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
 				__syncthreads();
 			}
-			free(ind2sub);
+
+			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(ind2sub);
+            }
 		}
 
 				__syncthreads();
@@ -207,7 +212,8 @@ namespace functions {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot) {
+			int postProcessOrNot,
+			int *allocationBuffer) {
 
 		/**
 		 * Gpu information for the problem
@@ -440,7 +446,8 @@ namespace functions {
 					xShapeInfo,
 					extraParams,
 					result,
-					resultShapeInfo);
+					resultShapeInfo,
+					allocationBuffer);
 		}
 	}
 
@@ -1810,7 +1817,8 @@ __global__ void reduceGenericGlobal(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot,
+		int *allocationBuffer) {
 
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
@@ -1830,7 +1838,8 @@ __global__ void reduceGenericGlobal(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot,
+			allocationBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1864,7 +1873,8 @@ __device__ void reduceGeneric(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot,
+		int *allocationBuffer) {
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
@@ -1883,7 +1893,8 @@ __device__ void reduceGeneric(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot,
+			allocationBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1916,7 +1927,8 @@ extern "C" __global__ void reduceDouble(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot,
+		int *allocationBuffer) {
 	reduceGeneric<double>(
 			op,
 			dx,
@@ -1926,7 +1938,8 @@ extern "C" __global__ void reduceDouble(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot,
+			allocationBuffer);
 
 }
 
@@ -1953,7 +1966,9 @@ extern "C" __global__ void reduceFloat(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot) {
+		int postProcessOrNot,
+		int *allocationBuffer
+		) {
 	reduceGeneric<float>(
 			op,
 			dx,
@@ -1963,7 +1978,8 @@ extern "C" __global__ void reduceFloat(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot);
+			postProcessOrNot,
+			allocationBuffer);
 }
 
 
