@@ -171,7 +171,7 @@ namespace functions {
 
 			}
             if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                free(xIdx);
+                delete[] xIdx;
             }
 		}
 	}
@@ -3765,7 +3765,7 @@ namespace functions {
 				sub = new functions::broadcast::ops::Subtract<T>();
 				div = new functions::broadcast::ops::Divide<T>();
 			}
-			maxResult = (T *) malloc(sizeof(T) * shape[0]);
+			maxResult = new t[shape[0]];
 		}
 		__syncthreads();
 
@@ -3825,8 +3825,8 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 	}
 #endif
@@ -4097,8 +4097,9 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 
 
@@ -4407,8 +4408,9 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 	}
 #endif
@@ -4947,7 +4949,7 @@ namespace functions {
 			if (threadIdx.x == 0) {
 				result[maxIdx] = 1.0;
 
-				free(dimension);
+				delete[] dimension;
 				delete max;
 			}
 		}

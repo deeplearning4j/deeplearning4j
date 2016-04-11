@@ -397,14 +397,14 @@ struct SharedIndexValue<double> {
 
 				__syncthreads();
 				if (tid == 0) {
-					free(tadShapeShapeInfo);
+					delete[] tadShapeShapeInfo;
 
 					if(newSqueezeDimensions) {
-						free(dimension);
+						delete[] dimension;
 					}
 
 					if(numOnes > 0) {
-						free(inputShapeInfo);
+						delete[] inputShapeInfo;
 					}
 				}
 			} else {
@@ -541,7 +541,7 @@ struct SharedIndexValue<double> {
 				}
 
 				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                	free(ind2sub);
+                	delete[] ind2sub;
             	}
 			}
 

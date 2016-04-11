@@ -1316,9 +1316,9 @@ namespace shape {
         int *tadShape = new int[dimensionLength];
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - dimensionLength;
-        int *ret = (int *) malloc(sizeof(int) * rank);
+        int *ret = new int[rank];
         //indexes not specified in the tad indexes
-        int *leftOverIndexes = (int *) malloc(sizeof(int) * leftOverIndexLen);
+        int *leftOverIndexes = new int[leftOverIndexLen];
         //every coordinate starts as zero
         for(int i = 0; i < rank; i++)
             ret[i] = 0;
@@ -1366,9 +1366,9 @@ namespace shape {
 
 
 
-        free(tadShape);
-        free(leftOverIndexes);
-        free(sub);
+        delete[] tadShape;
+        delete[] leftOverIndexes;
+        delete[] sub;
 
 
 
@@ -1458,7 +1458,7 @@ namespace shape {
             int *shape = shape::shapeOf(shapeInfo);
             int *stride = shape::stride(shapeInfo);
             int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-            free(tad2Sub);
+            delete[] tad2Sub;
             return ret;
 
         }
@@ -1491,7 +1491,7 @@ namespace shape {
                 int *shape = shape::shapeOf(shapeInfo);
                 int *stride = shape::stride(shapeInfo);
                 int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                free(tad2Sub);
+                delete[] tad2Sub;
                 return ret;
             }
 
@@ -1525,7 +1525,7 @@ namespace shape {
         int *theShape = shape::shapeOf(shapeInfo);
         int *theStride = shape::stride(shapeInfo);
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
-        int *ret = (int *) malloc(sizeof(int) * shape::shapeInfoLength(rank));
+        int *ret = new int[shape::shapeInfoLength(rank)];
         //set the rank
         ret[0] = rank;
         int *retShape = shape::shapeOf(ret);
@@ -1605,7 +1605,7 @@ namespace shape {
 #endif
     inline int * calcStridesFortran(int *shape, int rank, int startNum) {
         if (isVector(shape, rank)) {
-            int *ret = (int *) malloc(sizeof(int) * 2);
+            int *ret = new int[2];
             for (int i = 0; i < 2; i++)
                 ret[i] = 1;
             return ret;
@@ -1613,7 +1613,7 @@ namespace shape {
         }
 
         int dimensions = rank;
-        int *stride = (int *) malloc(sizeof(int) * dimensions);
+        int *stride = new int[dimensions];
         int st = startNum;
         for (int j = 0; j < rank; j++) {
             stride[j] = st;
@@ -1691,11 +1691,11 @@ namespace shape {
     inline ShapeInformation *shapeCopy(const ShapeInformation *toCopy) {
         ShapeInformation *copy = new ShapeInformation;
 
-        copy->shape = (int *) malloc(sizeof(int) * toCopy->rank);
+        copy->shape = new int[toCopy->rank];
 
         memcpy(copy->shape, toCopy->shape, toCopy->rank * sizeof(int));
 
-        copy->stride = (int *) malloc(sizeof(int) * toCopy->rank);
+        copy->stride = new int[toCopy->rank];
         for (int i = 0; i < toCopy->rank; i++) {
             copy->stride[i] = toCopy->stride[i];
         }
@@ -1715,11 +1715,11 @@ namespace shape {
         int *oldstrides = shape::copyOf(rank, stride);
         int np, op, last_stride;
         int oi, oj, ok, ni, nj, nk;
-        int *newStrides = (int *) malloc(sizeof(int) * rank);
+        int *newStrides = new int[rank];
         oldnd = 0;
         //set the shape to be 1 x length
         int newShapeRank = 2;
-        int *newShape = (int *) malloc(sizeof(int) * newShapeRank);
+        int *newShape = new int[newShapeRank];
         newShape[0] = 1;
         newShape[1] = shape::prodLong(shape, rank);
 
@@ -1821,10 +1821,10 @@ namespace shape {
         }
         //returns the last element of the new stride array
         int ret = last_stride;
-        free(newStrides);
-        free(newShape);
-        free(oldstrides);
-        free(olddims);
+        delete[] newStrides;
+        delete[] newShape;
+        delete[] oldstrides;
+        delete[] olddims;
         return ret;
     }
 
@@ -1849,8 +1849,7 @@ namespace shape {
 #endif
     inline int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
-        shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
-                sizeof(shape::ShapeInformation));
+        shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
         shapeInfo->stride = stride;
         shapeInfo->offset = 0;
@@ -1860,7 +1859,7 @@ namespace shape {
         shapeInfo->order = 'c';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
-        free(shapeInfo);
+        delete shapeInfo;
         return shapeInfoBuffer;
     }
 
@@ -1873,8 +1872,7 @@ namespace shape {
 #endif
     inline int *shapeBufferFortran(int rank, int *shape) {
         int *stride = shape::calcStridesFortran(shape,rank);
-        shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
-                sizeof(shape::ShapeInformation));
+        shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
         shapeInfo->stride = stride;
         shapeInfo->offset = 0;
@@ -1884,7 +1882,7 @@ namespace shape {
         shapeInfo->order = 'f';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
-        free(shapeInfo);
+        delete shapeInfo;
         return shapeInfoBuffer;
     }
 
@@ -1897,11 +1895,11 @@ namespace shape {
 #endif
     inline int *computeIndices(int rank, int *shape, int *stride) {
         int length = shape::prodLong(shape,rank);
-        int *ret = (int *) malloc(sizeof(int) * length);
+        int *ret = new int[length];
         for(int i = 0; i < length; i++) {
             int *idx = shape::ind2sub(rank, shape, i);
             ret[i] = shape::getOffset(0, shape, stride, idx, rank);
-            free(idx);
+            delete[] idx;
         }
 
         return ret;
@@ -2163,7 +2161,7 @@ namespace shape {
 #endif
 
     inline int *doPermuteSwap(int length, int *shape, int *rearrange) {
-        int *ret = (int *) malloc(sizeof(int) * length);
+        int *ret = new int[length];
         for (int i = 0; i < length; i++) {
             ret[i] = shape[rearrange[i]];
         }
@@ -2231,7 +2229,7 @@ namespace shape {
         }
 
         if(numDimensionsOne > 0) {
-            int *newDimensions = (int *) malloc(sizeof(int) * dimensionLength - numDimensionsOne);
+            int *newDimensions = new int[dimensionLength - numDimensionsOne];
             int newDimensionIdx = 0;
             for(int i = 0; i < dimensionLength; i++) {
                 if(shape[dimension[i]] != 1)
@@ -2287,10 +2285,10 @@ namespace shape {
         int *stride = shape::stride(shapeRef);
         int *rearrangeCopy1 = shape::copyOf(rearrageRank,rearrange);
         shape::doPermuteSwap(rearrageRank,&shape,rearrangeCopy1);
-        free(rearrangeCopy1);
+        delete[] rearrangeCopy1;
         int *rearrangeCopy2 = shape::copyOf(rearrageRank,rearrange);
         shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
-        free(rearrangeCopy2);
+        delete[] rearrangeCopy2;
     }
 
 #ifdef __CUDACC__
@@ -2298,7 +2296,7 @@ namespace shape {
 #endif
     inline int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength) {
         int delta = originalRank - dimensionLength;
-        int *ret = (int *) malloc(sizeof(int) * originalRank);
+        int *ret = new int[originalRank];
         for(int i = 0; i < delta; i++) {
             ret[i] = i + dimensionLength;
         }
@@ -2553,7 +2551,7 @@ namespace shape {
         int *strideCopy = copyOf(shapeRank, toPermute);
         checkArrangeArray(rearrange, shapeRank, shapeRank);
         int *newStride = doPermuteSwap(shapeRank, strideCopy, rearrange);
-        free(strideCopy);
+        delete[] strideCopy;
         return newStride;
     }
 
@@ -2938,10 +2936,11 @@ namespace shape {
     inline int *range(int from, int to, int increment) {
         int diff = nd4j::math::nd4j_abs<int>(from - to);
         int retLength = diff / increment;
-        int *ret =
-                diff / increment < 1 ?
-                (int *) malloc(sizeof(int)) :
-                (int *) malloc(sizeof(int) * diff / increment);
+        int *ret;
+        if(diff / increment < 1)
+            ret = new int[1];
+        else
+            ret = new int[diff / increment];
         if (from < to) {
             int count = 0;
             for (int i = from; i < to; i += increment) {
@@ -3019,7 +3018,7 @@ namespace shape {
         if (length < 1)
             return nullptr;
 
-        int *copy = (int *) malloc(length * sizeof(int));
+        int *copy = new int[length];
         for (int i = 0; i <= length / 2; i++) {
             int temp = data[i];
             copy[i] = data[length - i - 1];
@@ -3072,7 +3071,7 @@ namespace shape {
 #endif
 
     inline int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length) {
-        int *ret = (int *) malloc((arr1Length + arr2Length) * sizeof(int));
+        int *ret = new int[arr1Length + arr2Length];
         std::memcpy(ret, arr1, arr1Length * sizeof(int));
         std::memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
         return ret;
@@ -3121,11 +3120,11 @@ namespace shape {
 
     inline int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength) {
         int absSelta = nd4j::math::nd4j_abs<int>(rank - dimensionLength);
-        int *ret2 = (int *) malloc(absSelta * sizeof(int));
+        int *ret2 = new int[absSelta];
         removeIndex(shape, dimension, rank, dimensionLength, ret2);
         int length = rank - dimensionLength;
         int ret = prod(ret2, length);
-        free(ret2);
+        delete[] ret2;
         return ret;
     }
 
@@ -3182,7 +3181,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
         if (dimensionLength == 1) {
             int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
-            free(tensorShape);
+            delete[] tensorShape;
             tensorShape = newTensorShape;
         }
 
@@ -3192,10 +3191,10 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         int *reverseDimensions = reverseCopy(dimension, dimensionLength);
         int *rangeRet = range(0, rank);
-        int *remove = (int *) malloc((rank - dimensionLength) * sizeof(int));
+        int *remove = new int[rank - dimensionLength];
         removeIndex(rangeRet, dimension, rank, dimensionLength, remove);
 
-        int *zeroDimension = (int *) malloc(1 * sizeof(int));
+        int *zeroDimension = new int[1];
         zeroDimension[0] = 0;
 
         int removeLength = rank - dimensionLength;
@@ -3288,13 +3287,13 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         retOffset = info->offset + sliceIdx;
 
-        free(reverseDimensions);
-        free(rangeRet);
-        free(remove);
-        free(copy);
+        delete[] reverseDimensions;
+        delete[] rangeRet;
+        delete[] remove;
+        delete[] copy;
         //free the new pointer
         if (rank <= 2) {
-            free(tensorShape);
+            delete[] tensorShape;
         }
 
         if (retOffset < 0)
@@ -3323,7 +3322,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         if (dimensionLength == 1) {
             int *newTensorShape = shape::ensureVectorShape(tensorShape,
                                                            dimension[0]);
-            free(tensorShape);
+            delete[] tensorShape;
             tensorShape = newTensorShape;
         }
 
@@ -3337,10 +3336,10 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
         int *rangeRet = shape::range(0, xRank);
 
-        int *remove = (int *) malloc((removeLength) * sizeof(int));
+        int *remove = new int[removeLength];
         shape::removeIndex(rangeRet, dimension, xRank, dimensionLength, remove);
 
-        int *zeroDimension = (int *) malloc(1 * sizeof(int));
+        int *zeroDimension = new int[1];
         zeroDimension[0] = 0;
 
         int *newPermuteDims = shape::concat(remove, removeLength, reverseDimensions,
@@ -3377,21 +3376,21 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     inline void freePermuteInfo(TADPermuteInfo info) {
         if(info.tensorShape != NULL)
-            free(info.tensorShape);
+            delete[] info.tensorShape;
         if(info.reverseDimensions != NULL)
-            free(info.reverseDimensions);
+            delete[] info.reverseDimensions;
         if(info.rangeRet != NULL)
-            free(info.rangeRet);
+            delete[] info.rangeRet;
         if(info.remove != NULL)
-            free(info.remove);
+            delete[] info.remove;
         if(info.zeroDimension != NULL)
-            free(info.zeroDimension);
+            delete[] info.zeroDimension;
         if(info.newPermuteDims != NULL)
-            free(info.newPermuteDims);
+            delete[] info.newPermuteDims;
         if(info.permutedShape != NULL)
-            free(info.permutedShape);
+            delete[] info.permutedShape;
         if(info.permutedStrides != NULL)
-            free(info.permutedStrides);
+            delete[] info.permutedStrides;
 
     }
 
@@ -3408,7 +3407,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                                      volatile int *shape, int *dimension, int dimensionLength) {
         int *tensorShape = shape::keep(shape, dimension, dimensionLength, rank);
         int ret = length / shape::prodLong(tensorShape, dimensionLength);
-        free(tensorShape);
+        delete[] tensorShape;
         return ret;
     }
 
@@ -3427,7 +3426,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                                        rank(shapeInfo));
         int ret = shape::length(shapeInfo)
                   / shape::prodLong(tensorShape, dimensionLength);
-        free(tensorShape);
+        delete[] tensorShape;
         return ret;
     }
 
@@ -3482,8 +3481,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int tensorShapeRoughlyEquals = dimensionLength == 1 && delta <= 1;
         if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
             || dimensionLength == tadInfo.tensorShapeLength) {
-            ShapeInformation *info = (ShapeInformation *) malloc(
-                    sizeof(ShapeInformation));
+            ShapeInformation *info = new ShapeInformation();
             //row vector
             if (ret2Rank == 1) {
                 ret2Rank++;
@@ -3496,7 +3494,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->rank = ret2Rank;
             info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
-            free(info);
+            delete info;
             shape::freePermuteInfo(tadInfo);
             return shapeInfoRet;
         }
@@ -3527,15 +3525,14 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 ret2 = shape::ensureVectorShape(ret2);
                 ret2Stride = shape::ensureVectorShape(ret2Stride);
             }
-            ShapeInformation *info = (ShapeInformation *) malloc(
-                    sizeof(ShapeInformation));
+            ShapeInformation *info = new ShapeInformation();
             info->shape = ret2;
             info->stride = ret2Stride;
             info->offset = retOffset;
             info->rank = ret2Rank;
             info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
-            free(info);
+            delete info;
             shape::freePermuteInfo(tadInfo);
             return shapeInfoRet;
         }
@@ -3556,8 +3553,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             if (retOffset < 0)
                 retOffset = 0;
 
-            ShapeInformation *info = (ShapeInformation *) malloc(
-                    sizeof(ShapeInformation));
+            ShapeInformation *info = new ShapeInformation();
             //row vector
             if (ret2Rank == 1) {
                 ret2Rank++;
@@ -3570,7 +3566,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->rank = ret2Rank;
             info->elementWiseStride = ret2Stride[ret2Rank - 1];
             int *shapeInfoRet = shape::toShapeBuffer(info);
-            free(info);
+            delete info;
             shape::freePermuteInfo(tadInfo);
             return shapeInfoRet;
         }
@@ -3599,8 +3595,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
                 ret2Length = shape::prod(ret2, ret2Rank);
             }
 
-            ShapeInformation *info = (ShapeInformation *) malloc(
-                    sizeof(ShapeInformation));
+            ShapeInformation *info = new ShapeInformation();
             //row vector
             if (ret2Rank == 1) {
                 ret2Rank++;
@@ -3614,7 +3609,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
             info->elementWiseStride = ret2Stride[ret2Rank - 1];
 
             int *shapeInfoRet = shape::toShapeBuffer(info);
-            free(info);
+            delete info;
             shape::freePermuteInfo(tadInfo);
             return shapeInfoRet;
         }
@@ -3914,21 +3909,20 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
     inline int* createScalarShapeInfo() {
-        int *shape = (int *) malloc(sizeof(int) * 2);
+        int *shape = new int[2];
         shape[0] = 1;
         shape[1] = 1;
-        int *stride = (int *) malloc(sizeof(int) * 2);
+        int *stride = new int[2];
         stride[0] = 1;
         stride[1] = 1;
-        ShapeInformation *shapeInformation2 = (ShapeInformation *) malloc(
-                sizeof(ShapeInformation));
+        ShapeInformation *shapeInformation2 = new ShapeInformation();
         shapeInformation2->rank = 2;
         shapeInformation2->offset = 0;
         shapeInformation2->stride = stride;
         shapeInformation2->shape = shape;
         shapeInformation2->elementWiseStride = 1;
         int *ret = shape::toShapeBuffer(shapeInformation2);
-        free(shapeInformation2);
+        delete shapeInformation2;
         return ret;
     }
 
