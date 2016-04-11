@@ -23,8 +23,11 @@
 #include <jni.h>
 #endif
 
+#include "optype.h"
+
 namespace functions {
     namespace summarystats {
+
 
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
@@ -622,10 +625,6 @@ struct SharedSummaryStatsData<double> {
 
 
 
-		//only compute the tad indexes once
-		__shared__
-		shape::TADPermuteInfo xTadInfo;
-
 		SummaryStatsData <T> reduction;
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
@@ -635,7 +634,7 @@ struct SharedSummaryStatsData<double> {
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -649,7 +648,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension != NULL && dimension[0] != shape::MAX_DIMENSION) {
+			if (dimension != NULL && dimension[0] != MAX_DIMENSION) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -697,8 +696,8 @@ struct SharedSummaryStatsData<double> {
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
-							&dimension,
-							&dimensionLength,
+							dimension,
+							dimensionLength,
 							&squeezed,
 							&newSqueezeDimensions,
 							wholeRank,
@@ -774,13 +773,7 @@ struct SharedSummaryStatsData<double> {
 					}
 				}
 		    } else {
-                if(tid == 0) {
-					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-				}
-				__syncthreads();
-
-
-				int resultLength = shape::length(resultShapeInfo);
+             	int resultLength = shape::length(resultShapeInfo);
 				if(tid >= resultLength) {
 					return;
 				}
@@ -815,9 +808,7 @@ struct SharedSummaryStatsData<double> {
 				}
 
 				__syncthreads();
-				if(tid == 0) {
-					shape::freePermuteInfo(xTadInfo);
-				}
+
 		    }
 		}
 		else if (resultScalar) {
@@ -854,7 +845,7 @@ struct SharedSummaryStatsData<double> {
     			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize); //(int *) malloc(sizeof(int) * rank);
 #pragma unroll
 	    		for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-    				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
+    				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
                     int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
     				SummaryStatsData <T> indexVal2;
 					indexVal2.initWithValue(dx[offset]);
@@ -1013,7 +1004,6 @@ struct SharedSummaryStatsData<double> {
                 if (dimensionLength > 1) {
                     int numOnes = 0;
                     int *shape = shape::shapeOf(xShapeInfo);
-                    int *stride = shape::stride(xShapeInfo);
                     int wholeRank = shape::rank(xShapeInfo);
                     bool squeezed = false;
                     bool newSqueezeDimensions = false;
@@ -1023,16 +1013,16 @@ struct SharedSummaryStatsData<double> {
                     }
 
                     //squeeze the dimensions
-                        if (numOnes > 0) {
-                            xShapeInfo = shape::squeezeDimensions(
+                    if (numOnes > 0) {
+                        xShapeInfo = shape::squeezeDimensions(
                                 xShapeInfo,
-                                &dimension,
-                                &dimensionLength,
+                                dimension,
+                                dimensionLength,
                                 &squeezed,
                                 &newSqueezeDimensions,
                                 wholeRank,
                                 numOnes);
-                        }
+                    }
 
                     /**
                      * The element wise stride belong longs to a reduction index.
@@ -1049,7 +1039,6 @@ struct SharedSummaryStatsData<double> {
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-                    int tadLength = shape::length(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
@@ -1094,15 +1083,15 @@ struct SharedSummaryStatsData<double> {
                     }
 
 
-                        free(tadShapeShapeInfo);
+                    free(tadShapeShapeInfo);
 
-                        if (newSqueezeDimensions) {
-                            free(dimension);
-                        }
+                    if (newSqueezeDimensions) {
+                        free(dimension);
+                    }
 
-                        if (numOnes > 0) {
-                            free(xShapeInfo);
-                        }
+                    if (numOnes > 0) {
+                        free(xShapeInfo);
+                    }
                 }
 
                 else {
@@ -1473,12 +1462,11 @@ struct SharedSummaryStatsData<double> {
 #ifdef __CUDACC__
             __inline__ __host__ __device__
 #endif
-            functions::summarystats::SummaryStatsReduce<T> * getOp(int op,bool biasCorrected) {
-                if (op == 0) {
-                    return new functions::summarystats::ops::Variance<T>(biasCorrected);
-                } else if (op == 1) {
-                    return new functions::summarystats::ops::StandardDeviation<T>(biasCorrected);
-
+            functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected) {
+                if (op == op_type::Variance) {
+                    return new ops::Variance<T>(biasCorrected);
+                } else if (op == op_type::StandardDeviation) {
+                    return new ops::StandardDeviation<T>(biasCorrected);
                 }
                 return NULL;
             }

@@ -5,10 +5,18 @@
 #ifndef NATIVEOPERATIONS_NATIVEBLAS_H
 #define NATIVEOPERATIONS_NATIVEBLAS_H
 
-#include <dll.h>
 #include <pointercast.h>
 
 
+//DO NOT REMOVE: THIS IS AN EDITOR SEMANTICS THING FOR CLION
+//IT DEFINES THE EXPORT MACRO FOR THE EDITOR AND THEN
+//RE ADDS THE DEFINITION VIA dll.h
+#ifdef  _WIN32
+#define ND4J_EXPORT ND4J_EXPORT
+#else
+#define ND4J_EXPORT
+#endif
+#include <dll.h>
 
 class ND4J_EXPORT Nd4jBlas {
 public:

@@ -27,15 +27,15 @@
 
 
 namespace functions {
-namespace indexreduce {
-template<typename T>
-struct IndexValue {
-	T value;
-	int index;
-};
+	namespace indexreduce {
+		template<typename T>
+		struct IndexValue {
+			T value;
+			int index;
+		};
 
 #ifdef __CUDACC__
-// This is the un-specialized struct.  Note that we prevent instantiation of this
+		// This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 template<typename T>
 struct SharedIndexValue {
@@ -71,106 +71,106 @@ struct SharedIndexValue<double> {
 };
 #endif
 
-template<typename T>
-class IndexReduce: public  functions::ops::Op<T> {
+		template<typename T>
+		class IndexReduce: public  functions::ops::Op<T> {
 
-public:
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+		public:
+			/**
+             *
+             * @param val
+             * @param extraParams
+             * @return
+             */
+			//an op for the kernel
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
+			IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+			/**
+             *
+             * @param old
+             * @param opOutput
+             * @param extraParams
+             * @return
+             */
+			//calculate an update of the reduce operation
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
-			T *extraParams) = 0;
+			IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
+								 T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+			/**
+             *
+             * @param f1
+             * @param f2
+             * @param extraParams
+             * @return
+             */
+			//invoked when combining two kernels
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
+			IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+			/**
+             *
+             * @param reduction
+             * @param n
+             * @param xOffset
+             * @param dx
+             * @param incx
+             * @param extraParams
+             * @param result
+             * @return
+             */
+			//post process result (for things like means etc)
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) = 0;
+			IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
+									  T *dx, int incx, T *extraParams, T *result) = 0;
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+			/**
+             *
+             * @param d1
+             * @param d2
+             * @param extraParams
+             * @return
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
+			IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
 
 #ifdef __CUDACC__
-	/**
+			/**
 	 *
 	 * @param sPartialsRef
 	 * @param tid
@@ -268,16 +268,15 @@ public:
 
 
 		//only compute the tad indexes once
-		__shared__ shape::TADPermuteInfo xTadInfo;
-
 		IndexValue <T> reduction = {startingVal, 0};
+
 		if (tid == 0) {
 			if (resultShapeInfo != NULL)
 				resultLength = shape::length(resultShapeInfo);
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -330,8 +329,8 @@ public:
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 								inputShapeInfo,
-								&dimension,
-								&dimensionLength,
+								dimension,
+								dimensionLength,
 								&squeezed,
 								&newSqueezeDimensions,
 								wholeRank,
@@ -409,9 +408,6 @@ public:
 					}
 				}
 			} else {
-				if(tid == 0) {
-					xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-				}
 				__syncthreads();
 
 
@@ -443,9 +439,7 @@ public:
 
 				__syncthreads();
 
-				if(tid == 0) {
-					shape::freePermuteInfo(xTadInfo);
-				}
+
 			}
 			/*
                     if(tid == 0) {
@@ -509,13 +503,8 @@ public:
 				return;
 
 			if (threadIdx.x == 0) {
-				if (dimension != NULL && (dimension[0] != shape::MAX_DIMENSION && dimensionLength == 1)) {
-					int *xStride = shape::stride(xShapeInfo);
-					xElementWiseStride =  xStride[dimension[0]];
-				} else {
-					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-				}
-			}
+				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+		}
 
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
@@ -544,7 +533,7 @@ public:
 				int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
 				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,&ind2sub);
+					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 					int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
 					int currIdx = i;
 					IndexValue <T> indexVal = {dx[offset], currIdx};
@@ -616,675 +605,675 @@ public:
 
 
 #endif
-	/**
-	 * CPU operations
-	 * @param x the input data
-	 * @param xShapeInfo the shape information for the input data
-	 * @param extraParams the extra parameters
-	 * @param result the result data
-	 * @param resultShapeInfo the shpae information
-	 */
-	virtual
+			/**
+             * CPU operations
+             * @param x the input data
+             * @param xShapeInfo the shape information for the input data
+             * @param extraParams the extra parameters
+             * @param result the result data
+             * @param resultShapeInfo the shpae information
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__
+			inline __host__
 
 #elif defined(__GNUC__)
 
 #endif
-	T execScalar(T *x,
-			int *xShapeInfo,
-			T *extraParams) {
+			T execScalar(T *x,
+						 int *xShapeInfo,
+						 T *extraParams) {
 
-		T startingVal = this->startingValue(x);
-		IndexValue<T> startingIndex;
-		startingIndex.value = startingVal;
-		startingIndex.index = 0;
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		if(xElementWiseStride < 1) {
-			int shapeIter[MAX_RANK];
-			int coord[MAX_RANK];
-			int dim;
-			int xStridesIter[MAX_RANK];
+				T startingVal = this->startingValue(x);
+				IndexValue<T> startingIndex;
+				startingIndex.value = startingVal;
+				startingIndex.index = 0;
+				int length = shape::length(xShapeInfo);
+				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				if(xElementWiseStride < 1) {
+					int shapeIter[MAX_RANK];
+					int coord[MAX_RANK];
+					int dim;
+					int xStridesIter[MAX_RANK];
 
-			int *xShape = shape::shapeOf(xShapeInfo);
-			int *xStride = shape::stride(xShapeInfo);
-			int rank = shape::rank(xShapeInfo);
-			if(PrepareOneRawArrayIter<T>(rank,
-					xShape,
-					x,
-					xStride,
-					&rank,
-					shapeIter,
-					&x,
-					xStridesIter) >= 0) {
+					int *xShape = shape::shapeOf(xShapeInfo);
+					int *xStride = shape::stride(xShapeInfo);
+					int rank = shape::rank(xShapeInfo);
+					if(PrepareOneRawArrayIter<T>(rank,
+												 xShape,
+												 x,
+												 xStride,
+												 &rank,
+												 shapeIter,
+												 &x,
+												 xStridesIter) >= 0) {
 
-				ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-					/* Process the innermost dimension */
-					int i = shape::getOffset(0,xShape,xStride,coord,rank);
-					IndexValue<T> curr;
-					curr.value = x[i];
-					curr.index = i;
-					startingIndex = update(startingIndex, curr,
-							extraParams);
-				} ND4J_RAW_ITER_ONE_NEXT(dim,
-						rank,
-						coord,
-						shapeIter,
-						x,
-						xStridesIter);
-				return startingIndex.index;
-			}
-			else {
-				printf("Unable to prepare array\n");
-			}
-
-		}
-		else {
-
-			if (xElementWiseStride == 1) {
-				if(length < 8000) {
-#pragma omp simd
-					for (int i = 0; i < length; i++) {
-						IndexValue<T> curr;
-						curr.value = x[i];
-						curr.index = i;
-						startingIndex = update(startingIndex, curr,
-								extraParams);
-
-
-
+						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+							/* Process the innermost dimension */
+							int i = shape::getOffset(0,xShape,xStride,coord,rank);
+							IndexValue<T> curr;
+							curr.value = x[i];
+							curr.index = i;
+							startingIndex = update(startingIndex, curr,
+												   extraParams);
+						} ND4J_RAW_ITER_ONE_NEXT(dim,
+												 rank,
+												 coord,
+												 shapeIter,
+												 x,
+												 xStridesIter);
+						return startingIndex.index;
 					}
-					return startingIndex.index;
+					else {
+						printf("Unable to prepare array\n");
+					}
+
 				}
 				else {
-					BlockInformation info(length);
+
+					if (xElementWiseStride == 1) {
+						if(length < 8000) {
+#pragma omp simd
+							for (int i = 0; i < length; i++) {
+								IndexValue<T> curr;
+								curr.value = x[i];
+								curr.index = i;
+								startingIndex = update(startingIndex, curr,
+													   extraParams);
+
+
+
+							}
+							return startingIndex.index;
+						}
+						else {
+							BlockInformation info(length);
 
 #pragma omp parallel
 
-					{
-						IndexValue<T> local;
-						local.value = this->startingValue(x);
-						local.index = 0;
+							{
+								IndexValue<T> local;
+								local.value = this->startingValue(x);
+								local.index = 0;
 
-						for (int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-							int newOffset = (i * info.items);
-							T *chunk = x + newOffset;
-							int itemsToLoop = info.items;
-							if(newOffset >= length) {
-								break;
+								for (int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
+									int newOffset = (i * info.items);
+									T *chunk = x + newOffset;
+									int itemsToLoop = info.items;
+									if(newOffset >= length) {
+										break;
+									}
+
+									//handle modulo case
+									if(newOffset + info.items >= length) {
+										itemsToLoop = length - newOffset;
+									}
+
+									for (int j = 0; j < itemsToLoop; j++) {
+										IndexValue<T> curr;
+										curr.value = chunk[j];
+										curr.index = j;
+										local = update(local, curr, extraParams);
+									}
+
+
+#pragma omp critical
+									{
+										startingIndex = update(startingIndex, local,
+															   extraParams);
+									}
+
+
+								}
 							}
 
-							//handle modulo case
-							if(newOffset + info.items >= length) {
-								itemsToLoop = length - newOffset;
-							}
+							return startingIndex.index;
+						}
 
-							for (int j = 0; j < itemsToLoop; j++) {
-								IndexValue<T> curr;
-								curr.value = chunk[j];
-								curr.index = j;
-								local = update(local, curr, extraParams);
-							}
+					}
 
-
+					else {
+#pragma omp parallel for
+						for (int i = 0; i < length; i++) {
+							IndexValue<T> curr;
+							curr.value = x[i * xElementWiseStride];
+							curr.index = i;
 #pragma omp critical
 							{
-								startingIndex = update(startingIndex, local,
-										extraParams);
+								startingIndex = update(startingIndex, curr,
+													   extraParams);
 							}
 
-
 						}
+
+
+
 					}
 
-					return startingIndex.index;
-				}
-
-			}
-
-			else {
-#pragma omp parallel for
-				for (int i = 0; i < length; i++) {
-					IndexValue<T> curr;
-					curr.value = x[i * xElementWiseStride];
-					curr.index = i;
-#pragma omp critical
-					{
-						startingIndex = update(startingIndex, curr,
-								extraParams);
-					}
 
 				}
 
-
+				return  startingIndex.index;
 
 			}
 
 
-		}
-
-		return  startingIndex.index;
-
-	}
-
-
-	/**
-	 * CPU operations
-	 * @param x the input data
-	 * @param xShapeInfo the shape information for the input data
-	 * @param extraParams the extra parameters
-	 * @param result the result data
-	 * @param resultShapeInfo the shpae information
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#elif defined(__GNUC__)
-
-#endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfo) {
-		result[0] = this->execScalar(x,xShapeInfo,extraParams);
-	}
-
-	/**
-	 * The dimension wise
-	 * CPU implementation
-	 * @param x the input data
-	 * @param xShapeInfo the x shape information
-	 * @param extraParams the extra parameters for the reduce
-	 * @param result the result buffer
-	 * @param resultShapeInfoBuffer the shape information
-	 * @param dimension the dimension to do reduce along long
-	 * @param dimensionLength the length of the dimension
-	 * buffer
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#elif defined(__GNUC__)
-
-#endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfoBuffer,
-			int *dimension,
-			int dimensionLength) {
-
-		if(shape::isScalar(resultShapeInfoBuffer)) {
-			result[0] = execScalar(x,xShapeInfo,extraParams);
-			return;
-		}
-
-
-		const int resultLength = shape::length(resultShapeInfoBuffer);
-		IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
-
-#pragma omp parallel for
-		for (int i = 0; i < resultLength; i++) {
-			IndexValue<T> val;
-			val.value = this->startingValue(x);
-			val.index = 0;
-			startingIndex[i] = val;
-		}
-
-
-		if(dimensionLength > 1) {
 			/**
-			 * The element wise stride belong longs to a reduction index.
-			 * When used out of order, we can get rid of the data
-			 * dependencies and rely on using the max dimension
-			 * specified for stride instead.
-			 * Say we take the sum(0,1) along long arr
-			 * we can use arr.stride(1) as a representation
-			 * along long which to iterate.
-			 */
-			int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
-			int *xShape = shape::shapeOf(tadShapeShapeInfo);
-			int *xStride = shape::stride(tadShapeShapeInfo);
-			int rank = shape::rank(tadShapeShapeInfo);
-#pragma omp  parallel  for
-			for(int i = 0; i < resultLength; i++) {
-				int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-				int shapeIter[MAX_RANK];
-				int coord[MAX_RANK];
-				int dim;
-				int rankIter = rank;
-				int xStridesIter[MAX_RANK];
-				T *xPointer = x + offset;
-				IndexValue<T> indexValue;
-				indexValue.index = 0;
-				indexValue.value = x[offset];
-				if(PrepareOneRawArrayIter<T>(rankIter,
-						xShape,
-						xPointer,
-						xStride,
-						&rankIter,
-						shapeIter,
-						&xPointer,
-						xStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						/* Process the innermost dimension */
-						IndexValue<T> comp;
-						comp.index = shape::sub2Ind(rank,xShape,coord);
-						comp.value = xPointer[0];
-						indexValue =  update(indexValue,comp,extraParams);
-					} ND4J_RAW_ITER_ONE_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							xPointer,
-							xStridesIter);
-				}
-				else {
-					printf("Unable to prepare array\n");
-				}
+             * CPU operations
+             * @param x the input data
+             * @param xShapeInfo the shape information for the input data
+             * @param extraParams the extra parameters
+             * @param result the result data
+             * @param resultShapeInfo the shpae information
+             */
+			virtual
+#ifdef __CUDACC__
+			inline __host__
 
+#elif defined(__GNUC__)
 
-
-				result[i] = indexValue.index;
-
+#endif
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfo) {
+				result[0] = this->execScalar(x,xShapeInfo,extraParams);
 			}
-		}
 
-		else {
-			int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
-			int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+			/**
+             * The dimension wise
+             * CPU implementation
+             * @param x the input data
+             * @param xShapeInfo the x shape information
+             * @param extraParams the extra parameters for the reduce
+             * @param result the result buffer
+             * @param resultShapeInfoBuffer the shape information
+             * @param dimension the dimension to do reduce along long
+             * @param dimensionLength the length of the dimension
+             * buffer
+             */
+			virtual
+#ifdef __CUDACC__
+			inline __host__
+
+#elif defined(__GNUC__)
+
+#endif
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfoBuffer,
+					  int *dimension,
+					  int dimensionLength) {
+
+				if(shape::isScalar(resultShapeInfoBuffer)) {
+					result[0] = execScalar(x,xShapeInfo,extraParams);
+					return;
+				}
+
+
+				int resultLength = shape::length(resultShapeInfoBuffer);
+				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
+
 #pragma omp parallel for
-			for(int i = 0;  i < resultLength; i++) {
-				int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-				IndexValue<T> indexValue;
-				indexValue.index = 0;
-				indexValue.value = x[baseOffset];
-				for(int j = 1; j < tadLength; j++) {
-					IndexValue<T> comp;
-					comp.index = j;
-					comp.value = x[baseOffset + tadElementWiseStride * j];
-					indexValue =  update(indexValue,comp,extraParams);
+				for (int i = 0; i < resultLength; i++) {
+					IndexValue<T> val;
+					val.value = this->startingValue(x);
+					val.index = 0;
+					startingIndex[i] = val;
 				}
 
-				result[i] = indexValue.index;
+
+				if(dimensionLength > 1) {
+					/**
+                     * The element wise stride belong longs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along long arr
+                     * we can use arr.stride(1) as a representation
+                     * along long which to iterate.
+                     */
+					int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					int *xShape = shape::shapeOf(tadShapeShapeInfo);
+					int *xStride = shape::stride(tadShapeShapeInfo);
+					int rank = shape::rank(tadShapeShapeInfo);
+#pragma omp  parallel  for
+					for(int i = 0; i < resultLength; i++) {
+						int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						int shapeIter[MAX_RANK];
+						int coord[MAX_RANK];
+						int dim;
+						int rankIter = rank;
+						int xStridesIter[MAX_RANK];
+						T *xPointer = x + offset;
+						IndexValue<T> indexValue;
+						indexValue.index = 0;
+						indexValue.value = x[offset];
+						if(PrepareOneRawArrayIter<T>(rankIter,
+													 xShape,
+													 xPointer,
+													 xStride,
+													 &rankIter,
+													 shapeIter,
+													 &xPointer,
+													 xStridesIter) >= 0) {
+							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+								/* Process the innermost dimension */
+								IndexValue<T> comp;
+								comp.index = shape::sub2Ind(rank,xShape,coord);
+								comp.value = xPointer[0];
+								indexValue =  update(indexValue,comp,extraParams);
+							} ND4J_RAW_ITER_ONE_NEXT(dim,
+													 rank,
+													 coord,
+													 shapeIter,
+													 xPointer,
+													 xStridesIter);
+						}
+						else {
+							printf("Unable to prepare array\n");
+						}
+
+
+
+						result[i] = indexValue.index;
+
+					}
+				}
+
+				else {
+					int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
+					int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+					for(int i = 0;  i < resultLength; i++) {
+						int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						IndexValue<T> indexValue;
+						indexValue.index = 0;
+						indexValue.value = x[baseOffset];
+						for(int j = 1; j < tadLength; j++) {
+							IndexValue<T> comp;
+							comp.index = j;
+							comp.value = x[baseOffset + tadElementWiseStride * j];
+							indexValue =  update(indexValue,comp,extraParams);
+						}
+
+						result[i] = indexValue.index;
+					}
+
+
+
+				}
+
+				delete[] startingIndex;
+			}
+
+			virtual inline
+#ifdef __CUDACC__
+			__host__ __device__
+#endif
+			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+				//no extra params aggregation needs to happen
 			}
 
 
-
-		}
-
-		delete[] startingIndex;
-	}
-
-	virtual inline
+			virtual
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #endif
-	void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-		//no extra params aggregation needs to happen
-	}
-
-
-	virtual
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	T startingValue(T *input) = 0;
+			T startingValue(T *input) = 0;
 
 
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	virtual ~IndexReduce() {
-	}
+			virtual ~IndexReduce() {
+			}
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	IndexReduce() {
-	}
+			IndexReduce() {
+			}
 
-};
+		};
 
-namespace ops {
+		namespace ops {
 
 /**
  * Find the max index
  */
-template<typename T>
-class IMax: public  functions::indexreduce::IndexReduce<T> {
-public:
+			template<typename T>
+			class IMax: public  functions::indexreduce::IndexReduce<T> {
+			public:
 
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
-		return val;
-	}
+				functions::indexreduce::IndexValue<T> op(
+						functions::indexreduce::IndexValue<T> val, T *extraParams) override {
+					return val;
+				}
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+				/**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+				//calculate an update of the reduce operation
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> update(
-			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value > old.value)
-			return opOutput;
+				functions::indexreduce::IndexValue<T> update(
+						functions::indexreduce::IndexValue<T> old,
+						functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
+					if (opOutput.value > old.value)
+						return opOutput;
 
 #ifdef __CUDACC__
-		// workaround for cuda race condition at merge phase
+					// workaround for cuda race condition at merge phase
 		else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
 #elif defined(__GNUC__)
 
 #endif
-		return old;
-	}
+					return old;
+				}
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> merge(
-			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
-		if (f1.value > f2.value)
-			return f2;
-		return f1;
-	}
+				functions::indexreduce::IndexValue<T> merge(
+						functions::indexreduce::IndexValue<T> f1,
+						functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
+					if (f1.value > f2.value)
+						return f2;
+					return f1;
+				}
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> postProcess(
-			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
-	virtual
+				functions::indexreduce::IndexValue<T> postProcess(
+						functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
+				virtual
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return MIN_FLOAT;
-	}
+				T startingValue(T *input) {
+					return MIN_FLOAT;
+				}
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
-		return d1;
-	}
+				IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+								 functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
+					return d1;
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	virtual ~IMax() {
-	}
+				virtual ~IMax() {
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	IMax() {
-	}
+				IMax() {
+				}
 
-};
+			};
 
 /**
  * Find the min index
  */
-template<typename T>
-class IMin: public  functions::indexreduce::IndexReduce<T> {
-public:
+			template<typename T>
+			class IMin: public  functions::indexreduce::IndexReduce<T> {
+			public:
 
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
-		return val;
-	}
-	virtual
+				functions::indexreduce::IndexValue<T> op(
+						functions::indexreduce::IndexValue<T> val, T *extraParams) override {
+					return val;
+				}
+				virtual
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return MAX_FLOAT;
-	}
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+				T startingValue(T *input) {
+					return MAX_FLOAT;
+				}
+				/**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+				//calculate an update of the reduce operation
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> update(
-			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value < old.value)
-			return opOutput;
+				functions::indexreduce::IndexValue<T> update(
+						functions::indexreduce::IndexValue<T> old,
+						functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
+					if (opOutput.value < old.value)
+						return opOutput;
 
 #ifdef __CUDACC__
-		// workaround for cuda race condition at merge phase
+					// workaround for cuda race condition at merge phase
 		 else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
 #elif defined(__GNUC__)
 
 #endif
-		return old;
-	}
+					return old;
+				}
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> merge(
-			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
-		if (f1.value < f2.value)
-			return f2;
-		return f1;
-	}
+				functions::indexreduce::IndexValue<T> merge(
+						functions::indexreduce::IndexValue<T> f1,
+						functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
+					if (f1.value < f2.value)
+						return f2;
+					return f1;
+				}
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	functions::indexreduce::IndexValue<T> postProcess(
-			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
+				functions::indexreduce::IndexValue<T> postProcess(
+						functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
 
 #endif
-	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
-		return d1;
-	}
+				IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+								 functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
+					return d1;
+				}
 
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	virtual ~IMin() {
-	}
+				virtual ~IMin() {
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-	IMin() {
-	}
-};
-}
-
-template<typename T>
-class IndexReduceOpFactory {
-public:
-
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	IndexReduceOpFactory() {
-	}
-
-
-#ifdef __CUDACC__
-	__inline__ __host__ __device__
-#endif
-	functions::indexreduce::IndexReduce<T> * getOp(int op) {
-		if (op == 0) {
-			return new functions::indexreduce::ops::IMax<T>();
-		} else if (op == 1) {
-			return new functions::indexreduce::ops::IMin<T>();
-
+				IMin() {
+				}
+			};
 		}
-		return NULL;
+
+		template<typename T>
+		class IndexReduceOpFactory {
+		public:
+
+#ifdef __CUDACC__
+			__host__ __device__
+#endif
+			IndexReduceOpFactory() {
+			}
+
+
+#ifdef __CUDACC__
+			__inline__ __host__ __device__
+#endif
+			functions::indexreduce::IndexReduce<T> * getOp(int op) {
+				if (op == 0) {
+					return new functions::indexreduce::ops::IMax<T>();
+				} else if (op == 1) {
+					return new functions::indexreduce::ops::IMin<T>();
+
+				}
+				return NULL;
+			}
+		};
 	}
-};
-}
 
 
 }

@@ -151,7 +151,7 @@ void quickSort(StridePermutation *arr, int elements);
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void  SortStrideArray(int ndim, int *strides,
+inline void  SortStrideArray(int ndim, int strides[],
                       StridePermutation *out_strideperm) {
 
     /* Set up the strideperm values */
@@ -185,9 +185,9 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int PrepareOneRawArrayIter(int ndim, int *shape,
-                           T *data, int *strides,
-                           int *out_ndim, int *outShape,
+inline int PrepareOneRawArrayIter(int ndim, int shape[],
+                           T data[], int strides[],
+                           int *out_ndim, int outShape[],
                            T **out_data, int *outStrides) {
     StridePermutation strideperm[MAX_RANK];
     int i, j;
@@ -349,7 +349,7 @@ class CudaBlockInformation {
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-void quickSort(StridePermutation *arr, int elements) {
+inline void quickSort(StridePermutation *arr, int elements) {
 #define  MAX_LEVELS  300
 
     int  beg[MAX_LEVELS], end[MAX_LEVELS], i= 0, L, R, swap ;
@@ -391,7 +391,7 @@ void quickSort(StridePermutation *arr, int elements) {
     }
 }
 
-/*
+/**
  * The same as PrepareOneRawArrayIter, but for two
  * operands instead of one. Any broadcasting of the two operands
  * should have already been done before calling this function,
@@ -565,7 +565,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     return 0;
 }
 
-/*
+/**
  * The same as PrepareOneRawArrayIter, but for three
  * operands instead of one. Any broadcasting of the three operands
  * should have already been done before calling this function,
@@ -585,21 +585,20 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int  PrepareThreeRawArrayIter(int ndim, int *shape,
+int  PrepareThreeRawArrayIter(int ndim, int shape[],
                               T *dataA, int *stridesA,
                               T *dataB, int *stridesB,
                               T *dataC, int *stridesC,
-                              int *out_ndim, int *outShape,
-                              T **out_dataA, int *outStridesA,
-                              T **out_dataB, int *outStridesB,
-                              T **out_dataC, int *outStridesC)
+                              int &out_ndim, int *outShape,
+                              T **out_dataA, int outStridesA[],
+                              T **out_dataB, int outStridesB[],
+                              T **out_dataC, int outStridesC[])
 {
     StridePermutation strideperm[MAX_RANK];
-    int i, j;
 
     /* Special case 0 and 1 dimensions */
     if (ndim == 0) {
-        *out_ndim = 1;
+        out_ndim = 1;
         *out_dataA = dataA;
         *out_dataB = dataB;
         *out_dataC = dataC;
@@ -614,7 +613,7 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
         int stride_entryB = stridesB[0];
         int stride_entryC = stridesC[0];
         int shape_entry = shape[0];
-        *out_ndim = 1;
+        out_ndim = 1;
         outShape[0] = shape[0];
         /* Always make a positive stride for the first operand */
         if (stride_entryA >= 0) {
@@ -638,7 +637,7 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
 
     /* Sort the axes based on the destination strides */
     SortStrideArray(ndim, stridesA, strideperm);
-    for (i = 0; i < ndim; ++i) {
+    for (int i = 0; i < ndim; ++i) {
         int iperm = strideperm[ndim - i - 1].perm;
         outShape[i] = shape[iperm];
         outStridesA[i] = stridesA[iperm];
@@ -647,7 +646,7 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
     }
 
     /* Reverse any negative strides of operand A */
-    for (i = 0; i < ndim; ++i) {
+    for (int i = 0; i < ndim; ++i) {
         int stride_entryA = outStridesA[i];
         int stride_entryB = outStridesB[i];
         int stride_entryC = outStridesC[i];
@@ -663,7 +662,7 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
         }
         /* Detect 0-size arrays here */
         if (shape_entry == 0) {
-            *out_ndim = 1;
+            out_ndim = 1;
             *out_dataA = dataA;
             *out_dataB = dataB;
             *out_dataC = dataC;
@@ -676,8 +675,8 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
     }
 
     /* Coalesce any dimensions where possible */
-    i = 0;
-    for (j = 1; j < ndim; ++j) {
+    int i = 0;
+    for (int j = 1; j < ndim; ++j) {
         if (outShape[i] == 1) {
             /* Drop axis i */
             outShape[i] = outShape[j];
@@ -708,7 +707,7 @@ int  PrepareThreeRawArrayIter(int ndim, int *shape,
     *out_dataA = dataA;
     *out_dataB = dataB;
     *out_dataC = dataC;
-    *out_ndim = ndim;
+    out_ndim = ndim;
     return 0;
 }
 

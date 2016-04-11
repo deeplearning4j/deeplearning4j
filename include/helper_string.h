@@ -15,9 +15,9 @@
 #include <dll.h>
 
 //#include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include <fstream>
-//#include <string>
+#include <cstring>
 
 #ifdef _WIN32
 #ifndef STRCASECMP
@@ -100,7 +100,7 @@ inline int getFileExtension(char *filename, char **extension) {
 	return string_length;
 }
 
-inline int checkCmdLineFlag(const int argc, const char **argv,
+inline int checkCmdLineFlag(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 
@@ -128,7 +128,7 @@ inline int checkCmdLineFlag(const int argc, const char **argv,
 	return (int) bFound;
 }
 
-inline int getCmdLineArgumentInt(const int argc, const char **argv,
+inline int getCmdLineArgumentInt(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 	int value = -1;
@@ -160,7 +160,7 @@ inline int getCmdLineArgumentInt(const int argc, const char **argv,
 	}
 }
 
-inline float getCmdLineArgumentFloat(const int argc, const char **argv,
+inline float getCmdLineArgumentFloat(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 	float value = -1;
@@ -192,7 +192,7 @@ inline float getCmdLineArgumentFloat(const int argc, const char **argv,
 	}
 }
 
-inline bool getCmdLineArgumentString(const int argc, const char **argv,
+inline bool getCmdLineArgumentString(int argc, const char **argv,
 		const char *string_ref, char **string_retval) {
 	bool bFound = false;
 

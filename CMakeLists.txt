@@ -11,11 +11,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 find_path(STDIO_INCLUDE_PATH stdio.h)
-set(CMAKE_CXX_FLAGS "-Wall -g  -fopenmp -std=c++11  -fassociative-math -funsafe-math-optimizations -march=native")
 
-
-
-
+set(CMAKE_CXX_FLAGS "-Wall -fopenmp -std=c++11 -fassociative-math -funsafe-math-optimizations -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -std=c++11")
 
 include_directories(include)
 add_subdirectory(src)
@@ -23,25 +21,37 @@ add_subdirectory(src)
 if(ECLIPSE)
     message("ADDING ECLIPSE")
     add_subdirectory(eclipse)
-elseif(PTX)
+endif()
+
+if(PTX)
     message("ADDING PTX")
     add_subdirectory(ptx)
-elseif(CUBIN)
+endif()
+
+if(CUBIN)
     message("ADDING CUBIN")
     add_subdirectory(cubin)
-elseif(BUFFER)
+endif()
+
+if(BUFFER)
     message("ADDING buffer")
     add_subdirectory(buffer)
-elseif(BLAS)
+endif()
+
+if(BLAS)
     message("ADDING BLAS")
     add_subdirectory(blas)
+endif()
 
-elseif(FATBIN)
+if(FATBIN)
     message("ADDING FATBIN")
     add_subdirectory(fatbin)
-elseif(RUN_TEST)
+endif()
+
+if(TESTS)
     # packages
     find_package(CUDA)
+
     IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         include_directories("/usr/include")
         include_directories("/usr/local/include")
@@ -62,6 +72,5 @@ elseif(RUN_TEST)
         endif()
     endif()
     message("ADDING TEST")
-    add_subdirectory(library)
     add_subdirectory(test)
 endif()
