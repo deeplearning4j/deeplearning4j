@@ -485,7 +485,6 @@ struct SharedIndexValue<double> {
 				}
 
 				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-					printf("overhead!\n");
                 	free(ind2sub);
             	}
 			}

@@ -193,7 +193,7 @@ public:
 
 
 			if (dx == result) {
-				for (; i < n; i += totalThreads) {
+				for (i = tid; i < n; i += totalThreads) {
 					shape::ind2subC(xRank,xShape, i, xCoord);
 					shape::ind2subC(yRank,yShape, i, yCoord);
 
