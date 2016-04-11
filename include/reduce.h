@@ -200,7 +200,10 @@ namespace functions {
 
 					// we mark this block as finished
 					allocationBuffer[tid * rank] = 119120121;
+					__threadfence();
 				}
+
+				__syncthreads();
 
 				if (blockIdx.x == 0) {
 
@@ -226,18 +229,8 @@ namespace functions {
 
 						if (finisher != gridDim.x) {
 							// TODO: sleep here
-							clock_t start = clock();
-							clock_t now;
-							for (;;) {
-  								now = clock();
-  								clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
-  								if (cycles >= 10000) {
-    								break;
-  								}
-							}
-
-							*globalClock = now;
 						}
+						__syncthreads();
 					}
 
 					__syncthreads();
