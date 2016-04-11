@@ -5090,7 +5090,7 @@ namespace functions {
                             T maxValue = xPointer[0];
 
                             T *maxCursor = resultPointer;
-                            long maxCursorLong = reinterpret_cast<long>(maxCursor);
+                            Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
                             if (PrepareTwoRawArrayIter<T>(rank,
                                                           xShape,
                                                           xPointer,
@@ -5126,7 +5126,7 @@ namespace functions {
 
                             printf("After loop\n");
 
-                            /*   free(tadShapeShapeInfo);
+                               free(tadShapeShapeInfo);
 
 
                                if (newSqueezeDimensions) {
@@ -5135,7 +5135,7 @@ namespace functions {
 
                                if (numOnes > 0) {
                                    free(xShapeBuffer);
-                               }*/
+                               }
                         }
 
                     }
