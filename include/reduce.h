@@ -195,7 +195,7 @@ namespace functions {
 				int rank = shape::rank(xShapeInfo);
 				tid = threadIdx.x;
 				if (threadIdx.x == 0) {
-					reductionBuffer[blockIdx.x] = this->postProcess(sPartials[0],n,extraParams);
+					reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
 				}
 				__syncthreads();
 				__threadfence();
@@ -218,14 +218,14 @@ namespace functions {
 
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = sPartials[0];
+						result[0] = this->postProcess(sPartials[0],n,extraParams);
 					}
 				}
 			} else {
 				if (tid == 0) {
 					unsigned int *tc = (unsigned *) reductionBuffer;
 					tc[4096] = 0;
-					result[0] = sPartials[0];
+					result[0] = this->postProcess(sPartials[0],n,extraParams);
 				}
 			}
 	}
@@ -1861,12 +1861,11 @@ __global__ void reduceGenericGlobal(
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		reduceFunctionToInvoke = newOpFactory->create(op);
+		printf("Creating op A: [%i]\n", op);
+	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
 			dx,
@@ -1916,12 +1915,11 @@ __device__ void reduceGeneric(
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		reduceFunctionToInvoke = newOpFactory->create(op);
+		printf("Creating op B: [%i]\n", op);
+	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
 			dx,
