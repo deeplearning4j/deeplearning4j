@@ -465,7 +465,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 allocator.memcpyAsync(ret.data(),new Pointer(allocator.getPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
             } else {
-                long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), m.length()};
+                long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
                             extras,
