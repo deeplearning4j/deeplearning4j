@@ -163,8 +163,8 @@ namespace functions {
 			int *xIdx = shape::cuMalloc(allocationPointer, allocSize);
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i,&xIdx);
+				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
+				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xIdx);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
 				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
@@ -256,8 +256,8 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int *indexes,
-                    int *resultIndexes) {
+                    Nd4jIndex *indexes,
+                    Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
                 for (int i = 0; i < n; i++) {

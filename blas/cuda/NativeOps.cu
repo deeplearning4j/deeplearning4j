@@ -2109,7 +2109,7 @@ __device__ void flattenKernelGeneric(int dOffset,
 					T *result,
 					int *resultShapeInfo,
 					T *input,
-					int *inputShapeInfo) {
+					int *inputShapeInfo, int *allocationPointer) {
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 	int *zShape = shape::shapeOf(resultShapeInfo);
@@ -2131,41 +2131,49 @@ __device__ void flattenKernelGeneric(int dOffset,
 			}
 		} else {
 			int rank = shape::rank(inputShapeInfo);
-			int *coord = (int *) malloc(sizeof(int) * rank);
+			long allocSize = sizeof(int) * rank;
+			int *coord = shape::cuMalloc(allocationPointer, allocSize);
+
 			if(order == 'f') {
 				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2sub(rank,yShape,i,&coord);
+					shape::ind2sub(rank,yShape,i,coord);
 					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 					result[i + dOffset] = input[offset];
 				}
 			}
 			else {
 				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2subC(rank,yShape,i,&coord);
+					shape::ind2subC(rank,yShape,i,coord);
 					int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 					result[i + dOffset] = input[offset];
 				}
 			}
-			free(coord);
+
+			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+				free(coord);
+			}
 		}
 	} else {
 		int rank = shape::rank(inputShapeInfo);
-		int *coord = (int *) malloc(sizeof(int) * rank);
+		long allocSize = sizeof(int) * rank;
+		int *coord = shape::cuMalloc(allocationPointer, allocSize);
 		if(order == 'f') {
 			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2sub(rank,yShape,i,&coord);
+				shape::ind2sub(rank,yShape,i,coord);
 				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 				result[i+dOffset] = input[offset];
 			}
 		}
 		else {
 			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2subC(rank,yShape,i,&coord);
+				shape::ind2subC(rank,yShape,i,coord);
 				int offset = shape::getOffset(0,yShape,yStride,coord,rank);
 				result[i+dOffset] = input[offset];
 			}
 		}
-		free(coord);
+		if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+			free(coord);
+		}
 	}
 
 }
@@ -2175,8 +2183,8 @@ extern "C" __global__ void flattenKernelDouble(int offset,
 											  double *result,
 											  int *resultShapeInfo,
 											  double *input,
-											  int *inputShapeInfo) {
-	flattenKernelGeneric<double>(offset, order, result, resultShapeInfo, input, inputShapeInfo);
+											  int *inputShapeInfo, int *allocationPointer) {
+	flattenKernelGeneric<double>(offset, order, result, resultShapeInfo, input, inputShapeInfo, allocationPointer);
 }
 
 extern "C" __global__ void flattenKernelFloat(int offset,
@@ -2184,9 +2192,9 @@ extern "C" __global__ void flattenKernelFloat(int offset,
 											  float *result,
 											  int *resultShapeInfo,
 											  float *input,
-											  int *inputShapeInfo) {
+											  int *inputShapeInfo, int *allocationPointer) {
 
-	flattenKernelGeneric<float>(offset, order, result, resultShapeInfo, input, inputShapeInfo);
+	flattenKernelGeneric<float>(offset, order, result, resultShapeInfo, input, inputShapeInfo, allocationPointer);
 }
 
 /**
@@ -2219,7 +2227,9 @@ void NativeOps::flattenFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
-	flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -2249,10 +2259,11 @@ void NativeOps::flattenDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
-	flattenKernelDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	flattenKernelDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }

@@ -18,6 +18,8 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define PREALLOC_SIZE 5242880
+
 namespace shape {
 
 /**
@@ -98,7 +100,7 @@ namespace shape {
 
 
 #ifdef __CUDACC__
-    __inline__ __device__ int *cuMalloc(int *buffer, long size)
+    __inline__ __device__ int *cuMalloc(int *buffer, long size);
 #endif
 
 /**

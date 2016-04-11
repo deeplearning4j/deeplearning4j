@@ -64,7 +64,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams,
 			Nd4jIndex n,
-			int *indexes) {
+			int *indexes,int *allocationPointer) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -74,7 +74,7 @@ public:
 				extraParams,
 				indexes,
 				indexes,
-				indexes);
+				indexes, allocationPointer);
 	}
 
 	/**
@@ -90,10 +90,10 @@ public:
 			T *extraParams,
 			int *indexes,
 			int *yIndexes,
-			int *resultIndexes) {
+			int *resultIndexes,int *allocationPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 		Nd4jIndex n = shape::length(xShapeBuffer);
 		for (; i < n; i += totalThreads) {
 			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
@@ -113,7 +113,7 @@ public:
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *indexes,
-			int *yIndexes) {
+			int *yIndexes,int *allocationPointer) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -123,7 +123,7 @@ public:
 				extraParams,
 				indexes,
 				yIndexes,
-				indexes);
+				indexes, allocationPointer);
 	}
 
 	/**
@@ -247,10 +247,10 @@ public:
 			int incy,
 			T *params,
 			T *result,
-			int incz) {
+			int incz,int *allocationPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 
 		if (incy == 0) {
 			if ((blockIdx.x == 0) && (tid == 0)) {
