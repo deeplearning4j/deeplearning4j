@@ -5106,7 +5106,7 @@ namespace functions {
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                     if (maxValue < xPointer[0]) {
                                         maxCursor = resultPointer;
-                                        maxCursorLong = reinterpret_cast<long>(resultPointer);
+                                        maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
                                         maxValue = xPointer[0];
                                     }
 
