@@ -5,7 +5,7 @@ layout: kr-default
 
 # DL4J와 RNNs (Recurrent Neural Networks)
 
-이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/lstm.html)를 참고하십시오.
+이 문서는 RNNs를 DL4J에서 설계/학습하는데 필요한 실용적인 내용을 다룹니다. 이 문서는 RNNs의 배경 지식을 어느 정도 갖추고 있는 독자를 대상으로 작성되었습니다. RNNs의 기본적인 내용은 [초보자를 위한 RNNs과 LSTM 가이드](http://deeplearning4j.org/kr-lstm.html)를 참고하십시오.
 
 **내용**
 
@@ -14,9 +14,9 @@ layout: kr-default
 * [단기 BPTT (Back Propagation Through Time)](#tbptt)
 * [마스킹: 일대다(one-to-many), 다대일(many-to-one), 및 배열 분류](#masking)
 * [RNN과 다른 층의 조합](#otherlayertypes)
-* [효율적인 RNNs 사용](http://deeplearning4j.org/usingrnns.html#rnntimestep)
-* [시계열 데이터 가져오기](http://deeplearning4j.org/usingrnns.html#data)
-* [예제](http://deeplearning4j.org/usingrnns.html#examples)
+* [효율적인 RNNs 사용](#rnntimestep)
+* [시계열 데이터 가져오기](#data)
+* [예제](#examples)
 
 ## <a name="basics">기본 사항: 데이터 및 네트워크 구성</a>
 현재 DL4J는 RNNs의 여러 유형 중 LSTM(Long Short-Term Memory) 모델(클래스 이름: `GravesLSTM`)을 지원합니다. 앞으로 더 다양한 형태의 RNNs을 지원할 예정입니다.
