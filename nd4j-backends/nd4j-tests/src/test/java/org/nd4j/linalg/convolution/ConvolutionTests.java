@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -60,6 +61,30 @@ public  class ConvolutionTests extends BaseNd4jTest {
         System.out.println(ret);
     }
 
+
+    @Test
+    public void testIm2Col2() {
+        // n, c, h, w = new_val.shape
+        int kh = 2;
+        int kw = 2;
+        int ph = 0;
+        int pw = 0;
+        int sy = 2;
+        int sx = 2;
+        int depth = 2;
+        INDArray assertion  = Nd4j.create(new double[]{
+                1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4
+        }, new int[]{1, 1, 2, 2, 4, 4});
+        INDArray ret = Nd4j.create(new double[]{
+                1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+                3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+        }, new int[]{1, 1, 8, 8});
+
+        INDArray test = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
+        assertEquals(assertion,test);
+
+    }
 
     @Test
     public void testCompareIm2ColImpl() {
@@ -120,6 +145,7 @@ public  class ConvolutionTests extends BaseNd4jTest {
                                                         INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph, pw, -1, cAll); //Old implementation
                                                         INDArray outNew = Convolution.im2col(in, kh, kw, sh, sw, ph, pw, cAll);         //Current implementation
 
+                                                        assertArrayEquals(outOrig.data().asFloat(), outNew.data().asFloat(), 0.01f);
                                                         assertEquals(outOrig,outNew);
                                                     }
                                                 }
@@ -218,6 +244,24 @@ public  class ConvolutionTests extends BaseNd4jTest {
 
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
         assertEquals(assertion,newTest);
+    }
+
+    @Test
+    public void testIm2ColAndBack() {
+        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2, 2, 2, 2);
+        INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
+        INDArray im2colAssertion = Nd4j.create(new double[]{
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0, 0.0, 0.0, 0.0, 7.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.0, 10.0, 0.0, 0.0, 0.0, 0.0, 11.0, 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 15.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        }, new int[]{2, 2, 1, 1, 6, 6});
+        assertEquals(im2colAssertion, ret);
+        INDArray col2ImAssertion = Nd4j.create(new double[] {
+                1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0
+
+        }, new int[]{2,2,2,2});
+
+        INDArray otherConv = Convolution.col2im(ret, 1, 1, 2, 2, 2, 2);
+        assertEquals(col2ImAssertion,otherConv);
+
     }
 
     @Override
