@@ -487,7 +487,7 @@ void   NativeOps::execReduceDouble(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -534,7 +534,7 @@ void   NativeOps::execReduceDouble(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -575,7 +575,7 @@ double NativeOps::execReduceScalarDouble(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1455,7 +1455,7 @@ void   NativeOps::execReduceFloat(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1501,7 +1501,7 @@ void   NativeOps::execReduceFloat(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1541,7 +1541,7 @@ float NativeOps::execReduceScalarFloat(
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	reduceFloat<<< 1,launchDims.y, launchDims.z, *stream>>>(
+	reduceFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
