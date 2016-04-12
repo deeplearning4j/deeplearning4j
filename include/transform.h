@@ -3728,7 +3728,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer) {
+			int *allocationPointer, T *reductionPointer) {
 
 		int *shape = shape::shapeOf(xShapeBuffer);
 		__shared__ T *maxResult;
@@ -4293,13 +4293,6 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *allocationPointer, T *reductionPointer) {
-
-
-		// TODO: this kernel might use block-wise multireduce too
-		if (blockIdx.x > 0)
-			return;
-
-
 
 
 		int *shape = shape::shapeOf(xShapeBuffer);
