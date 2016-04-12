@@ -6,16 +6,15 @@ layout: default
 # Deep Learning Use Cases
 
 Deep learning excels at identifying patterns in unstructured data, which most people know as media such as images, sound, video and text. 
-
-Below is a list of sample use cases we've run across, paired with the sectors where they pertain. 
+Below is a list of sample use cases we've run across, paired with the sectors to which they pertain. 
 
 ![Alt text](../img/use_case_industries.png)
 
 ## Feature Introspection
 
-Traditional machine learning has the advantage of feature introspection -- that is, it knows why it is classifying an input in one way or another, which is important for analytics -- but that very advantage is what excludes it from working with unstructured, unsupervised data, as well as attaining the record-breaking accuracy of the latest deep learning models. 
+Traditional machine learning has the advantage of feature introspection -- that is, it knows why it is classifying an input in one way or another, which is important for analytics. But that very advantage is what excludes it from working with unlabeled and unstructured data, as well as attaining the record-breaking accuracy of the latest deep learning models. Feature engineering is one of the major chokepoints of traditional machine learning, since so few people are able to do it well and quickly enough to adapt to changing data.
 
-For cases where feature introspection is necessary (e.g. the law requires that you justify a decision to, say, close a bank account for fraud or deny a loan due to predicted credit risk), we recommend using a deep net in an ensemble with machine-learning algorithms, allowing each one to vote and relying on each for its strength; in this way, you can combine the accuracy of deep-learning with the explanatory power of feature introspection.
+For cases where feature introspection is necessary (e.g. the law requires that you justify a decision to, say, deny a loan due to predicted credit risk), we recommend using a deep net in an ensemble with machine-learning algorithms, allowing each one to vote and relying on each for its strength. Alternatively, one can perform various analyses on the results of deep nets to form hypotheses about their decision-making. 
 
 ## Text
 
@@ -42,5 +41,3 @@ Here's an example of faces clustered by a neural net:
 Advances in [reality capture and reality computing](http://pando.com/2014/02/16/convergence-what-happens-when-virtual-realities-take-over/) are making virtual and real worlds converge. One application of deep learning to this newly available data is to recognize and label objects in 3D environments, and in real life. 
 
 From there, it's a short step to simulated semantics, in which machines learn the nature and constraints of objects in the world, through their virtual representations, and then bring that understanding to the language they generate and ingest. We believe that is one of many futures in store for neural nets. 
-
-To jointly distribute deep learning over images and symbols, a complex of deep learning nets is foreseeable, in which one "manager" net relies on a large number of "expert" nets, each one specialized in one type of pattern recognition: cat faces, table legs, street signs, etc.
