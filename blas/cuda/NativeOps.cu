@@ -40,7 +40,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// check for partial block at the end
 	if(n % num_threads) ++num_blocks;
-	if (num_blocks > 256) num_blocks = 256;
+//	if (num_blocks > 256) num_blocks = 256;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
@@ -62,7 +62,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+	printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
@@ -1102,7 +1102,7 @@ void   NativeOps::execTransformDouble(
 				extraParamsPointer,
 				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 	} else {
-		transformDouble <<<launchDims.x, launchDims.y, launchDims.z, *stream >>> (
+		transformDouble <<<1, launchDims.y, launchDims.z, *stream >>> (
 				opNum,
 				xPointer,
 				xShapeInfoPointer,
@@ -2086,15 +2086,84 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
+	// special pointer for special buffer for special ops
+	float *specialPointer = reinterpret_cast<float *>(extraPointers[6]);
+
+	int *dimension = (int *) specialPointer;
+	int *maxDimension = dimension + 1;
+	int *maxShapeBuffer = (int *) maxDimension + 1;
+	float * special = (float *) maxShapeBuffer + 8;
 
 	// simple trick to get workaround over reductions into scalar
-	if (shape::isVector((int *)&extraPointers[0]) && opNum >= 38 && opNum <= 41) {
-		transformFloat <<<1, launchDims.y, launchDims.z * 3, *stream>>> (
-				opNum,
-				xPointer,
-				xShapeInfoPointer,
-				extraParamsPointer,
-				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+	if (opNum >= 38 && opNum <= 41) {
+		if (shape::isVector((int *)&extraPointers[0])) {
+			// if that's vector, we just go directly to op in 1 block
+			transformFloat <<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
+					opNum,
+					xPointer,
+					xShapeInfoPointer,
+					extraParamsPointer,
+					resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+		} else {
+			// going for blockwise specials
+//			int *dimension = (int *) mallocHost(4, 0);
+			dimension[0] = 0;
+
+//			int *maxDimension = (int *) mallocHost(4, 0);
+			maxDimension[0] = 1;
+
+//			int *shape = ((int *)&extraPointers[0]);
+
+//			float *special = (float *) mallocHost(1024 * 1024 * 8, 0);
+
+//			int *maxShapeBuffer = (int *) mallocHost(4 * 8, 0);
+			maxShapeBuffer[0] = 2;
+			maxShapeBuffer[1] = 256;
+			maxShapeBuffer[2] = 1;
+			maxShapeBuffer[3] = 1;
+			maxShapeBuffer[4] = 1;
+			maxShapeBuffer[5] = 0;
+			maxShapeBuffer[6] = 1;
+			maxShapeBuffer[7] = 99;
+
+			float *xpf = reinterpret_cast<float *>(dx);
+
+
+			switch (opNum) {
+				case 38:
+					// softmax
+
+					// max 3
+					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+
+					// sub 1
+					execBroadcastFloat(extraPointers, 1,dx,xShapeInfo, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
+
+					// exp 3
+					execTransformFloat(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+
+					//sum 1
+					execReduceFloat(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+
+					// divide 3
+					execBroadcastFloat(extraPointers, 3,dx,xShapeInfo, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
+
+					break;
+				case 39:
+					// softmax derivative
+					break;
+				case 40:
+					// logsoftmax
+
+					break;
+				case 41:
+					// ismax
+					break;
+				default:
+					printf("Bad case for transformFloat\n");
+					break;
+			}
+		}
 	} else {
 		transformFloat <<<launchDims.x, launchDims.y, launchDims.z * 3, *stream>>> (
 				opNum,

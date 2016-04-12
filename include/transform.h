@@ -146,7 +146,7 @@ namespace functions {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 		__shared__ int length;
-		if(tid == 0)
+		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
 		__syncthreads();
 
@@ -3757,9 +3757,11 @@ namespace functions {
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = new T[shape[0]];
+			//printf("maxResult length: [%i]\n", shape[0]);
 		}
 		__syncthreads();
 
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
 		int dimension[1] = {0};
@@ -3771,8 +3773,8 @@ namespace functions {
 		if (threadIdx.x == 0)
 			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		if (threadIdx.x < shape[0])
-			maxResult[threadIdx.x] = (T) 0.0;
+		if (tid < shape[0])
+			maxResult[tid] = (T) 0.0;
 		__syncthreads();
 
 		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer);
@@ -5245,16 +5247,11 @@ __device__ void transformGeneric(
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
-
+        op = doubleTransformFactory->getOp(opNum);
 	}
 
 	__syncthreads();
 
-
-	if(threadIdx.x == 0) {
-		op = doubleTransformFactory->getOp(opNum);
-	}
-	__syncthreads();
 
 
 	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer);
