@@ -396,14 +396,14 @@ struct SharedIndexValue<double> {
 
 				__syncthreads();
 				if (threadIdx.x == 0) {
-					free(tadShapeShapeInfo);
+					delete[] tadShapeShapeInfo;
 
 					if(newSqueezeDimensions) {
-						free(dimension);
+						delete[] dimension;
 					}
 
 					if(numOnes > 0) {
-						free(inputShapeInfo);
+						delete[] inputShapeInfo;
 					}
 				}
 			} else {
@@ -447,9 +447,6 @@ struct SharedIndexValue<double> {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			}
 
-			if (threadIdx.x == 0)
-				printf("Starting scalarIndexReduce block: [%i]\n", blockIdx.x);
-
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
 
@@ -485,7 +482,7 @@ struct SharedIndexValue<double> {
 				}
 
 				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                	free(ind2sub);
+                	delete[] ind2sub;
             	}
 			}
 

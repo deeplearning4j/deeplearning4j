@@ -173,7 +173,7 @@ namespace functions {
 
 			}
             if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                free(xIdx);
+                delete[] xIdx;
             }
 		}
 	}
@@ -3111,11 +3111,9 @@ namespace functions {
 		int padHeight = (int) extraParams[5];
 		int kSize = kernelWidth * kernelHeight;
 
-		int outArrayOffset = 0;
 		int *outShape = shape::shapeOf(resultShapeBuffer);
 		int *outStride = shape::stride(resultShapeBuffer);
 
-		int inArrayOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3423,7 +3421,6 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer) {
-		int inOffset = 0;
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3517,8 +3514,6 @@ namespace functions {
                     int strideY = (int) extraParams[1];
                     int padWidth = (int) extraParams[2];
                     int padHeight = (int) extraParams[3];
-                    int imgHeight = (int) extraParams[4];
-                    int imgWidth = (int) extraParams[5];
 
 
                     int exampleFrom = 0;
@@ -3733,13 +3728,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer) {
-		// TODO: this kernel might use block-wise multireduce too
-		if (blockIdx.x > 0)
-			return;
-
-
-
+			int *allocationPointer) {
 
 		int *shape = shape::shapeOf(xShapeBuffer);
 		__shared__ T *maxResult;
@@ -3767,7 +3756,7 @@ namespace functions {
 				sub = new functions::broadcast::ops::Subtract<T>();
 				div = new functions::broadcast::ops::Divide<T>();
 			}
-			maxResult = (T *) malloc(sizeof(T) * shape[0]);
+			maxResult = new T[shape[0]];
 		}
 		__syncthreads();
 
@@ -3827,8 +3816,8 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 	}
 #endif
@@ -4099,8 +4088,9 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 
 
@@ -4409,8 +4399,9 @@ namespace functions {
 				delete div;
 				delete sub;
 			}
-			free(maxResult);
-			free(maxResultShapeBuffer);
+
+			delete[] maxResult;
+			delete[] maxResultShapeBuffer;
 		}
 	}
 #endif
@@ -4851,13 +4842,11 @@ namespace functions {
                                                           xStridesIter,
                                                           &result,
                                                           resultStridesIter) >= 0) {
-                                T *maxCursor = result;
                                 T value = dx[0];
                                 int idx = 0;
                                 int maxIdx = 0;
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                     if(dx[0] > value) {
-                                        maxCursor = result;
                                         value = dx[0];
                                         maxIdx = idx;
                                     }
@@ -4949,7 +4938,7 @@ namespace functions {
 			if (threadIdx.x == 0) {
 				result[maxIdx] = 1.0;
 
-				free(dimension);
+				delete[] dimension;
 				delete max;
 			}
 		}

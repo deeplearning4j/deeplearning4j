@@ -244,11 +244,11 @@ namespace functions {
 
 		__syncthreads();
 		if(threadIdx.x == 0 && numOnes > 0)  {
-			free(xShapeInfo);
+			delete[] xShapeInfo;
 		}
 
 		if(threadIdx.x == 0) {
-			free(tadShapeShapeInfo);
+			delete[] tadShapeShapeInfo;
 		}
 
 	}
@@ -415,11 +415,11 @@ namespace functions {
 				}
 
 				if (newSqueezeDimensions) {
-					free(dimension);
+					delete[] dimension;
 				}
 
 				if (numOnes > 0) {
-					free(xShapeInfo);
+					delete[] xShapeInfo;
 				}
 
 

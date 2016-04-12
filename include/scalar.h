@@ -130,6 +130,7 @@ namespace functions {
 			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
                 free(xIdx);
             }
+			delete[] xIdx;
 
 		}
 
@@ -318,8 +319,8 @@ namespace functions {
                             int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
                             result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                            free(xIdx);
-                            free(resultIdx);
+                            delete[] xIdx;
+                            delete[] resultIdx;
 
                         }
 

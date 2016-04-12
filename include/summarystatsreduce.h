@@ -762,14 +762,14 @@ struct SharedSummaryStatsData<double> {
 
 				__syncthreads();
 				if (threadIdx.x == 0) {
-					free(tadShapeShapeInfo);
+					delete tadShapeShapeInfo;
 
 					if(newSqueezeDimensions) {
-						free(dimension);
+						delete dimension;
 					}
 
 					if(numOnes > 0) {
-						free(xShapeInfo);
+						delete xShapeInfo;
 					}
 				}
 		    } else {
@@ -847,7 +847,7 @@ struct SharedSummaryStatsData<double> {
 			    }
 
                 if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                    free(ind2sub);
+                    delete[] ind2sub;
                 }
             }
 
@@ -1122,14 +1122,14 @@ struct SharedSummaryStatsData<double> {
                     }
 
 
-                    free(tadShapeShapeInfo);
+                    delete[] tadShapeShapeInfo;
 
                     if (newSqueezeDimensions) {
-                        free(dimension);
+                        delete[] dimension;
                     }
 
                     if (numOnes > 0) {
-                        free(xShapeInfo);
+                        delete[] xShapeInfo;
                     }
                 }
 

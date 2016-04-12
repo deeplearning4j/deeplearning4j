@@ -19,7 +19,7 @@ endif()
 
 include_directories(../include)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -31,7 +31,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -msse2 -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
