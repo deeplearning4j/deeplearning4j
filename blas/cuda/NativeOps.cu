@@ -2156,7 +2156,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					else
 						targetIdx = maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1];
 
-					fillIsMaxFloat<<<256,256,0, *stream>>>(xPointer, shape::length(xShapeInfoPointer), targetIdx);
+					fillIsMaxFloat<<<256,256,0, *stream>>>(resultPointer, shape::length(xShapeInfoPointer), targetIdx);
 					break;
 				}
 				default: {
