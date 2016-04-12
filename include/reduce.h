@@ -140,9 +140,6 @@ namespace functions {
 
 		int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
-		if (tid == 0)
-			printf("Going on scalarReduce!\n");
-
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();

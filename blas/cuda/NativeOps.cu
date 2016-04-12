@@ -40,7 +40,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// check for partial block at the end
 	if(n % num_threads) ++num_blocks;
-//	if (num_blocks > 256) num_blocks = 256;
+	if (num_blocks > 256) num_blocks = 256;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
@@ -2096,7 +2096,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
-		if (shape::isVector(xShapeInfoPointer)) {
+		if (shape::isVector(xShapeInfoPointer) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
 			transformFloat <<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
 					opNum,
@@ -2106,7 +2106,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 		} else {
 			// going for blockwise specials
-//			float *xpf = reinterpret_cast<float *>(dx);
+			float *xpf = reinterpret_cast<float *>(dx);
 
 			int *shape = shape::shapeOf(xShapeInfoPointer);
 			printf("Rows num: %i\n", shape[0]);
@@ -2143,11 +2143,20 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					else if (opNum == 39)
 						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
-					// softmax derivative
 					break;
 				}
 				case 41: {
 					// ismax
+					int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
+					//cudaMemsetAsync((void *)dx, 0, shape::length(xShapeInfoPointer) * 4, *stream);
+					int targetIdx = 0;
+
+					if(shape::order(xShapeInfoPointer) == 'c' || shape::order(xShapeInfoPointer) == 'f' && maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1] >= shape::length(xShapeInfoPointer))
+						targetIdx = maxIdx;
+					else
+						targetIdx = maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1];
+
+					fillIsMaxFloat<<<256,256,0, *stream>>>(xPointer, shape::length(xShapeInfoPointer), targetIdx);
 					break;
 				}
 				default: {

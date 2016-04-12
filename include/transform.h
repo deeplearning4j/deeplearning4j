@@ -144,7 +144,7 @@ namespace functions {
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ int length;
 		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
@@ -197,7 +197,7 @@ namespace functions {
 			int *allocationPointer, T *reductionPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if(incy == 1 && resultStride == 1) {
 			/* equal, positive, non-unit increments. */
@@ -5632,6 +5632,22 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
     specialPointer[5] = 0;
     specialPointer[6] = 1;
     specialPointer[7] = 99;
+}
+template <typename T>
+__device__ void fillIsMaxGeneric(T *dx, long length, long idx) {
+
+   int tid = blockIdx.x * blockDim.x + threadIdx.x;
+   for (long i = tid; i < length; i+= blockDim.x * gridDim.x) {
+        dx[i] = (i == idx? 1.0 : 0.0);
+   }
+}
+
+extern "C" __global__ void fillIsMaxFloat(float *dx, long length, long idx) {
+    fillIsMaxGeneric<float>(dx, length, idx);
+}
+
+extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
+    fillIsMaxGeneric<double>(dx, length, idx);
 }
 
 #endif
