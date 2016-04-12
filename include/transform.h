@@ -5540,6 +5540,26 @@ extern "C" __global__ void transformFloatIndexes(
 
 }
 
+/**
+* This is utility kernel, that updates given special buffer with proper values in device memory
+*/
+extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, int *specialPointer, int rows) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid > 0)
+        return;
+
+    dimension[0] = 0;
+    maxDimension[0] = 1;
+
+    specialPointer[0] = 2;
+    specialPointer[1] = rows;
+    specialPointer[2] = 1;
+    specialPointer[3] = 1;
+    specialPointer[4] = 1;
+    specialPointer[5] = 0;
+    specialPointer[6] = 1;
+    specialPointer[7] = 99;
+}
 
 #endif
 

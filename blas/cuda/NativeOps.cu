@@ -2096,7 +2096,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
-		if (shape::isVector((int *)&extraPointers[0])) {
+		if (shape::isVector(xShapeInfoPointer)) {
 			// if that's vector, we just go directly to op in 1 block
 			transformFloat <<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
 					opNum,
@@ -2106,32 +2106,17 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 		} else {
 			// going for blockwise specials
-//			int *dimension = (int *) mallocHost(4, 0);
-			dimension[0] = 0;
+//			float *xpf = reinterpret_cast<float *>(dx);
 
-//			int *maxDimension = (int *) mallocHost(4, 0);
-			maxDimension[0] = 1;
-
-//			int *shape = ((int *)&extraPointers[0]);
-
-//			float *special = (float *) mallocHost(1024 * 1024 * 8, 0);
-
-//			int *maxShapeBuffer = (int *) mallocHost(4 * 8, 0);
-			maxShapeBuffer[0] = 2;
-			maxShapeBuffer[1] = 256;
-			maxShapeBuffer[2] = 1;
-			maxShapeBuffer[3] = 1;
-			maxShapeBuffer[4] = 1;
-			maxShapeBuffer[5] = 0;
-			maxShapeBuffer[6] = 1;
-			maxShapeBuffer[7] = 99;
-
-			float *xpf = reinterpret_cast<float *>(dx);
-
-
+			int *shape = shape::shapeOf(xShapeInfoPointer);
+			printf("Rows num: %i\n", shape[0]);
 			switch (opNum) {
 				case 38:
 					// softmax
+
+					prepareShapeBuffer<<<1,1,128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0]);
+
+					checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
 					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
