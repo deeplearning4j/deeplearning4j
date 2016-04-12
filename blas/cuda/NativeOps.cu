@@ -1052,7 +1052,7 @@ void   NativeOps::execTransformDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -1093,13 +1093,22 @@ void   NativeOps::execTransformDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			xPointer,
-			xShapeInfoPointer,
-			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer, reductionPointer);
-
+	// simple trick to get workaround over reductions into scalar
+	if (shape::isVector((int *)&extraPointers[0]) && opNum >= 38 && opNum <= 41) {
+		transformDouble <<<1, launchDims.y, launchDims.z, *stream >>> (
+				opNum,
+				xPointer,
+				xShapeInfoPointer,
+				extraParamsPointer,
+				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+	} else {
+		transformDouble <<<launchDims.x, launchDims.y, launchDims.z, *stream >>> (
+				opNum,
+				xPointer,
+				xShapeInfoPointer,
+				extraParamsPointer,
+				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+	}
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
@@ -1136,7 +1145,7 @@ void   NativeOps::execTransformDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	transformDoubleIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
+	transformDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2077,13 +2086,23 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	transformFloat<<<1,launchDims.y, launchDims.z * 3, *stream>>>(
-			opNum,
-			xPointer,
-			xShapeInfoPointer,
-			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer, reductionPointer);
 
+	// simple trick to get workaround over reductions into scalar
+	if (shape::isVector((int *)&extraPointers[0]) && opNum >= 38 && opNum <= 41) {
+		transformFloat <<<1, launchDims.y, launchDims.z * 3, *stream>>> (
+				opNum,
+				xPointer,
+				xShapeInfoPointer,
+				extraParamsPointer,
+				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+	} else {
+		transformFloat <<<launchDims.x, launchDims.y, launchDims.z * 3, *stream>>> (
+				opNum,
+				xPointer,
+				xShapeInfoPointer,
+				extraParamsPointer,
+				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
+	}
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
@@ -2121,7 +2140,7 @@ void   NativeOps::execTransformFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	transformFloatIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
+	transformFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
