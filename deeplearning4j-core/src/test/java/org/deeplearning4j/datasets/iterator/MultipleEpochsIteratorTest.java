@@ -8,6 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +19,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by nyghtowl on 11/14/15.
  */
 
 public class MultipleEpochsIteratorTest {
@@ -41,11 +42,7 @@ public class MultipleEpochsIteratorTest {
     }
 
 
-    //TODO structure needs work to make this class function using reset for total dataset
-    // Will work with ImageNetRecordReader only at this time
-
     @Test
-    @Ignore
     public void testNextAndReset() throws Exception{
         int epochs = 2;
         int batchSize = 2;
@@ -56,8 +53,10 @@ public class MultipleEpochsIteratorTest {
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
         assertTrue(multiIter.hasNext());
+
         while(multiIter.hasNext()){
-            multiIter.next();
+            DataSet path = multiIter.next();
+            assertFalse(path == null);
         }
         assertEquals(epochs, multiIter.numPasses, 0.0);
 
