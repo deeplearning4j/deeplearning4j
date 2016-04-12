@@ -1001,6 +1001,75 @@ namespace functions {
 
             };
 
+            template<typename T>
+            class SpecialDerivative : public Transform<T> {
+            public:
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+#ifdef __CUDACC__
+                /**
+	 *
+	 */
+
+	virtual __device__ void execSpecialCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+#endif
+
+                /**
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T *params) {
+                    return d1 * (1.0 - d1);
+                }
+
+
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+
+                virtual ~SpecialDerivative() {
+                }
+
+            };
+
 /**
  * -x
  */
@@ -5197,7 +5266,11 @@ namespace functions {
                 }
                 else if(op == 41) {
                     return new transform::ops::IsMax<T>();
+                } else if(op == 42) {
+                    // temporary special op for blockwise SoftMax Derivative
+                    return new transform::ops::SpecialDerivative<T>();
                 }
+
                 return ret;
             }
 

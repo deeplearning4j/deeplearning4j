@@ -2111,42 +2111,49 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			int *shape = shape::shapeOf(xShapeInfoPointer);
 			printf("Rows num: %i\n", shape[0]);
 			switch (opNum) {
-				case 38:
-					// softmax
-
-					prepareShapeBuffer<<<1,1,128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0]);
+				case 40: // LogSoftMax
+				case 39: // SoftMax Derivative
+				case 38: {// softmax
+					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
 					checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
-					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					// sub 1
-					execBroadcastFloat(extraPointers, 1,dx,xShapeInfo, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
+					execBroadcastFloat(extraPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
+									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
 					// exp 3
 					execTransformFloat(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
 					//sum 1
-					execReduceFloat(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+					execReduceFloat(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					// divide 3
-					execBroadcastFloat(extraPointers, 3,dx,xShapeInfo, (Nd4jPointer) special, (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
+					execBroadcastFloat(extraPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
+									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
-					break;
-				case 39:
+					// log 3
+					if (opNum == 40)
+						execTransformFloat(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+					else if (opNum == 39)
+						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+
 					// softmax derivative
 					break;
-				case 40:
-					// logsoftmax
-
-					break;
-				case 41:
+				}
+				case 41: {
 					// ismax
 					break;
-				default:
+				}
+				default: {
 					printf("Bad case for transformFloat\n");
 					break;
+				}
 			}
 		}
 	} else {
