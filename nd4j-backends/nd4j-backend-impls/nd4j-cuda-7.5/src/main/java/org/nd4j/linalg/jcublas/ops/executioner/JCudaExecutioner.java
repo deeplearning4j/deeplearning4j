@@ -152,8 +152,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
-        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
-        log.info("X: " + x);
+//        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
+//        log.info("X: " + x);
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
@@ -860,7 +860,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getPointer(op.z()).address();
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial()};
 
 
         if(op.y() != null) {

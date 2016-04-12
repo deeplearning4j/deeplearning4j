@@ -444,7 +444,10 @@ public class CudaTransformsTests {
         System.out.println("Data:" + input.data().length());
 
         SoftMax softMax = new SoftMax(input);
+        long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
+        long time2 = System.currentTimeMillis();
+        System.out.println("Execution time: " + (time2 - time1));
 /*
         assertEquals(0.036710344f,input.getFloat(0), 0.01f);
         assertEquals(0.023549506f,input.getFloat(152), 0.01f);
@@ -454,7 +457,7 @@ public class CudaTransformsTests {
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
 
-            System.out.println("Position: " + input.getDouble(300 * i));
+            //System.out.println("Position: " + input.getDouble(30000 * i));
 
             float sum = slice.sumNumber().floatValue();
             assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);
