@@ -193,7 +193,7 @@ namespace functions {
 
 
 			if (dx == result) {
-				for (; i < n; i += totalThreads) {
+				for (i = tid; i < n; i += totalThreads) {
 					shape::ind2subC(xRank,xShape, i, xCoord);
 					shape::ind2subC(yRank,yShape, i, yCoord);
 
@@ -253,13 +253,10 @@ namespace functions {
 		Nd4jIndex i = tid;
 
 		if (incy == 0) {
-			if ((blockIdx.x == 0) && (tid == 0)) {
 #pragma unroll
 				for (; i < n; i++) {
 					result[i * incz] = op(dx[i * incx], params);
 				}
-
-			}
 		} else if ((incx == incy) && (incx > 0)) {
 			/* equal, positive, increments */
 			if (incx == 1) {

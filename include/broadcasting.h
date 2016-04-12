@@ -870,12 +870,10 @@ __device__ void broadcastGeneric(
 	//TODO: Reduce object creation
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::broadcast::BroadcastOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		op = newOpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 

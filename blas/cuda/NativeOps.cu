@@ -40,6 +40,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// check for partial block at the end
 	if(n % num_threads) ++num_blocks;
+	if (num_blocks > 256) num_blocks = 256;
+
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
 
@@ -60,7 +62,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//printf("Params: gridSize: [1], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+	//printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
@@ -187,8 +189,9 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	indexReduceDouble<<<1,launchDims.y,launchDims.z * 4, *stream>>>(
+	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 4, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -197,7 +200,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 			NULL,
 			NULL,
 			1,
-			1, allocationPointer);
+			1, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -238,8 +241,9 @@ void   NativeOps::execIndexReduceDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[27], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	indexReduceDouble<<<1,launchDims.y,launchDims.z * 2, *stream>>>(
+	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -248,7 +252,7 @@ void   NativeOps::execIndexReduceDouble(
 			resultShapeInfoPointer,
 			dimensionPointer,
 			dimensionLength,
-			1, allocationPointer);
+			1, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -286,7 +290,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[26], deviceProperties[(int) extraPointers[2]]);
 
-	broadcastDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -335,7 +339,7 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformStridedDouble<<<1,launchDims.y,launchDims.z, *stream>>> (
+	pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>> (
 			opNum,
 			n,
 			xPointer,
@@ -394,7 +398,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformDoubleIndex <<<1, launchDims.y, launchDims.z, *stream>>>(
+	pairWiseTransformDoubleIndex <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -445,7 +449,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -486,8 +490,9 @@ void   NativeOps::execReduceDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -497,7 +502,7 @@ void   NativeOps::execReduceDouble(
 			NULL,
 			1,
 			1,
-			allocPointer);
+			allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -533,8 +538,9 @@ void   NativeOps::execReduceDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -544,7 +550,7 @@ void   NativeOps::execReduceDouble(
 			dimensionPointer,
 			dimensionLength,
 			1,
-			allocPointer);
+			allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -574,8 +580,9 @@ double NativeOps::execReduceScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	reduceDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -585,7 +592,7 @@ double NativeOps::execReduceScalarDouble(
 			NULL,
 			1,
 			1,
-			allocPointer);
+			allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -777,14 +784,16 @@ void   NativeOps::execScalarDouble(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[20], deviceProperties[(int) extraPointers[2]]);
 
-	scalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
 			xPointer,
 			xStride,
 			extraParamsPointer,
-			resultPointer,resultStride);
+			resultPointer,resultStride, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -818,14 +827,15 @@ void NativeOps::execScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[19], deviceProperties[(int) extraPointers[2]]);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	scalarDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
+	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			scalar,
 			xPointer,
 			xShapeInfoPointer,
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer);
+			resultPointer,resultShapeInfoPointer, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -864,15 +874,16 @@ void NativeOps::execScalarDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[18], deviceProperties[(int) extraPointers[2]]);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	scalarDoubleIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
+	scalarDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
 			xPointer,
 			extraParamsPointer,
 			resultPointer,
-			resultIndexesPointer);
+			resultIndexesPointer, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -902,8 +913,9 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -912,7 +924,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 			NULL,
 			NULL,
 			1,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -948,8 +960,9 @@ void   NativeOps::execSummaryStatsDouble(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -958,7 +971,7 @@ void   NativeOps::execSummaryStatsDouble(
 			resultShapeInfoPointer,
 			NULL,
 			1,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -994,8 +1007,9 @@ void   NativeOps::execSummaryStatsDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1004,7 +1018,7 @@ void   NativeOps::execSummaryStatsDouble(
 			resultShapeInfoPointer,
 			dimensionPointer,
 			dimensionLength,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1036,6 +1050,7 @@ void   NativeOps::execTransformDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[16], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1043,7 +1058,7 @@ void   NativeOps::execTransformDouble(
 			xPointer,
 			xStride,
 			extraParamsPointer,
-			resultPointer,resultStride, allocPointer);
+			resultPointer,resultStride, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1076,13 +1091,14 @@ void   NativeOps::execTransformDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[15], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	transformDouble<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer);
+			resultPointer,resultShapeInfoPointer, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1118,6 +1134,7 @@ void   NativeOps::execTransformDouble(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[14], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	transformDoubleIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1125,7 +1142,7 @@ void   NativeOps::execTransformDouble(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			resultIndexesPointer, allocPointer);
+			resultIndexesPointer, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1154,8 +1171,9 @@ float   NativeOps::execIndexReduceScalarFloat(
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	indexReduceFloat<<<1,launchDims.y, launchDims.z * 2, *stream>>>(
+	indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z * 2, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1164,7 +1182,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 			NULL,
 			NULL,
 			1,
-			1, allocationPointer);
+			1, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1204,8 +1222,9 @@ void   NativeOps::execIndexReduceFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[(int) extraPointers[2]]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	indexReduceFloat<<<1,launchDims.y,launchDims.z * 2, *stream>>>(
+	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1214,7 +1233,7 @@ void   NativeOps::execIndexReduceFloat(
 			resultShapeInfoPointer,
 			dimensionPointer,
 			dimensionLength,
-			1, allocationPointer);
+			1, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1253,7 +1272,7 @@ void   NativeOps::execBroadcastFloat(
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[(int) extraPointers[2]]);
 
-	broadcastFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1302,7 +1321,7 @@ void   NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformStridedFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -1361,7 +1380,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformFloatIndex<<<1,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformFloatIndex<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -1413,7 +1432,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	pairWiseTransformFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	pairWiseTransformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			yPointer,
@@ -1454,8 +1473,9 @@ void   NativeOps::execReduceFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1465,7 +1485,7 @@ void   NativeOps::execReduceFloat(
 			NULL,
 			1,
 			1,
-			allocPointer);
+			allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1500,8 +1520,9 @@ void   NativeOps::execReduceFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	reduceFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1511,7 +1532,7 @@ void   NativeOps::execReduceFloat(
 			dimensionPointer,
 			dimensionLength,
 			1,
-			allocPointer);
+			allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1540,8 +1561,9 @@ float NativeOps::execReduceScalarFloat(
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	reduceFloat<<< 1,launchDims.y, launchDims.z, *stream>>>(
+	reduceFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer
@@ -1551,7 +1573,8 @@ float NativeOps::execReduceScalarFloat(
 			NULL,
 			1,
 			1,
-			allocPointer
+			allocPointer,
+			reductionPointer
 	);
 
 
@@ -1745,15 +1768,16 @@ void   NativeOps::execScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[6], deviceProperties[(int) extraPointers[2]]);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	scalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
+	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
 			xPointer,
 			xStride,
 			extraParamsPointer,
-			resultPointer,resultStride);
+			resultPointer,resultStride, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1790,14 +1814,15 @@ void NativeOps::execScalarFloat(
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	scalarFloat<<<1, launchDims.y,launchDims.z, *stream>>>(
+	scalarFloat<<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			scalar,
 			xPointer,
 			xShapeInfoPointer,
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer);
+			resultPointer,resultShapeInfoPointer, allocPointer );
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1836,15 +1861,16 @@ void NativeOps::execScalarFloat(
 	Nd4jIndex n = shape::length(hostShapeInfo);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[4], deviceProperties[(int) extraPointers[2]]);
+	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	scalarFloatIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
+	scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			scalar,
 			xPointer,
 			extraParamsPointer,
 			resultPointer,
-			resultIndexesPointer);
+			resultIndexesPointer, allocPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1872,8 +1898,9 @@ float   NativeOps::execSummaryStatsScalarFloat(
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1882,7 +1909,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 			NULL,
 			NULL,
 			1,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1917,8 +1944,9 @@ void   NativeOps::execSummaryStatsFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1927,7 +1955,7 @@ void   NativeOps::execSummaryStatsFloat(
 			resultShapeInfoPointer,
 			NULL,
 			1,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1963,8 +1991,9 @@ void   NativeOps::execSummaryStatsFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<1,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1973,7 +2002,7 @@ void   NativeOps::execSummaryStatsFloat(
 			resultShapeInfoPointer,
 			dimensionPointer,
 			dimensionLength,
-			1,biasCorrected, allocationPointer);
+			1,biasCorrected, allocationPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -2006,6 +2035,7 @@ void   NativeOps::execTransformFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[2], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	transformFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2013,7 +2043,7 @@ void   NativeOps::execTransformFloat(
 			xPointer,
 			xStride,
 			extraParamsPointer,
-			resultPointer,resultStride, allocPointer);
+			resultPointer,resultStride, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -2045,13 +2075,14 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	transformFloat<<<1,launchDims.y, launchDims.z * 3, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer);
+			resultPointer,resultShapeInfoPointer, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -2088,6 +2119,7 @@ void   NativeOps::execTransformFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[0], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 	transformFloatIndexes<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2095,7 +2127,7 @@ void   NativeOps::execTransformFloat(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			resultIndexesPointer, allocPointer);
+			resultIndexesPointer, allocPointer, reductionPointer);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -2276,20 +2308,20 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
-	void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result,int *resultShapeInfo, int *allocationPointer) = transformFloat;
+	void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, float *params, float *result,int *resultShapeInfo, int *allocationPointer, float *reductionPointer) = transformFloat;
 	cudaFuncGetAttributes(&funcAttributes[1], transformFloatPointer1);
 
-	void (*transformFloatPointer2)(int opNum, Nd4jIndex n, float *dy, int incy, float *params, float *result,int resultStride, int *allocationPointer) = transformFloat;
+	void (*transformFloatPointer2)(int opNum, Nd4jIndex n, float *dy, int incy, float *params, float *result,int resultStride, int *allocationPointer, float *reductionPointer) = transformFloat;
 	cudaFuncGetAttributes(&funcAttributes[2], transformFloatPointer2);
 
 	cudaFuncGetAttributes(&funcAttributes[3], (void *)summaryStatsReduceFloat);
 
 	cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
 
-	void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo,float *params, float *result,int *resultShapeInfo) = scalarFloat;
+	void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo,float *params, float *result,int *resultShapeInfo, int *allocPointer) = scalarFloat;
 	cudaFuncGetAttributes(&funcAttributes[5], scalarFloatPointer1);
 
-	void (*scalarFloatPointer2)(int opNum, Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride) = scalarFloat;
+	void (*scalarFloatPointer2)(int opNum, Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocPointer) = scalarFloat;
 	cudaFuncGetAttributes(&funcAttributes[6], scalarFloatPointer2);
 
 	cudaFuncGetAttributes(&funcAttributes[7], reduce3Float);
@@ -2310,21 +2342,21 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[14], transformDoubleIndexes);
 
-	void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, double *params, double *result,int *resultShapeInfo, int *allocationPointer) = transformDouble;
+	void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, double *params, double *result,int *resultShapeInfo, int *allocationPointer, double *reductionPointer) = transformDouble;
 	cudaFuncGetAttributes(&funcAttributes[15], transformDoublePointer1);
 
-	void (*transformDoublePointer2)(int opNum, Nd4jIndex n, double *dy, int incy, double *params, double *result,int resultStride, int *allocationPointer) = transformDouble;
+	void (*transformDoublePointer2)(int opNum, Nd4jIndex n, double *dy, int incy, double *params, double *result,int resultStride, int *allocationPointer, double *reductionPointer) = transformDouble;
 	cudaFuncGetAttributes(&funcAttributes[16], transformDoublePointer2);
 
 	cudaFuncGetAttributes(&funcAttributes[17], summaryStatsReduceDouble);
 
 	cudaFuncGetAttributes(&funcAttributes[18], scalarDoubleIndexes);
 
-	void (*scalarDoublePointer1)(int opNum, double dx,double *dy, int *shapeInfo,double *params, double *result,int *resultShapeInfo) = scalarDouble;
+	void (*scalarDoublePointer1)(int opNum, double dx,double *dy, int *shapeInfo,double *params, double *result,int *resultShapeInfo, int *allocPointer) = scalarDouble;
 	cudaFuncGetAttributes(&funcAttributes[19], scalarDoublePointer1);
 
 
-	void (*scalarDoublePointer2)(int opNum, Nd4jIndex n,double dx, double *dy, int incy, double *params, double *result,int resultStride) = scalarDouble;
+	void (*scalarDoublePointer2)(int opNum, Nd4jIndex n,double dx, double *dy, int incy, double *params, double *result,int resultStride, int *allocPointer) = scalarDouble;
 	cudaFuncGetAttributes(&funcAttributes[20], scalarDoublePointer2);
 
 	cudaFuncGetAttributes(&funcAttributes[21], reduce3Double);

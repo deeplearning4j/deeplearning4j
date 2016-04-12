@@ -60,7 +60,7 @@ namespace functions {
 			T *dy,
 			T *params,
 			T *result,
-			int *indexes) {
+			int *indexes, int *allocationBuffer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -87,7 +87,7 @@ namespace functions {
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result, int *resultShapeInfo) {
+			T *result, int *resultShapeInfo, int *allocationBuffer) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -97,10 +97,10 @@ namespace functions {
         int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 		__shared__ int length;
-		if(tid == 0)
+		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
 		__syncthreads();
 
@@ -112,11 +112,13 @@ namespace functions {
 					dy,
 					xElementWiseStride,
 					params,
-					result,resultElementWiseStride);
+					result,resultElementWiseStride, allocationBuffer);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
-			int *xIdx = new int[xRank];
+			long allocSize = sizeof(int) * xRank;
+			int *xIdx = shape::cuMalloc(allocationBuffer, allocSize);
+
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
 				shape::ind2sub(xRank, xShape, i,xIdx);
@@ -125,6 +127,9 @@ namespace functions {
 				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
 
+			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(xIdx);
+            }
 			delete[] xIdx;
 
 		}
@@ -152,10 +157,10 @@ namespace functions {
 			T *dy,
 			int incy,
 			T *params,
-			T *result,int resultStride) {
+			T *result,int resultStride, int *allocationBuffer) {
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 		if(incy == 1) {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
@@ -1097,19 +1102,17 @@ __device__ void scalarGeneric(
 		T dx,
 		T *dy,
 		int incy, T *params,
-		T *result,int resultStride) {
+		T *result,int resultStride, int *allocationBuffer) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 
-	op->transformCuda(n,dx,dy,incy,params,result,resultStride);
+	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1124,7 +1127,7 @@ __global__ void scalarDouble(
 		double dx,
 		double *dy,
 		int incy, double *params,
-		double *result,int resultStride) {
+		double *result,int resultStride, int *allocationBuffer) {
 	scalarGeneric<double>(
 			opNum,
 			n,
@@ -1132,11 +1135,11 @@ __global__ void scalarDouble(
 			dy,
 			incy,
 			params,
-			result,resultStride);
+			result,resultStride, allocationBuffer);
 }
 
  __global__ void scalarFloat(int opNum,
-		Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride) {
+		Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocationBuffer) {
 	scalarGeneric<float>(
 			opNum,
 			n,
@@ -1144,7 +1147,7 @@ __global__ void scalarDouble(
 			dy,
 			incy,
 			params,
-			result,resultStride);
+			result,resultStride, allocationBuffer);
 }
 
 
@@ -1155,18 +1158,16 @@ __device__ void scalarGenericIndexes(
         T dx,
         T *dy,
         T *params,
-        T *result,int *indexes) {
+        T *result,int *indexes, int *allocationBuffer) {
     __shared__ functions::scalar::ScalarTransform<T> *op;
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-    if(threadIdx.x == 0)
+    if(threadIdx.x == 0) {
         scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-    __syncthreads();
-
-    if(threadIdx.x == 0)
         op = scalarDoubleOpFactory->getOp(opNum);
+    }
     __syncthreads();
 
-    op->transform(n,dx,dy,params,result,indexes);
+    op->transform(n,dx,dy,params,result,indexes, allocationBuffer);
     __syncthreads();
 
     if(threadIdx.x == 0) {
@@ -1181,14 +1182,14 @@ __device__ void scalarGenericIndexes(
         double dx,
         double *dy,
         double *params,
-        double *result,int *indexes) {
+        double *result,int *indexes, int *allocationBuffer) {
     scalarGenericIndexes<double>(opNum,
                                  n,
                                  dx,
                                  dy,
                                  params,
                                  result,
-                                 indexes);
+                                 indexes, allocationBuffer);
 }
 
  __global__ void scalarFloatIndexes(
@@ -1198,14 +1199,14 @@ __device__ void scalarGenericIndexes(
         float *dy,
         float *params,
         float *result,
-        int *indexes) {
+        int *indexes, int *allocationBuffer) {
     scalarGenericIndexes<float>(opNum,
                                  n,
                                  dx,
                                  dy,
                                  params,
                                  result,
-                                 indexes);
+                                 indexes, allocationBuffer);
 }
 
 
@@ -1223,19 +1224,17 @@ __device__ void scalarGeneric(
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result,int *resultShapeInfo) {
+		T *result,int *resultShapeInfo, int *allocationBuffer) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 
-	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo);
+	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo, allocationBuffer);
 	__syncthreads();
 
 	if(threadIdx.x == 0) {
@@ -1249,14 +1248,14 @@ extern "C" __global__ void scalarDouble(
 		double dx,
 		double *dy,
 		int *shapeInfo, double *params,
-		double *result,int *resultShapeInfo) {
+		double *result,int *resultShapeInfo, int *allocationBuffer) {
 	scalarGeneric<double>(
 			opNum,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result,resultShapeInfo);
+			result,resultShapeInfo, allocationBuffer);
 }
 
 extern "C" __global__ void scalarFloat(
@@ -1265,14 +1264,14 @@ extern "C" __global__ void scalarFloat(
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result,int *resultShapeInfo) {
+		float *result,int *resultShapeInfo, int *allocationBuffer) {
 	scalarGeneric<float>(
 			opNum,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result,resultShapeInfo);
+			result,resultShapeInfo, allocationBuffer);
 }
 
 #endif

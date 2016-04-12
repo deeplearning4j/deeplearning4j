@@ -133,11 +133,10 @@ namespace functions {
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *allocationBuffer) {
+			int *allocationBuffer, T *reductionBuffer) {
 		int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 		int n = shape::length(xShapeInfo);
-
 
 		int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -146,21 +145,21 @@ namespace functions {
 		volatile T *sPartials = val.getPointer();
 		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
-		for(int i = threadIdx.x; i < numElements; i+= blockDim.x)
-			sPartials[i] = init;
+		//for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
+		sPartials[threadIdx.x] = init;
 		__syncthreads();
 
 		if(elementWiseStride >= 1) {
 			if(elementWiseStride == 1) {
 #pragma unroll
-				for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
-					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
+				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams);
 				}
 			}
 			else {
 #pragma unroll
-				for(int i = elementWiseStride * (blockIdx.x * (blockDim.x) + tid);i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-					sPartials[tid] = this->update(sPartials[tid],this->op(dx[i * elementWiseStride],extraParams),extraParams);
+				for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
+					sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
 				}
 			}
 		}
@@ -169,9 +168,10 @@ namespace functions {
 			long allocSize = sizeof(int) * rank;
 			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
 #pragma unroll
-			for(int i = blockIdx.x * (blockDim.x) + tid;i < n; i += blockDim.x * gridDim.x) {
+			for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-				sPartials[tid] = this->update(sPartials[tid],this->op(dx[i],extraParams),extraParams);
+				int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
+				sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[offset],extraParams),extraParams);
 				__syncthreads();
 			}
 
@@ -180,15 +180,55 @@ namespace functions {
             }
 		}
 
-				__syncthreads();
+			__syncthreads();
 			T **sPartialsRef = (T **) &sPartials;
-			aggregatePartials(sPartialsRef, tid, numElements,extraParams);
+			aggregatePartials(sPartialsRef, threadIdx.x, blockDim.x,extraParams);
 
 
 			__syncthreads();
-			// write result for this block to global mem
-			if (tid == 0) {
-				result[0] = this->postProcess(sPartials[0],n,extraParams);
+
+			if (gridDim.x > 1) {
+				unsigned int *tc = (unsigned *) reductionBuffer;
+				__shared__ bool amLast;
+				int rank = shape::rank(xShapeInfo);
+				tid = threadIdx.x;
+				if (threadIdx.x == 0) {
+					reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
+				}
+				__syncthreads();
+				__threadfence();
+
+				if (tid==0) {
+					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+				    amLast = (ticket == gridDim.x-1);
+				}
+
+				__syncthreads();
+
+				if (amLast) {
+					tc[4096] = 0;
+
+					sPartials[threadIdx.x] = 0;
+
+					if (threadIdx.x < gridDim.x) {
+						sPartials[threadIdx.x] = reductionBuffer[threadIdx.x];
+					}
+					__syncthreads();
+
+					T **sPartialsRef = (T **) &sPartials;
+					aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x, extraParams);
+
+					__syncthreads();
+					if (tid == 0) {
+						result[0] = this->postProcess(sPartials[0],n,extraParams);
+					}
+				}
+			} else {
+				if (tid == 0) {
+					unsigned int *tc = (unsigned *) reductionBuffer;
+					tc[4096] = 0;
+					result[0] = this->postProcess(sPartials[0],n,extraParams);
+				}
 			}
 	}
 	/**
@@ -213,7 +253,7 @@ namespace functions {
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot,
-			int *allocationBuffer) {
+			int *allocationBuffer,T *reductionBuffer) {
 
 		/**
 		 * Gpu information for the problem
@@ -425,13 +465,13 @@ namespace functions {
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);
-					sPartials[tid] = op(dx[offsetForTad], extraParams);
+					sPartials[threadIdx.x] = op(dx[offsetForTad], extraParams);
 
 					for(j = 1; j < elementsPerReductionIndex; j++) {
-						sPartials[tid] =  update(sPartials[tid],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x],op(dx[offsetForTad + xElementWiseStride * j], extraParams), extraParams);
 					}
 
-					result[i] = postProcess(sPartials[tid],tadLength,extraParams);
+					result[i] = postProcess(sPartials[threadIdx.x],tadLength,extraParams);
 				}
 
 
@@ -447,7 +487,7 @@ namespace functions {
 					extraParams,
 					result,
 					resultShapeInfo,
-					allocationBuffer);
+					allocationBuffer, reductionBuffer);
 		}
 	}
 
@@ -473,7 +513,7 @@ namespace functions {
 			}
 			__syncthreads();
 		}
-
+		__syncthreads();
 
 #pragma unroll
 		for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
@@ -1818,17 +1858,15 @@ __global__ void reduceGenericGlobal(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, T *reductionBuffer) {
 
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		reduceFunctionToInvoke = newOpFactory->create(op);
+	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
 			dx,
@@ -1839,7 +1877,7 @@ __global__ void reduceGenericGlobal(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1874,16 +1912,14 @@ __device__ void reduceGeneric(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		reduceFunctionToInvoke = newOpFactory->create(op);
+	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
 			dx,
@@ -1894,7 +1930,7 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 	__syncthreads();
 	if(threadIdx.x == 0) {
@@ -1928,7 +1964,7 @@ extern "C" __global__ void reduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer) {
+		int *allocationBuffer, double *reductionBuffer) {
 	reduceGeneric<double>(
 			op,
 			dx,
@@ -1939,7 +1975,7 @@ extern "C" __global__ void reduceDouble(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 
 }
 
@@ -1967,7 +2003,8 @@ extern "C" __global__ void reduceFloat(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		int *allocationBuffer
+		int *allocationBuffer,
+		float *reductionBuffer
 		) {
 	reduceGeneric<float>(
 			op,
@@ -1979,7 +2016,7 @@ extern "C" __global__ void reduceFloat(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer);
+			allocationBuffer, reductionBuffer);
 }
 
 
