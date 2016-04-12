@@ -44,6 +44,89 @@
     </distributionManagement>
 
     <profiles>
+
+        <!-- If someone knows a better way to do this, please do let me know! -->
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os><name>linux</name></os>
+            </activation>
+            <properties>
+                <os.name>linux</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx</id>
+            <activation>
+                <os><name>mac os x</name></os>
+            </activation>
+            <properties>
+                <os.name>macosx</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <os.name>windows</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>i386</id>
+            <activation>
+                <os><arch>i386</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i486</id>
+            <activation>
+                <os><arch>i486</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i586</id>
+            <activation>
+                <os><arch>i586</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>i686</id>
+            <activation>
+                <os><arch>i686</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>amd64</id>
+            <activation>
+                <os><arch>amd64</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>x86-64</id>
+            <activation>
+                <os><arch>x86-64</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
         <profile>
             <id>release-sign-artifacts</id>
             <activation>
@@ -131,8 +214,8 @@
         </profile>
     </profiles>
     <scm>
-        <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
-        <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
+        <connection>scm:git@github.com:deeplearning4j/nd4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/nd4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/nd4j.git</url>
         <tag> HEAD</tag>
     </scm>
@@ -143,27 +226,31 @@
     <name>nd4j</name>
     <url>http://nd4j.org/</url>
     <modules>
-        <module>nd4j-api</module>
         <module>nd4j-jdbc</module>
-        <module>nd4j-jcublas-parent</module>
         <module>nd4j-instrumentation</module>
-        <module>nd4j-jocl-parent</module>
-        <module>nd4j-tests</module>
         <module>nd4j-perf</module>
-        <module>nd4j-x86</module>
         <module>nd4j-serde</module>
         <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
-        <module>nd4j-native</module>
+        <module>nd4j-buffer</module>
+        <module>nd4j-context</module>
+        <module>nd4j-backends</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
+        <netty.version>4.0.28.Final</netty.version>
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
-
+        <javacpp.version>1.2-SNAPSHOT</javacpp.version>
+        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
+        <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
     </properties>
+
     <developers>
         <developer>
             <id>agibsonccc</id>
@@ -173,16 +260,36 @@
     </developers>
 
     <licenses>
-      <license>
-        <name>Apache License, Version 2.0</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-      </license>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
+
 
     <build>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <includes>
+                        <include>**/*.so</include>
+                        <include>META-INF/*</include>
+                        <include>META-INF/services/**</include>
+                        <include>org.*</include>
+                        <include>**/*.properties</include>
+                        <include>**/*.class</include>
+                        <include>**/*.dll</include>
+                        <include>**/*.dylib</include>
+                        <include>lib/*</include>
+
+                    </includes>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.4</version>
@@ -205,17 +312,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.4</version>
-                <configuration>
-                    <argLine>-Xmx1024m</argLine>
-                    <environmentVariables>
-                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
-                    </environmentVariables>
-                </configuration>
             </plugin>
         </plugins>
 
@@ -308,13 +404,9 @@
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
-                <artifactId>junit-dep</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

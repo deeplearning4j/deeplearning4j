@@ -32,3 +32,4 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 .classpath
 *.dylib
 .DS_Store*
+lib/

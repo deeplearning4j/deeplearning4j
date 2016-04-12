@@ -39,7 +39,7 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-x86</artifactId>
+            <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -68,6 +68,9 @@
 
             </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 </project>

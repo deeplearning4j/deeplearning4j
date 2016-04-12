@@ -2,6 +2,7 @@ package org.nd4j.serde.jackson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,6 +15,7 @@ import static org.junit.Assert.*;
  */
 public class VectorSerializerTest {
     @Test
+    @Ignore
     public void testVectorSerializer() throws Exception {
         ObjectMapper mapper = getMapper();
         INDArray ones = Nd4j.ones(5);
