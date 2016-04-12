@@ -436,22 +436,29 @@ public class CudaTransformsTests {
 
     @Test
     public void testClassificationSoftmax() {
-        INDArray input = Nd4j.zeros(150, 3);
-        input.putScalar(0, 0.9);
-        input.putScalar(3, 0.2);
-        input.putScalar(152, 0.9);
-        input.putScalar(157, 0.11);
-        input.putScalar(310, 0.9);
-        input.putScalar(317, 0.1);
+        INDArray input = Nd4j.zeros(256, 300);
+        for (int i = 0; i < 256; i++) {
+            input.putScalar(300 * i, (i * 2) + 0.5);
+        }
 
         System.out.println("Data:" + input.data().length());
 
         SoftMax softMax = new SoftMax(input);
         Nd4j.getExecutioner().exec(softMax);
-        assertEquals(0.5515296f,input.getFloat(0), 0.01f);
-        assertEquals(0.5515296f,input.getFloat(152), 0.01f);
-        assertEquals(0.5515296f,input.getFloat(310), 0.01f);
+/*
+        assertEquals(0.036710344f,input.getFloat(0), 0.01f);
+        assertEquals(0.023549506f,input.getFloat(152), 0.01f);
+        assertEquals(0.005180763f,input.getFloat(310), 0.01f);
+        assertEquals(4.5634616E-7f,input.getFloat(879), 0.01f);
+*/
+        for (int i = 0; i < 256; i++) {
+            INDArray slice = input.slice(i);
 
+            System.out.println("Position: " + input.getDouble(300 * i));
+
+            float sum = slice.sumNumber().floatValue();
+            assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);
+        }
     }
 
     @Test
@@ -509,5 +516,18 @@ public class CudaTransformsTests {
 
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
         assertEquals(assertion,newTest);
+    }
+
+    @Test
+    public void testTransformExp() {
+        INDArray array1 = Nd4j.zeros(1500,150);
+        System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
+
+        Exp exp = new Exp(array1);
+        Nd4j.getExecutioner().exec(exp);
+
+        for (int x = 0; x < 1500 * 150; x++) {
+            assertEquals(1f, array1.getFloat(x), 0.0001f);
+        }
     }
 }

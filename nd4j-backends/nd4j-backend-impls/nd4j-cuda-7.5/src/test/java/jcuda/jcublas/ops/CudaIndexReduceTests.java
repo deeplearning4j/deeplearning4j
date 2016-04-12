@@ -73,11 +73,11 @@ public class CudaIndexReduceTests {
 
     @Test
     public void testIMaxLargeLarge() throws Exception {
-        INDArray array1 = Nd4j.linspace(1, 1000, 128000);
+        INDArray array1 = Nd4j.linspace(1, 1000, 12800);
 
         int idx =  ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(array1))).getFinalResult();
 
-        assertEquals(127999, idx);
+        assertEquals(12799, idx);
     }
 
     @Test

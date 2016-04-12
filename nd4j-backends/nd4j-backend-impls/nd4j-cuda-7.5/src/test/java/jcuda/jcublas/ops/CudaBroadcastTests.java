@@ -49,10 +49,8 @@ public class CudaBroadcastTests {
     @Test
     public void testPinnedSubiRowVector() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
-        assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
-
-        INDArray array1 = Nd4j.zeros(15,15);
-        INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
+        INDArray array1 = Nd4j.zeros(1500,150);
+        INDArray array2 = Nd4j.linspace(1,1500,1500);
 
         array1.subiRowVector(array2);
 
@@ -60,6 +58,40 @@ public class CudaBroadcastTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(-2.0f, array1.getRow(0).getFloat(0), 0.01);
+    }
+
+    @Test
+    public void testPinnedSubiColumnVector2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.zeros(1500,150);
+        INDArray array2 = Nd4j.linspace(1,1500,1500).reshape(1500,1);
+
+        array1.subiColumnVector(array2);
+
+        System.out.println("Array1: " + array1);
+        System.out.println("Array2: " + array2);
+
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-301.0f, array1.getRow(300).getFloat(0), 0.01);
+        assertEquals(-1500.0f, array1.getRow(1499).getFloat(0), 0.01);
+    }
+
+    @Test
+    public void testPinnedSubiRowVector2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+        INDArray array1 = Nd4j.zeros(1500,150);
+        INDArray array2 = Nd4j.linspace(1,1500,1500).reshape(1500,1);
+
+        array1.subiRowVector(array2);
+
+        //System.out.println("Array1: " + array1);
+        //System.out.println("Array2: " + array2);
+
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-301.0f, array1.getRow(300).getFloat(0), 0.01);
+        assertEquals(-1500.0f, array1.getRow(1499).getFloat(0), 0.01);
     }
 
     @Test
@@ -72,8 +104,8 @@ public class CudaBroadcastTests {
 
         array1.rsubiRowVector(array2);
 
-        System.out.println("Array1: " + array1);
-        System.out.println("Array2: " + array2);
+        //System.out.println("Array1: " + array1);
+        //System.out.println("Array2: " + array2);
 
         assertEquals(2.0f, array1.getRow(0).getFloat(0), 0.01);
     }
