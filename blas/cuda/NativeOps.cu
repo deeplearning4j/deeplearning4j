@@ -2430,3 +2430,12 @@ Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId
 		pointer = 0L;
 	return 1L;
 }
+
+
+int NativeOps::ompGetNumThreads() {
+
+}
+
+void NativeOps::setOmpNumThreads(int threads) {
+
+}
