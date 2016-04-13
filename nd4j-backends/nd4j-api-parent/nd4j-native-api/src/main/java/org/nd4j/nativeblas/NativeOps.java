@@ -7,6 +7,8 @@ import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.linalg.api.buffer.util.LibUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -20,12 +22,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @Platform(include={"NativeOps.h"}, preload="libnd4j", link = "nd4j")
 public class NativeOps extends Pointer {
+    private static Logger log = LoggerFactory.getLogger(NativeOps.class);
     static {
         Loader.load();
     }
 
     public NativeOps() {
         allocate();
+        setOmpNumThreads(Runtime.getRuntime().availableProcessors());
+        log.debug("Set number of threads to " + ompGetNumThreads());
     }
     private native void allocate();
 
@@ -841,6 +846,18 @@ public class NativeOps extends Pointer {
                                      long resultShapeInfo,
                                      long input,
                                      long inputShapeInfo);
+
+    /**
+     * Gets the number of open mp threads
+     * @return
+     */
+    public native int ompGetNumThreads();
+
+    /**
+     * Sets the number of openmp threads
+     * @param threads
+     */
+    public native void setOmpNumThreads(int threads);
 
     /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
