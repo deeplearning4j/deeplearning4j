@@ -88,6 +88,13 @@ public class ShapeOffsetResolution implements Serializable {
                 shape = ArrayUtil.reverseCopy(shape);
                 stride = ArrayUtil.reverseCopy(stride);
             }
+            else if(arr.isMatrix() && indexes[0] instanceof PointIndex && indexes[1] instanceof IntervalIndex) {
+                shape = new int[2];
+                shape[0] = 1;
+                IntervalIndex idx = (IntervalIndex) indexes[1];
+                shape[1] = idx.length();
+
+            }
 
             //keep same strides
             this.strides = stride;
@@ -165,6 +172,10 @@ public class ShapeOffsetResolution implements Serializable {
                     shapeAxis++;
                 }
             }
+
+
+
+
             this.shapes = shape;
             this.strides = stride;
             this.offsets = offsets;
@@ -392,7 +403,17 @@ public class ShapeOffsetResolution implements Serializable {
                 Collections.reverse(accumShape);
         }
 
-        this.shapes = Ints.toArray(accumShape);
+        if(arr.isMatrix() && indexes[0] instanceof PointIndex && indexes[1] instanceof IntervalIndex) {
+            this.shapes = new int[2];
+            shapes[0] = 1;
+            IntervalIndex idx = (IntervalIndex) indexes[1];
+            shapes[1] = idx.length();
+
+        }
+        else
+            this.shapes = Ints.toArray(accumShape);
+
+
         boolean isColumnVector = Shape.isColumnVectorShape(this.shapes);
         //finally fill in teh rest of the strides if any are left over
         while(accumStrides.size() < accumOffsets.size()) {
