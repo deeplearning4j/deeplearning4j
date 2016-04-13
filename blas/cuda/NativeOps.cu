@@ -2108,10 +2108,10 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 		} else {
 			// going for blockwise specials
-			float *xpf = reinterpret_cast<float *>(dx);
+			//float *xpf = reinterpret_cast<float *>(dx);
 
 			int *shape = shape::shapeOf(hostXShapeInfo);
-			printf("Rows num: %i\n", shape[0]);
+			//printf("Rows num: %i\n", shape[0]);
 			switch (opNum) {
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
@@ -2532,5 +2532,6 @@ int NativeOps::ompGetNumThreads() {
 }
 
 void NativeOps::setOmpNumThreads(int threads) {
-	blockLimit = threads;
+	printf("Setting max grid size to [%i]\n", threads);
+	//blockLimit = threads;
 }
