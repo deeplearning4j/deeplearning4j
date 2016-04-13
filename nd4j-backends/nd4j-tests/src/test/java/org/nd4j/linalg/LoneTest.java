@@ -51,6 +51,13 @@ public class LoneTest extends BaseNd4jTest {
         third.addi(0.3);
 
         first = first.get(NDArrayIndex.interval(4,8), NDArrayIndex.interval(0,2,8));
+        for(int i = 0; i < first.tensorssAlongDimension(0); i++) {
+            System.out.println(first.tensorAlongDimension(i,0));
+        }
+
+        for(int i = 0; i < first.tensorssAlongDimension(1); i++) {
+            System.out.println(first.tensorAlongDimension(i,1));
+        }
         second = second.get(NDArrayIndex.interval(3,7), NDArrayIndex.all());
         third = third.permute(0,2,1);
 

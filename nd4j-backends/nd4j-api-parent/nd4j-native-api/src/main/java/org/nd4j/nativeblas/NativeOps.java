@@ -29,7 +29,7 @@ public class NativeOps extends Pointer {
 
     public NativeOps() {
         allocate();
-        int numThreads = 0;
+        int numThreads;
         String numThreadsString = System.getenv("OMP_NUM_THREADS");
         if(numThreadsString != null && !numThreadsString.isEmpty()) {
             numThreads = Integer.parseInt(numThreadsString);
@@ -37,6 +37,8 @@ public class NativeOps extends Pointer {
         }
         else
             setOmpNumThreads(Runtime.getRuntime().availableProcessors());
+
+        log.debug("Number of threads used for linear algebra " + ompGetNumThreads());
 
     }
     private native void allocate();
