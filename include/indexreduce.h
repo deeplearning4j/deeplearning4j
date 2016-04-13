@@ -234,8 +234,6 @@ struct SharedIndexValue<double> {
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
-
-
 		/**
 		 * Gpu information for the problem
 		 */
@@ -469,28 +467,20 @@ struct SharedIndexValue<double> {
 
 		//reduce to 1 result
 		else if (resultScalar) {
-			if (threadIdx.x == 0) {
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-			}
-
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
-
-			__syncthreads();
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
 #pragma unroll
 					for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-						int currIdx = i;
-						IndexValue <T> indexVal = {dx[i], currIdx};
+						IndexValue <T> indexVal = {dx[i], i};
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				} else {
 #pragma unroll
 					for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
-						int currIdx = i;
-						IndexValue <T> indexVal = {dx[i * xElementWiseStride], currIdx};
+						IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				}
@@ -1270,12 +1260,10 @@ __device__ void indexReduceGeneric(
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
+	}
 	__syncthreads();
 
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
