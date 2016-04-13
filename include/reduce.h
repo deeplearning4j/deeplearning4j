@@ -325,7 +325,7 @@ namespace functions {
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 			}
-
+//			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0]);
 
@@ -457,10 +457,14 @@ namespace functions {
 				 * we can use arr.stride(1) as a representation
 				 * along long which to iterate.
 				 */
+
+/*
 				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 				int tadLength = elementsPerReductionIndex;
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
+
+
 
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
@@ -473,9 +477,36 @@ namespace functions {
 
 					result[i] = postProcess(sPartials[threadIdx.x],tadLength,extraParams);
 				}
+*/
+
+				int xLength = shape::length(xShapeInfo);
+				int tadLength = xLength / resultLength;
 
 
+                __syncthreads();
+#pragma unroll
+				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					__shared__ int offsetForTad;
+					if (threadIdx.x == 0)
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					__syncthreads();
+					sPartials[threadIdx.x] = 0.0;
+#pragma unroll
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+						int indexX = offsetForTad + xElementWiseStride * x;
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(dx[indexX], extraParams), extraParams);
 
+					}
+
+					__syncthreads();
+					T **sPartialsRef = (T **) &sPartials;
+					aggregatePartials(sPartialsRef, threadIdx.x, blockDim.x,extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[i] = postProcess(sPartials[0],tadLength ,extraParams);
+					}
+				}
 			}
 
 

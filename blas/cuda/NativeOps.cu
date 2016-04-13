@@ -2146,17 +2146,21 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					break;
 				}
 				case 41: {
-					// ismax
-					int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
-					//cudaMemsetAsync((void *)dx, 0, shape::length(xShapeInfoPointer) * 4, *stream);
-					int targetIdx = 0;
+					// IsMax along all dimensions
+					if (extraParams == NULL) {
+						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
+						int targetIdx = 0;
 
-					if(shape::order(xShapeInfoPointer) == 'c' || shape::order(xShapeInfoPointer) == 'f' && maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1] >= shape::length(xShapeInfoPointer))
-						targetIdx = maxIdx;
-					else
-						targetIdx = maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1];
+						if (shape::order(xShapeInfoPointer) == 'c' || shape::order(xShapeInfoPointer) == 'f' && maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1] >= shape::length(xShapeInfoPointer))
+							targetIdx = maxIdx;
+						else
+							targetIdx = maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1];
 
-					fillIsMaxFloat<<<256,256,0, *stream>>>(resultPointer, shape::length(xShapeInfoPointer), targetIdx);
+						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(xShapeInfoPointer), targetIdx);
+					} else {
+						// going for dimension-based IsMax
+						execIndexReduceFloat(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) dimension, 1);
+					}
 					break;
 				}
 				default: {
