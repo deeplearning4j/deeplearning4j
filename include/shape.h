@@ -329,13 +329,13 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(int *shape, int rank);
+    inline int isMatrix(const int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    inline int isMatrix(int *shapeInfo);
+    inline int isMatrix(const int *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -344,7 +344,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int* shapeOf(int *buffer);
+    const int* shapeOf(const int *buffer);
     int *shapeOf(int *buffer);
 
 /**
@@ -426,7 +426,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int rank(int *buffer);
+    int rank(const int *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -452,7 +452,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    int *stride(int *buffer);
+    const int *stride(const int *buffer);
     int *stride(int *buffer);
 
 /**
@@ -983,7 +983,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int prodLong(int *data, int length);
+    inline int prodLong(const int *data, int length);
 
     /**
      * Returns the rear most left over item not present in
@@ -1019,7 +1019,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int getOffset(int baseOffset, int *shape, int *stride, int *indices,int rank);
+    inline int getOffset(int baseOffset, const int *shape, const int *stride, const int *indices,int rank);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1036,13 +1036,13 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int * ind2sub(int rank,int *shape,int index,int numIndices);
+    inline int* ind2sub(int rank, const int *shape,int index,int numIndices);
 
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int *ind2sub(int rank, int *shape,int index);
+    inline int *ind2sub(int rank, const int *shape,int index);
 
     /**
      * Convert a linear index to
@@ -1142,7 +1142,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int *computeIndices(int rank, int *shape, int *stride);
+    Nd4jIndex *computeIndices(int rank, const int *shape, const int *stride);
 
     /**
    * Compute the real linear indices for the
@@ -1152,7 +1152,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int *computeIndices(int *shapeBuffer);
+    Nd4jIndex *computeIndices(const int *shapeBuffer);
 
     /**
  * Convert a linear index to
@@ -1868,9 +1868,9 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *computeIndices(int rank, int *shape, int *stride) {
+    inline Nd4jIndex *computeIndices(int rank, const int *shape, const int *stride) {
         int length = shape::prodLong(shape,rank);
-        int *ret = new int[length];
+        Nd4jIndex *ret = new Nd4jIndex[length];
         for(int i = 0; i < length; i++) {
             int *idx = shape::ind2sub(rank, shape, i);
             ret[i] = shape::getOffset(0, shape, stride, idx, rank);
@@ -1886,7 +1886,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline const Nd4jIndex *computeIndices(int *shapeBuffer) {
+    inline Nd4jIndex *computeIndices(const int *shapeBuffer) {
         return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
     }
 
@@ -1924,7 +1924,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int* ind2sub(int rank, int *shape, int index,int numIndices) {
+    inline int* ind2sub(int rank, const int *shape, int index,int numIndices) {
         int denom = numIndices;
         int *ret = new int[rank];
 
@@ -1949,7 +1949,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *ind2sub(int rank, int *shape, int index) {
+    inline int* ind2sub(int rank, const int *shape, int index) {
         return ind2sub(rank,shape, index,shape::prodLong(shape,rank));
     }
 
@@ -2436,7 +2436,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(int *shape, int rank) {
+    inline int isMatrix(const int *shape, int rank) {
         if (rank > 2)
             return 0;
         else if (rank <= 2) {
@@ -2451,7 +2451,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(int *shapeInfo) {
+    inline int isMatrix(const int *shapeInfo) {
         return isMatrix(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
@@ -2467,7 +2467,9 @@ namespace shape {
         return buffer + 1;
     }
 
-
+    inline const int *shapeOf(const int *buffer) {
+        return buffer + 1;
+    }
 
 /**
  * Return a copy of a buffer.
@@ -2568,7 +2570,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int rank(int *buffer) {
+    inline int rank(const int *buffer) {
         return buffer[0];
     }
 
@@ -2611,10 +2613,13 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int *stride(int *buffer) {
+    inline const int *stride(const int *buffer) {
         return buffer + (1 + rank(buffer));
     }
 
+    inline int *stride(int *buffer) {
+        return buffer + (1 + rank(buffer));
+    }
 
 
 /**
@@ -3606,7 +3611,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    int getOffset(int baseOffset, int *shape, int *stride, int *indices,int rank) {
+    int getOffset(int baseOffset, const int *shape, const int *stride, const int *indices, int rank) {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i]) {
@@ -3925,7 +3930,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int prodLong(int *data, int length) {
+    inline int prodLong(const int *data, int length) {
         int prod = 1;
         for (int i = 0; i < length; i++) {
             prod *= data[i];

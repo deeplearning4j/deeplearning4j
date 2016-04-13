@@ -100,17 +100,17 @@ public:
                      resultShapeBuffer,
                      this->extraParams,
                      indexes);
-        }
-        else
+        } else {
             op->exec(this->data->data->data,
                      xShapeBuffer,
                      this->data->data->data,
                      resultShapeBuffer,
                      this->extraParams);
+        }
 
-        free(xShapeBuffer);
-        free(resultShapeBuffer);
-        delete[] indexes;
+        delete []xShapeBuffer;
+        delete []resultShapeBuffer;
+        delete []indexes;
     }
 
 };
