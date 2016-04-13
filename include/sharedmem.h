@@ -11,6 +11,9 @@
 #ifdef __CUDACC__
 #ifndef _SHAREDMEM_H_
 #define _SHAREDMEM_H_
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <dll.h>
 
 //****************************************************************************
 // Because dynamically sized shared memory arrays are declared "extern",

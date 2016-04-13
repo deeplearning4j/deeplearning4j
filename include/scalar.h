@@ -7,11 +7,17 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
+#include <dll.h>
+
 #ifdef __JNI__
 #include <jni.h>
 #endif
 #include <op.h>
 #include <templatemath.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 namespace functions {
     namespace scalar {
 /**
@@ -49,16 +55,15 @@ namespace functions {
 	 * @param n
 	 */
 	virtual __inline__ __device__ void transform(
-			int n,
+			Nd4jIndex n,
 			T scalar,
 			T *dy,
-			int *shapeInfo,
 			T *params,
 			T *result,
-			int *indexes) {
+			int *indexes, int *allocationBuffer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
 		/* equal, positive, non-unit increments. */
 #pragma unroll
@@ -77,40 +82,56 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(
-			int n,
+	virtual __inline__ __device__ void transformCuda(
 			T scalar,
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result) {
+			T *result, int *resultShapeInfo, int *allocationBuffer) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
-		int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-
+		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
+        int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+		Nd4jIndex n = shape::length(shapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 		__shared__ int length;
-		if(tid == 0)
+		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
 		__syncthreads();
 
-		if(xElementWiseStride >= 1) {
-			transform(length,scalar,dy,xElementWiseStride,params,result);
+
+		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == shape::order(resultShapeInfo)) {
+			transformCuda(
+					length,
+					scalar,
+					dy,
+					xElementWiseStride,
+					params,
+					result,resultElementWiseStride, allocationBuffer);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
+			long allocSize = sizeof(int) * xRank;
+			int *xIdx = shape::cuMalloc(allocationBuffer, allocSize);
+
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
-				int *xIdx = shape::ind2sub(xRank, xShape, i);
-				int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				result[xOffset2] = op(dy[xOffset2],scalar, params);
-				free(xIdx);
+				shape::ind2sub(xRank, xShape, i,xIdx);
+				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+				int resultOffset = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
+
+			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                free(xIdx);
+            }
+			delete[] xIdx;
+
 		}
 
 
@@ -130,16 +151,16 @@ namespace functions {
 	 * @param blockSize
 	 */
 	virtual
-	__inline__ __device__ void transform(
-			int n,
+	__inline__ __device__ void transformCuda(
+			Nd4jIndex n,
 			T dx,
 			T *dy,
 			int incy,
 			T *params,
-			T *result) {
+			T *result,int resultStride, int *allocationBuffer) {
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		int i = blockIdx.x * blockDim.x + tid;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+		Nd4jIndex i = tid;
 		if(incy == 1) {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
@@ -149,7 +170,7 @@ namespace functions {
 		else {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i * incy] = op(dy[i * incy],dx, params);
+				result[i * resultStride] = op(dy[i * incy],dx, params);
 			}
 		}
 
@@ -174,19 +195,16 @@ namespace functions {
                            int *resultShapeInfo,
                            T scalar,
                            T *extraParams,
-                           const int n,
                            int *indexes,
                            int *resultIndexes) {
-                int i;
-#pragma omp parallel private(i)
-                {
-#pragma omp simd
-                    for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                        result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
-                    }
+                Nd4jIndex n = shape::length(xShapeInfo);
+#pragma omp parallel for
+                for (Nd4jIndex i = 0; i < n; i++) {
+                    result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
                 }
-
             }
+
+
 
 
             /**
@@ -201,14 +219,13 @@ namespace functions {
          * @param n the number of elements to loop over
          */
             void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams, const int n,int *indexes) {
+                           T scalar, T *extraParams,int *indexes) {
                 transform(x,
                           xShapeInfo,
                           result,
                           resultShapeInfo,
                           scalar,
                           extraParams,
-                          n,
                           indexes,
                           indexes);
             }
@@ -225,50 +242,91 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-            void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams, const int n) {
-
+            void transform(T *x,
+                           int *xShapeInfo,
+                           T *result,
+                           int *resultShapeInfo,
+                           T scalar, T *extraParams) {
+                char xOrdering = shape::order(xShapeInfo);
+                char resultOrdering = shape::order(resultShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-                    transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
-                }
-                else {
-
-
+                if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
                     int *xShape = shape::shapeOf(xShapeInfo);
-                    int *resultShape = shape::shapeOf(resultShapeInfo);
-
                     int *xStride = shape::stride(xShapeInfo);
                     int *resultStride = shape::stride(resultShapeInfo);
-                    int xRank = shape::rank(xShapeInfo);
-                    int resultRank = shape::rank(resultShapeInfo);
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 result,
+                                                 resultStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &result,
+                                                 resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *resultIter = result;
+                                resultIter[0] = op(xIter[0],scalar,extraParams);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     result,
+                                                     resultStridesIter);
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
 
-                    int xOffset = shape::offset(xShapeInfo);
-                    int resultOffset = shape::offset(resultShapeInfo);
+                }
+                else {
+                    Nd4jIndex n = shape::length(xShapeInfo);
 
-                    char xOrder = shape::order(xShapeInfo);
-                    char resultOrder = shape::order(xShapeInfo);
-                    int xElementWiseStride = shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
-                    int resultElementWiseStride = shape::computeElementWiseStride(resultRank,resultShape,resultStride,resultOrder == 'f');
 
-                    int i;
-#pragma omp parallel private(i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
+                    if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                        transform(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
+                    }
+                    else {
+                        int *xShape = shape::shapeOf(xShapeInfo);
+                        int *resultShape = shape::shapeOf(resultShapeInfo);
+
+                        int *xStride = shape::stride(xShapeInfo);
+                        int *resultStride = shape::stride(resultShapeInfo);
+                        int xRank = shape::rank(xShapeInfo);
+                        int resultRank = shape::rank(resultShapeInfo);
+
+                        int xOffset = shape::offset(xShapeInfo);
+                        int resultOffset = shape::offset(resultShapeInfo);
+
+#pragma omp parallel for
+                        for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
                             int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
                             int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
                             result[resultOffset2] = op(x[xOffset2], scalar,extraParams);
 
-                            free(xIdx);
-                            free(resultIdx);
-                        }
-                    }
+                            delete[] xIdx;
+                            delete[] resultIdx;
 
+                        }
+
+                    }
                 }
+
 
             }
 
@@ -285,29 +343,20 @@ namespace functions {
              * @param n the number of elements to loop over
              */
             void transform(T *x, int xStride, T *result, int resultStride,
-                           T scalar, T *extraParams, const int n) {
-                int i;
-
+                           T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
-#pragma omp parallel private (i)
-                    {
-#pragma omp simd
-                        for (i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                            result[i] = op(x[i], scalar, extraParams);
-                        }
+#pragma omp parallel for
+                    for (Nd4jIndex i = 0; i < n; i++) {
+                        result[i] = op(x[i], scalar, extraParams);
                     }
+                }
 
+                else {
+#pragma omp parallel for
+                    for (Nd4jIndex i = 0; i < n; i++) {
+                        result[i * resultStride] = op(x[i * xStride], scalar,
+                                                      extraParams);
 
-
-                } else {
-
-#pragma omp parallel private (i)
-                    {
-#pragma omp simd
-                        for (int i = omp_get_thread_num(); i < n; i+= omp_get_num_threads()) {
-                            result[i * resultStride] = op(x[i * resultStride], scalar,
-                                                          extraParams);
-                        }
                     }
                 }
 
@@ -353,17 +402,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 + d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -399,17 +438,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 / d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("div_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -445,17 +474,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 == d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("eq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -490,17 +509,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 > d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("gt_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -535,17 +544,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 < d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("add_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -579,17 +578,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 <= d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("ltoreq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -625,17 +614,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 >= d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("gtoreq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -671,17 +650,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_max<T>(d1, d2);
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("max_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -715,17 +684,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return nd4j::math::nd4j_min<T>(d1, d2);
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("min_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -760,17 +719,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 * d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                __host__
 
-#endif
-                std::string name() {
-                    return std::string("mul_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -802,17 +751,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 != d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("noteq_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -846,17 +785,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2 / d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rdiv_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -890,17 +819,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2 - d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rsib_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -930,17 +849,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("set_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -978,17 +887,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return d1 - d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("sub_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1025,17 +924,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return (int) d1 % (int) d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("mod_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1073,17 +962,7 @@ namespace functions {
                 inline T op(T d1, T d2, T *params) {
                     return (int) d2 % (int) d1;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("rmod_scalar");
-                }
 #ifdef __CUDACC__
                 __host__ __device__
 #endif
@@ -1121,17 +1000,7 @@ namespace functions {
                     }
                     return d2;
                 }
-                /** Name of the op
-                 * @return the name of the operation
-                 */
-                virtual
-#ifdef __CUDACC__
-                inline __host__
 
-#endif
-                std::string name() {
-                    return std::string("setvalorless_scalar");
-                }
 
 #ifdef __CUDACC__
                 __host__ __device__
@@ -1229,36 +1098,36 @@ namespace functions {
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		T dx,
 		T *dy,
 		int incy, T *params,
-		T *result) {
+		T *result,int resultStride, int *allocationBuffer) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-
-	__syncthreads();
-	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 
+	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer);
 
-
-	op->transform(n,dx,dy,incy,params,result);
-	if(threadIdx.x == 0)
-		free(op);
+	__syncthreads();
+	if(threadIdx.x == 0) {
+		delete op;
+		delete scalarDoubleOpFactory;
+	}
 }
 
-extern "C" __global__ void scalarDouble(
+__global__ void scalarDouble(
 		int opNum,
-		int n,
+		Nd4jIndex n,
 		double dx,
 		double *dy,
 		int incy, double *params,
-		double *result) {
+		double *result,int resultStride, int *allocationBuffer) {
 	scalarGeneric<double>(
 			opNum,
 			n,
@@ -1266,11 +1135,11 @@ extern "C" __global__ void scalarDouble(
 			dy,
 			incy,
 			params,
-			result);
+			result,resultStride, allocationBuffer);
 }
 
-extern "C" __global__ void scalarFloat(int opNum,
-		int n,float dx, float *dy, int incy, float *params, float *result) {
+ __global__ void scalarFloat(int opNum,
+		Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocationBuffer) {
 	scalarGeneric<float>(
 			opNum,
 			n,
@@ -1278,8 +1147,71 @@ extern "C" __global__ void scalarFloat(int opNum,
 			dy,
 			incy,
 			params,
-			result);
+			result,resultStride, allocationBuffer);
 }
+
+
+template <typename T>
+__device__ void scalarGenericIndexes(
+        int opNum,
+        Nd4jIndex n,
+        T dx,
+        T *dy,
+        T *params,
+        T *result,int *indexes, int *allocationBuffer) {
+    __shared__ functions::scalar::ScalarTransform<T> *op;
+    __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+    if(threadIdx.x == 0) {
+        scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+        op = scalarDoubleOpFactory->getOp(opNum);
+    }
+    __syncthreads();
+
+    op->transform(n,dx,dy,params,result,indexes, allocationBuffer);
+    __syncthreads();
+
+    if(threadIdx.x == 0) {
+        delete op;
+        delete scalarDoubleOpFactory;
+    }
+}
+
+ __global__ void scalarDoubleIndexes(
+        int opNum,
+        Nd4jIndex n,
+        double dx,
+        double *dy,
+        double *params,
+        double *result,int *indexes, int *allocationBuffer) {
+    scalarGenericIndexes<double>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes, allocationBuffer);
+}
+
+ __global__ void scalarFloatIndexes(
+        int opNum,
+        Nd4jIndex n,
+        float dx,
+        float *dy,
+        float *params,
+        float *result,
+        int *indexes, int *allocationBuffer) {
+    scalarGenericIndexes<float>(opNum,
+                                 n,
+                                 dx,
+                                 dy,
+                                 params,
+                                 result,
+                                 indexes, allocationBuffer);
+}
+
+
+
+
 
 
 
@@ -1288,63 +1220,58 @@ extern "C" __global__ void scalarFloat(int opNum,
 template <typename T>
 __device__ void scalarGeneric(
 		int opNum,
-		int n,
 		T dx,
 		T *dy,
 		int *shapeInfo,
 		T *params,
-		T *result) {
+		T *result,int *resultShapeInfo, int *allocationBuffer) {
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
-
-	__syncthreads();
-	if(threadIdx.x == 0)
 		op = scalarDoubleOpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 
+	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo, allocationBuffer);
+	__syncthreads();
 
-
-	op->transform(n,dx,dy,shapeInfo,params,result);
-	if(threadIdx.x == 0)
-		free(op);
+	if(threadIdx.x == 0) {
+		delete op;
+		delete scalarDoubleOpFactory;
+	}
 }
 
-extern "C" __global__ void scalarDoubleIndex(
+extern "C" __global__ void scalarDouble(
 		int opNum,
-		int n,
 		double dx,
 		double *dy,
 		int *shapeInfo, double *params,
-		double *result) {
+		double *result,int *resultShapeInfo, int *allocationBuffer) {
 	scalarGeneric<double>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result);
+			result,resultShapeInfo, allocationBuffer);
 }
 
-extern "C" __global__ void scalarFloatIndex(
+extern "C" __global__ void scalarFloat(
 		int opNum,
-		int n,
 		float dx,
 		float *dy,
 		int *shapeInfo,
 		float *params,
-		float *result) {
+		float *result,int *resultShapeInfo, int *allocationBuffer) {
 	scalarGeneric<float>(
 			opNum,
-			n,
 			dx,
 			dy,
 			shapeInfo,
 			params,
-			result);
+			result,resultShapeInfo, allocationBuffer);
 }
 
 #endif

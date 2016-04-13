@@ -44,7 +44,7 @@
 <pathentry kind="mac" name="__SIZEOF_FLOAT__" path="" value="4"/>
 <pathentry kind="mac" name="__SIZEOF_DOUBLE__" path="" value="8"/>
 <pathentry kind="mac" name="__SIZEOF_LONG_DOUBLE__" path="" value="16"/>
-<pathentry kind="mac" name="__SIZEOF_SIZE_T__" path="" value="8"/>
+<pathentry kind="mac" name="__SIZEOF_int__" path="" value="8"/>
 <pathentry kind="mac" name="__CHAR_BIT__" path="" value="8"/>
 <pathentry kind="mac" name="__BIGGEST_ALIGNMENT__" path="" value="16"/>
 <pathentry kind="mac" name="__ORDER_LITTLE_ENDIAN__" path="" value="1234"/>
@@ -53,7 +53,7 @@
 <pathentry kind="mac" name="__BYTE_ORDER__" path="" value="__ORDER_LITTLE_ENDIAN__"/>
 <pathentry kind="mac" name="__FLOAT_WORD_ORDER__" path="" value="__ORDER_LITTLE_ENDIAN__"/>
 <pathentry kind="mac" name="__SIZEOF_POINTER__" path="" value="8"/>
-<pathentry kind="mac" name="__SIZE_TYPE__" path="" value="long unsigned int"/>
+<pathentry kind="mac" name="__intYPE__" path="" value="long unsigned int"/>
 <pathentry kind="mac" name="__PTRDIFF_TYPE__" path="" value="long int"/>
 <pathentry kind="mac" name="__WCHAR_TYPE__" path="" value="int"/>
 <pathentry kind="mac" name="__WINT_TYPE__" path="" value="unsigned int"/>
@@ -273,8 +273,8 @@
 <pathentry kind="mac" name="__EXCEPTIONS" path="" value="1"/>
 <pathentry kind="mac" name="_GNU_SOURCE" path="" value="1"/>
 <pathentry include="/usr/local/include" kind="inc" path="" system="true"/>
+<pathentry include="/usr/local/cuda/include" kind="inc" path="" system="true"/>
 <pathentry include="/home/agibsonccc/code/nativeoperations/include" kind="inc" path="" system="true"/>
-<pathentry include="/home/agibsonccc/code/nativeoperations/library/tests" kind="inc" path="" system="true"/>
 <pathentry include="/usr/java/jdk1.8.0_31/include" kind="inc" path="" system="true"/>
 <pathentry include="/usr/java/jdk1.8.0_31/include/linux" kind="inc" path="" system="true"/>
 <pathentry include="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/include" kind="inc" path="" system="true"/>
@@ -366,6 +366,13 @@
 <buildCommand>/bin/gmake</buildCommand>
 <buildArguments>-j8</buildArguments>
 <buildTarget>clean</buildTarget>
+<stopOnError>true</stopOnError>
+<useDefaultCommand>false</useDefaultCommand>
+</target>
+<target name="[obj] NativeOps.cpp.o" path="library" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+<buildCommand>/bin/gmake</buildCommand>
+<buildArguments>-j8</buildArguments>
+<buildTarget>NativeOps.cpp.o</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
 </target>

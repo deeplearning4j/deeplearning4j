@@ -164,7 +164,7 @@ TEST(Shape,Keep) {
     free(keep);
 }
 
-TEST(Shape,TensorsAlongDimension) {
+TEST(Shape,tensorsAlongDimension) {
     int rank = 4;
     int *shape = (int *) malloc(sizeof(int) * rank);
     shape[0] = 2;

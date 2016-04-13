@@ -4,6 +4,8 @@
 
 #ifndef NATIVEOPERATIONS_LAPACKE_H
 #define NATIVEOPERATIONS_LAPACKE_H
+#include <dll.h>
+
 /*****************************************************************************
   Copyright (c) 2010, Intel Corp.
   All rights reserved.
@@ -50,7 +52,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
+#include <dll.h>
 #include <stdlib.h>
 
 #ifndef lapack_int

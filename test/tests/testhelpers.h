@@ -12,12 +12,12 @@
 #include <templatemath.h>
 #include <buffer.h>
 #include <array.h>
-int arrsEquals(int rank, int *comp1, int *comp2);
+
+#include "optype.h"
 
 template<typename T>
-int arrsEquals(int rank, T *comp1, T *comp2) {
+inline int arrsEquals(int rank, const T comp1[], const T comp2[]) {
     for (int i = 0; i < rank; i++) {
-        printf("Value i %d for comp1 %f and comp2 %f\n",i,comp1[i],comp2[i]);
         DOUBLES_EQUAL(comp1[i],comp2[i],1e-1);
     }
 
@@ -27,19 +27,51 @@ int arrsEquals(int rank, T *comp1, T *comp2) {
 template <typename T>
 class Data {
 public:
+    ~Data() {
+        //NOTE: delete nullptr; is well defined!
+        // but CppUnit does seem to mind...
+
+        if(xShape)
+            delete []xShape;
+
+        if(yShape && yShape != xShape)
+            delete []yShape;
+
+        if(resultShape)
+            delete []resultShape;
+
+        if(data)
+            delete []data;
+
+        if(dimension)
+            delete []dimension;
+
+        if(assertion)
+            delete []assertion;
+
+        if(y)
+            delete []y;
+
+        if(result)
+            delete result;
+
+        if(extraParams)
+            delete []extraParams;
+    }
+
     T scalar;
-    T *data = NULL;
-    T *y = NULL;
-    T *result = NULL;
-    T *extraParams = NULL;
-    T *assertion = NULL;
-    int *xShape = NULL;
-    int *yShape = NULL;
-    int *resultShape = NULL;
+    T *data = nullptr;
+    T *y = nullptr;
+    T *result = nullptr;
+    T *extraParams = nullptr;
+    T *assertion = nullptr;
+    int *xShape = nullptr;
+    int *yShape = nullptr;
+    int *resultShape = nullptr;
     int rank;
     int yRank;
     int resultRank;
-    int *dimension = NULL;
+    int *dimension = nullptr;
     int dimensionLength;
 
 };
@@ -48,15 +80,13 @@ template <typename T>
 void freeData(Data<T> *data);
 
 
-
 /**
  * Get the shape info buffer
  * for the given rank and shape.
  */
-int *shapeBuffer(int rank, int *shape) {
+inline int *shapeBuffer(int rank, int *shape) {
     int *stride = shape::calcStrides(shape, rank);
-    shape::ShapeInformation * shapeInfo = (shape::ShapeInformation *) malloc(
-            sizeof(shape::ShapeInformation));
+    shape::ShapeInformation * shapeInfo = new shape::ShapeInformation;
     shapeInfo->shape = shape;
     shapeInfo->stride = stride;
     shapeInfo->offset = 0;
@@ -70,65 +100,20 @@ int *shapeBuffer(int rank, int *shape) {
     return shapeInfoBuffer;
 }
 
-/**
- * Properly frees the
- * given data
- */
-template <typename T>
-void freeData(Data<T> **dataRef) {
-    Data<T> *data = *dataRef;
-    if(data->xShape != NULL) {
-        free(data->xShape);
-        data->xShape = NULL;
-    }
-    if(data->resultShape != NULL) {
-        free(data->resultShape);
-        data->resultShape = NULL;
-    }
-    if(data->data != NULL) {
-        free(data->data);
-        data->data = NULL;
-    }
-    if(data->dimension != NULL) {
-        free(data->dimension);
-        data->dimension = NULL;
-    }
-    if(data->assertion != NULL) {
-        free(data->assertion);
-        data->assertion = NULL;
-    }
-    if(data->y != NULL) {
-        free(data->y);
-        data->y = NULL;
-    }
-    if(data->result != NULL) {
-        free(data->result);
-        data->result = NULL;
-    }
-    if(data->extraParams != NULL) {
-        free(data->extraParams);
-        data->extraParams = NULL;
-    }
-
-    delete data;
-
-}
-
-
-void assertBufferProperties(int *shapeBuffer) {
+inline void assertBufferProperties(int *shapeBuffer) {
     CHECK(shape::rank(shapeBuffer) >= 2);
     CHECK(shape::length(shapeBuffer) >= 1);
     CHECK(shape::elementWiseStride(shapeBuffer) >= 1);
 }
 
 
-nd4j::buffer::Buffer<int> * shapeIntBuffer(int rank ,int*shape) {
+inline nd4j::buffer::Buffer<int>* shapeIntBuffer(int rank, int *shape) {
     int *shapeBuffRet = shapeBuffer(rank,shape);
     nd4j::buffer::Buffer<int> *ret = nd4j::buffer::createBuffer(shapeBuffRet,shape::shapeInfoLength(rank));
     return ret;
 }
 
-nd4j::buffer::Buffer<int> * gpuInformationBuffer(int blockSize,int gridSize,int sharedMemorySize) {
+inline nd4j::buffer::Buffer<int>* gpuInformationBuffer(int blockSize, int gridSize, int sharedMemorySize) {
     int *ret = (int *) malloc(sizeof(int) * 4);
     ret[0] = blockSize;
     ret[1] = gridSize;
@@ -146,7 +131,7 @@ class BaseTest {
 public:
     BaseTest() {
     }
-    BaseTest(int rank,int opNum,Data<T> *data,int extraParamsLength) {
+    BaseTest(int rank, int opNum,Data<T> *data,int extraParamsLength) {
         this->rank = rank;
         this->baseData = data;
         this->opNum = opNum;
@@ -154,14 +139,11 @@ public:
         init();
     }
 
-
-
     virtual ~BaseTest() {
         if(data != NULL)
             nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
         freeAssertion();
     }
-
 
     virtual nd4j::buffer::Buffer<int> * gpuInformationBuffer() {
         int *ret = (int *) malloc(sizeof(int) * 4);
@@ -172,10 +154,6 @@ public:
         nd4j::buffer::Buffer<int> *ret2 = nd4j::buffer::createBuffer(ret,4);
         return ret2;
     }
-
-
-
-
 
 protected:
     int rank;
@@ -246,7 +224,7 @@ public:
     PairWiseTest() {
     }
     //BaseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-    PairWiseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
+    PairWiseTest(int rank, int opNum, Data<T> *data, int extraParamsLength)
             :BaseTest<T>(rank,opNum,data,extraParamsLength)  {
         init();
     }
@@ -267,7 +245,7 @@ template <typename T>
 class TwoByTwoTest : public BaseTest<T> {
 public:
     virtual ~TwoByTwoTest() {}
-    TwoByTwoTest(int rank,int opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(rank,opNum,data,extraParamsLength) {}
+    TwoByTwoTest(int rank, int opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(rank,opNum,data,extraParamsLength) {}
     TwoByTwoTest(int opNum,Data<T> *data,int extraParamsLength) : BaseTest<T>(2,opNum,data,extraParamsLength) {}
     virtual void initShape() override {
         for(int i = 0; i < 2; i++) {

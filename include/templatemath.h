@@ -9,6 +9,7 @@
 #define TEMPLATEMATH_H_
 
 #include <math.h>
+#include <dll.h>
 
 namespace nd4j {
 	namespace math {
@@ -101,24 +102,24 @@ namespace nd4j {
 		}
 
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_leakyrelu(T val,T alpha) {
-            return val < 0 ?  alpha * val : val;
-        }
+		inline T nd4j_leakyrelu(T val,T alpha) {
+			return val < 0 ?  alpha * val : val;
+		}
 
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_eluderivative(T val) {
-            return val >= 0.0 ? 1.0 : nd4j_exp(val);
-        }
+		inline T nd4j_eluderivative(T val) {
+			return val >= 0.0 ? 1.0 : nd4j_exp(val);
+		}
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__
@@ -156,35 +157,35 @@ namespace nd4j {
 
 #endif
 		inline T nd4j_tanh(T val);
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_tanhderivative(T val) {
-            T tanh = nd4j_tanh(val);
-            return 1.0 - tanh * tanh;
-        }
-        template<typename T>
+		inline T nd4j_tanhderivative(T val) {
+			T tanh = nd4j_tanh(val);
+			return 1.0 - tanh * tanh;
+		}
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_sigmoidderivative(T val) {
-            T sigmoid = nd4j_sigmoid(val);
-            T out = sigmoid * (1.0 - sigmoid);
-            return out;
-        }
+		inline T nd4j_sigmoidderivative(T val) {
+			T sigmoid = nd4j_sigmoid(val);
+			T out = sigmoid * (1.0 - sigmoid);
+			return out;
+		}
 
-        template<typename T>
+		template<typename T>
 #ifdef __CUDACC__
-        __host__ __device__
+		__host__ __device__
 
 #endif
-        inline T nd4j_softsignderivative(T val) {
-            T y = 1 + nd4j_abs(val);
-            return 1.0 / (y * y);
-        }
+		inline T nd4j_softsignderivative(T val) {
+			T y = 1 + nd4j_abs(val);
+			return 1.0 / (y * y);
+		}
 		template<typename T>
 #ifdef __CUDACC__
 		__host__ __device__

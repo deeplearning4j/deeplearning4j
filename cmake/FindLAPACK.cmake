@@ -176,6 +176,20 @@ else()
       "${CGAL_TAUCS_LIBRARIES_DIR} ENV LAPACK_LIB_DIR"
       )
     endif()
+    
+    # intel mkl 11 lapack?
+    if(NOT LAPACK_LIBRARIES)
+      check_lapack_libraries(
+      LAPACK_DEFINITIONS
+      LAPACK_LIBRARIES
+      LAPACK
+      cheev
+      ""
+      "mkl_rt"
+      "${BLAS_LIBRARIES}"
+      "${CGAL_TAUCS_LIBRARIES_DIR} ENV LAPACK_LIB_DIR"
+      )
+    endif()
 
     #acml lapack?
     if(NOT LAPACK_LIBRARIES)

@@ -7,7 +7,9 @@
 
 #ifndef OP_H_
 #define OP_H_
-#include <string>
+#include <dll.h>
+//#include <string>
+
 #ifdef JNI
 #include <jni.h>
 #endif
@@ -22,16 +24,7 @@ class Op {
 protected:
     int extraParamsLen = 0;
 public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	__host__
 
-#endif
-	std::string name() = 0;
 
 	virtual inline
 #ifdef __CUDACC__
@@ -95,7 +88,7 @@ public:
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int strcmp(const char* s1, const char* s2) {
+inline int strcmp(const char* s1, const char* s2) {
 	while(*s1 && (*s1==*s2))
 		s1++,s2++;
 	return *(const unsigned char*)s1-*(const unsigned char*)s2;

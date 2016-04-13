@@ -10,8 +10,12 @@
 #include <shape.h>
 #include <op.h>
 #include <omp.h>
+#include <dll.h>
+
 #ifdef __CUDACC__
 #include <helper_cuda.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
 #endif
 
 #define MAX_FLOAT 1e37
@@ -19,18 +23,18 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
-
+#include <pairwise_util.h>
 
 namespace functions {
-namespace indexreduce {
-template<typename T>
-struct IndexValue {
-	T value;
-	int index;
-};
+	namespace indexreduce {
+		template<typename T>
+		struct IndexValue {
+			T value;
+			int index;
+		};
 
 #ifdef __CUDACC__
-// This is the un-specialized struct.  Note that we prevent instantiation of this
+		// This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 template<typename T>
 struct SharedIndexValue {
@@ -43,7 +47,7 @@ struct SharedIndexValue {
 };
 
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template<>
@@ -54,7 +58,7 @@ struct SharedIndexValue<float> {
 	}
 };
 // Following are the specializations for the following types.
-// int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
+// int, uint, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template<>
@@ -66,106 +70,106 @@ struct SharedIndexValue<double> {
 };
 #endif
 
-template<typename T>
-class IndexReduce: public  functions::ops::Op<T> {
+		template<typename T>
+		class IndexReduce: public  functions::ops::Op<T> {
 
-public:
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+		public:
+			/**
+             *
+             * @param val
+             * @param extraParams
+             * @return
+             */
+			//an op for the kernel
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
+			IndexValue<T> op(IndexValue<T> val, T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+			/**
+             *
+             * @param old
+             * @param opOutput
+             * @param extraParams
+             * @return
+             */
+			//calculate an update of the reduce operation
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
-			T *extraParams) = 0;
+			IndexValue<T> update(IndexValue<T> old, IndexValue<T> opOutput,
+								 T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+			/**
+             *
+             * @param f1
+             * @param f2
+             * @param extraParams
+             * @return
+             */
+			//invoked when combining two kernels
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
+			IndexValue<T> merge(IndexValue<T> f1, IndexValue<T> f2, T *extraParams) = 0;
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+			/**
+             *
+             * @param reduction
+             * @param n
+             * @param xOffset
+             * @param dx
+             * @param incx
+             * @param extraParams
+             * @param result
+             * @return
+             */
+			//post process result (for things like means etc)
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) = 0;
+			IndexValue<T> postProcess(IndexValue<T> reduction, int n, int xOffset,
+									  T *dx, int incx, T *extraParams, T *result) = 0;
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+			/**
+             *
+             * @param d1
+             * @param d2
+             * @param extraParams
+             * @return
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+			inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
+			IndexValue<T> op(IndexValue<T> d1, IndexValue<T> d2, T *extraParams) = 0;
 
 #ifdef __CUDACC__
-	/**
+			/**
 	 *
 	 * @param sPartialsRef
 	 * @param tid
@@ -221,29 +225,24 @@ public:
 	 *                          0 is the number of elements per vector
 	 *                          1 is the number of vectors
 	 */
-	__inline__ __device__ void transform(
-			int n, T *dx,
+	virtual __inline__ __device__ void transform(
+			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
 			T *result,
 			int *resultShapeInfo,
-			int *gpuInformation,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot) {
-
-
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 		/**
 		 * Gpu information for the problem
 		 */
-		int tid = threadIdx.x;
+		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ volatile int resultScalar;
 
 		__shared__ int xElementWiseStride;
-		__shared__ int xOffset;
-		__shared__ int reductionIndexesPerBlock;
 
-		int numElements = gpuInformation[2] / sizeof(IndexValue <T>);
+		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
 		IndexValue<T> *sPartials;
 		functions::indexreduce::SharedIndexValue<T> holder;
@@ -252,7 +251,7 @@ public:
 		T startingVal = this->startingValue(dx);
 
 #pragma unroll
-		for (int i = tid; i < numElements; i += blockDim.x) {
+		for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
 			IndexValue <T> val = {startingVal, i};
 			sPartials[i] = val;
 		}
@@ -263,19 +262,18 @@ public:
 
 		__shared__ volatile int resultLength;
 
-		__shared__ int tensorsForDimension;
 
-		__shared__ int elementsPerTad;
 
 		//only compute the tad indexes once
-		__shared__ shape::TADPermuteInfo xTadInfo;
-
 		IndexValue <T> reduction = {startingVal, 0};
-		if (tid == 0) {
-			tensorsForDimension = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
-			resultLength = shape::length(resultShapeInfo);
+
+		if (threadIdx.x == 0) {
+			if (resultShapeInfo != NULL)
+				resultLength = shape::length(resultShapeInfo);
+			else resultLength = 1;
+
 			if (dimensionLength == 1) {
-				if (dimension[0] == shape::MAX_DIMENSION)
+				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -285,1023 +283,948 @@ public:
 
 			if (resultLength == 1)
 				resultScalar = 1;
-			xOffset = shape::offset(xShapeInfo);
+
 			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+
 			xLength = shape::length(xShapeInfo);
-			elementsPerTad = xLength / resultLength;
-
-			if (gridDim.x >= resultLength) {
-				reductionIndexesPerBlock = 1;
-			}
-			else {
-				reductionIndexesPerBlock = resultLength / gridDim.x;
-			}
-
-
 		}
 		__syncthreads();
 
-		if (!resultScalar && dimensionLength > 1) {
-			if(tid == 0) {
-				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-			}
-			__syncthreads();
+		if (!resultScalar) {
+			if (dimensionLength > 1) {
+				__shared__ int numOnes;
+				__shared__ bool squeezed;
+				__shared__ bool newSqueezeDimensions;
+				__shared__ int *inputShapeInfo;
+				//decompose in to several sub tads after
+				//moving all dimensions (in sorted order)
+				//to the back.
+				//permuted version of the x shape info for setting up the tad problem
 
-			int resultLength = shape::length(resultShapeInfo);
-			if(tid >= resultLength)
-				return;
+				__shared__ int *tadShapeShapeInfo;
 
-			/**
-			 * The element wise stride belongs to a reduction index.
-			 * When used out of order, we can get rid of the data
-			 * dependencies and rely on using the max dimension
-			 * specified for stride instead.
-			 * Say we take the sum(0,1) along arr
-			 * we can use arr.stride(1) as a representation
-			 * along which to iterate.
-			 */
-			int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-			int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-			int tadLength = xTadInfo.tensorShapeProd;
-			int xLength = shape::length(xShapeInfo);
-			int i = 0,j = 0;
-#pragma unroll
-			for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-				int offset = dimensionLength > 1 ? i : tadLength * i;
-				IndexValue<T> comp2;
-				comp2.value = dx[offset];
-				comp2.index = 0;
-				sPartials[tid] = comp2;
-				__syncthreads();
-				for(j = 1; j < elementsPerReductionIndex; j++) {
-					IndexValue<T> comp;
-					comp.value = dx[offset + tadElementWiseStride * j];
-					comp.index =  j;
-					sPartials[tid] =  update(sPartials[tid],comp, extraParams);
-					__syncthreads();
-				     result[i] = sPartials[tid].index;
-
+				if(threadIdx.x == 0) {
+					inputShapeInfo = xShapeInfo;
 				}
 
+				__syncthreads();
+
+				int *shape = shape::shapeOf(inputShapeInfo);
+				int *stride = shape::stride(inputShapeInfo);
+				int wholeRank = shape::rank(inputShapeInfo);
+
+				if(threadIdx.x == 0) {
+					numOnes = 0;
+					for(int i = 0; i < wholeRank; i++) {
+						if(shape[i] == 1)
+							numOnes++;
+					}
+
+					//squeeze the dimensions
+					if(numOnes > 0) {
+						squeezed = false;
+						newSqueezeDimensions = false;
+						inputShapeInfo = shape::squeezeDimensions(
+								inputShapeInfo,
+								dimension,
+								dimensionLength,
+								&squeezed,
+								&newSqueezeDimensions,
+								wholeRank,
+								numOnes);
+					}
+				}
+
+				__syncthreads();
+
+				//decompose in to several sub tads after
+				//moving all dimensions (in sorted order)
+				//to the back.
+				//permuted version of the x shape info for setting up the tad problem
+				if(threadIdx.x == 0)
+					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
+				__syncthreads();
+
+				int *xShape = shape::shapeOf(tadShapeShapeInfo);
+				int *xStride = shape::stride(tadShapeShapeInfo);
+				int tadLength = shape::length(tadShapeShapeInfo);
+				int rank = shape::rank(tadShapeShapeInfo);
+
+#pragma unroll
+				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
+					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+					int shapeIter[MAX_RANK];
+					int coord[MAX_RANK];
+					int dim;
+					int rankIter = rank;
+					int xStridesIter[MAX_RANK];
+					T *xPointer = dx + offset;
+					IndexValue<T> indexValue;
+					indexValue.index = 0;
+					indexValue.value = dx[offset];
+
+					if(PrepareOneRawArrayIter<T>(rankIter,
+							xShape,
+							xPointer,
+							xStride,
+							&rankIter,
+							shapeIter,
+							&xPointer,
+							xStridesIter) >= 0) {
+						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+							/* Process the innermost dimension */
+							//start = update(start,op(xPointer[0],extraParams),extraParams);
+							IndexValue<T> comp;
+							comp.index = shape::sub2Ind(rank,xShape,coord);
+							comp.value = xPointer[0];
+							indexValue =  update(indexValue,comp,extraParams);
+						} ND4J_RAW_ITER_ONE_NEXT(dim,
+								rank,
+								coord,
+								shapeIter,
+								xPointer,
+								xStridesIter);
+					}
+					else {
+						printf("Unable to prepare array\n");
+					}
+
+					result[i] = indexValue.index;
+				}
+
+				__syncthreads();
+				if (threadIdx.x == 0) {
+					delete[] tadShapeShapeInfo;
+
+					if(newSqueezeDimensions) {
+						delete[] dimension;
+					}
+
+					if(numOnes > 0) {
+						delete[] inputShapeInfo;
+					}
+				}
+			} else {
+				int tadLength = xLength / resultLength;
+				__shared__ int offsetForTad;
+#pragma unroll
+				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					if (threadIdx.x == 0)
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					__syncthreads();
+					sPartials[threadIdx.x] = {dx[offsetForTad], 0};
+#pragma unroll
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+						int indexX = offsetForTad + xElementWiseStride * x;
+						IndexValue<T> comp {dx[indexX], x};
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
+					}
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+					}
+				}
+
+			/*
+				__syncthreads();
+
+
+
+				int resultLength = shape::length(resultShapeInfo);
+
+
+				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
+				int xLength = shape::length(xShapeInfo);
+				int i = 0,j = 0;
+
+#pragma unroll
+				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
+					int offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					IndexValue<T> comp2;
+					comp2.value = dx[offsetForTad];
+					comp2.index = 0;
+					sPartials[threadIdx.x] = comp2;
+
+					for(j = 1; j < elementsPerReductionIndex; j++) {
+						IndexValue<T> comp;
+						comp.value = dx[offsetForTad + xElementWiseStride * j];
+						comp.index =  j;
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x],comp, extraParams);
+					}
+
+					result[i] = sPartials[threadIdx.x].index;
+				}
+
+				__syncthreads();
+				*/
 			}
-
-
-			if(tid == 0) {
-				shape::freePermuteInfo(xTadInfo);
-			}
-
 		}
 
 
 		//reduce to 1 result
 		else if (resultScalar) {
-			//don't need any more blocks than the result length
-			if(blockIdx.x >= resultLength)
-				return;
+			int n = shape::length(xShapeInfo);
+			int numElements = blockDim.x;
 
-			unsigned int i = blockIdx.x * xElementWiseStride + tid;
-			unsigned int gridSize = blockDim.x * gridDim.x * xElementWiseStride;
-			if(xOffset == 0) {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
+			if(xElementWiseStride >= 1) {
+				if(xElementWiseStride == 1) {
 #pragma unroll
-				while (i < n) {
+					for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+						IndexValue <T> indexVal = {dx[i], i};
+						reduction = update(reduction, indexVal, extraParams);
+					}
+				} else {
+#pragma unroll
+					for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
+						IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
+						reduction = update(reduction, indexVal, extraParams);
+					}
+				}
+			} else {
+				int rank = shape::rank(xShapeInfo);
+				long allocSize = sizeof(int) * rank;
+				int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
+#pragma unroll
+				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
+					int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
 					int currIdx = i;
-					IndexValue <T> indexVal = {dx[i], currIdx};
+					IndexValue <T> indexVal = {dx[offset], currIdx};
 					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
-			}
-			else {
-				// we reduce multiple elements per thread.  The number is determined by the
-				// number of active thread blocks (via gridDim).  More blocks will result
-				// in a larger gridSize and therefore fewer elements per thread
-				while (xOffset + i < n) {
-					int currIdx = xOffset + i;
-					IndexValue <T> indexVal = {dx[xOffset + i], currIdx};
-					reduction = update(reduction, indexVal, extraParams);
-					i += gridSize;
-				}
-			}
-
-			// each thread puts its local sum into shared memory
-			sPartials[tid] = reduction;
-			__syncthreads();
-
-			aggregatePartials(&sPartials, tid,numElements ,extraParams);
-
-			// write result for this block to global mem
-			if (tid == 0) {
-				result[blockIdx.x] = sPartials[0].index;
-			}
-		}
-
-		//multi dimensional
-		else if (!resultScalar) {
-			__shared__ int *tadShapeBuffer;
-			if(tid == 0) {
-				xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-			}
-			__syncthreads();
-
-			if(tid == 0) {
-				tadShapeBuffer = shape::shapeBuffer(xTadInfo.tensorShapeLength,xTadInfo.tensorShape);
-			}
-
-			__syncthreads();
-
-
-
-
-			if (reductionIndexesPerBlock * blockIdx.x >= resultLength)
-				return;
-
-			int tadsPerReductionIndex = tensorsForDimension / resultLength;
-			//minimum number of threads needed for each reduction index
-			int tadsNeeded = reductionIndexesPerBlock * tadsPerReductionIndex;
-
-			if(tid >= tadsNeeded)
-				return;
-			else {
-				//process each tad
-				//tad wrt the thread
-				int currTad = tid + (blockIdx.x * reductionIndexesPerBlock);
-				int offsetForTad = shape::offset(currTad, xShapeInfo, dimension,dimensionLength, xTadInfo);
-
-				//update the reduction for the thread for the current tad
-				//note here that we compute the offset and then accumulate in shared memory
-				if(xElementWiseStride > 1)
-#pragma unroll
-					for (int element = 0; element < elementsPerTad; element++, offsetForTad += xElementWiseStride) {
-						IndexValue <T> indexVal = {dx[offsetForTad], element};
-						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
-						__syncthreads();
-					}
-				else {
-#pragma unroll
-					for (int element = 0; element < elementsPerTad; element++, offsetForTad++) {
-						IndexValue <T> indexVal = {dx[offsetForTad], element};
-						sPartials[tid] = update(sPartials[tid], indexVal, extraParams);
-						__syncthreads();
-					}
 				}
 
-
-
-
+				if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                	delete[] ind2sub;
+            	}
 			}
 
-			//first thread for a reduction index
-			if (tid % tadsPerReductionIndex == 0 && tadsPerReductionIndex > 1) {
-				/**
-				 * Each reduction index is handled by k tads
-				 * which need to be combined in each thread.
-				 *
-				 * Since the TADS to be combined
-				 * are to be next to each other
-				 * we can assume that
-				 * the items in shared memory
-				 * can be combined and collapsed
-				 * in to the first thread's
-				 * entry.
-				 *
-				 * This follows a similar pattern
-				 * for global block wise reduction
-				 * and computing parallel sums
-				 * in other reduction implementations.
-				 *
-				 */
-				for (int i = 1; i < tadsPerReductionIndex; i++) {
-					sPartials[tid] = update(sPartials[tid], sPartials[tid + i], extraParams);
-					__syncthreads();
-				}
-			}
 
+			sPartials[threadIdx.x] = reduction;
 			__syncthreads();
 
-			//after all the threads are done processing each first item in shared memory
-			//should correspond to the final value for the particular reduction index
-			//that was set for this block.
-			if (tid == 0) {
-				for (int i = 0; i < reductionIndexesPerBlock; i++) {
-					int reductionIndexToProcess = i + blockIdx.x * reductionIndexesPerBlock;
-					result[reductionIndexToProcess] = sPartials[i].index;
-				}
-
-
-				free(tadShapeBuffer);
-				shape::freePermuteInfo(xTadInfo);
-
-			}
-
-		}
-
-
-
-	}
-
-	/**
-	 * This implements a collapsing tad reduction
-	 * based on different dimensions.
-	 *
-	 * The reason we need this is because of the fact that
-	 * there are certain dimension combinations (usually > 1)
-	 * that don't have an element wise stride.
-	 *
-	 * A way to bypass this problem is to expand the problem
-	 * in to a 1 dimension reduction problem
-	 * and then collapsing the results in to the equivalent
-	 * shape of the multi dimension problem.
-	 *
-	 * An example problem would be an array of:
-	 * linspace(1,24,24).reshape(2,2,3,2)
-	 *
-	 * The tad for reduction:
-	 * 2,3 doesn't have an element wise stride.
-	 *
-	 * However, the tad for reduction:
-	 * 3 does
-	 *
-	 * What we can exploit here is the ability
-	 * to reshape problems of multiple dimensions
-	 *
-	 * in to equivalent expanded problems based on smaller tads
-	 * eg:
-	 * multiple reductions for each dimension along dimension 3
-	 * followed by collapsing the problem in to an equivalent state
-	 * as if we had specified 2,3 for the dimensions instead.
-	 *
-	 * This gives us a way of executing an element wise stride based
-	 * algorithm  that is executable on the gpu.
-	 *
-	 * For the GPU, we force each block to process a  tad
-	 * at the singular dimension level. Eg: dimension 3
-	 *
-	 * So for example along dimension 3 of the 2,2,3,2
-	 * array we have 12 tensors along dimension.
-	 *
-	 * We then map those 12 tads to a reduction index.
-	 *
-	 * A reduction index is the equivalent value
-	 * in the result as if we had specified the reduction dimensions
-	 * to be 2,3 instead.
-	 *
-	 * For example, if we have 12 tads for dimension 3
-	 * we will only have 4 for dimensions 2,3
-	 *
-	 * The goal will be then to generate the equivalent results
-	 * using dimension 3 but collapsing the results according to
-	 * the dimension 2,3 space (remember: the reason we are doing this mapping
-	 * is because we are trying to map the multi dimensional problem on to
-	 * a problem that allows us to solve it via element wise stride)
-	 *
-	 *
-	 * An example mapping relative to a gpu block is as follows:
-	 * ([[[[  1.,   2.],
-	 [  3.,   4.],
-	 [  5.,   6.]],
-
-	 [[  7.,   8.],
-	 [  9.,  10.],
-	 [ 11.,  12.]]],
-
-
-	 [[[ 13.,  14.],
-	 [ 15.,  16.],
-	 [ 17.,  18.]],
-
-	 [[ 19.,  20.],
-	 [ 21.,  22.],
-	 [ 23.,  24.]]]])
-
-
-
-	 * Along dimension 3 we will have tads of length 2
-	 * and 4 reduction indexes we need to map for the
-	 * 2,3 dimension problem.
-	 *
-	 *
-	 * The first reduction index will map to the first 3 tads of length 2
-	 * The next reduction index will map to the next 3, etc.
-	 *
-	 * We then process a reduction index per block on the gpu.
-	 * If any gpu block index is > the number of
-	 * reduction indexes we skip it.
-	 *
-	 * Note here we did this implementation because of
-	 * race conditions on the block and shared memory.
-	 *
-	 * This way of mapping allows us to avoid race conditions.
-	 *
-	 * @param data the data to process
-	 * @param result the result vector
-	 * @param initialValue the initial value for the reductino
-	 * @param elementsPerTad the elements per tad
-	 * for the expanded tad (eg: the one being collapsed from)
-	 * @param numTads the number of tads for the final result
-	 * @param n the number of elements in the buffer total
-	 * @param elementWiseStride the element wise stride
-	 * we use for the singular dimensions for each tad
-	 * @param numOriginalTads the number of original tads for the expanded version (eg: we are doing
-	 * reduction mapping a single dimension problem that allows for an element wise stride on to a multi
-	 * index problem)
-	 * @param sharedMemorySize the shared memory size we specified for launching the kernel - this is used for figuring out
-	 * how many elements are possible for the shared memory buffer for initializing the values to be default
-	 * @param xShapeInfo the shape information for the buffer - for more information on this see tad.h
-	 * @param dimension the dimension for the problem on the smaller scale (eg: the expanded version of the problem)
-	 * @param dimensionLength the length of the number of dimensions
-	 *
-	 */
-	__device__ void collapseTad(
-			T *data,
-			T *result,
-			T *extraParams,
-			int elementsPerTad, int numTads, int n, int elementWiseStride,
-			int numOriginalTads, int sharedMemorySize,
-			int *xShapeInfo, int *dimension, int dimensionLength) {
-		//shared memory space for storing intermediate results
-		IndexValue <T> *sPartials;
-		SharedIndexValue <T> holder;
-
-		sPartials = holder.getPointer();
-
-		int tid = threadIdx.x;
-		//intialize te values
-		int numItems = sharedMemorySize / sizeof(T);
-#pragma unroll
-		for (int i = tid; i < numItems; i += blockDim.x) {
-			IndexValue <T> valInit = {extraParams[0], 0};
-			sPartials[i] = valInit;
-		}
-		__syncthreads();
-
-		//each block processes a reduction index
-		if (blockIdx.x >= numTads)
-			return;
-
-		__shared__ shape::TADPermuteInfo xTadInfo;
-		if (tid == 0) {
-			xTadInfo = shape::tadInfo(xShapeInfo, dimension, dimensionLength);
-		}
-
-		__syncthreads();
-
-		/**
-		 * Reverse engineer which tads belong to a particular
-		 * reduction index.
-		 *
-		 * Each tad should be handled by a thread.
-		 *
-		 * Combine them all in the block at the end.
-		 *
-		 *
-		 */
-
-		//number of tads per reduce index
-		int tadsPerReduceIndex2 = shape::tadsPerReduceIndex(numTads, numOriginalTads);
-		//each thread does a tad
-		if (tid >= tadsPerReduceIndex2)
-			return;
-
-		/**
-		 * Need to ensure we stay in bounds on each block -
-		 * we need to compute the proper tads for each block and
-		 * do bounds checking on each thread.
-		 *
-		 * This is to ensure that each thread processes
-		 * a unique tad at most once.
-		 *
-		 *
-		 */
-		/**
-		 * NEXT PART HERE
-		 */
-
-		/**
-		 * Now WRT the thread id
-		 * we want to iterate through a tad
-		 * on each thread using the element wise stride
-		 * and num elements per tad to compute a reduce
-		 * for the tad. We then reduce in shared memory
-		 * setting the item in the shared memory space
-		 * and aggregate all of thh partial results
-		 * on thread 0 aggregating the final results
-		 * on the block resulting in one global write.
-		 */
-		//compute the offset for the tad for this thread
-		//iterating via element wise stride
-		//note here blockidx.x + tid is the tad we want
-		int tadForThread = tid + blockIdx.x * tadsPerReduceIndex2;
-		int offsetForBlock = shape::offset(tadForThread, xShapeInfo, dimension,dimensionLength, xTadInfo);
-#pragma unroll
-		for (int i = 0; i < elementsPerTad; offsetForBlock += elementWiseStride, i++) {
-			IndexValue <T> opApply = {data[offsetForBlock], offsetForBlock};
-			sPartials[tid] = update(sPartials[tid],opApply, extraParams);
+			aggregatePartials(&sPartials, threadIdx.x, blockDim.x,extraParams);
 			__syncthreads();
-		}
 
-		if (tid == 0 && blockIdx.x < numTads) {
-			//start at 1 so we don't count the first entry twice
-#pragma unroll
-			for (int i = 1; i < numTads; i++) {
-				sPartials[0] = update(sPartials[0], sPartials[i], extraParams);
+			if (gridDim.x > 1) {
+				__shared__ bool amLast;
+				unsigned int *tc = (unsigned *) reductionBuffer;
+				int rank = shape::rank(xShapeInfo);
+				tid = threadIdx.x;
+				if (threadIdx.x == 0) {
+					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+					pBuffer[blockIdx.x] = {sPartials[0].value, sPartials[0].index};
+				}
 				__syncthreads();
+				__threadfence();
+
+				if (tid==0) {
+					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+				    amLast = (ticket == gridDim.x-1);
+				}
+
+				__syncthreads();
+
+				if (amLast) {
+					tc[4096] = 0;
+					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+
+					if (threadIdx.x < gridDim.x)
+						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
+
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x,gridDim.x,extraParams);
+
+					__syncthreads();
+					if (tid == 0) {
+						result[0] = sPartials[0].index;
+					}
+				}
+			} else {
+				if (tid == 0) {
+					unsigned int *tc = (unsigned *) reductionBuffer;
+					tc[4096] = 0;
+					result[0] = sPartials[0].index;
+				}
+			}
+		}
+	}
+
+
+#endif
+			/**
+             * CPU operations
+             * @param x the input data
+             * @param xShapeInfo the shape information for the input data
+             * @param extraParams the extra parameters
+             * @param result the result data
+             * @param resultShapeInfo the shpae information
+             */
+			virtual
+#ifdef __CUDACC__
+			inline __host__
+
+#elif defined(__GNUC__)
+
+#endif
+			T execScalar(T *x,
+						 int *xShapeInfo,
+						 T *extraParams) {
+
+				T startingVal = this->startingValue(x);
+				IndexValue<T> startingIndex;
+				startingIndex.value = startingVal;
+				startingIndex.index = 0;
+				int length = shape::length(xShapeInfo);
+				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				if(xElementWiseStride < 1) {
+					int shapeIter[MAX_RANK];
+					int coord[MAX_RANK];
+					int dim;
+					int xStridesIter[MAX_RANK];
+
+					int *xShape = shape::shapeOf(xShapeInfo);
+					int *xStride = shape::stride(xShapeInfo);
+					int rank = shape::rank(xShapeInfo);
+					if(PrepareOneRawArrayIter<T>(rank,
+												 xShape,
+												 x,
+												 xStride,
+												 &rank,
+												 shapeIter,
+												 &x,
+												 xStridesIter) >= 0) {
+
+						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+							/* Process the innermost dimension */
+							int i = shape::getOffset(0,xShape,xStride,coord,rank);
+							IndexValue<T> curr;
+							curr.value = x[i];
+							curr.index = i;
+							startingIndex = update(startingIndex, curr,
+												   extraParams);
+						} ND4J_RAW_ITER_ONE_NEXT(dim,
+												 rank,
+												 coord,
+												 shapeIter,
+												 x,
+												 xStridesIter);
+						return startingIndex.index;
+					}
+					else {
+						printf("Unable to prepare array\n");
+					}
+
+				}
+				else {
+
+					if (xElementWiseStride == 1) {
+						if(length < 8000) {
+#pragma omp simd
+							for (int i = 0; i < length; i++) {
+								IndexValue<T> curr;
+								curr.value = x[i];
+								curr.index = i;
+								startingIndex = update(startingIndex, curr,
+													   extraParams);
+
+
+
+							}
+							return startingIndex.index;
+						}
+						else {
+							BlockInformation info(length);
+
+#pragma omp parallel
+
+							{
+								IndexValue<T> local;
+								local.value = this->startingValue(x);
+								local.index = 0;
+
+								for (int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
+									int newOffset = (i * info.items);
+									T *chunk = x + newOffset;
+									int itemsToLoop = info.items;
+									if(newOffset >= length) {
+										break;
+									}
+
+									//handle modulo case
+									if(newOffset + info.items >= length) {
+										itemsToLoop = length - newOffset;
+									}
+
+									for (int j = 0; j < itemsToLoop; j++) {
+										IndexValue<T> curr;
+										curr.value = chunk[j];
+										curr.index = j;
+										local = update(local, curr, extraParams);
+									}
+
+
+#pragma omp critical
+									{
+										startingIndex = update(startingIndex, local,
+															   extraParams);
+									}
+
+
+								}
+							}
+
+							return startingIndex.index;
+						}
+
+					}
+
+					else {
+#pragma omp parallel for
+						for (int i = 0; i < length; i++) {
+							IndexValue<T> curr;
+							curr.value = x[i * xElementWiseStride];
+							curr.index = i;
+#pragma omp critical
+							{
+								startingIndex = update(startingIndex, curr,
+													   extraParams);
+							}
+
+						}
+
+
+
+					}
+
+
+				}
+
+				return  startingIndex.index;
+
 			}
 
-			result[blockIdx.x] = sPartials[0].index;
-			shape::freePermuteInfo(xTadInfo);
-		}
-	}
 
-#endif
-	/**
-	 * CPU operations
-	 * @param x the input data
-	 * @param xShapeInfo the shape information for the input data
-	 * @param extraParams the extra parameters
-	 * @param result the result data
-	 * @param resultShapeInfo the shpae information
-	 */
-	virtual
+			/**
+             * CPU operations
+             * @param x the input data
+             * @param xShapeInfo the shape information for the input data
+             * @param extraParams the extra parameters
+             * @param result the result data
+             * @param resultShapeInfo the shpae information
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__
+			inline __host__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 #endif
-	T execScalar(T *x,
-			int *xShapeInfo,
-			T *extraParams) {
-		T startingVal = this->startingValue(x);
-		IndexValue<T> startingIndex;
-		startingIndex.value = startingVal;
-		startingIndex.index = 0;
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		if (xElementWiseStride == 1) {
-            int i;
-#pragma omp parallel private(i)
-            {
-#pragma omp for
-                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                    IndexValue<T> curr;
-                    curr.value = x[i];
-                    curr.index = i;
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfo) {
+				result[0] = this->execScalar(x,xShapeInfo,extraParams);
+			}
 
-                }
-            }
-
-            return startingIndex.index;
-		} else {
-
-            int i;
-#pragma omp parallel private(i)
-            {
-#pragma omp for
-                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                    IndexValue<T> curr;
-                    curr.value = x[i * xElementWiseStride];
-                    curr.index = i;
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
-                }
-            }
-
-			return  startingIndex.index;
-
-		}
-
-
-	}
-
-
-	/**
-	 * CPU operations
-	 * @param x the input data
-	 * @param xShapeInfo the shape information for the input data
-	 * @param extraParams the extra parameters
-	 * @param result the result data
-	 * @param resultShapeInfo the shpae information
-	 */
-	virtual
+			/**
+             * The dimension wise
+             * CPU implementation
+             * @param x the input data
+             * @param xShapeInfo the x shape information
+             * @param extraParams the extra parameters for the reduce
+             * @param result the result buffer
+             * @param resultShapeInfoBuffer the shape information
+             * @param dimension the dimension to do reduce along long
+             * @param dimensionLength the length of the dimension
+             * buffer
+             */
+			virtual
 #ifdef __CUDACC__
-	inline __host__
+			inline __host__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 #endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfo) {
-		T startingVal = this->startingValue(x);
-		IndexValue<T> startingIndex;
-		startingIndex.value = startingVal;
-		startingIndex.index = 0;
-		int length = shape::length(xShapeInfo);
-		int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		if (xElementWiseStride == 1 && resultElementWiseStride == 1) {
-            int i;
-#pragma omp parallel private(i)
-            {
-#pragma omp for
-                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                    IndexValue<T> curr;
-                    curr.value = x[i];
-                    curr.index = i;
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
+			void exec(T *x,
+					  int *xShapeInfo,
+					  T *extraParams,
+					  T *result,
+					  int *resultShapeInfoBuffer,
+					  int *dimension,
+					  int dimensionLength) {
 
-                }
-
-            }
-
-			result[0] = startingIndex.index;
-		} else {
-
-            int i;
-#pragma omp parallel private(i)
-            {
-#pragma omp for
-                for (i = omp_get_thread_num(); i < length; i+= omp_get_num_threads()) {
-                    IndexValue<T> curr;
-                    curr.value = x[i * xElementWiseStride];
-                    curr.index = i;
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
-                }
-            }
-
-			result[0] = startingIndex.index;
-
-		}
-
-
-	}
-
-	/**
-	 * The dimension wise
-	 * CPU implementation
-	 * @param x the input data
-	 * @param xShapeInfo the x shape information
-	 * @param extraParams the extra parameters for the reduce
-	 * @param result the result buffer
-	 * @param resultShapeInfoBuffer the shape information
-	 * @param dimension the dimension to do reduce along
-	 * @param dimensionLength the length of the dimension
-	 * buffer
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
-
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	void exec(T *x,
-			int *xShapeInfo,
-			T *extraParams,
-			T *result,
-			int *resultShapeInfoBuffer,
-			int *dimension, int dimensionLength) {
-		if(shape::isScalar(resultShapeInfoBuffer)) {
-			result[0] = execScalar(x,xShapeInfo,extraParams);
-			return;
-		}
-
-		shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
-		int resultLength = shape::length(resultShapeInfoBuffer);
-		/**
-		 * The element wise stride belongs to a reduction index.
-		 * When used out of order, we can get rid of the data
-		 * dependencies and rely on using the max dimension
-		 * specified for stride instead.
-		 * Say we take the sum(0,1) along arr
-		 * we can use arr.stride(1) as a representation
-		 * along which to iterate.
-		 */
-		IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
-
-		int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-		int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-		int tadLength = tadPermuteInfo.tensorShapeProd;
-int i;
-#pragma omp parallel private(i)
-        {
-#pragma omp for
-            for (i = omp_get_thread_num(); i < resultLength; i+= omp_get_num_threads()) {
-                IndexValue<T> val;
-                val.value = this->startingValue(x);
-                val.index = 0;
-                startingIndex[i] = val;
-            }
-        }
-
-
-        int j = 0;
-#pragma omp parallel private(j,i)
-		{
-			int ID = omp_get_thread_num();
-
-			for(i = ID; i < resultLength; i+= omp_get_num_threads()) {
-				int offset = dimensionLength > 1 ? i : tadLength * i;
-				startingIndex[i].value = x[offset];
-				startingIndex[i].index = 0;
-				for(j = 1; j < elementsPerReductionIndex; j++) {
-					IndexValue<T> comp2;
-					comp2.value = x[offset + tadElementWiseStride * j];
-					comp2.index = j;
-					startingIndex[i] = update(startingIndex[i],comp2, extraParams);
-					result[i] = startingIndex[i].index;
+				if(shape::isScalar(resultShapeInfoBuffer)) {
+					result[0] = execScalar(x,xShapeInfo,extraParams);
+					return;
 				}
 
 
+				int resultLength = shape::length(resultShapeInfoBuffer);
+				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
+
+#pragma omp parallel for
+				for (int i = 0; i < resultLength; i++) {
+					IndexValue<T> val;
+					val.value = this->startingValue(x);
+					val.index = 0;
+					startingIndex[i] = val;
+				}
+
+
+				if(dimensionLength > 1) {
+					/**
+                     * The element wise stride belong longs to a reduction index.
+                     * When used out of order, we can get rid of the data
+                     * dependencies and rely on using the max dimension
+                     * specified for stride instead.
+                     * Say we take the sum(0,1) along long arr
+                     * we can use arr.stride(1) as a representation
+                     * along long which to iterate.
+                     */
+					int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+					int *xShape = shape::shapeOf(tadShapeShapeInfo);
+					int *xStride = shape::stride(tadShapeShapeInfo);
+					int rank = shape::rank(tadShapeShapeInfo);
+#pragma omp  parallel  for
+					for(int i = 0; i < resultLength; i++) {
+						int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						int shapeIter[MAX_RANK];
+						int coord[MAX_RANK];
+						int dim;
+						int rankIter = rank;
+						int xStridesIter[MAX_RANK];
+						T *xPointer = x + offset;
+						IndexValue<T> indexValue;
+						indexValue.index = 0;
+						indexValue.value = x[offset];
+						if(PrepareOneRawArrayIter<T>(rankIter,
+													 xShape,
+													 xPointer,
+													 xStride,
+													 &rankIter,
+													 shapeIter,
+													 &xPointer,
+													 xStridesIter) >= 0) {
+							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+								/* Process the innermost dimension */
+								IndexValue<T> comp;
+								comp.index = shape::sub2Ind(rank,xShape,coord);
+								comp.value = xPointer[0];
+								indexValue =  update(indexValue,comp,extraParams);
+							} ND4J_RAW_ITER_ONE_NEXT(dim,
+													 rank,
+													 coord,
+													 shapeIter,
+													 xPointer,
+													 xStridesIter);
+						}
+						else {
+							printf("Unable to prepare array\n");
+						}
+
+
+
+						result[i] = indexValue.index;
+
+					}
+				}
+
+				else {
+					int tadElementWiseStride = shape::tadElementWiseStride(xShapeInfo, dimension, dimensionLength);
+					int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+#pragma omp parallel for
+					for(int i = 0;  i < resultLength; i++) {
+						int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						IndexValue<T> indexValue;
+						indexValue.index = 0;
+						indexValue.value = x[baseOffset];
+						for(int j = 1; j < tadLength; j++) {
+							IndexValue<T> comp;
+							comp.index = j;
+							comp.value = x[baseOffset + tadElementWiseStride * j];
+							indexValue =  update(indexValue,comp,extraParams);
+						}
+
+						result[i] = indexValue.index;
+					}
+
+
+
+				}
+
+				delete[] startingIndex;
 			}
 
-		}
-
-		shape::freePermuteInfo(tadPermuteInfo);
-        delete[] startingIndex;
-	}
-
-    virtual inline
+			virtual inline
 #ifdef __CUDACC__
-    __host__ __device__
+			__host__ __device__
 #endif
-    void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-        //no extra params aggregation needs to happen
-    }
+			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+				//no extra params aggregation needs to happen
+			}
 
 
-	virtual
+			virtual
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #endif
-	T startingValue(T *input) = 0;
+			T startingValue(T *input) = 0;
 
 
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+
 #endif
-	virtual ~IndexReduce() {
-	}
+			virtual ~IndexReduce() {
+			}
 #ifdef __CUDACC__
-	__host__ __device__
+			__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
+
 #endif
-	IndexReduce() {
-	}
+			IndexReduce() {
+			}
 
-};
+		};
 
-namespace ops {
+		namespace ops {
 
 /**
  * Find the max index
  */
-template<typename T>
-class IMax: public  functions::indexreduce::IndexReduce<T> {
-public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
+			template<typename T>
+			class IMax: public  functions::indexreduce::IndexReduce<T> {
+			public:
 
-#endif
-	std::string name() {
-		return std::string("imax");
-	}
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
-		return val;
-	}
+				functions::indexreduce::IndexValue<T> op(
+						functions::indexreduce::IndexValue<T> val, T *extraParams) override {
+					return val;
+				}
 
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+				/**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+				//calculate an update of the reduce operation
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> update(
-			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value > old.value)
+				functions::indexreduce::IndexValue<T> update(
+						functions::indexreduce::IndexValue<T> old,
+						functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
+					if (opOutput.value > old.value)
+						return opOutput;
+
+#ifdef __CUDACC__
+					// workaround for cuda race condition at merge phase
+		else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
-		return old;
-	}
+#elif defined(__GNUC__)
 
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
+#endif
+					return old;
+				}
+
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> merge(
-			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
-		if (f1.value > f2.value)
-			return f2;
-		return f1;
-	}
+				functions::indexreduce::IndexValue<T> merge(
+						functions::indexreduce::IndexValue<T> f1,
+						functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
+					if (f1.value > f2.value)
+						return f2;
+					return f1;
+				}
 
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> postProcess(
-			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
-	virtual
+				functions::indexreduce::IndexValue<T> postProcess(
+						functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
+				virtual
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return MIN_FLOAT;
-	}
+				T startingValue(T *input) {
+					return MIN_FLOAT;
+				}
 
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
-		return d1;
-	}
+				IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+								 functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
+					return d1;
+				}
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #elif defined(__GNUC__)
-	__always_inline
-#endif
-	virtual ~IMax() {
-	}
-#ifdef __CUDACC__
-	__host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	IMax() {
-	}
 
-};
+#endif
+				virtual ~IMax() {
+				}
+#ifdef __CUDACC__
+				__host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+				IMax() {
+				}
+
+			};
 
 /**
  * Find the min index
  */
-template<typename T>
-class IMin: public  functions::indexreduce::IndexReduce<T> {
-public:
-	/**
-	 * Name of the op
-	 * @return the name of the operation
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__
+			template<typename T>
+			class IMin: public  functions::indexreduce::IndexReduce<T> {
+			public:
 
-#endif
-	std::string name() {
-		return std::string("imin");
-	}
-	/**
-	 *
-	 * @param val
-	 * @param extraParams
-	 * @return
-	 */
-	//an op for the kernel
-	virtual
+				/**
+                 *
+                 * @param val
+                 * @param extraParams
+                 * @return
+                 */
+				//an op for the kernel
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> op(
-			functions::indexreduce::IndexValue<T> val, T *extraParams) override {
-		return val;
-	}
-	virtual
+				functions::indexreduce::IndexValue<T> op(
+						functions::indexreduce::IndexValue<T> val, T *extraParams) override {
+					return val;
+				}
+				virtual
 #ifdef __CUDACC__
-	__host__ __device__
+				__host__ __device__
 #endif
-	T startingValue(T *input) {
-		return MAX_FLOAT;
-	}
-	/**
-	 *
-	 * @param old
-	 * @param opOutput
-	 * @param extraParams
-	 * @return
-	 */
-	//calculate an update of the reduce operation
-	virtual
+				T startingValue(T *input) {
+					return MAX_FLOAT;
+				}
+				/**
+                 *
+                 * @param old
+                 * @param opOutput
+                 * @param extraParams
+                 * @return
+                 */
+				//calculate an update of the reduce operation
+				virtual
 #ifdef __CUDACC__
-	inline __host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-	__always_inline
+
 
 #endif
-	functions::indexreduce::IndexValue<T> update(
-			functions::indexreduce::IndexValue<T> old,
-			functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
-		if (opOutput.value < old.value) {
+				functions::indexreduce::IndexValue<T> update(
+						functions::indexreduce::IndexValue<T> old,
+						functions::indexreduce::IndexValue<T> opOutput, T *extraParams) override {
+					if (opOutput.value < old.value)
+						return opOutput;
+
+#ifdef __CUDACC__
+					// workaround for cuda race condition at merge phase
+		 else if (opOutput.value == old.value && opOutput.index < old.index)
 			return opOutput;
+#elif defined(__GNUC__)
+
+#endif
+					return old;
+				}
+
+				/**
+                 *
+                 * @param f1
+                 * @param f2
+                 * @param extraParams
+                 * @return
+                 */
+				//invoked when combining two kernels
+				virtual
+#ifdef __CUDACC__
+				inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+				functions::indexreduce::IndexValue<T> merge(
+						functions::indexreduce::IndexValue<T> f1,
+						functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
+					if (f1.value < f2.value)
+						return f2;
+					return f1;
+				}
+
+				/**
+                 *
+                 * @param reduction
+                 * @param n
+                 * @param xOffset
+                 * @param dx
+                 * @param incx
+                 * @param extraParams
+                 * @param result
+                 * @return
+                 */
+				//post process result (for things like means etc)
+				virtual
+#ifdef __CUDACC__
+				inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+				functions::indexreduce::IndexValue<T> postProcess(
+						functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+						T *dx, int incx, T *extraParams, T *result) override {
+					return reduction;
+				}
+
+				/**
+                 *
+                 * @param d1
+                 * @param d2
+                 * @param extraParams
+                 * @return
+                 */
+				virtual
+#ifdef __CUDACC__
+				inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+				IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+								 functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
+					return d1;
+				}
+
+#ifdef __CUDACC__
+				__host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+				virtual ~IMin() {
+				}
+#ifdef __CUDACC__
+				__host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+				IMin() {
+				}
+			};
 		}
 
-
-		return old;
-	}
-
-	/**
-	 *
-	 * @param f1
-	 * @param f2
-	 * @param extraParams
-	 * @return
-	 */
-	//invoked when combining two kernels
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	functions::indexreduce::IndexValue<T> merge(
-			functions::indexreduce::IndexValue<T> f1,
-			functions::indexreduce::IndexValue<T> f2, T *extraParams) override {
-		if (f1.value < f2.value)
-			return f2;
-		return f1;
-	}
-
-	/**
-	 *
-	 * @param reduction
-	 * @param n
-	 * @param xOffset
-	 * @param dx
-	 * @param incx
-	 * @param extraParams
-	 * @param result
-	 * @return
-	 */
-	//post process result (for things like means etc)
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	functions::indexreduce::IndexValue<T> postProcess(
-			functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
-			T *dx, int incx, T *extraParams, T *result) override {
-		return reduction;
-	}
-
-	/**
-	 *
-	 * @param d1
-	 * @param d2
-	 * @param extraParams
-	 * @return
-	 */
-	virtual
-#ifdef __CUDACC__
-	inline __host__  __device__
-
-#elif defined(__GNUC__)
-	__always_inline
-
-#endif
-	IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
-			functions::indexreduce::IndexValue<T> d2, T *extraParams) override {
-		return d1;
-	}
+		template<typename T>
+		class IndexReduceOpFactory {
+		public:
 
 #ifdef __CUDACC__
-	__host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
+			__host__ __device__
 #endif
-	virtual ~IMin() {
-	}
-#ifdef __CUDACC__
-	__host__ __device__
-#elif defined(__GNUC__)
-	__always_inline
-#endif
-	IMin() {
-	}
-};
-}
-
-template<typename T>
-class IndexReduceOpFactory {
-public:
-
-#ifdef __CUDACC__
-	__host__ __device__
-#endif
-	IndexReduceOpFactory() {
-	}
+			IndexReduceOpFactory() {
+			}
 
 
 #ifdef __CUDACC__
-	__inline__ __host__ __device__
+			__inline__ __host__ __device__
 #endif
-	functions::indexreduce::IndexReduce<T> * getOp(int op) {
-		if (op == 0) {
-			return new functions::indexreduce::ops::IMax<T>();
-		} else if (op == 1) {
-			return new functions::indexreduce::ops::IMin<T>();
+			functions::indexreduce::IndexReduce<T> * getOp(int op) {
+				if (op == 0) {
+					return new functions::indexreduce::ops::IMax<T>();
+				} else if (op == 1) {
+					return new functions::indexreduce::ops::IMin<T>();
 
-		}
-		return NULL;
+				}
+				return NULL;
+			}
+		};
 	}
-};
-}
 
 
 }
@@ -1320,34 +1243,35 @@ public:
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
 template <typename T>
 __device__ void indexReduceGeneric(
 		int op,
-		int n,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int *gpuInformation,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
+		int dimensionLength,
+		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
-		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-	__syncthreads();
-	if(threadIdx.x == 0)
-		indexReduce = newOpFactory->getOp(op);
-	__syncthreads();
-	indexReduce->transform(n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
 	if(threadIdx.x == 0) {
-		free(indexReduce);
-		free(newOpFactory);
+		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
+		indexReduce = newOpFactory->getOp(op);
+	}
+	__syncthreads();
+
+	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
+
+	__syncthreads();
+	if(threadIdx.x == 0) {
+		delete indexReduce;
+		delete newOpFactory;
 	}
 }
 
@@ -1362,15 +1286,30 @@ __device__ void indexReduceGeneric(
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
-extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xShapeInfo, double *extraParams, double *result,
-		int *resultShapeInfo, int *gpuInformation,
+__global__ void indexReduceDouble(
+		int op,
+		double *dx,
+		int *xShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	indexReduceGeneric<double>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer) {
+	indexReduceGeneric<double>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot, allocationBuffer, reductionBuffer);
 
 }
 
@@ -1385,15 +1324,30 @@ extern "C" __global__ void indexReduceDouble(int op,int n, double *dx, int *xSha
  * @param result the result buffer
  * @param resultShapeInfo the shape information for the result
  * @param gpuInformation the shape information for the data
- * @param dimension the dimension to do reduce along
+ * @param dimension the dimension to do reduce along long
  * @param dimensionLength the length of the dimension buffer
  * @param postProcessOrNot whether to pre process or not
  */
-extern "C" __global__ void indexReduceFloat(int op,int n, float *dx, int *xShapeInfo, float *extraParams, float *result,
-		int *resultShapeInfo, int *gpuInformation,
+__global__ void indexReduceFloat(
+		int op,
+		float *dx,
+		int *xShapeInfo,
+		float *extraParams,
+		float *result,
+		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot) {
-	indexReduceGeneric<float>(op,n,dx,xShapeInfo,extraParams,result,resultShapeInfo,gpuInformation,dimension,dimensionLength,postProcessOrNot);
+		int dimensionLength,
+		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer) {
+	indexReduceGeneric<float>(
+			op,
+			dx,
+			xShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot, allocationBuffer, reductionBuffer);
 
 }
 

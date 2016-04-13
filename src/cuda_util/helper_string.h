@@ -12,7 +12,7 @@
 // These are helper functions for the SDK samples (string parsing, timers, etc)
 #ifndef STRING_HELPER_H
 #define STRING_HELPER_H
-
+#include <dll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
@@ -98,7 +98,7 @@ inline int getFileExtension(char *filename, char **extension) {
 	return string_length;
 }
 
-inline int checkCmdLineFlag(const int argc, const char **argv,
+inline int checkCmdLineFlag(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 
@@ -126,7 +126,7 @@ inline int checkCmdLineFlag(const int argc, const char **argv,
 	return (int) bFound;
 }
 
-inline int getCmdLineArgumentInt(const int argc, const char **argv,
+inline int getCmdLineArgumentInt(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 	int value = -1;
@@ -158,7 +158,7 @@ inline int getCmdLineArgumentInt(const int argc, const char **argv,
 	}
 }
 
-inline float getCmdLineArgumentFloat(const int argc, const char **argv,
+inline float getCmdLineArgumentFloat(int argc, const char **argv,
 		const char *string_ref) {
 	bool bFound = false;
 	float value = -1;
@@ -190,7 +190,7 @@ inline float getCmdLineArgumentFloat(const int argc, const char **argv,
 	}
 }
 
-inline bool getCmdLineArgumentString(const int argc, const char **argv,
+inline bool getCmdLineArgumentString(int argc, const char **argv,
 		const char *string_ref, char **string_retval) {
 	bool bFound = false;
 
@@ -323,7 +323,7 @@ inline char *sdkFindFilePath(const char *filename,
 
 #ifdef _WIN32
 		// Windows path delimiter
-		size_t delimiter_pos = executable_name.find_last_of('\\');
+		int delimiter_pos = executable_name.find_last_of('\\');
 		executable_name.erase(0, delimiter_pos + 1);
 
 		if (executable_name.rfind(".exe") != std::string::npos)
@@ -334,7 +334,7 @@ inline char *sdkFindFilePath(const char *filename,
 
 #else
 		// Linux & OSX path delimiter
-		size_t delimiter_pos = executable_name.find_last_of('/');
+		int delimiter_pos = executable_name.find_last_of('/');
 		executable_name.erase(0, delimiter_pos + 1);
 #endif
 	}
@@ -342,7 +342,7 @@ inline char *sdkFindFilePath(const char *filename,
 	// Loop over all search paths and return the first hit
 	for (unsigned int i = 0; i < sizeof(searchPath) / sizeof(char *); ++i) {
 		std::string path(searchPath[i]);
-		size_t executable_name_pos = path.find("<executable_name>");
+		int executable_name_pos = path.find("<executable_name>");
 
 		// If there is executable_name variable in the searchPath
 		// replace it with the value

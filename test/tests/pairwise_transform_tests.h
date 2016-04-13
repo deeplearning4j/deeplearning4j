@@ -42,8 +42,8 @@ public:
 	PairwiseTransformTest() {
 		createOperationAndOpFactory();
 	}
-	PairwiseTransformTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
-	: PairWiseTest<T>(rank,opNum,data,extraParamsLength) {
+    PairwiseTransformTest(int rank, int opNum, Data<T> *data, int extraParamsLength)
+    : PairWiseTest<T>(rank, opNum,data,extraParamsLength) {
 		createOperationAndOpFactory();
 	}
 
@@ -150,6 +150,8 @@ Data<T> * getPairwiseData(T *assertion,int opNum) {
 
 	return data;
 }
+
+
 
 
 class DoublePairwiseTranformTest : public PairwiseTransformTest<double> {

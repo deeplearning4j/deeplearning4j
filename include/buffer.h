@@ -7,12 +7,19 @@
 
 #ifndef BUFFER_H_
 #define BUFFER_H_
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+#include <dll.h>
 
 #include <helper_string.h>
 #include <helper_cuda.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dll.h>
+
 
 namespace nd4j {
 	namespace buffer {
@@ -69,27 +76,33 @@ namespace nd4j {
 		__host__ __device__
 #endif
 
-		size_t bufferSize(Buffer<T> *buffer);
+		int bufferSize(Buffer<T> *buffer);
 
 /**
  * Copies data to the gpu
  * @param buffer the buffer to copy
  */
-		template<typename T>
+
 #ifdef __CUDACC__
+		template<typename T>
 		__host__
+		void copyDataToGpu(Buffer<T> **buffer, cudaStream_t stream);
 #endif
-		void copyDataToGpu(Buffer<T> **buffer);
+
+
 
 /**
  * Copies data from the gpu
  * @param buffer the buffer to copy
  */
-		template<typename T>
+
 #ifdef __CUDACC__
+		template<typename T>
 		__host__
+		void copyDataFromGpu(Buffer<T> **buffer, cudaStream_t stream);
 #endif
-		void copyDataFromGpu(Buffer<T> **buffer);
+
+
 
 /**
  * Allocate buffer of the given
@@ -145,7 +158,7 @@ namespace nd4j {
 		__host__ __device__
 #endif
 
-		size_t bufferSize(Buffer<T> *buffer) {
+		int bufferSize(Buffer<T> *buffer) {
 			return sizeof(T) * buffer->length;
 		}
 
@@ -155,10 +168,10 @@ namespace nd4j {
  * @param buffer
  */
 template<typename T>
-__host__ void copyDataToGpu(Buffer <T> **buffer) {
+__host__ void copyDataToGpu(Buffer <T> **buffer, cudaStream_t stream) {
 	Buffer <T> *bufferRef = *buffer;
-	checkCudaErrors(
-			cudaMemcpy(bufferRef->gData, bufferRef->data, bufferSize(bufferRef), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpyAsync(bufferRef->gData, bufferRef->data, bufferSize(bufferRef), cudaMemcpyHostToDevice, stream));
+	checkCudaErrors(cudaStreamSynchronize(stream));
 }
 
 /**
@@ -166,10 +179,11 @@ __host__ void copyDataToGpu(Buffer <T> **buffer) {
  * @param buffer
  */
 template<typename T>
-__host__ void copyDataFromGpu(Buffer <T> **buffer) {
+__host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 	Buffer <T> *bufferRef = *buffer;
 	int bufferTotalSize = bufferSize(bufferRef);
-	checkCudaErrors(cudaMemcpy(bufferRef->data, bufferRef->gData, bufferTotalSize, cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpyAsync(bufferRef->data, bufferRef->gData, bufferTotalSize, cudaMemcpyDeviceToHost, stream));
+	checkCudaErrors(cudaStreamSynchronize(stream));
 }
 #endif
 
@@ -226,18 +240,30 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer) {
 				buffData[i] = data[i];
 			ret->data = buffData;
 			ret->length = length;
-
-#ifdef __CUDACC__
-			T *gData;
-	T **gDataRef = &(gData);
-	checkCudaErrors(cudaMalloc((void **) gDataRef, sizeof(T) * length));
-	ret->gData = gData;
-	checkCudaErrors(cudaMemcpy(ret->gData, ret->data, sizeof(T) * length, cudaMemcpyHostToDevice));
-#endif
 			return ret;
 		}
+
+
+
+#ifdef __CUDACC__
+		template<typename T>
+		__host__
+		Buffer<T> *createBuffer(T *data, int length, cudaStream_t stream) {
+			Buffer<T> *ret = createBuffer(data, length);
+
+			T *gData;
+			T **gDataRef = &(gData);
+			checkCudaErrors(cudaMalloc((void **) gDataRef, sizeof(T) * length));
+			ret->gData = gData;
+			checkCudaErrors(cudaMemcpyAsync(ret->gData, ret->data, sizeof(T) * length, cudaMemcpyHostToDevice, stream));
+			return ret;
+		}
+#endif
 	}
 }
+
+
+
 #ifdef __CUDACC__
 template<typename T>
 __host__ void printArr(nd4j::buffer::Buffer <T> *buff) {
