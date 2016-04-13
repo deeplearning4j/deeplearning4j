@@ -5,9 +5,14 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 
+import org.nd4j.linalg.api.buffer.util.LibUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
- * Native interface for 
+ * Native interface for
  * op execution on cpu
  * @author Adam Gibson
  *
@@ -17,6 +22,7 @@ import org.bytedeco.javacpp.annotation.Platform;
  */
 @Platform(include={"NativeOps.h"}, preload="libnd4j", link = "nd4j")
 public class NativeOps extends Pointer {
+    private static Logger log = LoggerFactory.getLogger(NativeOps.class);
     static {
         Loader.load();
     }
@@ -31,6 +37,7 @@ public class NativeOps extends Pointer {
         }
         else
             setOmpNumThreads(Runtime.getRuntime().availableProcessors());
+
     }
     private native void allocate();
 
