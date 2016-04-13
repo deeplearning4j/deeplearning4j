@@ -3,10 +3,7 @@ package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
-import org.nd4j.linalg.api.buffer.util.LibUtils;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**
@@ -26,6 +23,14 @@ public class NativeOps extends Pointer {
 
     public NativeOps() {
         allocate();
+        int numThreads = 0;
+        String numThreadsString = System.getenv("OMP_NUM_THREADS");
+        if(numThreadsString != null && !numThreadsString.isEmpty()) {
+            numThreads = Integer.parseInt(numThreadsString);
+            setOmpNumThreads(numThreads);
+        }
+        else
+            setOmpNumThreads(Runtime.getRuntime().availableProcessors());
     }
     private native void allocate();
 
@@ -852,7 +857,7 @@ public class NativeOps extends Pointer {
      * Sets the number of openmp threads
      * @param threads
      */
-    public native void setOmpNunThreads(int threads);
+    public native void setOmpNumThreads(int threads);
 
     /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
