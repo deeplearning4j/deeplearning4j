@@ -47,6 +47,7 @@ public class CudaContext {
     private long bufferReduction;
     private long bufferAllocation;
     private long bufferScalar;
+    private long bufferSpecial;
 
 
     public CudaContext(boolean free) {

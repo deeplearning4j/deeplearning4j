@@ -152,8 +152,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
-        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
-        log.info("X: " + x);
+//        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
+//        log.info("X: " + x);
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
@@ -850,7 +850,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-//        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -860,8 +860,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getPointer(op.z()).address();
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
-        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
+        long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial()};
 
+        //log.info("X: " + Arrays.toString(xShapeInfoHostPointer));
 
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getPointer(op.y()).address();

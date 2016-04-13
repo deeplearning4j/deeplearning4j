@@ -225,12 +225,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         int ret2;
 
         CublasPointer xCPointer = new CublasPointer(X,ctx);
-
-        ret2 =   nd4jBlas.isamax(new long[]{ctx.getHandle().getNativePointer()},
+        ret2 = nd4jBlas.isamax(new long[]{ctx.getHandle().getNativePointer()},
                     N,
                     xCPointer.getDevicePointer().getNativePointer(),
                     incX);
-        return  ret2;
+        return  ret2 - 1;
     }
 
     @Override
@@ -249,7 +248,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                   ,N,
                   xCPointer.getDevicePointer().getNativePointer(),
                   incX);
-        return  ret2 ;
+        return  ret2 - 1 ;
     }
 
     @Override

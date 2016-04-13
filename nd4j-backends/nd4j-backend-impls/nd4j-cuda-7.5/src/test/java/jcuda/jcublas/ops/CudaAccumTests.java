@@ -61,6 +61,40 @@ public class CudaAccumTests {
     }
 
     @Test
+    public void testPinnedSumNumber() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.linspace(1, 10000, 10000);
+
+        float sum = array1.sumNumber().floatValue();
+
+        assertEquals(5.0005E7, sum, 1f);
+    }
+
+    @Test
+    public void testPinnedSumNumber2() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.ones(128000);
+
+        float sum = array1.sumNumber().floatValue();
+
+        assertEquals(128000f, sum, 0.01f);
+    }
+
+    @Test
+    public void testPinnedSumNumber3() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.ones(12800000);
+
+        float sum = array1.sumNumber().floatValue();
+
+        assertEquals(12800000f, sum, 0.01f);
+    }
+
+
+    @Test
     public void testStdev0(){
         double[][] ind = {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
         INDArray in = Nd4j.create(ind);
@@ -89,11 +123,11 @@ public class CudaAccumTests {
 
     @Test
     public void testStdevNum(){
-        INDArray in = Nd4j.linspace(1, 100, 100);
+        INDArray in = Nd4j.linspace(1, 1000, 10000);
         float stdev = in.stdNumber().floatValue();
 
 
-        assertEquals(29.011492f, stdev, 0.001f);
+        assertEquals(288.42972f, stdev, 0.001f);
     }
 
     /**
@@ -118,7 +152,7 @@ public class CudaAccumTests {
 //        INDArray result = Nd4j.getExecutioner().exec(new Mean(array1), 1);
 
         System.out.println("Array1: " + array1);
-//        System.out.println("Result: " + result);
+        System.out.println("Result: " + resu);
 
         assertEquals(1.14f, resu.floatValue(), 0.01f);
     }
@@ -295,5 +329,63 @@ public class CudaAccumTests {
         INDArray fSum = arrf.sum(0);
 
         assertEquals(Nd4j.create(new float[]{9f,12f}),fSum);
+    }
+
+    @Test
+    public void testMax1() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 76800,76800).reshape(256, 300);
+
+        long time1 = System.currentTimeMillis();
+        INDArray array = array1.max(1);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Time elapsed: "+ (time2 - time1) );
+
+        assertEquals(256, array.length());
+
+        for (int x = 0; x < 256; x++) {
+            assertEquals((x + 1) * 300, array.getFloat(x), 0.01f);
+        }
+    }
+
+    @Test
+    public void testMax0() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 76800,76800).reshape(256, 300);
+
+
+        long time1 = System.currentTimeMillis();
+        INDArray array = array1.max(0);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Time elapsed: "+ (time2 - time1) );
+
+        assertEquals(300, array.length());
+
+        for (int x = 0; x < 300; x++) {
+            assertEquals("Failed on x: " + x, 76800 - (array1.columns() - x) + 1 , array.getFloat(x), 0.01f);
+        }
+    }
+
+
+    @Test
+    public void testMax1_2() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 7680000,7680000).reshape(2560, 3000);
+/*
+        for (int x = 0; x < 7680000; x++) {
+            assertEquals(x+1, array1.getFloat(x), 0.001f);
+        }
+*/
+        long time1 = System.currentTimeMillis();
+        INDArray array = array1.max(1);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Time elapsed: "+ (time2 - time1) );
+
+        assertEquals(2560, array.length());
+
+        //System.out.println("Array: " + array);
+        for (int x = 0; x < 2560; x++) {
+            assertEquals("Failed on x:" + x,(x + 1) * 3000, array.getFloat(x), 0.01f);
+        }
     }
 }

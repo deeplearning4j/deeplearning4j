@@ -217,15 +217,20 @@ public class ContextPool {
     private void getDeviceBuffers(CudaContext context, int deviceId) {
         NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
-        long  reductionPointer = nativeOps.mallocDevice(32 * 1024 * 1024, deviceId, 0);
+        int sizeOf = (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
+
+        long  reductionPointer = nativeOps.mallocDevice(2049 * sizeOf * 2, deviceId, 0);
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
+
+        JCuda.cudaMemsetAsync(new Pointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        long  scalarPointer = nativeOps.mallocHost(1 * (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4), 0);
+        long  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
         if (scalarPointer == 0)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
@@ -240,5 +245,21 @@ public class ContextPool {
         context.setBufferScalar(dPtr.getNativePointer());
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
+
+        long  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, deviceId, 0);
+        if (specialPointer == 0)
+            throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
+/*
+        dPtr = new Pointer();
+        hPtr = new Pointer(specialPointer);
+
+        JCuda.cudaHostGetDevicePointer(
+                dPtr,
+                hPtr,
+                0);
+*/
+//        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
+
+        context.setBufferSpecial(specialPointer);
     }
 }
