@@ -843,6 +843,18 @@ public class NativeOps extends Pointer {
                                      long inputShapeInfo);
 
     /**
+     * Gets the number of open mp threads
+     * @return
+     */
+    public native int ompGetNumThreads();
+
+    /**
+     * Sets the number of openmp threads
+     * @param threads
+     */
+    public native void setOmpNunThreads(int threads);
+
+    /**
      * NEVER EVER USE THIS METHOD OUTSIDE OF  CUDA
      */
     public native void initializeDevicesAndFunctions();
