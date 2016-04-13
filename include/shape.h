@@ -1886,7 +1886,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *computeIndices(int *shapeBuffer) {
+    inline const Nd4jIndex *computeIndices(int *shapeBuffer) {
         return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
     }
 
