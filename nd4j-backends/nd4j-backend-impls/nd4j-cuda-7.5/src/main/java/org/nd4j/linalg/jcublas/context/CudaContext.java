@@ -73,15 +73,20 @@ public class CudaContext {
      */
     public void syncOldStream() {
 //        ContextHolder.getInstance().setContext();
+        syncOldStream(true);
+    }
+
+    public void syncOldStream(boolean syncCuBlas) {
+//        ContextHolder.getInstance().setContext();
         JCuda.cudaStreamSynchronize(oldStream);
 
-        syncCublasStream();
+        if (syncCuBlas) syncCublasStream();
     }
 
     public void syncCublasStream() {
         if (cublasStream != null) {
             JCuda.cudaStreamSynchronize(cublasStream);
-        }
+        } else throw new IllegalStateException("cuBLAS stream isnt set");
     }
 
 
@@ -180,6 +185,7 @@ public class CudaContext {
      */
     public static CudaContext getBlasContext() {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        context.syncOldStream(false);
         return context;
     }
 

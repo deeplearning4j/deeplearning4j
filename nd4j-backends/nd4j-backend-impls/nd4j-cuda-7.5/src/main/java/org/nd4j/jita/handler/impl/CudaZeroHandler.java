@@ -199,6 +199,9 @@ public class CudaZeroHandler implements MemoryHandler {
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
+
+                            JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+                            JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
                         } else {
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
                             returnPair.setDevicePointer(tmpPair.getDevicePointer());
@@ -207,9 +210,6 @@ public class CudaZeroHandler implements MemoryHandler {
                         }
                     }
                 }
-
-                JCuda.cudaMemsetAsync(new Pointer(returnPair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-                JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
                 return returnPair;
             }
@@ -459,13 +459,14 @@ public class CudaZeroHandler implements MemoryHandler {
         // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
-            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+            context.syncOldStream();
+            Pointer rDP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
 
             JCuda.cudaMemcpyAsync(
                     rDP,
                     dP,
                     length,
-                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    cudaMemcpyKind.cudaMemcpyDeviceToHost,
                     context.getOldStream()
             );
         }
@@ -916,11 +917,18 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         // we synchronize only if this AllocationPoint was used within device context, so for multiple consequent syncs only first one will be issued
+
+        // FIXME: this is wrong
+        CudaContext context = getCudaContext();
+        context.syncOldStream();
+
         if (!point.isActualOnHostSide()) {
-            CudaContext context = getCudaContext();
+
+            //log.info("Starting synchronization");
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
+                context.syncOldStream();
                 JCuda.cudaMemcpyAsync(
                         new Pointer(point.getHostPointer().address()),
                         new Pointer(point.getDevicePointer().address()),
@@ -928,7 +936,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getOldStream()
                 );
-            }
+            } else log.info("Not on [DEVICE]");
 //            System.out.println("Synchronizing...");
 //            CUcontext cUcontext = contextPool.getCuContextForDevice(deviceId);
 //            JCudaDriver.cuCtxSetCurrent(cUcontext);
@@ -936,6 +944,6 @@ public class CudaZeroHandler implements MemoryHandler {
             context.syncOldStream();
 
             point.tickHostRead();
-        }
+        };
     }
 }

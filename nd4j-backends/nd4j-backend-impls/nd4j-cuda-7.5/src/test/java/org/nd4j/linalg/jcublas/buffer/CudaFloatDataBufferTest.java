@@ -229,6 +229,10 @@ public class CudaFloatDataBufferTest {
         INDArray array1 = Nd4j.ones(1,10);
 
         System.out.println(array1.shapeInfoDataBuffer());
+
+        assertEquals(1.0, array1.getFloat(0), 0.0001);
+        assertEquals(1.0, array1.getFloat(1), 0.0001);
+        assertEquals(1.0, array1.getFloat(2), 0.0001);
     }
 
     @Test

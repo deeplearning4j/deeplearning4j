@@ -104,6 +104,8 @@ public class ContextPool {
                         context.setHandle(handle);
                         context.setCublasStream(cublasStream);
 
+                        logger.info("CublasStream on creation: " + cublasStream.getNativePointer());
+
                         cublasPool.put(deviceId, handle);
                     } else {
                         // just pick handle out there
@@ -114,7 +116,12 @@ public class ContextPool {
                         cudaStream_t cublasStream = new cudaStream_t();
                         JCublas2.cublasGetStream(handle, cublasStream);
                         context.setCublasStream(cublasStream);
+
+                        logger.info("CublasStream on reuse: " + cublasStream.getNativePointer());
                     }
+
+                    // we need this sync to finish memset
+                    context.syncOldStream();
 
                     contextsPool.put(threadId, context);
                     contextsForDevices.get(deviceId).put(contextsForDevices.get(deviceId).size(), context);
@@ -224,7 +231,6 @@ public class ContextPool {
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
         JCuda.cudaMemsetAsync(new Pointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
-        context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)

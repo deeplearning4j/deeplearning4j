@@ -33,7 +33,6 @@ public class JcublasLevel3 extends BaseLevel3 {
         A = Shape.toOffsetZero(A);
         B = Shape.toOffsetZero(B);
         CudaContext ctx = CudaContext.getBlasContext();
-
         /*
         log.info("SGEMM params> Order: {}, transA: {}, transB: {}, M: {}, N: {}, K: {}, alpha: {}", Order, TransA, TransB, M,  N, K, alpha);
 
