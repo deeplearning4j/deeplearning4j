@@ -81,11 +81,26 @@ public class CudaIndexReduceTests {
     }
 
     @Test
+    public void testIamaxC() {
+        INDArray linspace = Nd4j.linspace(1, 4, 4).dup('c');
+        assertEquals(3,Nd4j.getBlasWrapper().iamax(linspace));
+    }
+
+    @Test
+    public void testIamaxF() {
+        INDArray linspace = Nd4j.linspace(1, 4, 4).dup('f');
+        assertEquals(3,Nd4j.getBlasWrapper().iamax(linspace));
+    }
+
+    @Test
     public void testIMax2() {
         INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
+        long time1 = System.currentTimeMillis();
         INDArray  argMax = Nd4j.argMax(array1, 1);
+        long time2 = System.currentTimeMillis();
 
+        System.out.println("Execution time: " + (time2 - time1));
         for (int i = 0; i < 128; i++) {
             assertEquals(999f, argMax.getFloat(i), 0.0001f);
         }

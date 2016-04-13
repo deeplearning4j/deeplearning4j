@@ -246,10 +246,10 @@ public class ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        long  specialPointer = nativeOps.mallocHost(65536 * sizeOf, 0);
+        long  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, deviceId, 0);
         if (specialPointer == 0)
-            throw new IllegalStateException("Can't allocate [HOST] special buffer memory!");
-
+            throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
+/*
         dPtr = new Pointer();
         hPtr = new Pointer(specialPointer);
 
@@ -257,7 +257,9 @@ public class ContextPool {
                 dPtr,
                 hPtr,
                 0);
+*/
+//        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
 
-        context.setBufferSpecial(dPtr.getNativePointer());
+        context.setBufferSpecial(specialPointer);
     }
 }

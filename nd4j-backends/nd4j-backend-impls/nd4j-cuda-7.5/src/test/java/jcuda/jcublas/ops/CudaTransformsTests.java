@@ -417,7 +417,7 @@ public class CudaTransformsTests {
         INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
         INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
 
-
+        System.out.println("OutF data: " +Arrays.toString(outf.data().asFloat()));
         assertEquals(exp, outf);
     }
 
@@ -436,9 +436,9 @@ public class CudaTransformsTests {
 
     @Test
     public void testClassificationSoftmax() {
-        INDArray input = Nd4j.zeros(256, 300);
+        INDArray input = Nd4j.zeros(256, 30000);
         for (int i = 0; i < 256; i++) {
-            input.putScalar(300 * i, (i * 2) + 0.5);
+            input.putScalar(30000 * i, (i * 2) + 0.5);
         }
 
         System.out.println("Data:" + input.data().length());
@@ -457,7 +457,7 @@ public class CudaTransformsTests {
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
 
-            //System.out.println("Position: " + input.getDouble(30000 * i));
+            System.out.println("Position [0]: " + input.getDouble(30000 * i) + ", [1]: " + input.getDouble(30000 * i + 1));
 
             float sum = slice.sumNumber().floatValue();
             assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);
