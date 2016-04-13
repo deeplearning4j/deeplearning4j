@@ -1621,3 +1621,19 @@ Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId
     // not supported
     return 0L;
 }
+
+
+/**
+ * Returns the number open mp threads
+ */
+int NativeOps::ompGetNumThreads() {
+    return omp_get_num_threads();
+}
+
+/**
+ * Sets the number of openmp threads
+ */
+void NativeOps::setOmpNumThreads(int threads) {
+    omp_set_num_threads(threads);
+
+}

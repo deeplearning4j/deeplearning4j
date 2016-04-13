@@ -895,6 +895,11 @@ public:
      * @param ptrToDeviceId pointer to deviceId.
      */
     Nd4jPointer freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
+
+    int ompGetNumThreads();
+
+    void setOmpNumThreads(int threads);
+
 };
 
 

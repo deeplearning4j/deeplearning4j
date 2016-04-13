@@ -234,8 +234,6 @@ struct SharedIndexValue<double> {
 			int *dimension,
 			int dimensionLength,
 			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
-
-
 		/**
 		 * Gpu information for the problem
 		 */
@@ -407,6 +405,31 @@ struct SharedIndexValue<double> {
 					}
 				}
 			} else {
+				int tadLength = xLength / resultLength;
+				__shared__ int offsetForTad;
+#pragma unroll
+				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					if (threadIdx.x == 0)
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					__syncthreads();
+					sPartials[threadIdx.x] = {dx[offsetForTad], 0};
+#pragma unroll
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+						int indexX = offsetForTad + xElementWiseStride * x;
+						IndexValue<T> comp {dx[indexX], x};
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
+					}
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+					}
+				}
+
+			/*
 				__syncthreads();
 
 
@@ -437,34 +460,27 @@ struct SharedIndexValue<double> {
 				}
 
 				__syncthreads();
+				*/
 			}
 		}
 
 
 		//reduce to 1 result
 		else if (resultScalar) {
-			if (threadIdx.x == 0) {
-				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-			}
-
 			int n = shape::length(xShapeInfo);
 			int numElements = blockDim.x;
-
-			__syncthreads();
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
 #pragma unroll
 					for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-						int currIdx = i;
-						IndexValue <T> indexVal = {dx[i], currIdx};
+						IndexValue <T> indexVal = {dx[i], i};
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				} else {
 #pragma unroll
 					for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
-						int currIdx = i;
-						IndexValue <T> indexVal = {dx[i * xElementWiseStride], currIdx};
+						IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
 						reduction = update(reduction, indexVal, extraParams);
 					}
 				}
@@ -1244,12 +1260,10 @@ __device__ void indexReduceGeneric(
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
 		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
 		indexReduce = newOpFactory->getOp(op);
+	}
 	__syncthreads();
 
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
