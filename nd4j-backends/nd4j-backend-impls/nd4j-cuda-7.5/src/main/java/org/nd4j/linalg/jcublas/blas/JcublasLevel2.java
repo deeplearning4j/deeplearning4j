@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasHandle;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
@@ -26,33 +28,22 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        nd4jBlas.sgemv(new long[]{ctx.getHandle().getNativePointer()},
-                order,TransA,M,N,alpha,cAPointer.getDevicePointer().getNativePointer(),
-                lda,cBPointer.getDevicePointer().getNativePointer(),
-                incX,
-                beta,
-                cCPointer.getDevicePointer().getNativePointer(),
-                incY);
-         /*   JCublas2.cublasSgemv(
-                    ctx.getHandle(),
-                    OpUtil.getOp(TransA),
-                    M,
-                    N,
-                    Pointer.to(new float[]{alpha}),
-                    cAPointer.getPointer(),
-                    lda,
-                    cBPointer.getPointer(),
+        cublasHandle handle = ctx.getHandle();
+        synchronized (handle) {
+            JCublas2.cublasSetStream(handle, ctx.getOldStream());
+
+            nd4jBlas.sgemv(new long[]{ctx.getHandle().getNativePointer()},
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
+                    lda, cBPointer.getDevicePointer().getNativePointer(),
                     incX,
-                    Pointer.to(new float[]{beta}),
-                    cCPointer.getPointer(),
-                    incY);*/
-            //ctx.syncOldStream();
-        //    cCPointer.copyToHost();
-
+                    beta,
+                    cCPointer.getDevicePointer().getNativePointer(),
+                    incY);
+        }
     }
 
     @Override
@@ -100,32 +91,22 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        nd4jBlas.dgemv(new long[]{ctx.getHandle().getNativePointer()},
+        cublasHandle handle = ctx.getHandle();
+        synchronized (handle) {
+            JCublas2.cublasSetStream(handle, ctx.getOldStream());
+
+            nd4jBlas.dgemv(new long[]{ctx.getHandle().getNativePointer()},
                     order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
                     lda, cBPointer.getDevicePointer().getNativePointer(),
                     incX,
                     beta,
                     cCPointer.getDevicePointer().getNativePointer(),
                     incY);
-            /*JCublas2.cublasDgemv(
-                    ContextHolder.getInstance().getHandle(),
-                    OpUtil.getOp(TransA),
-                    M,
-                    N,
-                    Pointer.to(new double[]{alpha}),
-                    cAPointer.getPointer(),
-                    lda,
-                    cBPointer.getPointer(),
-                    incX,
-                    Pointer.to(new double[]{beta}),
-                    cCPointer.getPointer(),
-                    incY);*/
-//            ctx.syncOldStream();
-    //        cCPointer.copyToHost();
+        }
     }
 
     @Override

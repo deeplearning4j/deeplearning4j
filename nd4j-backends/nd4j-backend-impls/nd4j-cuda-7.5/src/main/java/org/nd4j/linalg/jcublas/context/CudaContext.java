@@ -185,7 +185,7 @@ public class CudaContext {
      */
     public static CudaContext getBlasContext() {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        context.syncOldStream(false);
+        //context.syncOldStream(false);
         return context;
     }
 
