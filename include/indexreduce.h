@@ -407,9 +407,6 @@ struct SharedIndexValue<double> {
 					}
 				}
 			} else {
-
-
-				int xLength = shape::length(xShapeInfo);
 				int tadLength = xLength / resultLength;
 				__shared__ int offsetForTad;
 #pragma unroll

@@ -648,7 +648,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension != NULL && dimension[0] != MAX_DIMENSION) {
+			if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -784,19 +784,22 @@ struct SharedSummaryStatsData<double> {
 					if (threadIdx.x == 0)
 						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
 					__syncthreads();
-					SummaryStatsData <T> indexVal;
-				    indexVal.initWithValue(dx[offsetForTad]);
-					sPartials[threadIdx.x] = op(indexVal, extraParams);
+					int indexX = offsetForTad + xElementWiseStride * threadIdx.x;
+					if (threadIdx.x < tadLength) {
+					    SummaryStatsData <T> indexVal;
+				        indexVal.initWithValue(dx[indexX]);
+					    sPartials[threadIdx.x] = op(indexVal, extraParams);
+					}
 #pragma unroll
-					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
-						int indexX = offsetForTad + xElementWiseStride * x;
+					for (int x = threadIdx.x + blockDim.x; x < tadLength; x+= blockDim.x) {
+						indexX = offsetForTad + xElementWiseStride * x;
 						SummaryStatsData <T> indexVal2;
 					    indexVal2.initWithValue(dx[indexX]);
-						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], indexVal2, extraParams);
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x,blockDim.x ,extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
