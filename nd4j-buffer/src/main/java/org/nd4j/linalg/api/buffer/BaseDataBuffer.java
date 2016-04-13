@@ -81,6 +81,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient long originalOffset = 0;
     protected transient Long trackingPoint;
 
+    protected transient boolean constant = false;
+
     public BaseDataBuffer() {
     }
 
@@ -1533,5 +1535,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public void setTrackingPoint(Long trackingPoint) {
         this.trackingPoint = trackingPoint;
+    }
+
+    /**
+     * This method returns whether this DataBuffer is constant, or not.
+     * Constant buffer means that it modified only during creation time, and then it stays the same for all lifecycle. I.e. used in shape info databuffers.
+     *
+     * @return
+     */
+    public boolean isConstant() {
+        return constant;
+    }
+
+    /**
+     *
+     * This method allows you to mark databuffer as constant.
+     *
+     * PLEASE NOTE: DO NOT USE THIS METHOD, UNLESS YOU'RE 100% SURE WHAT YOU DO
+     *
+     * @param reallyConstant
+     */
+    public void setConstant(boolean reallyConstant) {
+        this.constant = reallyConstant;
     }
 }

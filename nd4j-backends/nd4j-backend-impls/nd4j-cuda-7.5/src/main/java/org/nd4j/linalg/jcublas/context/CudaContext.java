@@ -73,7 +73,7 @@ public class CudaContext {
      */
     public void syncOldStream() {
 //        ContextHolder.getInstance().setContext();
-        syncOldStream(true);
+        syncOldStream(false);
     }
 
     public void syncOldStream(boolean syncCuBlas) {

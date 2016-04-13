@@ -290,6 +290,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        if (buffer.isConstant()) return;
         // we actually need synchronization only in device-dependant environment. no-op otherwise
         if (memoryHandler.isDeviceDependant()) {
             AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());

@@ -265,7 +265,7 @@ public class AtomicAllocatorTest {
         }
 
         long time1 = System.nanoTime();
-        int count = 50000;
+        int count = 5000000;
         for (int i = 0; i < count; i++) {
             blasWrapper.axpy(new Float(0.75f), array1, array2);
         }
@@ -502,7 +502,7 @@ public class AtomicAllocatorTest {
             long time2 = System.nanoTime();
 
 
-            if (cnt.incrementAndGet() % 100000 == 0) {
+            if (cnt.incrementAndGet() % 10000 == 0) {
                 log.info("Execution time: [" + (time2 - time1) + "] ns");
                 assertEquals(1.7674999237060547, array2.getDouble(0), 0.00001);
                 log.info("Sleeping for 2 seconds...");
