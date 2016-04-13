@@ -153,7 +153,6 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
                 JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-
                 JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
                 int numBuckets = configuration.getNumberOfHostMemoryBuckets();
@@ -187,6 +186,9 @@ public class CudaZeroHandler implements MemoryHandler {
                     returnPair.setHostPointer(tmpPair.getHostPointer());
 
                     point.setAllocationStatus(AllocationStatus.HOST);
+
+                    JCuda.cudaMemsetAsync(new Pointer(returnPair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+                    JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
                 }
 
                 if (reqMemory < configuration.getMaximumSingleAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
@@ -207,6 +209,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 }
 
                 JCuda.cudaMemsetAsync(new Pointer(returnPair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+                JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
                 return returnPair;
             }
@@ -398,7 +401,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public AllocationStatus getInitialLocation() {
-        return AllocationStatus.HOST;
+        return AllocationStatus.DEVICE;
     }
 
     /**
