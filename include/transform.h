@@ -144,9 +144,9 @@ namespace functions {
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ int length;
-		if(tid == 0)
+		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
 		__syncthreads();
 
@@ -197,7 +197,7 @@ namespace functions {
 			int *allocationPointer, T *reductionPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if(incy == 1 && resultStride == 1) {
 			/* equal, positive, non-unit increments. */
@@ -997,6 +997,75 @@ namespace functions {
 #endif
 
                 virtual ~Log() {
+                }
+
+            };
+
+            template<typename T>
+            class SpecialDerivative : public Transform<T> {
+            public:
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+#ifdef __CUDACC__
+                /**
+	 *
+	 */
+
+	virtual __device__ void execSpecialCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+#endif
+
+                /**
+                 * The op for transforms
+                 * @param d1
+                 * @param params
+                 * @return
+                 */
+                virtual
+#ifdef __CUDACC__
+                inline __host__  __device__
+
+#elif defined(__GNUC__)
+
+
+#endif
+                T op(T d1, T *params) {
+                    return d1 * (1.0 - d1);
+                }
+
+
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+
+                virtual ~SpecialDerivative() {
                 }
 
             };
@@ -3757,9 +3826,11 @@ namespace functions {
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = new T[shape[0]];
+			//printf("maxResult length: [%i]\n", shape[0]);
 		}
 		__syncthreads();
 
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
 		int dimension[1] = {0};
@@ -3771,8 +3842,8 @@ namespace functions {
 		if (threadIdx.x == 0)
 			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		if (threadIdx.x < shape[0])
-			maxResult[threadIdx.x] = (T) 0.0;
+		if (tid < shape[0])
+			maxResult[tid] = (T) 0.0;
 		__syncthreads();
 
 		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer);
@@ -5297,7 +5368,11 @@ namespace functions {
                 }
                 else if(op == 41) {
                     return new transform::ops::IsMax<T>();
+                } else if(op == 42) {
+                    // temporary special op for blockwise SoftMax Derivative
+                    return new transform::ops::SpecialDerivative<T>();
                 }
+
                 return ret;
             }
 
@@ -5347,16 +5422,11 @@ __device__ void transformGeneric(
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
-
+        op = doubleTransformFactory->getOp(opNum);
 	}
 
 	__syncthreads();
 
-
-	if(threadIdx.x == 0) {
-		op = doubleTransformFactory->getOp(opNum);
-	}
-	__syncthreads();
 
 
 	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer);
@@ -5645,6 +5715,42 @@ extern "C" __global__ void transformFloatIndexes(
 
 }
 
+/**
+* This is utility kernel, that updates given special buffer with proper values in device memory
+*/
+extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, int *specialPointer, int rows) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid > 0)
+        return;
+
+    dimension[0] = 0;
+    maxDimension[0] = 1;
+
+    specialPointer[0] = 2;
+    specialPointer[1] = rows;
+    specialPointer[2] = 1;
+    specialPointer[3] = 1;
+    specialPointer[4] = 1;
+    specialPointer[5] = 0;
+    specialPointer[6] = 1;
+    specialPointer[7] = 99;
+}
+template <typename T>
+__device__ void fillIsMaxGeneric(T *dx, long length, long idx) {
+
+   int tid = blockIdx.x * blockDim.x + threadIdx.x;
+   for (long i = tid; i < length; i+= blockDim.x * gridDim.x) {
+        dx[i] = (i == idx? 1.0 : 0.0);
+   }
+}
+
+extern "C" __global__ void fillIsMaxFloat(float *dx, long length, long idx) {
+    fillIsMaxGeneric<float>(dx, length, idx);
+}
+
+extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
+    fillIsMaxGeneric<double>(dx, length, idx);
+}
 
 #endif
 

@@ -648,7 +648,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension != NULL && dimension[0] != MAX_DIMENSION) {
+			if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -773,7 +773,39 @@ struct SharedSummaryStatsData<double> {
 					}
 				}
 		    } else {
-             	int resultLength = shape::length(resultShapeInfo);
+
+
+                int xLength = shape::length(xShapeInfo);
+				int tadLength = xLength / resultLength;
+
+                __shared__ int offsetForTad;
+#pragma unroll
+				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					if (threadIdx.x == 0)
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					__syncthreads();
+					int indexX = offsetForTad + xElementWiseStride * threadIdx.x;
+					if (threadIdx.x < tadLength) {
+					    SummaryStatsData <T> indexVal;
+				        indexVal.initWithValue(dx[indexX]);
+					    sPartials[threadIdx.x] = op(indexVal, extraParams);
+					}
+#pragma unroll
+					for (int x = threadIdx.x + blockDim.x; x < tadLength; x+= blockDim.x) {
+						indexX = offsetForTad + xElementWiseStride * x;
+						SummaryStatsData <T> indexVal2;
+					    indexVal2.initWithValue(dx[indexX]);
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
+					}
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength) ,extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[i] = getValue(sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
+					}
+				}
 
 				/**
 				 * The element wise stride belong longs to a reduction index.
@@ -784,6 +816,8 @@ struct SharedSummaryStatsData<double> {
 				 * we can use arr.stride(1) as a representation
 				 * along long which to iterate.
 				 */
+				/*
+				int resultLength = shape::length(resultShapeInfo);
 				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
 				int xLength = shape::length(xShapeInfo);
 				int i = 0,j = 0;
@@ -805,7 +839,7 @@ struct SharedSummaryStatsData<double> {
 				}
 
 				__syncthreads();
-
+                */
 		    }
 		}
 		else if (resultScalar) {
