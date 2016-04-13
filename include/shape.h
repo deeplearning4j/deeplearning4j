@@ -1312,11 +1312,11 @@ namespace shape {
 #endif
     inline int * tad2Sub(int index, int *dimension, int dimensionLength, int *shapeInfo) {
         int *shape = shape::shapeOf(shapeInfo);
-        //shape of the tad
-        int *tadShape = new int[dimensionLength];
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - dimensionLength;
         int *ret = new int[rank];
+        //shape of the tad
+        int *tadShape = new int[leftOverIndexLen];
         //indexes not specified in the tad indexes
         int *leftOverIndexes = new int[leftOverIndexLen];
         //every coordinate starts as zero
