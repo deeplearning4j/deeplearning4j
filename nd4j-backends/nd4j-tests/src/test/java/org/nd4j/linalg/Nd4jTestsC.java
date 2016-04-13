@@ -983,7 +983,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
-
+    @Test
+    public void testGetFromRowVector() {
+        INDArray matrix = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray rowGet = matrix.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 2));
+        assertArrayEquals(new int[]{1,2},rowGet.shape());
+    }
 
     @Test
     public void testSubRowVector() {
@@ -1752,7 +1757,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testGetRow(){
         INDArray arr = Nd4j.ones(10, 4);
-        for( int i=0; i<10; i++ ){
+        for( int i=0; i < 10; i++ ){
             INDArray row = arr.getRow(i);
             assertArrayEquals(row.shape(), new int[]{1, 4});
         }
