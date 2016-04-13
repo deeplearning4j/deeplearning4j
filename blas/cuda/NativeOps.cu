@@ -24,6 +24,7 @@
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
+int blockLimit = 128;
 
 
 template <typename T>
@@ -40,7 +41,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// check for partial block at the end
 	if(n % num_threads) ++num_blocks;
-	if (num_blocks > 128) num_blocks = 128;
+	if (num_blocks > blockLimit) num_blocks = blockLimit;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
@@ -2526,9 +2527,9 @@ Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId
 
 
 int NativeOps::ompGetNumThreads() {
-
+	return blockLimit;
 }
 
 void NativeOps::setOmpNumThreads(int threads) {
-
+	blockLimit = threads;
 }
