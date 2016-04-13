@@ -4740,25 +4740,16 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {
                     int length = shape::length(xShapeBuffer);
-                    if (dx == result && shape::order(xShapeBuffer) == 'c') {
-                        int eleStride = shape::elementWiseStride(xShapeBuffer);
-                        if (eleStride == 1) {
-                            int maxIdx = 0;
-                            T currMax = dx[0];
+                    int eleStride = shape::elementWiseStride(xShapeBuffer);
+                    int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
+                    char xOrder = shape::order(xShapeBuffer);
+                    char resultOrder = shape::order(resultShapeBuffer);
+                    if (xOrder == resultOrder && xOrder == 'c') {
+                        if (eleStride == 1 && resultEleStride == 1) {
                             if (length < 8000) {
+                                int maxIdx = 0;
+                                T currMax = dx[0];
 #pragma omp simd
-                                for (int i = 0; i < length; i++) {
-                                    if (currMax < dx[i]) {
-                                        currMax = dx[i];
-                                        maxIdx = i;
-                                    }
-
-                                    dx[i] = 0.0;
-
-                                }
-                            }
-                            else {
-#pragma omp parallel for shared(maxIdx,currMax)
                                 for (int i = 0; i < length; i++) {
                                     if (currMax < dx[i]) {
                                         currMax = dx[i];
@@ -4768,178 +4759,119 @@ namespace functions {
                                     result[i] = 0.0;
 
                                 }
+
+                                result[maxIdx] = 1.0;
+
                             }
-
-                            result[maxIdx] = 1.0;
-
-
-                        }
-                        else {
-                            int maxIdx = 0;
-                            T currMax = dx[0];
-                            if (length < 8000) {
-#pragma omp simd
+                            else {
+                                int maxIdx = 0;
+                                T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
                                 for (int i = 0; i < length; i++) {
                                     if (currMax < dx[i]) {
                                         currMax = dx[i];
                                         maxIdx = i;
                                     }
-
-                                    dx[i * eleStride] = 0.0;
+                                    result[i] = 0.0;
 
                                 }
 
-                                dx[maxIdx * eleStride] = 1.0;
+                                result[maxIdx] = 1.0;
                             }
-                            else {
-#pragma omp parallel for shared(maxIdx,currMax)
+
+                        }
+                        else {
+                            if (length < 8000) {
+                                int maxIdx = 0;
+                                T currMax = dx[0];
+#pragma omp simd
                                 for (int i = 0; i < length; i++) {
+                                    result[i * resultEleStride] = 0.0;
                                     if (currMax < dx[i * eleStride]) {
                                         currMax = dx[i * eleStride];
                                         maxIdx = i;
                                     }
-                                    dx[i * eleStride] = 0.0;
-
                                 }
-                            }
 
-                            dx[maxIdx * eleStride] = 1.0;
-
-                        }
-                    }
-                    else {
-                        int eleStride = shape::elementWiseStride(xShapeBuffer);
-                        int resultEleStride = shape::elementWiseStride(resultShapeBuffer);
-                        char xOrder = shape::order(xShapeBuffer);
-                        char resultOrder = shape::order(resultShapeBuffer);
-                        if (xOrder == resultOrder && xOrder == 'c') {
-                            if (eleStride == 1 && resultEleStride == 1) {
-                                if (length < 8000) {
-                                    int maxIdx = 0;
-                                    T currMax = dx[0];
-#pragma omp simd
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i]) {
-                                            currMax = dx[i];
-                                            maxIdx = i;
-                                        }
-
-                                        result[i] = 0.0;
-
-                                    }
-
-                                    result[maxIdx] = 1.0;
-
-                                }
-                                else {
-                                    int maxIdx = 0;
-                                    T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax)
-                                    for (int i = 0; i < length; i++) {
-                                        if (currMax < dx[i]) {
-                                            currMax = dx[i];
-                                            maxIdx = i;
-                                        }
-                                        result[i] = 0.0;
-
-                                    }
-
-                                    result[maxIdx] = 1.0;
-                                }
+                                result[maxIdx * resultEleStride] = 1.0;
 
                             }
                             else {
-                                if (length < 8000) {
-                                    int maxIdx = 0;
-                                    T currMax = dx[0];
-#pragma omp simd
-                                    for (int i = 0; i < length; i++) {
-                                        result[i * resultEleStride] = 0.0;
-                                        if (currMax < dx[i * eleStride]) {
-                                            currMax = dx[i * eleStride];
-                                            maxIdx = i;
-                                        }
-                                    }
-
-                                    result[maxIdx * resultEleStride] = 1.0;
-
-                                }
-                                else {
-                                    int maxIdx = 0;
-                                    T currMax = dx[0];
-#pragma omp parallel for shared(maxIdx,currMax)
-                                    for (int i = 0; i < length; i++) {
-                                        result[i * resultEleStride] = 0.0;
-                                        if (currMax < dx[i * eleStride]) {
-                                            currMax = dx[i * eleStride];
-                                            maxIdx = i;
-                                        }
-                                    }
-
-                                    result[maxIdx * resultEleStride] = 1.0;
-                                }
-
-                            }
-                        }
-
-
-                        else {
-                            int shapeIter[MAX_RANK];
-                            int coord[MAX_RANK];
-                            int dim;
-                            int xStridesIter[MAX_RANK];
-                            int resultStridesIter[MAX_RANK];
-                            int *xShape = shape::shapeOf(xShapeBuffer);
-                            int *xStride = shape::stride(xShapeBuffer);
-                            int *resultStride = shape::stride(resultShapeBuffer);
-                            int rank = shape::rank(xShapeBuffer);
-                            T *originalResult = result;
-                            if (PrepareTwoRawArrayIter<T>(rank,
-                                                          xShape,
-                                                          dx,
-                                                          xStride,
-                                                          result,
-                                                          resultStride,
-                                                          &rank,
-                                                          shapeIter,
-                                                          &dx,
-                                                          xStridesIter,
-                                                          &result,
-                                                          resultStridesIter) >= 0) {
-                                T value = dx[0];
-                                int idx = 0;
                                 int maxIdx = 0;
-                                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                    if(dx[0] > value) {
-                                        value = dx[0];
-                                        maxIdx = idx;
+                                T currMax = dx[0];
+#pragma omp parallel for shared(maxIdx,currMax)
+                                for (int i = 0; i < length; i++) {
+                                    result[i * resultEleStride] = 0.0;
+                                    if (currMax < dx[i * eleStride]) {
+                                        currMax = dx[i * eleStride];
+                                        maxIdx = i;
                                     }
-
-                                    idx++;
-                                    result[0] = 0.0;
-
                                 }
-                                ND4J_RAW_ITER_TWO_NEXT(
-                                        dim,
-                                        rank,
-                                        coord,
-                                        shapeIter,
-                                        dx,
-                                        xStridesIter,
-                                        result,
-                                        resultStridesIter);
 
-                                //pointer to where max value would be
-                                if(shape::order(resultShapeBuffer) == 'c' || shape::order(resultShapeBuffer) == 'f' &&
-                                                                                     maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-                                                                                             shape::length(resultShapeBuffer))
-                                    originalResult[maxIdx] = 1.0;
-                                else
-                                    originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
+                                result[maxIdx * resultEleStride] = 1.0;
                             }
-                        }
 
+                        }
                     }
+
+
+                    else {
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int xStridesIter[MAX_RANK];
+                        int resultStridesIter[MAX_RANK];
+                        int *xShape = shape::shapeOf(xShapeBuffer);
+                        int *xStride = shape::stride(xShapeBuffer);
+                        int *resultStride = shape::stride(resultShapeBuffer);
+                        int rank = shape::rank(xShapeBuffer);
+                        T *originalResult = result;
+                        if (PrepareTwoRawArrayIter<T>(rank,
+                                                      xShape,
+                                                      dx,
+                                                      xStride,
+                                                      result,
+                                                      resultStride,
+                                                      &rank,
+                                                      shapeIter,
+                                                      &dx,
+                                                      xStridesIter,
+                                                      &result,
+                                                      resultStridesIter) >= 0) {
+                            T value = dx[0];
+                            int idx = 0;
+                            int maxIdx = 0;
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                if(dx[0] > value) {
+                                    value = dx[0];
+                                    maxIdx = idx;
+                                }
+
+                                idx++;
+                                result[0] = 0.0;
+
+                            }
+                            ND4J_RAW_ITER_TWO_NEXT(
+                                    dim,
+                                    rank,
+                                    coord,
+                                    shapeIter,
+                                    dx,
+                                    xStridesIter,
+                                    result,
+                                    resultStridesIter);
+
+                            //pointer to where max value would be
+                            if(shape::order(resultShapeBuffer) == 'c' || shape::order(resultShapeBuffer) == 'f' &&
+                                                                         maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
+                                                                         shape::length(resultShapeBuffer))
+                                originalResult[maxIdx] = 1.0;
+                            else
+                                originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
+                        }
+                    }
+
+
                 }
             public:
 
@@ -5008,7 +4940,6 @@ namespace functions {
 		}
 	}
 #endif
-
                 /**
                  * CPU operation execution
                  * @param dx the input data
@@ -5029,24 +4960,195 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if(extraParams == NULL || extraParams[0] == 0 || extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
-                        this->doAll(dx,xShapeBuffer,result,resultShapeBuffer,extraParams);
+                    if (extraParams == NULL || extraParams[0] == 0 ||
+                        extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
+                        this->doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
+                    }
+                    else if(shape::isVector(xShapeBuffer)) {
+                        int dimensionLength = (int) extraParams[0];
+                        int *dimension = new int[dimensionLength];
+                        int length = shape::length(xShapeBuffer);
+                        for (int i = 0; i < dimensionLength; i++) {
+                            dimension[i] = (int) extraParams[i + 1];
+                        }
+                        if (shape::shapeOf(xShapeBuffer)[dimension[0]] == 1) {
+                            for(int i = 0; i < length; i++) {
+                                result[i] = 1.0;
+                            }
+                        }
+                        else {
+                            int eleStride = shape::elementWiseStride(xShapeBuffer);
+                            if (eleStride == 1) {
+                                int maxIdx = 0;
+                                T currMax = dx[0];
+                                if (length < 8000) {
+#pragma omp simd
+                                    for (int i = 0; i < length; i++) {
+                                        if (currMax < dx[i]) {
+                                            currMax = dx[i];
+                                            maxIdx = i;
+                                        }
+
+                                        dx[i] = 0.0;
+
+                                    }
+                                }
+                                else {
+#pragma omp parallel for shared(maxIdx,currMax)
+                                    for (int i = 0; i < length; i++) {
+                                        if (currMax < dx[i]) {
+                                            currMax = dx[i];
+                                            maxIdx = i;
+                                        }
+
+                                        result[i] = 0.0;
+
+                                    }
+                                }
+
+                                result[maxIdx] = 1.0;
+
+                            }
+
+
+                            else {
+                                int maxIdx = 0;
+                                T currMax = dx[0];
+                                if (length < 8000) {
+#pragma omp simd
+                                    for (int i = 0; i < length; i++) {
+                                        if (currMax < dx[i * eleStride]) {
+                                            currMax = dx[i * eleStride];
+                                            maxIdx = i;
+                                        }
+
+                                        dx[i] = 0.0;
+
+                                    }
+                                }
+                                else {
+#pragma omp parallel for shared(maxIdx,currMax)
+                                    for (int i = 0; i < length; i++) {
+                                        if (currMax < dx[i * eleStride]) {
+                                            currMax = dx[i * eleStride];
+                                            maxIdx = i;
+                                        }
+
+                                        result[i] = 0.0;
+
+                                    }
+                                }
+
+                                result[maxIdx] = 1.0;
+
+                            }
+                        }
+
+
                     }
                     else {
                         int dimensionLength = (int) extraParams[0];
-                        std::vector<int> dimension(dimensionLength);
-                        for(int i = 0; i < dimensionLength; i++) {
+                        int *dimension = (int *) malloc(sizeof(int) *dimensionLength);
+                        for (int i = 0; i < dimensionLength; i++) {
                             dimension[i] = (int) extraParams[i + 1];
                         }
 
-                        int tads = shape::tensorsAlongDimension(xShapeBuffer,dimension.data(),dimensionLength);
-                        int *tadShapeInfo = shape::tadShapeInfo(0,xShapeBuffer,dimension.data(),dimensionLength);
-                        for(int i = 0; i < tads; i++) {
-                            int offset = shape::tadOffset(i,xShapeBuffer,dimension.data(),dimensionLength);
-                            this->doAll(dx + offset,tadShapeInfo,result + offset,tadShapeInfo,extraParams);
+                        int numOnes = 0;
+                        int *shape = shape::shapeOf(xShapeBuffer);
+                        int wholeRank = shape::rank(xShapeBuffer);
+                        bool squeezed = false;
+                        bool newSqueezeDimensions = false;
+
+                        for (int i = 0; i < wholeRank; i++) {
+                            if (shape[i] == 1)
+                                numOnes++;
+                        }
+
+                        //squeeze the dimensions
+                        if (numOnes > 0 && wholeRank > 2) {
+                            xShapeBuffer = shape::squeezeDimensions(
+                                    xShapeBuffer,
+                                    dimension,
+                                    dimensionLength,
+                                    &squeezed,
+                                    &newSqueezeDimensions,
+                                    wholeRank,
+                                    numOnes);
+                        }
+
+                        int tads = shape::tensorsAlongDimension(xShapeBuffer, dimension, dimensionLength);
+                        //decompose in to several sub tads after
+                        //moving all dimensions (in sorted order)
+                        //to the back.
+                        //permuted version of the x shape info for setting up the tad problem
+                        int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeBuffer, dimension,
+                                                                                    dimensionLength, false);
+#pragma omp  parallel  for
+                        for (int i = 0; i < tads; i++) {
+                            int offset = shape::tadOffset(i, xShapeBuffer, dimension, dimensionLength);
+                            int shapeIter[MAX_RANK];
+                            int coord[MAX_RANK];
+                            int dim;
+                            int xStridesIter[MAX_RANK];
+                            int resultStridesIter[MAX_RANK];
+                            int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                            int *xStride = shape::stride(tadShapeShapeInfo);
+                            int *resultStride = shape::stride(tadShapeShapeInfo);
+                            int rank = shape::rank(tadShapeShapeInfo);
+                            T *xPointer = dx + offset;
+                            T *resultPointer = result + offset;
+                            T maxValue = xPointer[0];
+
+                            T *maxCursor = resultPointer;
+                            Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
+                            if (PrepareTwoRawArrayIter<T>(rank,
+                                                          xShape,
+                                                          xPointer,
+                                                          xStride,
+                                                          resultPointer,
+                                                          resultStride,
+                                                          &rank,
+                                                          shapeIter,
+                                                          &xPointer,
+                                                          xStridesIter,
+                                                          &resultPointer,
+                                                          resultStridesIter) >= 0) {
+                                ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                    if (maxValue < xPointer[0]) {
+                                        maxCursor = resultPointer;
+                                        maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
+                                        maxValue = xPointer[0];
+                                    }
+
+                                    resultPointer[0] = 0.0;
+                                }
+                                ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                       rank,
+                                                       coord,
+                                                       shapeIter,
+                                                       xPointer,
+                                                       xStridesIter,
+                                                       resultPointer,
+                                                       resultStridesIter);
+                                maxCursor = reinterpret_cast<T *>(maxCursorLong);
+                                maxCursor[0] = 1.0;
+                            }
+
+
+
+
+                        }
+
+
+                        delete[] tadShapeShapeInfo;
+                        if (newSqueezeDimensions) {
+                            delete[] dimension;
+                        }
+
+                        if (numOnes > 0) {
+                            delete[] xShapeBuffer;
                         }
                     }
-
                 }
 
                 /**

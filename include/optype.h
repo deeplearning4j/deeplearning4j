@@ -5,6 +5,10 @@
 
 typedef int OpType;
 
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#define constexpr const
+#endif
+
 namespace op_type
 {
      constexpr OpType Variance = 0;

@@ -1312,11 +1312,11 @@ namespace shape {
 #endif
     inline int * tad2Sub(int index, int *dimension, int dimensionLength, int *shapeInfo) {
         int *shape = shape::shapeOf(shapeInfo);
-        //shape of the tad
-        int *tadShape = new int[dimensionLength];
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - dimensionLength;
         int *ret = new int[rank];
+        //shape of the tad
+        int *tadShape = new int[leftOverIndexLen];
         //indexes not specified in the tad indexes
         int *leftOverIndexes = new int[leftOverIndexLen];
         //every coordinate starts as zero
@@ -1463,38 +1463,13 @@ namespace shape {
 
         }
         else {
-            if(shape::order(shapeInfo) == 'c') {
-                int *stride = shape::stride(shapeInfo);
-                int innerMostStride = stride[dimension[dimensionLength - 1]];
-                int elementWiseStrideParent = stride[dimension[dimensionLength - 1] -1];
-                if(index >= innerMostStride) {
-                    //represents the jump
-                    //the offset represents how many jumps of the element wise stride to do after identifying
-                    //the base offset for the ump as index / inner most stride. For example in our case above:
-                    //13 would be the offset as the first element wise stride after the jump with a modulus of 1.
-                    //14 would be the offset as the first element wise stride after the jump with a modulous of 2.
-                    int base = index / innerMostStride;
-                    base *= elementWiseStrideParent;
-                    if(index > innerMostStride) {
-                        int addOffset =  (index > innerMostStride ? (index % innerMostStride) : 1);
-                        base += addOffset;
-                    }
-
-                    return base;
-                }
-
-                else return index;
-            }
-            else {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                delete[] tad2Sub;
-                return ret;
-            }
-
+            int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+            int rank = shape::rank(shapeInfo);
+            int *shape = shape::shapeOf(shapeInfo);
+            int *stride = shape::stride(shapeInfo);
+            int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+            delete[] tad2Sub;
+            return ret;
         }
 
 
