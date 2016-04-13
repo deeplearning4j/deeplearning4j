@@ -407,6 +407,34 @@ struct SharedIndexValue<double> {
 					}
 				}
 			} else {
+
+
+				int xLength = shape::length(xShapeInfo);
+				int tadLength = xLength / resultLength;
+				__shared__ int offsetForTad;
+#pragma unroll
+				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					if (threadIdx.x == 0)
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+					__syncthreads();
+					sPartials[threadIdx.x] = {dx[offsetForTad], 0};
+#pragma unroll
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+						int indexX = offsetForTad + xElementWiseStride * x;
+						IndexValue<T> comp {dx[indexX], x};
+						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
+					}
+
+					__syncthreads();
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+					}
+				}
+
+			/*
 				__syncthreads();
 
 
@@ -437,6 +465,7 @@ struct SharedIndexValue<double> {
 				}
 
 				__syncthreads();
+				*/
 			}
 		}
 

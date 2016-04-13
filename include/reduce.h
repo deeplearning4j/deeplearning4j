@@ -481,12 +481,10 @@ namespace functions {
 
 				int xLength = shape::length(xShapeInfo);
 				int tadLength = xLength / resultLength;
-
-
-                __syncthreads();
+				__shared__ int offsetForTad;
 #pragma unroll
 				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-					__shared__ int offsetForTad;
+
 					if (threadIdx.x == 0)
 						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
 					__syncthreads();

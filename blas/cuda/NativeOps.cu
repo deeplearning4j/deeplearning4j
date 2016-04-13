@@ -40,7 +40,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// check for partial block at the end
 	if(n % num_threads) ++num_blocks;
-	if (num_blocks > 256) num_blocks = 256;
+	if (num_blocks > 128) num_blocks = 128;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
 }
