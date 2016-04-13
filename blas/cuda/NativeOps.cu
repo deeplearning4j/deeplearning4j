@@ -255,7 +255,7 @@ void   NativeOps::execIndexReduceDouble(
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 /**
@@ -302,7 +302,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 			dimensionPointer,
 			dimensionLength);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -351,7 +351,7 @@ void   NativeOps::execPairwiseTransformDouble(
 			resultPointer,
 			resultStride, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -412,7 +412,7 @@ void NativeOps::execPairwiseTransformDouble(
 			yIndexesPointer,
 			resultIndexesPointer, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -460,7 +460,7 @@ void NativeOps::execPairwiseTransformDouble(
 			yShapeInfoPointer,
 			resultShapeInfoPointer, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -505,7 +505,7 @@ void   NativeOps::execReduceDouble(
 			1,
 			allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -553,7 +553,7 @@ void   NativeOps::execReduceDouble(
 			1,
 			allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -649,7 +649,7 @@ void   NativeOps::execReduce3Double(
 			1,
 			1, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -753,8 +753,6 @@ void   NativeOps::execReduce3Double(
 			dimensionLength,
 			1, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
-
 }
 /**
  *
@@ -795,8 +793,6 @@ void   NativeOps::execScalarDouble(
 			xStride,
 			extraParamsPointer,
 			resultPointer,resultStride, allocPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -837,8 +833,6 @@ void NativeOps::execScalarDouble(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,resultShapeInfoPointer, allocPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 
@@ -885,9 +879,6 @@ void NativeOps::execScalarDouble(
 			extraParamsPointer,
 			resultPointer,
 			resultIndexesPointer, allocPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
-
 
 }
 /**
@@ -973,8 +964,6 @@ void   NativeOps::execSummaryStatsDouble(
 			NULL,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -1020,8 +1009,6 @@ void   NativeOps::execSummaryStatsDouble(
 			dimensionPointer,
 			dimensionLength,
 			1,biasCorrected, allocationPointer, reductionPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -1060,8 +1047,6 @@ void   NativeOps::execTransformDouble(
 			xStride,
 			extraParamsPointer,
 			resultPointer,resultStride, allocPointer, reductionPointer);
-
-	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1125,7 +1110,7 @@ void   NativeOps::execTransformDouble(
 				case 38: {// softmax
 					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
-					checkCudaErrors(cudaStreamSynchronize(*stream));
+					//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
 					execReduceDouble(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
@@ -1186,7 +1171,7 @@ void   NativeOps::execTransformDouble(
 						extraParamsPointer,
 						resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 	}
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1230,7 +1215,7 @@ void   NativeOps::execTransformDouble(
 			resultPointer,
 			resultIndexesPointer, allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 
@@ -1321,7 +1306,7 @@ void   NativeOps::execIndexReduceFloat(
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 /**
@@ -1369,7 +1354,7 @@ void   NativeOps::execBroadcastFloat(
 			dimensionPointer,
 			dimensionLength);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+//	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -1418,7 +1403,7 @@ void   NativeOps::execPairwiseTransformFloat(
 			resultPointer,
 			resultStride, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1479,7 +1464,7 @@ void NativeOps::execPairwiseTransformFloat(
 			yIndexesPointer,
 			resultIndexesPointer, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1528,7 +1513,7 @@ void NativeOps::execPairwiseTransformFloat(
 			yShapeInfoPointer,
 			resultShapeInfoPointer, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1573,7 +1558,7 @@ void   NativeOps::execReduceFloat(
 			1,
 			allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1620,7 +1605,7 @@ void   NativeOps::execReduceFloat(
 			1,
 			allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1718,7 +1703,7 @@ void   NativeOps::execReduce3Float(
 			1,
 			1, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1823,8 +1808,7 @@ void   NativeOps::execReduce3Float(
 			dimensionLength,
 			1, allocationPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
-
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -1865,7 +1849,7 @@ void   NativeOps::execScalarFloat(
 			extraParamsPointer,
 			resultPointer,resultStride, allocPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1910,7 +1894,7 @@ void NativeOps::execScalarFloat(
 			extraParamsPointer,
 			resultPointer,resultShapeInfoPointer, allocPointer );
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -1958,7 +1942,7 @@ void NativeOps::execScalarFloat(
 			resultPointer,
 			resultIndexesPointer, allocPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 /**
@@ -2043,7 +2027,7 @@ void   NativeOps::execSummaryStatsFloat(
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  *
@@ -2090,7 +2074,7 @@ void   NativeOps::execSummaryStatsFloat(
 			dimensionLength,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 /**
@@ -2131,7 +2115,7 @@ void   NativeOps::execTransformFloat(
 			extraParamsPointer,
 			resultPointer,resultStride, allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
@@ -2194,7 +2178,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				case 38: {// softmax
 					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
-					checkCudaErrors(cudaStreamSynchronize(*stream));
+					//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
 					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
@@ -2255,7 +2239,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				extraParamsPointer,
 				resultPointer, resultShapeInfoPointer, allocPointer, reductionPointer);
 	}
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+//	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 }
 
@@ -2300,7 +2284,7 @@ void   NativeOps::execTransformFloat(
 			resultPointer,
 			resultIndexesPointer, allocPointer, reductionPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 
 
 }
@@ -2432,7 +2416,7 @@ void NativeOps::flattenFloat(
 
 	flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+//	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
  * Append an input array
@@ -2466,7 +2450,7 @@ void NativeOps::flattenDouble(
 
 	flattenKernelDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
 
-	checkCudaErrors(cudaStreamSynchronize(*stream));
+	//checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::initializeDevicesAndFunctions() {
