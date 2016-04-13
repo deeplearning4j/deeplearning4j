@@ -2081,6 +2081,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[(int) extraPointers[2]]);
 
@@ -2097,7 +2098,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
-		if (shape::isVector(xShapeInfoPointer) && opNum != 41) {
+		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
 			transformFloat <<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
 					opNum,
@@ -2109,7 +2110,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			// going for blockwise specials
 			float *xpf = reinterpret_cast<float *>(dx);
 
-			int *shape = shape::shapeOf(xShapeInfoPointer);
+			int *shape = shape::shapeOf(hostXShapeInfo);
 			printf("Rows num: %i\n", shape[0]);
 			switch (opNum) {
 				case 40: // LogSoftMax
@@ -2152,12 +2153,12 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
-						if (shape::order(xShapeInfoPointer) == 'c' || shape::order(xShapeInfoPointer) == 'f' && maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1] >= shape::length(xShapeInfoPointer))
+						if (shape::order(hostXShapeInfo) == 'c' || shape::order(hostXShapeInfo) == 'f' && maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1] >= shape::length(hostXShapeInfo))
 							targetIdx = maxIdx;
 						else
-							targetIdx = maxIdx * shape::stride(xShapeInfoPointer)[shape::rank(xShapeInfoPointer) - 1];
+							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(xShapeInfoPointer), targetIdx);
+						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
 						execIndexReduceFloat(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) dimension, 1);
