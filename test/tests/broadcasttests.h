@@ -59,7 +59,7 @@ static Data<T> * getDataBroadcast(int rank,T *comparison) {
         for(int i = 0; i < 4; i++)
                 ret->result[i] = comparison[i];
 
-        ret->extraParams = new T;
+        ret->extraParams = new T[1];
         return ret;
 
 }

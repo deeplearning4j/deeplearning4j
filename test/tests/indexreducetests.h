@@ -27,32 +27,34 @@ template <typename T>
 static Data<T> * getDataIndexReduce(T *assertion,T startingVal) {
     Data<T> *ret = new Data<T>();
 
-    int rank = 2;
-    int length = 4;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    constexpr int rank = 2;
+    constexpr int length = 4;
+
+    int *shape = new int[rank];
+
     shape[0] = 1;
     shape[1] = length;
     ret->xShape = shape;
     ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 4; i++)
+    ret->data = new T[length];
+    for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[length];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 1; i++) {
+    ret->assertion = new T[length];
+    for(int i = 0; i < length; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[rank];
     ret->dimension[0] = MAX_DIMENSION;
 
-    ret->result = (T *) malloc(sizeof(T));
+    ret->result = new T[1];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
-    for(int i = 0; i < 2; i++)
+    ret->resultShape = new int[rank];
+    for(int i = 0; i < rank; i++)
         ret->resultShape[i] = 1;
 
     return ret;
@@ -65,28 +67,29 @@ static Data<T> * getDataIndexReduceDimension(T *assertion,T startingVal) {
     int rank = 2;
     int length = 4;
     int resultLength = 2;
-    ret->xShape = (int *) malloc(sizeof(int) * rank);
+    ret->xShape = new int[rank];
     ret->xShape[0] = 2;
     ret->xShape [1] = 2;
     ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
     for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+
+    T *extraParams = new T[4];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
+    ret->assertion = new T[4];
     for(int i = 0; i < 2; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[2];
     ret->dimension[0] = 1;
     ret->dimensionLength = 1;
-    ret->result = (T *) malloc(sizeof(T) * resultLength);
+    ret->result = new T[resultLength];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * rank);
+    ret->resultShape = new int[rank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 2;
 
@@ -102,31 +105,31 @@ static Data<T> * getDataIndexReduceDimensionMulti(T *assertion,T startingVal) {
     int resultRank = 2;
     int length = 12;
     int resultLength = 3;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 2;
     shape[1] = 2;
     shape[2] = 3;
     ret->xShape = shape;
     ret->rank = rank;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
     for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[4];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * resultLength);
+    ret->assertion = new T[resultLength];
     for(int i = 0; i < resultLength; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[2];
     ret->dimension[0] = 0;
     ret->dimension[1] = 1;
     ret->dimensionLength = 2;
-    ret->result = (T *) malloc(sizeof(T) * resultLength);
+    ret->result = new T[resultLength];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * resultRank);
+    ret->resultShape = new int[resultRank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 3;
 
@@ -165,9 +168,9 @@ public:
                 this->result->data->data,
                 resultShapeBuff,
                 this->baseData->dimension,this->baseData->dimensionLength);
-        free(xShapeBuff);
-        free(resultShapeBuff);
 
+        delete []xShapeBuff;
+        delete []resultShapeBuff;
     }
 
     virtual void run () override {
@@ -411,11 +414,11 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMinMulti) {
     int opNum = 1;
     float assertion[3] = {0,0,0};
     Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
-    FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-    test->run();
+    FloatIndexReduceTest test(rank,opNum,data,1);
+
+    test.run();
 
     delete data;
-    delete test;
 }
 
 
@@ -425,10 +428,10 @@ TEST(IndexReduce,ObjectOrientedFloatDimensionIMaxMulti) {
     float assertion[3] = {3,3,3};
 
     Data<float> *data = getDataIndexReduceDimensionMulti<float>(assertion,0);
-    FloatIndexReduceTest *test = new FloatIndexReduceTest(rank,opNum,data,1);
-    test->run();
+    FloatIndexReduceTest test(rank,opNum,data,1);
+
+    test.run();
 
     delete data;
-    delete test;
 }
 #endif //NATIVEOPERATIONS_INDEXREDUCETESTS_H_H

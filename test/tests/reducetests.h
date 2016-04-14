@@ -63,8 +63,9 @@ public:
                 resultShapeBuff,
                 this->baseData->dimension,
                 this->baseData->dimensionLength);
-        free(xShapeBuff);
-        free(resultShapeBuff);
+
+        delete []xShapeBuff;
+        delete []resultShapeBuff;
     }
 
     virtual void run () override {
@@ -190,31 +191,31 @@ static Data<T> * getDataReduceOneFiftyByFour(T *assertion,T startingVal) {
     int rank = 2;
     int length = 600;
     int resultLength = 4;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 150;
     shape[1] = 4;
     ret->xShape = shape;
-    ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->rank = rank;
+    ret->data = new T[length];
     for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 4; i++)
+    T *extraParams = new T[resultLength];
+    for(int i = 0; i < resultLength; i++)
         extraParams[i] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * resultLength);
+    ret->assertion = new T[resultLength];
     for(int i = 0; i < resultLength; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[rank];
     ret->dimension[0] = 0;
     ret->dimensionLength = 1;
 
-    ret->result = (T *) malloc(sizeof(T) * resultLength);
-    ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
+    ret->result = new T[resultLength];
+    ret->resultRank = rank;
+    ret->resultShape = new int[rank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 4;
 
@@ -228,31 +229,31 @@ static Data<T> * getDataReduceTwoByThree(T *assertion,T startingVal) {
 
     int rank = 2;
     int length = 6;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 2;
     shape[1] = 3;
     ret->xShape = shape;
     ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
     for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[4];
     for(int i = 0; i < 4; i++)
         extraParams[i] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
+    ret->assertion = new T[3];
     for(int i = 0; i < 3; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[rank];
     ret->dimension[0] = 0;
     ret->dimensionLength = 1;
 
-    ret->result = (T *) malloc(sizeof(T));
-    ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
+    ret->result = new T[1];
+    ret->resultRank = rank;
+    ret->resultShape = new int[rank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 3;
     return ret;
@@ -264,31 +265,31 @@ static Data<T> * getDataReduce(T *assertion,T startingVal) {
 
     int rank = 2;
     int length = 4;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 1;
     shape[1] = length;
     ret->xShape = shape;
-    ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 4; i++)
+    ret->rank = rank;
+    ret->data = new T[length];
+    for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 4; i++)
+    T *extraParams = new T[length];
+    for(int i = 0; i < length; i++)
         extraParams[i] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 1; i++) {
+    ret->assertion = new T[length];
+    for(int i = 0; i < length; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[rank];
     ret->dimension[0] = MAX_DIMENSION;
 
-    ret->result = (T *) malloc(sizeof(T));
-    ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
-    for(int i = 0; i < 2; i++)
+    ret->result = new T[1];
+    ret->resultRank = rank;
+    ret->resultShape = new int[rank];
+    for(int i = 0; i < rank; i++)
         ret->resultShape[i] = 1;
 
     return ret;
@@ -300,30 +301,30 @@ static Data<T> * getDataReduceDimension(T *assertion,T startingVal) {
 
     int rank = 2;
     int length = 4;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 2;
     shape[1] = 2;
     ret->xShape = shape;
     ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * length);
-    for(int i = 0; i < 4; i++)
+    ret->data = new T[length];
+    for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[length];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
-    for(int i = 0; i < 2; i++) {
+    ret->assertion = new T[length];
+    for(int i = 0; i < length; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[rank];
     ret->dimension[0] = 1;
     ret->dimensionLength = 1;
-    ret->result = (T *) malloc(sizeof(T));
-    ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
-    for(int i = 0; i < 2; i++)
+    ret->result = new T[1];
+    ret->resultRank = rank;
+    ret->resultShape = new int[rank];
+    for(int i = 0; i < rank; i++)
         ret->resultShape[i] = 1;
     ret->resultShape[1] = 2;
 
@@ -338,31 +339,31 @@ static Data<T> * getDataReduceDimensionMulti(T *assertion,T startingVal) {
     int resultRank = 2;
     int length = 12;
     int resultLength = 3;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 2;
     shape[1] = 2;
     shape[2] = 3;
     ret->xShape = shape;
     ret->rank = rank;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
     for(int i = 0; i < length; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[4];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * resultLength);
+    ret->assertion = new T[resultLength];
     for(int i = 0; i < resultLength; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[resultRank];
     ret->dimension[0] = 0;
     ret->dimension[1] = 1;
     ret->dimensionLength = 2;
-    ret->result = (T *) malloc(sizeof(T) * resultLength);
+    ret->result = new T[resultLength];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * resultRank);
+    ret->resultShape = new int[resultRank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 3;
 

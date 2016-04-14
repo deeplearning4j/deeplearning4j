@@ -33,7 +33,16 @@ namespace nd4j {
             int rank;
             char ordering;
 
-            int operator==(const NDArray<T>& other) {
+            NDArray() : data(nullptr), shape(nullptr), stride(nullptr)
+            {}
+
+            ~NDArray() {
+                delete data;
+                delete shape;
+                delete stride;
+            }
+
+            bool operator==(const NDArray<T>& other) const {
                 if (rank != other.rank)
                     return 0;
 
@@ -154,7 +163,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __host__
 #endif
-            void freeNDArrayOnGpuAndCpu(NDArray<T> **arr);
+            void freeNDArrayOnGpuAndCpu(NDArray<T> *arr);
 
             /**
              * Allocate the data based
@@ -263,7 +272,7 @@ namespace nd4j {
                 int rank,
                 int *shape,
                 int *stride,int offset) {
-            NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>));
+            NDArray<T> *ret = new NDArray<T>;
             ret->rank = rank;
 
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
@@ -289,7 +298,7 @@ namespace nd4j {
 
         NDArray<T> * NDArrays<T>::createFrom(int rank, int *shape, int *stride,
                                              int offset, T defaultValue) {
-            NDArray<T> *ret = (NDArray<T> *) malloc(sizeof(NDArray<T>) * 2);
+            NDArray<T> *ret = new NDArray<T>[2];
             ret->rank = rank;
             ret->shape = nd4j::buffer::createBuffer(shape,rank);
             ret->stride = nd4j::buffer::createBuffer(stride,rank);
@@ -299,7 +308,7 @@ namespace nd4j {
             Nd4jIndex realSize = shape::prodLong(shape,rank);
             if(realSize < 2)
                 realSize = 2;
-            T * data = (T *) malloc(realSize * sizeof(T));
+            T* data = new T[realSize];
             ret->data = nd4j::buffer::createBuffer<T>(data, length);
             ret->data->assign(data);
             return ret;
@@ -363,13 +372,8 @@ void NDArrays<T>::copyFromGpu(NDArray<T> **arr) {
 #ifdef __CUDACC__
         __host__
 #endif
-        void NDArrays<T>::freeNDArrayOnGpuAndCpu(NDArray<T> **arr) {
-            NDArray<T> * arrRef = *arr;
-            nd4j::buffer::Buffer<T> *dataBuf = arrRef->data;
-            nd4j::buffer::freeBuffer<T>(&dataBuf);
-            nd4j::buffer::freeBuffer(&arrRef->shape);
-            nd4j::buffer::freeBuffer(&arrRef->stride);
-
+        void NDArrays<T>::freeNDArrayOnGpuAndCpu(NDArray<T> *arr) {
+            delete []arr;
         }
 
 /**

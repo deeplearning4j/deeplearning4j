@@ -186,21 +186,23 @@ public:
 template <typename T>
 static Data<T> * getDataTransform(T *assertion,int rank) {
     Data<T> *data = new Data<T>();
-    data->xShape = (int *) malloc(sizeof(int) * 2);
-    data->resultShape = (int *) malloc(sizeof(int) * 2);
     data->resultRank = 2;
-    for(int i = 0; i < 2; i++) {
+    data->xShape = new int[data->resultRank];
+    data->resultShape = new int[data->resultRank];
+
+    for(int i = 0; i < data->resultRank; i++) {
         data->xShape[i] = 2;
         data->resultShape[i] = 2;
     }
-    data->assertion = (T *) malloc(sizeof(T) * 4);
+    data->assertion = new T[4];
     for(int i = 0; i < 4; i++) {
         data->assertion[i] = assertion[i];
     }
 
     data->rank = rank;
-    data->extraParams = (T *) malloc(sizeof(T) * 2);
-    data->result = (T *) malloc(sizeof(T) * 4);
+    data->extraParams = new T[2];
+    data->result = new T[4];
+
     return data;
 
 }

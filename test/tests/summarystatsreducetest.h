@@ -54,7 +54,7 @@ static Data<T> * getDataSummary(const T assertion[2],T startingVal) {
     ret->dimension = new int[2];
     ret->dimension[0] = MAX_DIMENSION;
 
-    ret->result = new T;
+    ret->result = new T[1];
     ret->resultRank = 2;
     ret->resultShape = new int[2];
     for(int i = 0; i < 2; i++)
@@ -74,24 +74,24 @@ inline Data<T> * getDataSummaryDimension(const T assertion[2],T startingVal) {
     shape[1] = 2;
     ret->xShape = shape;
     ret->rank = 2;
-    ret->data = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
     for(int i = 0; i < 4; i++)
         ret->data[i] = i + 1;
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[4];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * 4);
+    ret->assertion = new T[4];
     for(int i = 0; i < 2; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[2];
     ret->dimension[0] = 1;
     ret->dimensionLength = 1;
-    ret->result = (T *) malloc(sizeof(T));
+    ret->result = new T[1];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * 2);
+    ret->resultShape = new int[2];
     for(int i = 0; i < 2; i++)
         ret->resultShape[i] = 1;
     ret->resultShape[1] = 2;
@@ -181,9 +181,9 @@ public:
                 this->result->data->data,
                 resultShapeBuff,
                 this->baseData->dimension,this->baseData->dimensionLength);
-        free(xShapeBuff);
-        free(resultShapeBuff);
 
+        delete []xShapeBuff;
+        delete []resultShapeBuff;
     }
 
     virtual void run () override {
