@@ -223,14 +223,21 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setDeviceId(deviceId);
 
-                            deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), point.getDeviceId(), reqMemory);
+                            deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
                         } else {
+                            log.info("Skipping allocation C on [DEVICE]");
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
                             returnPair.setDevicePointer(tmpPair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.HOST);
                         }
+                    } else {
+                        log.info("Skipping allocation B on [DEVICE]");
                     }
+                } else {
+                    log.info("Skipping allocation A on [DEVICE] [{}]", deviceId);
+                    log.warn("ReqMem: [{}], current state: [{}], maxTotalAllocation: [{}] ", reqMemory, deviceMemoryTracker.getAllocatedSize(deviceId), configuration.getMaximumDeviceAllocation());
+                    throw new RuntimeException("PEW");
                 }
 
                 return returnPair;
@@ -575,6 +582,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public org.bytedeco.javacpp.Pointer getDevicePointer(DataBuffer buffer) {
         // TODO: It would be awesome to get rid of typecasting here
+        getCudaContext().syncOldStream();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
@@ -780,14 +788,12 @@ public class CudaZeroHandler implements MemoryHandler {
         if (point.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 
+        free(point, AllocationStatus.DEVICE);
+
         deviceAllocations.get(deviceId).remove(objectId);
 
         deviceMemoryTracker.subFromAllocation(threadId, deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
 
-        // TODO: this check could actually be removed, since copyback is always false by design now
-        if (!copyback) {
-            free(point, AllocationStatus.DEVICE);
-        }
         point.setAllocationStatus(AllocationStatus.HOST);
 
         environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));

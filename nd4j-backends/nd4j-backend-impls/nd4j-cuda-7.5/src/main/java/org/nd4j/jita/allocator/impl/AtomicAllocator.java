@@ -296,6 +296,8 @@ public class AtomicAllocator implements Allocator {
         // we actually need synchronization only in device-dependant environment. no-op otherwise
         if (memoryHandler.isDeviceDependant()) {
             AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            if (point == null)
+                throw new RuntimeException("AllocationPoint is NULL");
             memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId(), point);
         }
     }

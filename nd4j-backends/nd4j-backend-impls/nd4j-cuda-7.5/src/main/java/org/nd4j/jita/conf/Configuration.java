@@ -49,7 +49,7 @@ public class Configuration implements Serializable {
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    private long maximumDeviceAllocation = 256 * 1024 * 1024L;
+    private long maximumDeviceAllocation = 1024 * 1024 * 1024L;
 
 
     /**

@@ -5,6 +5,8 @@ import com.google.common.collect.Table;
 import lombok.NonNull;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +31,8 @@ public class DeviceAllocationsTracker {
     private final Map<Integer, AtomicLong> memoryTackled = new ConcurrentHashMap<>();
 
     private final Map<Integer, AtomicLong> reservedSpace = new ConcurrentHashMap<>();
+
+    private static Logger log = LoggerFactory.getLogger(DeviceAllocationsTracker.class);
 
     public DeviceAllocationsTracker(@NonNull CudaEnvironment environment, @NonNull Configuration configuration) {
         this.environment = environment;
@@ -61,7 +65,7 @@ public class DeviceAllocationsTracker {
                     reservedSpace.put(deviceId, new AtomicLong(0));
                 }
             }
-                  globalLock.writeLock().unlock();
+            globalLock.writeLock().unlock();
         }
     }
 
@@ -83,11 +87,16 @@ public class DeviceAllocationsTracker {
     public long subFromAllocation(Long threadId, Integer deviceId, long memorySize) {
         ensureThreadRegistered(threadId, deviceId);
 
-        AtomicLong val2 = memoryTackled.get(deviceId);
-        val2.addAndGet(memorySize * -1);
-
         try {
             deviceLocks.get(deviceId).writeLock().lock();
+
+            AtomicLong val2 = memoryTackled.get(deviceId);
+            //long before = val2.get();
+            val2.addAndGet(memorySize * -1);
+
+            //long after = memoryTackled.get(deviceId).get();
+
+            //log.info("Memory reduction on device [{}], memory size: [{}], before: [{}], after [{}]", deviceId, memorySize, before, after);
 
             AtomicLong val = allocationTable.get(deviceId, threadId);
 
