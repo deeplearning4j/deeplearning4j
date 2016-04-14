@@ -5068,8 +5068,8 @@ namespace functions {
                         if (numOnes > 0 && wholeRank > 2) {
                             xShapeBuffer = shape::squeezeDimensions(
                                     xShapeBuffer,
-                                    dimension,
-                                    dimensionLength,
+                                    &dimension,
+                                    &dimensionLength,
                                     &squeezed,
                                     &newSqueezeDimensions,
                                     wholeRank,

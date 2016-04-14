@@ -216,7 +216,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int* squeezeDimensions(int *shapeInfo, int* dimension, int dimensionLength, bool *squeezedRef, bool *squeezeDimensionsRef,int wholeRank,int numOnes);
+    inline int* squeezeDimensions(int *shapeInfo, int** dimension, int *dimensionLength, bool *squeezedRef, bool *squeezeDimensionsRef,int wholeRank,int numOnes);
 
 /**
  * In place permute swap
@@ -1458,6 +1458,10 @@ namespace shape {
             int *shape = shape::shapeOf(shapeInfo);
             int *stride = shape::stride(shapeInfo);
             int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+            if(ret < 0) {
+                delete[] tad2Sub;
+                return -1;
+            }
             delete[] tad2Sub;
             return ret;
 
@@ -2179,7 +2183,16 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int* squeezeDimensions(int *shapeInfo, int *dimension, int dimensionLength, bool *squeezedRef,bool *squeezeDimensionsRef,int wholeRank,int numOnes) {
+    inline int* squeezeDimensions(int *shapeInfo,
+                                  int **dimensionRef,
+                                  int *dimensionLengthRef,
+                                  bool *squeezedRef,
+                                  bool *squeezeDimensionsRef,
+                                  int wholeRank,
+                                  int numOnes) {
+        int *dimension = *dimensionRef;
+        int dimensionLength = *dimensionLengthRef;
+
         int *squeezeShape = new int[wholeRank - numOnes];
         int *squeezeStride = new int[wholeRank - numOnes];
         *squeezedRef = true;
@@ -2188,48 +2201,89 @@ namespace shape {
         int *stride = shape::stride(shapeInfo);
 
         int numEncountered = 0;
+        int numDimensionsOne = 0;
         for(int i = 0; i < wholeRank; i++) {
             if(shape[i] != 1) {
                 squeezeShape[numEncountered] = shape[i];
                 squeezeStride[numEncountered] = stride[i];
                 numEncountered++;
             }
-        }
-
-        //for any dimensions specified that are 1,ignore them
-        int numDimensionsOne = 0;
-        for(int i = 0; i < dimensionLength; i++) {
-            if(shape[dimension[i]] == 1)
+            else
                 numDimensionsOne++;
         }
 
         if(numDimensionsOne > 0) {
-            int *newDimensions = new int[dimensionLength - numDimensionsOne];
+            int newDimensionsLength = dimensionLength;
+            int *newDimensions = new int[newDimensionsLength];
             int newDimensionIdx = 0;
+            printf("Before new dimension\n");
             for(int i = 0; i < dimensionLength; i++) {
-                if(shape[dimension[i]] != 1)
+                if(shape[dimension[i]] != 1) {
+                    printf("New dimension %d is %d at idx is %d\n",i,newDimensionIdx,dimension[i] - numDimensionsOne);
                     newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
+                }
             }
 
-            //reduce along the new dimensions
-            dimension = newDimensions;
-            dimensionLength  -= numDimensionsOne;
+
+            //double check no dimensions are negative, if so remove them
+            bool negOneFound = false;
+            int negOneIndex = -1;
+            printf("Before neg one found\n");
+            for(int i = 0; i < newDimensionsLength; i++) {
+                if(newDimensions[i] < 0) {
+                    negOneFound = true;
+                    negOneIndex = i;
+                    break;
+                }
+
+            }
+
+            printf("After neg one found with new dimension length %d\n",newDimensionsLength);
+            if(negOneFound) {
+                printf("Neg one index was %d\n",negOneIndex);
+                int *newDimensionsTwo = new int[newDimensionsLength];
+                int currIdx = 0;
+                for(int i = 0; i < newDimensionsLength; i++) {
+                    if(i != negOneIndex)
+                        newDimensionsTwo[currIdx++] = newDimensions[i];
+                }
+
+                delete[] newDimensions;
+                //reduce along the new dimensions
+                *dimensionRef = newDimensionsTwo;
+                *dimensionLengthRef  = newDimensionsLength;
+            }
+            else {
+                printf("Non neg one found\n");
+                //reduce along the new dimensions
+                *dimensionRef = newDimensions;
+                *dimensionLengthRef  = newDimensionsLength;
+
+            }
+
 
         }
+
+
         //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
         //the previous pointer is just a view of a pointer to be reused that was passed in
         shape = squeezeShape;
         stride = squeezeStride;
         wholeRank -= numOnes;
-        //adjust dimensions
-        for(int i = 0; i < dimensionLength; i++) {
-            dimension[i] -= numOnes;
-        }
+        //adjustment happens above
+        if(numDimensionsOne  <= 0) {
 
-        for(int i = 0; i < dimensionLength; i++) {
-            //didn't need to be adjusted
-            if(dimension[i] < 0)
-                dimension[i] += numDimensionsOne;
+            //adjust dimensions
+            for(int i = 0; i < dimensionLength; i++) {
+                dimension[i] -= numOnes;
+            }
+
+            for(int i = 0; i < dimensionLength; i++) {
+                //didn't need to be adjusted
+                if(dimension[i] < 0)
+                    dimension[i] += numDimensionsOne;
+            }
+
         }
 
         char order = shape::order(shapeInfo);
@@ -3610,12 +3664,12 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i]) {
-                printf("Index [%d] must not be >= shape[d].\n", i);
+                //printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
                 return -1;
             }
 
             if(shape[i] != 1) {
-                offset += (int)indices[i] * stride[i];
+                offset += (int) indices[i] * stride[i];
             }
         }
 
