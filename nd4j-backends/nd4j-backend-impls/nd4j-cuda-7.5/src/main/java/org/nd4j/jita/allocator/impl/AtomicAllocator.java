@@ -290,7 +290,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        // we don't synchronize constant buffers, since we assume they are always valid on host side
         if (buffer.isConstant()) return;
+
         // we actually need synchronization only in device-dependant environment. no-op otherwise
         if (memoryHandler.isDeviceDependant()) {
             AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
@@ -388,6 +390,8 @@ public class AtomicAllocator implements Allocator {
 
         // since we can't allow java object without native memory, we explicitly specify that memory is handled using HOST memory only, after device memory is released
         point.setAllocationStatus(AllocationStatus.HOST);
+
+        //memoryHandler.purgeZeroObject(point.getBucketId(), point.getObjectId(), point, copyback);
     }
 
     /**
@@ -585,8 +589,8 @@ public class AtomicAllocator implements Allocator {
                     ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                     //log.debug("Skipping zero GC round: ["+zeroUseCounter.get()+"/" +zeroAllocations.get(threadId).size() + "]");
                 }  else {
-                    lastCheck = System.currentTimeMillis();
                     seekUnusedZero(bucketId, aggressiveness);
+                    lastCheck = System.currentTimeMillis();
                 }
             }
         }
@@ -615,6 +619,7 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             log.info("Starting device GC for device: " + deviceId);
+            long lastCheck = System.currentTimeMillis();
             while (!terminate.get()) {
                 /*
                     Check for device garbage
@@ -637,9 +642,13 @@ public class AtomicAllocator implements Allocator {
                 if (memoryHandler.getAllocatedDeviceMemory(deviceId) > (configuration.getMaximumDeviceAllocation() * 0.85))
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
-                if (memoryHandler.getAllocatedDeviceMemory(deviceId)< (configuration.getMaximumDeviceAllocation() * 0.25) && (memoryHandler.getAllocatedDeviceObjects(deviceId) < 500)) {
+                if (memoryHandler.getAllocatedDeviceMemory(deviceId)< (configuration.getMaximumDeviceAllocation() * 0.25) && (memoryHandler.getAllocatedDeviceObjects(deviceId) < 500) && lastCheck > System.currentTimeMillis() - 30000) {
                     // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
-                } else seekUnusedDevice(0L, this.deviceId, aggressiveness);
+                    log.warn("SKIPPING DEVICE GC CYCLE");
+                } else {
+                    seekUnusedDevice(0L, this.deviceId, aggressiveness);
+                    lastCheck = System.currentTimeMillis();
+                }
 
 
             }

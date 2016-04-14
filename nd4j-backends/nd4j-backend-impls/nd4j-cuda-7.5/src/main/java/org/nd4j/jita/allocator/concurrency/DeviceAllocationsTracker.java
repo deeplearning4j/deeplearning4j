@@ -65,7 +65,7 @@ public class DeviceAllocationsTracker {
         }
     }
 
-    public long addToAllocation(Long threadId, Integer deviceId, long memorySize) {
+    public long addToAllocation(@NonNull Long threadId, Integer deviceId, long memorySize) {
         ensureThreadRegistered(threadId, deviceId);
         try {
             deviceLocks.get(deviceId).readLock().lock();

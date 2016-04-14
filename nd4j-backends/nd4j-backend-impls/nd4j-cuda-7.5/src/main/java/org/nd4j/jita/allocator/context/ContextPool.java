@@ -104,8 +104,6 @@ public class ContextPool {
                         context.setHandle(handle);
                         context.setCublasStream(cublasStream);
 
-                        logger.info("CublasStream on creation: " + cublasStream.getNativePointer());
-
                         cublasPool.put(deviceId, handle);
                     } else {
                         // just pick handle out there
@@ -113,11 +111,10 @@ public class ContextPool {
                         cublasHandle handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
+                        // TODO: actually we don't need this anymore
                         cudaStream_t cublasStream = new cudaStream_t();
                         JCublas2.cublasGetStream(handle, cublasStream);
                         context.setCublasStream(cublasStream);
-
-                        logger.info("CublasStream on reuse: " + cublasStream.getNativePointer());
                     }
 
                     // we need this sync to finish memset
