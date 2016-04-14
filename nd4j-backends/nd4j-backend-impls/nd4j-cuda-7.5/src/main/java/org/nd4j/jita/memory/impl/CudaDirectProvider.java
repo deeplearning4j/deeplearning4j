@@ -43,8 +43,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
-                if (reqMem < 1)
+                if (reqMem < 1) {
                     reqMem = 1;
+                    log.warn("ALLOCATING 0-LENGTH HOST BUFFER");
+                }
 
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
@@ -75,8 +77,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
-                if (reqMem < 1)
+                if (reqMem < 1) {
                     reqMem = 1;
+                    log.warn("ALLOCATING 0-LENGTH DEVICE BUFFER");
+                }
 
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
@@ -107,13 +111,14 @@ public class CudaDirectProvider implements MemoryProvider {
      * @param point
      */
     @Override
-    public void free(AllocationPoint point) {
+    public synchronized void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
+                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
             }

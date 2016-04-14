@@ -26,7 +26,7 @@ public class DeviceAllocationsTracker {
 
     private final Map<Integer, ReentrantReadWriteLock> deviceLocks = new ConcurrentHashMap<>();
 
-    private final Table<Integer, Long, AtomicLong> allocationTable = HashBasedTable.create();
+    //private final Table<Integer, Long, AtomicLong> allocationTable = HashBasedTable.create();
 
     private final Map<Integer, AtomicLong> memoryTackled = new ConcurrentHashMap<>();
 
@@ -46,16 +46,16 @@ public class DeviceAllocationsTracker {
     protected void ensureThreadRegistered(Long threadId, Integer deviceId) {
         globalLock.readLock().lock();
 
-        boolean contains = allocationTable.contains(deviceId, threadId);
+      //  boolean contains = allocationTable.contains(deviceId, threadId);
 
         globalLock.readLock().unlock();
 
-        if (!contains) {
+        if (!memoryTackled.containsKey(deviceId)) {
             globalLock.writeLock().lock();
 
-            contains = allocationTable.contains(deviceId, threadId);
-            if (!contains) {
-                allocationTable.put(deviceId, threadId, new AtomicLong(0));
+            //contains = allocationTable.contains(deviceId, threadId);
+            //if (!contains) {
+                //allocationTable.put(deviceId, threadId, new AtomicLong(0));
 
                 if (!memoryTackled.containsKey(deviceId)) {
                     memoryTackled.put(deviceId, new AtomicLong(0));
@@ -64,7 +64,7 @@ public class DeviceAllocationsTracker {
                 if (!reservedSpace.containsKey(deviceId)) {
                     reservedSpace.put(deviceId, new AtomicLong(0));
                 }
-            }
+            //}
             globalLock.writeLock().unlock();
         }
     }
@@ -74,11 +74,11 @@ public class DeviceAllocationsTracker {
         try {
             deviceLocks.get(deviceId).readLock().lock();
 
-            memoryTackled.get(deviceId).addAndGet(memorySize);
+            long res = memoryTackled.get(deviceId).addAndGet(memorySize);
 
             subFromReservedSpace(deviceId, memorySize);
 
-            return allocationTable.get(deviceId, threadId).addAndGet(memorySize);
+            return res; //allocationTable.get(deviceId, threadId).addAndGet(memorySize);
         } finally {
             deviceLocks.get(deviceId).readLock().unlock();
         }
@@ -98,11 +98,11 @@ public class DeviceAllocationsTracker {
 
             //log.info("Memory reduction on device [{}], memory size: [{}], before: [{}], after [{}]", deviceId, memorySize, before, after);
 
-            AtomicLong val = allocationTable.get(deviceId, threadId);
+//            AtomicLong val = allocationTable.get(deviceId, threadId);
 
-            val.addAndGet(memorySize * -1);
+//            val.addAndGet(memorySize * -1);
 
-            return val.get();
+            return val2.get();
         } finally {
             deviceLocks.get(deviceId).writeLock().unlock();
         }
@@ -138,7 +138,7 @@ public class DeviceAllocationsTracker {
         try {
             deviceLocks.get(deviceId).readLock().lock();
 
-            return allocationTable.get(deviceId, threadId).get();
+            return getAllocatedSize(deviceId); /// allocationTable.get(deviceId, threadId).get();
         } finally {
             deviceLocks.get(deviceId).readLock().unlock();
         }

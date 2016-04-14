@@ -119,7 +119,7 @@ public interface Allocator {
      *
      * @param requiredMemory
      */
-    AllocationPoint allocateMemory(AllocationShape requiredMemory);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory);
 
     /**
      * This method allocates required chunk of memory in specific location
@@ -129,7 +129,7 @@ public interface Allocator {
      * @param requiredMemory
      * @param location
      */
-    AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location);
 
 
     void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);

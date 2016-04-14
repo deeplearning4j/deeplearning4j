@@ -143,9 +143,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(long length, int elementSize) {
         this.allocationMode = AllocationMode.JAVACPP;
 
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
         this.length = length;
-        allocationPoint.attachBuffer(this);
+        //allocationPoint.attachBuffer(this);
         this.elementSize = elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
@@ -722,7 +722,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if(t == Type.DOUBLE) {
                 this.elementSize = 8;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
                 allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
@@ -734,7 +734,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
             } else if(t == Type.FLOAT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
                 allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
@@ -746,8 +746,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
             } else if(t == Type.INT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
-                allocationPoint.attachBuffer(this);
+                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();

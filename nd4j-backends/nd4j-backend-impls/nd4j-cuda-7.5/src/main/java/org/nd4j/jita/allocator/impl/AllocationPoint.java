@@ -54,8 +54,8 @@ public class AllocationPoint {
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
     // TODO: timer should be instantiated externally
-    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
-    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
+//    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
+//    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
      device, where memory was/will be allocated.
@@ -72,7 +72,7 @@ public class AllocationPoint {
 
 //    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
 
-    @Getter private AtomicState accessState = new AtomicState();
+//    @Getter private AtomicState accessState = new AtomicState();
 
     private volatile WeakReference<DataBuffer> originalDataBufferReference;
 
@@ -164,8 +164,8 @@ public class AllocationPoint {
 
     public void tickDevice() {
         this.deviceTicks.incrementAndGet();
-        this.timerShort.triggerEvent();
-        this.timerLong.triggerEvent();
+//        this.timerShort.triggerEvent();
+//        this.timerLong.triggerEvent();
         this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
     }

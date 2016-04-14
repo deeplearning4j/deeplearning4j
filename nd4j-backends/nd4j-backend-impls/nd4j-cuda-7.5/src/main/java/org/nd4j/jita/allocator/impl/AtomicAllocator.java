@@ -320,9 +320,9 @@ public class AtomicAllocator implements Allocator {
      * @param requiredMemory
      */
     @Override
-    public AllocationPoint allocateMemory(AllocationShape requiredMemory) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory) {
         // by default we allocate on initial location
-        AllocationPoint point = allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
+        AllocationPoint point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
 
         return point;
     }
@@ -336,7 +336,7 @@ public class AtomicAllocator implements Allocator {
      * @param location
      */
     @Override
-    public AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location) {
         AllocationPoint point = new AllocationPoint();
 
         // we use these longs as tracking codes for memory tracking
@@ -345,9 +345,12 @@ public class AtomicAllocator implements Allocator {
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
 
+
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
         PointersPair pair = memoryHandler.alloc(location, point, requiredMemory);
         point.setPointers(pair);
+
+        point.attachBuffer(buffer);
 
         allocationsMap.put(allocId, point);
 
@@ -373,7 +376,6 @@ public class AtomicAllocator implements Allocator {
      * @param copyback
      */
     protected void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
-
         allocationsMap.remove(objectId);
 
         memoryHandler.purgeZeroObject(bucketId, objectId, point, copyback);
@@ -391,7 +393,7 @@ public class AtomicAllocator implements Allocator {
          memoryHandler.purgeDeviceObject(threadId, deviceId, objectId, point, copyback);
 
         // since we can't allow java object without native memory, we explicitly specify that memory is handled using HOST memory only, after device memory is released
-        point.setAllocationStatus(AllocationStatus.HOST);
+        //point.setAllocationStatus(AllocationStatus.HOST);
 
         //memoryHandler.purgeZeroObject(point.getBucketId(), point.getObjectId(), point, copyback);
     }
@@ -417,6 +419,7 @@ public class AtomicAllocator implements Allocator {
 
         // simple counter for dereferenced objects
         AtomicInteger elementsDropped = new AtomicInteger(0);
+        AtomicInteger elementsSurvived = new AtomicInteger(0);
 
         for (Long object: memoryHandler.getHostTrackingPoints(bucketId)) {
             AllocationPoint point = getAllocationPoint(object);
@@ -425,24 +428,27 @@ public class AtomicAllocator implements Allocator {
             if (point == null)
                 continue;
 
-            if (point.getAccessState().isToeAvailable() && point.getAllocationStatus() == AllocationStatus.HOST) {
-                point.getAccessState().requestToe();
+            if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                //point.getAccessState().isToeAvailable()
+                //point.getAccessState().requestToe();
 
                 /*
                     Check if memory points to non-existant buffer, using externals.
                     If externals don't have specified buffer - delete reference.
                  */
                 if (point.getBuffer() == null ) {
-                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
-                        purgeZeroObject(bucketId, object, point, false);
-                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    purgeZeroObject(bucketId, object, point, false);
+                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
-                        elementsDropped.incrementAndGet();
-                        continue;
-                    };
+                    elementsDropped.incrementAndGet();
+                    continue;
+                } else {
+                    elementsSurvived.incrementAndGet();
                 }
 
-                point.getAccessState().releaseToe();
+                //point.getAccessState().releaseToe();
+            } else {
+              //  log.warn("SKIPPING :(");
             }
         }
 
@@ -450,7 +456,7 @@ public class AtomicAllocator implements Allocator {
 
         //log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
         //log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.debug("Zero elements checked: ["+ totalElements +"], deleted: " + elementsDropped.get());
+        log.debug("Zero {} elements checked: [{}], deleted: {}, survived: {}", bucketId, totalElements, elementsDropped.get(), elementsSurvived.get());
 
         return freeSpace.get();
     }
@@ -466,9 +472,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
 
-        Set<Long> allocations = memoryHandler.getDeviceTrackingPoints(deviceId);
-
-        int initialSize = allocations.size();
+      //  int initialSize = allocations.size();
 
         // these 2 variables will contain jvm-wise memory access frequencies
         float shortAverage = deviceShort.getAverage();
@@ -480,12 +484,13 @@ public class AtomicAllocator implements Allocator {
 
         AtomicInteger elementsDropped = new AtomicInteger(0);
         AtomicInteger elementsMoved = new AtomicInteger(0);
+        AtomicInteger elementsSurvived = new AtomicInteger(0);
 
-        for (Long object: allocations) {
+        for (Long object: memoryHandler.getDeviceTrackingPoints(deviceId)) {
             AllocationPoint point = getAllocationPoint(object);
 
-            if (point.getAccessState().isToeAvailable()) {
-                point.getAccessState().requestToe();
+//            if (point.getAccessState().isToeAvailable()) {
+//                point.getAccessState().requestToe();
 
                 /*
                     Check if memory points to non-existant buffer, using externals.
@@ -503,6 +508,8 @@ public class AtomicAllocator implements Allocator {
                         elementsDropped.incrementAndGet();
                         continue;
                     };
+                } else {
+                    elementsSurvived.incrementAndGet();
                 }
 
                 /*
@@ -526,11 +533,11 @@ public class AtomicAllocator implements Allocator {
                     }
                 }
 */
-                point.getAccessState().releaseToe();
-            }
+              //  point.getAccessState().releaseToe();
+            //}
         }
 
-        log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements before cleanup: ["+initialSize+"], elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
+        log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Survivors: ["+elementsSurvived.get()+"]");
 
         return freeSpace.get();
     }
@@ -664,7 +671,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public long getTotalAllocatedHostMemory() {
-        return memoryHandler.getAllocationStatistics().row(AllocationStatus.HOST).get(0);
+        return 0L; // memoryHandler.getAllocationStatistics().row(AllocationStatus.HOST).get(0);
     }
 
     /**
@@ -683,7 +690,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public long getTotalAllocatedDeviceMemory(Integer deviceId) {
-        return memoryHandler.getAllocationStatistics().row(AllocationStatus.DEVICE).get(deviceId);
+        return 0L;//; memoryHandler.getAllocationStatistics().row(AllocationStatus.DEVICE).get(deviceId);
     }
 
     /**
