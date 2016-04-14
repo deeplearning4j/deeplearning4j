@@ -693,7 +693,7 @@ public class AtomicAllocatorTest {
 
         log.info("-Xmx value: " + Runtime.getRuntime().maxMemory());
         // GpuThreadSyntheticData
-        GpuThreadOpsTransformData[] threads = new GpuThreadOpsTransformData[4];
+        GpuThreadOpsTransformData[] threads = new GpuThreadOpsTransformData[8];
         for (int x =0; x< threads.length; x++) {
             GpuThreadOpsTransformData thread = new GpuThreadOpsTransformData(x);
             thread.start();
