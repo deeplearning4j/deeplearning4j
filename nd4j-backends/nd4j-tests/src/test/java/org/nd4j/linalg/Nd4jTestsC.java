@@ -662,6 +662,52 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testSumAlongDim1sEdgeCases() {
+        int[][] shapes = new int[][]{
+                //Standard case:
+                {2,2,3,4},
+                //Leading 1s:
+                {1,2,3,4},
+                {1,1,2,3},
+                //Trailing 1s:
+                {4,3,2,1},
+                {4,3,1,1},
+                //1s for non-leading/non-trailing dimensions
+                {4,1,3,2},
+                {4,3,1,2},
+                {4,1,1,2}
+        };
+
+        int[][] sumDims = {
+                {0}, {1}, {2}, {3},
+                {0,1}, {0,2}, {0,3}, {1,2}, {1,3},
+                {0,1,2}, {0,1,3}, {0,2,3},
+                {0,1,2,3}
+        };
+
+        for( int[] shape : shapes ){
+            for(int[] dims : sumDims) {
+                System.out.println("Shape: " + Arrays.toString(shape) + ", sumDims=" + Arrays.toString(dims));
+                int length = ArrayUtil.prod(shape);
+                INDArray inC = Nd4j.linspace(1, length, length).reshape('c', shape);
+                INDArray inF = inC.dup('f');
+                assertEquals(inC, inF);
+
+                INDArray sumC = inC.sum(dims);
+                INDArray sumF = inF.sum(dims);
+                assertEquals(sumC, sumF);
+
+                //Multiple runs: check for consistency between runs (threading issues, etc)
+                for (int i = 0; i < 100; i++) {
+                    assertEquals(sumC, inC.sum(dims));
+                    assertEquals(sumF, inF.sum(dims));
+                }
+            }
+        }
+    }
+
     @Test
     public void testIsMaxAlongDimensionSimple(){
         //Simple test: when doing IsMax along a dimension, we expect all values to be either 0 or 1
