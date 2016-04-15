@@ -7,16 +7,19 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
+import org.nd4j.jita.allocator.garbage.GarbageReference;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;
 import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,15 +77,21 @@ public class AllocationPoint {
 
 //    @Getter private AtomicState accessState = new AtomicState();
 
-    private volatile WeakReference<DataBuffer> originalDataBufferReference;
+    private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
+
+    private volatile GarbageReference garbageReference;
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer
      *
      * @param buffer
      */
-    public void attachBuffer(@NonNull DataBuffer buffer) {
-        originalDataBufferReference = new WeakReference<DataBuffer>(buffer);
+    public void attachBuffer(@NonNull BaseDataBuffer buffer) {
+        originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
+    }
+
+    public void attachReference(GarbageReference reference) {
+        garbageReference = reference;
     }
 
     /**

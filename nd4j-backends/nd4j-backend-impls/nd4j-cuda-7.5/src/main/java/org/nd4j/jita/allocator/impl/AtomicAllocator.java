@@ -2,11 +2,13 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.garbage.GarbageReference;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
@@ -15,12 +17,16 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,6 +87,7 @@ public class AtomicAllocator implements Allocator {
      */
     private Map<Long, ZeroGarbageCollectorThread> collectorsZero = new ConcurrentHashMap<>();
     private Map<Integer, DeviceGarbageCollectorThread> collectorsDevice = new ConcurrentHashMap<>();
+    private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
@@ -91,6 +98,8 @@ public class AtomicAllocator implements Allocator {
 
     private final Ring zeroLong = new LockedRing(30);
     private final Ring zeroShort = new LockedRing(30);
+
+    private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
 
     public static AtomicAllocator getInstance() {
         return INSTANCE;
@@ -110,10 +119,19 @@ public class AtomicAllocator implements Allocator {
      */
     protected void initHostCollectors() {
         for (int i = 0; i < configuration.getNumberOfHostMemoryBuckets(); i++) {
+            ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
+
+            UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
+            queueMap.put(i, queue);
+            uThread.start();
+
+            collectorsUnified.put(i, uThread);
+            /*
             ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread((long) i, shouldStop);
             zThread.start();
 
             collectorsZero.put((long) i, zThread);
+            */
         }
     }
 
@@ -121,12 +139,14 @@ public class AtomicAllocator implements Allocator {
      * This method executes garbage collectors for each special device (i.e. CUDA GPUs) present in system
      */
     protected void initDeviceCollectors() {
+        /*
         for (Integer deviceId : this.memoryHandler.getAvailableDevices()) {
 
             DeviceGarbageCollectorThread dThread = new DeviceGarbageCollectorThread(deviceId, shouldStop);
             dThread.start();
             collectorsDevice.put(deviceId, dThread);
         }
+        */
     }
 
     /**
@@ -341,9 +361,15 @@ public class AtomicAllocator implements Allocator {
 
         // we use these longs as tracking codes for memory tracking
         Long allocId = objectsTracker.getAndIncrement();
-        point.attachBuffer(buffer);
+        //point.attachBuffer(buffer);
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
+
+        int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+        int bucketId = RandomUtils.nextInt(0, numBuckets);
+
+        GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+        point.attachReference(reference);
 
 
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
@@ -537,6 +563,43 @@ public class AtomicAllocator implements Allocator {
         log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Survivors: ["+elementsSurvived.get()+"]");
 
         return freeSpace.get();
+    }
+
+    private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
+        private final ReferenceQueue<BaseDataBuffer> queue;
+
+
+        public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
+            this.queue = queue;
+            this.setDaemon(true);
+            this.setName("UniGC thread " + threadId);
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                GarbageReference reference = (GarbageReference) queue.poll();
+                if (reference != null) {
+                    AllocationPoint point = reference.getPoint();
+
+                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                    } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                        purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+
+                        // and we deallocate host memory, since object is dereferenced
+                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                    }
+
+                } else {
+                    try {
+                        Thread.sleep(50);
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+        }
     }
 
     /**

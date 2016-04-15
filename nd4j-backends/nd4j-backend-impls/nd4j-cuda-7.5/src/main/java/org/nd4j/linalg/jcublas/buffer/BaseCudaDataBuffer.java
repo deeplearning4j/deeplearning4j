@@ -723,7 +723,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             if(t == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
-                allocationPoint.attachBuffer(this);
+                //allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
@@ -735,7 +735,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             } else if(t == Type.FLOAT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
-                allocationPoint.attachBuffer(this);
+                //allocationPoint.attachBuffer(this);
                 this.trackingPoint = allocationPoint.getObjectId();
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();

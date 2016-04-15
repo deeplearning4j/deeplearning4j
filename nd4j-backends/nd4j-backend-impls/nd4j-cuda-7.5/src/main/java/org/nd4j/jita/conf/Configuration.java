@@ -31,7 +31,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    private int numberOfHostMemoryBuckets = 4;
+    private int numberOfHostMemoryBuckets = 8;
 
     /**
      * Deallocation aggressiveness
