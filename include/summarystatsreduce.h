@@ -1535,9 +1535,9 @@ struct SharedSummaryStatsData<double> {
             __inline__ __host__ __device__
 #endif
             functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected) {
-                if (op == op_type::Variance) {
+                if (op ==  0) {
                     return new ops::Variance<T>(biasCorrected);
-                } else if (op == op_type::StandardDeviation) {
+                } else if (op == 1) {
                     return new ops::StandardDeviation<T>(biasCorrected);
                 }
                 return NULL;
