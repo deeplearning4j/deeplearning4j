@@ -13,7 +13,6 @@
 #include <buffer.h>
 #include <array.h>
 
-#include "optype.h"
 
 template<typename T>
 inline int arrsEquals(int rank, const T comp1[], const T comp2[]) {
