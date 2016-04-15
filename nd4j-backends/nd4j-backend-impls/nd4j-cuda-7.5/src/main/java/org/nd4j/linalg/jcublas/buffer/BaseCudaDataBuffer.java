@@ -293,6 +293,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
         }
+        allocator.synchronizeHostData(this);
     }
 
     /**
@@ -322,7 +323,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
         }
-        allocator.synchronizeHostData(this);
     }
 
     /**
@@ -356,8 +356,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void setData(int[] data) {
+        //if (1 > 0) throw new RuntimeException("LOLZ");
         set(data, data.length, 0, 0);
-        allocator.synchronizeHostData(this);
+        ((CudaContext)allocator.getDeviceContext().getContext()).syncOldStream();
     }
 
     @Override
