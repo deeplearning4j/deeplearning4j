@@ -23,7 +23,6 @@
 #include <jni.h>
 #endif
 
-#include "optype.h"
 
 namespace functions {
     namespace summarystats {
@@ -174,7 +173,7 @@ namespace functions {
 
 
 #endif
-            T getM2() const {
+            T getM2()  {
                 return M2;
             }
 
@@ -196,7 +195,7 @@ namespace functions {
 
 
 #endif
-            T getM3() const {
+            T getM3()  {
                 return M3;
             }
 
@@ -218,7 +217,7 @@ namespace functions {
 
 
 #endif
-            T getM4() const {
+            T getM4()  {
                 return M4;
             }
 
@@ -240,7 +239,7 @@ namespace functions {
 
 
 #endif
-            T getMax() const {
+            T getMax()  {
                 return max;
             }
 
@@ -262,7 +261,7 @@ namespace functions {
 
 
 #endif
-            T getMean() const {
+            T getMean()  {
                 return mean;
             }
 
@@ -284,7 +283,7 @@ namespace functions {
 
 
 #endif
-            T getMin() const {
+            T getMin()  {
                 return min;
             }
 
@@ -306,7 +305,7 @@ namespace functions {
 
 
 #endif
-            T getN() const {
+            T getN()  {
                 return n;
             }
 
@@ -696,8 +695,8 @@ struct SharedSummaryStatsData<double> {
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 							inputShapeInfo,
-							dimension,
-							dimensionLength,
+							&dimension,
+							&dimensionLength,
 							&squeezed,
 							&newSqueezeDimensions,
 							wholeRank,
@@ -1089,8 +1088,8 @@ struct SharedSummaryStatsData<double> {
                     if (numOnes > 0) {
                         xShapeInfo = shape::squeezeDimensions(
                                 xShapeInfo,
-                                dimension,
-                                dimensionLength,
+                                &dimension,
+                                &dimensionLength,
                                 &squeezed,
                                 &newSqueezeDimensions,
                                 wholeRank,
@@ -1536,9 +1535,9 @@ struct SharedSummaryStatsData<double> {
             __inline__ __host__ __device__
 #endif
             functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected) {
-                if (op == op_type::Variance) {
+                if (op ==  0) {
                     return new ops::Variance<T>(biasCorrected);
-                } else if (op == op_type::StandardDeviation) {
+                } else if (op == 1) {
                     return new ops::StandardDeviation<T>(biasCorrected);
                 }
                 return NULL;

@@ -465,8 +465,8 @@ namespace functions {
 						newSqueezeDimensions = false;
 						inputShapeInfo = shape::squeezeDimensions(
 								inputShapeInfo,
-								dimension,
-								dimensionLength,
+								&dimension,
+								&dimensionLength,
 								&squeezed,
 								&newSqueezeDimensions,
 								wholeRank,
