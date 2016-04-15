@@ -23,7 +23,6 @@
 #include <jni.h>
 #endif
 
-#include "optype.h"
 
 namespace functions {
     namespace summarystats {

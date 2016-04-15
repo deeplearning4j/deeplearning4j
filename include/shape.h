@@ -2644,7 +2644,7 @@ namespace shape {
         return buffer + (1 + rank(buffer));
     }
 
-   
+
 
 /**
  * Compute the length of the given shape
