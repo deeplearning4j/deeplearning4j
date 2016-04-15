@@ -33,7 +33,7 @@ namespace nd4j {
             int rank;
             char ordering;
 
-            int operator==(const NDArray<T>& other) {
+            int operator==( NDArray<T>& other) {
                 if (rank != other.rank)
                     return 0;
 

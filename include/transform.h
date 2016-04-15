@@ -258,7 +258,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const Nd4jIndex *indexes,
+                     Nd4jIndex *indexes,
                     Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
@@ -3220,7 +3220,7 @@ namespace functions {
 
 			data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
 
-			const T* data_im_ptr = dx;
+			 T* data_im_ptr = dx;
 
 			data_im_ptr += (c_im * height + h_offset) * width + w_offset;
 
@@ -3294,7 +3294,7 @@ namespace functions {
                     int inShape2 = inShape[2];
                     int inShape3 = inShape[3];
 
-                    const bool padding = padHeight > 0 || padWidth > 0;
+                     bool padding = padHeight > 0 || padWidth > 0;
 
                     T *dIn = dx;
                     T *dOut = result;
@@ -3609,7 +3609,7 @@ namespace functions {
                     int xOutTo = inShape[5];
 
 
-                    const bool padding = padHeight > 0 || padWidth > 0;
+                     bool padding = padHeight > 0 || padWidth > 0;
 
                     T *fIn = dx;
                     T *fOut = result;
@@ -5066,8 +5066,8 @@ namespace functions {
                         if (numOnes > 0 && wholeRank > 2) {
                             xShapeBuffer = shape::squeezeDimensions(
                                     xShapeBuffer,
-                                    dimension,
-                                    dimensionLength,
+                                    &dimension,
+                                    &dimensionLength,
                                     &squeezed,
                                     &newSqueezeDimensions,
                                     wholeRank,

@@ -35,7 +35,7 @@
 
 // CUDA Runtime error messages
 #ifdef __DRIVER_TYPES_H__
-static const char *_cudaGetErrorEnum(cudaError_t error)
+static  char *_cudaGetErrorEnum(cudaError_t error)
 {
 	switch (error)
 	{
@@ -238,7 +238,7 @@ static const char *_cudaGetErrorEnum(cudaError_t error)
 
 #ifdef __cuda_cuda_h__
 // CUDA Driver API errors
-static const char *_cudaGetErrorEnum(CUresult error)
+static  char *_cudaGetErrorEnum(CUresult error)
 {
 	switch (error)
 	{
@@ -390,7 +390,7 @@ static const char *_cudaGetErrorEnum(CUresult error)
 
 #ifdef CUBLAS_API_H_
 // cuBLAS API errors
-static const char *_cudaGetErrorEnum(cublasStatus_t error)
+static  char *_cudaGetErrorEnum(cublasStatus_t error)
 {
 	switch (error)
 	{
@@ -425,7 +425,7 @@ static const char *_cudaGetErrorEnum(cublasStatus_t error)
 
 #ifdef _CUFFT_H_
 // cuFFT API errors
-static const char *_cudaGetErrorEnum(cufftResult error)
+static  char *_cudaGetErrorEnum(cufftResult error)
 {
 	switch (error)
 	{
@@ -466,7 +466,7 @@ static const char *_cudaGetErrorEnum(cufftResult error)
 
 #ifdef CUSPARSEAPI
 // cuSPARSE API errors
-static const char *_cudaGetErrorEnum(cusparseStatus_t error)
+static  char *_cudaGetErrorEnum(cusparseStatus_t error)
 {
 	switch (error)
 	{
@@ -504,7 +504,7 @@ static const char *_cudaGetErrorEnum(cusparseStatus_t error)
 
 #ifdef CURAND_H_
 // cuRAND API errors
-static const char *_cudaGetErrorEnum(curandStatus_t error)
+static  char *_cudaGetErrorEnum(curandStatus_t error)
 {
 	switch (error)
 	{
@@ -554,7 +554,7 @@ static const char *_cudaGetErrorEnum(curandStatus_t error)
 
 #ifdef NV_NPPIDEFS_H
 // NPP API errors
-static const char *_cudaGetErrorEnum(NppStatus error)
+static  char *_cudaGetErrorEnum(NppStatus error)
 {
 	switch (error)
 	{
@@ -678,7 +678,7 @@ static const char *_cudaGetErrorEnum(NppStatus error)
 #endif
 
 template<typename T>
-bool check(T result, char const *const func, const char *const file, int const line) {
+bool check(T result, char  * func,  char * file, int  line) {
 	if (result) {
 		fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \"%s\" \n",
 				file, line, static_cast<unsigned int>(result), _cudaGetErrorEnum(result), func);
@@ -714,7 +714,7 @@ bool check(T result, char const *const func, const char *const file, int const l
 // This will output the proper error string when calling cudaGetLastError
 #define getLastCudaError(msg)      __getLastCudaError (msg, __FILE__, __LINE__)
 
-inline void __getLastCudaError(const char *errorMessage, const char *file, int line)
+inline void __getLastCudaError( char *errorMessage,  char *file, int line)
 {
 	cudaError_t err = cudaGetLastError();
 
@@ -891,7 +891,7 @@ inline int gpuGetMaxGflopsDeviceId()
 }
 
 // Initialization code to find the best CUDA Device
-inline int findCudaDevice(int argc, const char **argv)
+inline int findCudaDevice(int argc,  char **argv)
 {
 	cudaDeviceProp deviceProp;
 	int devID = 0;
