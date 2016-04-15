@@ -91,7 +91,6 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     PairWiseTransform<double> *op  = new ops::Copy<double>();
     int *xShapeBuffer = shape::shapeBuffer(3,shape);
     int *yShapeBuffer = shape::shapeBuffer(3,shape);
-    int indexes[] = {8};
 
     op->exec(data, xShapeBuffer, yData, yShapeBuffer, resultData, xShapeBuffer, NULL);
     for(int i = 0; i < 8; i++) {

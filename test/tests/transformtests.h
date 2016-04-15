@@ -91,7 +91,7 @@ public:
     virtual void execCpuKernel() override {
         int *xShapeBuffer = shapeBuffer(this->baseData->rank,this->baseData->xShape);
         int *resultShapeBuffer = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
-        const Nd4jIndex *indexes  = shape::computeIndices(xShapeBuffer);
+        Nd4jIndex *indexes  = shape::computeIndices(xShapeBuffer);
 
         if(useIndexes) {
             op->exec(this->data->data->data,
@@ -100,17 +100,17 @@ public:
                      resultShapeBuffer,
                      this->extraParams,
                      indexes);
-        }
-        else
+        } else {
             op->exec(this->data->data->data,
                      xShapeBuffer,
                      this->data->data->data,
                      resultShapeBuffer,
                      this->extraParams);
+        }
 
-        free(xShapeBuffer);
-        free(resultShapeBuffer);
-        delete[] indexes;
+        delete []xShapeBuffer;
+        delete []resultShapeBuffer;
+        delete []indexes;
     }
 
 };
