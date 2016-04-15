@@ -111,7 +111,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @param point
      */
     @Override
-    public synchronized void free(AllocationPoint point) {
+    public void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here

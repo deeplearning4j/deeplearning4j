@@ -85,7 +85,7 @@ public class CudaZeroHandler implements MemoryHandler {
     // FIXME: CopyOnWriteArrayList is BAD here. Really BAD. B A D.
     // Table thread safety is guaranteed by reentrant read/write locks :(
     //private Table<Long, Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = HashBasedTable.create();
-    private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new HashMap<>();
+    private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new ConcurrentHashMap<>();
 
     /*
         map for Thread, Object allocations in zero memory.
@@ -93,7 +93,7 @@ public class CudaZeroHandler implements MemoryHandler {
     // CopyOnWriteArrayList performance to be investigated in this use case
     // Map thread safety is guaranteed by exclusive writeLock in getDeviceId() method, because we can't use putIfAbsent on j7
     // FIXME: at j7 -> j8 transition, this one could be changed to ConcurrentHashMap
-    private final Map<Long, ConcurrentHashMap<Long, Long>> zeroAllocations = new HashMap<>();
+    private final Map<Long, ConcurrentHashMap<Long, Long>> zeroAllocations = new ConcurrentHashMap<>();
 
 
     private AtomicLong zeroCounter = new AtomicLong(0);
@@ -197,14 +197,10 @@ public class CudaZeroHandler implements MemoryHandler {
                 if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
                     tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
 
-                   returnPair.setDevicePointer(tmpPair.getDevicePointer());
+                    returnPair.setDevicePointer(tmpPair.getDevicePointer());
                     returnPair.setHostPointer(tmpPair.getHostPointer());
 
                     point.setAllocationStatus(AllocationStatus.HOST);
-
-                //    JCuda.cudaMemsetAsync(new Pointer(returnPair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-                //    JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
-
                 }
 
                 if (reqMemory < configuration.getMaximumSingleAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
@@ -216,14 +212,14 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
-                      //      JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-                     //       JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
+                            JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
+                            JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
 
                             point.setDeviceId(deviceId);
-
+                            zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
                             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
                         } else {
                             log.info("Skipping allocation C on [DEVICE]");
@@ -764,7 +760,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public Set<Long> getDeviceTrackingPoints(Integer deviceId) {
         if (!deviceAllocations.containsKey(deviceId))
             return new HashSet<>();
-        return new CopyOnWriteArraySet<>(deviceAllocations.get(deviceId).values());
+        return deviceAllocations.get(deviceId).keySet();
     }
 
     /**

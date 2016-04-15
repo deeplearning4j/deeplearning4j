@@ -341,7 +341,7 @@ public class AtomicAllocator implements Allocator {
 
         // we use these longs as tracking codes for memory tracking
         Long allocId = objectsTracker.getAndIncrement();
-
+        point.attachBuffer(buffer);
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
 
@@ -350,10 +350,7 @@ public class AtomicAllocator implements Allocator {
         PointersPair pair = memoryHandler.alloc(location, point, requiredMemory);
         point.setPointers(pair);
 
-        point.attachBuffer(buffer);
-
         allocationsMap.put(allocId, point);
-
         return point;
     }
 
@@ -653,7 +650,6 @@ public class AtomicAllocator implements Allocator {
 
                 if (memoryHandler.getAllocatedDeviceMemory(deviceId)< (configuration.getMaximumDeviceAllocation() * 0.25) && (memoryHandler.getAllocatedDeviceObjects(deviceId) < 500) && lastCheck > System.currentTimeMillis() - 30000) {
                     // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
-                    log.warn("SKIPPING DEVICE GC CYCLE");
                 } else {
                     seekUnusedDevice(0L, this.deviceId, aggressiveness);
                     lastCheck = System.currentTimeMillis();
