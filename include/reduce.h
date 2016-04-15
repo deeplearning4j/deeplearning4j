@@ -857,7 +857,7 @@ namespace functions {
 
                     //Migrates it to be new shape information
                     if(dimensionLength <= 1) {
-                        printf("New dimension length \n");
+                        printf("Dimension length migrated to 1\n");
                         this->exec(x,
                                    xShapeInfo,
                                    extraParams,
@@ -889,8 +889,6 @@ namespace functions {
 #pragma omp  parallel  for
                     for(int i = 0; i < resultLength; i++) {
                         int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-
-
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -940,36 +938,49 @@ namespace functions {
                 }
 
                 else {
-                    if(shape::order(xShapeInfo) == 'f') {
-                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
-                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-#pragma omp parallel for
-                        for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                            T currResult = op(x[baseOffset],extraParams);
-                            for(int j = 1; j < tadLength; j++) {
-                                currResult = update(currResult,op(x[baseOffset + j * tadElementWiseStride],extraParams),extraParams);
-                            }
+                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+                    int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                    int *xStride = shape::stride(tadShapeShapeInfo);
+                    int tadLength = shape::length(tadShapeShapeInfo);
+                    int rank = shape::rank(tadShapeShapeInfo);
+#pragma omp  parallel  for
+                    for(int i = 0; i < resultLength; i++) {
+                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
 
-                            result[i] = postProcess(currResult,tadLength,extraParams);
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int rankIter = rank;
+                        int xStridesIter[MAX_RANK];
+                        T *xPointer = x + offset;
+
+                        T start = this->startingValue(xPointer);
+                        printf("Value for tad %d start is %f\n",i,start);
+                        if(PrepareOneRawArrayIter<T>(rankIter,
+                                                     xShape,
+                                                     xPointer,
+                                                     xStride,
+                                                     &rankIter,
+                                                     shapeIter,
+                                                     &xPointer,
+                                                     xStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                start = update(start,op(xPointer[0],extraParams),extraParams);
+                                printf("Value for tad %d after is %f\n",i,xPointer[0]);
+                            } ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     xPointer,
+                                                     xStridesIter);
+                            start = postProcess(start,tadLength,extraParams);
+                        }
+                        else {
+                            printf("Unable to prepare array\n");
                         }
 
-                    }
-                    else {
-                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
-                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-#pragma omp parallel for
-                        for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
-                            T currResult = op(x[baseOffset],extraParams);
-                            result[i] = currResult;
-                            for(int j = 1; j < tadLength; j++) {
-                                currResult = op(x[baseOffset + j * tadElementWiseStride],extraParams);
-                                result[i] = update(result[i],currResult,extraParams);
-                            }
-
-                            result[i] = postProcess(result[i],tadLength,extraParams);
-                        }
+                        result[i] = start;
 
                     }
 
