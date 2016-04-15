@@ -62,7 +62,7 @@ if(TESTS)
         include_directories("/usr/local/include")
     ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-    if (CUDA_FOUND)
+    if (CUDA_FOUND AND CUDA_BLAS)
         add_definitions(-D__CUDACC__)
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.5" CACHE STRING "Minimum required CUDA compute capability" )
