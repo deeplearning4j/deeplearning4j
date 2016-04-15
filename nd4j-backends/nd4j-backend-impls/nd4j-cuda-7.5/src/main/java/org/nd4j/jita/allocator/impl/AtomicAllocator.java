@@ -370,6 +370,7 @@ public class AtomicAllocator implements Allocator {
 
         GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
         point.attachReference(reference);
+        point.setDeviceId(getDeviceId());
 
 
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that

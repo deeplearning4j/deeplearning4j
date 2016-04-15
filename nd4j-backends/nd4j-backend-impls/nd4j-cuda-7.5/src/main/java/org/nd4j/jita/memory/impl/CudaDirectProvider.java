@@ -43,10 +43,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
-                if (reqMem < 1) {
+                if (reqMem < 1)
                     reqMem = 1;
-                    log.warn("ALLOCATING 0-LENGTH HOST BUFFER");
-                }
 
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
@@ -77,10 +75,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
-                if (reqMem < 1) {
+                if (reqMem < 1)
                     reqMem = 1;
-                    log.warn("ALLOCATING 0-LENGTH DEVICE BUFFER");
-                }
 
                 // FIXME: it would be nice to get rid of typecasting here
                 NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();

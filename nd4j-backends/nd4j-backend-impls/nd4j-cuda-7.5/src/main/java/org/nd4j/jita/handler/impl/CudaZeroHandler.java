@@ -290,7 +290,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );
 
-            context.syncOldStream();
+           // context.syncOldStream();
 
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
@@ -313,7 +313,7 @@ public class CudaZeroHandler implements MemoryHandler {
                  context.getOldStream()
              );
 
-            context.syncOldStream();
+           // context.syncOldStream();
 
         } else throw new UnsupportedOperationException("Can't relocate data in requested direction: [" + currentStatus + "] -> [" + targetStatus + "]");
     }
@@ -501,7 +501,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );
         }
-        context.syncOldStream();
+      //  context.syncOldStream();
     }
 
     /**

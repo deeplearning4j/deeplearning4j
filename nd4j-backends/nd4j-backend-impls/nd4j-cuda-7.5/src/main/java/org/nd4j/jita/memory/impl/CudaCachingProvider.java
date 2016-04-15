@@ -29,12 +29,15 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     private static Logger log = LoggerFactory.getLogger(CudaCachingProvider.class);
 
     private volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
+    private volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
 
     private final AtomicLong cacheHit = new AtomicLong(0);
     private final AtomicLong cacheMiss = new AtomicLong(0);
 
     private final AtomicLong allocRequests = new AtomicLong(0);
-    private final AtomicLong cachedAmount = new AtomicLong(0);
+
+    private final AtomicLong zeroCachedAmount = new AtomicLong(0);
+    private final AtomicLong deviceCachedAmount = new AtomicLong(0);
 
     private final Semaphore singleLock = new Semaphore(1);
 
@@ -80,7 +83,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
                     cacheHit.incrementAndGet();
 
                     // since this memory chunk is going to be used now, remove it's amount from
-                    cachedAmount.addAndGet(-1 * reqMemory);
+                    zeroCachedAmount.addAndGet(-1 * reqMemory);
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(new CudaPointer(pointer.getNativePointer()));
@@ -92,7 +95,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
             }
             cacheMiss.incrementAndGet();
 
-            if (cachedAmount.get() < MAX_CACHED_MEMORY / 10) {
+            if (zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10) {
                 CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
                 preallocator.start();
             }
@@ -101,7 +104,60 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
             return super.malloc(shape, point, location);
         }
 
+        if (location == AllocationStatus.DEVICE && reqMemory < MAX_SINGLE_ALLOCATION) {
+            ensureDeviceCacheHolder(point.getDeviceId(), shape);
+
+            CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
+            if (cache != null) {
+                Pointer pointer = cache.poll();
+                if (pointer != null) {
+                    cacheHit.incrementAndGet();
+
+                    deviceCachedAmount.addAndGet(-1 * reqMemory);
+
+                    PointersPair pair = new PointersPair();
+                    pair.setDevicePointer(new CudaPointer(pointer.getNativePointer()));
+                    pair.setHostPointer(new CudaPointer(pointer.getNativePointer()));
+
+                    point.setAllocationStatus(AllocationStatus.DEVICE);
+                    return pair;
+                }
+            }
+            cacheMiss.incrementAndGet();
+            return super.malloc(shape, point, location);
+        }
+
         return super.malloc(shape, point, location);
+    }
+
+    protected  void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
+        if (!deviceCache.containsKey(deviceId)) {
+            try {
+                singleLock.acquire();
+
+                if (!deviceCache.containsKey(deviceId)) {
+                    deviceCache.put(deviceId, new ConcurrentHashMap<AllocationShape, CacheHolder>());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                singleLock.release();
+            }
+        }
+
+        if (!deviceCache.get(deviceId).containsKey(shape)) {
+            try {
+                singleLock.acquire();
+
+                if (!deviceCache.get(deviceId).containsKey(shape)) {
+                    deviceCache.get(deviceId).put(shape, new CacheHolder(shape));
+                }
+            } catch (Exception e) {
+
+            } finally {
+                singleLock.release();
+            }
+        }
     }
 
     protected void ensureCacheHolder(AllocationShape shape) {
@@ -130,13 +186,44 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            super.free(point);
+            AllocationShape shape = point.getShape();
+            long reqMemory = AllocationUtils.getRequiredMemory(shape);
+            // we don't cache too big objects
+
+            if (reqMemory > MAX_SINGLE_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
+                super.free(point);
+                return;
+            }
+
+            ensureDeviceCacheHolder(point.getDeviceId(), shape);
+
+            /*
+                Now we should decide if this object can be cached or not
+             */
+            CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
+
+            // memory chunks < threshold will be cached no matter what
+            if (reqMemory <= FORCED_CACHE_THRESHOLD) {
+                cache.put(new Pointer(point.getDevicePointer().address()));
+            } else {
+                long cacheEntries = cache.size();
+                long cacheHeight = deviceCache.get(point.getDeviceId()).size();
+
+                // total memory allocated within this bucket
+                long cacheDepth = cacheEntries * reqMemory;
+
+                if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                    cache.put(new Pointer(point.getDevicePointer().address()));
+                } else {
+                    super.free(point);
+                }
+            }
         } else {
             AllocationShape shape = point.getShape();
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
             // we don't cache too big objects
-            if (reqMemory > MAX_SINGLE_ALLOCATION || cachedAmount.get() >= MAX_CACHED_MEMORY) {
+            if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
                 super.free(point);
                 return;
             }
@@ -176,7 +263,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
     public void printCacheStats() {
         float cacheRatio = getCacheHitRatio();
 
-        log.debug("Cached amount: " + cachedAmount.get());
+        log.debug("Cached amount: " + zeroCachedAmount.get());
         log.debug("Total shapes in cache: " + zeroCache.size());
         log.debug("Current hit ratio: " + cacheRatio);
     }
@@ -203,7 +290,7 @@ public class CudaCachingProvider extends CudaDirectProvider implements MemoryPro
         }
 
         public void put(Pointer pointer) {
-            cachedAmount.addAndGet(reqMem);
+            zeroCachedAmount.addAndGet(reqMem);
             counter.incrementAndGet();
             queue.add(pointer);
         }
