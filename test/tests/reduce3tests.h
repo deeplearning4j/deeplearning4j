@@ -62,7 +62,7 @@ static Data<T> * getDataReduce3(const T assertion[1], T startingVal) {
     ret->dimension = new int[rank];
     ret->dimension[0] = MAX_DIMENSION;
     ret->dimensionLength = 1;
-    ret->result = new T;
+    ret->result = new T[1];
     ret->resultRank = 2;
     ret->resultShape = new int[ret->resultRank];
     for(int i = 0; i < ret->resultRank; i++)
@@ -106,7 +106,7 @@ static Data<T> * getDataReduce3Dimension(const T *assertion,T startingVal) {
     ret->dimension = new int[2];
 	ret->dimension[0] = 1;
 	ret->dimensionLength = 1;
-    ret->result = new T;
+    ret->result = new T[1];
 	ret->resultRank = 2;
     ret->resultShape = new int[2];
 	for(int i = 0; i < 2; i++)
@@ -124,7 +124,7 @@ static Data<T> * getDataReduce3DimensionMulti(T *assertion,T startingVal) {
     int resultRank = 2;
     int length = 12;
     int resultLength = 3;
-    int *shape = (int *) malloc(sizeof(int) * rank);
+    int *shape = new int[rank];
     shape[0] = 2;
     shape[1] = 2;
     shape[2] = 3;
@@ -132,8 +132,8 @@ static Data<T> * getDataReduce3DimensionMulti(T *assertion,T startingVal) {
     ret->yShape = shape;
     ret->rank = rank;
     ret->yRank = rank;
-    ret->data = (T *) malloc(sizeof(T) * length);
-    ret->y = (T *) malloc(sizeof(T) * length);
+    ret->data = new T[length];
+    ret->y = new T[length];
 
     for (int i = 0; i < length; i++) {
         ret->data[i] = i + 1;
@@ -141,22 +141,22 @@ static Data<T> * getDataReduce3DimensionMulti(T *assertion,T startingVal) {
         printf("Val %d for x is %f and y %f\n",i,ret->data[i],ret->y[i]);
     }
 
-    T *extraParams = (T *) malloc(sizeof(T) * 4);
+    T *extraParams = new T[4];
     extraParams[0] = startingVal;
     ret->extraParams = extraParams;
 
-    ret->assertion = (T *) malloc(sizeof(T) * resultLength);
+    ret->assertion = new T[resultLength];
     for(int i = 0; i < resultLength; i++) {
         ret->assertion[i] = assertion[i];
     }
 
-    ret->dimension = (int *) malloc(sizeof(int) * 2);
+    ret->dimension = new int[resultRank];
     ret->dimension[0] = 0;
     ret->dimension[1] = 1;
     ret->dimensionLength = 2;
-    ret->result = (T *) malloc(sizeof(T) * resultLength);
+    ret->result = new T[resultLength];
     ret->resultRank = 2;
-    ret->resultShape = (int *) malloc(sizeof(int) * resultRank);
+    ret->resultShape = new int[resultRank];
     ret->resultShape[0] = 1;
     ret->resultShape[1] = 3;
 
@@ -200,9 +200,10 @@ public:
                 resultShapeBuff
                 ,this->baseData->dimension,
                 this->baseData->dimensionLength);
-        free(xShapeBuff);
-        free(yShapeBuff);
-        free(resultShapeBuff);
+
+        delete []xShapeBuff;
+        delete []yShapeBuff;
+        delete []resultShapeBuff;
     }
 
     virtual void run () override {

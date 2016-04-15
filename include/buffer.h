@@ -31,10 +31,15 @@ namespace nd4j {
 		struct Buffer {
 			int length = 0;
 			int allocatedOnGpu = 0;
-			T *data = NULL;
-			T *gData = NULL;
+                        T *data = nullptr;
+                        T *gData = nullptr;
 			T one, two;
-		public:
+                public:
+                        ~Buffer() {
+                            delete []data;
+                            delete []gData;
+                        }
+
 			void assign(T *val) {
 				data = val;
 			}
@@ -213,14 +218,13 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 		__host__
 #endif
 
-		void freeBuffer(Buffer<T> **buffer) {
-			Buffer<T> *bufferRef = *buffer;
-			if(bufferRef->data != NULL)
-				free(bufferRef->data);
+                void freeBuffer(Buffer<T> *buffer) {
 #ifdef __CUDACC__
-			if(bufferRef->gData != NULL)
-            checkCudaErrors(cudaFree(bufferRef->gData));
+			if(buffer->gData != NULL)
+            checkCudaErrors(cudaFree(buffer->gData));
 #endif
+
+                        delete buffer;
 		}
 
 /**
@@ -234,8 +238,8 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 		__host__
 #endif
 		Buffer<T> *createBuffer(T *data, int length) {
-			Buffer<T> *ret = (Buffer<T> *) malloc(sizeof(Buffer<T>));
-			T *buffData = (T *) malloc(sizeof(T) * length);
+                        Buffer<T> *ret = new Buffer<T>;
+                        T *buffData = new T[length];
 			for(int i = 0; i < length; i++)
 				buffData[i] = data[i];
 			ret->data = buffData;

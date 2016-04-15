@@ -52,7 +52,7 @@ public:
             delete []y;
 
         if(result)
-            delete result;
+            delete []result;
 
         if(extraParams)
             delete []extraParams;
@@ -85,11 +85,7 @@ void freeData(Data<T> *data);
  */
 inline int *shapeBuffer(int rank, int *shape) {
     int *stride = shape::calcStrides(shape, rank);
-    shape::ShapeInformation * shapeInfo = new shape::ShapeInformation;
-    shapeInfo->shape = shape;
-    shapeInfo->stride = stride;
-    shapeInfo->offset = 0;
-    shapeInfo->rank = rank;
+    shape::ShapeInformation * shapeInfo = new shape::ShapeInformation(shape, stride, 0, rank);
     int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
                                                             0);
     if(elementWiseStride < 1)
@@ -130,18 +126,19 @@ class BaseTest {
 public:
     BaseTest() {
     }
-    BaseTest(int rank, int opNum,Data<T> *data,int extraParamsLength) {
-        this->rank = rank;
-        this->baseData = data;
-        this->opNum = opNum;
-        this->extraParamsLength = extraParamsLength;
+    BaseTest(int rank_, int opNum_,Data<T> *data, int extraParamsLength_)
+        : rank(rank_), baseData(data), opNum(opNum_), extraParamsLength(extraParamsLength_) {
         init();
     }
 
     virtual ~BaseTest() {
         if(data != NULL)
-            nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(&data);
-        freeAssertion();
+            nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(data);
+
+        if(extraParamsBuff != NULL)
+            nd4j::buffer::freeBuffer(extraParamsBuff);
+
+        delete []result;
     }
 
     virtual nd4j::buffer::Buffer<int> * gpuInformationBuffer() {
@@ -197,11 +194,8 @@ protected:
         for(int i = 0; i < resultLength; i++) {
             result->data->data[i] = baseData->result[i];
         }
-    }
 
-    virtual void freeAssertion() {
-        if(extraParamsBuff != NULL)
-            nd4j::buffer::freeBuffer(&extraParamsBuff);
+        delete []resultStride;
     }
 
     virtual void initializeData() {
@@ -224,18 +218,17 @@ public:
     }
     //BaseTest(int rank,int opNum,Data<T> *data,int extraParamsLength)
     PairWiseTest(int rank, int opNum, Data<T> *data, int extraParamsLength)
-            :BaseTest<T>(rank,opNum,data,extraParamsLength)  {
-        init();
-    }
-    virtual ~PairWiseTest() {}
-    virtual void init() override {
+            : BaseTest<T>(rank,opNum,data,extraParamsLength)  {
         yRank = this->baseData->yRank;
         yShape = this->baseData->yShape;
         yStride = shape::calcStrides(yShape,yRank);
         yData = nd4j::array::NDArrays<T>::createFrom(this->baseData->y,yRank, yShape, yStride, 0);
     }
 
-
+    virtual ~PairWiseTest() {
+        delete yData;
+        delete []yStride;
+    }
 };
 
 

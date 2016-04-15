@@ -98,8 +98,8 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     }
 
     delete op;
-    delete xShapeBuffer;
-    delete yShapeBuffer;
+    delete []xShapeBuffer;
+    delete []yShapeBuffer;
 }
 
 TEST(PairWiseUtil,PairWiseUtilEuclideanDistance) {
@@ -160,9 +160,9 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
     int *resultShapeBuffer = shape::shapeBuffer(rank,resultShape);
     op->exec(data,xShapeBuffer,NULL,yData,yShapeBuffer,result,resultShapeBuffer,dimension,dimensionLength);
 
-    delete xShapeBuffer;
-    delete yShapeBuffer;
-    delete resultShapeBuffer;
+    delete []xShapeBuffer;
+    delete []yShapeBuffer;
+    delete []resultShapeBuffer;
     delete op;
 }
 

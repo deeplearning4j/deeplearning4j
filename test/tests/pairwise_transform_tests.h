@@ -70,9 +70,9 @@ public:
 				this->extraParams,
 				length);
 
-		free(shapeBuff);
-		free(yShapeBuff);
-		free(resultShapeBuff);
+        delete []shapeBuff;
+        delete []yShapeBuff;
+        delete []resultShapeBuff;
 	}
 
 	virtual void run () override {
@@ -122,9 +122,9 @@ Data<T> * getPairwiseData(T *assertion,int opNum) {
 	data->rank = rank;
 	data->yRank = yRank;
 	data->resultRank = resultRank;
-	data->xShape = (int *) malloc(sizeof(int) * rank);
-	data->yShape = (int *) malloc(sizeof(int) * yRank);
-	data->resultShape = (int *) malloc(sizeof(int) * yRank);
+    data->xShape = new int[rank];
+    data->yShape = new int[yRank];
+    data->resultShape = new int[yRank];
 
 	for(int i = 0; i < 2; i++) {
 		data->xShape[i] = 2;
@@ -133,20 +133,20 @@ Data<T> * getPairwiseData(T *assertion,int opNum) {
 	}
 
 
-	T *extraParams = (T *) malloc(sizeof(T) * 2);
+    T *extraParams = new T[2];
 	data->extraParams = extraParams;
-	T *y = (T *) malloc(sizeof(T) * length);
-	data->y = y;
+    T *y = new T[length];
+    data->y = y;
 	for(int i = 0; i < length; i++) {
 		y[i] = i + 2;
 	}
 
-	T *comparisionAssertion = (T *) malloc(sizeof(T) * 4);
-	for(int i = 0; i < 4; i++)
+    T *comparisionAssertion = new T[length];
+    for(int i = 0; i < length; i++)
 		comparisionAssertion[i] = assertion[i];
 	data->assertion = comparisionAssertion;
 
-	data->result = (T *) malloc(sizeof(T) * length);
+    data->result = new T[length];
 
 	return data;
 }

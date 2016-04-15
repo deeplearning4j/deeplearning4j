@@ -80,9 +80,10 @@ public:
 		assertBufferProperties(resultShapeBuff);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeBuff);
 		int n = shape::length(xShapeBuff);
-		op->transform(this->data->data->data,xElementWiseStride,this->result->data->data,resultElementWiseStride,this->baseData->scalar,this->extraParams,n);
-		free(xShapeBuff);
-		free(resultShapeBuff);
+        op->transform(this->data->data->data,xElementWiseStride,this->result->data->data,resultElementWiseStride,this->baseData->scalar,this->extraParams,n);
+
+        delete []xShapeBuff;
+        delete []resultShapeBuff;
 	}
 
 protected:
@@ -149,51 +150,57 @@ public:
 
 template <typename T>
 static Data<T> * getData(T *comparison,int rank) {
-	Data<T> *data = new Data<T>();
+    Data<T> *data = new Data<T>();
+
+    constexpr int resultRank = 2;
+
 	data->scalar = 1;
 	data->rank = rank;
-	data->resultRank = 2;
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	data->resultShape = (int *) malloc(sizeof(int) * 2);
+    data->resultRank = resultRank;
+    data->xShape = new int[resultRank];
+    data->resultShape = new int[resultRank];
 
-	for(int i = 0; i < 2; i++) {
+    for(int i = 0; i < resultRank; i++) {
 		data->xShape[i] = 2;
 		data->resultShape[i] = 2;
 
 	}
-	data->result = (T *) malloc(sizeof(T *) * 4);
-	data->assertion = (T *) malloc(sizeof(T) * 4);
+
+    //FIXME magic number
+    data->result = new T[4];
+    data->assertion = new T[4];
 	for(int i = 0; i < 4; i++)
 		data->assertion[i] = comparison[i];
 	data->rank = rank;
-	data->extraParams = (T *) malloc(sizeof(T) * 2);
+    data->extraParams = new T[resultRank];
 	return data;
 
 }
 
 template <typename T>
 static Data<T> * getData(T *comparison,T scalar,int rank) {
-	Data<T> *data = new Data<T>();
+    Data<T> *data = new Data<T>();
+    int resultRank = 2;
+
 	data->scalar = scalar;
 	data->rank = rank;
-	data->resultRank = 2;
-	data->xShape = (int *) malloc(sizeof(int) * 2);
-	data->resultShape = (int *) malloc(sizeof(int) * 2);
+    data->resultRank = resultRank;
+    data->xShape = new int[resultRank];
+    data->resultShape = new int[resultRank];
 
-	for(int i = 0; i < 2; i++) {
+    for(int i = 0; i < resultRank; i++) {
 		data->xShape[i] = 2;
 		data->resultShape[i] = 2;
 
 	}
 
-	data->result = (T *) malloc(sizeof(T *) * 4);
-	data->assertion = (T *) malloc(sizeof(T) * 4);
+    data->result = new T[4];
+    data->assertion = new T[4];
 	for(int i = 0; i < 4; i++)
 		data->assertion[i] = comparison[i];
 	data->rank = rank;
-	data->extraParams = (T *) malloc(sizeof(T) * 2);
+    data->extraParams = new T[resultRank];
 	return data;
-
 }
 
 TEST(ScalarTransform,ObjectOrientedScalarAdd) {
@@ -246,10 +253,9 @@ TEST(ScalarTransform,ObjectOrientedScalarDiv) {
 
 	Data<double> *data = getData<double>(comparison,2,rank);
 
-	DoubleScalarTest *test = new DoubleScalarTest(rank,opNum,data,1);
-	test->run();
+    DoubleScalarTest test(rank,opNum,data,1);
+    test.run();
 
-	delete test;
 	delete data;
 }
 

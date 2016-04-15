@@ -143,7 +143,6 @@ namespace functions {
 		//shared memory space for storing intermediate results
 		SharedMemory <T> val;
 		volatile T *sPartials = val.getPointer();
-		int numElements = blockDim.x;
 		T init = this->startingValue(dx);
 		//for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
 		sPartials[threadIdx.x] = init;

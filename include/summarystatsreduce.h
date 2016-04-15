@@ -846,7 +846,6 @@ struct SharedSummaryStatsData<double> {
 			    xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
             int n = shape::length(xShapeInfo);
-            int numElements = blockDim.x;
 
 			__syncthreads();
 

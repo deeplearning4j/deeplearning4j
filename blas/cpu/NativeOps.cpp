@@ -1466,12 +1466,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
     }
     else {
-        int idx = 0;
         int rank = shape::rank(inputShapeInfoPointer);
-        int *coord = new int[rank];
         int *xShape = shape::shapeOf(inputShapeInfoPointer);
-        int *xStride = shape::stride(inputShapeInfoPointer);
-        int len = shape::length(inputShapeInfoPointer);
         int tadShape = xShape[ dimension ];
  #pragma omp  parallel  for
          for(int i = 0; i < numTads; i++) {

@@ -196,7 +196,6 @@ namespace functions {
 			int resultStride,
 			int *allocationPointer, T *reductionPointer) {
 		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if(incy == 1 && resultStride == 1) {
