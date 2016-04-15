@@ -357,6 +357,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void setData(int[] data) {
         set(data, data.length, 0, 0);
+        allocator.synchronizeHostData(this);
     }
 
     @Override

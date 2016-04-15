@@ -377,7 +377,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
 
         cublasHandle handle = ctx.getHandle();
-        synchronized (handle) {
+//        synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
             long[] p = new long[]{ctx.getHandle().getNativePointer()};
@@ -388,7 +388,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX,
                     xBPointer.getDevicePointer().getNativePointer(),
                     incY);
-        }
+//        }
     }
 
     @Override

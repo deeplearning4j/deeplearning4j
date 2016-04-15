@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.impl;
 
+import jcuda.runtime.cudaEvent_t;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -80,6 +81,7 @@ public class AllocationPoint {
     private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
 
     private volatile GarbageReference garbageReference;
+
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer

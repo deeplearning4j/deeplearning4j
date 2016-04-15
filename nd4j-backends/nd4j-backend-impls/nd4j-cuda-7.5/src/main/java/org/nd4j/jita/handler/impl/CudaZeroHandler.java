@@ -3,8 +3,6 @@ package org.nd4j.jita.handler.impl;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
-import jcuda.driver.CUcontext;
-import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
@@ -14,27 +12,26 @@ import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.flow.FlowController;
+import org.nd4j.jita.allocator.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.allocator.impl.*;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.jita.memory.impl.CudaCachingProvider;
+import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
-import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.util.NioUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,7 +73,9 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final MemoryProvider provider = new CudaCachingProvider();
+    private final MemoryProvider provider = new CudaCachingZeroProvider();
+
+    private final FlowController flowController = new SynchronousFlowController();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -116,6 +115,7 @@ public class CudaZeroHandler implements MemoryHandler {
         this.allocator = allocator;
 
         this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
+        this.flowController.init(allocator);
         //initCudaContextForThread(Thread.currentThread().getId());
     }
 
@@ -471,7 +471,7 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = getCudaContext();
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
-      Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
+        Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
      //   Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
 //        log.info("Location: " + point.getAllocationStatus());
@@ -950,33 +950,6 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         // we synchronize only if this AllocationPoint was used within device context, so for multiple consequent syncs only first one will be issued
-
-        // FIXME: this is wrong
-       // CudaContext context = getCudaContext();
-      //  context.syncOldStream();
-
-        if (!point.isActualOnHostSide()) {
-            CudaContext context = getCudaContext();
-            //log.info("Starting synchronization");
-
-            // if this piece of memory is device-dependant, we'll also issue copyback once
-            if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
-                context.syncOldStream();
-                JCuda.cudaMemcpyAsync(
-                        new Pointer(point.getHostPointer().address()),
-                        new Pointer(point.getDevicePointer().address()),
-                        AllocationUtils.getRequiredMemory(point.getShape()),
-                        cudaMemcpyKind.cudaMemcpyDeviceToHost,
-                        context.getOldStream()
-                );
-            } else log.info("Not on [DEVICE]");
-//            System.out.println("Synchronizing...");
-//            CUcontext cUcontext = contextPool.getCuContextForDevice(deviceId);
-//            JCudaDriver.cuCtxSetCurrent(cUcontext);
-
-            context.syncOldStream();
-
-            point.tickHostRead();
-        };
+        flowController.synchronizeToHost(point);
     }
 }
