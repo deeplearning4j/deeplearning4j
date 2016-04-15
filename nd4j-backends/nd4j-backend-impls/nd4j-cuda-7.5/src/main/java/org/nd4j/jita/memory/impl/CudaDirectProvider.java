@@ -156,7 +156,7 @@ public class CudaDirectProvider implements MemoryProvider {
          */
         //if (configuration != null && used > total * configuration.getMaxDeviceMemoryUsed()) return false;
 
-        if (free + requiredMemory < total * 0.90)
+        if (free + requiredMemory < total * 0.85)
             return true;
         else return false;
     }

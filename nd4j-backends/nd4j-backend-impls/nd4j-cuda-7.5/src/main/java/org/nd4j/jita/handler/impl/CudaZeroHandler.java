@@ -861,14 +861,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     devicesAffinity.put(threadId, device);
 
                     if (!deviceAllocations.containsKey(device)) {
-                        log.info("Putting new map");
                         deviceAllocations.put(device, new ConcurrentHashMap<Long, Long>());
                     }
 
                     log.debug("Mapping device [" + device + "] to thread [" + Thread.currentThread().getId() + "]");
-
-                    //initCudaContextForThread(threadId);
-                    //initializeDevice(threadId, device);
                 }
                 return devicesAffinity.get(threadId);
             } finally {
@@ -956,11 +952,11 @@ public class CudaZeroHandler implements MemoryHandler {
         // we synchronize only if this AllocationPoint was used within device context, so for multiple consequent syncs only first one will be issued
 
         // FIXME: this is wrong
-        CudaContext context = getCudaContext();
-        context.syncOldStream();
+       // CudaContext context = getCudaContext();
+      //  context.syncOldStream();
 
         if (!point.isActualOnHostSide()) {
-
+            CudaContext context = getCudaContext();
             //log.info("Starting synchronization");
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
