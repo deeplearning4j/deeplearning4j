@@ -76,7 +76,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final MemoryProvider provider = new CudaDirectProvider();
+    private final MemoryProvider provider = new CudaCachingProvider();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -181,7 +181,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
                 JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-                JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
+                // ABC  JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
                 pickupHostAllocation(point);
 
@@ -213,7 +213,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, getCudaContext().getOldStream());
-                            JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
+                            // ABC  JCuda.cudaStreamSynchronize(getCudaContext().getOldStream());
 
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
@@ -584,7 +584,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public org.bytedeco.javacpp.Pointer getDevicePointer(DataBuffer buffer) {
         // TODO: It would be awesome to get rid of typecasting here
-        getCudaContext().syncOldStream();
+        //getCudaContext().syncOldStream();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
