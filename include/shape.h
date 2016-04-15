@@ -333,13 +333,13 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(const int *shape, int rank);
+    inline int isMatrix(int *shape, int rank);
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
-    inline int isMatrix(const int *shapeInfo);
+    inline int isMatrix(int *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -348,7 +348,6 @@ namespace shape {
     __host__ __device__
 #endif
 
-    const int* shapeOf(const int *buffer);
     int *shapeOf(int *buffer);
 
 /**
@@ -456,7 +455,6 @@ namespace shape {
     __host__ __device__
 #endif
 
-    const int *stride(const int *buffer);
     int *stride(int *buffer);
 
 /**
@@ -1872,7 +1870,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline Nd4jIndex *computeIndices(int rank, const int *shape, const int *stride) {
+    inline Nd4jIndex *computeIndices(int rank, int *shape, const int *stride) {
         int length = shape::prodLong(shape,rank);
         Nd4jIndex *ret = new Nd4jIndex[length];
         for(int i = 0; i < length; i++) {
@@ -1890,7 +1888,7 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline Nd4jIndex *computeIndices(const int *shapeBuffer) {
+    inline Nd4jIndex *computeIndices(int *shapeBuffer) {
         return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
     }
 
@@ -2455,7 +2453,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(const int *shapeInfo) {
+    inline int isMatrix(int *shapeInfo) {
         return isMatrix(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
@@ -2468,10 +2466,6 @@ namespace shape {
 #endif
 
     inline int *shapeOf(int *buffer) {
-        return buffer + 1;
-    }
-
-    inline const int *shapeOf(const int *buffer) {
         return buffer + 1;
     }
 

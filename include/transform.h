@@ -234,7 +234,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    const Nd4jIndex *indexes) {
+                    Nd4jIndex *indexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
