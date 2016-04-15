@@ -68,7 +68,7 @@
 #endif
 
 // CUDA Utility Helper Functions
-inline int stringRemoveDelimiter(char delimiter, const char *string) {
+inline int stringRemoveDelimiter(char delimiter,  char *string) {
 	int string_start = 0;
 
 	while (string[string_start] == delimiter) {
@@ -100,16 +100,16 @@ inline int getFileExtension(char *filename, char **extension) {
 	return string_length;
 }
 
-inline int checkCmdLineFlag(int argc, const char **argv,
-		const char *string_ref) {
+inline int checkCmdLineFlag(int argc,  char **argv,
+		 char *string_ref) {
 	bool bFound = false;
 
 	if (argc >= 1) {
 		for (int i = 1; i < argc; i++) {
 			int string_start = stringRemoveDelimiter('-', argv[i]);
-			const char *string_argv = &argv[i][string_start];
+			 char *string_argv = &argv[i][string_start];
 
-			const char *equal_pos = strchr(string_argv, '=');
+			 char *equal_pos = strchr(string_argv, '=');
 			int argv_length = (int) (
 					equal_pos == 0 ?
 							strlen(string_argv) : equal_pos - string_argv);
@@ -128,15 +128,15 @@ inline int checkCmdLineFlag(int argc, const char **argv,
 	return (int) bFound;
 }
 
-inline int getCmdLineArgumentInt(int argc, const char **argv,
-		const char *string_ref) {
+inline int getCmdLineArgumentInt(int argc,  char **argv,
+		 char *string_ref) {
 	bool bFound = false;
 	int value = -1;
 
 	if (argc >= 1) {
 		for (int i = 1; i < argc; i++) {
 			int string_start = stringRemoveDelimiter('-', argv[i]);
-			const char *string_argv = &argv[i][string_start];
+			 char *string_argv = &argv[i][string_start];
 			int length = (int) strlen(string_ref);
 
 			if (!STRNCASECMP(string_argv, string_ref, length)) {
@@ -160,15 +160,15 @@ inline int getCmdLineArgumentInt(int argc, const char **argv,
 	}
 }
 
-inline float getCmdLineArgumentFloat(int argc, const char **argv,
-		const char *string_ref) {
+inline float getCmdLineArgumentFloat(int argc,  char **argv,
+		 char *string_ref) {
 	bool bFound = false;
 	float value = -1;
 
 	if (argc >= 1) {
 		for (int i = 1; i < argc; i++) {
 			int string_start = stringRemoveDelimiter('-', argv[i]);
-			const char *string_argv = &argv[i][string_start];
+			 char *string_argv = &argv[i][string_start];
 			int length = (int) strlen(string_ref);
 
 			if (!STRNCASECMP(string_argv, string_ref, length)) {
@@ -192,8 +192,8 @@ inline float getCmdLineArgumentFloat(int argc, const char **argv,
 	}
 }
 
-inline bool getCmdLineArgumentString(int argc, const char **argv,
-		const char *string_ref, char **string_retval) {
+inline bool getCmdLineArgumentString(int argc,  char **argv,
+		 char *string_ref, char **string_retval) {
 	bool bFound = false;
 
 	if (argc >= 1) {

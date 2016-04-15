@@ -54,7 +54,7 @@ int opSize() {
             int inShape2 = inShape[2];
             int inShape3 = inShape[3];
 
-            const boolean padding = padHeight > 0 || padWidth > 0;
+             boolean padding = padHeight > 0 || padWidth > 0;
 
             T dIn = dbIn;
             T dOut = dbOut;
@@ -204,7 +204,7 @@ private:
             int xOutTo = inShape[5];
 
 
-            const boolean padding = padHeight > 0 || padWidth > 0;
+             boolean padding = padHeight > 0 || padWidth > 0;
 
             T * fIn = dbCol;
             T * fOut = dbOut;

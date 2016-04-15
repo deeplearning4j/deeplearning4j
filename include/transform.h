@@ -234,7 +234,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    int *indexes) {
+                    Nd4jIndex *indexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp simd
                 for (int i = 0; i < n; i++) {
@@ -258,7 +258,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    Nd4jIndex *indexes,
+                     Nd4jIndex *indexes,
                     Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
@@ -3220,7 +3220,7 @@ namespace functions {
 
 			data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
 
-			const T* data_im_ptr = dx;
+			 T* data_im_ptr = dx;
 
 			data_im_ptr += (c_im * height + h_offset) * width + w_offset;
 
@@ -3294,7 +3294,7 @@ namespace functions {
                     int inShape2 = inShape[2];
                     int inShape3 = inShape[3];
 
-                    const bool padding = padHeight > 0 || padWidth > 0;
+                     bool padding = padHeight > 0 || padWidth > 0;
 
                     T *dIn = dx;
                     T *dOut = result;
@@ -3609,7 +3609,7 @@ namespace functions {
                     int xOutTo = inShape[5];
 
 
-                    const bool padding = padHeight > 0 || padWidth > 0;
+                     bool padding = padHeight > 0 || padWidth > 0;
 
                     T *fIn = dx;
                     T *fOut = result;
@@ -3915,7 +3915,6 @@ namespace functions {
                         T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
-                        int *stride = shape::stride(xShapeBuffer);
                         //iterate along rows
                         int dimension[1] = {0};
                         int maxDimension[1] = {1};
@@ -4493,7 +4492,6 @@ namespace functions {
                         T *extraParams) {
                     if (shape::isMatrix(xShapeBuffer, 2)) {
                         int *shape = shape::shapeOf(xShapeBuffer);
-                        int *stride = shape::stride(xShapeBuffer);
 
                         int resultEleStide = shape::elementWiseStride(resultShapeBuffer);
 
@@ -4862,9 +4860,9 @@ namespace functions {
                                     resultStridesIter);
 
                             //pointer to where max value would be
-                            if(shape::order(resultShapeBuffer) == 'c' || shape::order(resultShapeBuffer) == 'f' &&
+                            if(shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
                                                                          maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-                                                                         shape::length(resultShapeBuffer))
+                                                                         shape::length(resultShapeBuffer)))
                                 originalResult[maxIdx] = 1.0;
                             else
                                 originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
@@ -4961,7 +4959,7 @@ namespace functions {
                         int *resultShapeBuffer,
                         T *extraParams) {
                     if (extraParams == NULL || extraParams[0] == 0 ||
-                        extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION) {
+                        (extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION)) {
                         this->doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
                     }
                     else if(shape::isVector(xShapeBuffer)) {

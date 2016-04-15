@@ -174,7 +174,7 @@ namespace functions {
 
 
 #endif
-            T getM2() const {
+            T getM2()  {
                 return M2;
             }
 
@@ -196,7 +196,7 @@ namespace functions {
 
 
 #endif
-            T getM3() const {
+            T getM3()  {
                 return M3;
             }
 
@@ -218,7 +218,7 @@ namespace functions {
 
 
 #endif
-            T getM4() const {
+            T getM4()  {
                 return M4;
             }
 
@@ -240,7 +240,7 @@ namespace functions {
 
 
 #endif
-            T getMax() const {
+            T getMax()  {
                 return max;
             }
 
@@ -262,7 +262,7 @@ namespace functions {
 
 
 #endif
-            T getMean() const {
+            T getMean()  {
                 return mean;
             }
 
@@ -284,7 +284,7 @@ namespace functions {
 
 
 #endif
-            T getMin() const {
+            T getMin()  {
                 return min;
             }
 
@@ -306,7 +306,7 @@ namespace functions {
 
 
 #endif
-            T getN() const {
+            T getN()  {
                 return n;
             }
 
