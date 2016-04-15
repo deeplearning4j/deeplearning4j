@@ -278,15 +278,21 @@ public class CudaFloatDataBufferTest {
 
     @Test
     public void testArraySimple() throws Exception {
+        INDArray array2 = Nd4j.linspace(1, 100000, 100000);
+
         INDArray array = Nd4j.create(new float[] {1f, 2f, 3f});
 
-        AtomicAllocator.getInstance().getPointer(array);
-        AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
+       // AtomicAllocator.getInstance().getPointer(array);
+       // AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
 
         System.out.println("------------------------");
 
-        AtomicAllocator.getInstance().getPointer(array);
-        AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
+        //AtomicAllocator.getInstance().getPointer(array);
+        //AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
+
+        System.out.println("------------------------");
+
+        System.out.println(array.shapeInfoDataBuffer());
     }
 
     @Test

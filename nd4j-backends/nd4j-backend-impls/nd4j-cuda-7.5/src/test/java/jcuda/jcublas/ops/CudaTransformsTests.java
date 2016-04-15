@@ -437,12 +437,15 @@ public class CudaTransformsTests {
     @Test
     public void testClassificationSoftmax() {
         INDArray input = Nd4j.zeros(256, 3000);
+        System.out.println("A0: --------------------------------");
         for (int i = 0; i < 256; i++) {
             input.putScalar(3000 * i, (i * 2) + 0.5);
         }
 
+        System.out.println("A1: --------------------------------");
         System.out.println("Data:" + input.data().length() + " Sum: " + input.sumNumber());
 
+        System.out.println("A2: --------------------------------");
         SoftMax softMax = new SoftMax(input);
         long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
@@ -456,7 +459,7 @@ public class CudaTransformsTests {
 */
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
-            System.out.println("--------------------------------");
+            System.out.println("AX: --------------------------------");
             System.out.println("Position [0]: " + input.getDouble(3000 * i) + ", [1]: " + input.getDouble(3000 * i + 1));
 
           //  float sum = slice.sumNumber().floatValue();

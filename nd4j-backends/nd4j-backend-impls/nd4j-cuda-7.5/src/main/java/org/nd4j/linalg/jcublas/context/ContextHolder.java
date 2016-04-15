@@ -255,11 +255,11 @@ public class ContextHolder {
                 getContext(i,thread.getName());
         }
 
-
+/*
         setContext();
 
 
-/*
+
         // Check if the device supports mapped host memory
         cudaDeviceProp deviceProperties = new cudaDeviceProp();
         JCuda.cudaGetDeviceProperties(deviceProperties, 0);

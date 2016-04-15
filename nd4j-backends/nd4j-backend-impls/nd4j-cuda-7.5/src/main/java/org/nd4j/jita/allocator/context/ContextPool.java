@@ -89,14 +89,14 @@ public class ContextPool {
 
                 // if we hadn't hit MAX_STREAMS_PER_DEVICE limit - we add new stream. Otherwise we use random one.
                 if (contextsForDevices.get(deviceId).size() < MAX_STREAMS_PER_DEVICE) {
-                    logger.info("Creating new context...");
+                    logger.debug("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
                     getDeviceBuffers(context, deviceId);
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.info("Creating new cuBLAS handle for device ["+deviceId+"]...");
+                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
@@ -107,7 +107,7 @@ public class ContextPool {
                         cublasPool.put(deviceId, handle);
                     } else {
                         // just pick handle out there
-                        logger.info("Reusing blas here...");
+                        logger.debug("Reusing blas here...");
                         cublasHandle handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
@@ -126,7 +126,7 @@ public class ContextPool {
                     return context;
                 } else {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
-                    logger.info("Reusing context: " + rand);
+                    logger.debug("Reusing context: " + rand);
 
                     JCuda.cudaSetDevice(deviceId);
 
@@ -147,7 +147,7 @@ public class ContextPool {
     }
 
     private CudaContext createNewStream(Integer deviceId) {
-        logger.info("Creating new stream for device ["+deviceId+"]...");
+        logger.debug("Creating new stream for device ["+deviceId+"]...");
         JCuda.cudaSetDevice(deviceId);
 
         CudaContext context = new CudaContext();
@@ -169,7 +169,7 @@ public class ContextPool {
     }
 
     private CUcontext createNewContext(Integer deviceId) {
-        logger.info("Creating new CUcontext...");
+        logger.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
 
@@ -197,7 +197,7 @@ public class ContextPool {
     public synchronized void resetPool(int deviceId) {
 
         for (CUcontext cuContext: cuPool.values()) {
-            logger.info("Destroying context: " + cuContext);
+            logger.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
         }
 
