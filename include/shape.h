@@ -27,6 +27,9 @@ namespace shape {
  * the information on an ndarray
  */
     struct ShapeInformation {
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
         ShapeInformation(int *shape_ = nullptr, int *stride_ = nullptr, char order_ = 0, int rank_ = 0, int offset_ = 0, int elementWiseStride_ = 0)
                 : shape(shape_), stride(stride_), order(order_), rank(rank_), offset(offset_), elementWiseStride(elementWiseStride_)
         {}

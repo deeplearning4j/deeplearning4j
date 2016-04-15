@@ -468,7 +468,6 @@ struct SharedIndexValue<double> {
 		//reduce to 1 result
 		else if (resultScalar) {
 			int n = shape::length(xShapeInfo);
-			int numElements = blockDim.x;
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {
