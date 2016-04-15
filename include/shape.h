@@ -2438,7 +2438,7 @@ namespace shape {
     __host__ __device__
 #endif
 
-    inline int isMatrix(int *shape, int rank) {
+    inline int isMatrix(const int *shape, int rank) {
         if (rank > 2)
             return 0;
         else if (rank <= 2) {

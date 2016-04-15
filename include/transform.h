@@ -258,7 +258,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                    Nd4jIndex *indexes,
+                    const Nd4jIndex *indexes,
                     Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
