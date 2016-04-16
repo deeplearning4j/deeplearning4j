@@ -312,9 +312,13 @@ public class CudaFloatDataBufferTest {
 
         System.out.println("X3: ------------------------");
 
-        System.out.println(Shape.isRowVectorShape(slice.shapeInfoDataBuffer()));
+        AtomicAllocator.getInstance().getPointer(slice.shapeInfoDataBuffer());
 
         System.out.println("X4: ------------------------");
+
+        System.out.println(Shape.isRowVectorShape(slice.shapeInfoDataBuffer()));
+
+        System.out.println("X5: ------------------------");
 
         System.out.println(slice.shapeInfoDataBuffer());
     }
