@@ -478,7 +478,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
         //Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
-        Pointer dP = new Pointer((point.getPointers().getDevicePointer().address()) + dstOffset);
+        Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
         //log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
@@ -489,7 +489,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 srcPointer,
                 length,
           //      (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
-                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                cudaMemcpyKind.cudaMemcpyHostToHost,
                 context.getOldStream()
         );
 
@@ -498,13 +498,13 @@ public class CudaZeroHandler implements MemoryHandler {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
 //            context.syncOldStream();
 //            log.info("MemcpyAsync to device...");
-            Pointer rDP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
+            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
             JCuda.cudaMemcpyAsync(
                     rDP,
-                    srcPointer,
+                    dP,
                     length,
-                    cudaMemcpyKind.cudaMemcpyHostToHost,
+                    cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );
 
