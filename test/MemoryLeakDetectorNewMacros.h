@@ -27,58 +27,55 @@
 /* This #ifndef prevents <new> from being included twice and enables the file to be included anywhere */
 #ifndef CPPUTEST_USE_NEW_MACROS
 
-#if CPPUTEST_USE_STD_CPP_LIB
-#include <new>
-#include <memory>
-#include <string>
-#endif
+    #if CPPUTEST_USE_STD_CPP_LIB
+        #include <new>
+        #include <memory>
+        #include <string>
+    #endif
 #ifdef __CUDACC__
-__host__ __device__
+		__host__ __device__
 #endif
-void* operator new(int size, const char* file, int line) UT_THROW (std::bad_alloc);
+    void* operator new(size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
 #ifdef __CUDACC__
-__host__ __device__
-#endif
-void* operator new[](int size, const char* file, int line) UT_THROW (std::bad_alloc);
+		__host__ __device__
+#endif    
+void* operator new[](size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
 #ifdef __CUDACC__
-__host__ __device__
-#endif
-void* operator new(int size) UT_THROW(std::bad_alloc);
+		__host__ __device__
+#endif    
+void* operator new(size_t size) UT_THROW(std::bad_alloc);
 #ifdef __CUDACC__
-__host__ __device__
-#endif
-void* operator new[](int size) UT_THROW(std::bad_alloc);
+		__host__ __device__
+#endif    
+void* operator new[](size_t size) UT_THROW(std::bad_alloc);
 #ifdef __CUDACC__
-__host__ __device__
+		__host__ __device__
 #endif
-void operator delete(void* mem) UT_NOTHROW;
+    void operator delete(void* mem) UT_NOTHROW;
 #ifdef __CUDACC__
-__host__ __device__
-#endif
+		__host__ __device__
+#endif    
 void operator delete[](void* mem) UT_NOTHROW;
 #ifdef __CUDACC__
-__host__ __device__
-#endif
+		__host__ __device__
+#endif    
 void operator delete(void* mem, const char* file, int line) UT_NOTHROW;
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-void operator delete[](void* mem, const char* file, int line) UT_NOTHROW;
+    void operator delete[](void* mem, const char* file, int line) UT_NOTHROW;
 
 #endif
 
 
 #ifdef __clang__
-#pragma clang diagnostic push
+ #pragma clang diagnostic push
  #if __clang_major__ >= 3 && __clang_minor__ >= 6
   #pragma clang diagnostic ignored "-Wkeyword-macro"
  #endif
 #endif
 
-//#define new new(__FILE__, __LINE__)
+#define new new(__FILE__, __LINE__)
 
 #ifdef __clang__
-#pragma clang diagnostic pop
+ #pragma clang diagnostic pop
 #endif
 
 #define CPPUTEST_USE_NEW_MACROS 1

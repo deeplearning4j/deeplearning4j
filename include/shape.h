@@ -647,6 +647,9 @@ namespace shape {
      * at the beginning should be removed with middle dimensions
      * decremented.
      *
+     * For any time there is a no op, a collapse will
+     * set the first dimension to be -1.
+     *
      *
      */
     class DimensionCollapse {
@@ -655,12 +658,18 @@ namespace shape {
         __host__ __device__
 #endif
         void collapse(int *shapeInfo,int **dimension,int *dimensionLength) {
+            //handle negative dimensions/backwards indexing
+            for(int i = 0; i < (*dimensionLength); i++) {
+                if((*dimension)[i] < 0)
+                    (*dimension)[i] += shape::rank(shapeInfo);
+            }
+            int *originalDimension = *dimension;
             int *shape = shape::shapeOf(shapeInfo);
             int rank = shape::rank(shapeInfo);
             int result[MAX_RANK];
             //initial result should be the same as the original dimensions
             for(int i = 0; i < *dimensionLength; i++) {
-                result[i] = *dimension[i];
+                result[i] = (*dimension)[i];
             }
 
             //no more singular dimensions specified
@@ -668,32 +677,45 @@ namespace shape {
             int onesDecrement = 0;
             while(!done) {
                 //terminate early: only singular dimensions specified for reduce
-                if(*dimensionLength < 1) {
+                if((*dimensionLength) < 1) {
                     done = true;
+                    //signal as a no op
+                    *dimension[0] = -1;
                     break;
                 }
                 //captures intermediary result from the for loop
                 int intermediaryResult[MAX_RANK];
                 for(int i = 0; i < *dimensionLength; i++) {
-                    intermediaryResult[i] = *dimension[i];
+                    intermediaryResult[i] = (*dimension)[i];
                 }
 
                 bool oneEncountered = false;
                 bool nonOneEncountered = false;
+                bool hitBeginning = false;
+                //assume intermediate collapsing of dimensions
+                bool collapseMiddleDimensions = true;
                 //note here that dimension length MAY end up being zero
-                for(int i = *dimensionLength - 1; i >= 0; i--) {
-                    if(shape[dimension[i]] == 1) {
+                for(int i = (*dimensionLength) - 1; i >= 0; i--) {
+                    if(shape[(*dimension)[i]] == 1) {
                         oneEncountered = true;
-                         //trailing ones
+                        //trailing ones
                         if(!nonOneEncountered) {
                             //just drop trailing ones
-                            *dimensionLength--;
+                            (*dimensionLength)--;
+                            nonOneEncountered = false;
+                            collapseMiddleDimensions = false;
                             //intermediary result just needs to have the results copied from dimension since we're just removing the tail
                             memcpy(intermediaryResult,*dimension,sizeof(int) * (*dimensionLength));
                             //break the for loop and force it to go back around starting from the new index
                             break;
                         }
                         else {
+                            //already decremented all dimensions
+                            //this was a result of hitting beginning ones
+                            //we will only need to loop once
+                            if(i == 0) {
+                                hitBeginning = true;
+                            }
                             //will need to shift dimensions that aren't trailing ones
                             //back by onesDecrement
                             //mark the intermediary result as -1 for non inclusion
@@ -702,32 +724,41 @@ namespace shape {
                         }
                     }
                     else {
-                        intermediaryResult[i] = *dimension[i];
+                        intermediaryResult[i] = (*dimension)[i];
                         nonOneEncountered = true;
                     }
                 }
 
-                //collapse dimensions
-                int newIntermediary[MAX_RANK];
-                int idx = 0;
-                for(int i = 0; i < dimensionLength; i++) {
-                    //of note: dimension will decrease by the number of ones encountered
-                    if(intermediaryResult[i] >= 0)
-                        newIntermediary[idx++] = intermediaryResult[i] - onesDecrement;
+                if(collapseMiddleDimensions && oneEncountered) {
+                    //collapse dimensions
+                    int newIntermediary[MAX_RANK];
+                    int idx = 0;
+                    for(int i = 0; i < *dimensionLength; i++) {
+                        //of note: dimension will decrease by the number of ones encountered
+                        if(intermediaryResult[i] >= 0) {
+                            //dimension 0 doesn't need to be decremented
+                            if(intermediaryResult[i] > 0)
+                                newIntermediary[idx++] = intermediaryResult[i] - onesDecrement;
+                            else
+                                newIntermediary[idx++] = intermediaryResult[i];
+                        }
+                    }
+
+                    //decrement by the number of dimensions where ones appeared
+                    (*dimensionLength) -= onesDecrement;
+                    //update to current result
+                    (*dimension) = newIntermediary;
                 }
+                    //converged: no need to change result
+                else
+                    (*dimension) = intermediaryResult;
 
-                //decrement by the number of dimensions where ones appeared
-                *dimensionLength -= onesDecrement;
-                intermediaryResult = newIntermediary;
 
-                //update to current result
-                *dimension = intermediaryResult;
                 //converge when there are no singular dimensions specified in the reduce
-                done = !oneEncountered && nonOneEncountered;
+                done = (!oneEncountered && nonOneEncountered) || hitBeginning;
             }
 
-            delete[] *dimension;
-            *dimension = result;
+            delete[] originalDimension;
         }
     };
 
