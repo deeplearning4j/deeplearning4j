@@ -489,14 +489,14 @@ public class CudaZeroHandler implements MemoryHandler {
                 srcPointer,
                 length,
           //      (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
-                cudaMemcpyKind.cudaMemcpyHostToDevice,
+                cudaMemcpyKind.cudaMemcpyHostToHost,
                 context.getOldStream()
         );
 
         // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
-            context.syncOldStream();
+//            context.syncOldStream();
 //            log.info("MemcpyAsync to device...");
             Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
