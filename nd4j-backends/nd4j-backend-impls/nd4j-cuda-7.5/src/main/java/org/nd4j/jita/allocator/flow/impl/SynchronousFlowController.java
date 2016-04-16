@@ -32,7 +32,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnHostSide()) {
 
-            log.info("Synchronization started... " + point.getShape());
+            //log.info("Synchronization started... " + point.getShape());
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
