@@ -99,4 +99,4 @@ Additional links:
 
 ## Next Steps
 
-Once you are done running the examples, have a look at our [documentation](http://deeplearning4j.org/documentation), our [more comprehensive setup guide](http://deeplearning4j.org/gettingstarted), or drop by [Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+Once you are done running the examples, have a look at our [documentation](http://deeplearning4j.org/documentation), our [more comprehensive setup guide](http://deeplearning4j.org/gettingstarted), or drop by [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). We have three big community channels on Gitter: 1) The [main channel](https://gitter.im/deeplearning4j/deeplearning4j) for anything and everything. Most people hang out here. 2) The [tuning help channel](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) for people just getting started with neural networks. Beginners please visit us here! 3) The [early adopters channel](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
