@@ -482,7 +482,7 @@ public class CudaZeroHandler implements MemoryHandler {
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
         //log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
-            //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
+            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
         JCuda.cudaMemcpyAsync(
                 dP,
@@ -496,9 +496,10 @@ public class CudaZeroHandler implements MemoryHandler {
         // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
-//            context.syncOldStream();
-//            log.info("MemcpyAsync to device...");
+            context.syncOldStream();
             Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+
+            log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 
             JCuda.cudaMemcpyAsync(
                     rDP,
