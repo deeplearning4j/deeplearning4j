@@ -435,9 +435,6 @@ namespace functions {
 				if (threadIdx.x == 0) {
 					delete[] tadShapeShapeInfo;
 
-					if(newSqueezeDimensions) {
-						delete[] dimension;
-					}
 
 					if(numOnes > 0) {
 						delete[] inputShapeInfo;

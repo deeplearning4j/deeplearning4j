@@ -543,9 +543,6 @@ namespace functions {
 				if (tid == 0) {
 					delete[] tadShapeShapeInfo;
 
-					if(newSqueezeDimensions) {
-						delete[] dimension;
-					}
 
 					if(numOnes > 0) {
 						delete[] xShapeInfo;
