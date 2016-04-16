@@ -478,18 +478,18 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
         //Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
-        Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
+        Pointer dP = new Pointer((point.getPointers().getDevicePointer().address()) + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
         //log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
-//            log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
+            //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
         JCuda.cudaMemcpyAsync(
                 dP,
                 srcPointer,
                 length,
           //      (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
-                cudaMemcpyKind.cudaMemcpyHostToHost,
+                cudaMemcpyKind.cudaMemcpyHostToDevice,
                 context.getOldStream()
         );
 
@@ -498,19 +498,19 @@ public class CudaZeroHandler implements MemoryHandler {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
 //            context.syncOldStream();
 //            log.info("MemcpyAsync to device...");
-            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+            Pointer rDP = new Pointer(point.getPointers().getHostPointer().address() + dstOffset);
 
             JCuda.cudaMemcpyAsync(
                     rDP,
-                    dP,
+                    srcPointer,
                     length,
-                    cudaMemcpyKind.cudaMemcpyHostToDevice,
+                    cudaMemcpyKind.cudaMemcpyHostToHost,
                     context.getOldStream()
             );
 
 //            context.syncOldStream();
         }
-    //    context.syncOldStream();
+        //context.syncOldStream();
         //point.tickDevice();
     }
 

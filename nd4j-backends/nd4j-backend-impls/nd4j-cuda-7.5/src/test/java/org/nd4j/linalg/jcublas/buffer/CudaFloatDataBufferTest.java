@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -277,22 +278,45 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
-    public void testArraySimple() throws Exception {
-        INDArray array2 = Nd4j.linspace(1, 100000, 100000);
+    public void testArraySimple1() throws Exception {
+       // INDArray array2 = Nd4j.linspace(1, 100000, 100000);
 
         INDArray array = Nd4j.create(new float[] {1f, 2f, 3f});
 
-       // AtomicAllocator.getInstance().getPointer(array);
-       // AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
-
         System.out.println("------------------------");
 
-        //AtomicAllocator.getInstance().getPointer(array);
-        //AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer());
+        System.out.println(Shape.isRowVectorShape(array.shapeInfoDataBuffer()));
 
         System.out.println("------------------------");
 
         System.out.println(array.shapeInfoDataBuffer());
+    }
+
+    @Test
+    public void testArraySimple2() throws Exception {
+        // INDArray array2 = Nd4j.linspace(1, 100000, 100000);
+
+        INDArray array = Nd4j.zeros(100, 100);
+
+        System.out.println("X0: ------------------------");
+
+        System.out.println(Shape.isRowVectorShape(array.shapeInfoDataBuffer()));
+
+        System.out.println("X1: ------------------------");
+
+        System.out.println(array.shapeInfoDataBuffer());
+
+        System.out.println("X2: ------------------------");
+
+        INDArray slice = array.getRow(12);
+
+        System.out.println("X3: ------------------------");
+
+        System.out.println(Shape.isRowVectorShape(slice.shapeInfoDataBuffer()));
+
+        System.out.println("X4: ------------------------");
+
+        System.out.println(slice.shapeInfoDataBuffer());
     }
 
     @Test
