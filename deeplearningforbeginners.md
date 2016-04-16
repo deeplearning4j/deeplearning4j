@@ -19,6 +19,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
+* [Google's Intro to Machine Learning on YouTube](https://www.youtube.com/watch?v=cKxRvEZd3Mw&index=2&list=PLOU2XLYxmsIIuiBfYad6rFYQU_jL2ryal)
 
 ## Math
 
