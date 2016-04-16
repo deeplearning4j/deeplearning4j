@@ -2,6 +2,7 @@ package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
@@ -435,15 +436,20 @@ public class CudaTransformsTests {
      }
 
     @Test
-    public void testClassificationSoftmax() {
+    public void testClassificationSoftmax() throws Exception {
         INDArray input = Nd4j.zeros(256, 3000);
         System.out.println("A0: --------------------------------");
         for (int i = 0; i < 256; i++) {
             input.putScalar(3000 * i, (i * 2) + 0.5);
         }
+        AtomicAllocator.getInstance().getPointer(input);
+        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
+        System.out.println("AA: --------------------------------");
+        float sumAll = input.sumNumber().floatValue();
         System.out.println("A1: --------------------------------");
-        System.out.println("Data:" + input.data().length() + " Sum: " + input.sumNumber());
+        System.out.println("Data:" + input.data().length() + " Sum: " + sumAll);
+        assertEquals(65408.0f, sumAll, 0.01f);
 
         System.out.println("A2: --------------------------------");
         SoftMax softMax = new SoftMax(input);

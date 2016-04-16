@@ -32,7 +32,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnHostSide()) {
 
-            // log.info("Synchronization started...");
+        //    log.info("Synchronization started... " + point.getShape());
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
@@ -49,7 +49,7 @@ public class SynchronousFlowController implements FlowController {
             context.syncOldStream();
 
             point.tickHostRead();
-        }// else log.info("Point is actual on host side");
+        }; // else log.info("Point is actual on host side! " + point.getShape());
     }
 
     @Override

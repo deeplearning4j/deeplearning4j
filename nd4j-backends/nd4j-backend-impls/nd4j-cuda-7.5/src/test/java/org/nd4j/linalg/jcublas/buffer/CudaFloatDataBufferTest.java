@@ -354,14 +354,16 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
-    public void testToFlattenedOrder() {
+    public void testToFlattenedOrder() throws Exception {
         INDArray concatC = Nd4j.linspace(1,4,4).reshape('c',2,2);
         INDArray concatF = Nd4j.create(new int[]{2,2},'f');
         concatF.assign(concatC);
         INDArray assertionC = Nd4j.create(new double[]{1,2,3,4,1,2,3,4});
-        INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
-        assertEquals(assertionC,testC);
+        //INDArray testC = Nd4j.toFlattened('c',concatC,concatF);
+        //assertEquals(assertionC,testC);
+        System.out.println("P0: --------------------------------------------------------");
         INDArray test = Nd4j.toFlattened('f',concatC,concatF);
+        System.out.println("P1: --------------------------------------------------------");
         INDArray assertion = Nd4j.create(new double[]{1,3,2,4,1,3,2,4});
         assertEquals(assertion,test);
     }
