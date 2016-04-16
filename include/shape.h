@@ -1344,30 +1344,7 @@ namespace shape {
             }
 
             if(numDimensionsOne > 0) {
-                int newDimensionsLength = dimensionLength;
-                int *newDimensions = new int[newDimensionsLength];
-                int newDimensionIdx = 0;
-                for(int i = 0; i < dimensionLength; i++) {
-                    if(shape[dimension[i]] != 1) {
-                        newDimensions[newDimensionIdx++] = dimension[i] - numDimensionsOne;
-                    }
-                }
-
-
-
-                if(dimensionZeroCollapsed) {
-                    //reduce along the new dimensions
-                    *dimensionRef = newDimensions;
-                    *dimensionLengthRef  = newDimensionsLength - numDimensionsOne;
-                }
-                else {
-                    //reduce along the new dimensions
-                    *dimensionRef = newDimensions;
-                    *dimensionLengthRef  = newDimensionsLength - numDimensionsOne;
-
-                }
-
-
+                this->collapse(shapeInfo,dimensionRef,dimensionLengthRef);
             }
 
 
@@ -1376,21 +1353,7 @@ namespace shape {
             shape = squeezeShape;
             stride = squeezeStride;
             wholeRank -= numOnes;
-            //adjustment happens above
-            if(numDimensionsOne  <= 0) {
 
-                //adjust dimensions
-                for(int i = 0; i < dimensionLength; i++) {
-                    dimension[i] -= numOnes;
-                }
-
-                for(int i = 0; i < dimensionLength; i++) {
-                    //didn't need to be adjusted
-                    if(dimension[i] < 0)
-                        dimension[i] += numDimensionsOne;
-                }
-
-            }
 
             char order = shape::order(shapeInfo);
             int *xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);

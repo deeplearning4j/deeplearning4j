@@ -463,14 +463,15 @@ namespace functions {
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
-								inputShapeInfo,
-								&dimension,
-								&dimensionLength,
-								&squeezed,
-								&newSqueezeDimensions,
-								wholeRank,
-								numOnes);
+					    shape::SingularDimensions singularDimension;
+                        inputShapeInfo = singularDimension.squeezeDimensions(
+                                inputShapeInfo,
+                                &dimension,
+                                &dimensionLength,
+                                &squeezed,
+                                &newSqueezeDimensions,
+                                wholeRank,
+                                numOnes);
 					}
 				}
 

@@ -324,7 +324,8 @@ struct SharedIndexValue<double> {
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
+						shape::SingularDimensions singularDimension;
+						inputShapeInfo = singularDimension.squeezeDimensions(
 								inputShapeInfo,
 								&dimension,
 								&dimensionLength,

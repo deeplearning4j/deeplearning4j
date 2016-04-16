@@ -369,14 +369,15 @@ namespace functions {
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
-							inputShapeInfo,
-							&dimension,
-							&dimensionLength,
-							&squeezed,
-							&newSqueezeDimensions,
-							wholeRank,
-							numOnes);
+						shape::SingularDimensions singularDimension;
+						inputShapeInfo = singularDimension.squeezeDimensions(
+								inputShapeInfo,
+								&dimension,
+								&dimensionLength,
+								&squeezed,
+								&newSqueezeDimensions,
+								wholeRank,
+								numOnes);
 					}
 				}
 
@@ -844,7 +845,8 @@ namespace functions {
                     //squeeze the dimensions
                     if (numOnes > 0) {
                         //note here dimension length can shrinken on the edge case where 0 is also a dimension that is a singular dimension
-                        xShapeInfo = shape::squeezeDimensions(
+                        shape::SingularDimensions singularDimension;
+                        xShapeInfo = singularDimension.squeezeDimensions(
                                 xShapeInfo,
                                 &dimension,
                                 &dimensionLength,
@@ -853,6 +855,7 @@ namespace functions {
                                 wholeRank,
                                 numOnes);
                     }
+
 
                     //Migrates it to be new shape information
                     if(dimensionLength <= 1) {
