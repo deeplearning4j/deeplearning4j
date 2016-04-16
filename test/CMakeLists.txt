@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.2)
+include_directories(../include)
 include_directories(tests)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
