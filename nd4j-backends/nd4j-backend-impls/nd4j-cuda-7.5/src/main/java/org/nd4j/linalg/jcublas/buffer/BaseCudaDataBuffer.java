@@ -227,7 +227,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //super(data);
         this(data.length, Sizeof.FLOAT);
         set(data, data.length, 0, 0);
-        allocator.synchronizeHostData(this);
     }
 
     public BaseCudaDataBuffer(int[] data) {

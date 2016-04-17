@@ -268,7 +268,7 @@ public class AllocationPoint {
     public boolean isActualOnDeviceSide() {
         //log.info("isActuialOnDeviceSide() -> Host side: [{}], Device side: [{}]", accessHostWrite.get(), accessDeviceWrite.get());
         boolean result = accessDeviceWrite.get() >= accessHostWrite.get() || accessDeviceRead.get() >= accessHostWrite.get(); //accessHostWrite.get() <= getDeviceAccessTime();
-        log.info("isActuialOnDeviceSide() -> {}, Shape: {}", result, shape);
+//        log.info("isActuialOnDeviceSide() -> {} ({}), Shape: {}", result, objectId, shape);
         return result;
     }
 

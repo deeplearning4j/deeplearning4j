@@ -184,7 +184,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
 
                 JCuda.cudaMemsetAsync(new Pointer(pair.getHostPointer().address()), 0, reqMemory, context.getOldStream());
-            //    JCuda.cudaStreamSynchronize(context.getOldStream());
+                JCuda.cudaStreamSynchronize(context.getOldStream());
 
                 pickupHostAllocation(point);
 
@@ -219,7 +219,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, context.getOldStream());
-                         //   JCuda.cudaStreamSynchronize(context.getOldStream());
+                            JCuda.cudaStreamSynchronize(context.getOldStream());
 
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
@@ -492,6 +492,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 cudaMemcpyKind.cudaMemcpyHostToHost,
                 context.getOldStream()
         );
+        context.syncOldStream();
 
         /*
         // OUT-OF-ORDER/OUT-OF-STREAM COPY, DO NOT UNCOMMENT, DO NOT REMOVE
@@ -524,7 +525,7 @@ public class CudaZeroHandler implements MemoryHandler {
 //        context.syncOldStream();
 
         //
-        point.tickDeviceRead();
+        point.tickDeviceWrite();
         point.tickHostRead();
 //
     }
@@ -574,7 +575,7 @@ public class CudaZeroHandler implements MemoryHandler {
        context.syncOldStream();
 
 
- //      point.tickDeviceWrite();
+       point.tickDeviceWrite();
 //       point.tickHostRead();
 
     }
@@ -649,7 +650,7 @@ public class CudaZeroHandler implements MemoryHandler {
             );
         }
 
-       // dstPoint.tickDevice();
+        dstPoint.tickDeviceWrite();
 
         // it has to be blocking call
         context.syncOldStream();
@@ -685,7 +686,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //if (buffer.isConstant()) {
-                    log.info("RELOCATING CONSTANT: {}", buffer);
+              //      log.info("RELOCATING CONSTANT: {}, {}", dstPoint.getObjectId(), buffer);
                     //throw new IllegalStateException("Constant buffer can't be expired on device side");
                 //}
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape());
@@ -724,6 +725,9 @@ public class CudaZeroHandler implements MemoryHandler {
         }
         //dstPoint.tickHostWrite();
         //dstPoint.tickHostRead();
+        //log.info("Requesting host pointer for {}", buffer);
+        //getCudaContext().syncOldStream();
+        synchronizeThreadDevice(Thread.currentThread().getId(), dstPoint.getDeviceId(), dstPoint);
 
         return new CudaPointer(dstPoint.getPointers().getHostPointer(), buffer.length(), (buffer.offset() * buffer.getElementSize()));
     }

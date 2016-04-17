@@ -68,7 +68,7 @@ public class AtomicAllocator implements Allocator {
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
-    private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
+    private AtomicLong objectsTracker = new AtomicLong(0);
 
     // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();

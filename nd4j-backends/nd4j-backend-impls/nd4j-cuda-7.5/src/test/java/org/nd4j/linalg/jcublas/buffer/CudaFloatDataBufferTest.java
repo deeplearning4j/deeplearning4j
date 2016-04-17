@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -448,5 +449,168 @@ public class CudaFloatDataBufferTest {
 
         INDArray fmixed = Nd4j.toFlattened('f',firstC,secondF,thirdF);
         assertEquals(fc,fmixed);
+    }
+
+    @Test
+    public void testDataCreation1() throws Exception {
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) Nd4j.createBuffer(10);
+
+        AllocationPoint point = buffer.getAllocationPoint();
+
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        buffer.put(0, 10f);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        buffer.put(1, 10f);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+
+        AtomicAllocator.getInstance().getPointer(buffer);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+
+        System.out.println("AM ------------------------------------");
+        AtomicAllocator.getInstance().getHostPointer(buffer);
+
+        System.out.println("AN ------------------------------------");
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+
+    }
+
+    @Test
+    public void testDataCreation2() throws Exception {
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) Nd4j.createBuffer(new int[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+
+        AllocationPoint point = buffer.getAllocationPoint();
+
+        assertEquals(true, point.isActualOnDeviceSide());
+        assertEquals(true, point.isActualOnHostSide());
+
+        System.out.println("AX --------------------------");
+        buffer.put(0, 10f);
+        System.out.println("AZ --------------------------");
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        buffer.put(1, 10f);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+
+        AtomicAllocator.getInstance().getPointer(buffer);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+
+        System.out.println("AM ------------------------------------");
+        AtomicAllocator.getInstance().getHostPointer(buffer);
+
+        System.out.println("AN ------------------------------------");
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+    }
+
+    @Test
+    public void testDataCreation3() throws Exception {
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) Nd4j.createBuffer(new float[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+
+        AllocationPoint point = buffer.getAllocationPoint();
+
+        assertEquals(true, point.isActualOnDeviceSide());
+        assertEquals(true, point.isActualOnHostSide());
+
+        System.out.println("AX --------------------------");
+        buffer.put(0, 10f);
+        System.out.println("AZ --------------------------");
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+        buffer.put(1, 10f);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(false, point.isActualOnDeviceSide());
+
+
+        AtomicAllocator.getInstance().getPointer(buffer);
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+
+        System.out.println("AM ------------------------------------");
+        AtomicAllocator.getInstance().getHostPointer(buffer);
+
+        System.out.println("AN ------------------------------------");
+
+        assertEquals(true, point.isActualOnHostSide());
+
+        assertEquals(true, point.isActualOnDeviceSide());
+    }
+
+    @Test
+    public void testDataCreation4() throws Exception {
+        BaseCudaDataBuffer buffer = (BaseCudaDataBuffer) Nd4j.createBuffer(new int[8]);
+
+        AllocationPoint point = buffer.getAllocationPoint();
+
+        assertEquals(true, point.isActualOnDeviceSide());
+        assertEquals(true, point.isActualOnHostSide());
+
+        System.out.println("AX --------------------------");
+        buffer.put(0, 10f);
+        System.out.println("AZ --------------------------");
+    }
+
+    @Test
+    public void testDataCreation5() throws Exception {
+        INDArray array = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
+
+        AllocationPoint pointMain = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
+
+        AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
+
+        assertEquals(false, pointShape.isActualOnDeviceSide());
+        assertEquals(true, pointShape.isActualOnHostSide());
+
+        assertEquals(false, pointMain.isActualOnDeviceSide());
+        assertEquals(true, pointMain.isActualOnHostSide());
+    }
+
+    @Test
+    public void testDataCreation6() throws Exception {
+        INDArray array = Nd4j.create(new double[]{0, 1, 2, 3});
+
+        AllocationPoint pointMain = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
+
+        AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
+
+        assertEquals(false, pointShape.isActualOnDeviceSide());
+        assertEquals(true, pointShape.isActualOnHostSide());
+
+        assertEquals(true, pointMain.isActualOnDeviceSide());
+        assertEquals(true, pointMain.isActualOnHostSide());
     }
 }

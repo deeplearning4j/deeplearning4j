@@ -28,19 +28,19 @@ public class SynchronousFlowController implements FlowController {
     public void synchronizeToHost(AllocationPoint point) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-
+/*
         if (point.getDeviceWriteTime() > point.getHostReadTime()) {
-            log.info("Forcing sync... isActualOnHostSide: {}, Shape: {}", point.isActualOnHostSide(), point.getShape());
+            log.info("Forcing sync... isActualOnHostSide: {} ({}), Shape: {}", point.isActualOnHostSide(), point.getObjectId(), point.getShape());
             waitTillFinished(point);
         }
-
+*/
 
 
         if (!point.isActualOnHostSide()) {
 
-            //waitTillFinished(point);
+            waitTillFinished(point);
 
-            log.info("Synchronization started... " + point.getShape());
+            //log.info("Synchronization started... " + point.getShape());
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
@@ -58,7 +58,7 @@ public class SynchronousFlowController implements FlowController {
 
             // updating host read timer
             point.tickHostRead();
-            log.info("After sync... isActualOnHostSide: {}", point.isActualOnHostSide());
+            //log.info("After sync... isActualOnHostSide: {}", point.isActualOnHostSide());
         }// else log.info("Point is actual on host side! " + point.getShape());
     }
 
