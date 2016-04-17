@@ -484,15 +484,28 @@ public class CudaZeroHandler implements MemoryHandler {
 //        if (length > 4)
             //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
 
-        JCuda.cudaMemcpyAsync(
-                dP,
-                srcPointer,
-                length,
-          //      (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
-                cudaMemcpyKind.cudaMemcpyHostToHost,
-                context.getOldStream()
-        );
-        context.syncOldStream();
+        if (dstBuffer.isConstant()) {
+
+            org.bytedeco.javacpp.Pointer dstPointer = new CudaPointer(point.getPointers().getHostPointer().address() + dstOffset,0L);
+            org.bytedeco.javacpp.Pointer srcPointerJ = new CudaPointer(srcPointer, length);
+
+         //   log.info("JCPP Memcpy: [{}] -> [{}], length: [{}]", srcPointerJ.address(), dstPointer.address(), length);
+
+            org.bytedeco.javacpp.Pointer.memcpy(dstPointer, srcPointerJ, length);
+        } else {
+
+            JCuda.cudaMemcpyAsync(
+                    dP,
+                    srcPointer,
+                    length,
+                    //      (point.getAllocationStatus() == AllocationStatus.DEVICE ? cudaMemcpyKind.cudaMemcpyHostToDevice: cudaMemcpyKind.cudaMemcpyHostToHost),
+                    cudaMemcpyKind.cudaMemcpyHostToHost,
+                    context.getOldStream()
+            );
+
+            //context.syncOldStream();
+        }
+
 
         /*
         // OUT-OF-ORDER/OUT-OF-STREAM COPY, DO NOT UNCOMMENT, DO NOT REMOVE

@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -349,7 +350,13 @@ public class AtomicAllocator implements Allocator {
     @Override
     public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory) {
         // by default we allocate on initial location
-        AllocationPoint point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
+        AllocationPoint point = null;
+        if (buffer instanceof CudaIntDataBuffer) {
+            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
+
+        } else {
+            point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
+        }
 
         return point;
     }

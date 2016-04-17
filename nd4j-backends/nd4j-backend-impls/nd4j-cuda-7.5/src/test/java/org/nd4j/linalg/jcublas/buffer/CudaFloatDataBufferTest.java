@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -528,6 +529,8 @@ public class CudaFloatDataBufferTest {
         assertEquals(true, point.isActualOnHostSide());
 
         assertEquals(true, point.isActualOnDeviceSide());
+
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
     }
 
     @Test
@@ -568,6 +571,8 @@ public class CudaFloatDataBufferTest {
         assertEquals(true, point.isActualOnHostSide());
 
         assertEquals(true, point.isActualOnDeviceSide());
+
+        assertEquals(AllocationStatus.DEVICE, point.getAllocationStatus());
     }
 
     @Test
@@ -582,6 +587,8 @@ public class CudaFloatDataBufferTest {
         System.out.println("AX --------------------------");
         buffer.put(0, 10f);
         System.out.println("AZ --------------------------");
+
+        assertEquals(AllocationStatus.HOST, point.getAllocationStatus());
     }
 
     @Test
@@ -597,6 +604,9 @@ public class CudaFloatDataBufferTest {
 
         assertEquals(false, pointMain.isActualOnDeviceSide());
         assertEquals(true, pointMain.isActualOnHostSide());
+
+        assertEquals(AllocationStatus.DEVICE, pointMain.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, pointShape.getAllocationStatus());
     }
 
     @Test
@@ -612,5 +622,8 @@ public class CudaFloatDataBufferTest {
 
         assertEquals(true, pointMain.isActualOnDeviceSide());
         assertEquals(true, pointMain.isActualOnHostSide());
+
+        assertEquals(AllocationStatus.DEVICE, pointMain.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, pointShape.getAllocationStatus());
     }
 }
