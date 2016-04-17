@@ -379,6 +379,11 @@ public class AtomicAllocator implements Allocator {
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
 
+        if (buffer instanceof CudaIntDataBuffer) {
+            buffer.setConstant(true);
+            point.setConstant(true);
+        }
+
         int numBuckets = configuration.getNumberOfHostMemoryBuckets();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
@@ -777,9 +782,10 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
-        if (dstBuffer.isConstant()) {
-            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
-        } else this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+//        if (dstBuffer.isConstant()) {
+//            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
+//        } else
+            this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
     }
 
     @Override

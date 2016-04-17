@@ -60,6 +60,8 @@ public class AllocationPoint {
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
+    @Getter @Setter private boolean constant;
+
     // TODO: timer should be instantiated externally
 //    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
 //    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);

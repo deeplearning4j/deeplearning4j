@@ -459,7 +459,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint point = buffer.getAllocationPoint();
 
 
-        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnHostSide());
 
         buffer.put(0, 10f);
 
