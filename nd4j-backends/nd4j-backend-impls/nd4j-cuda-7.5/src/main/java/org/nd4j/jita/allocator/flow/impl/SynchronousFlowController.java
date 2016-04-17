@@ -28,15 +28,22 @@ public class SynchronousFlowController implements FlowController {
     public void synchronizeToHost(AllocationPoint point) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        waitTillFinished(point);
+
+        if (point.getDeviceWriteTime() > point.getHostReadTime()) {
+            log.info("Forcing sync... isActualOnHostSide: {}, Shape: {}", point.isActualOnHostSide(), point.getShape());
+            waitTillFinished(point);
+        }
+
+
 
         if (!point.isActualOnHostSide()) {
 
-            //log.info("Synchronization started... " + point.getShape());
+            //waitTillFinished(point);
+
+            log.info("Synchronization started... " + point.getShape());
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
-                context.syncOldStream();
                 JCuda.cudaMemcpyAsync(
                         new Pointer(point.getHostPointer().address()),
                         new Pointer(point.getDevicePointer().address()),
@@ -44,12 +51,15 @@ public class SynchronousFlowController implements FlowController {
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getOldStream()
                 );
-            };
 
-       //     context.syncOldStream();
+                context.syncOldStream();
+            }// else log.info("Not [DEVICE] memory, skipping...");
 
+
+            // updating host read timer
             point.tickHostRead();
-        }; // else log.info("Point is actual on host side! " + point.getShape());
+            log.info("After sync... isActualOnHostSide: {}", point.isActualOnHostSide());
+        }// else log.info("Point is actual on host side! " + point.getShape());
     }
 
     @Override

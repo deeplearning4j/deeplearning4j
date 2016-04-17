@@ -54,6 +54,9 @@ public class AllocationPoint {
     private final AtomicLong accessHostRead = new AtomicLong(0);
     private final AtomicLong accessDeviceRead = new AtomicLong(0);
 
+    private final AtomicLong accessHostWrite = new AtomicLong(0);
+    private final AtomicLong accessDeviceWrite = new AtomicLong(0);
+
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
@@ -173,11 +176,11 @@ public class AllocationPoint {
         return deviceTicks.get();
     }
 
-    public void tickDevice() {
-        this.deviceTicks.incrementAndGet();
+    public void tickDeviceRead() {
+//        this.deviceTicks.incrementAndGet();
 //        this.timerShort.triggerEvent();
 //        this.timerLong.triggerEvent();
-        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        //this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
         this.accessDeviceRead.set(timeProvider.getCurrentTime());
     }
 
@@ -192,8 +195,12 @@ public class AllocationPoint {
      *
      * @return
      */
-    public long getHostAccessTime() {
+    public long getHostReadTime() {
         return accessHostRead.get();
+    }
+
+    public long getHostWriteTime() {
+        return accessHostWrite.get();
     }
 
 
@@ -216,7 +223,7 @@ public class AllocationPoint {
      * @return
      */
     public long getDeviceWriteTime() {
-        return 0L;//accessDeviceWrite.get();
+        return accessDeviceWrite.get();
     }
 
     public void tickHostRead() {
@@ -228,15 +235,17 @@ public class AllocationPoint {
      *
      */
     public void tickDeviceWrite() {
-        deviceAccessTime.set(realTimeProvider.getCurrentTime());
-//        accessDeviceWrite.set(timeProvider.getCurrentTime());
+//        deviceAccessTime.set(realTimeProvider.getCurrentTime());
+        tickDeviceRead();
+        accessDeviceWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
      * This method sets time when this point was changed on host
      */
     public void tickHostWrite() {
-        //accessHostWrite.set(timeProvider.getCurrentTime());
+        tickHostRead();
+        accessHostWrite.set(timeProvider.getCurrentTime());
     }
 
     /**
@@ -245,7 +254,10 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public boolean isActualOnHostSide() {
-        return getHostAccessTime() >= getDeviceAccessTime();
+        //log.info("isActuialOnHostSide() -> Host side: [{}], Device side: [{}]", accessHostRead.get(), accessDeviceRead.get());
+        boolean result = accessHostWrite.get() >= accessDeviceWrite.get() || accessHostRead.get() >= accessDeviceWrite.get();
+        //log.info("isActuialOnHostSide() -> {}, shape: {}", result, shape);
+        return result;
     }
 
     /**
@@ -254,7 +266,10 @@ public class AllocationPoint {
      * @return
      */
     public boolean isActualOnDeviceSide() {
-        return false; //accessHostWrite.get() <= getDeviceAccessTime();
+        //log.info("isActuialOnDeviceSide() -> Host side: [{}], Device side: [{}]", accessHostWrite.get(), accessDeviceWrite.get());
+        boolean result = accessDeviceWrite.get() >= accessHostWrite.get() || accessDeviceRead.get() >= accessHostWrite.get(); //accessHostWrite.get() <= getDeviceAccessTime();
+        log.info("isActuialOnDeviceSide() -> {}, Shape: {}", result, shape);
+        return result;
     }
 
     /**

@@ -30,7 +30,11 @@ public class CudaContext {
     private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
+
     private cudaStream_t cublasStream;
+
+    private cudaStream_t specialStream;
+
     //private cudaEvent_t oldEvent;
     private cublasHandle handle;
     private CublasPointer resultPointer;
@@ -74,6 +78,10 @@ public class CudaContext {
     public void syncOldStream() {
 //        ContextHolder.getInstance().setContext();
         syncOldStream(false);
+    }
+
+    public void syncSpecialStream() {
+        JCuda.cudaStreamSynchronize(specialStream);
     }
 
     public void syncOldStream(boolean syncCuBlas) {
@@ -124,6 +132,9 @@ public class CudaContext {
             oldStreamFromPool = false;
             oldStream = new cudaStream_t();
             JCuda.cudaStreamCreate(oldStream);
+
+            //specialStream = new cudaStream_t();
+            //JCuda.cudaStreamCreate(specialStream);
         }
 
     }

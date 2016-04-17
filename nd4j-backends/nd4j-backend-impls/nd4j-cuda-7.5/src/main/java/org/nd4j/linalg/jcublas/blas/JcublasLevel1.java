@@ -342,6 +342,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -362,6 +364,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -389,6 +393,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xBPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -414,6 +420,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -433,6 +441,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -456,6 +466,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX, xBPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -559,6 +571,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().getNativePointer(),
                     incX);
         }
+
+        allocator.tickDeviceWrite(X);
     }
 
     @Override
@@ -577,6 +591,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().getNativePointer(),
                     incX);
         }
+
+        allocator.tickDeviceWrite(X);
     }
 
     @Override

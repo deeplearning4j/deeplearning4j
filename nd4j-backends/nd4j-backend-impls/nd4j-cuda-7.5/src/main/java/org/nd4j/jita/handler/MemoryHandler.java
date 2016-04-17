@@ -138,6 +138,8 @@ public interface MemoryHandler {
      */
     void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
 
+    void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+
     /**
      * Synchronous version of memcpy
      *

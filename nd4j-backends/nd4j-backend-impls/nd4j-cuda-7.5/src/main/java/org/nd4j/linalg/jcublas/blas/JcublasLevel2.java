@@ -44,6 +44,8 @@ public class JcublasLevel2 extends BaseLevel2 {
                     cCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override
@@ -107,6 +109,8 @@ public class JcublasLevel2 extends BaseLevel2 {
                     cCPointer.getDevicePointer().getNativePointer(),
                     incY);
         }
+
+        allocator.tickDeviceWrite(Y);
     }
 
     @Override

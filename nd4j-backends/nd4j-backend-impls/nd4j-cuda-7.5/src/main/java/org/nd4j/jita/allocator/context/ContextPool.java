@@ -228,6 +228,7 @@ public class ContextPool {
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
         JCuda.cudaMemsetAsync(new Pointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)

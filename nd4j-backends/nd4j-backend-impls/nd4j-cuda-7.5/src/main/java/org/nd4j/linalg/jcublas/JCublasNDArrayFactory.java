@@ -462,10 +462,13 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
-                allocator.memcpyAsync(ret.data(),new Pointer(allocator.getPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
+                allocator.memcpyAsync(ret.data(),new Pointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
+
+                allocator.tickDeviceWrite(ret);
             } else {
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
+
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
                             extras,
@@ -488,6 +491,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
+
+                if (ret != null) allocator.tickDeviceWrite(ret);
+
                 //Works for all cases...
 
                /* NdIndexIterator iter = new NdIndexIterator(order, m.shape());

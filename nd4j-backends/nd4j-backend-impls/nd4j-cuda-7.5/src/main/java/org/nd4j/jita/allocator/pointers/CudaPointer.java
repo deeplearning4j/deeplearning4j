@@ -21,6 +21,7 @@ public class CudaPointer extends Pointer {
 
     private static Logger logger = LoggerFactory.getLogger(CudaPointer.class);
 
+
     public CudaPointer(Pointer pointer) {
         this.address = pointer.address();
         this.capacity = pointer.capacity();
@@ -53,6 +54,13 @@ public class CudaPointer extends Pointer {
 
     public CudaPointer(long address) {
         this.address = address;
+    }
+
+    public CudaPointer(long address, long capacity) {
+        this.address = address;
+        this.capacity = capacity;
+        this.limit = capacity;
+        this.position = 0;
     }
 
     public Pointer asNativePointer() {

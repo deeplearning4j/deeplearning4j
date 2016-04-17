@@ -136,5 +136,13 @@ public interface Allocator {
 
     void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
 
+    void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
+
+    void tickHostWrite(DataBuffer buffer);
+
+    void tickHostWrite(INDArray array);
+
+    void tickDeviceWrite(INDArray array);
 }

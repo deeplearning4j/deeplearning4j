@@ -414,11 +414,29 @@ public class CudaTransformsTests {
 
     @Test
     public void testIsMaxMinimized() throws Exception {
+        System.out.println("A------------------------------");
         INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
-        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+        System.out.println("AA------------------------------");
+        INDArray origf = orig.dup('f');
+        System.out.println("AB------------------------------");
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(origf));
+        System.out.println("AC------------------------------");
         INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
 
+        System.out.println("A0------------------------------");
+        System.out.println("exp data: " +Arrays.toString(exp.data().asFloat()));
+        System.out.println("A1------------------------------");
         System.out.println("OutF data: " +Arrays.toString(outf.data().asFloat()));
+        System.out.println("A2------------------------------");
+        System.out.println("exp shape: " + exp.shapeInfoDataBuffer());
+        System.out.println("A3------------------------------");
+        System.out.println("OutF shape: " + outf.shapeInfoDataBuffer());
+        System.out.println("A4------------------------------");
+        System.out.println("exp: " + exp);
+        System.out.println("A5------------------------------");
+        System.out.println("OutF: " + outf);
+        System.out.println("A6------------------------------");
+
         assertEquals(exp, outf);
     }
 
@@ -442,6 +460,11 @@ public class CudaTransformsTests {
         for (int i = 0; i < 256; i++) {
             input.putScalar(3000 * i, (i * 2) + 0.5);
         }
+        System.out.println("AF: --------------------------------");
+        AtomicAllocator.getInstance().getPointer(input);
+        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
+
+        System.out.println("AX: --------------------------------");
         AtomicAllocator.getInstance().getPointer(input);
         AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 

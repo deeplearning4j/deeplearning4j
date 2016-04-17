@@ -278,6 +278,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getHostPointer(INDArray array) {
+        synchronizeHostData(array);
         return memoryHandler.getHostPointer(array.data());
     }
 
@@ -312,8 +313,11 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(DataBuffer buffer) {
         // we don't synchronize constant buffers, since we assume they are always valid on host side
         if (buffer.isConstant()) {
-            //log.info("Skipping synchronization due to constant");
-            return;
+            //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
+         //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
+           // return;
+            //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
         }
 
         // we actually need synchronization only in device-dependant environment. no-op otherwise
@@ -766,7 +770,14 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
-        this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+        if (dstBuffer.isConstant()) {
+            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
+        } else this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+        this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
     }
 
     /**
@@ -802,5 +813,26 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Integer getDeviceId() {
         return memoryHandler.getDeviceId();
+    }
+
+    @Override
+    public void tickHostWrite(DataBuffer buffer) {
+        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+        point.tickHostWrite();
+    }
+
+    @Override
+    public void tickHostWrite(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        tickHostWrite(buffer);
+    }
+
+    @Override
+    public void tickDeviceWrite(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+
+        point.tickDeviceWrite();
     }
 }

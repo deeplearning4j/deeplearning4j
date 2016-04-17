@@ -228,12 +228,26 @@ public class CudaFloatDataBufferTest {
     @Test
     public void testShapeInfo1() throws Exception {
         INDArray array1 = Nd4j.ones(1,10);
-
+        System.out.println("X 0: -----------------------------");
         System.out.println(array1.shapeInfoDataBuffer());
+        System.out.println(array1);
+
+        System.out.println("X 1: -----------------------------");
 
         assertEquals(1.0, array1.getFloat(0), 0.0001);
+
+        System.out.println("X 2: -----------------------------");
+
         assertEquals(1.0, array1.getFloat(1), 0.0001);
         assertEquals(1.0, array1.getFloat(2), 0.0001);
+
+        System.out.println("X 3: -----------------------------");
+
+        float sum = array1.sumNumber().floatValue();
+
+        System.out.println("X 4: -----------------------------");
+
+        System.out.println("Sum: " + sum);
     }
 
     @Test
@@ -257,11 +271,14 @@ public class CudaFloatDataBufferTest {
     @Test
     public void testSum2() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-   //     System.out.println("-------------------------------------");
+        System.out.println("X 0: -------------------------------------");
 //        System.out.println("N result: " + n);
         INDArray test = Nd4j.create(new float[]{3, 7, 11, 15}, new int[]{2, 2});
+        System.out.println("X 1: -------------------------------------");
 //        System.out.println("Test result: " + test);
         INDArray sum = n.sum(-1);
+
+        System.out.println("X 2: -------------------------------------");
 
 //        System.out.println("Sum result: " + sum);
         assertEquals(test, sum);
