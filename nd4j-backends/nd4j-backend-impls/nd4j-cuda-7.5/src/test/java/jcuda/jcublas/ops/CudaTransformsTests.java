@@ -563,5 +563,6 @@ public class CudaTransformsTests {
         for (int x = 0; x < 1500 * 150; x++) {
             assertEquals(1f, array1.getFloat(x), 0.0001f);
         }
+
     }
 }
