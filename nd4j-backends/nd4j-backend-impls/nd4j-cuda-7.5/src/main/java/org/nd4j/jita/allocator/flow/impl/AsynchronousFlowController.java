@@ -1,5 +1,7 @@
 package org.nd4j.jita.allocator.flow.impl;
 
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaEvent_t;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -30,6 +32,11 @@ public class AsynchronousFlowController implements FlowController{
     public void registerAction(INDArray result, INDArray... operands) {
         // no-op
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+        cudaEvent_t event = new cudaEvent_t();
+
+        JCuda.cudaEventCreate(event);
+        JCuda.cudaEventRecord(event, context.getOldStream());
 
 
     }

@@ -459,7 +459,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint point = buffer.getAllocationPoint();
 
 
-        assertEquals(false, point.isActualOnHostSide());
+        assertEquals(true, point.isActualOnHostSide());
 
         buffer.put(0, 10f);
 
@@ -636,7 +636,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
 
         assertEquals(true, pointMain.isActualOnDeviceSide());
-        assertEquals(false, pointMain.isActualOnHostSide());
+        assertEquals(true, pointMain.isActualOnHostSide());
 
         assertEquals(false, pointShape.isActualOnDeviceSide());
         assertEquals(true, pointShape.isActualOnHostSide());
@@ -651,5 +651,20 @@ public class CudaFloatDataBufferTest {
         AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
         assertFalse(pointMain.isConstant());
         assertTrue(pointShape.isConstant());
+    }
+
+    @Test
+    public void testDataCreation9() throws Exception {
+        INDArray array = Nd4j.create(20);
+
+        AllocationPoint pointMain = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
+
+        AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
+
+        assertFalse(pointMain.isConstant());
+        assertTrue(pointShape.isConstant());
+
+        assertEquals(true, pointMain.isActualOnDeviceSide());
+        assertEquals(true, pointMain.isActualOnHostSide());
     }
 }
