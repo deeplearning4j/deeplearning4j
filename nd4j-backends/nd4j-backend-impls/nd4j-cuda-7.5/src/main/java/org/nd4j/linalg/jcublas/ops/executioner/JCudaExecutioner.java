@@ -144,7 +144,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return op.noOp();
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
         op.setZ(ret);
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
@@ -363,7 +368,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             retShape = new int[]{1, 1};
         }
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
+
         op.setZ(ret);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
@@ -630,7 +641,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return null;
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
         op.setZ(ret);
 
         if(op.z().isScalar()) {
