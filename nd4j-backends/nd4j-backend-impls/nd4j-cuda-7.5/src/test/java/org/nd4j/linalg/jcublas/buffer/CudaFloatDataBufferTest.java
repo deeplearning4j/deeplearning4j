@@ -498,7 +498,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint point = buffer.getAllocationPoint();
 
         assertEquals(true, point.isActualOnDeviceSide());
-        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnHostSide());
 
         System.out.println("AX --------------------------");
         buffer.put(0, 10f);
@@ -540,7 +540,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint point = buffer.getAllocationPoint();
 
         assertEquals(true, point.isActualOnDeviceSide());
-        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnHostSide());
 
         System.out.println("AX --------------------------");
         buffer.put(0, 10f);
@@ -582,7 +582,7 @@ public class CudaFloatDataBufferTest {
         AllocationPoint point = buffer.getAllocationPoint();
 
         assertEquals(true, point.isActualOnDeviceSide());
-        assertEquals(true, point.isActualOnHostSide());
+        assertEquals(false, point.isActualOnHostSide());
 
         System.out.println("AX --------------------------");
         buffer.put(0, 10f);
@@ -621,7 +621,7 @@ public class CudaFloatDataBufferTest {
         assertEquals(true, pointShape.isActualOnHostSide());
 
         assertEquals(true, pointMain.isActualOnDeviceSide());
-        assertEquals(true, pointMain.isActualOnHostSide());
+        assertEquals(false, pointMain.isActualOnHostSide());
 
         assertEquals(AllocationStatus.DEVICE, pointMain.getAllocationStatus());
         assertEquals(AllocationStatus.HOST, pointShape.getAllocationStatus());

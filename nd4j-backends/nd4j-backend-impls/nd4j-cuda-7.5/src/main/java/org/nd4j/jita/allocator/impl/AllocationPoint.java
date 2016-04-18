@@ -87,6 +87,17 @@ public class AllocationPoint {
 
     private volatile GarbageReference garbageReference;
 
+    private cudaEvent_t lastEvent;
+
+
+    public void setLastEvent(cudaEvent_t event) {
+
+    }
+
+    public cudaEvent_t getLastEvent() {
+        return lastEvent;
+    }
+
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer

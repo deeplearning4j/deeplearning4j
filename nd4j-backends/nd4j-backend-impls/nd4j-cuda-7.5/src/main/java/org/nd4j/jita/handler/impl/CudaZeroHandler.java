@@ -190,7 +190,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     point.tickHostWrite();
                 } else {
                     JCuda.cudaMemsetAsync(new Pointer(pair.getHostPointer().address()), 0, reqMemory, context.getOldStream());
-                    point.tickHostWrite();
+                    //point.tickHostWrite();
                 }
 
                 pickupHostAllocation(point);
@@ -224,7 +224,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, context.getOldStream());
-                            JCuda.cudaStreamSynchronize(context.getOldStream());
+                            //JCuda.cudaStreamSynchronize(context.getOldStream());
 
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());

@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.flow;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Interface describing flow controller.
@@ -24,4 +25,7 @@ public interface FlowController {
      * @param point
      */
     void waitTillFinished(AllocationPoint point);
+
+
+    void registerAction(INDArray result, INDArray... operands);
 }

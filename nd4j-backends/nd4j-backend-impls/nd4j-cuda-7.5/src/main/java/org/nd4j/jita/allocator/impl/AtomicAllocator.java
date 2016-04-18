@@ -353,7 +353,6 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = null;
 
         // TODO: size limitation should be rised in final release to something more sensible
-        //
         if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
             point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
         } else {

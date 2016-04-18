@@ -8,6 +8,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,8 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnHostSide()) {
 
-            waitTillFinished(point);
+            if (!point.isConstant())
+                waitTillFinished(point);
 
           //  log.info("Synchronization started... " + point.getShape());
 
@@ -66,5 +68,9 @@ public class SynchronousFlowController implements FlowController {
     public void waitTillFinished(AllocationPoint point) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         context.syncOldStream();
+    }
+
+    public void registerAction(INDArray result, INDArray... operands) {
+        // no-op
     }
 }
