@@ -110,7 +110,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer, dimension.length);
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return op.z();
     }
@@ -177,7 +177,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected()
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
@@ -209,7 +209,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
@@ -237,7 +237,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             }
         } else {
@@ -262,7 +262,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected()
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
@@ -294,7 +294,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
@@ -322,7 +322,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    if (op.z() != null) allocator.tickDeviceWrite(op.z());
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             }
         }
@@ -405,7 +405,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return op.z();
     }
@@ -512,7 +512,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return null;
     }
@@ -593,7 +593,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return null;
 
@@ -799,8 +799,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-
-        if (op.z() != null && !op.z().isScalar()) allocator.tickDeviceWrite(op.z());
+//&& !op.z().isScalar()
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return context;
     }
@@ -842,7 +842,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     extraArgs);
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return  null;
     }
@@ -967,7 +967,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return null;
     }

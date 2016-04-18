@@ -13,6 +13,7 @@ import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.flow.FlowController;
+import org.nd4j.jita.allocator.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.allocator.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.allocator.impl.*;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -24,6 +25,7 @@ import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
@@ -75,7 +77,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final MemoryProvider provider = new CudaCachingZeroProvider();
 
-    private final FlowController flowController = new SynchronousFlowController();
+    private final FlowController flowController = new AsynchronousFlowController();
 
     private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
 
@@ -937,6 +939,8 @@ public class CudaZeroHandler implements MemoryHandler {
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
         zeroAllocations.get(bucketId).remove(objectId);
 
+        flowController.waitTillFinished(point);
+
         // we call for caseless deallocation here
         //JCudaDriver.cuCtxSetCurrent(contextPool.getCuContextForDevice(0));
         free(point, AllocationStatus.HOST);
@@ -1070,5 +1074,10 @@ public class CudaZeroHandler implements MemoryHandler {
     public void synchronizeThreadDevice(Long threadId, Integer deviceId, AllocationPoint point) {
         // we synchronize only if this AllocationPoint was used within device context, so for multiple consequent syncs only first one will be issued
         flowController.synchronizeToHost(point);
+    }
+
+    @Override
+    public void registerAction(INDArray result, INDArray... operands) {
+        flowController.registerAction(result, operands);
     }
 }

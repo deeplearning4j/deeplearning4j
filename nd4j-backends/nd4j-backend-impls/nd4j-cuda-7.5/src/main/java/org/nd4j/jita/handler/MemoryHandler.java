@@ -11,6 +11,7 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Set;
 
@@ -260,4 +261,6 @@ public interface MemoryHandler {
      * @return
      */
     ExternalContext getDeviceContext();
+
+    void registerAction(INDArray result, INDArray... operands);
 }

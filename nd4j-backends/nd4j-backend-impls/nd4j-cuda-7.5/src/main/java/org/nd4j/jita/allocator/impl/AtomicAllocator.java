@@ -849,4 +849,20 @@ public class AtomicAllocator implements Allocator {
 
         point.tickDeviceWrite();
     }
+
+    @Override
+    public AllocationPoint getAllocationPoint(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        return getAllocationPoint(buffer);
+    }
+
+    @Override
+    public AllocationPoint getAllocationPoint(DataBuffer buffer) {
+        return getAllocationPoint(buffer.getTrackingPoint());
+    }
+
+    @Override
+    public void registerAction(INDArray result, INDArray... operands) {
+        memoryHandler.registerAction(result, operands);
+    }
 }

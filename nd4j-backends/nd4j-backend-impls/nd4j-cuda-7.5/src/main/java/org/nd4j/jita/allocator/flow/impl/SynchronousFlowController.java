@@ -71,6 +71,8 @@ public class SynchronousFlowController implements FlowController {
     }
 
     public void registerAction(INDArray result, INDArray... operands) {
-        // no-op
+        if (result == null) return;
+        AllocationPoint point = allocator.getAllocationPoint(result);
+        point.tickDeviceWrite();
     }
 }

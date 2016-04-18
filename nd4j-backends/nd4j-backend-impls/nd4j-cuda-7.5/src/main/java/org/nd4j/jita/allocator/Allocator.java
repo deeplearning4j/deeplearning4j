@@ -145,4 +145,10 @@ public interface Allocator {
     void tickHostWrite(INDArray array);
 
     void tickDeviceWrite(INDArray array);
+
+    AllocationPoint getAllocationPoint(INDArray array);
+
+    AllocationPoint getAllocationPoint(DataBuffer buffer);
+
+    void registerAction(INDArray result, INDArray... operands);
 }
