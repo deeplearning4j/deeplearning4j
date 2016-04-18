@@ -224,11 +224,10 @@ public class CudaZeroHandler implements MemoryHandler {
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, context.getOldStream());
-                       //     JCuda.cudaStreamSynchronize(context.getOldStream());
+                            JCuda.cudaStreamSynchronize(context.getOldStream());
 
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
-
 
                             zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
                             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
@@ -293,7 +292,7 @@ public class CudaZeroHandler implements MemoryHandler {
             CudaContext context = getCudaContext();
 
             // we must be sure, no calculations are pending within these streams before copyback
-            context.syncOldStream();
+//            context.syncOldStream();
 
             JCuda.cudaMemcpyAsync(
                     PointerUtil.getHostPointer(targetBuffer),
@@ -499,6 +498,8 @@ public class CudaZeroHandler implements MemoryHandler {
          //   log.info("JCPP Memcpy: [{}] -> [{}], length: [{}]", srcPointerJ.address(), dstPointer.address(), length);
 
             org.bytedeco.javacpp.Pointer.memcpy(dstPointer, srcPointerJ, length);
+
+            point.tickHostRead();
         } else {
 
             JCuda.cudaMemcpyAsync(
@@ -546,7 +547,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         //
         point.tickDeviceWrite();
-        point.tickHostRead();
+
 //
     }
 
@@ -706,7 +707,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //if (buffer.isConstant()) {
-              //      log.info("RELOCATING CONSTANT: {}, {}", dstPoint.getObjectId(), buffer);
+                   // log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
                     //throw new IllegalStateException("Constant buffer can't be expired on device side");
                 //}
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape());

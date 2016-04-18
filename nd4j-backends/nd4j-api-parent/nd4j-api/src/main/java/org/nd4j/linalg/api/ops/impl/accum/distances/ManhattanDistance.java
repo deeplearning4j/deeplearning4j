@@ -38,18 +38,30 @@ public class ManhattanDistance extends BaseAccumulation {
 
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
+        extraArgs = new Object[2];
+        extraArgs[0] = 0.0f;
+        extraArgs[1] = 0.0f;
     }
 
     public ManhattanDistance(INDArray x, INDArray y, long n) {
         super(x, y, n);
+        extraArgs = new Object[2];
+        extraArgs[0] = 0.0f;
+        extraArgs[1] = 0.0f;
     }
 
     public ManhattanDistance(INDArray x) {
         super(x);
+        extraArgs = new Object[2];
+        extraArgs[0] = 0.0f;
+        extraArgs[1] = 0.0f;
     }
 
     public ManhattanDistance(INDArray x, INDArray y) {
         super(x, y);
+        extraArgs = new Object[2];
+        extraArgs[0] = 0.0f;
+        extraArgs[1] = 0.0f;
     }
 
     @Override

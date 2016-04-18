@@ -641,4 +641,15 @@ public class CudaFloatDataBufferTest {
         assertEquals(false, pointShape.isActualOnDeviceSide());
         assertEquals(true, pointShape.isActualOnHostSide());
     }
+
+    @Test
+    public void testDataCreation8() throws Exception {
+        INDArray array = Nd4j.create(new float[]{1, 2, 3, 4, 5});
+
+        AllocationPoint pointMain = ((BaseCudaDataBuffer) array.data()).getAllocationPoint();
+
+        AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
+        assertFalse(pointMain.isConstant());
+        assertTrue(pointShape.isConstant());
+    }
 }

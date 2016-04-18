@@ -674,6 +674,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 } else if (op.y() != null) {
                     long y = AtomicAllocator.getInstance().getPointer(op.y()).address();
                     long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+
                     float result = nativeOps.execReduce3ScalarFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -798,7 +799,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        if (op.z() != null) allocator.tickDeviceWrite(op.z());
+
+        if (op.z() != null && !op.z().isScalar()) allocator.tickDeviceWrite(op.z());
 
         return context;
     }
