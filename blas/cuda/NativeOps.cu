@@ -45,7 +45,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if (num_blocks < 8) {
 		num_blocks = 8;
-		num_threads = (n / num_blocks) + 1;
+		num_threads = n / num_blocks;
 	}
 
 	if(n % num_threads) ++num_blocks;
