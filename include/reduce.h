@@ -954,7 +954,7 @@ namespace functions {
                         T *xPointer = x + offset;
 
                         T start = this->startingValue(xPointer);
-                        printf("Value for tad %d start is %f\n",i,start);
+                        //printf("Value for tad %d start is %f\n",i,start);
                         if(PrepareOneRawArrayIter<T>(rankIter,
                                                      xShape,
                                                      xPointer,
@@ -966,7 +966,7 @@ namespace functions {
                             ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 start = update(start,op(xPointer[0],extraParams),extraParams);
-                                printf("Value for tad %d after is %f\n",i,xPointer[0]);
+                                //printf("Value for tad %d after is %f\n",i,xPointer[0]);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,
                                                      rank,
                                                      coord,
