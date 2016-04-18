@@ -62,7 +62,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             nd4jBlas.ssyrk(new long[]{ctx.getHandle().getNativePointer()}, Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer().getNativePointer(), lda, beta, cPointer.getDevicePointer().getNativePointer(), ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -147,7 +147,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.tickDeviceWrite(B);
+        allocator.registerAction(B);
     }
 
     @Override
@@ -170,7 +170,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             ctx.syncOldStream();
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -201,7 +201,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -228,7 +228,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -259,7 +259,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.tickDeviceWrite(C);
+        allocator.registerAction(C);
     }
 
     @Override
@@ -288,7 +288,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.tickDeviceWrite(B);
+        allocator.registerAction(B);
     }
 
     @Override
@@ -317,7 +317,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.tickDeviceWrite(B);
+        allocator.registerAction(B);
     }
 
     @Override

@@ -91,7 +91,7 @@ public class AllocationPoint {
 
 
     public void setLastEvent(cudaEvent_t event) {
-
+        lastEvent = event;
     }
 
     public cudaEvent_t getLastEvent() {

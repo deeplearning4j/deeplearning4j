@@ -45,7 +45,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override

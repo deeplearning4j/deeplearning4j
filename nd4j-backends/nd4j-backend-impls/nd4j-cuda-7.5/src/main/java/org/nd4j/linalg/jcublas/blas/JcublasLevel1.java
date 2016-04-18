@@ -343,7 +343,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -365,7 +365,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -394,7 +394,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -421,7 +421,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -442,7 +442,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -467,7 +467,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.tickDeviceWrite(Y);
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -572,7 +572,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.tickDeviceWrite(X);
+        allocator.registerAction(X);
     }
 
     @Override
@@ -592,7 +592,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.tickDeviceWrite(X);
+        allocator.registerAction(X);
     }
 
     @Override

@@ -9,14 +9,19 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author raver119@gmail.com
  */
 public class AsynchronousFlowController implements FlowController{
     private volatile Allocator allocator;
+
+    private static Logger log = LoggerFactory.getLogger(AsynchronousFlowController.class);
 
     @Override
     public void init(Allocator allocator) {
@@ -66,12 +71,11 @@ public class AsynchronousFlowController implements FlowController{
 
     public void registerAction(INDArray result, INDArray... operands) {
         if (result == null) return;
-        // no-op
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
         cudaEvent_t event = new cudaEvent_t();
 
-        JCuda.cudaEventCreate(event);
+        JCuda.cudaEventCreateWithFlags(event, JCuda.cudaEventBlockingSync);
         JCuda.cudaEventRecord(event, context.getOldStream());
 
         AllocationPoint point = allocator.getAllocationPoint(result);
