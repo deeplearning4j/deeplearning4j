@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.impl;
 
+import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaEvent_t;
 import lombok.Getter;
 import lombok.NonNull;
@@ -91,6 +92,10 @@ public class AllocationPoint {
 
 
     public void setLastEvent(cudaEvent_t event) {
+        if (event != null) {
+            if (lastEvent != null)
+                JCuda.cudaEventDestroy(lastEvent);
+        }
         lastEvent = event;
     }
 
