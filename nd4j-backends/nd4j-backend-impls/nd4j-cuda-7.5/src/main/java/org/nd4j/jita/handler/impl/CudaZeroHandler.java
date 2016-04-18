@@ -77,7 +77,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final MemoryProvider provider = new CudaCachingZeroProvider();
 
-    private final FlowController flowController = new SynchronousFlowController();
+    private final FlowController flowController = new AsynchronousFlowController();
 
     private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
 
@@ -911,7 +911,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (point.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 
-    //    flowController.waitTillFinished(point);
+        flowController.waitTillFinished(point);
 
         free(point, AllocationStatus.DEVICE);
 
@@ -941,7 +941,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
         zeroAllocations.get(bucketId).remove(objectId);
 
-    //    flowController.waitTillFinished(point);
+        flowController.waitTillFinished(point);
 
         // we call for caseless deallocation here
         //JCudaDriver.cuCtxSetCurrent(contextPool.getCuContextForDevice(0));
