@@ -1530,8 +1530,8 @@ namespace shape {
                 //now that the dimensions are permuted, all of the tad shapes/strides are in the back
                 //all we need to do is copy from the start of the tad dimensions to the end since they are
                 //arranged in the right order
-                shape::copyTo(dimensionLength, permutedShape, retStride);
-                shape::copyTo(dimensionLength, permutedStride, retShape);
+                shape::copyTo(dimensionLength, permutedStride, retStride);
+                shape::copyTo(dimensionLength, permutedShape, retShape);
                 delete[] permuteIndexes;
 
             }
