@@ -152,3 +152,38 @@ To check your PATH/environment, run "where libstdc++-6.dll" and "where libgcc_s_
 Finally, using dumpbin (from Visual Studio) can help to show required dependencies for jniNativeOps.dll:
 
 	dumpbin /dependents [path to jniNativeOps.dll]
+	
+### My application crashes on the first usage of ND4J with the CUDA Backend
+
+```
+Exception in thread "main" java.lang.RuntimeException: Can't allocate [HOST] memory: 32
+```
+
+If the Exception you are getting looks anything like this, and you see this upon startup:
+```
+o.n.j.c.CudaEnvironment - Device [0]: Free: 0 Total memory: 0
+```
+
+Then you are most probably trying to use a mobile GPU (like 970**m**) and Optimus is trying to ruin the day. There isn't much that ND4J can do about it, but there is a workaround, that while **not recommended** for production, should allow you to still use your GPU.
+
+You will have to add JOGL to your dependencies:
+```
+    <dependency>
+      <groupId>org.jogamp.gluegen</groupId>
+      <artifactId>gluegen-rt-main</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jogamp.jogl</groupId>
+      <artifactId>jogl-all-main</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+```
+
+And as the very first thing in your `main` method you will need to add:
+
+```java
+        GLProfile.initSingleton();
+```
+
+This should allow ND4J to work correctly.
