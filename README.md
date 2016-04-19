@@ -36,4 +36,13 @@ This is required for building nd4j as well.
        ./buildnativeoperations.sh blas cpu
        ./buildnativeoperations.sh blas cuda
        
+For Debug builds:
 
+    ./buildnativeoperations.sh blas cpu Debug
+    ./buildnativeoperations.sh blas cuda Debug
+
+
+For release builds (default):
+
+    ./buildnativeoperations.sh blas cpu Release
+    ./buildnativeoperations.sh blas cuda Release

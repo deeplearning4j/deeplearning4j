@@ -6,7 +6,6 @@ option(PTX "Compile ptx" OFF)
 option(CUBIN "Compile cubin" OFF)
 option(ECLIPSE "Generate eclipse files" OFF)
 option(BLAS "Compile blas shared library for either cuda or cpu" ON)
-option(BUFFER "Compiles a small buffer library" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
@@ -26,6 +25,7 @@ ENDIF()
 
 
 include_directories(include)
+add_subdirectory(include)
 add_subdirectory(src)
 
 if(ECLIPSE)
@@ -43,10 +43,6 @@ if(CUBIN)
     add_subdirectory(cubin)
 endif()
 
-if(BUFFER)
-    message("ADDING buffer")
-    add_subdirectory(buffer)
-endif()
 
 if(BLAS)
     message("ADDING BLAS")

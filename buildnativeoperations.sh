@@ -89,42 +89,39 @@ else
                ./libnd4jtests
            fi
 
-           echo "FINISHING BUILD"
      elif [ "$1" == "cubin" ]; then
             rm -rf cubinbuild
            mkdir cubinbuild
            cd cubinbuild
             eval $CMAKE_COMMAND -DCUBIN=TRUE ..
            eval $MAKE_COMMAND && cd ..
-           echo "FINISHING BUILD"
            mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
      elif [ "$1" == "blas" ]; then
-           if [ "$#" -gt "1" ]; then
+           if [ "$#" -gt 1 ]; then
               if [ "$2" == "cuda" ]; then
               if [ "$#" -gt 2 ]; then
-                    echo "CUDA BUILD DEBUG"
-                     rm -rf blasbuild/cuda
-                   mkdir -p blasbuild/cuda
-                   cd blasbuild/cuda
-                    eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE="$3" ../..
-                   eval $MAKE_COMMAND && cd ../..
-              else
+                   e echo "CUDA BUILD $3"
                    rm -rf blasbuild/cuda
                    mkdir -p blasbuild/cuda
                    cd blasbuild/cuda
-                    eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE ../..
+                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=$3 ../..
+                   eval $MAKE_COMMAND && cd ../..
+              else
+                   echo "CUDA BUILD RELEASE"
+                   rm -rf blasbuild/cuda
+                   mkdir -p blasbuild/cuda
+                   cd blasbuild/cuda
+                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=Release../..
                    eval $MAKE_COMMAND && cd ../..
               fi
-                  echo "FINISHING BUILD"
               elif [ "$2" == "cpu" ]; then
                     if [ "$#" -gt 2 ]; then
-                    echo "CPU BUILD DEBUG"
+                     echo "CPU BUILD DEBUG"
                      echo "RUNNING COMMAND $CMAKE_COMMAND"
-                        rm -rf blasbuild/cpu
-
-                        mkdir -p blasbuild/cpu
-                    cd blasbuild/cpu
-                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE="$3"  ../..
+                     rm -rf blasbuild/cpu
+                     mkdir -p blasbuild/cpu
+                   cd blasbuild/cpu
+                   eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=$3  ../..
                    eval $MAKE_COMMAND && cd ../..
 
               else
@@ -133,15 +130,13 @@ else
 
                         mkdir -p blasbuild/cpu
                     cd blasbuild/cpu
-                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE ../..
+                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=Release ../..
                    eval $MAKE_COMMAND && cd ../..
-
-                   echo "FINISHING BUILD"
               fi
 
 
               else
-                   echo "Please specify cpu or gpu"
+                   echo "Please specify cpu or cuda"
 
               fi
 
@@ -149,7 +144,6 @@ else
 
                    eval $CMAKE_COMMAND  -DCPU_BLAS=true -DBLAS=TRUE ..
                   eval $MAKE_COMMAND && cd ..
-                  echo "FINISHING BUILD"
            fi
 
 
