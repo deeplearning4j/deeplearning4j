@@ -1,7 +1,6 @@
 package org.nd4j.jita.conf;
 
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaDeviceProp;
+
 import lombok.Data;
 import lombok.NonNull;
 import org.slf4j.Logger;
@@ -12,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static jcuda.driver.JCudaDriver.cuDeviceGetCount;
-import static jcuda.driver.JCudaDriver.cuInit;
+
 
 /**
  * @author raver119@gmail.com

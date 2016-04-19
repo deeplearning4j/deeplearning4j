@@ -125,7 +125,7 @@ public interface MemoryHandler {
      * @param length
      * @param dstOffset
      */
-    void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     /**
      * Asynchronous version of memcpy
@@ -137,9 +137,9 @@ public interface MemoryHandler {
      * @param length
      * @param dstOffset
      */
-    void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     /**
      * Synchronous version of memcpy

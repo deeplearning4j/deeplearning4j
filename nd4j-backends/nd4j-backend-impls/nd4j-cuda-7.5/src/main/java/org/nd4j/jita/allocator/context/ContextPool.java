@@ -1,16 +1,12 @@
 package org.nd4j.jita.allocator.context;
 
-import jcuda.Pointer;
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUdevice;
-import jcuda.driver.CUresult;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaStream_t;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -22,9 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-
-import static jcuda.driver.JCudaDriver.cuCtxCreate;
-import static jcuda.driver.JCudaDriver.cuDeviceGet;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
@@ -41,7 +34,7 @@ public class ContextPool {
 
     private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
-    private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
+    private volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
 
     private volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
@@ -100,7 +93,7 @@ public class ContextPool {
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
-                        cublasHandle handle = createNewCublasHandle(cublasStream);
+                        cublasHandle_t handle = createNewCublasHandle(cublasStream);
                         context.setHandle(handle);
                         context.setCublasStream(cublasStream);
 
@@ -108,7 +101,7 @@ public class ContextPool {
                     } else {
                         // just pick handle out there
                         logger.debug("Reusing blas here...");
-                        cublasHandle handle = cublasPool.get(deviceId);
+                        cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
                         // TODO: actually we don't need this anymore
@@ -160,8 +153,8 @@ public class ContextPool {
         return context;
     }
 
-    private cublasHandle createNewCublasHandle(cudaStream_t stream) {
-        cublasHandle handle = new cublasHandle();
+    private cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
+        cublasHandle_t handle = new cublasHandle();
         JCublas2.cublasCreate(handle);
         JCublas2.cublasSetStream(handle,stream);
 
@@ -227,7 +220,7 @@ public class ContextPool {
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        JCuda.cudaMemsetAsync(new Pointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        JCuda.cudaMemsetAsync(new CudaPointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
         context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
@@ -239,14 +232,14 @@ public class ContextPool {
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
         Pointer dPtr = new Pointer();
-        Pointer hPtr = new Pointer(scalarPointer);
+        Pointer hPtr = new CudaPointer(scalarPointer);
 
         JCuda.cudaHostGetDevicePointer(
                 dPtr,
                 hPtr,
                 0);
 
-        context.setBufferScalar(dPtr.getNativePointer());
+        context.setBufferScalar(dPtr.address());
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 

@@ -1,9 +1,6 @@
 package org.nd4j.jita.memory.impl;
 
-import jcuda.Pointer;
-import jcuda.driver.JCudaDriver;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -53,7 +50,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (pointer == 0)
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
 
-                Pointer hostPointer = new Pointer(pointer);
+                Pointer hostPointer = new CudaPointer(pointer);
 
                 JCuda.cudaHostGetDevicePointer(
                         devicePointer,
@@ -86,7 +83,7 @@ public class CudaDirectProvider implements MemoryProvider {
                     return null;
                     //throw new RuntimeException("Can't allocate [DEVICE] memory!");
 
-                Pointer devicePointer = new Pointer(pointer);
+                Pointer devicePointer = new CudaPointer(pointer);
 
                 PointersPair devicePointerInfo = point.getPointers();
                 if (devicePointerInfo == null)

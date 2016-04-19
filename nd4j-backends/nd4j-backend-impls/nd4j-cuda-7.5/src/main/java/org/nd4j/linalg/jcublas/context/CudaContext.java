@@ -1,16 +1,10 @@
 package org.nd4j.linalg.jcublas.context;
 
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUstream;
-import jcuda.driver.CUstream_flags;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaStream_t;
 import lombok.Data;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.jcublas.CublasPointer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,8 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Data
 public class CudaContext {
-    private CUcontext context;
-    private CUstream stream;
+    //private CUcontext context;
+    //private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
 
@@ -36,7 +30,7 @@ public class CudaContext {
     private cudaStream_t specialStream;
 
     //private cudaEvent_t oldEvent;
-    private cublasHandle handle;
+    private cublasHandle_t handle;
     private CublasPointer resultPointer;
     private AtomicBoolean oldStreamReturned = new AtomicBoolean(false);
     private AtomicBoolean handleReturned = new AtomicBoolean(false);

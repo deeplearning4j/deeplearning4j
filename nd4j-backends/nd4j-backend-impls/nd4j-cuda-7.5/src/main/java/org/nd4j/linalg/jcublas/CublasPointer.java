@@ -19,9 +19,10 @@
 
 package org.nd4j.linalg.jcublas;
 
-import jcuda.Pointer;
 import lombok.Getter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -151,7 +152,7 @@ public class CublasPointer  implements AutoCloseable {
         //vector based striding won't work with an array that looks like this
 
         this.cudaContext = context;
-        this.devicePointer = new Pointer(AtomicAllocator.getInstance().getPointer(array).address());
+        this.devicePointer = new CudaPointer(AtomicAllocator.getInstance().getPointer(array).address());
 
         /*
         if(array instanceof IComplexNDArray) {
@@ -244,7 +245,7 @@ public class CublasPointer  implements AutoCloseable {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("NativePointer: ["+devicePointer.getNativePointer()+"]");
+        sb.append("NativePointer: ["+devicePointer.address()+"]");
         return sb.toString();
     }
 

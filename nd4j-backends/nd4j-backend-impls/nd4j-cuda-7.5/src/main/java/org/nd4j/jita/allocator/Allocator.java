@@ -132,11 +132,11 @@ public interface Allocator {
     AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location);
 
 
-    void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
 

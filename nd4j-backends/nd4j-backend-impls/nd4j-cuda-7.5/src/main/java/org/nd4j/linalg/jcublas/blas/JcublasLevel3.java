@@ -5,6 +5,7 @@ import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -40,12 +41,12 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer cBPointer = new CublasPointer(B, ctx);
         CublasPointer cCPointer = new CublasPointer(C, ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
             nd4jBlas.sgemm(
-                    new long[]{ctx.getHandle().getNativePointer()},
+                    new long[]{ctx.getHandle().address()},
                     Order,
                     TransA,
                     TransB,
@@ -53,12 +54,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     N,
                     K,
                     alpha,
-                    cAPointer.getDevicePointer().getNativePointer(),
+                    cAPointer.getDevicePointer().address(),
                     lda,
-                    cBPointer.getDevicePointer().getNativePointer(),
+                    cBPointer.getDevicePointer().address(),
                     ldb,
                     beta,
-                    cCPointer.getDevicePointer().getNativePointer(),
+                    cCPointer.getDevicePointer().address(),
                     ldc);
         }
 
@@ -73,21 +74,21 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer bPointer = new CublasPointer(B, ctx);
         CublasPointer cPointer = new CublasPointer(C, ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.ssymm(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.ssymm(new long[]{ctx.getHandle().address()},
                     Order,
                     Side,
                     Uplo,
                     M, N,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
-                    lda, bPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
+                    lda, bPointer.getDevicePointer().address(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer().getNativePointer(),
+                    cPointer.getDevicePointer().address(),
                     ldc);
         }
 
@@ -101,11 +102,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.ssyrk(new long[]{ctx.getHandle().getNativePointer()}, Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer().getNativePointer(), lda, beta, cPointer.getDevicePointer().getNativePointer(), ldc);
+            nd4jBlas.ssyrk(new long[]{ctx.getHandle().address()}, Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer().address(), lda, beta, cPointer.getDevicePointer().address(), ldc);
         }
 
         allocator.registerAction(C);
@@ -128,11 +129,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.strsm(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.strsm(new long[]{ctx.getHandle().address()},
                     Order,
                     Side,
                     Uplo,
@@ -141,9 +142,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    bPointer.getDevicePointer().getNativePointer(),
+                    bPointer.getDevicePointer().address(),
                     ldb);
         }
 
@@ -162,11 +163,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer cBPointer = new CublasPointer(B,ctx);
         CublasPointer cCPointer = new CublasPointer(C,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dgemm(new long[]{ctx.getHandle().getNativePointer()}, Order, TransA, TransB, M, N, K, alpha, cAPointer.getDevicePointer().getNativePointer(), lda, cBPointer.getDevicePointer().getNativePointer(), ldb, beta, cCPointer.getDevicePointer().getNativePointer(), ldc);
+            nd4jBlas.dgemm(new long[]{ctx.getHandle().address()}, Order, TransA, TransB, M, N, K, alpha, cAPointer.getDevicePointer().address(), lda, cBPointer.getDevicePointer().address(), ldb, beta, cCPointer.getDevicePointer().address(), ldc);
             ctx.syncOldStream();
         }
 
@@ -181,23 +182,23 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer bPointer = new CublasPointer(B,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dsymm(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.dsymm(new long[]{ctx.getHandle().address()},
                     Order,
                     Side,
                     Uplo,
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    bPointer.getDevicePointer().getNativePointer(),
+                    bPointer.getDevicePointer().address(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer().getNativePointer(),
+                    cPointer.getDevicePointer().address(),
                     ldc);
         }
 
@@ -211,20 +212,20 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dsyrk(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.dsyrk(new long[]{ctx.getHandle().address()},
                     Order,
                     Uplo,
                     Trans,
                     N,
                     K,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    beta, cPointer.getDevicePointer().getNativePointer(),
+                    beta, cPointer.getDevicePointer().address(),
                     ldc);
         }
 
@@ -239,23 +240,23 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer bPointer = new CublasPointer(B,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dsyr2k(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.dsyr2k(new long[]{ctx.getHandle().address()},
                     Order,
                     Uplo,
                     Trans,
                     N,
                     K,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    bPointer.getDevicePointer().getNativePointer(),
+                    bPointer.getDevicePointer().address(),
                     ldb,
                     beta,
-                    cPointer.getDevicePointer().getNativePointer(),
+                    cPointer.getDevicePointer().address(),
                     ldc);
         }
 
@@ -269,11 +270,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dtrmm(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.dtrmm(new long[]{ctx.getHandle().address()},
                     Order,
                     Side,
                     Uplo,
@@ -282,9 +283,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    bPointer.getDevicePointer().getNativePointer(),
+                    bPointer.getDevicePointer().address(),
                     ldb);
         }
 
@@ -298,11 +299,11 @@ public class JcublasLevel3 extends BaseLevel3 {
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dtrsm(new long[]{ctx.getHandle().getNativePointer()},
+            nd4jBlas.dtrsm(new long[]{ctx.getHandle().address()},
                     Order,
                     Side,
                     Uplo,
@@ -311,9 +312,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                     M,
                     N,
                     alpha,
-                    aPointer.getDevicePointer().getNativePointer(),
+                    aPointer.getDevicePointer().address(),
                     lda,
-                    bPointer.getDevicePointer().getNativePointer(),
+                    bPointer.getDevicePointer().address(),
                     ldb);
         }
 

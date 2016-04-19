@@ -19,12 +19,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import com.google.common.collect.Table;
-import jcuda.Pointer;
-import org.apache.commons.lang3.tuple.Triple;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;

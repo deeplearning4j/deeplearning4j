@@ -1,6 +1,6 @@
 package org.nd4j.jita.memory.impl;
 
-import jcuda.Pointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -37,8 +37,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
 
                     PointersPair pair = new PointersPair();
-                    pair.setDevicePointer(new CudaPointer(pointer.getNativePointer()));
-                    pair.setHostPointer(new CudaPointer(pointer.getNativePointer()));
+                    pair.setDevicePointer(new CudaPointer(pointer.address()));
+                    pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
                     return pair;
@@ -69,7 +69,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
-                cache.put(new Pointer(point.getDevicePointer().address()));
+                cache.put(new CudaPointer(point.getDevicePointer().address()));
             } else {
                 long cacheEntries = cache.size();
                 long cacheHeight = deviceCache.get(point.getDeviceId()).size();
@@ -78,7 +78,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 long cacheDepth = cacheEntries * reqMemory;
 
                 if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cache.put(new Pointer(point.getDevicePointer().address()));
+                    cache.put(new CudaPointer(point.getDevicePointer().address()));
                 } else {
                     super.free(point);
                 }

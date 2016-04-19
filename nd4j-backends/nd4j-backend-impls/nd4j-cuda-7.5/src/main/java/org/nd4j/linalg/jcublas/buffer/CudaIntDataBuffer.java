@@ -20,7 +20,6 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import io.netty.buffer.ByteBuf;
-import jcuda.Sizeof;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -38,7 +37,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
      * @param length the length of the buffer
      */
     public CudaIntDataBuffer(long length) {
-        super(length, Sizeof.INT);
+        super(length, 4);
         this.constant = true;
     }
 
@@ -202,7 +201,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public int getElementSize() {
-        return Sizeof.INT;
+        return 4;
     }
 
     private void readObject(java.io.ObjectInputStream stream)

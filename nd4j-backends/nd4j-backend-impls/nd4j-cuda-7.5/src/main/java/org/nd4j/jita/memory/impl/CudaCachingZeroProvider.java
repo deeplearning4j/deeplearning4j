@@ -1,6 +1,6 @@
 package org.nd4j.jita.memory.impl;
 
-import jcuda.Pointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -86,8 +86,8 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                     zeroCachedAmount.addAndGet(-1 * reqMemory);
 
                     PointersPair pair = new PointersPair();
-                    pair.setDevicePointer(new CudaPointer(pointer.getNativePointer()));
-                    pair.setHostPointer(new CudaPointer(pointer.getNativePointer()));
+                    pair.setDevicePointer(new CudaPointer(pointer.address()));
+                    pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.HOST);
                     return pair;
@@ -155,7 +155,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
-                cache.put(new Pointer(point.getHostPointer().address()));
+                cache.put(new CudaPointer(point.getHostPointer().address()));
             } else {
                 long cacheEntries = cache.size();
                 long cacheHeight = zeroCache.size();
@@ -164,7 +164,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 long cacheDepth = cacheEntries * reqMemory;
 
                 if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
-                    cache.put(new Pointer(point.getHostPointer().address()));
+                    cache.put(new CudaPointer(point.getHostPointer().address()));
                 } else {
                     super.free(point);
                 }
@@ -237,7 +237,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
                 PointersPair pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
                 if (this.location == AllocationStatus.HOST) {
-                    Pointer pointer = new Pointer(pair.getHostPointer().address());
+                    Pointer pointer = new CudaPointer(pair.getHostPointer().address());
                     CudaCachingZeroProvider.this.zeroCache.get(shape).put(pointer);
                 }
             }

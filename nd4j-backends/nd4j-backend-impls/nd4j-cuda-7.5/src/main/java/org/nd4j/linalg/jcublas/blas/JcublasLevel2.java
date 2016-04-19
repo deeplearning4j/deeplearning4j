@@ -1,9 +1,8 @@
 package org.nd4j.linalg.jcublas.blas;
 
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -32,16 +31,16 @@ public class JcublasLevel2 extends BaseLevel2 {
         CublasPointer cBPointer = new CublasPointer(X, ctx);
         CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.sgemv(new long[]{ctx.getHandle().getNativePointer()},
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
-                    lda, cBPointer.getDevicePointer().getNativePointer(),
+            nd4jBlas.sgemv(new long[]{ctx.getHandle().address()},
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
+                    lda, cBPointer.getDevicePointer().address(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer().getNativePointer(),
+                    cCPointer.getDevicePointer().address(),
                     incY);
         }
 
@@ -97,16 +96,16 @@ public class JcublasLevel2 extends BaseLevel2 {
         CublasPointer cBPointer = new CublasPointer(X, ctx);
         CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        cublasHandle handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
             JCublas2.cublasSetStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dgemv(new long[]{ctx.getHandle().getNativePointer()},
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
-                    lda, cBPointer.getDevicePointer().getNativePointer(),
+            nd4jBlas.dgemv(new long[]{ctx.getHandle().address()},
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
+                    lda, cBPointer.getDevicePointer().address(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer().getNativePointer(),
+                    cCPointer.getDevicePointer().address(),
                     incY);
         }
 

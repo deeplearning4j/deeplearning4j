@@ -1,7 +1,5 @@
 package org.nd4j.jita.allocator.impl;
 
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaEvent_t;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -11,6 +9,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.SyncState;
 import org.nd4j.jita.allocator.garbage.GarbageReference;
 import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.impl.SimpleTimer;

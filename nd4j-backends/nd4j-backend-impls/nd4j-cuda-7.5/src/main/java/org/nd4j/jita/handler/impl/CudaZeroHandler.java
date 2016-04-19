@@ -2,11 +2,9 @@ package org.nd4j.jita.handler.impl;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import jcuda.Pointer;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
@@ -225,7 +223,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
-                            JCuda.cudaMemsetAsync(new Pointer(pair.getDevicePointer().address()), 0, reqMemory, context.getOldStream());
+                            JCuda.cudaMemsetAsync(new CudaPointer(pair.getDevicePointer().address()), 0, reqMemory, context.getOldStream());
                             //JCuda.cudaStreamSynchronize(context.getOldStream());
 
 
@@ -290,7 +288,7 @@ public class CudaZeroHandler implements MemoryHandler {
             if (targetBuffer == null)
                 throw new IllegalStateException("Target buffer is NULL!");
 
-            Pointer devicePointer = new Pointer(point.getPointers().getDevicePointer().address());
+            Pointer devicePointer = new CudaPointer(point.getPointers().getDevicePointer().address());
 
             CudaContext context = getCudaContext();
 
@@ -314,9 +312,9 @@ public class CudaZeroHandler implements MemoryHandler {
                  throw new IllegalStateException("devicePointer is NULL!");
             }
 
-            Pointer devicePointer = new Pointer(point.getPointers().getDevicePointer().address());
+            Pointer devicePointer = new CudaPointer(point.getPointers().getDevicePointer().address());
 
-            Pointer hostPointer = new Pointer(point.getPointers().getHostPointer().address());
+            Pointer hostPointer = new CudaPointer(point.getPointers().getHostPointer().address());
 
             CudaContext context = getCudaContext();
 
@@ -379,8 +377,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
         CudaContext context = getCudaContext();
 
-        Pointer devPtr = new Pointer(pair.getDevicePointer().address());
-        Pointer hostPointer = new Pointer(pair.getHostPointer().address());
+        Pointer devPtr = new CudaPointer(pair.getDevicePointer().address());
+        Pointer hostPointer = new CudaPointer(pair.getHostPointer().address());
         long reqMem =AllocationUtils.getRequiredMemory(shape);
 
         JCuda.cudaMemcpyAsync(
@@ -487,7 +485,7 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
         //Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
-        Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
+        Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
 //        Pointer sP = new Pointer(srcPointer.getNativePointer());
         //log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
@@ -531,7 +529,7 @@ public class CudaZeroHandler implements MemoryHandler {
         // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
-            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+            Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
             //log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 
@@ -572,7 +570,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
       //  context.syncOldStream();
 
-        Pointer dP = new Pointer((point.getPointers().getHostPointer().address()) + dstOffset);
+        Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
         JCuda.cudaMemcpyAsync(
                 dP,
                 srcPointer,
@@ -583,7 +581,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            Pointer rDP = new Pointer(point.getPointers().getDevicePointer().address() + dstOffset);
+            Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
             JCuda.cudaMemcpyAsync(
                     rDP,
@@ -637,11 +635,11 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         AllocationPoint srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
 
-        Pointer dP = new Pointer(dstPoint.getPointers().getHostPointer().address());
+        Pointer dP = new CudaPointer(dstPoint.getPointers().getHostPointer().address());
         Pointer sP = null;
 
         if (srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
-            sP = new Pointer(srcPoint.getPointers().getDevicePointer().address());
+            sP = new CudaPointer(srcPoint.getPointers().getDevicePointer().address());
 
             JCuda.cudaMemcpyAsync(
                     dP,
@@ -651,7 +649,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );
         } else {
-            sP = new Pointer(srcPoint.getPointers().getHostPointer().address());
+            sP = new CudaPointer(srcPoint.getPointers().getHostPointer().address());
 
             JCuda.cudaMemcpyAsync(
                     dP,
@@ -663,7 +661,7 @@ public class CudaZeroHandler implements MemoryHandler {
         }
 
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
-            Pointer rDP = new Pointer(dstPoint.getPointers().getDevicePointer().address());
+            Pointer rDP = new CudaPointer(dstPoint.getPointers().getDevicePointer().address());
 
             JCuda.cudaMemcpyAsync(
                     rDP,

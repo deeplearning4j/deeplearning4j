@@ -782,7 +782,7 @@ public class AtomicAllocator implements Allocator {
      * @param dstOffset
      */
     @Override
-    public void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+    public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
 //        if (dstBuffer.isConstant()) {
 //            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
 //        } else
@@ -790,7 +790,7 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
-    public void memcpySpecial(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+    public void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
     }
 
@@ -803,7 +803,7 @@ public class AtomicAllocator implements Allocator {
      * @param dstOffset
      */
     @Override
-    public void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+    public void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         this.memoryHandler.memcpyBlocking(dstBuffer, srcPointer, length, dstOffset);
     }
 
