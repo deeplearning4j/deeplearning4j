@@ -1521,7 +1521,7 @@ namespace shape {
             else {
                 int shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfo));
                 int *permuteIndexes = this->permuteDims();
-                int toPermute[shapeInfoLen];
+                int toPermute[MAX_RANK];
                 shape::permuteShapeBufferInPlace(shapeInfo,permuteIndexes,toPermute);
                 //copy starting from the tad shapes/strides that got permuted to the back
                 int shapeOffset = shape::rank(shapeInfo) - dimensionLength;
