@@ -899,6 +899,33 @@ public:
 
     void setOmpNumThreads(int threads);
 
+
+
+    Nd4jPointer createContext();
+
+    Nd4jPointer createStream();
+
+    Nd4jPointer createEvent();
+
+    Nd4jPointer createBlasHandle();
+
+    Nd4jPointer registerEvent(Nd4jPointer event, Nd4jPointer stream);
+
+    Nd4jPointer destroyEvent(Nd4jPointer event);
+
+    Nd4jPointer setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
+
+    Nd4jPointer setDevice(Nd4jPointer ptrToDeviceId);
+
+    long getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
+
+    Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags);
+
+    Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags);
+
+    Nd4jPointer memset(Nd4jPointer dst, long size, int value, int flags);
+
+    Nd4jPointer memsetAsync(Nd4jPointer dst, long size, int value, int flags);
 };
 
 

@@ -5,6 +5,7 @@
 #include <buffer.h>
 #include <shape.h>
 
+#include <cublas_v2.h>
 #include <reduce3.h>
 #include <reduce.h>
 #include <indexreduce.h>
@@ -2610,4 +2611,82 @@ int NativeOps::ompGetNumThreads() {
 void NativeOps::setOmpNumThreads(int threads) {
 	printf("Setting max grid size to [%i]\n", threads);
 	//blockLimit = threads;
+}
+
+Nd4jPointer NativeOps::createContext() {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::createStream() {
+	Nd4jPointer nativeStream = NULL;
+	cudaError_t result = cudaStreamCreate((cudaStream_t *) &nativeStream);
+	checkCudaErrors(result);
+	if (result != 0)
+		return 0L;
+	else return nativeStream;
+}
+
+Nd4jPointer NativeOps::createEvent() {
+	Nd4jPointer nativeEvent= NULL;
+	cudaError_t result = cudaEventCreate((cudaEvent_t *) &nativeEvent);
+	checkCudaErrors(result);
+	if (result != 0)
+		return 0L;
+	else return nativeEvent;
+}
+
+Nd4jPointer NativeOps::createBlasHandle() {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
+	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
+
+	cudaError_t result = cudaEventRecord(*pEvent, *pStream);
+	if (result != 0)
+		return 0L;
+	else return 1;
+}
+
+Nd4jPointer NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
+	int deviceId = (int) ptrToDeviceId;
+	cudaError_t result = cudaSetDevice(deviceId);
+	checkCudaErrors(result);
+	if (result != 0)
+		return 0L;
+	else return 1;
+}
+
+long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::memset(Nd4jPointer dst, long size, int value, int flags) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, long size, int value, int flags) {
+	return 0L;
+}
+
+Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
+	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+	cudaError_t result = cudaEventDestroy(*pEvent);
+	checkCudaErrors(result);
+	if (result != 0)
+		return 0L;
+	else return 1;
 }
