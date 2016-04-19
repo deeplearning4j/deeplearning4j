@@ -153,7 +153,7 @@ Finally, using dumpbin (from Visual Studio) can help to show required dependenci
 
 	dumpbin /dependents [path to jniNativeOps.dll]
 	
-### My application crashes on the first usage of ND4J with the CUDA Backend
+### My application crashes on the first usage of ND4J with the CUDA Backend (Windows)
 
 ```
 Exception in thread "main" java.lang.RuntimeException: Can't allocate [HOST] memory: 32
@@ -187,3 +187,12 @@ And as the very first thing in your `main` method you will need to add:
 ```
 
 This should allow ND4J to work correctly.
+
+
+### My Display Driver / System crashes when I use the CUDA Backend (Windows)
+
+ND4J is meant to be used with pure compute cards (i.e. the Tesla series). On consumer GPUs that are mainly meant for gaming, this results in a usage that can conflict with with the cards primary work: Displaying your Desktop. 
+
+Microsoft has added the Timeout Detection and Recovery (TDR) to detect malfunctioning drivers and improper usage, which now interferes with the compute tasks of ND4J, by killing them if they occupy the GPU for longer then a few seconds. This results in the "Display driver stopped responding and has recovered" message. This results in a perceived driver crash along with a crash of your application. If you try to run it again TDR may decide that something is messing with the display driver and force a reboot.
+
+If you really want to use your display GPU for compute with ND4J (**not recommended**), you will have to disable TDR by setting TdrLevel=0 (see https://msdn.microsoft.com/en-us/library/windows/hardware/ff569918%28v=vs.85%29.aspx). If you do this you **will** have display freezes, which, depending on your workload, can stay quite a long time.
