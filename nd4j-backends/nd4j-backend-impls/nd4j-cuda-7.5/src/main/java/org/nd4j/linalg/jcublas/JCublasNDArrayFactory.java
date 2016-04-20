@@ -43,6 +43,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +55,7 @@ import java.util.List;
  * @author mjk
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
-    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 
     public JCublasNDArrayFactory() {

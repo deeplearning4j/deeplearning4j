@@ -12,10 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
-import org.nd4j.nativeblas.DefaultPointerConverter;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
+import org.nd4j.nativeblas.*;
 
 
 /**
@@ -24,8 +21,7 @@ import org.nd4j.nativeblas.PointerConverter;
 public class JcublasLevel2 extends BaseLevel2 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
-    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
-    private PointerConverter pointerConverter = new DefaultPointerConverter();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {

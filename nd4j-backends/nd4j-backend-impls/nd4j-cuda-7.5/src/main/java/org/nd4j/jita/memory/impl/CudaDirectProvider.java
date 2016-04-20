@@ -110,7 +110,8 @@ public class CudaDirectProvider implements MemoryProvider {
             case HOST: {
                 // cudaFreeHost call here
                 // FIXME: it would be nice to get rid of typecasting here
-                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
                 //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
                 if (result == 0)
@@ -121,7 +122,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 // cudaFree call
                 //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
 
-                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
                 long result = nativeOps.freeDevice(point.getPointers().getDevicePointer().address(), 0);
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");

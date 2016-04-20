@@ -16,10 +16,7 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
-import org.nd4j.nativeblas.DefaultPointerConverter;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
+import org.nd4j.nativeblas.*;
 
 /**
  * @author Adam Gibson
@@ -27,8 +24,7 @@ import org.nd4j.nativeblas.PointerConverter;
 public class JcublasLevel1 extends BaseLevel1 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
-    private PointerConverter pointerConverter = new DefaultPointerConverter();
-    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {

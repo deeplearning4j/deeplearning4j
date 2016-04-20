@@ -239,7 +239,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         } else {
                             log.info("Skipping allocation C on [DEVICE]");
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
-                            returnPair.setDevicePointer(tmpPair.getDevicePointer());
+                            returnPair.setDevicePointer(tmpPair.getHostPointer());
 
                             point.setAllocationStatus(AllocationStatus.HOST);
                         }

@@ -221,7 +221,7 @@ public class ContextPool {
      * @param deviceId
      */
     private void getDeviceBuffers(CudaContext context, int deviceId) {
-        NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
         int sizeOf = (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
 
@@ -242,8 +242,8 @@ public class ContextPool {
         if (scalarPointer == 0)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
-        Pointer dPtr = new Pointer();
-        Pointer hPtr = new CudaPointer(scalarPointer);
+   //     Pointer dPtr = new Pointer();
+   //     Pointer hPtr = new CudaPointer(scalarPointer);
 
 /*
         JCuda.cudaHostGetDevicePointer(
@@ -251,7 +251,7 @@ public class ContextPool {
                 hPtr,
                 0);
 */
-        context.setBufferScalar(hPtr.address());
+        context.setBufferScalar(scalarPointer);
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 

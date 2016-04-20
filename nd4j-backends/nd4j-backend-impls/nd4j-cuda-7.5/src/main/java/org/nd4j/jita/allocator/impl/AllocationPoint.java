@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class AllocationPoint {
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
-    protected static final NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Getter @Setter private boolean constant;
 
