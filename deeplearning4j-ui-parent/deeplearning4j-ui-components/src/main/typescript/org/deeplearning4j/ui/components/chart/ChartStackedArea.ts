@@ -20,6 +20,7 @@
 /// <reference path="../../typedefs/d3.d.ts" />
 /// <reference path="../../util/TSUtils.ts" />
 /// <reference path="Chart.ts" />
+/// <reference path="Legend.ts" />
 
 
 class ChartStackedArea extends Chart implements Renderable {
@@ -126,30 +127,23 @@ class ChartStackedArea extends Chart implements Renderable {
             .enter().append("g")
             .attr("class", "browser");
 
+        var tempLabels = this.labels;
+
+        var defaultColor: Ordinal<string,string> = d3.scale.category20();
         browser.append("path")
             .attr("class", "area")
             .attr("data-legend",function(d: any) { return d.name})
             .attr("d", function (d: any) {
                 return area(d.values);
             })
-            .style("fill", function (d: any) {
-                return color(d.name);
+            .style("fill", function(d: any){
+                if(s && s.getSeriesColor(tempLabels.indexOf(d.name))){
+                    return s.getSeriesColor(tempLabels.indexOf(d.name));
+                } else{
+                    return defaultColor(String(tempLabels.indexOf(d.name)))
+                }
             })
             .style({"stroke-width": "0px"});
-
-        //This appends the text labels to the right of the chart
-        browser.append("text")
-                .datum(function (d: any) {
-                    return {name: d.name, value: d.values[d.values.length - 1]};
-                })
-                .attr("transform", function (d) {
-                    return "translate(" + xScale(d.value.xValue) + "," + yScale(d.value.y0 + d.value.y / 2) + ")";
-                })
-                .attr("x", -6)
-                .attr("dy", ".35em")
-                .text(function (d) {
-                    return d.name;
-                });
 
         //Add the x axis:
         var xAxisNode = svg.append("g")
@@ -176,5 +170,12 @@ class ChartStackedArea extends Chart implements Renderable {
             if(this.style) titleStyle = this.style.getTitleStyle();
             Chart.appendTitle(svg, this.title, margin, titleStyle);
         }
+
+        //Append the legend
+        var legend: any = svg.append("g")
+            .attr("class","legend")
+            .attr("transform","translate(40,40)")
+            .style("font-size","12px")
+            .call(Legend.legendFn);
     }
 }
