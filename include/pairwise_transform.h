@@ -215,7 +215,7 @@ namespace functions {
 			}
 
 			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                delete[] tB;
+                free(tB);
             }
 		}
 
