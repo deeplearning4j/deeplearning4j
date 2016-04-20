@@ -721,7 +721,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             if(layer != null ) {
                 if (Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
-                if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(learningRate);
+                if (Double.isNaN(layer.getBiasLearningRate())) layer.setBiasLearningRate(layer.getLearningRate());
                 if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
