@@ -41,6 +41,7 @@ If you do not know how to program yet, you shouldn't start with Java. Python and
 * [Additional command-line tutorial](http://www.learnenough.com/command-line)
 * [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
 * [Intro to Computer Science (CS50 @Harvard edX)](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
+* [A Gentle Introduction to Machine Fundamentals](https://marijnhaverbeke.nl/turtle/)
 
 If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
 
@@ -59,7 +60,6 @@ Once you have programming basics down, tackle Java, the world's most widely used
 With that under your belt, we recommend you approach Deeplearning4j through its [examples](https://github.com/deeplearning4j/dl4j-0.4-examples). 
 
 * [Quickstart](../quickstart.html)
-* [Iris Deep-Belief Network Tutorial](../iris-flower-dataset-tutorial.html)
 
 Once you get those up and running, and you've understood the API, you're ready for a full install.
 
