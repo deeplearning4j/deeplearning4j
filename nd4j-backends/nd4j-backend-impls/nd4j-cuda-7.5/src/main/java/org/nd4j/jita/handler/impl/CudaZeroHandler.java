@@ -76,9 +76,9 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final MemoryProvider provider = new CudaCachingZeroProvider();
 
-    private final FlowController flowController = new SynchronousFlowController();
+    private final FlowController flowController = new AsynchronousFlowController();
 
-    private final AllocationStatus INITIAL_LOCATION = AllocationStatus.HOST;
+    private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
