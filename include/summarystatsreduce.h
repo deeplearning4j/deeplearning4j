@@ -880,7 +880,7 @@ struct SharedSummaryStatsData<double> {
 			    }
 
                 if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                    delete[] ind2sub;
+                    free(ind2sub);
                 }
             }
 

@@ -130,8 +130,6 @@ namespace functions {
 			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
                 free(xIdx);
             }
-			delete[] xIdx;
-
 		}
 
 
