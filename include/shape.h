@@ -1521,7 +1521,7 @@ namespace shape {
             else {
                 int shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfo));
                 int *permuteIndexes = this->permuteDims();
-                int *toPermute = new int[shapeInfoLen];
+                int toPermute[MAX_RANK];
                 shape::permuteShapeBufferInPlace(shapeInfo,permuteIndexes,toPermute);
                 //copy starting from the tad shapes/strides that got permuted to the back
                 int shapeOffset = shape::rank(shapeInfo) - dimensionLength;
@@ -1530,9 +1530,8 @@ namespace shape {
                 //now that the dimensions are permuted, all of the tad shapes/strides are in the back
                 //all we need to do is copy from the start of the tad dimensions to the end since they are
                 //arranged in the right order
-                shape::copyTo(dimensionLength, permutedShape, retStride);
-                shape::copyTo(dimensionLength, permutedStride, retShape);
-                delete[] toPermute;
+                shape::copyTo(dimensionLength, permutedStride, retStride);
+                shape::copyTo(dimensionLength, permutedShape, retShape);
                 delete[] permuteIndexes;
 
             }
