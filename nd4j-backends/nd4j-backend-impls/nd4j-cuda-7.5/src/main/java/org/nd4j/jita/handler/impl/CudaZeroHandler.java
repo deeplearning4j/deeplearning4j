@@ -470,7 +470,7 @@ public class CudaZeroHandler implements MemoryHandler {
             );
             */
 
-            nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address());
 
             //context.syncOldStream();
         }

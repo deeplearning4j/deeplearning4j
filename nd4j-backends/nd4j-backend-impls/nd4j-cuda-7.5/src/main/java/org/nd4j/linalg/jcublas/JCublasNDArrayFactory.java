@@ -45,6 +45,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -470,6 +471,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             } else {
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
 
+                System.out.println("X: " + Arrays.toString(extras));
+
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
                             extras,
@@ -493,7 +496,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
 
-                if (ret != null) allocator.tickDeviceWrite(ret);
+                if (ret != null) allocator.registerAction(ret);
 
                 //Works for all cases...
 
