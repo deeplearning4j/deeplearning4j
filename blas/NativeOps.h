@@ -917,15 +917,21 @@ public:
 
     Nd4jPointer setDevice(Nd4jPointer ptrToDeviceId);
 
+    Nd4jPointer streamSynchronize(Nd4jPointer stream);
+
+    Nd4jPointer eventSynchronize(Nd4jPointer event);
+
     long getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
 
-    Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags);
+    Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags);
+    Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memset(Nd4jPointer dst, long size, int value, int flags);
+    Nd4jPointer memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memsetAsync(Nd4jPointer dst, long size, int value, int flags);
+    Nd4jPointer memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer getAvailableDevices();
 };
 
 

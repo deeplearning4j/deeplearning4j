@@ -2475,8 +2475,14 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaGetDeviceCount(&devCnt);
 	deviceProperties = new cudaDeviceProp[devCnt];
 	for (int i = 0; i < devCnt; i++) {
+		cudaSetDevice(i);
 		cudaGetDeviceProperties(&deviceProperties[i], i);
+
+		cudaDeviceSetLimit(cudaLimitStackSize, 10000);
+		cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
 	}
+
+	cudaSetDevice(0);
 
 	cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
 
@@ -2636,7 +2642,11 @@ Nd4jPointer NativeOps::createEvent() {
 }
 
 Nd4jPointer NativeOps::createBlasHandle() {
-	return 0L;
+	Nd4jPointer nativeHandle= NULL;
+	cublasStatus_t result = cublasCreate((cublasHandle_t *) &nativeHandle);
+	if (result != 0)
+		return 0L;
+	else return nativeHandle;
 }
 
 Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
@@ -2650,7 +2660,13 @@ Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 }
 
 Nd4jPointer NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
-	return 0L;
+	cublasHandle_t *pHandle = reinterpret_cast<cublasHandle_t *>(&handle);
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
+
+	cublasStatus_t result = cublasSetStream(*pHandle, *pStream);
+	if (result != 0)
+		return 0L;
+	else return 1L;
 }
 
 Nd4jPointer NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
@@ -2663,23 +2679,69 @@ Nd4jPointer NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
 }
 
 long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
-	return 0L;
+	int device = (int) ptrToDeviceId;
+
+	if (device >= 0) {
+		setDevice(ptrToDeviceId);
+	}
+	size_t memFree = 0;
+	size_t memTotal = 0;
+
+	cudaMemGetInfo(&memFree, &memTotal);
+
+	return (long) memFree;
 }
 
-Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
-	return 0L;
+Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+
+	return memcpyAsync(dst, src, size, flags, reserved);
 }
 
-Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
-	return 0L;
+Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
+
+	cudaMemcpyKind 	kind;
+
+	switch (flags) {
+		case 0: {
+				kind = cudaMemcpyHostToHost;
+			}
+			break;
+		case 1: {
+				kind = cudaMemcpyHostToDevice;
+			}
+			break;
+		case 2: {
+				kind = cudaMemcpyDeviceToHost;
+			}
+			break;
+	}
+
+	cudaError_t result = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
+
+	if (result != 0)
+		return 0L;
+	else return 1;
 }
 
-Nd4jPointer NativeOps::memset(Nd4jPointer dst, long size, int value, int flags) {
-	return 0L;
+Nd4jPointer NativeOps::memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved) {
+	//cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
+
+	cudaError_t result = cudaMemset((void *) dst, value, (size_t) size);
+
+	if (result != 0)
+		return 0L;
+	else return 1;
 }
 
-Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, long size, int value, int flags) {
-	return 0L;
+Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved) {
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
+
+	cudaError_t result = cudaMemsetAsync((void *) dst, value, (size_t) size, *pStream);
+
+	if (result != 0)
+		return 0L;
+	else return 1;
 }
 
 Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
@@ -2689,4 +2751,28 @@ Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
 	if (result != 0)
 		return 0L;
 	else return 1;
+}
+
+Nd4jPointer NativeOps::streamSynchronize(Nd4jPointer stream) {
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
+
+	cudaError_t result = cudaStreamSynchronize(*pStream);
+	if (result != 0)
+		return 0L;
+	else return 1L;
+}
+
+Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
+	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+
+	cudaError_t result = cudaEventSynchronize(*pEvent);
+	if (result != 0)
+		return 0L;
+	else return 1L;
+}
+
+Nd4jPointer NativeOps::getAvailableDevices() {
+	int devCnt = 0;
+	cudaGetDeviceCount(&devCnt);
+	return (Nd4jPointer) devCnt;
 }

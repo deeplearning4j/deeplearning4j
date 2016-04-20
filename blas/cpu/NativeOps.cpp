@@ -1666,22 +1666,34 @@ long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
+Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags) {
+Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memset(Nd4jPointer dst, long size, int value, int flags) {
+Nd4jPointer NativeOps::memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, long size, int value, int flags) {
+Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, int value, long size,  int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
 Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::streamSynchronize(Nd4jPointer stream) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::getAvailableDevices() {
     return 0L;
 }
