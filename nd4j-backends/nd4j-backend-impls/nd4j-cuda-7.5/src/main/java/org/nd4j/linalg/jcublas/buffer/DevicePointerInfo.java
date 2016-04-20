@@ -2,7 +2,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 
 /**
  * Provides information about a device pointer
@@ -12,7 +12,7 @@ import org.nd4j.linalg.jcublas.buffer.allocation.HostDevicePointer;
 @Data
 @AllArgsConstructor
 public class DevicePointerInfo {
-    final private HostDevicePointer pointers;
+    final private PointersPair pointers;
     final private long length;
     final private int stride;
     final private int offset;

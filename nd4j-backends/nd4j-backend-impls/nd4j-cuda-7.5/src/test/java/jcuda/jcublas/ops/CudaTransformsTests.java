@@ -8,10 +8,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
-
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;

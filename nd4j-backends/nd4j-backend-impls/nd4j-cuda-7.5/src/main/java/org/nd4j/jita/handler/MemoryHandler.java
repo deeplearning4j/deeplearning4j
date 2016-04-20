@@ -9,7 +9,6 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -26,10 +25,9 @@ public interface MemoryHandler {
      * This method gets called from Allocator, during Allocator/MemoryHandler initialization
      *
      * @param configuration
-     * @param environment
      * @param allocator
      */
-    void init(Configuration configuration, CudaEnvironment environment, Allocator allocator);
+    void init(Configuration configuration, Allocator allocator);
 
     /**
      * This method returns if this MemoryHandler instance is device-dependant (i.e. CUDA)

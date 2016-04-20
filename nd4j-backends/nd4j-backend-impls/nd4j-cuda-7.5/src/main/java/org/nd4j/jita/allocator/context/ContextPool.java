@@ -44,6 +44,8 @@ public class ContextPool {
 
     private static Logger logger = LoggerFactory.getLogger(ContextPool.class);
 
+    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
     public boolean containsContextForThread(long threadId) {
         return contextsPool.containsKey(threadId);
     }
@@ -105,9 +107,9 @@ public class ContextPool {
                         context.setHandle(handle);
 
                         // TODO: actually we don't need this anymore
-                        cudaStream_t cublasStream = new cudaStream_t();
-                        JCublas2.cublasGetStream(handle, cublasStream);
-                        context.setCublasStream(cublasStream);
+//                        cudaStream_t cublasStream = new cudaStream_t();
+                  //      JCublas2.cublasGetStream(handle, cublasStream);
+  //                      context.setCublasStream(cublasStream);
                     }
 
                     // we need this sync to finish memset
@@ -121,7 +123,7 @@ public class ContextPool {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
                     logger.debug("Reusing context: " + rand);
 
-                    JCuda.cudaSetDevice(deviceId);
+                    nativeOps.setDevice(deviceId);
 
                     CudaContext context = contextsForDevices.get(deviceId).get(rand);
 
@@ -141,7 +143,8 @@ public class ContextPool {
 
     private CudaContext createNewStream(Integer deviceId) {
         logger.debug("Creating new stream for device ["+deviceId+"]...");
-        JCuda.cudaSetDevice(deviceId);
+        //JCuda.cudaSetDevice(deviceId);
+        nativeOps.setDevice(deviceId);
 
         CudaContext context = new CudaContext();
         context.initOldStream();
@@ -154,14 +157,16 @@ public class ContextPool {
     }
 
     private cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
-        cublasHandle_t handle = new cublasHandle();
-        JCublas2.cublasCreate(handle);
-        JCublas2.cublasSetStream(handle,stream);
+        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
+        //JCublas2.cublasCreate(handle);
+        //JCublas2.cublasSetStream(handle,stream);
+        nativeOps.setBlasStream(handle.address(), stream.address());
 
         return handle;
     }
 
     private CUcontext createNewContext(Integer deviceId) {
+        /*
         logger.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
@@ -180,6 +185,8 @@ public class ContextPool {
         }
 
         return context;
+        */
+        return null;
     }
 
     /**
@@ -188,7 +195,7 @@ public class ContextPool {
      * PLEASE NOTE: This is debugging-related method, and should NOT be used in real tasks
      */
     public synchronized void resetPool(int deviceId) {
-
+        /*
         for (CUcontext cuContext: cuPool.values()) {
             logger.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
@@ -200,6 +207,7 @@ public class ContextPool {
         cublasPool.clear();
 
         acquireContextForDevice(deviceId);
+        */
     }
 
     public CUcontext getCuContextForDevice(Integer deviceId) {
@@ -220,7 +228,9 @@ public class ContextPool {
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        JCuda.cudaMemsetAsync(new CudaPointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        //JCuda.cudaMemsetAsync(new CudaPointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream().address());
+
         context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
@@ -234,11 +244,12 @@ public class ContextPool {
         Pointer dPtr = new Pointer();
         Pointer hPtr = new CudaPointer(scalarPointer);
 
+/*
         JCuda.cudaHostGetDevicePointer(
                 dPtr,
                 hPtr,
                 0);
-
+*/
         context.setBufferScalar(dPtr.address());
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);

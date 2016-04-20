@@ -871,11 +871,43 @@ public class NativeOps extends Pointer {
      */
     public native void initializeDevicesAndFunctions();
 
-    public native  long mallocHost(long memorySize, int flags);
+    public native long mallocHost(long memorySize, int flags);
 
-    public native  long mallocDevice(long memorySize, long ptrToDeviceId, int flags);
+    public native long mallocDevice(long memorySize, long ptrToDeviceId, int flags);
 
-    public native  long freeHost(long pointer);
+    public native long freeHost(long pointer);
 
-    public native  long freeDevice(long pointer, long deviceId);
+    public native long freeDevice(long pointer, long deviceId);
+
+    public native long createContext();
+
+    public native long createStream();
+
+    public native long createEvent();
+
+    public native long createBlasHandle();
+
+    public native long registerEvent(long event, long stream);
+
+    public native long destroyEvent(long event);
+
+    public native long setBlasStream(long handle, long stream);
+
+    public native long setDevice(long ptrToDeviceId);
+
+    public native long streamSynchronize(long stream);
+
+    public native long eventSynchronize(long event);
+
+    public native long getDeviceFreeMemory(long ptrToDeviceId);
+
+    public native long memcpy(long dst, long src, long size, int flags, long reserved);
+
+    public native long memcpyAsync(long dst, long src, long size, int flags, long reserved);
+
+    public native long memset(long dst, int value, long size,  int flags, long reserved);
+
+    public native long memsetAsync(long dst, int value, long size, int flags, long reserved);
+
+    public native long getAvailableDevices();
 }

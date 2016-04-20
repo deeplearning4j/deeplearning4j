@@ -19,23 +19,10 @@
 
 package org.nd4j.linalg.jcublas.context;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import lombok.Data;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategy;
-import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
-
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.nd4j.linalg.io.ClassPathResource;
-
-import org.apache.commons.pool2.ObjectPool;
 
 
 import java.io.IOException;
@@ -59,12 +46,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class ContextHolder {
 
-    private Map<Integer,GpuInformation> info = new ConcurrentHashMap<>();
     private Map<String,Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
     private Map<String,Integer> threads = new ConcurrentHashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
-    private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_BAN = "org.nd4j.linalg.jcuda.jcublas.ban_devices";
     private static AtomicBoolean deviceSetup = new AtomicBoolean(false);
@@ -73,8 +58,6 @@ public class ContextHolder {
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     // holder for memory strategies override
-    private Map<String, MemoryStrategy> forcedStrategies = new ConcurrentHashMap<>();
-
     /**
      * Singleton pattern
      * @return the instance for the context holder.
@@ -111,17 +94,7 @@ public class ContextHolder {
         return threads;
     }
 
-    /**
-     * This methord forces use of specific MemoryStrategy for current thread
-     *
-     * PLEASE NOTE: NEVER USE THIS METHOD IN PRODUCTION ENVIRONMENT, IT CAN LEAD TO UNPREDICTABLE RESULTS
-     *
-     * @param memoryStrategy MemoryStrategy to be used withing current thread, if null - forced strategy for current thread will be purged
-     */
-    public void forceMemoryStrategyForThread(MemoryStrategy memoryStrategy) {
-        if (memoryStrategy == null) forcedStrategies.remove(Thread.currentThread().getName());
-            else forcedStrategies.put(Thread.currentThread().getName(), memoryStrategy);
-    }
+
 
     /**
      * Get the number of devices
@@ -130,30 +103,6 @@ public class ContextHolder {
     public int deviceNum() {
         return numDevices;
     }
-
-    /**
-     * Get the configuration for the current
-     * device and thread
-     * @return the current configuration for
-     * the given device and thread
-     */
-    public  DeviceConfiguration getConf() {
-        return getConf(getDeviceForThread());
-    }
-
-
-    /**
-     * Get the memory strategy for the current thread
-     * and device
-     * @return
-     */
-    public MemoryStrategy getMemoryStrategy() {
-        // FIXME: this ad-hoc is used to get forced strategies working for initial pass on CUDA mem allocation tests, and this could/should be removed before release
-        if (forcedStrategies.containsKey(Thread.currentThread().getName())) return forcedStrategies.get(Thread.currentThread().getName());
-            else return getConf().getMemoryStrategy();
-    }
-
-
 
 
     /**
@@ -264,41 +213,6 @@ public class ContextHolder {
 
     public void setNumDevices(int numDevices) {
         this.numDevices = numDevices;
-    }
-
-
-    /**
-     * Returns the gpu diagnostics
-     * for the current thread
-     * @return
-     */
-    public GpuInformation getCurrentGpuInformation() {
-        return getGpuInfo(getDeviceForThread());
-    }
-
-    /**
-     * Returns the gpu diagnostics
-     * for the given device
-     * @param device the device to get
-     *               the gpu diagnostics for
-     * @return
-     */
-    public GpuInformation getGpuInfo(int device) {
-        return info.get(device);
-    }
-
-
-    public Map<Integer, GpuInformation> getInfo() {
-        return info;
-    }
-
-    /**
-     * Get the configuration the given device
-     * @param device the device to get the configuration for
-     * @return the device configuration
-     */
-    public DeviceConfiguration getConf(int device) {
-        return confs.get(device);
     }
 
     /**

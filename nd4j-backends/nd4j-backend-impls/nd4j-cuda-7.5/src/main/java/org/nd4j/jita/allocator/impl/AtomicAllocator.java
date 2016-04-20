@@ -14,7 +14,6 @@ import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -65,7 +64,6 @@ public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
     private Configuration configuration = new Configuration();
-    private CudaEnvironment environment;
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
@@ -107,9 +105,8 @@ public class AtomicAllocator implements Allocator {
     }
 
     protected AtomicAllocator() {
-        environment = new CudaEnvironment(configuration);
         this.memoryHandler = new CudaZeroHandler();
-        this.memoryHandler.init(configuration, environment, this);
+        this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
@@ -169,7 +166,7 @@ public class AtomicAllocator implements Allocator {
         globalLock.writeLock().lock();
 
         this.memoryHandler = memoryHandler;
-        this.memoryHandler.init(configuration, environment, this);
+        this.memoryHandler.init(configuration, this);
 
         globalLock.writeLock().unlock();
     }
@@ -187,41 +184,11 @@ public class AtomicAllocator implements Allocator {
             globalLock.writeLock().lock();
 
             this.configuration = configuration;
-            this.environment = new CudaEnvironment(this.configuration);
 
             globalLock.writeLock().unlock();
         }
     }
 
-    /**
-     * This method allows you to exclude specific device from being used for calculations
-     * <p>
-     * Please note: you can call this method multiple times, to ban multiple devices
-     *
-     * @param deviceId deviceId to be banned
-     */
-    public void banDevice(@NonNull Integer deviceId) {
-        globalLock.writeLock().lock();
-
-        environment.banDevice(deviceId);
-
-        globalLock.writeLock().unlock();
-    }
-
-    /**
-     * Set active CUDA environment
-     *
-     * @param environment
-     */
-    @Override
-    public void setEnvironment(@NonNull CudaEnvironment environment) {
-        globalLock.writeLock().lock();
-        this.environment = environment;
-
-//        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
-
-        globalLock.writeLock().unlock();
-    }
 
     /**
      * Returns current Allocator configuration

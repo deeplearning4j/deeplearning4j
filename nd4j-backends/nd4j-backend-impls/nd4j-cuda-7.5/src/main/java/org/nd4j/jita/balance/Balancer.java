@@ -4,7 +4,6 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 
 /**
  * @author raver119@gmail.com
@@ -17,9 +16,8 @@ public interface Balancer {
      * This method initializes this Balancer instance
      *
      * @param configuration
-     * @param environment
      */
-    void init(Configuration configuration, CudaEnvironment environment);
+    void init(Configuration configuration);
 
     /**
      * This method checks, if it's worth moving some memory region to device

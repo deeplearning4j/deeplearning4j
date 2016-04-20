@@ -8,9 +8,12 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.DefaultPointerConverter;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.Nd4jBlas;
 import org.nd4j.nativeblas.PointerConverter;
 
@@ -21,6 +24,7 @@ import org.nd4j.nativeblas.PointerConverter;
 public class JcublasLevel2 extends BaseLevel2 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
+    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
     private PointerConverter pointerConverter = new DefaultPointerConverter();
 
     @Override
@@ -33,7 +37,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            JCublas2.cublasSetStream(handle, ctx.getOldStream());
+            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
 
             nd4jBlas.sgemv(new long[]{ctx.getHandle().address()},
                     order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
@@ -98,7 +102,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            JCublas2.cublasSetStream(handle, ctx.getOldStream());
+            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
 
             nd4jBlas.dgemv(new long[]{ctx.getHandle().address()},
                     order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),

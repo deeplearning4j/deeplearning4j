@@ -17,6 +17,9 @@ import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +63,8 @@ public class AllocationPoint {
     // real time here
     private final AtomicLong deviceAccessTime = new AtomicLong(0);
 
+    protected static final NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
     @Getter @Setter private boolean constant;
 
     // TODO: timer should be instantiated externally
@@ -93,7 +98,7 @@ public class AllocationPoint {
     public void setLastEvent(cudaEvent_t event) {
         if (event != null) {
             if (lastEvent != null)
-                JCuda.cudaEventDestroy(lastEvent);
+                nativeOps.destroyEvent(lastEvent.address());
         }
         lastEvent = event;
     }

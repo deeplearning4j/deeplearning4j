@@ -7,7 +7,6 @@ import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.conf.DeviceInformation;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -42,7 +41,6 @@ import static org.junit.Assert.*;
 @Ignore
 public class AtomicAllocatorTest {
     private static AtomicAllocator allocator;
-    private static CudaEnvironment singleDevice4GBcc52;
 
 
     private static Logger log = LoggerFactory.getLogger(AtomicAllocatorTest.class);

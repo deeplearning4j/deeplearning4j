@@ -5,7 +5,10 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,6 +50,8 @@ public class CudaContext {
     private long bufferScalar;
     private long bufferSpecial;
 
+    private static NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
 
     public CudaContext(boolean free) {
         this();
@@ -63,7 +68,8 @@ public class CudaContext {
      * stream
      */
     public void syncStream() {
-        JCudaDriver.cuStreamSynchronize(stream);}
+        //JCudaDriver.cuStreamSynchronize(stream);
+    }
 
     /**
      * Synchronizes
@@ -75,19 +81,19 @@ public class CudaContext {
     }
 
     public void syncSpecialStream() {
-        JCuda.cudaStreamSynchronize(specialStream);
+        nativeOps.streamSynchronize(specialStream.address());
     }
 
     public void syncOldStream(boolean syncCuBlas) {
 //        ContextHolder.getInstance().setContext();
-        JCuda.cudaStreamSynchronize(oldStream);
+        nativeOps.streamSynchronize(oldStream.address());
 
         if (syncCuBlas) syncCublasStream();
     }
 
     public void syncCublasStream() {
         if (cublasStream != null) {
-            JCuda.cudaStreamSynchronize(cublasStream);
+            nativeOps.streamSynchronize(cublasStream.address());
         } else throw new IllegalStateException("cuBLAS stream isnt set");
     }
 
@@ -109,12 +115,14 @@ public class CudaContext {
      */
     public void initStream() {
 //        ContextHolder.getInstance().setContext();
+        /*
         if(stream == null) {
             stream = new CUstream();
             JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
             streamFromPool = false;
             eventDestroyed = false;
         }
+        */
     }
 
     /**
@@ -124,8 +132,8 @@ public class CudaContext {
 //        ContextHolder.getInstance().setContext();
         if(oldStream == null)  {
             oldStreamFromPool = false;
-            oldStream = new cudaStream_t();
-            JCuda.cudaStreamCreate(oldStream);
+            oldStream = new cudaStream_t(nativeOps.createStream());
+            //JCuda.cudaStreamCreate(oldStream);
 
             //specialStream = new cudaStream_t();
             //JCuda.cudaStreamCreate(specialStream);

@@ -6,7 +6,6 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,14 +25,6 @@ public interface Allocator {
      * @param configuration configuration bean to be applied
      */
     void applyConfiguration(Configuration configuration);
-
-
-    /**
-     * Set active CUDA environment
-     *
-     * @param environment
-     */
-    void setEnvironment(CudaEnvironment environment);
 
     /**
      * This method returns CudaContext for current thread

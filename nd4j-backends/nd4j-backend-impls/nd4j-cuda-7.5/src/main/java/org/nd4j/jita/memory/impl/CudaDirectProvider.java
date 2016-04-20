@@ -22,7 +22,9 @@ import java.util.Arrays;
  */
 public class CudaDirectProvider implements MemoryProvider {
 
+    protected static final long DEVICE_RESERVED_SPACE = 1024 * 1024 * 50L;
     private static Logger log = LoggerFactory.getLogger(CudaDirectProvider.class);
+    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
     /**
      * This method provides PointersPair to memory chunk specified by AllocationShape
@@ -51,12 +53,12 @@ public class CudaDirectProvider implements MemoryProvider {
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
 
                 Pointer hostPointer = new CudaPointer(pointer);
-
+/*
                 JCuda.cudaHostGetDevicePointer(
                         devicePointer,
                         hostPointer,
                         0);
-
+*/
                 PointersPair devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
@@ -140,8 +142,10 @@ public class CudaDirectProvider implements MemoryProvider {
      * @return
      */
     public boolean pingDeviceForFreeMemory(Integer deviceId, long requiredMemory) {
+        /*
         long[] totalMem = new long[1];
         long[] freeMem = new long[1];
+
 
         JCuda.cudaMemGetInfo(freeMem, totalMem);
 
@@ -154,8 +158,15 @@ public class CudaDirectProvider implements MemoryProvider {
          */
         //if (configuration != null && used > total * configuration.getMaxDeviceMemoryUsed()) return false;
 
+        /*
         if (free + requiredMemory < total * 0.85)
             return true;
         else return false;
+        */
+        long freeMem = nativeOps.getDeviceFreeMemory(-1);
+        if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
+            return false;
+        else return true;
+
     }
 }

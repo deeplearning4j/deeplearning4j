@@ -1,10 +1,7 @@
 package org.nd4j.jita.allocator.concurrency;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import lombok.NonNull;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +16,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author raver119@gmail.com
  */
 public class DeviceAllocationsTracker {
-    private CudaEnvironment environment;
     private Configuration configuration;
 
     private final ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
@@ -34,11 +30,10 @@ public class DeviceAllocationsTracker {
 
     private static Logger log = LoggerFactory.getLogger(DeviceAllocationsTracker.class);
 
-    public DeviceAllocationsTracker(@NonNull CudaEnvironment environment, @NonNull Configuration configuration) {
-        this.environment = environment;
+    public DeviceAllocationsTracker(@NonNull Configuration configuration) {
         this.configuration = configuration;
 
-        for (Integer device: environment.getAvailableDevices().keySet()) {
+        for (Integer device: configuration.getAvailableDevices()) {
             deviceLocks.put(device, new ReentrantReadWriteLock());
         }
     }
@@ -120,13 +115,16 @@ public class DeviceAllocationsTracker {
         ensureThreadRegistered(threadId, deviceId);
         try {
             deviceLocks.get(deviceId).writeLock().lock();
-
+/*
             if (getAllocatedSize(deviceId) + memorySize + getReservedSpace(deviceId)> environment.getDeviceInformation(deviceId).getTotalMemory() * configuration.getMaxDeviceMemoryUsed()) {
                 return false;
             } else {
                 addToReservedSpace(deviceId, memorySize);
                 return true;
             }
+            */
+            addToReservedSpace(deviceId, memorySize);
+            return true;
         } finally {
             deviceLocks.get(deviceId).writeLock().unlock();
         }

@@ -1,15 +1,17 @@
 package org.nd4j.jita.allocator.flow.impl;
 
-import jcuda.Pointer;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
+
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class SynchronousFlowController implements FlowController {
     private static Logger log = LoggerFactory.getLogger(SynchronousFlowController.class);
     private volatile Allocator allocator;
+    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
     @Override
     public void init(Allocator allocator) {
@@ -46,6 +49,7 @@ public class SynchronousFlowController implements FlowController {
 
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
+                /*
                 JCuda.cudaMemcpyAsync(
                         new Pointer(point.getHostPointer().address()),
                         new Pointer(point.getDevicePointer().address()),
@@ -53,6 +57,8 @@ public class SynchronousFlowController implements FlowController {
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getOldStream()
                 );
+                */
+                nativeOps.memcpyAsync(point.getHostPointer().address(), point.getDevicePointer().address(), AllocationUtils.getRequiredMemory(point.getShape()), CudaConstants.cudaMemcpyDeviceToHost, context.getOldStream().address());
 
                 context.syncOldStream();
             }// else log.info("Not [DEVICE] memory, skipping...");
