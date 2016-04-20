@@ -2,15 +2,12 @@ package jcuda.jcublas.ops;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
-
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -413,11 +410,29 @@ public class CudaTransformsTests {
 
     @Test
     public void testIsMaxMinimized() throws Exception {
+        System.out.println("A------------------------------");
         INDArray orig = Nd4j.create(new double[][]{{0, 2}, {2, 1}});
-        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup('f')));
+        System.out.println("AA------------------------------");
+        INDArray origf = orig.dup('f');
+        System.out.println("AB------------------------------");
+        INDArray outf = Nd4j.getExecutioner().execAndReturn(new IsMax(origf));
+        System.out.println("AC------------------------------");
         INDArray exp = Nd4j.create(new double[][]{{0, 1}, {0, 0}});
 
+        System.out.println("A0------------------------------");
+        System.out.println("exp data: " +Arrays.toString(exp.data().asFloat()));
+        System.out.println("A1------------------------------");
         System.out.println("OutF data: " +Arrays.toString(outf.data().asFloat()));
+        System.out.println("A2------------------------------");
+        System.out.println("exp shape: " + exp.shapeInfoDataBuffer());
+        System.out.println("A3------------------------------");
+        System.out.println("OutF shape: " + outf.shapeInfoDataBuffer());
+        System.out.println("A4------------------------------");
+        System.out.println("exp: " + exp);
+        System.out.println("A5------------------------------");
+        System.out.println("OutF: " + outf);
+        System.out.println("A6------------------------------");
+
         assertEquals(exp, outf);
     }
 
@@ -435,14 +450,27 @@ public class CudaTransformsTests {
      }
 
     @Test
-    public void testClassificationSoftmax() {
-        INDArray input = Nd4j.zeros(256, 30000);
+    public void testClassificationSoftmax() throws Exception {
+        INDArray input = Nd4j.zeros(256, 3000);
+        System.out.println("A0: --------------------------------");
         for (int i = 0; i < 256; i++) {
-            input.putScalar(30000 * i, (i * 2) + 0.5);
+            input.putScalar(3000 * i, (i * 2) + 0.5);
         }
+        System.out.println("AF: --------------------------------");
+        AtomicAllocator.getInstance().getPointer(input);
+        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
-        System.out.println("Data:" + input.data().length());
+        System.out.println("AX: --------------------------------");
+        AtomicAllocator.getInstance().getPointer(input);
+        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
+        System.out.println("AA: --------------------------------");
+        float sumAll = input.sumNumber().floatValue();
+        System.out.println("A1: --------------------------------");
+        System.out.println("Data:" + input.data().length() + " Sum: " + sumAll);
+        assertEquals(65408.0f, sumAll, 0.01f);
+
+        System.out.println("A2: --------------------------------");
         SoftMax softMax = new SoftMax(input);
         long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
@@ -456,8 +484,7 @@ public class CudaTransformsTests {
 */
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
-
-            System.out.println("Position [0]: " + input.getDouble(30000 * i) + ", [1]: " + input.getDouble(30000 * i + 1));
+            System.out.println("Position [0]: " + input.getDouble(3000 * i) + ", [1]: " + input.getDouble(3000 * i + 1));
 
             float sum = slice.sumNumber().floatValue();
             assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);
@@ -524,7 +551,7 @@ public class CudaTransformsTests {
     @Test
     public void testTransformExp() {
         INDArray array1 = Nd4j.zeros(1500,150);
-        System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
+        //System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
 
         Exp exp = new Exp(array1);
         Nd4j.getExecutioner().exec(exp);
@@ -532,5 +559,6 @@ public class CudaTransformsTests {
         for (int x = 0; x < 1500 * 150; x++) {
             assertEquals(1f, array1.getFloat(x), 0.0001f);
         }
+
     }
 }

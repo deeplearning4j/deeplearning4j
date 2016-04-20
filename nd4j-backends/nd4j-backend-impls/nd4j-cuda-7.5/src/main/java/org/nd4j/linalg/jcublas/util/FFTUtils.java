@@ -1,6 +1,5 @@
 package org.nd4j.linalg.jcublas.util;
 
-import jcuda.jcufft.cufftType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -13,10 +12,12 @@ public class FFTUtils {
      * @return the plan for the given buffer
      */
     public static int getPlanFor(DataBuffer buff) {
-        if(buff.dataType() == DataBuffer.Type.FLOAT)
+     /*   if(buff.dataType() == DataBuffer.Type.FLOAT)
             return cufftType.CUFFT_C2C;
         else
             return cufftType.CUFFT_Z2Z;
+            */
+        throw new UnsupportedOperationException();
     }
 
 

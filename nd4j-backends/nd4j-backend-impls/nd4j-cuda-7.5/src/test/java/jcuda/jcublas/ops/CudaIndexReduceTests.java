@@ -8,8 +8,6 @@ import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.allocation.PinnedMemoryStrategy;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 
 import static org.junit.Assert.assertEquals;
 

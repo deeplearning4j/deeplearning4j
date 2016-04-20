@@ -4,7 +4,6 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 public class CudaPointer extends Pointer {
 
     private static Logger logger = LoggerFactory.getLogger(CudaPointer.class);
+
 
     public CudaPointer(Pointer pointer) {
         this.address = pointer.address();
@@ -44,15 +44,15 @@ public class CudaPointer extends Pointer {
         this.position = 0;
     }
 
-    public CudaPointer(jcuda.Pointer pointer,  long capacity) {
-        this.address = pointer.getNativePointer();
+    public CudaPointer(long address) {
+        this.address = address;
+    }
+
+    public CudaPointer(long address, long capacity) {
+        this.address = address;
         this.capacity = capacity;
         this.limit = capacity;
         this.position = 0;
-    }
-
-    public CudaPointer(long address) {
-        this.address = address;
     }
 
     public Pointer asNativePointer() {
@@ -71,8 +71,8 @@ public class CudaPointer extends Pointer {
         return new IntPointer(this);
     }
 
-    public jcuda.Pointer asCudaPointer() {
-        return new jcuda.Pointer(this.address());
+    public long getNativePointer() {
+        return address();
     }
 
     /**

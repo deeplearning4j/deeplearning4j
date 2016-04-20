@@ -517,13 +517,18 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testSum5d() {
+    public void testSum5d() throws Exception {
         System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1,1,4,4,4);
         INDArray arr5s = arr5.sum(2,3);
+        Thread.sleep(1000);
         System.out.println("5d length: " + arr5s.length());
         for(int i = 0; i < arr5s.length(); i++)
             assertEquals(16, arr5s.getDouble(i),1e-1);
+
+
+        INDArray arrF = Nd4j.ones(1,1,4,4,4);
+        System.out.println("A: " + arrF);
     }
 
 

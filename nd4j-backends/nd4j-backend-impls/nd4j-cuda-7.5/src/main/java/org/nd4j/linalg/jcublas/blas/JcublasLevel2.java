@@ -2,16 +2,17 @@ package org.nd4j.linalg.jcublas.blas;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.nativeblas.DefaultPointerConverter;
-import org.nd4j.nativeblas.Nd4jBlas;
-import org.nd4j.nativeblas.PointerConverter;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.*;
 
 
 /**
@@ -20,39 +21,30 @@ import org.nd4j.nativeblas.PointerConverter;
 public class JcublasLevel2 extends BaseLevel2 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = new Nd4jBlas();
-    private PointerConverter pointerConverter = new DefaultPointerConverter();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        nd4jBlas.sgemv(new long[]{ctx.getHandle().getNativePointer()},
-                order,TransA,M,N,alpha,cAPointer.getDevicePointer().getNativePointer(),
-                lda,cBPointer.getDevicePointer().getNativePointer(),
-                incX,
-                beta,
-                cCPointer.getDevicePointer().getNativePointer(),
-                incY);
-         /*   JCublas2.cublasSgemv(
-                    ctx.getHandle(),
-                    OpUtil.getOp(TransA),
-                    M,
-                    N,
-                    Pointer.to(new float[]{alpha}),
-                    cAPointer.getPointer(),
-                    lda,
-                    cBPointer.getPointer(),
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+
+            nd4jBlas.sgemv(new long[]{ctx.getHandle().address()},
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
+                    lda, cBPointer.getDevicePointer().address(),
                     incX,
-                    Pointer.to(new float[]{beta}),
-                    cCPointer.getPointer(),
-                    incY);*/
-            //ctx.syncOldStream();
-        //    cCPointer.copyToHost();
+                    beta,
+                    cCPointer.getDevicePointer().address(),
+                    incY);
+        }
 
+        allocator.registerAction(Y);
     }
 
     @Override
@@ -100,32 +92,24 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         CudaContext ctx = CudaContext.getBlasContext();
 
-        CublasPointer cAPointer = new CublasPointer(A,ctx);
-        CublasPointer cBPointer = new CublasPointer(X,ctx);
-        CublasPointer cCPointer = new CublasPointer(Y,ctx);
+        CublasPointer cAPointer = new CublasPointer(A, ctx);
+        CublasPointer cBPointer = new CublasPointer(X, ctx);
+        CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        nd4jBlas.dgemv(new long[]{ctx.getHandle().getNativePointer()},
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().getNativePointer(),
-                    lda, cBPointer.getDevicePointer().getNativePointer(),
+        cublasHandle_t handle = ctx.getHandle();
+        synchronized (handle) {
+            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+
+            nd4jBlas.dgemv(new long[]{ctx.getHandle().address()},
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
+                    lda, cBPointer.getDevicePointer().address(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer().getNativePointer(),
+                    cCPointer.getDevicePointer().address(),
                     incY);
-            /*JCublas2.cublasDgemv(
-                    ContextHolder.getInstance().getHandle(),
-                    OpUtil.getOp(TransA),
-                    M,
-                    N,
-                    Pointer.to(new double[]{alpha}),
-                    cAPointer.getPointer(),
-                    lda,
-                    cBPointer.getPointer(),
-                    incX,
-                    Pointer.to(new double[]{beta}),
-                    cCPointer.getPointer(),
-                    incY);*/
-//            ctx.syncOldStream();
-    //        cCPointer.copyToHost();
+        }
+
+        allocator.registerAction(Y);
     }
 
     @Override

@@ -1,17 +1,15 @@
 package org.nd4j.linalg.jcublas.context;
 
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUstream;
-import jcuda.driver.CUstream_flags;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaStream_t;
 import lombok.Data;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,13 +24,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Data
 public class CudaContext {
-    private CUcontext context;
-    private CUstream stream;
+    //private CUcontext context;
+    //private CUstream stream;
     //private CUevent cUevent;
     private cudaStream_t oldStream;
+
     private cudaStream_t cublasStream;
+
+    private cudaStream_t specialStream;
+
     //private cudaEvent_t oldEvent;
-    private cublasHandle handle;
+    private cublasHandle_t handle;
     private CublasPointer resultPointer;
     private AtomicBoolean oldStreamReturned = new AtomicBoolean(false);
     private AtomicBoolean handleReturned = new AtomicBoolean(false);
@@ -48,6 +50,8 @@ public class CudaContext {
     private long bufferAllocation;
     private long bufferScalar;
     private long bufferSpecial;
+
+    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 
     public CudaContext(boolean free) {
@@ -65,7 +69,8 @@ public class CudaContext {
      * stream
      */
     public void syncStream() {
-        JCudaDriver.cuStreamSynchronize(stream);}
+        //JCudaDriver.cuStreamSynchronize(stream);
+    }
 
     /**
      * Synchronizes
@@ -73,15 +78,24 @@ public class CudaContext {
      */
     public void syncOldStream() {
 //        ContextHolder.getInstance().setContext();
-        JCuda.cudaStreamSynchronize(oldStream);
+        syncOldStream(false);
+    }
 
-        syncCublasStream();
+    public void syncSpecialStream() {
+        nativeOps.streamSynchronize(specialStream.address());
+    }
+
+    public void syncOldStream(boolean syncCuBlas) {
+//        ContextHolder.getInstance().setContext();
+        nativeOps.streamSynchronize(oldStream.address());
+
+        if (syncCuBlas) syncCublasStream();
     }
 
     public void syncCublasStream() {
         if (cublasStream != null) {
-            JCuda.cudaStreamSynchronize(cublasStream);
-        }
+            nativeOps.streamSynchronize(cublasStream.address());
+        } else throw new IllegalStateException("cuBLAS stream isnt set");
     }
 
 
@@ -102,12 +116,14 @@ public class CudaContext {
      */
     public void initStream() {
 //        ContextHolder.getInstance().setContext();
+        /*
         if(stream == null) {
             stream = new CUstream();
             JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT);
             streamFromPool = false;
             eventDestroyed = false;
         }
+        */
     }
 
     /**
@@ -117,8 +133,11 @@ public class CudaContext {
 //        ContextHolder.getInstance().setContext();
         if(oldStream == null)  {
             oldStreamFromPool = false;
-            oldStream = new cudaStream_t();
-            JCuda.cudaStreamCreate(oldStream);
+            oldStream = new cudaStream_t(nativeOps.createStream());
+            //JCuda.cudaStreamCreate(oldStream);
+
+            specialStream = new cudaStream_t(nativeOps.createStream());
+            //JCuda.cudaStreamCreate(specialStream);
         }
 
     }
@@ -180,6 +199,7 @@ public class CudaContext {
      */
     public static CudaContext getBlasContext() {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        //context.syncOldStream(false);
         return context;
     }
 

@@ -1,30 +1,24 @@
 package org.nd4j.jita.allocator.context;
 
-import jcuda.Pointer;
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUdevice;
-import jcuda.driver.CUresult;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasHandle;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaStream_t;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-
-import static jcuda.driver.JCudaDriver.cuCtxCreate;
-import static jcuda.driver.JCudaDriver.cuDeviceGet;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
@@ -41,7 +35,7 @@ public class ContextPool {
 
     private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
-    private volatile Map<Integer, cublasHandle> cublasPool = new ConcurrentHashMap<>();
+    private volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
 
     private volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
@@ -50,6 +44,8 @@ public class ContextPool {
     private Semaphore lock = new Semaphore(1);
 
     private static Logger logger = LoggerFactory.getLogger(ContextPool.class);
+
+    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public boolean containsContextForThread(long threadId) {
         return contextsPool.containsKey(threadId);
@@ -89,32 +85,36 @@ public class ContextPool {
 
                 // if we hadn't hit MAX_STREAMS_PER_DEVICE limit - we add new stream. Otherwise we use random one.
                 if (contextsForDevices.get(deviceId).size() < MAX_STREAMS_PER_DEVICE) {
-                    logger.info("Creating new context...");
+                    logger.debug("Creating new context...");
                     CudaContext context = createNewStream(deviceId);
 
                     getDeviceBuffers(context, deviceId);
 
                     if (contextsForDevices.get(deviceId).size() == 0) {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
-                        logger.info("Creating new cuBLAS handle for device ["+deviceId+"]...");
+                        logger.debug("Creating new cuBLAS handle for device ["+deviceId+"]...");
 
                         cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
-                        cublasHandle handle = createNewCublasHandle(cublasStream);
+                        cublasHandle_t handle = createNewCublasHandle(cublasStream);
                         context.setHandle(handle);
                         context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
                     } else {
                         // just pick handle out there
-                        logger.info("Reusing blas here...");
-                        cublasHandle handle = cublasPool.get(deviceId);
+                        logger.debug("Reusing blas here...");
+                        cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
 
-                        cudaStream_t cublasStream = new cudaStream_t();
-                        JCublas2.cublasGetStream(handle, cublasStream);
-                        context.setCublasStream(cublasStream);
+                        // TODO: actually we don't need this anymore
+//                        cudaStream_t cublasStream = new cudaStream_t();
+                  //      JCublas2.cublasGetStream(handle, cublasStream);
+  //                      context.setCublasStream(cublasStream);
                     }
+
+                    // we need this sync to finish memset
+                    context.syncOldStream();
 
                     contextsPool.put(threadId, context);
                     contextsForDevices.get(deviceId).put(contextsForDevices.get(deviceId).size(), context);
@@ -122,9 +122,9 @@ public class ContextPool {
                     return context;
                 } else {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
-                    logger.info("Reusing context: " + rand);
+                    logger.debug("Reusing context: " + rand);
 
-                    JCuda.cudaSetDevice(deviceId);
+                    nativeOps.setDevice(deviceId);
 
                     CudaContext context = contextsForDevices.get(deviceId).get(rand);
 
@@ -143,8 +143,9 @@ public class ContextPool {
     }
 
     private CudaContext createNewStream(Integer deviceId) {
-        logger.info("Creating new stream for device ["+deviceId+"]...");
-        JCuda.cudaSetDevice(deviceId);
+        logger.debug("Creating new stream for device ["+deviceId+"]...");
+        //JCuda.cudaSetDevice(deviceId);
+        nativeOps.setDevice(deviceId);
 
         CudaContext context = new CudaContext();
         context.initOldStream();
@@ -156,16 +157,18 @@ public class ContextPool {
         return context;
     }
 
-    private cublasHandle createNewCublasHandle(cudaStream_t stream) {
-        cublasHandle handle = new cublasHandle();
-        JCublas2.cublasCreate(handle);
-        JCublas2.cublasSetStream(handle,stream);
+    private cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
+        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
+        //JCublas2.cublasCreate(handle);
+        //JCublas2.cublasSetStream(handle,stream);
+        nativeOps.setBlasStream(handle.address(), stream.address());
 
         return handle;
     }
 
     private CUcontext createNewContext(Integer deviceId) {
-        logger.info("Creating new CUcontext...");
+        /*
+        logger.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
         CUcontext context = new CUcontext();
 
@@ -183,6 +186,8 @@ public class ContextPool {
         }
 
         return context;
+        */
+        return null;
     }
 
     /**
@@ -191,9 +196,9 @@ public class ContextPool {
      * PLEASE NOTE: This is debugging-related method, and should NOT be used in real tasks
      */
     public synchronized void resetPool(int deviceId) {
-
+        /*
         for (CUcontext cuContext: cuPool.values()) {
-            logger.info("Destroying context: " + cuContext);
+            logger.debug("Destroying context: " + cuContext);
             JCudaDriver.cuCtxDestroy(cuContext);
         }
 
@@ -203,6 +208,7 @@ public class ContextPool {
         cublasPool.clear();
 
         acquireContextForDevice(deviceId);
+        */
     }
 
     public CUcontext getCuContextForDevice(Integer deviceId) {
@@ -215,7 +221,7 @@ public class ContextPool {
      * @param deviceId
      */
     private void getDeviceBuffers(CudaContext context, int deviceId) {
-        NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
         int sizeOf = (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
 
@@ -223,7 +229,9 @@ public class ContextPool {
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        JCuda.cudaMemsetAsync(new Pointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        //JCuda.cudaMemsetAsync(new CudaPointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
+        nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream().address());
+
         context.syncOldStream();
 
         long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
@@ -234,15 +242,16 @@ public class ContextPool {
         if (scalarPointer == 0)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
-        Pointer dPtr = new Pointer();
-        Pointer hPtr = new Pointer(scalarPointer);
+   //     Pointer dPtr = new Pointer();
+   //     Pointer hPtr = new CudaPointer(scalarPointer);
 
+/*
         JCuda.cudaHostGetDevicePointer(
                 dPtr,
                 hPtr,
                 0);
-
-        context.setBufferScalar(dPtr.getNativePointer());
+*/
+        context.setBufferScalar(scalarPointer);
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
@@ -259,6 +268,7 @@ public class ContextPool {
                 0);
 */
 //        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
+        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream().address());
 
         context.setBufferSpecial(specialPointer);
     }

@@ -19,18 +19,12 @@
 
 package org.nd4j.linalg.jcublas;
 
-import jcuda.Pointer;
 import lombok.Getter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
@@ -98,26 +92,6 @@ public class CublasPointer  implements AutoCloseable {
     }
 
     /**
-     * copies the result to the host buffer
-     *
-     *
-     */
-    @Deprecated
-    public void copyToHost() {
-
-        if (1 > 0) return;
-
-        if(arr != null) {
-            int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-            ContextHolder.getInstance().getMemoryStrategy().copyToHost(buffer,arr.offset(),arr.elementWiseStride(),compLength,cudaContext,arr.offset(),arr.elementWiseStride());
-        }
-        else {
-            ContextHolder.getInstance().getMemoryStrategy().copyToHost(buffer,0,cudaContext);
-        }
-    }
-
-
-    /**
      * Creates a CublasPointer
      * for a given JCudaBuffer
      * @param buffer
@@ -151,7 +125,7 @@ public class CublasPointer  implements AutoCloseable {
         //vector based striding won't work with an array that looks like this
 
         this.cudaContext = context;
-        this.devicePointer = new Pointer(AtomicAllocator.getInstance().getPointer(array).address());
+        this.devicePointer = new CudaPointer(AtomicAllocator.getInstance().getPointer(array).address());
 
         /*
         if(array instanceof IComplexNDArray) {
@@ -244,54 +218,8 @@ public class CublasPointer  implements AutoCloseable {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("NativePointer: ["+devicePointer.getNativePointer()+"]");
+        sb.append("NativePointer: ["+devicePointer.address()+"]");
         return sb.toString();
-    }
-
-
-    private void appendWhereArrayLengthLessThanBufferLength(StringBuffer sb) {
-        int length = arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length();
-
-        if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString, 0, 1, length,buffer, cudaContext, arr.elementWiseStride(),arr.offset());
-            sb.append(setString);
-        }
-        else if(arr.data().dataType() == DataBuffer.Type.INT) {
-            int[] set = new int[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString, 0, 1, length, buffer, cudaContext, arr.elementWiseStride(),arr.offset());
-            sb.append(setString);
-        }
-        else {
-            float[] set = new float[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString, 0, 1,length,buffer, cudaContext, arr.elementWiseStride(),arr.offset());
-            sb.append(setString);
-        }
-    }
-
-    private void appendWhereArrayLengthEqualsBufferLength(StringBuffer sb) {
-        int length = arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length();
-        if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString,0,1,length,buffer,cudaContext,1,0);
-            sb.append(setString);
-        }
-        else if(arr.data().dataType() == DataBuffer.Type.INT) {
-            int[] set = new int[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString, 0, 1, length, buffer, cudaContext, 1, 0);
-            sb.append(setString);
-        }
-        else {
-            float[] set = new float[length];
-            DataBuffer setString = Nd4j.createBuffer(set);
-            ContextHolder.getInstance().getMemoryStrategy().getData(setString, 0, 1, length, buffer, cudaContext, 1, 0);
-            sb.append(setString);
-        }
     }
 
 

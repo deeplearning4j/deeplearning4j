@@ -582,4 +582,22 @@ public interface DataBuffer extends Serializable {
      * @param trackingPoint
      */
     void setTrackingPoint(Long trackingPoint);
+
+    /**
+     * This method returns whether this DataBuffer is constant, or not.
+     * Constant buffer means that it modified only during creation time, and then it stays the same for all lifecycle. I.e. used in shape info databuffers.
+     *
+     * @return
+     */
+    boolean isConstant();
+
+    /**
+     *
+     * This method allows you to mark databuffer as constant.
+     *
+     * PLEASE NOTE: DO NOT USE THIS METHOD, UNLESS YOU'RE 100% SURE WHAT YOU DO
+     *
+     * @param reallyConstant
+     */
+    void setConstant(boolean reallyConstant);
 }

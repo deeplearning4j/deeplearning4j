@@ -6,7 +6,6 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,14 +25,6 @@ public interface Allocator {
      * @param configuration configuration bean to be applied
      */
     void applyConfiguration(Configuration configuration);
-
-
-    /**
-     * Set active CUDA environment
-     *
-     * @param environment
-     */
-    void setEnvironment(CudaEnvironment environment);
 
     /**
      * This method returns CudaContext for current thread
@@ -119,7 +110,7 @@ public interface Allocator {
      *
      * @param requiredMemory
      */
-    AllocationPoint allocateMemory(AllocationShape requiredMemory);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory);
 
     /**
      * This method allocates required chunk of memory in specific location
@@ -129,12 +120,26 @@ public interface Allocator {
      * @param requiredMemory
      * @param location
      */
-    AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location);
 
 
-    void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
+
+    void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
+
+    void tickHostWrite(DataBuffer buffer);
+
+    void tickHostWrite(INDArray array);
+
+    void tickDeviceWrite(INDArray array);
+
+    AllocationPoint getAllocationPoint(INDArray array);
+
+    AllocationPoint getAllocationPoint(DataBuffer buffer);
+
+    void registerAction(INDArray result, INDArray... operands);
 }

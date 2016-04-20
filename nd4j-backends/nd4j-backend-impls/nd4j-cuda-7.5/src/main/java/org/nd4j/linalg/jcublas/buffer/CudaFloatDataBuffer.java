@@ -20,8 +20,7 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import io.netty.buffer.ByteBuf;
-import jcuda.Pointer;
-import jcuda.Sizeof;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -42,7 +41,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
      * @param length the length of the buffer
      */
     public CudaFloatDataBuffer(long length) {
-        super(length, Sizeof.FLOAT);
+        super(length, 4);
     }
 
     public CudaFloatDataBuffer(long length, int elementSize) {
@@ -122,9 +121,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            long offset = indices[0];
+         /*   long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
+            */
+            throw new UnsupportedOperationException();
         } else
             throw new UnsupportedOperationException("Only contiguous supported");
     }
@@ -138,9 +139,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            long offset = indices[0];
+            /*long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
+            */
+            throw new UnsupportedOperationException();
         } else
             throw new UnsupportedOperationException("Only contiguous supported");
     }

@@ -2,6 +2,9 @@ package org.nd4j.jita.conf;
 
 import lombok.Data;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+import org.nd4j.nativeblas.NativeOps;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,7 +34,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    private int numberOfHostMemoryBuckets = 4;
+    private int numberOfHostMemoryBuckets = 8;
 
     /**
      * Deallocation aggressiveness
@@ -49,7 +52,7 @@ public class Configuration implements Serializable {
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    private long maximumDeviceAllocation = 256 * 1024 * 1024L;
+    private long maximumDeviceAllocation = 1024 * 1024 * 1024L;
 
 
     /**
@@ -72,6 +75,8 @@ public class Configuration implements Serializable {
      */
     private long maximumSingleAllocation = Long.MAX_VALUE;
 
+    private List<Integer> availableDevices = new ArrayList<>();
+
     public void setMinimumRelocationThreshold(int threshold) {
         this.maximumDeviceAllocation = Math.max(2, threshold);
     }
@@ -87,5 +92,14 @@ public class Configuration implements Serializable {
         if (percentage < 0.02 || percentage > 0.95) {
             this.maxDeviceMemoryUsed = 0.85;
         } else this.maxDeviceMemoryUsed = percentage;
+    }
+
+    public Configuration() {
+        //NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
+        int cnt = 2; //(int) nativeOps.getAvailableDevices();
+        for (int i = 0; i < cnt; i++) {
+            availableDevices.add(i);
+        }
     }
 }

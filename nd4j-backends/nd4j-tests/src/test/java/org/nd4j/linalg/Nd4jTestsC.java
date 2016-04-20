@@ -407,12 +407,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray outAsc = Nd4j.sortRows(in, i, true);
             INDArray outDesc = Nd4j.sortRows(in, i, false);
 
+            System.out.println("outDesc: " + Arrays.toString(outAsc.data().asFloat()));
             for( int j = 0; j < nRows; j++) {
                 assertEquals(outAsc.getDouble(j,i),j,1e-1);
                 int origRowIdxAsc = order.indexOf(j);
                 assertTrue(outAsc.getRow(j).equals(in.getRow(origRowIdxAsc)));
 
-                assertTrue(outDesc.getDouble(j,i)==(nRows-j-1));
+                assertEquals((nRows-j-1), outDesc.getDouble(j,i), 0.001f);
                 int origRowIdxDesc = order.indexOf(nRows-j-1);
                 assertTrue(outDesc.getRow(j).equals(in.getRow(origRowIdxDesc)));
             }

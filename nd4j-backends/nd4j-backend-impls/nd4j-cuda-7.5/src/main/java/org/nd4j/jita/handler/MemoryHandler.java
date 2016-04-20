@@ -9,8 +9,8 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Set;
 
@@ -25,10 +25,9 @@ public interface MemoryHandler {
      * This method gets called from Allocator, during Allocator/MemoryHandler initialization
      *
      * @param configuration
-     * @param environment
      * @param allocator
      */
-    void init(Configuration configuration, CudaEnvironment environment, Allocator allocator);
+    void init(Configuration configuration, Allocator allocator);
 
     /**
      * This method returns if this MemoryHandler instance is device-dependant (i.e. CUDA)
@@ -124,7 +123,7 @@ public interface MemoryHandler {
      * @param length
      * @param dstOffset
      */
-    void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     /**
      * Asynchronous version of memcpy
@@ -136,7 +135,9 @@ public interface MemoryHandler {
      * @param length
      * @param dstOffset
      */
-    void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset);
+    void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
+
+    void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
     /**
      * Synchronous version of memcpy
@@ -258,4 +259,6 @@ public interface MemoryHandler {
      * @return
      */
     ExternalContext getDeviceContext();
+
+    void registerAction(INDArray result, INDArray... operands);
 }

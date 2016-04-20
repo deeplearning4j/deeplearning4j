@@ -70,6 +70,7 @@ public class TestTensorCalculator extends BaseNd4jTest {
                     TensorCalculator tCalc = TensorCalculatorFactory.getTensorCalculator(arr,d);
                     assertEquals(nT, tCalc.getNumTensors());
                     for (int i = 0; i < nT; i++) {
+                        System.out.println("Running: " + z + " " + j + " " + d + " " + i);
                         String msg = pair.getSecond() + " - " + i + ", d="+ d;
                         INDArray tensor = arr.tensorAlongDimension(i, d);
                         assertEquals(msg, tensor.offset(), tCalc.getOffsetForTensor(i));

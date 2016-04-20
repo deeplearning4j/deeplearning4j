@@ -19,8 +19,8 @@
 
 package org.nd4j.linalg.jcublas;
 
-import jcuda.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -43,6 +43,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +55,7 @@ import java.util.List;
  * @author mjk
  */
 public class JCublasNDArrayFactory extends BaseNDArrayFactory {
-    private NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 
     public JCublasNDArrayFactory() {
@@ -462,10 +463,13 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
-                allocator.memcpyAsync(ret.data(),new Pointer(allocator.getPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
+                allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
+
+                allocator.tickDeviceWrite(ret);
             } else {
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
+
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
                             extras,
@@ -488,6 +492,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
+
+                if (ret != null) allocator.tickDeviceWrite(ret);
+
                 //Works for all cases...
 
                /* NdIndexIterator iter = new NdIndexIterator(order, m.shape());

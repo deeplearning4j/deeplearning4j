@@ -340,6 +340,13 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o != null) AtomicAllocator.getInstance().synchronizeHostData((INDArray) o);
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.equals(o);
+    }
+
     /**
      * Generate string representation of the matrix.
      */

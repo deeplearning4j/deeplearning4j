@@ -37,6 +37,7 @@ import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,11 +56,12 @@ import java.util.Arrays;
  */
 public class JCudaExecutioner extends DefaultOpExecutioner {
 
+    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
     private static final Allocator allocator = AtomicAllocator.getInstance();
-    private static NativeOps nativeOps = new NativeOps();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
     public JCudaExecutioner() {
-        nativeOps.initializeDevicesAndFunctions();
+
     }
 
     public NativeOps getNativeOps() {
@@ -74,6 +76,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         Arrays.sort(dimension);
+        //log.info("B OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         
@@ -109,6 +112,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer, dimension.length);
         }
 
+        allocator.registerAction(op.z(), op.x(), op.y());
+
         return op.z();
     }
 
@@ -141,10 +146,17 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return op.noOp();
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
         op.setZ(ret);
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
@@ -152,13 +164,18 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
-//        log.info("ExtraPointers: " + Arrays.toString(xShapeInfoHostPointer));
-//        log.info("X: " + x);
-
+        /*
+        log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
+        log.info("X: " + x);
+        log.info("xShapeInfo: " + xShapeInfo);
+*/
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+
                     op.setFinalResult(ret.getDouble(0));
                 } else {
                     nativeOps.execSummaryStatsDouble(
@@ -173,9 +190,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length,
                             ((Variance) op).isBiasCorrected()
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execReduce3ScalarDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -185,6 +206,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             AtomicAllocator.getInstance().getPointer(op.y()).address(),
                             AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer())
                     ));
+
                     op.setFinalResult(ret.getDouble(0));
                 } else {
                     nativeOps.execReduce3Double(
@@ -200,9 +222,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimensionPointer,
                             dimension.length
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execReduceScalarDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -210,6 +236,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             xShapeInfo,
                             extraArgs
                     ));
+
                     op.setFinalResult(ret.getDouble(0));
                 } else {
                     nativeOps.execReduceDouble(
@@ -223,24 +250,19 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimensionPointer,
                             dimension.length
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             }
         } else {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(), x, xShapeInfo, extraArgs, true));
+
                     op.setFinalResult(ret.getFloat(0));
                 } else {
-/*                    log.info("OpNum: " + op.opNum());
-                    log.info("X: " + Arrays.toString(op.x().data().asFloat()));
-                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-                    log.info("Extras: " + op.extraArgsDataBuff());
-                    log.info("Result: " + op.z().length());
-                    log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
-                    log.info("Dimension: " + Arrays.toString(dimension));
-                    log.info("DimensionLength: " + dimension.length);
-                    log.info("Bias: " + ((Variance) op).isBiasCorrected());
-*/
                     nativeOps.execSummaryStatsFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -253,9 +275,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length,
                             ((Variance) op).isBiasCorrected()
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execReduce3ScalarFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -265,6 +291,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             AtomicAllocator.getInstance().getPointer(op.y()).address(),
                             AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer())
                     ));
+
                     op.setFinalResult(ret.getFloat(0));
                 } else {
                     nativeOps.execReduce3Float(
@@ -280,9 +307,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimensionPointer,
                             dimension.length
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
+                    allocator.tickHostWrite(ret);
+
                     ret.putScalar(0, nativeOps.execReduceScalarFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -290,20 +321,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             xShapeInfo,
                             extraArgs
                     ));
+
                     op.setFinalResult(ret.getFloat(0));
                 } else {
-/*                    log.info("AMSFDA execReduceFloat");
-
-                    log.info("OpNum: " + op.opNum());
-                    log.info("X: " + Arrays.toString(op.x().data().asFloat()));
-                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-                    log.info("X shapeInfo length: " + op.x().shapeInfoDataBuffer().length());
-                    log.info("Extras: " + op.extraArgsDataBuff());
-                    log.info("Result: " + op.z().length());
-                    log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
-                    log.info("Dimension: " + Arrays.toString(dimension));
-                    log.info("DimensionLength: " + dimension.length);
-*/
                     nativeOps.execReduceFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -315,9 +335,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimensionPointer,
                             dimension.length
                     );
+
+                    allocator.registerAction(op.z(), op.x(), op.y());
                 }
             }
         }
+
 
         return ret;
     }
@@ -354,7 +377,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             retShape = new int[]{1, 1};
         }
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
+
         op.setZ(ret);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
@@ -362,15 +391,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-/*
-        log.info("X.length: " + op.x().length());
-        log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-        log.info("Extras: " + op.extraArgsDataBuff());
-        log.info("Result: " + op.z().length());
-        log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
-        log.info("Dimension: " + Arrays.toString(dimension));
-        log.info("DimensionLength");
-*/
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
 
@@ -379,8 +399,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
-
-
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.execIndexReduceDouble(
@@ -406,6 +424,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer, dimension.length);
 
         }
+
+        allocator.registerAction(op.z(), op.x(), op.y());
+
         return op.z();
     }
 
@@ -428,6 +449,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     allocator.synchronizeHostData(op.y());
 
                 super.exec(op);
+
+                if (op.z() != null)
+                    allocator.tickHostWrite(op.z());
                 return null;
         }
 
@@ -466,7 +490,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private CudaContext invoke(BroadcastOp op) {
-//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
@@ -508,6 +532,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
+        allocator.registerAction(op.z(), op.x(), op.y());
+
         return null;
     }
 
@@ -516,20 +542,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(IndexAccumulation op,int[] dimension)  {
 
 
-//        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+        //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-/*
-        log.info("X: " + op.x());
-        log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-        log.info("Extras: " + op.extraArgsDataBuff());
-
-        log.info("X address: " + x);
-*/
 
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
                 context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
@@ -594,6 +613,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        allocator.registerAction(op.z(), op.x(), op.y());
+
         return null;
 
     }
@@ -601,7 +622,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(Accumulation op, int[] dimension) {
 
-        //log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+    //    log.info("A OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
         // dimension is ALWAYS null here.
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
@@ -629,7 +650,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return null;
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret = null;
+        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+            ret= Nd4j.zeros(retShape);
+        } else {
+            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+        }
         op.setZ(ret);
 
         if(op.z().isScalar()) {
@@ -673,6 +699,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 } else if (op.y() != null) {
                     long y = AtomicAllocator.getInstance().getPointer(op.y()).address();
                     long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+
                     float result = nativeOps.execReduce3ScalarFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -765,15 +792,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
                 }
                 else {
-/*                    log.info("X: " + op.x());
-                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-                    log.info("Extras: " + op.extraArgsDataBuff());
-                    log.info("Result: " + op.z().length());
-                    log.info("Result shapeInfo: " + op.z().shapeInfoDataBuffer());
-                    log.info("Dimension: " + Arrays.toString(dimension));
-                    log.info("DimensionLength");
-                    log.info("Bias: " + ((Variance) op).isBiasCorrected());
-*/
+
                     if(op instanceof Variance) {
                         nativeOps.execSummaryStatsFloat(
                                 xShapeInfoHostPointer,
@@ -805,13 +824,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
+//&& !op.z().isScalar()
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return context;
     }
 
 
     private CudaContext invoke(ScalarOp op) {
-//       log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
+      //  log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -846,11 +867,13 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     extraArgs);
         }
 
+        allocator.registerAction(op.z(), op.x(), op.y());
+
         return  null;
     }
 
     private CudaContext invoke(TransformOp op) {
-        //log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
+    //    log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -862,7 +885,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial()};
 
-        //log.info("X: " + Arrays.toString(xShapeInfoHostPointer));
+   //     log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
+   //     log.info("X: " + x);
+   //     log.info("xShapeInfo: " + xShapeInfo);
 
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getPointer(op.y()).address();
@@ -896,19 +921,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
-/*                    log.info("X: " + op.x());
-                    log.info("X length: " + op.x().length());
-                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-                    log.info("X.ews: " +op.x().elementWiseStride());
-
-                    log.info("Y: " + op.y());
-                    log.info("Y length: " + op.y().length());
-                    log.info("Y shapeInfo: " + op.y().shapeInfoDataBuffer());
-                    log.info("Y.ews: " +op.y().elementWiseStride());
-
-                    log.info("extraArgs: " + op.extraArgsDataBuff());
-                    log.info("N: " + op.n());
-*/
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -922,7 +934,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             op.n()
                     );
                 } else {
-//                    log.info("PWT 2");
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -972,18 +983,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             op.n()
                     );
                 } else {
-                    /*log.info("X: " + Arrays.toString(op.x().data().asFloat()));
-                    log.info("X length: " + op.x().length());
-                    log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
-                    log.info("X.ews: " +op.x().elementWiseStride());
-
-                    log.info("Z: " + Arrays.toString(op.z().data().asFloat()));
-                    log.info("Z length: " + op.z().length());
-                    log.info("Z shapeInfo: " + op.z().shapeInfoDataBuffer());
-                    log.info("Z.ews: " +op.z().elementWiseStride());
-
-                    log.info("extraArgs: " + op.extraArgsDataBuff());
-                    */
                     nativeOps.execTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -995,6 +994,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             }
         }
+
+
+        allocator.registerAction(op.z(), op.x(), op.y());
 
         return null;
     }

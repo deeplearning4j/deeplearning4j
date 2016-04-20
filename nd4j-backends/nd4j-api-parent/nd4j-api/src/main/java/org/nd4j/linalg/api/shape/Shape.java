@@ -1365,6 +1365,7 @@ public class Shape {
      */
     public static DataBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
         DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);
+        ret.setConstant(true);
         int count = 1;
         ret.put(0,shape.length);
         if(shape.length != stride.length)

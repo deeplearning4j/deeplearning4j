@@ -2,25 +2,31 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.garbage.GarbageReference;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,11 +64,10 @@ public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
     private Configuration configuration = new Configuration();
-    private CudaEnvironment environment;
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
-    private AtomicLong objectsTracker = new AtomicLong(Long.MIN_VALUE);
+    private AtomicLong objectsTracker = new AtomicLong(0);
 
     // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
@@ -81,6 +86,7 @@ public class AtomicAllocator implements Allocator {
      */
     private Map<Long, ZeroGarbageCollectorThread> collectorsZero = new ConcurrentHashMap<>();
     private Map<Integer, DeviceGarbageCollectorThread> collectorsDevice = new ConcurrentHashMap<>();
+    private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
@@ -92,14 +98,15 @@ public class AtomicAllocator implements Allocator {
     private final Ring zeroLong = new LockedRing(30);
     private final Ring zeroShort = new LockedRing(30);
 
+    private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
+
     public static AtomicAllocator getInstance() {
         return INSTANCE;
     }
 
     protected AtomicAllocator() {
-        environment = new CudaEnvironment(configuration);
         this.memoryHandler = new CudaZeroHandler();
-        this.memoryHandler.init(configuration, environment, this);
+        this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
@@ -110,10 +117,19 @@ public class AtomicAllocator implements Allocator {
      */
     protected void initHostCollectors() {
         for (int i = 0; i < configuration.getNumberOfHostMemoryBuckets(); i++) {
+            ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
+
+            UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
+            queueMap.put(i, queue);
+            uThread.start();
+
+            collectorsUnified.put(i, uThread);
+            /*
             ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread((long) i, shouldStop);
             zThread.start();
 
             collectorsZero.put((long) i, zThread);
+            */
         }
     }
 
@@ -121,12 +137,14 @@ public class AtomicAllocator implements Allocator {
      * This method executes garbage collectors for each special device (i.e. CUDA GPUs) present in system
      */
     protected void initDeviceCollectors() {
+        /*
         for (Integer deviceId : this.memoryHandler.getAvailableDevices()) {
 
             DeviceGarbageCollectorThread dThread = new DeviceGarbageCollectorThread(deviceId, shouldStop);
             dThread.start();
             collectorsDevice.put(deviceId, dThread);
         }
+        */
     }
 
     /**
@@ -148,7 +166,7 @@ public class AtomicAllocator implements Allocator {
         globalLock.writeLock().lock();
 
         this.memoryHandler = memoryHandler;
-        this.memoryHandler.init(configuration, environment, this);
+        this.memoryHandler.init(configuration, this);
 
         globalLock.writeLock().unlock();
     }
@@ -166,41 +184,11 @@ public class AtomicAllocator implements Allocator {
             globalLock.writeLock().lock();
 
             this.configuration = configuration;
-            this.environment = new CudaEnvironment(this.configuration);
 
             globalLock.writeLock().unlock();
         }
     }
 
-    /**
-     * This method allows you to exclude specific device from being used for calculations
-     * <p>
-     * Please note: you can call this method multiple times, to ban multiple devices
-     *
-     * @param deviceId deviceId to be banned
-     */
-    public void banDevice(@NonNull Integer deviceId) {
-        globalLock.writeLock().lock();
-
-        environment.banDevice(deviceId);
-
-        globalLock.writeLock().unlock();
-    }
-
-    /**
-     * Set active CUDA environment
-     *
-     * @param environment
-     */
-    @Override
-    public void setEnvironment(@NonNull CudaEnvironment environment) {
-        globalLock.writeLock().lock();
-        this.environment = environment;
-
-//        this.deviceMemoryTracker = new DeviceAllocationsTracker(this.environment, this.configuration);
-
-        globalLock.writeLock().unlock();
-    }
 
     /**
      * Returns current Allocator configuration
@@ -258,6 +246,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getHostPointer(INDArray array) {
+        synchronizeHostData(array);
         return memoryHandler.getHostPointer(array.data());
     }
 
@@ -290,9 +279,20 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
+        // we don't synchronize constant buffers, since we assume they are always valid on host side
+        if (buffer.isConstant()) {
+            //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
+         //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
+           // return;
+            //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
+        }
+
         // we actually need synchronization only in device-dependant environment. no-op otherwise
         if (memoryHandler.isDeviceDependant()) {
             AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            if (point == null)
+                throw new RuntimeException("AllocationPoint is NULL");
             memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId(), point);
         }
     }
@@ -315,9 +315,16 @@ public class AtomicAllocator implements Allocator {
      * @param requiredMemory
      */
     @Override
-    public AllocationPoint allocateMemory(AllocationShape requiredMemory) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory) {
         // by default we allocate on initial location
-        AllocationPoint point = allocateMemory(requiredMemory, memoryHandler.getInitialLocation());
+        AllocationPoint point = null;
+
+        // TODO: size limitation should be rised in final release to something more sensible
+        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
+            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
+        } else {
+            point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
+        }
 
         return point;
     }
@@ -331,21 +338,33 @@ public class AtomicAllocator implements Allocator {
      * @param location
      */
     @Override
-    public AllocationPoint allocateMemory(AllocationShape requiredMemory, AllocationStatus location) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location) {
         AllocationPoint point = new AllocationPoint();
 
         // we use these longs as tracking codes for memory tracking
         Long allocId = objectsTracker.getAndIncrement();
-
+        //point.attachBuffer(buffer);
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
+
+        if (buffer instanceof CudaIntDataBuffer) {
+            buffer.setConstant(true);
+            point.setConstant(true);
+        }
+
+        int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+        int bucketId = RandomUtils.nextInt(0, numBuckets);
+
+        GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+        point.attachReference(reference);
+        point.setDeviceId(getDeviceId());
+
 
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
         PointersPair pair = memoryHandler.alloc(location, point, requiredMemory);
         point.setPointers(pair);
 
         allocationsMap.put(allocId, point);
-
         return point;
     }
 
@@ -368,7 +387,6 @@ public class AtomicAllocator implements Allocator {
      * @param copyback
      */
     protected void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
-
         allocationsMap.remove(objectId);
 
         memoryHandler.purgeZeroObject(bucketId, objectId, point, copyback);
@@ -386,7 +404,9 @@ public class AtomicAllocator implements Allocator {
          memoryHandler.purgeDeviceObject(threadId, deviceId, objectId, point, copyback);
 
         // since we can't allow java object without native memory, we explicitly specify that memory is handled using HOST memory only, after device memory is released
-        point.setAllocationStatus(AllocationStatus.HOST);
+        //point.setAllocationStatus(AllocationStatus.HOST);
+
+        //memoryHandler.purgeZeroObject(point.getBucketId(), point.getObjectId(), point, copyback);
     }
 
     /**
@@ -410,6 +430,7 @@ public class AtomicAllocator implements Allocator {
 
         // simple counter for dereferenced objects
         AtomicInteger elementsDropped = new AtomicInteger(0);
+        AtomicInteger elementsSurvived = new AtomicInteger(0);
 
         for (Long object: memoryHandler.getHostTrackingPoints(bucketId)) {
             AllocationPoint point = getAllocationPoint(object);
@@ -418,24 +439,27 @@ public class AtomicAllocator implements Allocator {
             if (point == null)
                 continue;
 
-            if (point.getAccessState().isToeAvailable() && point.getAllocationStatus() == AllocationStatus.HOST) {
-                point.getAccessState().requestToe();
+            if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                //point.getAccessState().isToeAvailable()
+                //point.getAccessState().requestToe();
 
                 /*
                     Check if memory points to non-existant buffer, using externals.
                     If externals don't have specified buffer - delete reference.
                  */
                 if (point.getBuffer() == null ) {
-                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
-                        purgeZeroObject(bucketId, object, point, false);
-                        freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    purgeZeroObject(bucketId, object, point, false);
+                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
-                        elementsDropped.incrementAndGet();
-                        continue;
-                    };
+                    elementsDropped.incrementAndGet();
+                    continue;
+                } else {
+                    elementsSurvived.incrementAndGet();
                 }
 
-                point.getAccessState().releaseToe();
+                //point.getAccessState().releaseToe();
+            } else {
+              //  log.warn("SKIPPING :(");
             }
         }
 
@@ -443,7 +467,7 @@ public class AtomicAllocator implements Allocator {
 
         //log.debug("Short average: ["+shortAverage+"], Long average: [" + longAverage + "]");
         //log.debug("Aggressiveness: ["+ aggressiveness+"]; Short threshold: ["+shortThreshold+"]; Long threshold: [" + longThreshold + "]");
-        log.debug("Zero elements checked: ["+ totalElements +"], deleted: " + elementsDropped.get());
+        log.debug("Zero {} elements checked: [{}], deleted: {}, survived: {}", bucketId, totalElements, elementsDropped.get(), elementsSurvived.get());
 
         return freeSpace.get();
     }
@@ -459,9 +483,7 @@ public class AtomicAllocator implements Allocator {
         AtomicLong freeSpace = new AtomicLong(0);
 
 
-        Set<Long> allocations = memoryHandler.getDeviceTrackingPoints(deviceId);
-
-        int initialSize = allocations.size();
+      //  int initialSize = allocations.size();
 
         // these 2 variables will contain jvm-wise memory access frequencies
         float shortAverage = deviceShort.getAverage();
@@ -473,12 +495,13 @@ public class AtomicAllocator implements Allocator {
 
         AtomicInteger elementsDropped = new AtomicInteger(0);
         AtomicInteger elementsMoved = new AtomicInteger(0);
+        AtomicInteger elementsSurvived = new AtomicInteger(0);
 
-        for (Long object: allocations) {
+        for (Long object: memoryHandler.getDeviceTrackingPoints(deviceId)) {
             AllocationPoint point = getAllocationPoint(object);
 
-            if (point.getAccessState().isToeAvailable()) {
-                point.getAccessState().requestToe();
+//            if (point.getAccessState().isToeAvailable()) {
+//                point.getAccessState().requestToe();
 
                 /*
                     Check if memory points to non-existant buffer, using externals.
@@ -496,6 +519,8 @@ public class AtomicAllocator implements Allocator {
                         elementsDropped.incrementAndGet();
                         continue;
                     };
+                } else {
+                    elementsSurvived.incrementAndGet();
                 }
 
                 /*
@@ -519,13 +544,50 @@ public class AtomicAllocator implements Allocator {
                     }
                 }
 */
-                point.getAccessState().releaseToe();
-            }
+              //  point.getAccessState().releaseToe();
+            //}
         }
 
-        log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements before cleanup: ["+initialSize+"], elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Device objects left: ["+allocations.size()+"]");
+        log.debug("Thread/Device ["+ threadId+"/"+deviceId+"] elements purged: [" + elementsDropped.get()+"]; Relocated: ["+ elementsMoved.get()+"]; Survivors: ["+elementsSurvived.get()+"]");
 
         return freeSpace.get();
+    }
+
+    private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
+        private final ReferenceQueue<BaseDataBuffer> queue;
+
+
+        public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
+            this.queue = queue;
+            this.setDaemon(true);
+            this.setName("UniGC thread " + threadId);
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                GarbageReference reference = (GarbageReference) queue.poll();
+                if (reference != null) {
+                    AllocationPoint point = reference.getPoint();
+
+                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                    } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                        purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+
+                        // and we deallocate host memory, since object is dereferenced
+                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                    }
+
+                } else {
+                    try {
+                        Thread.sleep(50);
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -584,8 +646,8 @@ public class AtomicAllocator implements Allocator {
                     ; // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
                     //log.debug("Skipping zero GC round: ["+zeroUseCounter.get()+"/" +zeroAllocations.get(threadId).size() + "]");
                 }  else {
-                    lastCheck = System.currentTimeMillis();
                     seekUnusedZero(bucketId, aggressiveness);
+                    lastCheck = System.currentTimeMillis();
                 }
             }
         }
@@ -614,6 +676,7 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             log.info("Starting device GC for device: " + deviceId);
+            long lastCheck = System.currentTimeMillis();
             while (!terminate.get()) {
                 /*
                     Check for device garbage
@@ -636,9 +699,12 @@ public class AtomicAllocator implements Allocator {
                 if (memoryHandler.getAllocatedDeviceMemory(deviceId) > (configuration.getMaximumDeviceAllocation() * 0.85))
                     aggressiveness = Aggressiveness.IMMEDIATE;
 
-                if (memoryHandler.getAllocatedDeviceMemory(deviceId)< (configuration.getMaximumDeviceAllocation() * 0.25) && (memoryHandler.getAllocatedDeviceObjects(deviceId) < 500)) {
+                if (memoryHandler.getAllocatedDeviceMemory(deviceId)< (configuration.getMaximumDeviceAllocation() * 0.25) && (memoryHandler.getAllocatedDeviceObjects(deviceId) < 500) && lastCheck > System.currentTimeMillis() - 30000) {
                     // i don't want deallocation to be fired on lower thresholds. just no sense locking stuff
-                } else seekUnusedDevice(0L, this.deviceId, aggressiveness);
+                } else {
+                    seekUnusedDevice(0L, this.deviceId, aggressiveness);
+                    lastCheck = System.currentTimeMillis();
+                }
 
 
             }
@@ -652,7 +718,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public long getTotalAllocatedHostMemory() {
-        return memoryHandler.getAllocationStatistics().row(AllocationStatus.HOST).get(0);
+        return 0L; // memoryHandler.getAllocationStatistics().row(AllocationStatus.HOST).get(0);
     }
 
     /**
@@ -671,7 +737,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public long getTotalAllocatedDeviceMemory(Integer deviceId) {
-        return memoryHandler.getAllocationStatistics().row(AllocationStatus.DEVICE).get(deviceId);
+        return 0L;//; memoryHandler.getAllocationStatistics().row(AllocationStatus.DEVICE).get(deviceId);
     }
 
     /**
@@ -683,8 +749,16 @@ public class AtomicAllocator implements Allocator {
      * @param dstOffset
      */
     @Override
-    public void memcpyAsync(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
-        this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+    public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+//        if (dstBuffer.isConstant()) {
+//            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
+//        } else
+            this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
     }
 
     /**
@@ -696,7 +770,7 @@ public class AtomicAllocator implements Allocator {
      * @param dstOffset
      */
     @Override
-    public void memcpyBlocking(DataBuffer dstBuffer, jcuda.Pointer srcPointer, long length, long dstOffset) {
+    public void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         this.memoryHandler.memcpyBlocking(dstBuffer, srcPointer, length, dstOffset);
     }
 
@@ -720,5 +794,42 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Integer getDeviceId() {
         return memoryHandler.getDeviceId();
+    }
+
+    @Override
+    public void tickHostWrite(DataBuffer buffer) {
+        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+        point.tickHostWrite();
+    }
+
+    @Override
+    public void tickHostWrite(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+
+        tickHostWrite(buffer);
+    }
+
+    @Override
+    public void tickDeviceWrite(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+
+        point.tickDeviceWrite();
+    }
+
+    @Override
+    public AllocationPoint getAllocationPoint(INDArray array) {
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        return getAllocationPoint(buffer);
+    }
+
+    @Override
+    public AllocationPoint getAllocationPoint(DataBuffer buffer) {
+        return getAllocationPoint(buffer.getTrackingPoint());
+    }
+
+    @Override
+    public void registerAction(INDArray result, INDArray... operands) {
+        memoryHandler.registerAction(result, operands);
     }
 }

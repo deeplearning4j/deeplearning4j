@@ -3,7 +3,6 @@ package org.nd4j.linalg.jcublas.util;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import jcuda.Pointer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;

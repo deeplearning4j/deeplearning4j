@@ -20,8 +20,6 @@
 package org.nd4j.linalg.jcublas.buffer;
 
 import io.netty.buffer.ByteBuf;
-import jcuda.Pointer;
-import jcuda.Sizeof;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -42,7 +40,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
      * @param length the length of the buffer
      */
     public CudaDoubleDataBuffer(long length) {
-        super(length, Sizeof.DOUBLE);
+        super(length, 8);
     }
 
     public CudaDoubleDataBuffer(long length, int elementSize) {
@@ -130,10 +128,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            long offset = indices[0];
+            /*long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
-
+            */
+            throw new UnsupportedOperationException();
         } else
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
@@ -147,9 +146,11 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
-            long offset = indices[0];
+            /*long offset = indices[0];
             Pointer p = Pointer.to(data);
             set(offset, data.length, p, inc);
+            */
+            throw new UnsupportedOperationException();
         } else
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
@@ -229,12 +230,12 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         }
 
         this.length = n;
-        this.elementSize = Sizeof.DOUBLE;
+        this.elementSize = 8;
 
         //wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
         //wrappedBuffer.order(ByteOrder.nativeOrder());
 
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(new AllocationShape(length, elementSize));
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
         this.trackingPoint = allocationPoint.getObjectId();
         this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
         this.wrappedBuffer.order(ByteOrder.nativeOrder());
