@@ -555,6 +555,8 @@ var ChartScatter = (function (_super) {
 var Legend = (function () {
     function Legend() {
     }
+    Legend.offsetX = 15;
+    Legend.offsetY = 15;
     Legend.padding = 8;
     Legend.separation = 12;
     Legend.boxSize = 10;
@@ -599,6 +601,7 @@ var Legend = (function () {
             .style("fill", Legend.fillColor)
             .style("stroke", Legend.borderStrokeColor)
             .style("opacity", Legend.legendOpacity);
+        svg.selectAll(".legend").attr("transform", "translate(" + Legend.offsetX + "," + Legend.offsetY + ")");
     });
     return Legend;
 }());
