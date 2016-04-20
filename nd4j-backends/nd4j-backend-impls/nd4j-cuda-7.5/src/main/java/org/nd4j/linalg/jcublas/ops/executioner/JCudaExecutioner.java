@@ -37,6 +37,7 @@ import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +56,9 @@ import java.util.Arrays;
  */
 public class JCudaExecutioner extends DefaultOpExecutioner {
 
+    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
     private static final Allocator allocator = AtomicAllocator.getInstance();
-    private static NativeOps nativeOps = new NativeOps();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
     public JCudaExecutioner() {
         nativeOps.initializeDevicesAndFunctions();

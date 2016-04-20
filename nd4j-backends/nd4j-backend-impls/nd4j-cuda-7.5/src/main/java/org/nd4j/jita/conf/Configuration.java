@@ -95,9 +95,9 @@ public class Configuration implements Serializable {
     }
 
     public Configuration() {
-        NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+        //NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
-        int cnt = (int) nativeOps.getAvailableDevices();
+        int cnt = 2; //(int) nativeOps.getAvailableDevices();
         for (int i = 0; i < cnt; i++) {
             availableDevices.add(i);
         }

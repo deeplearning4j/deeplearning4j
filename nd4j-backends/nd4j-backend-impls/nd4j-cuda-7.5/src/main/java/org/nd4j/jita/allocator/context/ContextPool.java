@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class ContextPool {
 
     private static Logger logger = LoggerFactory.getLogger(ContextPool.class);
 
-    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public boolean containsContextForThread(long threadId) {
         return contextsPool.containsKey(threadId);

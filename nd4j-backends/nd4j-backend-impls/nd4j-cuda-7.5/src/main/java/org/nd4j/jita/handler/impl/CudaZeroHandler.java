@@ -76,9 +76,9 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final MemoryProvider provider = new CudaCachingZeroProvider();
 
-    private final FlowController flowController = new AsynchronousFlowController();
+    private final FlowController flowController = new SynchronousFlowController();
 
-    private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
+    private final AllocationStatus INITIAL_LOCATION = AllocationStatus.HOST;
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -100,7 +100,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private AtomicLong zeroCounter = new AtomicLong(0);
 
-    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected NativeOps nativeOps = new NativeOps(); // ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
     public CudaZeroHandler() {
         allocator = AtomicAllocator.getInstance();

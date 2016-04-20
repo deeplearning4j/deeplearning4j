@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
     protected static final long DEVICE_RESERVED_SPACE = 1024 * 1024 * 50L;
     private static Logger log = LoggerFactory.getLogger(CudaDirectProvider.class);
-    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     /**
      * This method provides PointersPair to memory chunk specified by AllocationShape

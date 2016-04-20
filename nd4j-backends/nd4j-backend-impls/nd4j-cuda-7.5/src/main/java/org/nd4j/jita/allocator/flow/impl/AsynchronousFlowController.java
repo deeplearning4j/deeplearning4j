@@ -13,6 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ public class AsynchronousFlowController implements FlowController{
 
     private static Logger log = LoggerFactory.getLogger(AsynchronousFlowController.class);
 
-    protected NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     @Override
     public void init(Allocator allocator) {
@@ -51,7 +52,12 @@ public class AsynchronousFlowController implements FlowController{
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getSpecialStream()
                 );*/
-                nativeOps.memcpyAsync(point.getHostPointer().address(), point.getDevicePointer().address(), AllocationUtils.getRequiredMemory(point.getShape()), CudaConstants.cudaMemcpyDeviceToHost, context.getSpecialStream().address());
+                nativeOps.memcpyAsync(
+                        point.getHostPointer().address(),
+                        point.getDevicePointer().address(),
+                        AllocationUtils.getRequiredMemory(point.getShape()),
+                        CudaConstants.cudaMemcpyDeviceToHost,
+                        context.getSpecialStream().address());
 
                 context.syncSpecialStream();
             }// else log.info("Not [DEVICE] memory, skipping...");

@@ -9,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,7 +51,7 @@ public class CudaContext {
     private long bufferScalar;
     private long bufferSpecial;
 
-    private static NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 
     public CudaContext(boolean free) {
@@ -135,7 +136,7 @@ public class CudaContext {
             oldStream = new cudaStream_t(nativeOps.createStream());
             //JCuda.cudaStreamCreate(oldStream);
 
-            //specialStream = new cudaStream_t();
+            specialStream = new cudaStream_t(nativeOps.createStream());
             //JCuda.cudaStreamCreate(specialStream);
         }
 
