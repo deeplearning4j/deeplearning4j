@@ -196,3 +196,20 @@ ND4J is meant to be used with pure compute cards (i.e. the Tesla series). On con
 Microsoft has added the Timeout Detection and Recovery (TDR) to detect malfunctioning drivers and improper usage, which now interferes with the compute tasks of ND4J, by killing them if they occupy the GPU for longer then a few seconds. This results in the "Display driver stopped responding and has recovered" message. This results in a perceived driver crash along with a crash of your application. If you try to run it again TDR may decide that something is messing with the display driver and force a reboot.
 
 If you really want to use your display GPU for compute with ND4J (**not recommended**), you will have to disable TDR by setting TdrLevel=0 (see https://msdn.microsoft.com/en-us/library/windows/hardware/ff569918%28v=vs.85%29.aspx). If you do this you **will** have display freezes, which, depending on your workload, can stay quite a long time.
+
+
+### My JVM is crashing with the problematic frame being in `cygwin1.dll`
+
+If you have any cygwin related dlls in the crash log, this means that you have build libnd4j or nd4j with cygwin being on the PATH before Msys2. This results in successful compilation, but crashes the JVM with some usecases. 
+
+In order to fix this problem, all you have to do is to remove cygwin from your PATH while building libnd4j and nd4j.
+
+If you want to inspect your path you can do this by running:
+```
+    echo $PATH
+```
+
+If you want to set your PATH temporarily, you can do so with:
+```
+    export PATH=... # Replace ... with what every you want to have there
+```
