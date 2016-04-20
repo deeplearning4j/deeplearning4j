@@ -39,6 +39,8 @@ There are four components to this display:
 - Bottom left: histogram of updates (updates are the gradient values after applying learning rate, momentum, etc)
 - Bottom right: line chart of the absolute value of parameters and updates, for each parameter type
 
+*Note: parameter(param) refers to weights(W) and biases(b) and the number tells you what layer it is related to.*
+
 ## <a name="usingui">Using the UI to Tune Your Network</a>
 
 Here's an excellent [web page by Andrej Karpathy](http://cs231n.github.io/neural-networks-3/#baby) about visualizing neural net training.
