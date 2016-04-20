@@ -18,12 +18,16 @@
 
 class Legend {
 
+    //TODO: make these configurable...
+    private static offsetX: number = 15;
+    private static offsetY: number = 15;
     private static padding: number = 8;
     private static separation: number = 12;
     private static boxSize: number = 10;
     private static fillColor: string = "#FFFFFF";
     private static legendOpacity: number = 0.75;
     private static borderStrokeColor: string = "#000000";
+
 
     static legendFn = (function(g: any) {
         //Get SVG and legend box/items:
@@ -74,5 +78,7 @@ class Legend {
             .style("fill",Legend.fillColor)
             .style("stroke",Legend.borderStrokeColor)
             .style("opacity",Legend.legendOpacity);
+
+        svg.selectAll(".legend").attr("transform","translate(" + Legend.offsetX + "," + Legend.offsetY + ")");
     });
 }
