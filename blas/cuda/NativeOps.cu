@@ -2625,7 +2625,7 @@ Nd4jPointer NativeOps::createStream() {
 
 Nd4jPointer NativeOps::createEvent() {
 	Nd4jPointer nativeEvent= NULL;
-	cudaError_t result = cudaEventCreate((cudaEvent_t *) &nativeEvent);
+	cudaError_t result = cudaEventCreateWithFlags((cudaEvent_t *) &nativeEvent, cudaEventBlockingSync | cudaEventDisableTiming);
 	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
