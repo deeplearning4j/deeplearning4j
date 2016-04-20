@@ -552,6 +552,56 @@ var ChartScatter = (function (_super) {
     }
     return ChartScatter;
 }(Chart));
+var Legend = (function () {
+    function Legend() {
+    }
+    Legend.padding = 8;
+    Legend.separation = 12;
+    Legend.boxSize = 10;
+    Legend.fillColor = "#FFFFFF";
+    Legend.legendOpacity = 0.75;
+    Legend.borderStrokeColor = "#000000";
+    Legend.legendFn = (function (g) {
+        var svg = d3.select(g.property("nearestViewportElement"));
+        var legendBox = g.selectAll(".outerRect").data([true]);
+        var legendItems = g.selectAll(".legendElement").data([true]);
+        legendBox.enter().append("rect").attr("class", "outerRect");
+        legendItems.enter().append("g").attr("class", "legendElement");
+        var legendElements = [];
+        svg.selectAll("[data-legend]").each(function () {
+            var thisVar = d3.select(this);
+            legendElements.push({
+                label: thisVar.attr("data-legend"),
+                color: thisVar.style("fill")
+            });
+        });
+        legendItems.selectAll("rect")
+            .data(legendElements, function (d) { return d.label; })
+            .call(function (d) { d.enter().append("rect"); })
+            .call(function (d) { d.exit().remove(); })
+            .attr("x", 0)
+            .attr("y", function (d, i) { return i * Legend.separation - Legend.boxSize + "px"; })
+            .attr("width", Legend.boxSize)
+            .attr("height", Legend.boxSize)
+            .style("fill", function (d) { return d.color; });
+        legendItems.selectAll("text")
+            .data(legendElements, function (d) { return d.label; })
+            .call(function (d) { d.enter().append("text"); })
+            .call(function (d) { d.exit().remove(); })
+            .attr("y", function (d, i) { return i * Legend.separation + "px"; })
+            .attr("x", (Legend.padding + Legend.boxSize) + "px")
+            .text(function (d) { return d.label; });
+        var legendBoundingBox = legendItems[0][0].getBBox();
+        legendBox.attr("x", (legendBoundingBox.x - Legend.padding))
+            .attr("y", (legendBoundingBox.y - Legend.padding))
+            .attr("height", (legendBoundingBox.height + 2 * Legend.padding))
+            .attr("width", (legendBoundingBox.width + 2 * Legend.padding))
+            .style("fill", Legend.fillColor)
+            .style("stroke", Legend.borderStrokeColor)
+            .style("opacity", Legend.legendOpacity);
+    });
+    return Legend;
+}());
 var ChartStackedArea = (function (_super) {
     __extends(ChartStackedArea, _super);
     function ChartStackedArea(jsonStr) {
@@ -640,18 +690,6 @@ var ChartStackedArea = (function (_super) {
                 }
             })
                 .style({ "stroke-width": "0px" });
-            browser.append("text")
-                .datum(function (d) {
-                return { name: d.name, value: d.values[d.values.length - 1] };
-            })
-                .attr("transform", function (d) {
-                return "translate(" + xScale(d.value.xValue) + "," + yScale(d.value.y0 + d.value.y / 2) + ")";
-            })
-                .attr("x", -6)
-                .attr("dy", ".35em")
-                .text(function (d) {
-                return d.name;
-            });
             var xAxisNode = svg.append("g")
                 .attr("class", "x axis")
                 .style("stroke", "#000")
@@ -673,6 +711,11 @@ var ChartStackedArea = (function (_super) {
                     titleStyle = _this.style.getTitleStyle();
                 Chart.appendTitle(svg, _this.title, margin, titleStyle);
             }
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(40,40)")
+                .style("font-size", "12px")
+                .call(Legend.legendFn);
         };
         var json = JSON.parse(jsonStr);
         if (!json["componentType"])
