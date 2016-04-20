@@ -164,10 +164,10 @@ If the Exception you are getting looks anything like this, and you see this upon
 o.n.j.c.CudaEnvironment - Device [0]: Free: 0 Total memory: 0
 ```
 
-Then you are most probably trying to use a mobile GPU (like 970**m**) and Optimus is trying to ruin the day. There isn't much that ND4J can do about it, but there is a workaround, that while **not recommended** for production, should allow you to still use your GPU.
+Then you are most probably trying to use a mobile GPU (like 970**m**) and Optimus is trying to ruin the day. First you should try to force the usage of the GPU through normal means, like setting the the JVM to run on your GPU via the Nvidia System Panel or by disabling the iGPU in your BIOS. If this still isn't enough, you can try the following workaround, that while **not recommended** for production, should allow you to still use your GPU.
 
 You will have to add JOGL to your dependencies:
-```
+```xml
     <dependency>
       <groupId>org.jogamp.gluegen</groupId>
       <artifactId>gluegen-rt-main</artifactId>
@@ -186,7 +186,7 @@ And as the very first thing in your `main` method you will need to add:
         GLProfile.initSingleton();
 ```
 
-This should allow ND4J to work correctly.
+This should allow ND4J to work correctly (you still have to set that the JVM has to use the GPU in the Nvidia System Panel).
 
 
 ### My Display Driver / System crashes when I use the CUDA Backend (Windows)
