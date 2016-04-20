@@ -2645,6 +2645,7 @@ Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
 
 	cudaError_t result = cudaEventRecord(*pEvent, *pStream);
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1;
@@ -2709,7 +2710,7 @@ Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, 
 	}
 
 	cudaError_t result = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
-
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1;
@@ -2719,7 +2720,7 @@ Nd4jPointer NativeOps::memset(Nd4jPointer dst, int value, long size, int flags, 
 	//cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
 
 	cudaError_t result = cudaMemset((void *) dst, value, (size_t) size);
-
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1;
@@ -2729,7 +2730,7 @@ Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, int value, long size, int fl
 	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
 
 	cudaError_t result = cudaMemsetAsync((void *) dst, value, (size_t) size, *pStream);
-
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1;
@@ -2748,6 +2749,7 @@ Nd4jPointer NativeOps::streamSynchronize(Nd4jPointer stream) {
 	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
 
 	cudaError_t result = cudaStreamSynchronize(*pStream);
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1L;
@@ -2757,6 +2759,7 @@ Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
 	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 
 	cudaError_t result = cudaEventSynchronize(*pEvent);
+	checkCudaErrors(result);
 	if (result != 0)
 		return 0L;
 	else return 1L;
