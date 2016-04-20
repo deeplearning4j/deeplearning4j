@@ -873,7 +873,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     private CudaContext invoke(TransformOp op) {
-    //    log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
+//        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
@@ -884,14 +884,20 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long z = AtomicAllocator.getInstance().getPointer(op.z()).address();
         long zShapeInfo = AddressRetriever.retrieveDeviceAddress(op.z().shapeInfoDataBuffer());
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial()};
-
-   //     log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
-   //     log.info("X: " + x);
-   //     log.info("xShapeInfo: " + xShapeInfo);
-
+/*
+        log.info("------------------------------------");
+        log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
+        log.info("X: {}, Y: {}, Z: {}", x, op.y() != null ? AtomicAllocator.getInstance().getPointer(op.y()).address() : null, z);
+        log.info("xShapeInfo: " + xShapeInfo);
+*/
         if(op.y() != null) {
             long y = AtomicAllocator.getInstance().getPointer(op.y()).address();
             long yShapeInfo = AddressRetriever.retrieveDeviceAddress(op.y().shapeInfoDataBuffer());
+/*
+            log.info("X shapeInfo: " + op.x().shapeInfoDataBuffer());
+            log.info("Y shapeInfo: " + op.y().shapeInfoDataBuffer());
+            log.info("Z shapeInfo: " + op.z().shapeInfoDataBuffer());
+*/
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {

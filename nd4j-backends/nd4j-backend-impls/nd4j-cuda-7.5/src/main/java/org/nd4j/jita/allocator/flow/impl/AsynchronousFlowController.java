@@ -52,12 +52,13 @@ public class AsynchronousFlowController implements FlowController{
                         cudaMemcpyKind.cudaMemcpyDeviceToHost,
                         context.getSpecialStream()
                 );*/
-                nativeOps.memcpyAsync(
+                if (nativeOps.memcpyAsync(
                         point.getHostPointer().address(),
                         point.getDevicePointer().address(),
                         AllocationUtils.getRequiredMemory(point.getShape()),
                         CudaConstants.cudaMemcpyDeviceToHost,
-                        context.getSpecialStream().address());
+                        context.getSpecialStream().address()) == 0)
+                    throw new IllegalStateException("MemcpyAsync failed");
 
                 context.syncSpecialStream();
             }// else log.info("Not [DEVICE] memory, skipping...");

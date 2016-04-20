@@ -209,7 +209,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
                     tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
 
-                    returnPair.setDevicePointer(tmpPair.getDevicePointer());
+                    returnPair.setDevicePointer(tmpPair.getHostPointer());
                     returnPair.setHostPointer(tmpPair.getHostPointer());
 
                     point.setAllocationStatus(AllocationStatus.HOST);
@@ -330,7 +330,8 @@ public class CudaZeroHandler implements MemoryHandler {
                  cudaMemcpyKind.cudaMemcpyHostToDevice,
                  context.getOldStream()
              );*/
-            nativeOps.memcpyAsync(devicePointer.address(), hostPointer.address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            if (nativeOps.memcpyAsync(devicePointer.address(), hostPointer.address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
+                throw new IllegalStateException("MemcpyAsync failed");
 
             //context.syncOldStream();
 
@@ -469,8 +470,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );
             */
+            //log.info("Memcpy pointers: [{}] -> [{}]", srcPointer.address(),  dP.address());
 
-            nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address());
+            if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address()) == 0)
+                throw new IllegalStateException("MemcpyAsync failed");
 
             //context.syncOldStream();
         }
@@ -500,7 +503,8 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
+                throw new IllegalStateException("MemcpyAsync failed");
 
             //context.syncOldStream();
         }
