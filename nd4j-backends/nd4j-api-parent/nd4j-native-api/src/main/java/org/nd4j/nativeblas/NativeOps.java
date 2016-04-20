@@ -29,6 +29,7 @@ public class NativeOps extends Pointer {
 
     public NativeOps() {
         allocate();
+        initializeDevicesAndFunctions();
         int numThreads = 0;
         String numThreadsString = System.getenv("OMP_NUM_THREADS");
         if(numThreadsString != null && !numThreadsString.isEmpty()) {

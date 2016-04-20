@@ -251,7 +251,7 @@ public class ContextPool {
                 hPtr,
                 0);
 */
-        context.setBufferScalar(dPtr.address());
+        context.setBufferScalar(hPtr.address());
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
@@ -268,6 +268,7 @@ public class ContextPool {
                 0);
 */
 //        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
+        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream().address());
 
         context.setBufferSpecial(specialPointer);
     }

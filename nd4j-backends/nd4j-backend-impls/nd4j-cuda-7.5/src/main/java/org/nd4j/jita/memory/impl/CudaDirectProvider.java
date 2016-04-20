@@ -46,9 +46,6 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-                // FIXME: it would be nice to get rid of typecasting here
-                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
-
                long pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == 0)
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
@@ -61,7 +58,7 @@ public class CudaDirectProvider implements MemoryProvider {
                         0);
 */
                 PointersPair devicePointerInfo = new PointersPair();
-                devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
+                devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
                 point.setPointers(devicePointerInfo);
@@ -79,7 +76,7 @@ public class CudaDirectProvider implements MemoryProvider {
                     reqMem = 1;
 
                 // FIXME: it would be nice to get rid of typecasting here
-                NativeOps nativeOps = ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+
 
                 long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
                 if (pointer == 0)
