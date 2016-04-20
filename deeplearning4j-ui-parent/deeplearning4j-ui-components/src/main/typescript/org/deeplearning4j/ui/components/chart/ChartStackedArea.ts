@@ -126,14 +126,24 @@ class ChartStackedArea extends Chart implements Renderable {
             .enter().append("g")
             .attr("class", "browser");
 
+        var tempLabels = this.labels;
+
+        var defaultColor: Ordinal<string,string> = d3.scale.category20();
         browser.append("path")
             .attr("class", "area")
             .attr("data-legend",function(d: any) { return d.name})
             .attr("d", function (d: any) {
                 return area(d.values);
             })
-            .style("fill", function (d: any) {
-                return color(d.name);
+            //.style("fill", function (d: any) {
+            //    return color(d.name);
+            //})
+            .style("fill", function(d: any){
+                if(s && s.getSeriesColor(tempLabels.indexOf(d.name))){
+                    return s.getSeriesColor(tempLabels.indexOf(d.name));
+                } else{
+                    return defaultColor(String(tempLabels.indexOf(d.name)))
+                }
             })
             .style({"stroke-width": "0px"});
 
