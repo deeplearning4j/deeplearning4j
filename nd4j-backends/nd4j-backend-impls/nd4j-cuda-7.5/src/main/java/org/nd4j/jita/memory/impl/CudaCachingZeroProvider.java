@@ -163,11 +163,11 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+            //    if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                     cache.put(new CudaPointer(point.getHostPointer().address()));
-                } else {
-                    super.free(point);
-                }
+            //    } else {
+            //        super.free(point);
+          //      }
             }
         }
     }

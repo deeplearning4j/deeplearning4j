@@ -50,7 +50,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+            long result = nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+            if (result == 0)
+                throw new IllegalStateException("cublasSetStream failed");
 
             ret = nd4jBlas.sdot(new long[]{handle.address()},
                     N,

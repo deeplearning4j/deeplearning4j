@@ -134,7 +134,7 @@ public class CudaPairwiseTrainformsTests {
 
         INDArray arrayTest = array1.dup('f');
 
-//        assertEquals(array1, arrayTest);
+        assertEquals(array1, arrayTest);
 
         array1.muli(array2);
 
@@ -142,7 +142,7 @@ public class CudaPairwiseTrainformsTests {
 
     //    System.out.println("Array1: " + array1);
 
-        assertNotEquals(array1, arrayTest);
+       assertNotEquals(array1, arrayTest);
         //System.out.println("Array2: " + array2);
     }
 

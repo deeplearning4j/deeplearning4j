@@ -234,7 +234,7 @@ public class ContextPool {
 
         context.syncOldStream();
 
-        long  allocationPointer = nativeOps.mallocDevice(5 * 1024 * 1024, deviceId, 0);
+        long  allocationPointer = nativeOps.mallocDevice(32 * 1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
