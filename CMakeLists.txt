@@ -6,21 +6,26 @@ option(PTX "Compile ptx" OFF)
 option(CUBIN "Compile cubin" OFF)
 option(ECLIPSE "Generate eclipse files" OFF)
 option(BLAS "Compile blas shared library for either cuda or cpu" ON)
-option(BUFFER "Compiles a small buffer library" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 find_path(STDIO_INCLUDE_PATH stdio.h)
 
-set(CMAKE_CXX_FLAGS "-Wall -fopenmp -std=c++11 -fassociative-math -funsafe-math-optimizations")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -std=c++11")
+set(CMAKE_CXX_FLAGS_RELEASE  "-Wall -fopenmp -std=c++11 -fassociative-math -funsafe-math-optimizations")
+set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -O0 -fopenmp -std=c++11")
+
+
+
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
 ELSE()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 ENDIF()
 
+
+
 include_directories(include)
+add_subdirectory(include)
 add_subdirectory(src)
 
 if(ECLIPSE)
@@ -38,10 +43,6 @@ if(CUBIN)
     add_subdirectory(cubin)
 endif()
 
-if(BUFFER)
-    message("ADDING buffer")
-    add_subdirectory(buffer)
-endif()
 
 if(BLAS)
     message("ADDING BLAS")

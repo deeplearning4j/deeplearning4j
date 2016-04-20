@@ -91,7 +91,6 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     PairWiseTransform<double> *op  = new ops::Copy<double>();
     int *xShapeBuffer = shape::shapeBuffer(3,shape);
     int *yShapeBuffer = shape::shapeBuffer(3,shape);
-    int indexes[] = {8};
 
     op->exec(data, xShapeBuffer, yData, yShapeBuffer, resultData, xShapeBuffer, NULL);
     for(int i = 0; i < 8; i++) {
@@ -99,8 +98,8 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     }
 
     delete op;
-    delete xShapeBuffer;
-    delete yShapeBuffer;
+    delete []xShapeBuffer;
+    delete []yShapeBuffer;
 }
 
 TEST(PairWiseUtil,PairWiseUtilEuclideanDistance) {
@@ -161,9 +160,9 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
     int *resultShapeBuffer = shape::shapeBuffer(rank,resultShape);
     op->exec(data,xShapeBuffer,NULL,yData,yShapeBuffer,result,resultShapeBuffer,dimension,dimensionLength);
 
-    delete xShapeBuffer;
-    delete yShapeBuffer;
-    delete resultShapeBuffer;
+    delete []xShapeBuffer;
+    delete []yShapeBuffer;
+    delete []resultShapeBuffer;
     delete op;
 }
 

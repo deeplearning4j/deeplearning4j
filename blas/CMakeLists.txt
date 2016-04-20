@@ -3,7 +3,6 @@ if(LINUX)
     link_directories(/usr/lib)
 endif()
 
-include_directories(../include)
 if(APPLE)
     message("Using apple")
     link_directories(/usr/local/lib)
@@ -22,9 +21,8 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-include_directories(../include)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -33,7 +31,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=2 -fopt-info-vec -fopt-info-vec-missed")
@@ -89,9 +87,9 @@ elseif(CPU_BLAS)
     FIND_PACKAGE(LAPACK)
     add_library(nd4j SHARED cpu/NativeBlas.cpp cpu/NativeOps.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h)
     if(NOT BLAS_FOUND OR NOT LAPACK_FOUND)
-          find_package(OpenBLAS)
-            target_link_libraries(nd4j ${OpenBLAS_LIB})
-        else()
+        find_package(OpenBLAS)
+        target_link_libraries(nd4j ${OpenBLAS_LIB})
+    else()
         target_link_libraries(nd4j ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
         #install(TARGETS mySharedLib DESTINATION /some/full/path)
         install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)

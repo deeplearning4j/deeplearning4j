@@ -25,7 +25,6 @@
 #endif
 
 #include <pointercast.h>
-#include "optype.h"
 
 //DO NOT REMOVE: THIS IS AN EDITOR SEMANTICS THING FOR CLION
 //IT DEFINES THE EXPORT MACRO FOR THE EDITOR AND THEN
@@ -900,6 +899,39 @@ public:
 
     void setOmpNumThreads(int threads);
 
+
+
+    Nd4jPointer createContext();
+
+    Nd4jPointer createStream();
+
+    Nd4jPointer createEvent();
+
+    Nd4jPointer createBlasHandle();
+
+    Nd4jPointer registerEvent(Nd4jPointer event, Nd4jPointer stream);
+
+    Nd4jPointer destroyEvent(Nd4jPointer event);
+
+    Nd4jPointer setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
+
+    Nd4jPointer setDevice(Nd4jPointer ptrToDeviceId);
+
+    Nd4jPointer streamSynchronize(Nd4jPointer stream);
+
+    Nd4jPointer eventSynchronize(Nd4jPointer event);
+
+    long getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
+
+    Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer getAvailableDevices();
 };
 
 

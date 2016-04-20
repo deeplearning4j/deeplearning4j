@@ -600,7 +600,7 @@ namespace functions {
              * @param n the length of the input
              */
 			virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
-							  int resultStride, T *extraParams, const Nd4jIndex n) {
+							  int resultStride, T *extraParams,  Nd4jIndex n) {
 				if (xStride == 1 && yStride == 1 && resultStride == 1) {
 					if(n < 8000) {
 						for (Nd4jIndex i = 0; i < n; i++) {

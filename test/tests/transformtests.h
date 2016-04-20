@@ -91,7 +91,7 @@ public:
     virtual void execCpuKernel() override {
         int *xShapeBuffer = shapeBuffer(this->baseData->rank,this->baseData->xShape);
         int *resultShapeBuffer = shapeBuffer(this->baseData->resultRank,this->baseData->resultShape);
-        const Nd4jIndex *indexes  = shape::computeIndices(xShapeBuffer);
+        Nd4jIndex *indexes  = shape::computeIndices(xShapeBuffer);
 
         if(useIndexes) {
             op->exec(this->data->data->data,
@@ -100,17 +100,17 @@ public:
                      resultShapeBuffer,
                      this->extraParams,
                      indexes);
-        }
-        else
+        } else {
             op->exec(this->data->data->data,
                      xShapeBuffer,
                      this->data->data->data,
                      resultShapeBuffer,
                      this->extraParams);
+        }
 
-        free(xShapeBuffer);
-        free(resultShapeBuffer);
-        delete[] indexes;
+        delete []xShapeBuffer;
+        delete []resultShapeBuffer;
+        delete []indexes;
     }
 
 };
@@ -186,21 +186,23 @@ public:
 template <typename T>
 static Data<T> * getDataTransform(T *assertion,int rank) {
     Data<T> *data = new Data<T>();
-    data->xShape = (int *) malloc(sizeof(int) * 2);
-    data->resultShape = (int *) malloc(sizeof(int) * 2);
     data->resultRank = 2;
-    for(int i = 0; i < 2; i++) {
+    data->xShape = new int[data->resultRank];
+    data->resultShape = new int[data->resultRank];
+
+    for(int i = 0; i < data->resultRank; i++) {
         data->xShape[i] = 2;
         data->resultShape[i] = 2;
     }
-    data->assertion = (T *) malloc(sizeof(T) * 4);
+    data->assertion = new T[4];
     for(int i = 0; i < 4; i++) {
         data->assertion[i] = assertion[i];
     }
 
     data->rank = rank;
-    data->extraParams = (T *) malloc(sizeof(T) * 2);
-    data->result = (T *) malloc(sizeof(T) * 4);
+    data->extraParams = new T[2];
+    data->result = new T[4];
+
     return data;
 
 }

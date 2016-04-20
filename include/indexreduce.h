@@ -324,10 +324,11 @@ struct SharedIndexValue<double> {
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
+						shape::TAD singularDimension;
+						inputShapeInfo = singularDimension.squeezeDimensions(
 								inputShapeInfo,
-								dimension,
-								dimensionLength,
+								&dimension,
+								&dimensionLength,
 								&squeezed,
 								&newSqueezeDimensions,
 								wholeRank,
@@ -396,9 +397,6 @@ struct SharedIndexValue<double> {
 				if (threadIdx.x == 0) {
 					delete[] tadShapeShapeInfo;
 
-					if(newSqueezeDimensions) {
-						delete[] dimension;
-					}
 
 					if(numOnes > 0) {
 						delete[] inputShapeInfo;
@@ -468,7 +466,6 @@ struct SharedIndexValue<double> {
 		//reduce to 1 result
 		else if (resultScalar) {
 			int n = shape::length(xShapeInfo);
-			int numElements = blockDim.x;
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {

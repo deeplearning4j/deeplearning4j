@@ -463,14 +463,15 @@ namespace functions {
 					if(numOnes > 0) {
 						squeezed = false;
 						newSqueezeDimensions = false;
-						inputShapeInfo = shape::squeezeDimensions(
-								inputShapeInfo,
-								dimension,
-								dimensionLength,
-								&squeezed,
-								&newSqueezeDimensions,
-								wholeRank,
-								numOnes);
+					    shape::TAD singularDimension;
+                        inputShapeInfo = singularDimension.squeezeDimensions(
+                                inputShapeInfo,
+                                &dimension,
+                                &dimensionLength,
+                                &squeezed,
+                                &newSqueezeDimensions,
+                                wholeRank,
+                                numOnes);
 					}
 				}
 
@@ -542,9 +543,6 @@ namespace functions {
 				if (tid == 0) {
 					delete[] tadShapeShapeInfo;
 
-					if(newSqueezeDimensions) {
-						delete[] dimension;
-					}
 
 					if(numOnes > 0) {
 						delete[] xShapeInfo;

@@ -343,7 +343,7 @@ namespace functions {
              * @param n the number of elements to loop over
              */
             void transform(T *x, int xStride, T *result, int resultStride,
-                           T scalar, T *extraParams, const Nd4jIndex n) {
+                           T scalar, T *extraParams,  Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for
                     for (Nd4jIndex i = 0; i < n; i++) {
