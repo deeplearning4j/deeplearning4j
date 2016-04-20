@@ -232,10 +232,6 @@
             <name>Paul Dubs</name>
         </developer>
         <developer>
-            <id>treo</id>
-            <name>Paul Dubs</name>
-        </developer>
-        <developer>
             <id>EronWright</id>
             <name>Eron Wright</name>
         </developer>
@@ -252,7 +248,6 @@
             <name>emmjaykay</name>
         </developer>
     </developers>
-
 
     <build>
         <extensions>
