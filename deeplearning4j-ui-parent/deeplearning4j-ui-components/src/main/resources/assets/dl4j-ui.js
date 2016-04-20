@@ -623,6 +623,8 @@ var ChartStackedArea = (function (_super) {
                 .data(browsers)
                 .enter().append("g")
                 .attr("class", "browser");
+            var tempLabels = _this.labels;
+            var defaultColor = d3.scale.category20();
             browser.append("path")
                 .attr("class", "area")
                 .attr("data-legend", function (d) { return d.name; })
@@ -630,7 +632,12 @@ var ChartStackedArea = (function (_super) {
                 return area(d.values);
             })
                 .style("fill", function (d) {
-                return color(d.name);
+                if (s && s.getSeriesColor(tempLabels.indexOf(d.name))) {
+                    return s.getSeriesColor(tempLabels.indexOf(d.name));
+                }
+                else {
+                    return defaultColor(String(tempLabels.indexOf(d.name)));
+                }
             })
                 .style({ "stroke-width": "0px" });
             browser.append("text")
@@ -724,12 +731,12 @@ var ComponentDiv = (function (_super) {
                 if (_this.style.getFloatValue())
                     newDiv.css("float", _this.style.getFloatValue());
             }
+            appendToObject.append(newDiv);
             if (_this.components) {
                 for (var i = 0; i < _this.components.length; i++) {
                     _this.components[i].render(newDiv);
                 }
             }
-            appendToObject.append(newDiv);
         };
         var json = JSON.parse(jsonStr);
         if (!json["componentType"])
