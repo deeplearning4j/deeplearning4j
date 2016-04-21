@@ -17,9 +17,11 @@ Contents
 
 ## <a name="intro">Convolutional Net Introduction</a>
 
-Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
+Convolutional nets can be used to classify images (name what they see), cluster them by similarity (photo search), and perform object recognition within scenes. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. 
 
-The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
+Convolutional nets overlap with text analysis via optical character recognition (OCR), where the images are symbols to be transcribed, and they can also be applied to sound when it is represented visually.
+
+The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
 ## <a name="tensors">Images Are 4-D Tensors?</a>
 
@@ -51,6 +53,8 @@ So instead of thinking of images as two-dimensional areas, in convolutional nets
 ## <a name="define">Definition</a>
 
 From the Latin *convolvere*, "to convolve" means to roll together. For mathematical purposes, a convolution is the integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
+
+<iframe src="http://mathworld.wolfram.com/images/gifs/convgaus.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
 Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Imagine near it a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions' overlap at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). So in a sense, the two functions are being "rolled together."
 
