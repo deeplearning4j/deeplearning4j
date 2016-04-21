@@ -63,7 +63,7 @@ public class DataPoint implements Serializable {
     /**
      * Euclidean distance
      * @param point the distance from this point to the given point
-     * @return the distance distance between the two points
+     * @return the distance between the two points
      */
     public double distance(DataPoint point) {
         switch (functionName) {
