@@ -18,7 +18,7 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
-#define PREALLOC_SIZE 5242880
+#define PREALLOC_SIZE 33554432
 
 namespace shape {
 

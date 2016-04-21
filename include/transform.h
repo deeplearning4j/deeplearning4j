@@ -173,7 +173,7 @@ namespace functions {
 
 			}
             if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                delete[] xIdx;
+                free(xIdx);
             }
 		}
 	}
@@ -3191,6 +3191,11 @@ namespace functions {
 		int width = inShape[3];
 
 
+        int strideex = inStride[0];
+        int stridech = inStride[1];
+        int strideh = inStride[2];
+        int stridew = inStride[3];
+
 		// (height + 2 * padHeight - kernelHeight) / strideX + 1; //
 		// (width + 2 * padWidth - kernelWidth) / strideY + 1; //
 		int height_col = outShape[4];
@@ -3212,6 +3217,8 @@ namespace functions {
 			int c_im = h_index / height_col;
 			int c_col = c_im * kSize;
 
+            int depth_im = c_im % depth;
+            int num_im = c_im / depth;
 			int h_offset = h_col * strideY - padHeight;
 			int w_offset = w_col * strideX - padWidth;
 
@@ -3221,13 +3228,13 @@ namespace functions {
 
 			 T* data_im_ptr = dx;
 
-			data_im_ptr += (c_im * height + h_offset) * width + w_offset;
+            data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
 
 			for (int i = 0; i < kernelHeight; ++i) {
 				for (int j = 0; j < kernelWidth; ++j) {
 					int h_im = h_offset + i;
 					int w_im = w_offset + j;
-					*data_col_ptr = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * width + j] : 0;
+                    *data_col_ptr = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
 					data_col_ptr += height_col * width_col;
 				}
 			}
@@ -3492,6 +3499,13 @@ namespace functions {
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
+        int strideex = inStride[0];
+        int stridech= inStride[1];
+        int stridekrow = inStride[2];
+        int stridekcol = inStride[3];
+        int striderow = inStride[4];
+        int stridecol = inStride[5];
+
 		int kernelHeight = inShape[2];
 		int kernelWidth = inShape[3];
 
@@ -3516,9 +3530,9 @@ namespace functions {
 
     	int n = samples * depth * imgHeight * imgWidth;
 
-        if (threadIdx.x == 0)
+        /*if (threadIdx.x == 0)
 			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
-			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);
+			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
 
 
 
@@ -3527,6 +3541,9 @@ namespace functions {
 			int w_im = i % imgWidth + padWidth;
 			int h_im = (i / imgWidth) % imgHeight + padHeight;
 			int c_im = i / (imgWidth * imgWidth);
+
+            int num_im = c_im / depth; 
+            int depth_im = c_im % depth;
 
 			// compute the start and end of the output
 			int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
@@ -3541,7 +3558,8 @@ namespace functions {
         			int h_k = (h_im - h_col * strideY);
         			int w_k = (w_im - w_col * strideX);
 
-	       			int data_col_index = (((c_im * kernelHeight + h_k) * kernelWidth + w_k) * height_col + h_col) * width_col + w_col;
+	       			int data_col_index =    num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+
 			        val += dx[data_col_index];
       			}
 		    }

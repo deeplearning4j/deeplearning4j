@@ -1633,3 +1633,67 @@ void NativeOps::setOmpNumThreads(int threads) {
     omp_set_num_threads(threads);
 
 }
+
+Nd4jPointer NativeOps::createContext() {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::createStream() {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::createEvent() {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::createBlasHandle() {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
+    return 0L;
+}
+
+long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, int value, long size,  int flags, Nd4jPointer reserved) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::streamSynchronize(Nd4jPointer stream) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
+    return 0L;
+}
+
+Nd4jPointer NativeOps::getAvailableDevices() {
+    return 0L;
+}
