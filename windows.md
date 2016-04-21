@@ -211,5 +211,5 @@ If you want to inspect your path you can do this by running:
 
 If you want to set your PATH temporarily, you can do so with:
 ```
-    export PATH=... # Replace ... with what every you want to have there
+    export PATH=... # Replace ... with what ever you want to have there
 ```
