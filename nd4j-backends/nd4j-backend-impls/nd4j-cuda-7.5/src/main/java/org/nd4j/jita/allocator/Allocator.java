@@ -129,6 +129,8 @@ public interface Allocator {
 
     void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
+    void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
+
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
 
     void tickHostWrite(DataBuffer buffer);

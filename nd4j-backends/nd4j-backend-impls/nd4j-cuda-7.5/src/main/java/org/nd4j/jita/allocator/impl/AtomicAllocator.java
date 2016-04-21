@@ -582,8 +582,8 @@ public class AtomicAllocator implements Allocator {
 
                 } else {
                     try {
-                        if (threadId == 0)
-                            System.gc();
+                        //if (threadId == 0)
+                         //   System.gc();
                         Thread.sleep(500);
                     } catch (Exception e) {
 
@@ -762,6 +762,11 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset);
     }
 
     /**

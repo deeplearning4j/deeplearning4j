@@ -349,7 +349,7 @@ public class JCublasNDArray extends BaseNDArray {
         if (!isView() && ordering() == Nd4j.order()) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), ordering());
-            allocator.memcpyAsync(array.data(), allocator.getHostPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
             return array;
         } else return super.dup();
     }
@@ -360,7 +360,7 @@ public class JCublasNDArray extends BaseNDArray {
         if (!isView() && ordering() == order) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), order);
-            allocator.memcpyAsync(array.data(), allocator.getHostPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
             return array;
         } else return super.dup(order);
     }

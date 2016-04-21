@@ -518,6 +518,18 @@ public class CudaZeroHandler implements MemoryHandler {
 //
     }
 
+    @Override
+    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        CudaContext context = getCudaContext();
+        AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+
+        Pointer dP = new CudaPointer((point.getPointers().getDevicePointer().address()) + dstOffset);
+
+        nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream().address());
+
+        point.tickDeviceWrite();
+    }
+
     /**
      * Special memcpy version, addressing shapeInfoDataBuffer copies
      *
