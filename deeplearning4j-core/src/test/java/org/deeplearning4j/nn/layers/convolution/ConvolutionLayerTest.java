@@ -49,6 +49,7 @@ public class ConvolutionLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .l2(2e-4)
                 .regularization(true)
+                .momentum(0.9)
                 .useDropConnect(true)
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
