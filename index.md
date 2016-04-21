@@ -78,3 +78,4 @@ Developers who would like to contribute to Deeplearning4j can get started by rea
 
 * University of Massachusets "[RandomOut: Using a convolutional gradient norm to win The Filter Lottery](http://arxiv.org/abs/1602.05931)"
 * Stanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
+* [Like2Vec: A New Technique for Recommender Algorithms](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit?pref=2&pli=1#slide=id.g11a4ba0c5c_0_6)
