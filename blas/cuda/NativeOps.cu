@@ -2760,6 +2760,9 @@ Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, 
 		case 2: {
 				kind = cudaMemcpyDeviceToHost;
 			}
+		case 3: {
+			kind = cudaMemcpyDeviceToDevice;
+		}
 			break;
 	}
 
