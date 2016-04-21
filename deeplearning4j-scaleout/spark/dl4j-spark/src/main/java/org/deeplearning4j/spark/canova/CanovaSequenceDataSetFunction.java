@@ -3,11 +3,13 @@ package org.deeplearning4j.spark.canova;
 import org.apache.spark.api.java.function.Function;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
@@ -91,7 +93,17 @@ public class CanovaSequenceDataSetFunction implements Function<Collection<Collec
                     //feature
                     fIdx[1] = countFeatures++;
                     fIdx[2] = i;
-                    features.putScalar(fIdx, current.toDouble());
+                    try {
+                        features.putScalar(fIdx, current.toDouble());
+                    } catch (UnsupportedOperationException e) {
+                        // This isn't a scalar, so check if we got an array already
+                        if (current instanceof NDArrayWritable) {
+                            features.get(NDArrayIndex.point(fIdx[0]), NDArrayIndex.all(), NDArrayIndex.point(fIdx[2]))
+                                    .putRow(0, ((NDArrayWritable)current).get());
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             }
             i++;
