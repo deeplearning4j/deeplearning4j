@@ -248,7 +248,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     }
                 } else {
                     log.info("Skipping allocation A on [DEVICE] [{}]", deviceId);
-                    log.info("ReqMem: [{}], current state: [{}], maxTotalAllocation: [{}] ", reqMemory, deviceMemoryTracker.getAllocatedSize(deviceId), configuration.getMaximumDeviceAllocation());
+               //     log.info("ReqMem: [{}], current state: [{}], maxTotalAllocation: [{}] ", reqMemory, deviceMemoryTracker.getAllocatedSize(deviceId), configuration.getMaximumDeviceAllocation());
 //                    throw new RuntimeException("PEW");
                 }
 
