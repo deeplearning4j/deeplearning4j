@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 
 import java.util.List;
@@ -338,6 +339,30 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
+    }
+
+    @Override
+    public INDArray dup() {
+        /*
+            Special case for cuda: if we have not a view, and shapes do match - we
+        */
+        if (!isView() && ordering() == Nd4j.order()) {
+            AtomicAllocator allocator = AtomicAllocator.getInstance();
+            INDArray array = Nd4j.create(shape(), ordering());
+            allocator.memcpyAsync(array.data(), allocator.getHostPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+            return array;
+        } else return super.dup();
+    }
+
+    @Override
+    public INDArray dup(char order) {
+
+        if (!isView() && ordering() == order) {
+            AtomicAllocator allocator = AtomicAllocator.getInstance();
+            INDArray array = Nd4j.create(shape(), order);
+            allocator.memcpyAsync(array.data(), allocator.getHostPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+            return array;
+        } else return super.dup(order);
     }
 
     @Override

@@ -225,7 +225,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
-                            nativeOps.memsetAsync(pair.getDevicePointer().address(), 0, reqMemory, 0, context.getOldStream().address());
+                            //nativeOps.memsetAsync(pair.getDevicePointer().address(), 0, reqMemory, 0, context.getOldStream().address());
                             //JCuda.cudaStreamSynchronize(context.getOldStream());
 
 
@@ -234,8 +234,8 @@ public class CudaZeroHandler implements MemoryHandler {
                             zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
                             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
 
-                            point.tickDeviceWrite();
-                            point.tickHostRead();
+                          //  point.tickDeviceWrite();
+                            point.tickHostWrite();
                         } else {
                             log.info("Skipping allocation C on [DEVICE]");
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
