@@ -135,7 +135,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             //No op - try again after adding new subtypes
         }
 
-        //Try: programmatically registering JSON subtypes for GraphVertex classes. This allows users to to add custom GraphVertex
+        //Try: programmatically registering JSON subtypes for GraphVertex classes. This allows users to add custom GraphVertex
         // implementations without needing to manually register subtypes
         //First: get all registered subtypes
         AnnotatedClass ac = AnnotatedClass.construct(GraphVertex.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);

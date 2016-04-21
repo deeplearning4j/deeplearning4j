@@ -141,7 +141,7 @@ public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable
         Map<String, Object> tokenizerVarMap = getTokenizerVarMap();
         Map<String, Object> word2vecVarMap = getWord2vecVarMap();
 
-        // Variables to fill in in train
+        // Variables to fill in train
         final JavaRDD<AtomicLong> sentenceWordsCountRDD;
         final JavaRDD<List<VocabWord>> vocabWordListRDD;
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;

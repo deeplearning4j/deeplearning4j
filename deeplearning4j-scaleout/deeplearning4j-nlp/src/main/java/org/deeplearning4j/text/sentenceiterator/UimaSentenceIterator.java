@@ -204,7 +204,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 
 
     /**
-     * Return a a sentence segmenter
+     * Return a sentence segmenter
      * @return a sentence segmenter
      */
     public static AnalysisEngine segmenter() {
