@@ -1154,6 +1154,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
+            if(pointer != null) {
+                return pointer.asByteBuffer().asIntBuffer();
+            }
+
             if(offset() > 0)
                 return (IntBuffer) IntBuffer.wrap(intData).position((int)offset());
             else
@@ -1172,6 +1176,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
+            if(pointer != null) {
+                return pointer.asByteBuffer().asDoubleBuffer();
+            }
+
             if(offset() == 0) {
                 return DoubleBuffer.wrap(doubleData);
             }
@@ -1195,6 +1203,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
+            if(pointer != null) {
+                return pointer.asByteBuffer().asFloatBuffer();
+            }
+
             if(offset() == 0) {
                 return FloatBuffer.wrap(floatData);
             }
@@ -1214,6 +1226,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public ByteBuffer asNio() {
+        if(wrappedBuffer == null && pointer != null) {
+            return pointer.asByteBuffer();
+        }
         return wrappedBuffer;
     }
 
