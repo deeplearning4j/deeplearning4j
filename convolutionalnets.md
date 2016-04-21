@@ -54,7 +54,8 @@ So instead of thinking of images as two-dimensional areas, in convolutional nets
 
 From the Latin *convolvere*, "to convolve" means to roll together. For mathematical purposes, a convolution is the integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
 
-<iframe src="http://mathworld.wolfram.com/images/gifs/convgaus.gif" width="100%" height="280px;" style="border:none;"></iframe>
+<iframe src="http://mathworld.wolfram.com/images/gifs/convgaus.gif" width="100%" height="260px;" style="border:none;"></iframe>
+*Credit: [Mathworld](http://mathworld.wolfram.com/): The green curve shows the convolution of the blue and red curves as a function of t, the position indicated by the vertical green line. The gray region indicates the product `g(tau)f(t-tau)` as a function of t, so its area as a function of t is precisely the convolution.*
 
 Look at the tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Near it is a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions' overlap at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). So in a sense, the two functions are being "rolled together." 
 
