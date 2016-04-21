@@ -724,7 +724,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     if (momentumSchedule != null && layer.getMomentumSchedule() == null)
                         layer.setMomentumSchedule(momentumSchedule);
                     else if (momentumSchedule == null && layer.getMomentumSchedule() == null)
-                        setMomentumSchedule(new HashMap<Integer, Double>());
+                        layer.setMomentumSchedule(new HashMap<Integer, Double>());
                     break;
                 case ADAM:
                     if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
