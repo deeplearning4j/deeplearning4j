@@ -82,8 +82,8 @@ public abstract class Layer implements Serializable, Cloneable {
     //adadelta - weight for how much to consider previous history
     protected double rho;
     protected double rmsDecay;
-    protected double adamMeanDecay = 0.9;
-    protected double adamVarDecay = 0.999;
+    protected double adamMeanDecay;
+    protected double adamVarDecay;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0;   //Threshold for l2 and element-wise gradient clipping
 
