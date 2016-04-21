@@ -36,7 +36,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples) {
-		super(new LFWLoader().getRecordReader(numExamples), batchSize, height * width * channels, LFWLoader.NUM_LABELS);
+		super(new LFWLoader().getRecordReader(numExamples), batchSize, 1, LFWLoader.NUM_LABELS);
 	}
 
 	/**
@@ -46,7 +46,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
-		super(new LFWLoader().getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], LFWLoader.NUM_LABELS);
+		super(new LFWLoader().getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, LFWLoader.NUM_LABELS);
 	}
 
 	/**
@@ -56,7 +56,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories) {
-		super(new LFWLoader().getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
+		super(new LFWLoader().getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, numCategories);
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numCategories the overall number of labels
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories) {
-		super(new LFWLoader().getRecordReader(numExamples, numCategories), batchSize, height * width * channels, numCategories);
+		super(new LFWLoader().getRecordReader(numExamples, numCategories), batchSize, 1, numCategories);
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param imgDim an array of height, width and channels
 	 */
 	public LFWDataSetIterator(int batchSize, int[] imgDim)  {
-		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], LFWLoader.NUM_LABELS);
+		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, LFWLoader.NUM_LABELS);
 	}
 
 
@@ -86,7 +86,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numCategories the overall number of labels
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories, boolean useSubset) {
-		super(new LFWLoader(useSubset).getRecordReader(numExamples, numCategories), batchSize, height * width * channels, numCategories);
+		super(new LFWLoader(useSubset).getRecordReader(numExamples, numCategories), batchSize, 1, numCategories);
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param imgDim an array of height, width and channels
 	 */
 	public LFWDataSetIterator(int batchSize, int[] imgDim, boolean useSubset)  {
-		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, imgDim[0] * imgDim[1] * imgDim[2], useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS);
+		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS);
 	}
 
 
@@ -106,7 +106,7 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, Random rng) {
-		super(new LFWLoader(useSubset).getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2], numCategories, rng), batchSize, imgDim[0] * imgDim[1] * imgDim[2], numCategories);
+		super(new LFWLoader(useSubset).getRecordReader(numExamples, imgDim[0], imgDim[1], imgDim[2], numCategories, rng), batchSize, 1, numCategories);
 	}
 
 }
