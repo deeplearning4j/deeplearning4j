@@ -42,7 +42,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     protected final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
-    protected final long MAX_SINGLE_ALLOCATION = 1000000;
+    protected final long MAX_SINGLE_ALLOCATION = 32000000;
 
     // maximum cached size of memory
     protected final long MAX_CACHED_MEMORY;

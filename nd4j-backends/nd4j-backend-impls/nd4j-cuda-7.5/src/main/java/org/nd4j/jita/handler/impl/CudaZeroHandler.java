@@ -22,6 +22,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
+import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -74,7 +75,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final MemoryProvider provider = new CudaCachingZeroProvider();
+    private final MemoryProvider provider = new CudaFullCachingProvider();
 
     private final FlowController flowController = new AsynchronousFlowController();
 
@@ -504,7 +505,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     context.getOldStream()
             );*/
             if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
-                throw new IllegalStateException("MemcpyAsync failed");
+                throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
             //context.syncOldStream();
         }

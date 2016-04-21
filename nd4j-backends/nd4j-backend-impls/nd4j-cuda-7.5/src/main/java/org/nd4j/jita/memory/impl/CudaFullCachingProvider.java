@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,14 +20,18 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
+    protected final long MAX_GPU_ALLOCATION = 10000000;
+
     protected final AtomicLong deviceCachedAmount = new AtomicLong(0);
 
     protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
 
+    private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
+
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
-        if (location == AllocationStatus.DEVICE && reqMemory < MAX_SINGLE_ALLOCATION) {
+        if (location == AllocationStatus.DEVICE && reqMemory < MAX_GPU_ALLOCATION) {
             ensureDeviceCacheHolder(point.getDeviceId(), shape);
 
             CacheHolder cache = deviceCache.get(point.getDeviceId()).get(shape);
@@ -37,8 +43,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
 
                     PointersPair pair = new PointersPair();
-                    pair.setDevicePointer(new CudaPointer(pointer.address()));
-                    pair.setHostPointer(new CudaPointer(pointer.address()));
+                    pair.setDevicePointer(pointer);
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
                     return pair;
@@ -57,7 +62,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_SINGLE_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
+            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
                 super.free(point);
                 return;
             }
@@ -70,6 +75,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
                 cache.put(new CudaPointer(point.getDevicePointer().address()));
+                return;
             } else {
                 long cacheEntries = cache.size();
                 long cacheHeight = deviceCache.get(point.getDeviceId()).size();
@@ -79,6 +85,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
                 if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                     cache.put(new CudaPointer(point.getDevicePointer().address()));
+                    return;
                 } else {
                     super.free(point);
                 }
