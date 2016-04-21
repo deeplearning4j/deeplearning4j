@@ -790,16 +790,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 throw new IllegalStateException("DropConnect is set to true but momentum has not been added to configuration.");
             if (useRegularization && (Double.isNaN(l1) && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
                 log.warn("Regularization is set to true but l1 or l2 has not been added to configuration.");
-            if ((!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2())) && !useRegularization)
-                throw new IllegalStateException("L1 or l2 has been added to configuration but useRegularization is set to false.");
-            if ((dist != null || layer.getDist() != null) && layer.getWeightInit() != WeightInit.DISTRIBUTION)
-                throw new IllegalStateException("Distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
-            else if (layer.getWeightInit() == WeightInit.DISTRIBUTION && (dist == null && layer.getDist() == null)) {
-                layer.setDist(new NormalDistribution(1e-3, 1));
-                log.warn("Distribution is automatically set to mean 1e-3 and variance 1.");
+            // CompGraph may have null layers TODO confirm valid configuration
+            if (layer != null) {
+                if ((!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2())) && !useRegularization)
+                    throw new IllegalStateException("L1 or l2 has been added to configuration but useRegularization is set to false.");
+                if ((dist != null || layer.getDist() != null) && layer.getWeightInit() != WeightInit.DISTRIBUTION)
+                    throw new IllegalStateException("Distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
+                else if (layer.getWeightInit() == WeightInit.DISTRIBUTION && (dist == null && layer.getDist() == null)) {
+                    layer.setDist(new NormalDistribution(1e-3, 1));
+                    log.warn("Distribution is automatically set to mean 1e-3 and variance 1.");
+                } else if (layer.getWeightInit() == WeightInit.DISTRIBUTION && (dist != null && layer.getDist() == null))
+                    layer.setDist(dist);
             }
-            else if (layer.getWeightInit() == WeightInit.DISTRIBUTION && (dist != null && layer.getDist() == null))
-                layer.setDist(dist);
         }
 
         /**

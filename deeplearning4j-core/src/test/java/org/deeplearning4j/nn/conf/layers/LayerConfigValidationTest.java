@@ -1,9 +1,12 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -246,5 +249,31 @@ public class LayerConfigValidationTest {
         net.init();
     }
 
+    @Test
+    public void testCompGraphNullLayer(){
+            ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .learningRate(0.01).iterations(3)
+                    .seed(42).miniBatch(false)
+                    .l1(0.2).l2(0.2)
+                    .rmsDecay(0.3)
+                    .regularization(true)
+		        /* Graph Builder */
+                    .updater(Updater.RMSPROP)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("L" +1, new GravesLSTM.Builder().nIn(20)
+                            .updater(Updater.RMSPROP).nOut(10)
+                            .weightInit(WeightInit.XAVIER).dropOut(0.4)
+                            .l1(0.3)
+                            .activation("sigmoid").build(), "in")
+                    .addLayer("output", new RnnOutputLayer.Builder().nIn(20)
+                            .nOut(10).activation("softmax")
+                            .weightInit(WeightInit.VI).build(), "L"+1).setOutputs("output");
+            ComputationGraphConfiguration conf = gb.build();
+            ComputationGraph cg = new ComputationGraph(conf);
+            cg.init();
+        }
+    }
 
-}
+
