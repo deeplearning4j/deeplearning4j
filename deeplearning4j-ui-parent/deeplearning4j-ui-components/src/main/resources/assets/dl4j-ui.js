@@ -968,6 +968,14 @@ var ComponentText = (function (_super) {
                     newSpan.style.textDecoration = 'underline';
                 if (_this.style.getColor())
                     newSpan.style.color = _this.style.getColor();
+                if (_this.style.getMarginTop())
+                    newSpan.style.marginTop = _this.style.getMarginTop() + "px";
+                if (_this.style.getMarginBottom())
+                    newSpan.style.marginBottom = _this.style.getMarginBottom() + "px";
+                if (_this.style.getMarginLeft())
+                    newSpan.style.marginLeft = _this.style.getMarginLeft() + "px";
+                if (_this.style.getMarginRight())
+                    newSpan.style.marginRight = _this.style.getMarginRight() + "px";
                 newSpan.appendChild(textNode);
                 appendToObject.append(newSpan);
             }
