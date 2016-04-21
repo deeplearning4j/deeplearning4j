@@ -876,7 +876,6 @@ var ComponentTable = (function (_super) {
             var margin = Style.getMargins(s);
             var tbl = document.createElement('table');
             tbl.style.width = '100%';
-            tbl.style.height = '100%';
             if (s && s.getBorderWidthPx() != null)
                 tbl.setAttribute('border', String(s.getBorderWidthPx()));
             if (s && s.getBackgroundColor())
