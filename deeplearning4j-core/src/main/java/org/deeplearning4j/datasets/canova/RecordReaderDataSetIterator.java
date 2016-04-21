@@ -25,6 +25,7 @@ import org.canova.api.io.converters.WritableConverterException;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,7 +33,10 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -204,15 +208,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         INDArray label = null;
-        INDArray featureVector;
-        if(regression && labelIndex >= 0){
-            //Handle the possibly multi-label regression case here:
-            int nLabels = labelIndexTo - labelIndex + 1;
-            featureVector = Nd4j.create(1, currList.size() - nLabels);
-        } else {
-            //Classification case, and also no-labels case
-            featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
-        }
+        INDArray featureVector = null;
         int featureCount = 0;
         int labelCount = 0;
         for (int j = 0; j < currList.size(); j++) {
@@ -243,7 +239,28 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
-                featureVector.putScalar(featureCount++, current.toDouble());
+                try {
+                    double value = current.toDouble();
+                    if (featureVector == null) {
+                        if(regression && labelIndex >= 0){
+                            //Handle the possibly multi-label regression case here:
+                            int nLabels = labelIndexTo - labelIndex + 1;
+                            featureVector = Nd4j.create(1, currList.size() - nLabels);
+                        } else {
+                            //Classification case, and also no-labels case
+                            featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+                        }
+                    }
+                    featureVector.putScalar(featureCount++, value);
+                } catch (UnsupportedOperationException e) {
+                    // This isn't a scalar, so check if we got an array already
+                    if (current instanceof NDArrayWritable) {
+                        assert featureVector == null;
+                        featureVector = ((NDArrayWritable)current).get();
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
 

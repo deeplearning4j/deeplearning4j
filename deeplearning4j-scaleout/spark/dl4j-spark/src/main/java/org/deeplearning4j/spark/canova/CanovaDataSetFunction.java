@@ -4,6 +4,7 @@ import org.apache.spark.api.java.function.Function;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.io.converters.WritableConverterException;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -62,7 +63,7 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
         }
 
         INDArray label = null;
-        INDArray featureVector = Nd4j.create(labelIndex >= 0 ? list.size() - 1 : list.size());
+        INDArray featureVector = null;
         int featureCount = 0;
         for (int j = 0; j < list.size(); j++) {
             Writable current = list.get(j);
@@ -91,7 +92,21 @@ public class CanovaDataSetFunction implements Function<Collection<Writable>,Data
                 }
             } else {
                 //Current value is not the label
-                featureVector.putScalar(featureCount++, current.toDouble());
+                try {
+                    double value = current.toDouble();
+                    if (featureVector == null) {
+                        featureVector = Nd4j.create(labelIndex >= 0 ? list.size() - 1 : list.size());
+                    }
+                    featureVector.putScalar(featureCount++, value);
+                } catch (UnsupportedOperationException e) {
+                    // This isn't a scalar, so check if we got an array already
+                    if (current instanceof NDArrayWritable) {
+                        assert featureVector == null;
+                        featureVector = ((NDArrayWritable)current).get();
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
 

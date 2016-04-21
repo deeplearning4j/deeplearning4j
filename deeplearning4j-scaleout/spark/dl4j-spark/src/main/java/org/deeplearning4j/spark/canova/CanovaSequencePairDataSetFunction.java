@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.canova;
 import org.apache.spark.api.java.function.Function;
 import org.canova.api.io.WritableConverter;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.canova.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -111,7 +112,17 @@ public class CanovaSequencePairDataSetFunction implements Function<Tuple2<Collec
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
                 if(converter != null) current = converter.convert(current);
-                inputArr.putScalar(idx, current.toDouble());
+                try {
+                    inputArr.putScalar(idx, current.toDouble());
+                } catch (UnsupportedOperationException e) {
+                    // This isn't a scalar, so check if we got an array already
+                    if (current instanceof NDArrayWritable) {
+                        inputArr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
+                                .putRow(0, ((NDArrayWritable)current).get());
+                    } else {
+                        throw e;
+                    }
+                }
                 idx[1] = ++f;
             }
             idx[2] = ++i;
