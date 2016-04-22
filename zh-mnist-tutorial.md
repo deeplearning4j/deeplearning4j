@@ -1,5 +1,5 @@
 ---
-title: 
+title: "深信度网络的MNIST"
 layout: zh-default
 ---
 
@@ -38,7 +38,7 @@ Windows用户需注意 ,请参考并执行以下操作方法:
           DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
 3. 接下来,我们要训练一个深度信念网络来重建MNIST数据集。这将通过以下的代码片段来完成:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNMnistFullExample.java?slice=28:95"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierMoon.java?slice=28:95"></script>
 
 当您的网络已被训练后,您会看到一个[F1](https://en.wikipedia.org/wiki/F1_score)分数。在机器学习里,那是一个用来评定分类器性能的指标。F1的分数是一个在零和一之间的数字,它是用来表示在训练过程中您的网络有多好。F1分数类似于一个百分比,1就是表示您的预测结果100%准确。它基本上就是您的网络猜测的正确概率。
 
