@@ -13,7 +13,7 @@ Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使
 
 ### [神经网络使用情景](../use_cases.html)
 
-* [人脸／图像识别](../facial-reconstruction-tutorial.html)
+* 人脸／图像识别
 * 语音搜索
 * 文本到语音（转录）
 * 垃圾邮件筛选（异常情况探测）
@@ -60,7 +60,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 * [LSTM和递归网络教程](../zh-lstm)
 * [通过DL4J使用递归网络](../zh-usingrnns)
 * [深度置信网络和MNIST](../zh-mnist-tutorial)
-* [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial)
+* 针对LFW人脸图像数据集进行人脸重构
 * [通过Canova库自定义数据准备工作](../image-data-pipeline)
 * [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
 * [本征向量、主成分分析（PCA）和熵](../zh-eigenvector)
