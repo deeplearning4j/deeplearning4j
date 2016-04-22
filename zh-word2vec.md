@@ -1,5 +1,5 @@
 ---
-title: 
+title: Word2vec
 layout: zh-default
 ---
 
