@@ -1,5 +1,5 @@
 ---
-title: 
+title: "受限玻尔兹曼机(RBM)"
 layout: zh-default
 ---
 
