@@ -198,12 +198,12 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 * [LSTM:A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">其他基础教程</a>
-* [受限玻尔兹曼机](../restrictedboltzmannmachine.html)
-* [本征向量、协方差、主成分分析（PCA）和熵](../eigenvector.html)
-* [Word2vec](../word2vec.html)
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
+* [本征向量、协方差、主成分分析（PCA）和熵](../zh-eigenvector.html)
+* [Word2vec](../zh-word2vec.html)
 * [深度神经网络简介](../neuralnet-overview.html)
 * [神经网络与回归分析](../linear-regression.html)
-* [卷积网络教程](../convolutionalnets.html)
+* [卷积网络教程](../zh-convolutionalnets.html)
 
 ### 注
 
