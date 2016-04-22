@@ -254,12 +254,12 @@ public class AtomicAllocatorTest {
         System.out.println("Array1 length: " + array1.length());
         BlasWrapper blasWrapper = Nd4j.getBlasWrapper();
         // Warmup
-        for (int i = 0; i < 50000; i++) {
+        for (int i = 0; i < 500; i++) {
             blasWrapper.axpy(new Float(0.75f), array1, array2);
         }
 
         long time1 = System.nanoTime();
-        int count = 5000000;
+        int count = 50000;
         for (int i = 0; i < count; i++) {
             blasWrapper.axpy(new Float(0.75f), array1, array2);
         }

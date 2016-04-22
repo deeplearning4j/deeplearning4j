@@ -20,11 +20,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
-    protected final long MAX_GPU_ALLOCATION = 10000000;
+    protected final long MAX_GPU_ALLOCATION = 32000000;
 
-    protected final AtomicLong deviceCachedAmount = new AtomicLong(0);
+
 
     protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache = new ConcurrentHashMap<>();
+
 
     private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
 
@@ -38,9 +39,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             if (cache != null) {
                 Pointer pointer = cache.poll();
                 if (pointer != null) {
-                    cacheHit.incrementAndGet();
+                    cacheDeviceHit.incrementAndGet();
 
                     deviceCachedAmount.addAndGet(-1 * reqMemory);
+
+                   // log.info("Serving from cache {} bytes", reqMemory);
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
@@ -49,7 +52,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     return pair;
                 }
             }
-            cacheMiss.incrementAndGet();
+            cacheDeviceMiss.incrementAndGet();
             return super.malloc(shape, point, location);
         }
         return super.malloc(shape, point, location);
@@ -114,7 +117,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 singleLock.acquire();
 
                 if (!deviceCache.get(deviceId).containsKey(shape)) {
-                    deviceCache.get(deviceId).put(shape, new CacheHolder(shape));
+                    deviceCache.get(deviceId).put(shape, new CacheHolder(shape, deviceCachedAmount));
                 }
             } catch (Exception e) {
 

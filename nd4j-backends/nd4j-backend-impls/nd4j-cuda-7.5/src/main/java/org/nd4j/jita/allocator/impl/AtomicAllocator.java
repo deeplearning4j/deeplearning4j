@@ -582,9 +582,10 @@ public class AtomicAllocator implements Allocator {
 
                 } else {
                     try {
-                        //if (threadId == 0)
-                         //   System.gc();
-                        Thread.sleep(500);
+                        if (threadId == 0) {
+                            System.gc();
+                            Thread.sleep(2000);
+                        } else Thread.sleep(500);
                     } catch (Exception e) {
 
                     }

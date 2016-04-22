@@ -460,7 +460,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             point.tickHostRead();
         } else {
-
+          //  log.info("Memcpy async: {} bytes ", length);
             /*
             JCuda.cudaMemcpyAsync(
                     dP,
@@ -520,6 +520,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     @Override
     public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+      //  log.info("Memcpy device: {} bytes ", length);
         CudaContext context = getCudaContext();
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
 
@@ -542,7 +543,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        //log.info("memcpySpecial called");
+     //   log.info("Memcpy special: {} bytes ", length);
         CudaContext context = getCudaContext();
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
 
@@ -615,6 +616,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
         //log.info("Buffer MemCpy called");
+        log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
         CudaContext context = getCudaContext();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         AllocationPoint srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
