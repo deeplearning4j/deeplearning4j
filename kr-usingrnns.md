@@ -1,5 +1,5 @@
 ---
-title: 
+title: "DL4J와 RNNs (Recurrent Neural Networks)"
 layout: kr-default
 ---
 
