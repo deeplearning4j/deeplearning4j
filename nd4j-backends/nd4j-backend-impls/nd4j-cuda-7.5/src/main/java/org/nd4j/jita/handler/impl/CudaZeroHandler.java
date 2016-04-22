@@ -7,28 +7,24 @@ import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
-import org.nd4j.jita.allocator.context.ContextPool;
+import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.flow.FlowController;
 import org.nd4j.jita.allocator.flow.impl.AsynchronousFlowController;
-import org.nd4j.jita.allocator.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.allocator.impl.*;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +56,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     // simple pool for cublas contexts
     //private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
-    private ContextPool contextPool = new ContextPool();
+    private BasicContextPool contextPool = new BasicContextPool();
 
 
     // another simple counter, to track allocated device memory on per-thread per-device basis
