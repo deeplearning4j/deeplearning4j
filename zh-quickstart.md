@@ -15,7 +15,7 @@ layout: zh-default
 3. Maven（自动化生成工具）
 4. Github
 
-若您需要安装上述任意一项，请阅读[ND4J入门指南](http://nd4j.org/getstarted.html)。（ND4J是我们用于深度学习的科学计算引擎，其入门指南中的内容对两个项目均适用。）本页中的样例只需安装上面列出的四项，无需安装“ND4J入门指南”中的所有软件。
+若您需要安装上述任意一项，请阅读[ND4J入门指南](http://nd4j.org/zh-getstarted.html)。（ND4J是我们用于深度学习的科学计算引擎，其入门指南中的内容对两个项目均适用。）本页中的样例只需安装上面列出的四项，无需安装“ND4J入门指南”中的所有软件。
 
 建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)以便提问或反馈。即使您加入后无意发言，也可默默潜水学习。此外，如果您对深度学习刚刚入门，我们还准备了一份[上手时需要学习的清单](../deeplearningforbeginners.html)。
 
@@ -28,7 +28,7 @@ Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ�
 * 在命令行中输入`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`。（目前示例版本为0.0.4.x。）
 * 在IntelliJ中使用Maven创建新项目，并指向上述示例的根目录。
 * 复制、粘贴下列代码，确保您的POM.xml文件与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
-* 附加的[Windows系统说明可通过此链接访问](../gettingstarted.html#windows)。
+* 附加的[Windows系统说明可通过此链接访问](../zh-gettingstarted.html#windows)。
 * 从左侧文件列表中选择`DBNIrisExample.java`。
 * 单击运行！（也即右键单击源文件时出现的绿色按钮……）
 
@@ -56,7 +56,7 @@ nd4j-x86后端应如下所示：
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-x86*可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](../gettingstarted.html#open)。
+*nd4j-x86*可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](../zh-gettingstarted.html#open)。
 
 ## 高级：在AWS上使用命令行
 
