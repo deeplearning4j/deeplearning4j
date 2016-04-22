@@ -65,7 +65,7 @@ Given a series of letters, a recurrent *will* use the first character to help de
 Since recurrent nets span time, they are probably best illustrated with animation (the first vertical line of nodes to appear can be thought of as a feedforward network, which becomes recurrent as it unfurls over time). 
 
 {::nomarkdown}
-<iframe src="https://i.imgur.com/6Uak4vF.gif" width="100%" height="630px;" style="border:none;"></iframe>
+<iframe src="https://i.imgur.com/6Uak4vF" width="100%" height="630px;" style="border:none;"></iframe>
 {:/nomarkdown}
 
 In the [diagram above](https://i.imgur.com/6Uak4vF.gifv), each `x` is an input example, `w` is the weights that filter inputs, `a` is the activation of the hidden layer (a combination of weighted input and the previous hidden state), and `b` is the output of the hidden layer after it has been transformed, or squashed, using a rectified linear or sigmoid unit. 
