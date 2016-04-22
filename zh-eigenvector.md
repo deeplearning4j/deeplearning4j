@@ -198,7 +198,7 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 识别数据集的主成分可以与发现骰子是灌铅的相类比。两者的实质都是识别潜在的模式。
 
-信息从有关系统的*未知情况*转变为*已知情况*，这代表了熵的变化。洞悉系统的模式会使系统的熵降低。获得信息，降低熵——这就是信息增益。没错，这类信息熵具有主观性，因为它取决于我们对于系统的了解程度。（顺便一提，[信息增益](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)与我们在[受限玻尔兹曼机](../restrictedboltzmannmachine.html)中探讨的KL散度意义相同。） 
+信息从有关系统的*未知情况*转变为*已知情况*，这代表了熵的变化。洞悉系统的模式会使系统的熵降低。获得信息，降低熵——这就是信息增益。没错，这类信息熵具有主观性，因为它取决于我们对于系统的了解程度。（顺便一提，[信息增益](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)与我们在[受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)中探讨的KL散度意义相同。） 
 
 所以每个贯穿散点图的主成分都会降低系统的熵，减少系统的不可预测性。 
 
@@ -223,8 +223,8 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 ## <a name="resources">其他基础教程</a>
 
 * [回归分析与神经网络](../linear-regression.html)
-* [Word2vec：从原始文本中提取关系](../word2vec.html)
-* [受限玻尔兹曼机：深度置信网络的基础组件](../restrictedboltzmannmachine.html)
-* [递归神经网络和长短期记忆单元](../lstm.html)
+* [Word2vec：从原始文本中提取关系](../zh-word2vec.html)
+* [受限玻尔兹曼机：深度置信网络的基础组件](../zh-restrictedboltzmannmachine.html)
+* [递归神经网络和长短期记忆单元](../zh-lstm.html)
 
 <a name="ref">1)</a> *在有些情况下，矩阵可能没有一组完整的本征向量；矩阵线性独立的本征向量的数量至多等于矩阵的维度数。*
