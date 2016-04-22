@@ -1,5 +1,5 @@
 ---
-title: A Beginner's Guide to Recurrent Networks and LSTMs
+title: "초보자를 위한 RNNs과 LSTM 가이드"
 layout: kr-default
 ---
 
