@@ -5433,11 +5433,14 @@ __device__ void transformGeneric(
 		T *result,
 		int resultStride, int *allocationPointer, T *reductionPointer) {
 
+
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
+
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
+		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
         op = doubleTransformFactory->getOp(opNum);
 	}
 
@@ -5537,18 +5540,13 @@ __device__ void transformGeneric(
 		T *params,
 		T *result,int *resultShapeInfo, int *allocationPointer, T *reductionPointer) {
 
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
+
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
-
-	}
-
-	__syncthreads();
-
-
-	if(threadIdx.x == 0) {
+		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum);
 	}
 	__syncthreads();
@@ -5646,18 +5644,12 @@ __device__ void transformGenericIndexes(
 		T *params,
 		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
 
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new functions::transform::TransformOpFactory<T>();
-
-	}
-
-	__syncthreads();
-
-
-	if(threadIdx.x == 0) {
+		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum);
 	}
 	__syncthreads();

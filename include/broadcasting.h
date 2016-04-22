@@ -869,11 +869,12 @@ __device__ void broadcastGeneric(
 		int *dimension,
 		int dimensionLength) {
 
-	//TODO: Reduce object creation
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::broadcast::BroadcastOpFactory<T>)];
+
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory =  new functions::broadcast::BroadcastOpFactory<T>();
+		newOpFactory =  new(factoryBuffer) functions::broadcast::BroadcastOpFactory<T>();
 		op = newOpFactory->getOp(opNum);
 	}
 	__syncthreads();

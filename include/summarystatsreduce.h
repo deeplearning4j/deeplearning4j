@@ -1581,10 +1581,13 @@ __device__ void summaryStatsReduceGeneric(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>)];
+
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
+		newOpFactory = new(factoryBuffer) functions::summarystats::SummaryStatsReduceOpFactory<T>();
 		indexReduce = newOpFactory->getOp(op,biasCorrected);
 	}
 	__syncthreads();

@@ -1505,15 +1505,15 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		T *result,
 		int *resultShapeInfo,
 		int postProcessOrNot, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce3::Reduce3OpFactory<T>)];
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	if(threadIdx.x == 0)
-		reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
+		reduce3OpFactory = new(factoryBuffer) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 	op->transformNoElementWiseStride(dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,postProcessOrNot, allocationPointer);
@@ -1603,15 +1603,16 @@ __device__ void reduce3Generic(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce3::Reduce3OpFactory<T>)];
+
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	if(threadIdx.x == 0)
-		reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
+	if(threadIdx.x == 0) {
+		reduce3OpFactory = new(factoryBuffer) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum);
+	}
 	__syncthreads();
 
 	op->transform(

@@ -1776,7 +1776,6 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                     return new functions::reduce::ops::StandardDeviation<T>();
                 else if (op == 10)
                     return new functions::reduce::ops::Variance<T>();
-
                 return NULL;
             }
 
@@ -1822,11 +1821,13 @@ __global__ void reduceGenericGlobal(
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
 
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce::ReduceOpFactory<T>)];
+
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
+		newOpFactory =  new(factoryBuffer) functions::reduce::ReduceOpFactory<T>();
 		reduceFunctionToInvoke = newOpFactory->create(op);
 	}
 	__syncthreads();

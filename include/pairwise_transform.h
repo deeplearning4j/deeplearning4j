@@ -1943,10 +1943,13 @@ __device__ void pairWiseTransformGeneric(
 		int *xShapeInfo,
 		int *yShapeInfo,
 		int *resultShapeInfo, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum);
 	}
 	__syncthreads();
@@ -2069,10 +2072,14 @@ __device__ void pairWiseTransformGeneric(
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum);
 	}
 	__syncthreads();
@@ -2212,10 +2219,14 @@ __device__ void pairWiseTransformStridedGeneric(
 		T *params,
 		T *result,
 		int incz, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+
 	if (threadIdx.x == 0) {
-		newOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum);
 	}
 	__syncthreads();

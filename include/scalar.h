@@ -1101,10 +1101,14 @@ __device__ void scalarGeneric(
 		T *dy,
 		int incy, T *params,
 		T *result,int resultStride, int *allocationBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+
 	if(threadIdx.x == 0) {
-		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
 		op = scalarDoubleOpFactory->getOp(opNum);
 	}
 	__syncthreads();
@@ -1157,10 +1161,14 @@ __device__ void scalarGenericIndexes(
         T *dy,
         T *params,
         T *result,int *indexes, int *allocationBuffer) {
+
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+
     __shared__ functions::scalar::ScalarTransform<T> *op;
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+
     if(threadIdx.x == 0) {
-        scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+        scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
         op = scalarDoubleOpFactory->getOp(opNum);
     }
     __syncthreads();
@@ -1223,10 +1231,14 @@ __device__ void scalarGeneric(
 		int *shapeInfo,
 		T *params,
 		T *result,int *resultShapeInfo, int *allocationBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+
 	if(threadIdx.x == 0) {
-		scalarDoubleOpFactory = new functions::scalar::ScalarOpFactory<T>();
+		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
 		op = scalarDoubleOpFactory->getOp(opNum);
 	}
 	__syncthreads();

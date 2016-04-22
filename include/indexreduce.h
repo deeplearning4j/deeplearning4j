@@ -1255,10 +1255,13 @@ __device__ void indexReduceGeneric(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::indexreduce::IndexReduceOpFactory<T>)];
+
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
+		newOpFactory = new(factoryBuffer) functions::indexreduce::IndexReduceOpFactory<T>();
 		indexReduce = newOpFactory->getOp(op);
 	}
 	__syncthreads();
