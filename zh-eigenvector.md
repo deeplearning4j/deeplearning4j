@@ -1,5 +1,5 @@
 ---
-title:本征向量、PCA和熵
+title: "本征向量、PCA和熵"
 layout: zh-default
 ---
 
