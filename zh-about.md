@@ -1,5 +1,5 @@
 ---
-title:About the Deeplearning4j Team
+title: "关于我们"
 layout: zh-default
 ---
 
