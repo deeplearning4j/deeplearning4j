@@ -1,7 +1,8 @@
-package org.nd4j.jita.allocator.flow;
+package org.nd4j.jita.flow;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -27,5 +28,19 @@ public interface FlowController {
     void waitTillFinished(AllocationPoint point);
 
 
+    /**
+     * This method is called after operation was executed
+     *
+     * @param result
+     * @param operands
+     */
     void registerAction(INDArray result, INDArray... operands);
+
+    /**
+     * This method is called before operation was executed
+     *
+     * @param result
+     * @param operands
+     */
+    cudaStream_t prepareAction(INDArray result, INDArray... operands);
 }

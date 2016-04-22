@@ -1,17 +1,15 @@
-package org.nd4j.jita.allocator.flow.impl;
+package org.nd4j.jita.flow.impl;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
-import org.nd4j.jita.allocator.flow.FlowController;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
-import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -93,5 +91,10 @@ public class AsynchronousFlowController implements FlowController{
         AllocationPoint point = allocator.getAllocationPoint(result);
         point.setLastEvent(event);
         point.tickDeviceWrite();
+    }
+
+    @Override
+    public cudaStream_t prepareAction(INDArray result, INDArray... operands) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }
