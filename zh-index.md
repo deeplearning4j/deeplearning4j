@@ -35,7 +35,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 * [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
 * [卷积网络](../zh-convolutionalnets.html) （图像）
-* [递归网络](../usingrnns.html)/[LSTMs](../lstm.html)（时间序列和传感器数据）
+* [递归网络](../zh-usingrnns.html)/[LSTMs](../zh-lstm.html)（时间序列和传感器数据）
 * [递归自动编码器](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [深度置信网络](../deepbeliefnetwork.html)
 * [深度自动编码器](http://deeplearning4j.org/deepautoencoder.html)（问－答／数据压缩）
@@ -57,13 +57,13 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 * [深度神经网络简介](../neuralnet-overview)
 * [卷积网络教程](../zh-convolutionalnets)
-* [LSTM和递归网络教程](../lstm)
-* [通过DL4J使用递归网络](../usingrnns)
-* [深度置信网络和MNIST](../mnist-tutorial)
+* [LSTM和递归网络教程](../zh-lstm)
+* [通过DL4J使用递归网络](../zh-usingrnns)
+* [深度置信网络和MNIST](../zh-mnist-tutorial)
 * [针对LFW人脸图像数据集进行人脸重构](../facial-reconstruction-tutorial)
 * [通过Canova库自定义数据准备工作](../image-data-pipeline)
 * [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
-* [本征向量、主成分分析（PCA）和熵](../eigenvector)
+* [本征向量、主成分分析（PCA）和熵](../zh-eigenvector)
 * [深度学习词汇表](../glossary)
 
 ### 用户反馈
