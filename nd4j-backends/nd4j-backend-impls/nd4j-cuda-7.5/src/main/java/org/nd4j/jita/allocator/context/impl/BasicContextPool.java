@@ -1,6 +1,8 @@
 package org.nd4j.jita.allocator.context.impl;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.nd4j.jita.allocator.context.ContextPack;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -25,21 +27,21 @@ import java.util.concurrent.Semaphore;
  *
  * @author raver119@gmail.com
  */
-public class BasicContextPool {
+public class BasicContextPool implements ContextPool {
     // TODO: number of max threads should be device-dependant
-    private static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
+    protected static final int MAX_STREAMS_PER_DEVICE = Integer.MAX_VALUE - 1;
 
-    private volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
+    protected volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
-    private volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
+    protected volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
 
-    private volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
+    protected volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
-    private volatile Map<Integer, Map<Integer, CudaContext>> contextsForDevices = new ConcurrentHashMap<>();
+    protected volatile Map<Integer, Map<Integer, CudaContext>> contextsForDevices = new ConcurrentHashMap<>();
 
-    private Semaphore lock = new Semaphore(1);
+    protected Semaphore lock = new Semaphore(1);
 
-    private static Logger logger = LoggerFactory.getLogger(BasicContextPool.class);
+    protected static Logger logger = LoggerFactory.getLogger(BasicContextPool.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -51,6 +53,7 @@ public class BasicContextPool {
         return acquireContextForDevice(deviceId);
     }
 
+    @Override
     public CudaContext acquireContextForDevice(Integer deviceId) {
         /*
             We should check, if we have context for this specific thread/device
@@ -138,7 +141,7 @@ public class BasicContextPool {
         return contextsPool.get(threadId);
     }
 
-    private CudaContext createNewStream(Integer deviceId) {
+    protected CudaContext createNewStream(Integer deviceId) {
         logger.debug("Creating new stream for device ["+deviceId+"]...");
         //JCuda.cudaSetDevice(deviceId);
         nativeOps.setDevice(deviceId);
@@ -153,16 +156,16 @@ public class BasicContextPool {
         return context;
     }
 
-    private cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
+    protected cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
         cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
         //JCublas2.cublasCreate(handle);
         //JCublas2.cublasSetStream(handle,stream);
-        nativeOps.setBlasStream(handle.address(), stream.address());
+        //nativeOps.setBlasStream(handle.address(), stream.address());
 
         return handle;
     }
 
-    private CUcontext createNewContext(Integer deviceId) {
+    protected CUcontext createNewContext(Integer deviceId) {
         /*
         logger.debug("Creating new CUcontext...");
         CUdevice device = new CUdevice();
@@ -216,7 +219,7 @@ public class BasicContextPool {
      * @param context
      * @param deviceId
      */
-    private void getDeviceBuffers(CudaContext context, int deviceId) {
+    protected void getDeviceBuffers(CudaContext context, int deviceId) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
         int sizeOf = (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
@@ -267,5 +270,9 @@ public class BasicContextPool {
         nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream().address());
 
         context.setBufferSpecial(specialPointer);
+    }
+
+    public ContextPack acquireContextPackForDevice(Integer deviceId) {
+        return new ContextPack(acquireContextForDevice(deviceId));
     }
 }

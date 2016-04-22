@@ -7,8 +7,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
+import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.flow.FlowController;
@@ -54,11 +56,6 @@ public class CudaZeroHandler implements MemoryHandler {
     // simple counter to track allocated host-memory
     protected final AtomicLong zeroUseCounter = new AtomicLong(0);
 
-    // simple pool for cublas contexts
-    //private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
-    private BasicContextPool contextPool = new BasicContextPool();
-
-
     // another simple counter, to track allocated device memory on per-thread per-device basis
     protected volatile DeviceAllocationsTracker deviceMemoryTracker;
 
@@ -70,6 +67,8 @@ public class CudaZeroHandler implements MemoryHandler {
     private AtomicInteger devPtr = new AtomicInteger(0);
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
+
+    private ContextPool contextPool = new PackedContextPool();
 
     private final MemoryProvider provider = new CudaFullCachingProvider();
 
@@ -1008,11 +1007,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public CudaContext getCudaContext() {
         // FIXME: remove this before release
-        long threadId = Thread.currentThread().getId();
         Integer deviceId = getDeviceId();
-        if (!contextPool.containsContextForThread(threadId)) {
-            return contextPool.acquireContextForDevice(deviceId);
-        }
         return contextPool.acquireContextForDevice(deviceId);
     }
 
