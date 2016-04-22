@@ -1,5 +1,5 @@
 ---
-title:LSTM和递归网络基础教程
+title: "LSTM和递归网络基础教程"
 layout: default
 ---
 
