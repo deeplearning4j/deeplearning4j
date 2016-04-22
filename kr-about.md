@@ -1,5 +1,5 @@
 ---
-title: 
+title: "회사 소개"
 layout: kr-default
 ---
 
