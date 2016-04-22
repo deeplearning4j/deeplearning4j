@@ -8,17 +8,18 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
+import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
+import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.flow.FlowController;
+import org.nd4j.jita.allocator.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.allocator.impl.*;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.flow.impl.SynchronousFlowController;
-import org.nd4j.jita.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
@@ -55,11 +56,6 @@ public class CudaZeroHandler implements MemoryHandler {
     // simple counter to track allocated host-memory
     protected final AtomicLong zeroUseCounter = new AtomicLong(0);
 
-    // simple pool for cublas contexts
-    //private Map<Long, CudaContext> contextPool = new ConcurrentHashMap<>();
-    private ContextPool contextPool = new ContextPool();
-
-
     // another simple counter, to track allocated device memory on per-thread per-device basis
     protected volatile DeviceAllocationsTracker deviceMemoryTracker;
 
@@ -72,9 +68,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
+    private ContextPool contextPool = new PackedContextPool();
+
     private final MemoryProvider provider = new CudaFullCachingProvider();
 
-    private final FlowController flowController = new SynchronousFlowController();
+    private final FlowController flowController = new AsynchronousFlowController();
 
     private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
 
@@ -1009,11 +1007,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public CudaContext getCudaContext() {
         // FIXME: remove this before release
-        long threadId = Thread.currentThread().getId();
         Integer deviceId = getDeviceId();
-        if (!contextPool.containsContextForThread(threadId)) {
-            return contextPool.acquireContextForDevice(deviceId);
-        }
         return contextPool.acquireContextForDevice(deviceId);
     }
 
