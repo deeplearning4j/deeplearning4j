@@ -26,7 +26,7 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
-bool debug = false;
+bool debug = true;
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -47,6 +47,11 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	if (num_blocks < 8 && n > 128) {
 		num_blocks = 8;
 		num_threads = n / num_blocks;
+	}
+
+	if (num_threads >= 768) {
+		num_blocks = num_blocks * 2;
+		num_threads = num_threads / 2;
 	}
 
 	if(n % num_threads) ++num_blocks;
