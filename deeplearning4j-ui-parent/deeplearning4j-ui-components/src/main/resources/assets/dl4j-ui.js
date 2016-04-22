@@ -876,7 +876,6 @@ var ComponentTable = (function (_super) {
             var margin = Style.getMargins(s);
             var tbl = document.createElement('table');
             tbl.style.width = '100%';
-            tbl.style.height = '100%';
             if (s && s.getBorderWidthPx() != null)
                 tbl.setAttribute('border', String(s.getBorderWidthPx()));
             if (s && s.getBackgroundColor())
@@ -969,6 +968,14 @@ var ComponentText = (function (_super) {
                     newSpan.style.textDecoration = 'underline';
                 if (_this.style.getColor())
                     newSpan.style.color = _this.style.getColor();
+                if (_this.style.getMarginTop())
+                    newSpan.style.marginTop = _this.style.getMarginTop() + "px";
+                if (_this.style.getMarginBottom())
+                    newSpan.style.marginBottom = _this.style.getMarginBottom() + "px";
+                if (_this.style.getMarginLeft())
+                    newSpan.style.marginLeft = _this.style.getMarginLeft() + "px";
+                if (_this.style.getMarginRight())
+                    newSpan.style.marginRight = _this.style.getMarginRight() + "px";
                 newSpan.appendChild(textNode);
                 appendToObject.append(newSpan);
             }
