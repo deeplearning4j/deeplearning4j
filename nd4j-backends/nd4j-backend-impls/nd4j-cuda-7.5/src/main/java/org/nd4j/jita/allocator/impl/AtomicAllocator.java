@@ -555,12 +555,13 @@ public class AtomicAllocator implements Allocator {
 
     private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<BaseDataBuffer> queue;
-
+        private int threadId;
 
         public UnifiedGarbageCollectorThread(Integer threadId, @NonNull ReferenceQueue<BaseDataBuffer> queue) {
             this.queue = queue;
             this.setDaemon(true);
             this.setName("UniGC thread " + threadId);
+            this.threadId = threadId;
         }
 
         @Override
@@ -581,7 +582,10 @@ public class AtomicAllocator implements Allocator {
 
                 } else {
                     try {
-                        Thread.sleep(50);
+                        if (threadId == 0) {
+                            System.gc();
+                            Thread.sleep(2000);
+                        } else Thread.sleep(500);
                     } catch (Exception e) {
 
                     }
@@ -759,6 +763,11 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
         this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
+    }
+
+    @Override
+    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset);
     }
 
     /**

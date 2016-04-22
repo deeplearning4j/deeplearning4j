@@ -667,4 +667,9 @@ public class CudaFloatDataBufferTest {
         assertEquals(true, pointMain.isActualOnDeviceSide());
         assertEquals(true, pointMain.isActualOnHostSide());
     }
+
+    @Test
+    public void testDup4() throws Exception {
+
+    }
 }

@@ -31,18 +31,24 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
     protected volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
 
-    protected final AtomicLong cacheHit = new AtomicLong(0);
-    protected final AtomicLong cacheMiss = new AtomicLong(0);
+    protected final AtomicLong cacheZeroHit = new AtomicLong(0);
+    protected final AtomicLong cacheZeroMiss = new AtomicLong(0);
+
+    protected final AtomicLong cacheDeviceHit = new AtomicLong(0);
+    protected final AtomicLong cacheDeviceMiss = new AtomicLong(0);
+
+
 
     private final AtomicLong allocRequests = new AtomicLong(0);
 
-    private final AtomicLong zeroCachedAmount = new AtomicLong(0);
+    protected final AtomicLong zeroCachedAmount = new AtomicLong(0);
+    protected final AtomicLong deviceCachedAmount = new AtomicLong(0);
 
 
     protected final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
-    protected final long MAX_SINGLE_ALLOCATION = 1000000;
+    protected final long MAX_SINGLE_ALLOCATION = 32000000;
 
     // maximum cached size of memory
     protected final long MAX_CACHED_MEMORY;
@@ -80,7 +86,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             if (cache != null ) {
                 Pointer pointer = cache.poll();
                 if (pointer != null) {
-                    cacheHit.incrementAndGet();
+                    cacheZeroHit.incrementAndGet();
 
                     // since this memory chunk is going to be used now, remove it's amount from
                     zeroCachedAmount.addAndGet(-1 * reqMemory);
@@ -93,14 +99,14 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                     return pair;
                 }
             }
-            cacheMiss.incrementAndGet();
+            cacheZeroMiss.incrementAndGet();
 
             if (zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10) {
                 CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
                 preallocator.start();
             }
 
-            cacheMiss.incrementAndGet();
+            cacheZeroMiss.incrementAndGet();
             return super.malloc(shape, point, location);
         }
 
@@ -114,7 +120,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             try {
                 singleLock.acquire();
                 if (!zeroCache.containsKey(shape)) {
-                    zeroCache.put(shape, new CacheHolder(shape));
+                    zeroCache.put(shape, new CacheHolder(shape, zeroCachedAmount));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -163,36 +169,44 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-            //    if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                     cache.put(new CudaPointer(point.getHostPointer().address()));
-            //    } else {
-            //        super.free(point);
-          //      }
+                } else {
+                    super.free(point);
+                }
             }
         }
     }
 
-    private float getCacheHitRatio() {
-        long totalHits = cacheHit.get() + cacheMiss.get();
-        float cacheRatio = cacheHit.get() * 100 / (float) totalHits;
+    private float getZeroCacheHitRatio() {
+        long totalHits = cacheZeroHit.get() + cacheZeroMiss.get();
+        float cacheRatio = cacheZeroHit.get() * 100 / (float) totalHits;
+        return cacheRatio;
+    }
+
+    private float getDeviceCacheHitRatio() {
+        long totalHits = cacheDeviceHit.get() + cacheDeviceMiss.get();
+        float cacheRatio = cacheDeviceHit.get() * 100 / (float) totalHits;
         return cacheRatio;
     }
 
     public void printCacheStats() {
-        float cacheRatio = getCacheHitRatio();
-
-        log.debug("Cached amount: " + zeroCachedAmount.get());
+        log.debug("Cached host amount: " + zeroCachedAmount.get());
+        log.debug("Cached device amount: " + deviceCachedAmount.get());
         log.debug("Total shapes in cache: " + zeroCache.size());
-        log.debug("Current hit ratio: " + cacheRatio);
+        log.debug("Current host hit ratio: " + getZeroCacheHitRatio());
+        log.debug("Current device hit ratio: " + getDeviceCacheHitRatio());
     }
 
     protected class CacheHolder {
         private Queue<Pointer> queue = new ConcurrentLinkedQueue<>();
         private AtomicInteger counter = new AtomicInteger(0);
         private long reqMem = 0;
+        private final AtomicLong allocCounter;
 
-        public CacheHolder(AllocationShape shape) {
+        public CacheHolder(AllocationShape shape, AtomicLong counter) {
             this.reqMem = AllocationUtils.getRequiredMemory(shape);
+            this.allocCounter = counter;
         }
 
         public int size() {
@@ -208,7 +222,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
         }
 
         public void put(Pointer pointer) {
-            zeroCachedAmount.addAndGet(reqMem);
+            allocCounter.addAndGet(reqMem);
             counter.incrementAndGet();
             queue.add(pointer);
         }

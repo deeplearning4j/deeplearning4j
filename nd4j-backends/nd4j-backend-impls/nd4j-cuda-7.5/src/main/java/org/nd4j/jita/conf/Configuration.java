@@ -52,13 +52,13 @@ public class Configuration implements Serializable {
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    private long maximumDeviceAllocation = 1 * 1024 * 1024 * 1024L;
+    private long maximumDeviceAllocation = 3 * 1024 * 1024 * 1024L;
 
 
     /**
      * Maximum allocatable zero-copy/pinned/pageable memory
      */
-    private long maximumZeroAllocation = Runtime.getRuntime().maxMemory();
+    private long maximumZeroAllocation = Runtime.getRuntime().maxMemory() + (500 * 1024 * 1024L);
 
     /**
      * True if allowed, false if relocation required
