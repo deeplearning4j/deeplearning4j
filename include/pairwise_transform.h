@@ -1867,46 +1867,115 @@ namespace functions {
              * @return the operation based on the op number
              */
 #ifdef __CUDACC__
-			__inline__ __host__ __device__
+			__inline__ __device__
+            PairWiseTransform<T> * getOp(int op, unsigned char *buffer) {
+#else
+			PairWiseTransform<T> * getOp(int op) {
 #endif
-			PairWiseTransform<T> *getOp(int op) {
+
 				if (op == 0)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Add<T>();
+#else
 					return new pairwise_transforms::ops::Add<T>();
+#endif
 				else if (op == 1)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Copy<T>();
+#else
 					return new pairwise_transforms::ops::Copy<T>();
+#endif
 				else if (op == 2)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Divide<T>();
+#else
 					return new pairwise_transforms::ops::Divide<T>();
+#endif
 				else if (op == 3)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::EqualTo<T>();
+#else
 					return new pairwise_transforms::ops::EqualTo<T>();
+#endif
 				else if (op == 4)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::GreaterThan<T>();
+#else
 					return new pairwise_transforms::ops::GreaterThan<T>();
+#endif
 				else if (op == 5)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::LessThan<T>();
+#else
 					return new pairwise_transforms::ops::LessThan<T>();
+#endif
 				else if (op == 6)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Multiply<T>();
+#else
 					return new pairwise_transforms::ops::Multiply<T>();
+#endif
 				if (op == 7)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::ReverseDivide<T>();
+#else
 					return new pairwise_transforms::ops::ReverseDivide<T>();
+#endif
 				if (op == 8)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::ReverseSubtraction<T>();
+#else
 					return new pairwise_transforms::ops::ReverseSubtraction<T>();
+#endif
 				if (op == 9)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Subtract<T>();
+#else
 					return new pairwise_transforms::ops::Subtract<T>();
+#endif
 				if (op == 10)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Epsilon<T>();
+#else
 					return new pairwise_transforms::ops::Epsilon<T>();
+#endif
 				if(op == 11)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::GreaterThanOrEqual<T>();
+#else
 					return new pairwise_transforms::ops::GreaterThanOrEqual<T>();
+#endif
 				if(op == 12)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::LessThanOrEqual<T>();
+#else
 					return new pairwise_transforms::ops::LessThanOrEqual<T>();
+#endif
 				if(op == 13)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Max<T>();
+#else
 					return new pairwise_transforms::ops::Max<T>();
+#endif
 				if(op == 14)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Min<T>();
+#else
 					return new pairwise_transforms::ops::Min<T>();
+#endif
 				if(op == 15)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::NotEqualTo<T>();
+#else
 					return new pairwise_transforms::ops::NotEqualTo<T>();
+#endif
 				if(op == 16)
+#ifdef __CUDACC__
+					return new(buffer) pairwise_transforms::ops::Set<T>();
+#else
 					return new pairwise_transforms::ops::Set<T>();
-
-
-				return NULL;
+#endif
+			return NULL;
 			}
 
 
@@ -1945,23 +2014,17 @@ __device__ void pairWiseTransformGeneric(
 		int *resultShapeInfo, int *allocationPointer) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
 		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum);
+		op = newOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 	op->transformCuda(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params, allocationPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete newOpFactory;
-	}
-
 }
 
 
@@ -2074,13 +2137,14 @@ __device__ void pairWiseTransformGeneric(
 		int *resultIndexes, int *allocationPointer) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
 		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum);
+		op = newOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
@@ -2095,12 +2159,6 @@ __device__ void pairWiseTransformGeneric(
 			xIndexes,
 			yIndexes,
 			resultIndexes, allocationPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete newOpFactory;
-	}
 
 }
 
@@ -2221,23 +2279,18 @@ __device__ void pairWiseTransformStridedGeneric(
 		int incz, int *allocationPointer) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
 	if (threadIdx.x == 0) {
 		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum);
+		op = newOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 	op->transformCuda(n, dx, dy, incx, incy, params, result, incz, allocationPointer);
-
-	__syncthreads();
-	if (threadIdx.x == 0) {
-		delete op;
-		delete newOpFactory;
-	}
 
 }
 

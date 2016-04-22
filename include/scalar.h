@@ -1048,43 +1048,113 @@ namespace functions {
              * @return the op
              */
 #ifdef __CUDACC__
-            __inline__ __host__ __device__
-#endif
+            __inline__ __device__
+            ScalarTransform<T> * getOp(int op, unsigned char *buffer) {
+#else
             ScalarTransform<T> * getOp(int op) {
+#endif
                 if (op == 0)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Add<T>();
+#else
                     return new functions::scalar::ops::Add<T>();
+#endif
                 else if (op == 1)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Subtract<T>();
+#else
                     return new functions::scalar::ops::Subtract<T>();
+#endif
                 else if (op == 2)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Multiply<T>();
+#else
                     return  new functions::scalar::ops::Multiply<T> ();
+#endif
                 else if (op == 3)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Divide<T>();
+#else
                     return new functions::scalar::ops::Divide<T>();
+#endif
                 else if (op == 4)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::ReverseDivide<T>();
+#else
                     return new functions::scalar::ops::ReverseDivide<T>();
+#endif
                 else if (op == 5)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::ReverseSubtract<T>();
+#else
                     return new functions::scalar::ops::ReverseSubtract<T>();
+#endif
                 else if (op == 6)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Max<T>();
+#else
                     return new functions::scalar::ops::Max<T> ();
+#endif
                 else if (op == 7)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::LessThan<T>();
+#else
                     return new functions::scalar::ops::LessThan<T> ();
+#endif
                 else if (op == 8)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::GreaterThan<T>();
+#else
                     return new functions::scalar::ops::GreaterThan<T>();
+#endif
                 else if (op == 9)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Equals<T>();
+#else
                     return new functions::scalar::ops::Equals<T>();
+#endif
                 else if (op == 10)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::LessThanOrEqual<T>();
+#else
                     return new functions::scalar::ops::LessThanOrEqual<T>();
+#endif
                 else if (op == 11)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::NotEquals<T>();
+#else
                     return new functions::scalar::ops::NotEquals<T>();
+#endif
                 else if (op == 12)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Min<T>();
+#else
                     return new functions::scalar::ops::Min<T>();
+#endif
                 else if (op == 13)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Set<T>();
+#else
                     return new functions::scalar::ops::Set<T>();
+#endif
                 else if (op == 14)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::Mod<T>();
+#else
                     return new functions::scalar::ops::Mod<T>();
+#endif
                 else if (op == 15)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::RMod<T>();
+#else
                     return new functions::scalar::ops::RMod<T>();
+#endif
                 else if (op == 16)
+#ifdef __CUDACC__
+                    return new(buffer) functions::scalar::ops::GreaterThanOrEqual<T>();
+#else
                     return new functions::scalar::ops::GreaterThanOrEqual<T>();
+#endif
                 return NULL;
             }
         };
@@ -1103,24 +1173,19 @@ __device__ void scalarGeneric(
 		T *result,int resultStride, int *allocationBuffer) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
 
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
 	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum);
+		op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 
 	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete scalarDoubleOpFactory;
-	}
 }
 
 __global__ void scalarDouble(
@@ -1163,23 +1228,18 @@ __device__ void scalarGenericIndexes(
         T *result,int *indexes, int *allocationBuffer) {
 
     __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
 
     __shared__ functions::scalar::ScalarTransform<T> *op;
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
     if(threadIdx.x == 0) {
         scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-        op = scalarDoubleOpFactory->getOp(opNum);
+        op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
     }
     __syncthreads();
 
     op->transform(n,dx,dy,params,result,indexes, allocationBuffer);
-    __syncthreads();
-
-    if(threadIdx.x == 0) {
-        delete op;
-        delete scalarDoubleOpFactory;
-    }
 }
 
  __global__ void scalarDoubleIndexes(
@@ -1233,24 +1293,19 @@ __device__ void scalarGeneric(
 		T *result,int *resultShapeInfo, int *allocationBuffer) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
 
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
 	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum);
+		op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 
 	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo, allocationBuffer);
-	__syncthreads();
-
-	if(threadIdx.x == 0) {
-		delete op;
-		delete scalarDoubleOpFactory;
-	}
 }
 
 extern "C" __global__ void scalarDouble(

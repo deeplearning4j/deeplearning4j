@@ -1752,30 +1752,72 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
              * @return
              */
 #ifdef __CUDACC__
-            __inline__ __device__ __host__
-#endif
+            __inline__ __device__
+            virtual functions::reduce::ReduceFunction<T> * create(int op, unsigned char *buffer) {
 
+#else
             virtual functions::reduce::ReduceFunction<T> * create(int op) {
+#endif
                 if (op == 0)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Mean<T>();
+#else
                     return new functions::reduce::ops::Mean<T>();
+#endif
                 else if (op == 1)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Sum<T>();
+#else
                     return new functions::reduce::ops::Sum<T>();
+#endif
                 else if (op == 3)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Max<T>();
+#else
                     return new functions::reduce::ops::Max<T>();
+#endif
                 else if (op == 4)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Min<T>();
+#else
                     return new functions::reduce::ops::Min<T>();
+#endif
                 else if (op == 5)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Norm1<T>();
+#else
                     return new functions::reduce::ops::Norm1<T>();
+#endif
                 else if (op == 6)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Norm2<T>();
+#else
                     return new functions::reduce::ops::Norm2<T>();
+#endif
                 else if (op == 7)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::NormMax<T>();
+#else
                     return new functions::reduce::ops::NormMax<T>();
+#endif
                 else if (op == 8)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Prod<T>();
+#else
                     return new functions::reduce::ops::Prod<T>();
+#endif
                 else if (op == 9)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::StandardDeviation<T>();
+#else
                     return new functions::reduce::ops::StandardDeviation<T>();
+#endif
                 else if (op == 10)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Variance<T>();
+#else
                     return new functions::reduce::ops::Variance<T>();
+#endif
                 return NULL;
             }
 
@@ -1822,13 +1864,15 @@ __global__ void reduceGenericGlobal(
 		int *allocationBuffer, T *reductionBuffer) {
 
     __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce::ReduceOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce::ReduceFunction<T>)];
+
 
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
 		newOpFactory =  new(factoryBuffer) functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op);
+		reduceFunctionToInvoke = newOpFactory->create(op, functionBuffer);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1841,13 +1885,6 @@ __global__ void reduceGenericGlobal(
 			dimensionLength,
 			postProcessOrNot,
 			allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete reduceFunctionToInvoke;
-		delete newOpFactory;
-	}
-
 }
 
 /**
@@ -1876,12 +1913,17 @@ __device__ void reduceGeneric(
 		int dimensionLength,
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
+
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce::ReduceOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce::ReduceFunction<T>)];
+
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op);
+		newOpFactory =  new(factoryBuffer) functions::reduce::ReduceOpFactory<T>();
+		reduceFunctionToInvoke = newOpFactory->create(op, functionBuffer);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1894,13 +1936,6 @@ __device__ void reduceGeneric(
 			dimensionLength,
 			postProcessOrNot,
 			allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete reduceFunctionToInvoke;
-		delete newOpFactory;
-	}
-
 }
 
 /**

@@ -812,23 +812,53 @@ namespace functions {
              * @return the broadcast operation
              */
 #ifdef __CUDACC__
-			__inline__ __host__ __device__
-#endif
+			__inline__ __device__
+            Broadcast<T> * getOp(int op, unsigned char *buffer) {
+#else
 			Broadcast<T> * getOp(int op) {
+#endif
 				if (op == 0) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::Add<T>();
+#else
 					return new functions::broadcast::ops::Add<T>();
+#endif
 				} else if (op == 1) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::Subtract<T>();
+#else
 					return new functions::broadcast::ops::Subtract<T>();
+#endif
 				} else if (op == 2) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::Multiply<T>();
+#else
 					return new  functions::broadcast::ops::Multiply<T>();
+#endif
 				} else if (op == 3) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::Divide<T>();
+#else
 					return new functions::broadcast::ops::Divide<T>();
+#endif
 				} else if (op == 4) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::ReverseDivide<T>();
+#else
 					return new functions::broadcast::ops::ReverseDivide<T>();
+#endif
 				} else if (op == 5) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::ReverseSubtract<T>();
+#else
 					return new functions::broadcast::ops::ReverseSubtract<T>();
+#endif
 				} else if (op == 6) {
+#ifdef __CUDACC__
+					return new(buffer) functions::broadcast::ops::Copy<T>();
+#else
 					return new functions::broadcast::ops::Copy<T>();
+#endif
 				}
 
 				return NULL;
@@ -870,12 +900,13 @@ __device__ void broadcastGeneric(
 		int dimensionLength) {
 
 	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::broadcast::BroadcastOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::broadcast::Broadcast<T>)];
 
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
 		newOpFactory =  new(factoryBuffer) functions::broadcast::BroadcastOpFactory<T>();
-		op = newOpFactory->getOp(opNum);
+		op = newOpFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
@@ -889,12 +920,6 @@ __device__ void broadcastGeneric(
 			resultShapeInfo,
 			dimension,
 			dimensionLength);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete newOpFactory;
-	}
 }
 
 /**

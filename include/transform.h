@@ -5249,147 +5249,318 @@ namespace functions {
              * @return the op given the number
              */
 #ifdef __CUDACC__
-            __inline__ __device__ __host__
+            __inline__ __device__
+            Transform<T> * getOp(int op, unsigned char *buffer) {
+#else
+            Transform<T> * getOp(int op) {
 #endif
-
-            Transform<T> *getOp(int op) {
-                //gets stuck on string comparison
-                Transform<T> *ret = NULL;
                 /**
                  * We are likely going to need constant symbols for device memory for different operations
                  * or switch to arithmetic based approaches?
                  */
                 if (op == 0) {
-                    ret = new transform::ops::Abs<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Abs<T>();
+#else
+                    return new transform::ops::Abs<T>();
+#endif
                 }
                 else if (op == 1) {
-                    ret = new transform::ops::Ceiling<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Ceiling<T>();
+#else
+                    return new transform::ops::Ceiling<T>();
+#endif
                 }
                 if (op == 2) {
-                    ret = new transform::ops::Cosine<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Cosine<T>();
+#else
+                    return new transform::ops::Cosine<T>();
+#endif
                 }
                 else if (op == 3) {
-                    ret = new transform::ops::Exp<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Exp<T>();
+#else
+                    return new transform::ops::Exp<T>();
+#endif
                 }
                 else if (op == 4) {
-                    ret = new transform::ops::Floor<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Floor<T>();
+#else
+                    return new transform::ops::Floor<T>();
+#endif
                 }
                 else if (op == 5) {
-                    ret = new transform::ops::Log<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Log<T>();
+#else
+                    return new transform::ops::Log<T>();
+#endif
                 }
                 else if (op == 6) {
-                    ret = new transform::ops::Neg<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Neg<T>();
+#else
+                    return new transform::ops::Neg<T>();
+#endif
                 }
                 else if (op == 7) {
-                    ret = new transform::ops::Pow<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Pow<T>();
+#else
+                    return new transform::ops::Pow<T>();
+#endif
                 }
                 else if (op == 8) {
-                    ret = new transform::ops::Round<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Round<T>();
+#else
+                    return new transform::ops::Round<T>();
+#endif
                 }
                 else if (op == 9) {
-                    ret = new transform::ops::SetRange<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SetRange<T>();
+#else
+                    return new transform::ops::SetRange<T>();
+#endif
                 }
                 else if (op == 10) {
-                    ret = new transform::ops::Sigmoid<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Sigmoid<T>();
+#else
+                    return new transform::ops::Sigmoid<T>();
+#endif
                 }
                 else if (op == 11) {
-                    ret = new transform::ops::Sign<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Sign<T>();
+#else
+                    return new transform::ops::Sign<T>();
+#endif
                 }
                 else if (op == 12) {
-                    ret = new transform::ops::Sin<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Sin<T>();
+#else
+                    return new transform::ops::Sin<T>();
+#endif
                 }
                 else if (op == 13) {
-                    ret = new transform::ops::SoftPlus<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SoftPlus<T>();
+#else
+                    return new transform::ops::SoftPlus<T>();
+#endif
                 }
                 else if (op == 14) {
-                    ret = new transform::ops::Sqrt<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Sqrt<T>();
+#else
+                    return new transform::ops::Sqrt<T>();
+#endif
                 }
                 else if (op == 15) {
-                    ret = new transform::ops::Tanh<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Tanh<T>();
+#else
+                    return new transform::ops::Tanh<T>();
+#endif
                 }
                 else if (op == 16) {
-                    ret = new transform::ops::ACos<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::ACos<T>();
+#else
+                    return new transform::ops::ACos<T>();
+#endif
                 }
                 else if (op == 17) {
-                    ret = new transform::ops::ASin<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::ASin<T>();
+#else
+                    return new transform::ops::ASin<T>();
+#endif
                 }
                 else if (op == 18) {
-                    ret = new transform::ops::ATan<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::ATan<T>();
+#else
+                    return new transform::ops::ATan<T>();
+#endif
                 }
                 else if (op == 19) {
-                    ret = new transform::ops::HardTanh<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::HardTanh<T>();
+#else
+                    return new transform::ops::HardTanh<T>();
+#endif
                 }
                 else if (op == 20) {
-                    ret = new transform::ops::SoftSign<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SoftSign<T>();
+#else
+                    return new transform::ops::SoftSign<T>();
+#endif
                 }
                 else if (op == 21) {
-                    ret = new transform::ops::ELU<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::ELU<T>();
+#else
+                    return new transform::ops::ELU<T>();
+#endif
                 }
                 else if (op == 22) {
-                    ret = new transform::ops::ELUDerivative<T>();
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::ELUDerivative<T>();
+#else
+                    return new transform::ops::ELUDerivative<T>();
+#endif
                 }
                 else if (op == 23) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::TanhDerivative<T>();
+#else
                     return new transform::ops::TanhDerivative<T>();
+#endif
                 }
                 else if (op == 24) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::TimesOneMinus<T>();
+#else
                     return new transform::ops::TimesOneMinus<T>();
+#endif
                 }
                 else if(op == 25) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::HardTanhDerivative<T>();
+#else
                     return new transform::ops::HardTanhDerivative<T>();
+#endif
                 }
                 else if(op == 26) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Ones<T>();
+#else
                     return new transform::ops::Ones<T>();
+#endif
                 }
                 else if(op == 27) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Identity<T>();
+#else
                     return new transform::ops::Identity<T>();
+#endif
                 }
                 else if(op == 28) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Stabilize<T>();
+#else
                     return new transform::ops::Stabilize<T>();
+#endif
                 }
                 else if(op == 29) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SigmoidDerivative<T>();
+#else
                     return new transform::ops::SigmoidDerivative<T>();
+#endif
                 }
                 else if(op == 30) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SoftSignDerivative<T>();
+#else
                     return new transform::ops::SoftSignDerivative<T>();
+#endif
                 }
                 else if(op == 31) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::LeakyRELU<T>();
+#else
                     return new transform::ops::LeakyRELU<T>();
+#endif
                 }
                 else if(op == 32) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::LeakyRELUDerivative<T>();
+#else
                     return new transform::ops::LeakyRELUDerivative<T>();
+#endif
                 }
                 else if(op == 33) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::RELU<T>();
+#else
                     return new transform::ops::RELU<T>();
+#endif
                 }
                 else if(op == 34) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Step<T>();
+#else
                     return new transform::ops::Step<T>();
+#endif
                 }
                 else if(op == 35) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::OneMinus<T>();
+#else
                     return new transform::ops::OneMinus<T>();
+#endif
                 }
                 else if(op == 36) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Col2Im<T>();
+#else
                     return new transform::ops::Col2Im<T>();
+#endif
                 }
                 else if(op == 37) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::Im2col<T>();
+#else
                     return new transform::ops::Im2col<T>();
+#endif
                 }
                 else if(op == 38) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SoftMax<T>();
+#else
                     return new transform::ops::SoftMax<T>();
+#endif
                 }
                 else if(op == 39) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SoftMaxDerivative<T>();
+#else
                     return new transform::ops::SoftMaxDerivative<T>();
+#endif
                 }
                 else if(op == 40) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::LogSoftMax<T>();
+#else
                     return new transform::ops::LogSoftMax<T>();
+#endif
                 }
                 else if(op == 41) {
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::IsMax<T>();
+#else
                     return new transform::ops::IsMax<T>();
+#endif
                 } else if(op == 42) {
                     // temporary special op for blockwise SoftMax Derivative
+#ifdef __CUDACC__
+                    return new(buffer) transform::ops::SpecialDerivative<T>();
+#else
                     return new transform::ops::SpecialDerivative<T>();
+#endif
                 }
 
-                return ret;
+                return NULL;
             }
 
         };
@@ -5435,26 +5606,18 @@ __device__ void transformGeneric(
 
 
     __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-        op = doubleTransformFactory->getOp(opNum);
+        op = doubleTransformFactory->getOp(opNum, functionBuffer);
 	}
-
 	__syncthreads();
-
-
 
 	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete doubleTransformFactory;
-	}
 }
 
 /**
@@ -5541,24 +5704,19 @@ __device__ void transformGeneric(
 		T *result,int *resultShapeInfo, int *allocationPointer, T *reductionPointer) {
 
     __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum);
+		op = doubleTransformFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 
 	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo, allocationPointer, reductionPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete doubleTransformFactory;
-	}
 }
 
 
@@ -5645,23 +5803,19 @@ __device__ void transformGenericIndexes(
 		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
 
     __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
+
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum);
+		op = doubleTransformFactory->getOp(opNum, functionBuffer);
 	}
 	__syncthreads();
 
 
 	op->transformCuda(dy,shapeInfo,params,result,indexes,allocationPointer, reductionPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete doubleTransformFactory;
-	}
 }
 
 
