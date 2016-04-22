@@ -42,14 +42,7 @@ public class AsynchronousFlowController implements FlowController{
             // if this piece of memory is device-dependant, we'll also issue copyback once
             if (point.getAllocationStatus() == AllocationStatus.DEVICE && !point.isActualOnHostSide()) {
                 CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-/*
-                JCuda.cudaMemcpyAsync(
-                        new Pointer(point.getHostPointer().address()),
-                        new Pointer(point.getDevicePointer().address()),
-                        AllocationUtils.getRequiredMemory(point.getShape()),
-                        cudaMemcpyKind.cudaMemcpyDeviceToHost,
-                        context.getSpecialStream()
-                );*/
+
                 if (nativeOps.memcpyAsync(
                         point.getHostPointer().address(),
                         point.getDevicePointer().address(),
@@ -60,7 +53,6 @@ public class AsynchronousFlowController implements FlowController{
 
                 context.syncSpecialStream();
             }// else log.info("Not [DEVICE] memory, skipping...");
-
 
             // updating host read timer
             point.tickHostRead();
@@ -78,6 +70,7 @@ public class AsynchronousFlowController implements FlowController{
         }
     }
 
+    @Override
     public void registerAction(INDArray result, INDArray... operands) {
         if (result == null) return;
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
@@ -94,7 +87,13 @@ public class AsynchronousFlowController implements FlowController{
     }
 
     @Override
-    public cudaStream_t prepareAction(INDArray result, INDArray... operands) {
+    public CudaContext prepareAction(INDArray result, INDArray... operands) {
         throw new UnsupportedOperationException("Not implemented yet");
+        /**
+         * This method should decide, which CUDA stream should be used for execution, based on data affinity
+         * Decision is made based on data affinity, at INDArray level solely.
+         */
+
+
     }
 }

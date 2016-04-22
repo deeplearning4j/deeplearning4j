@@ -84,8 +84,8 @@ public class SynchronousFlowController implements FlowController {
     }
 
     @Override
-    public cudaStream_t prepareAction(INDArray result, INDArray... operands) {
+    public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-        return context.getOldStream();
+        return context;
     }
 }

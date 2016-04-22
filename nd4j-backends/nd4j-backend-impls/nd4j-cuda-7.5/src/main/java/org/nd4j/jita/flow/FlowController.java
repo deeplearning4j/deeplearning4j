@@ -4,6 +4,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
  * Interface describing flow controller.
@@ -42,5 +43,5 @@ public interface FlowController {
      * @param result
      * @param operands
      */
-    cudaStream_t prepareAction(INDArray result, INDArray... operands);
+    CudaContext prepareAction(INDArray result, INDArray... operands);
 }

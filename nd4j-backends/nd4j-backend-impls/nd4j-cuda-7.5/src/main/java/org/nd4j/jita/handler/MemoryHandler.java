@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -263,4 +264,6 @@ public interface MemoryHandler {
     ExternalContext getDeviceContext();
 
     void registerAction(INDArray result, INDArray... operands);
+
+    FlowController getFlowController();
 }

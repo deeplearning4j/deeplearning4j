@@ -17,6 +17,7 @@ import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.flow.FlowController;
+import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
@@ -73,7 +74,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final MemoryProvider provider = new CudaFullCachingProvider();
 
-    private final FlowController flowController = new AsynchronousFlowController();
+    private final FlowController flowController = new SynchronousFlowController();
 
     private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
 
@@ -1065,5 +1066,10 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void registerAction(INDArray result, INDArray... operands) {
         flowController.registerAction(result, operands);
+    }
+
+    @Override
+    public FlowController getFlowController() {
+        return flowController;
     }
 }

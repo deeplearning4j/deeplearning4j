@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -144,4 +145,6 @@ public interface Allocator {
     AllocationPoint getAllocationPoint(DataBuffer buffer);
 
     void registerAction(INDArray result, INDArray... operands);
+
+    FlowController getFlowController();
 }

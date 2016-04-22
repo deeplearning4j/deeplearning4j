@@ -14,6 +14,7 @@ import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -840,5 +841,10 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void registerAction(INDArray result, INDArray... operands) {
         memoryHandler.registerAction(result, operands);
+    }
+
+    @Override
+    public FlowController getFlowController() {
+        return memoryHandler.getFlowController();
     }
 }

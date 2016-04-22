@@ -23,6 +23,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -78,7 +79,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         Arrays.sort(dimension);
         //log.info("B OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
         
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long y = AtomicAllocator.getInstance().getPointer(op.y()).address();
@@ -154,8 +155,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         op.setZ(ret);
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
@@ -389,7 +389,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[]{Integer.MAX_VALUE};
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
@@ -491,7 +491,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private CudaContext invoke(BroadcastOp op) {
         //log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
@@ -547,7 +547,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
 
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -629,7 +629,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         Arrays.sort(dimension);
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         long[] xShapeInfoHostPointer = new long[]{AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
@@ -834,7 +834,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(ScalarOp op) {
       //  log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
@@ -875,7 +875,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private CudaContext invoke(TransformOp op) {
 //        log.info("T OpName: [" + op.getClass().getCanonicalName() + "]; OpCode: [" + op.opNum() + "]");
 
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
