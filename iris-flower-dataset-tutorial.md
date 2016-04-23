@@ -9,7 +9,7 @@ Deep-belief networks are algorithms that can serve as multinomial classifiers. G
 
 This goes beyond a Boolean ‘yes’ or ‘no’ to handle a broader, multinomial taxonomy of inputs, where the label chosen is represented as a 1, and all other possible labels are 0s. The network outputs a vector containing one number per output node. The numbers in the vector equals the number of labels to choose from. 
 
-*(To run the Iris example, [use this file](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java) and explore others from our [Quick Start page](../quickstart.html).)*
+*(To explore other DL4J examples, please see our [QuickStart page](../quickstart).)*
 
 ### The IRIS Dataset
 
