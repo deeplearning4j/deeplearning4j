@@ -44,14 +44,14 @@ layout: default
 * [BabyAIShapesDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIShapesDatasets): distinguishing between 3 simple shapes
 * [BabyAIImageAndQuestionDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIImageAndQuestionDatasets): a question-image-answer dataset
 * Datasets generated for the purpose of an empirical evaluation of deep architectures ([DeepVsShallowComparisonICML2007](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/DeepVsShallowComparisonICML2007)):
-* [MnistVariations](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/MnistVariations) : introducing controlled variations in MNIST
-* [RectanglesData](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/RectanglesData) : discriminating between wide and tall rectangles
-* [ConvexNonConvex](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/ConvexNonConvex) : discriminating between convex and nonconvex shapes
-* [BackgroundCorrelation](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BackgroundCorrelation) : controlling the degree of correlation in noisy MNIST backgrounds
+* [MnistVariations](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/MnistVariations): introducing controlled variations in MNIST
+* [RectanglesData](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/RectanglesData): discriminating between wide and tall rectangles
+* [ConvexNonConvex](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/ConvexNonConvex): discriminating between convex and nonconvex shapes
+* [BackgroundCorrelation](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BackgroundCorrelation): controling the degree of correlation in noisy MNIST backgrounds.
 
 ## Faces
 
-* [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 images of faces collected from the web, labelled with the name of the person pictured
+* [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 images of faces collected from the web, labeled with the name of the person pictured.
 * [Olivetti: a few images of several different people](http://www.cs.nyu.edu/~roweis/data.html)
 * [Multi-Pie: The CMU Multi-PIE Face Database](http://www.multipie.org/)
 * [Face-in-Action](http://www.flintbox.com/public/project/5486/)
@@ -73,9 +73,9 @@ layout: default
 
 * [TIMIT Speech Corpus: phoneme classification](http://www.ldc.upenn.edu/Catalog/CatalogEntry.jsp?catalogId=LDC93S1)
 * [MovieLens](http://www.grouplens.org) The first dataset has 100,000 ratings for 1682 movies by 943 users, subdivided into five disjoint subsets. The second dataset has about 1 million ratings for 3900 movies by 6040 users. 
-* [Jester](http://www.ieor.berkeley.edu/~goldberg/jester-data/): This dataset contains 4.1 million continuous ratings (-10.00 to +10.00) of 100 jokes from 73,421 users.
-* [Netflix Prize](http://www.netflixprize.com/): Netflix released an anonymised version of their movie rating dataset; it consists of 100 million ratings, done by 480,000 users who have rated between 1 and all of the 17,770 movies.
-* [Book-Crossing dataset](http://www.informatik.uni-freiburg.de/~cziegler/BX/): This dataset is from the Book-Crossing community, and contains 278,858 users providing 1,149,780 ratings about 271,379 books.
+* [Jester](http://www.ieor.berkeley.edu/~goldberg/jester-data/): 4.1 million continuous ratings (-10.00 to +10.00) of 100 jokes from 73,421 users.
+* [Netflix Prize](http://www.netflixprize.com/): Netflix released an anonymized version of their movie rating dataset; it consists of 100 million ratings, done by 480,000 users who have rated between 1 and all of the 17,770 movies.
+* [Book-Crossing dataset](http://www.informatik.uni-freiburg.de/~cziegler/BX/): From the Book-Crossing community. Contains 278,858 users providing 1,149,780 ratings about 271,379 books.
 
 ## Misc
 
