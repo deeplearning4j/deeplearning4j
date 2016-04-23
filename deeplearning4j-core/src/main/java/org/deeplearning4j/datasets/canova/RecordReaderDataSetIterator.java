@@ -57,24 +57,33 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected DataSetPreProcessor preProcessor;
 
 
+
+    @Deprecated
+    public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
+        this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
+    }
+    @Deprecated
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter) {
+        this(recordReader, converter, 10, -1, -1);
+    }
+    @Deprecated
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int labelIndex, int numPossibleLabels) {
+        this(recordReader, converter, 10, labelIndex, numPossibleLabels);
+    }
+    @Deprecated
+    public RecordReaderDataSetIterator(RecordReader recordReader) {
+        this(recordReader, new SelfWritableConverter());
+    }
+
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
+        this(recordReader, converter, batchSize, -1, -1);
+    }
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
-    }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels, int maxNumBatches) {
-        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, maxNumBatches, false);
-    }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader) {
-        this(recordReader, new SelfWritableConverter());
-    }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
-        this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels, boolean regression) {
@@ -85,12 +94,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
     }
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter) {
-        this(recordReader, converter, 10, -1, -1);
-    }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int labelIndex, int numPossibleLabels) {
-        this(recordReader, converter, 10, labelIndex, numPossibleLabels);
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels, int maxNumBatches) {
+        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, maxNumBatches, false);
     }
 
     /**

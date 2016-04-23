@@ -61,14 +61,15 @@ class ComponentDiv extends Component implements Renderable {
             if(this.style.getFloatValue()) newDiv.css("float", this.style.getFloatValue());
         }
 
+        //Adding the div before adding the sub-components seems to be important for charts/d3 to work properly
+        appendToObject.append(newDiv);
+
         //now, add the sub-components:
         if(this.components){
             for( var i=0; i<this.components.length; i++ ){
                 this.components[i].render(newDiv);
             }
         }
-
-        appendToObject.append(newDiv);
     }
 
 }

@@ -39,6 +39,7 @@ public class StyleText extends Style {
     private String color;
 
     private StyleText(Builder builder){
+        super(builder);
         this.font = builder.font;
         this.fontSize = builder.fontSize;
         this.underline = builder.underline;
