@@ -22,7 +22,7 @@ Each label is then assigned a likelihood of how accurately it describes the inpu
 
 In fact, you can enter any number of inputs into the network simultaneously. Each of them will be a row in your binary matrix. And the number of rows in your binary input matrix will be equal to the number of rows in your binary out matrix of guesses.
 
-You can also create one evaluation class to track statitistics over time. Using a data set iterator, you could do something like this:
+You can also create one evaluation class to track statistics over time. Using a data set iterator, you could do something like this:
 
             DataSetIterator iter = ...;
 
