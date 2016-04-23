@@ -52,25 +52,24 @@ BackgroundCorrelation : controlling the degree of correlation in noisy MNIST bac
 
 ## Faces
 
-Labelled Faces in the Wild: 13,000 images of faces collected from the web, labelled with the name of the person pictured (http://vis-www.cs.umass.edu/lfw/)
-Toronto Face Dataset
-Olivetti: a few images of several different people (http://www.cs.nyu.edu/~roweis/data.html)
-Multi-Pie: The CMU Multi-PIE Face Database (http://www.multipie.org/)
-Face-in-Action (http://www.flintbox.com/public/project/5486/)
-JACFEE: Japanese and Caucasian Facial Expressions of Emotion (http://www.humintell.com/jacfee/)
-FERET: The Facial Recognition Technology Database (http://www.itl.nist.gov/iad/humanid/feret/feret_master.html)
-mmifacedb: MMI Facial Expression Database (http://www.mmifacedb.com/)
-IndianFaceDatabase: http://vis-www.cs.umass.edu/~vidit/IndianFaceDatabase/)
-(e.g. The Yale Face Database (http://vision.ucsd.edu/content/yale-face-database) and The Yale Face Database B (http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html)). 
+* [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 images of faces collected from the web, labelled with the name of the person pictured
+* Toronto Face Dataset
+* [Olivetti: a few images of several different people](http://www.cs.nyu.edu/~roweis/data.html)
+* [Multi-Pie: The CMU Multi-PIE Face Database](http://www.multipie.org/)
+* [Face-in-Action](http://www.flintbox.com/public/project/5486/)
+* [JACFEE: Japanese and Caucasian Facial Expressions of Emotion](http://www.humintell.com/jacfee/)
+* [FERET: The Facial Recognition Technology Database](http://www.itl.nist.gov/iad/humanid/feret/feret_master.html)
+* [mmifacedb: MMI Facial Expression Database](http://www.mmifacedb.com/)
+* [IndianFaceDatabase](http://vis-www.cs.umass.edu/~vidit/IndianFaceDatabase/)
+* [The Yale Face Database](http://vision.ucsd.edu/content/yale-face-database) and [The Yale Face Database B](http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html)). 
 
 ## Text
 
-20 newsgroups: classification task, mapping word occurences to newsgroup ID (http://qwone.com/~jason/20Newsgroups/)
-Reuters (RCV*) Corpuses: text/topic prediction (http://about.reuters.com/researchandstandards/corpus/)
-Penn Treebank : used for next word prediction or next character prediction (http://www.cis.upenn.edu/~treebank/)
-Broadcast News: large text dataset, classically used for next word prediction (http://www.ldc.upenn.edu/Catalog/CatalogEntry.jsp?catalogId=LDC97S44)
-Wikipedia Dataset
-Multidomain sentiment analysis dataset: http://www.cs.jhu.edu/~mdredze/datasets/sentiment/
+* [20 newsgroups: classification task, mapping word occurences to newsgroup ID](http://qwone.com/~jason/20Newsgroups/)
+* [Reuters (RCV*) Corpuses: text/topic prediction](http://about.reuters.com/researchandstandards/corpus/)
+* [Penn Treebank : used for next word prediction or next character prediction](http://www.cis.upenn.edu/~treebank/)
+* [Broadcast News: large text dataset, classically used for next word prediction](http://www.ldc.upenn.edu/Catalog/CatalogEntry.jsp?catalogId=LDC97S44)
+* [Multidomain sentiment analysis dataset](http://www.cs.jhu.edu/~mdredze/datasets/sentiment/)
 
 ## Speech
 
@@ -87,4 +86,4 @@ Multidomain sentiment analysis dataset: http://www.cs.jhu.edu/~mdredze/datasets/
 * [Million Song dataset](http://labrosa.ee.columbia.edu/millionsong/)
 * [Merck Molecular Activity Challenge](http://www.kaggle.com/c/MerckActivity/data)
 
-*Thanks for deeplearning.net for many of these links.*
+*Thanks to deeplearning.net for many of these links and dataset descriptions.*
