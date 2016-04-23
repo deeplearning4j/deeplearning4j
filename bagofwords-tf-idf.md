@@ -5,7 +5,7 @@ layout: default
 
 # Bag of Words & TF-IDF 
 
-[Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW) is a list of words with their wordcounts. Each row is a document, each column is a word and each cell is a wordcount. 
+[Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW) is a list of words with their wordcounts. Each row is a document, each column is a word and each cell is a word count. 
 
 BoW is also a method for preparing text for input in a deep-learning net. For a given training corpus, it produces a list of words and their associated wordcounts. Each of the documents in the corpus is represented by columns of equal length. Those are wordcount vectors, an output stripped of context. 
 
