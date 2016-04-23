@@ -279,6 +279,12 @@ public class AsynchronousFlowController implements FlowController{
                     log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     // now we must sync on both pendingLanes and pass data to zLane
                     newLane = zLane;
+
+                    for (INDArray operand: operands) {
+                        if (operand == null) continue;
+
+                        waitTillFinished(allocator.getAllocationPoint(operand));
+                    }
                 }
             } else {
                 log.info("Only Z is holder: [{}]", zLane);
@@ -314,7 +320,13 @@ public class AsynchronousFlowController implements FlowController{
                     // we have different lanes for op.X and op.Y with pending write. We need to synchronize somewhere to become free.
                     // basically - synchronize on one lane, and throw task to another one
                     log.info("Unpaired dependencies: [{}, {}]", pendingLanes[0], pendingLanes[1]);
-
+                    if (pendingLanes[0] >= 0) {
+                        waitTillFinished(allocator.getAllocationPoint(operands[0]));
+                        newLane = pendingLanes[1];
+                    } else if (pendingLanes[1] >= 0) {
+                        waitTillFinished(allocator.getAllocationPoint(operands[1]));
+                        newLane = pendingLanes[0];
+                    }
                 }
             } else {
                 // we don't have any holders here. Totally free execution here

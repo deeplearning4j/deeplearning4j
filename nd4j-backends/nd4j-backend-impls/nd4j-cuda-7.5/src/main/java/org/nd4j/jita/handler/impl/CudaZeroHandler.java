@@ -692,7 +692,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //if (buffer.isConstant()) {
-                    log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
+                    //log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
                     //throw new IllegalStateException("Constant buffer can't be expired on device side");
                 //}
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
