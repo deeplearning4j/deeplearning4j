@@ -43,8 +43,8 @@ class ComponentTable extends Component implements Renderable {
         var margin: Margin = Style.getMargins(s);
 
         var tbl = document.createElement('table');
+        //TODO allow setting of table width/height
         tbl.style.width = '100%';
-        tbl.style.height = '100%';
         if(s && s.getBorderWidthPx() != null ) tbl.setAttribute('border', String(s.getBorderWidthPx()));
         if(s && s.getBackgroundColor()) tbl.style.backgroundColor = s.getBackgroundColor();
 

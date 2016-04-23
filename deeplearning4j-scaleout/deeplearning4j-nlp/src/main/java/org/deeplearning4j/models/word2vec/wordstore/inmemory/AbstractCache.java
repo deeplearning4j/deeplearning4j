@@ -270,7 +270,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     }
 
     /**
-     * Set exact number number of observed documents that contain specified word
+     * Set exact number of observed documents that contain specified word
      *
      * @param word the word to set the count for
      * @param count the count of the word

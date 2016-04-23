@@ -78,7 +78,7 @@ public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
     @Override
     public IVertexSequence<V> next() {
         if(!hasNext()) throw new NoSuchElementException();
-        //Generate a random walk starting at at vertex order[current]
+        //Generate a random walk starting at vertex order[current]
         int currVertexIdx = order[position++];
         int[] indices = new int[walkLength+1];
         indices[0] = currVertexIdx;
