@@ -3,7 +3,7 @@ title: Deep-Belief Networks in Java
 layout: default
 ---
 
-# Deep-Belief Networks
+# Tutorial: Deep-Belief Networks
 
 A deep-belief network can be defined as a stack of [restricted Boltzmann machines, explained here](../restrictedboltzmannmachine.html), in which each RBM layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
@@ -11,7 +11,7 @@ This stack of RBMs might end with a a [Softmax](../glossary.html#softmax) layer 
 
 With the exception of the first and final layers, each layer in a deep-belief network has a double role: it serves as the hidden layer to the nodes that come before it, and as the input (or "visible") layer to the nodes that come after. It is a network built of single-layer networks. 
 
-Deep-belief networks are used to recognize, cluster and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. 
+Deep-belief networks are used to recognize, cluster and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. They were introduced by [Geoff Hinton and his students in 2006](http://www.cs.toronto.edu/~hinton/absps/fastnc.pdf).
 
 ### Hyperparameters
 
