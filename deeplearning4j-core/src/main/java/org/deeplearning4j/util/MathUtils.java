@@ -502,7 +502,7 @@ public class MathUtils  {
      * This returns the product of all numbers in the given array.
      * @param nums the numbers to multiply over
      * @return the product of all numbers in the array, or 0
-     * if the length is or or nums i null
+     * if the length is or nums i null
      */
     public static double times(double[] nums) {
         if(nums==null || nums.length==0) return 0;
@@ -1183,11 +1183,11 @@ public class MathUtils  {
     }//end distanceFinderZValue
 
     /**
-     * This returns the distance distance of two vectors
+     * This returns the distance of two vectors
      * sum(i=1,n)   (q_i - p_i)^2
      * @param p the first vector
      * @param q the second vector
-     * @return the distance distance between two vectors
+     * @return the distance between two vectors
      */
     public static double euclideanDistance(double[] p,double[]  q) {
 
@@ -1201,11 +1201,11 @@ public class MathUtils  {
 
     }//end euclideanDistance
     /**
-     * This returns the distance distance of two vectors
+     * This returns the distance of two vectors
      * sum(i=1,n)   (q_i - p_i)^2
      * @param p the first vector
      * @param q the second vector
-     * @return the distance distance between two vectors
+     * @return the distance between two vectors
      */
     public static double euclideanDistance(float[] p,float[]  q) {
 

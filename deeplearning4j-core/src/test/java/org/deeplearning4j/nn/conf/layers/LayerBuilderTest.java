@@ -254,4 +254,5 @@ public class LayerBuilderTest {
         confActual.getLayer().setDropOut(new java.util.Random().nextDouble());
         assertNotEquals("broken equals method (missing callSuper?)", confExpected.getLayer(), confActual.getLayer());
     }
+
 }

@@ -982,7 +982,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
@@ -997,7 +997,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
-                if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
+                if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
 
                 boolean hasMaskArrays = next.hasMaskArrays();
@@ -2217,7 +2217,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         while(iterator.hasNext()){
             DataSet next = iterator.next();
 
-            if (next == null || next.getFeatureMatrix() == null || next.getLabels() == null)
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
 
             INDArray features = next.getFeatures();
