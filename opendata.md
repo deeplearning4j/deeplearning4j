@@ -52,7 +52,6 @@ layout: default
 ## Faces
 
 * [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 images of faces collected from the web, labelled with the name of the person pictured
-* Toronto Face Dataset
 * [Olivetti: a few images of several different people](http://www.cs.nyu.edu/~roweis/data.html)
 * [Multi-Pie: The CMU Multi-PIE Face Database](http://www.multipie.org/)
 * [Face-in-Action](http://www.flintbox.com/public/project/5486/)
