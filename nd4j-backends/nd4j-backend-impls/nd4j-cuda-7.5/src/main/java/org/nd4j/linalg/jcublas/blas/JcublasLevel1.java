@@ -349,7 +349,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -371,7 +371,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -400,7 +400,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -427,7 +427,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -448,7 +448,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -473,7 +473,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -578,7 +578,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.registerAction(X);
+        allocator.registerAction(ctx, X);
     }
 
     @Override
@@ -598,7 +598,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.registerAction(X);
+        allocator.registerAction(ctx, X);
     }
 
     @Override

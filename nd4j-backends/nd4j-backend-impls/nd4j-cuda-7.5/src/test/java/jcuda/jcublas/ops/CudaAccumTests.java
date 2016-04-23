@@ -180,7 +180,11 @@ public class CudaAccumTests {
         INDArray n = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
 
+        long time1 = System.currentTimeMillis();
         INDArray sum = n.sum(new int[]{0});
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Time elapsed: "+ (time2 - time1) );
 
         System.out.println("Sum: " + sum);
         System.out.println("Sum.Length: " + sum.length());
@@ -189,6 +193,28 @@ public class CudaAccumTests {
 
         assertEquals(63565.02f, sum.getFloat(0), 0.01f);
         assertEquals(63566.02f, sum.getFloat(1), 0.01f);
+    }
+
+    @Test
+    public void testSum3_1() {
+        INDArray n = Nd4j.linspace(1, 128000, 128000).reshape(128, 1000);
+
+
+        long time1 = System.currentTimeMillis();
+        INDArray sum = n.sum(new int[]{0});
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Time elapsed: "+ (time2 - time1) );
+
+        System.out.println("Sum: " + sum);
+        System.out.println("Sum.Length: " + sum.length());
+        System.out.println("elementWiseStride: " + n.elementWiseStride());
+        System.out.println("elementStride: " + n.elementStride());
+
+        assertEquals(8128128.0f, sum.getFloat(0), 0.01f);
+        assertEquals(8128256.0f, sum.getFloat(1), 0.01f);
+        assertEquals(8128512.0f, sum.getFloat(3), 0.01f);
+        assertEquals(8128640.0f, sum.getFloat(4), 0.01f);
     }
 
     @Test

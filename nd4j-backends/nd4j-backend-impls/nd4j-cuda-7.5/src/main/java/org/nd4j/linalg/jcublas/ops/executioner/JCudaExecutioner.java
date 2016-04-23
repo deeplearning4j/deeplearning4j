@@ -113,7 +113,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     dimensionPointer, dimension.length);
         }
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return op.z();
     }
@@ -161,9 +161,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long x = AtomicAllocator.getInstance().getPointer(op.x()).address();
         long xShapeInfo = AddressRetriever.retrieveDeviceAddress(op.x().shapeInfoDataBuffer());
         long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
-        long extraArgs = op.extraArgs() != null && op instanceof Variance ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+       // long extraArgs = op.extraArgs() != null && op instanceof Variance ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
+        long extraArgs = op.extraArgs() != null ? AddressRetriever.retrieveDeviceAddress(op.extraArgsDataBuff()) : 0;
         long dimensionPointer = AddressRetriever.retrieveDeviceAddress(Nd4j.createBuffer(dimension));
 
+        log.info("Extras: {}",op.extraArgsDataBuff());
         /*
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
         log.info("X: " + x);
@@ -191,7 +193,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected()
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
@@ -223,7 +225,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
@@ -251,7 +253,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             }
         } else {
@@ -276,7 +278,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected()
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
                 if (ret.isScalar()) {
@@ -308,7 +310,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
@@ -336,7 +338,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             dimension.length
                     );
 
-                    allocator.registerAction(op.z(), op.x(), op.y());
+                    allocator.registerAction(context, op.z(), op.x(), op.y());
                 }
             }
         }
@@ -425,7 +427,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return op.z();
     }
@@ -532,7 +534,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         }
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return null;
     }
@@ -613,7 +615,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return null;
 
@@ -825,7 +827,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
 //&& !op.z().isScalar()
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return context;
     }
@@ -867,7 +869,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     extraArgs);
         }
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return  null;
     }
@@ -1002,7 +1004,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        allocator.registerAction(op.z(), op.x(), op.y());
+        allocator.registerAction(context, op.z(), op.x(), op.y());
 
         return null;
     }

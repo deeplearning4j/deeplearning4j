@@ -3,6 +3,7 @@ package org.nd4j.jita.handler;
 import com.google.common.collect.Table;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -12,6 +13,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.Set;
 
@@ -263,7 +265,9 @@ public interface MemoryHandler {
      */
     ExternalContext getDeviceContext();
 
-    void registerAction(INDArray result, INDArray... operands);
+    void registerAction(CudaContext context, INDArray result, INDArray... operands);
 
     FlowController getFlowController();
+
+    ContextPool getContextPool();
 }

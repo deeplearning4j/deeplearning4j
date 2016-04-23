@@ -35,7 +35,7 @@ public interface FlowController {
      * @param result
      * @param operands
      */
-    void registerAction(INDArray result, INDArray... operands);
+    void registerAction(CudaContext context, INDArray result, INDArray... operands);
 
     /**
      * This method is called before operation was executed
@@ -44,4 +44,6 @@ public interface FlowController {
      * @param operands
      */
     CudaContext prepareAction(INDArray result, INDArray... operands);
+
+    void waitTillReleased(AllocationPoint point);
 }

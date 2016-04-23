@@ -20,6 +20,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
@@ -894,7 +895,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (point.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 
-        flowController.waitTillFinished(point);
+        flowController.waitTillReleased(point);
 
         free(point, AllocationStatus.DEVICE);
 
@@ -924,7 +925,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
         zeroAllocations.get(bucketId).remove(objectId);
 
-        flowController.waitTillFinished(point);
+        flowController.waitTillReleased(point);
 
         // we call for caseless deallocation here
         //JCudaDriver.cuCtxSetCurrent(contextPool.getCuContextForDevice(0));
@@ -1058,12 +1059,17 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
     @Override
-    public void registerAction(INDArray result, INDArray... operands) {
-        flowController.registerAction(result, operands);
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
+        flowController.registerAction(context, result, operands);
     }
 
     @Override
     public FlowController getFlowController() {
         return flowController;
+    }
+
+    @Override
+    public ContextPool getContextPool() {
+        return contextPool;
     }
 }

@@ -554,10 +554,14 @@ public class CudaTransformsTests {
         //System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
 
         Exp exp = new Exp(array1);
+        long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(exp);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: ["+ (time2 - time1)+"]");
 
         for (int x = 0; x < 1500 * 150; x++) {
-            assertEquals(1f, array1.getFloat(x), 0.0001f);
+            assertEquals("Failed on iteration ["+ x+"]",1f, array1.getFloat(x), 0.0001f);
         }
 
     }

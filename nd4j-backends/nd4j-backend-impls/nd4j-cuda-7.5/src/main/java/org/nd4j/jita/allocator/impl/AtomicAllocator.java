@@ -5,6 +5,7 @@ import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -839,12 +841,17 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
-    public void registerAction(INDArray result, INDArray... operands) {
-        memoryHandler.registerAction(result, operands);
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
+        memoryHandler.registerAction(context, result, operands);
     }
 
     @Override
     public FlowController getFlowController() {
         return memoryHandler.getFlowController();
+    }
+
+    @Override
+    public ContextPool getContextPool() {
+        return memoryHandler.getContextPool();
     }
 }

@@ -66,7 +66,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             nd4jBlas.ssyrk(new long[]{ctx.getHandle().address()}, Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer().address(), lda, beta, cPointer.getDevicePointer().address(), ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B);
     }
 
     @Override
@@ -174,7 +174,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             ctx.syncOldStream();
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -205,7 +205,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -232,7 +232,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -263,7 +263,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C);
     }
 
     @Override
@@ -292,7 +292,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B);
     }
 
     @Override
@@ -321,7 +321,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B);
     }
 
     @Override

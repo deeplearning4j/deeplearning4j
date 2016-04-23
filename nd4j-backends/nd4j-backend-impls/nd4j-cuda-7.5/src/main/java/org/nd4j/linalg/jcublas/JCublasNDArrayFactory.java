@@ -467,7 +467,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
 
-                if (ret != null) allocator.registerAction(ret);
+                if (ret != null) allocator.registerAction(context, ret);
             } else {
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
 
@@ -494,7 +494,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
 
-                if (ret != null) allocator.registerAction(ret);
+                if (ret != null) allocator.registerAction(context, ret, m);
 
                 //Works for all cases...
 

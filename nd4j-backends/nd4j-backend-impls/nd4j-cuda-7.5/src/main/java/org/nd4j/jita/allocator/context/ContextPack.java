@@ -28,6 +28,7 @@ public class ContextPack {
 
     public void addLane(@NonNull Integer laneId, @NonNull CudaContext context) {
         lanes.put(laneId, context);
+        context.setLaneId(laneId);
     }
 
     public CudaContext getContextForLane(Integer laneId) {

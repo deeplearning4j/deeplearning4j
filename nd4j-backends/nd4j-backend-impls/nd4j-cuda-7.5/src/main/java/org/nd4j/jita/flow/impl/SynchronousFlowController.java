@@ -77,7 +77,7 @@ public class SynchronousFlowController implements FlowController {
         context.syncOldStream();
     }
 
-    public void registerAction(INDArray result, INDArray... operands) {
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
         if (result == null) return;
         AllocationPoint point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
@@ -87,5 +87,10 @@ public class SynchronousFlowController implements FlowController {
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         return context;
+    }
+
+    @Override
+    public void waitTillReleased(AllocationPoint point) {
+        waitTillFinished(point);
     }
 }

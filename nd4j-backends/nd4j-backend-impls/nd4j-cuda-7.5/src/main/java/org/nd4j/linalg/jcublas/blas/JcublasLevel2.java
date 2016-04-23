@@ -44,7 +44,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y);
     }
 
     @Override
