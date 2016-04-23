@@ -431,7 +431,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * Two new WordVectorsSerialiaztion methods have been introduced: `writeFullModel` and `loadFullModel`. These save and load a full model state. 
 * A decent workstation should be able to handle a vocab with a few million words. Deeplearning4j's Word2vec imlementation can model a few terabytes of data on a single machine. Roughly, the math is: `vectorSize * 4 * 3 * vocab.size()`.
 
-### Doc2vec & Other Resources
+### Doc2vec & Other NLP Resources
 
 * [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
 * [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
@@ -443,6 +443,14 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
 * [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](../bagofwords-tf-idf.html)
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Neural Networks](../neuralnet-overview)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks](../convolutionalnets)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
