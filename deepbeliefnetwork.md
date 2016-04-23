@@ -3,7 +3,7 @@ title: Deep-Belief Networks in Java
 layout: default
 ---
 
-# Tutorial: Deep-Belief Networks
+# Tutorial: Deep-Belief Networks & MNIST
 
 A deep-belief network can be defined as a stack of [restricted Boltzmann machines, explained here](../restrictedboltzmannmachine.html), in which each RBM layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
