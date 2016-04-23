@@ -226,6 +226,16 @@ public class AsynchronousFlowController implements FlowController{
         return pack.getContextForLane(pack.nextRandomLane());
     }
 
+
+    protected int pickFirstLane(int[] lanes) {
+        if (lanes[0] >= 0)
+            return lanes[0];
+        else if (lanes[1] >= 0)
+            return lanes[1];
+
+        return 0;
+    }
+
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
 
@@ -247,7 +257,7 @@ public class AsynchronousFlowController implements FlowController{
             asyncMiss.incrementAndGet();
 
             // but we still have to check, if op.X and op.Y has pending writes on other lanes
-            log.info("Busy Z dep: [{}]", zLane);
+            log.info("Busy Z dep: [{}], hasReads: [{}]", zLane, zReads);
 
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
@@ -274,11 +284,16 @@ public class AsynchronousFlowController implements FlowController{
             if (holdersCount.get() > 0) {
                 if (isMatchingLanes(zLane, pendingLanes)) {
                     log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
-                    newLane = zLane;
+                    if (zLane >= 0)
+                        newLane = zLane;
+                    else
+                        newLane = pickFirstLane(pendingLanes);
                 } else {
                     log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     // now we must sync on both pendingLanes and pass data to zLane
-                    newLane = zLane;
+                    if (zLane >= 0)
+                        newLane = zLane;
+                    else newLane = pickFirstLane(pendingLanes);
 
                     for (INDArray operand: operands) {
                         if (operand == null) continue;
@@ -288,6 +303,9 @@ public class AsynchronousFlowController implements FlowController{
                 }
             } else {
                 log.info("Only Z is holder: [{}]", zLane);
+                if (zLane < 0)
+                    zLane = pack.nextRandomLane();
+
                 newLane = zLane;
             }
         } else {
