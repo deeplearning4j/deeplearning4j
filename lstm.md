@@ -197,13 +197,13 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Long Short-Term Memory in Recurrent Neural Networks](http://www.felixgers.de/papers/phd.pdf); Felix Gers
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
-## <a name="beginner">Other Beginner's Guides</a>
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector.html)
-* [Word2vec](../word2vec.html)
-* [Neural Networks](../neuralnet-overview.html)
-* [Neural Networks and Regression](../linear-regression.html)
-* [Convolutional Networks](../convolutionalnets.html)
+## <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [Word2vec](../word2vec)
+* [Neural Networks](../neuralnet-overview)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks](../convolutionalnets)
 
 ### Footnotes
 
