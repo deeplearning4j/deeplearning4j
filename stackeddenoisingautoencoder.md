@@ -45,3 +45,11 @@ By the same token, deep-belief networks are created as a `MultiLayerNetwork` tha
            .pretrain(true).backprop(false)
                 .build();
 
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](../neuralnet-overview)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Word2vec](../word2vec)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks](../convolutionalnets)
