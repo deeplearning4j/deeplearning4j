@@ -13,6 +13,10 @@ With the exception of the first and final layers, each layer in a deep-belief ne
 
 Deep-belief networks are used to recognize, cluster and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. They were introduced by [Geoff Hinton and his students in 2006](http://www.cs.toronto.edu/~hinton/absps/fastnc.pdf).
 
+## MNIST for Deep-Belief Networks
+
+MNIST is a good place to begin exploring image recognition and DBNs. The first step is to take an image from the dataset and binarize it; i.e. convert its pixels from continuous gray scale to ones and zeros. Typically, every gray-scale pixel with a value higher than 35 becomes a 1, while the rest are set to 0. The MNIST dataset iterator class does that.
+
 ### Hyperparameters
 
 See the [parameters common to all multilayer networks in our Iris DBN tutorial](../iris-flower-dataset-tutorial).
@@ -20,6 +24,13 @@ See the [parameters common to all multilayer networks in our Iris DBN tutorial](
 The variable k represents the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is `1`.
 
 ### Initiating a Deep-Belief Network
+
+An **MnistDataSetIterator**, just a form of a more general DataSetIterator, will do that. 
+
+Typically, a DataSetIterator handles inputs and dataset-specific concerns like binarization or normalization. For MNIST, the following line specifies the batch size and number of examples, two parameters which allow the user to specify the sample size they want to train on (more examples tend to increase both model accuracy and training time):
+         
+         //Train on batches of 100 out of 60000 examples
+         DataSetIterator iter = new MnistDataSetIterator(100,60000);
 
 Traverse the input data with the `MnistDataSetIterator`. (You can see the entire example [here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java), and download it with [DL4J's examples repo](https://github.com/deeplearning4j/dl4j-0.4-examples/).)
 
