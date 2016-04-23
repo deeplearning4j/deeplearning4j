@@ -44,10 +44,10 @@ layout: default
 * [BabyAIShapesDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIShapesDatasets): distinguishing between 3 simple shapes
 * [BabyAIImageAndQuestionDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIImageAndQuestionDatasets): a question-image-answer dataset
 * Datasets generated for the purpose of an empirical evaluation of deep architectures ([DeepVsShallowComparisonICML2007](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/DeepVsShallowComparisonICML2007)):
-* MnistVariations : introducing controlled variations in MNIST
-* RectanglesData : discriminating between wide and tall rectangles
-* ConvexNonConvex : discriminating between convex and nonconvex shapes
-* BackgroundCorrelation : controlling the degree of correlation in noisy MNIST backgrounds
+* [MnistVariations](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/MnistVariations) : introducing controlled variations in MNIST
+* [RectanglesData](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/RectanglesData) : discriminating between wide and tall rectangles
+* [ConvexNonConvex](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/ConvexNonConvex) : discriminating between convex and nonconvex shapes
+* [BackgroundCorrelation](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BackgroundCorrelation) : controlling the degree of correlation in noisy MNIST backgrounds
 
 ## Faces
 
