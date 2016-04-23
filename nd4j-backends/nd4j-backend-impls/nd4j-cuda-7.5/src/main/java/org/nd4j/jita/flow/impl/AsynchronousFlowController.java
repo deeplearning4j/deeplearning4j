@@ -21,7 +21,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,6 +42,8 @@ public class AsynchronousFlowController implements FlowController{
 
     protected AtomicLong asyncHit = new AtomicLong(0);
     protected AtomicLong asyncMiss = new AtomicLong(0);
+
+    protected Map<Integer, AtomicLong> lanesCounter = new ConcurrentHashMap<>();
 
     private AtomicLong totalHits = new AtomicLong(0);
 
@@ -107,6 +111,11 @@ public class AsynchronousFlowController implements FlowController{
 
         if (totalHits.incrementAndGet() % 25000 == 0) {
             log.debug("AsyncHit ratio: [{}]", getAsyncHitRatio());
+/*
+            for (int lane = 0; lane < allocator.getContextPool().acquireContextPackForDevice(0).getAvailableLanes(); lane++) {
+                log.debug("Lane [{}]: {} ", lane, lanesCounter.get(lane).get());
+            }
+            */
         }
 
         cudaEvent_t event = new cudaEvent_t(nativeOps.createEvent());
@@ -379,6 +388,12 @@ public class AsynchronousFlowController implements FlowController{
 
             allocator.getAllocationPoint(operand).setCurrentContext(context);
         }
+
+        if (!lanesCounter.containsKey(newLane)) {
+            lanesCounter.put(newLane, new AtomicLong(0));
+        }
+
+        lanesCounter.get(newLane).incrementAndGet();
 
         if (context == null)
             throw new IllegalStateException("Context shouldn't be null: " + newLane);

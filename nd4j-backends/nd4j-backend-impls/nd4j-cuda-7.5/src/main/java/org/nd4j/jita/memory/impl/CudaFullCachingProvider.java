@@ -65,10 +65,10 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
-                super.free(point);
-                return;
-            }
+     //       if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
+    //            super.free(point);
+  //              return;
+//            }
 
             ensureDeviceCacheHolder(point.getDeviceId(), shape);
 
@@ -86,12 +86,12 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                //if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                     cache.put(new CudaPointer(point.getDevicePointer().address()));
                     return;
-                } else {
-                    super.free(point);
-                }
+                //} else {
+                //    super.free(point);
+               // }
             }
         }
         super.free(point);

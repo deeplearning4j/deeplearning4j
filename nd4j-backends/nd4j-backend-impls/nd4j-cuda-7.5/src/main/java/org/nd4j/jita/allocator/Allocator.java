@@ -132,7 +132,7 @@ public interface Allocator {
 
     void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
+    void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset, CudaContext context);
 
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
 

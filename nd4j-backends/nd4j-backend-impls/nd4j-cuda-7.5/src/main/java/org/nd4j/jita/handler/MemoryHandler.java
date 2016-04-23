@@ -142,7 +142,7 @@ public interface MemoryHandler {
 
     void memcpySpecial(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
 
-    void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
+    void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset, CudaContext context);
 
     /**
      * Synchronous version of memcpy

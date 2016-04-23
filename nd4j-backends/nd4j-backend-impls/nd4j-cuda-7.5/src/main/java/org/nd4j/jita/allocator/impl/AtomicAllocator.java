@@ -770,8 +770,8 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
-    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset);
+    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset, CudaContext context) {
+        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset, context);
     }
 
     /**
