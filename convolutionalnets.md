@@ -150,11 +150,16 @@ Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=42:73"></script>
 
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](../neuralnet-overview)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Word2vec](../word2vec)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [Neural Networks and Regression](../linear-regression)
+
 ## <a name="resource">Other Resources</a>
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 * [Andrej Karpathy's Stanford course](https://cs231n.github.io/) on Convolutional Nets is fantastic. We highly recommend it as an introduction to the major ideas. (*Exercises in Python.*)
 * To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/convolution) after following the instructions on the [Quickstart page](http://deeplearning4j.org/quickstart.html). 
-* [Intro to Recurrent Networks](../recurrentnet.html)
-* [Guide to Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [Intro to Neural Networks](../neuralnet-overview.html)
