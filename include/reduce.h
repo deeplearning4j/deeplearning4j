@@ -310,25 +310,12 @@ namespace functions {
 
             int *xStride = shape::stride(xShapeInfo);
             char xOrder = shape::order(xShapeInfo);
-            /*
-                int *xShape = shape::shapeOf(xShapeInfo);
-                int *xStride = shape::stride(xShapeInfo);
-                char xOrder = shape::order(xShapeInfo);
-                int n = shape::length(xShapeInfo);
-                int xRank = shape::rank(xShapeInfo);
-                int xOffset = shape::offset(xShapeInfo);
-             */
-            //				int
 
             if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
-                xElementWiseStride =  xStride[dimension[0]];//shape::computeElementWiseStride(xRank,xShape,xStride,xOrder == 'f');
+                xElementWiseStride =  xStride[dimension[0]];
             } else {
                 xElementWiseStride = shape::elementWiseStride(xShapeInfo);
             }
-//			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-
-            //printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0]);
-
         }
         __syncthreads();
 
@@ -349,10 +336,8 @@ namespace functions {
 
                 __shared__ int *tadShapeShapeInfo;
 
-                if(threadIdx.x == 0) {
+                if(threadIdx.x == 0)
                     inputShapeInfo = xShapeInfo;
-                }
-
                 __syncthreads();
 
                 int *shape = shape::shapeOf(inputShapeInfo);
@@ -366,13 +351,19 @@ namespace functions {
                             numOnes++;
                     }
 
+                    __shared__ int sqShape[MAX_RANK * 2 + 4];
+                    __shared__ int sqOut[MAX_RANK * 2 + 4];
+
+                    __shared__ int *sqStride;
+                    sqStride = sqShape + MAX_RANK;
+
                     //squeeze the dimensions
                     if(numOnes > 0) {
                         squeezed = false;
                         newSqueezeDimensions = false;
-                        shape::TAD singularDimension;
+                        shape::TAD singularDimension(sqShape, sqStride, sqOut);
                         inputShapeInfo = singularDimension.squeezeDimensions(
-                                inputShapeInfo,
+                                xShapeInfo,
                                 &dimension,
                                 &dimensionLength,
                                 &squeezed,
@@ -380,18 +371,17 @@ namespace functions {
                                 wholeRank,
                                 numOnes);
                     }
+
+                    //decompose in to several sub tads after
+                    //moving all dimensions (in sorted order)
+                    //to the back.
+                    //permuted version of the x shape info for setting up the tad problem
+
+                    tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false, sqShape);
                 }
-
                 __syncthreads();
 
-                //decompose in to several sub tads after
-                //moving all dimensions (in sorted order)
-                //to the back.
-                //permuted version of the x shape info for setting up the tad problem
-                if(threadIdx.x == 0)
-                    tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(inputShapeInfo,dimension,dimensionLength,false);
-                __syncthreads();
-
+                // TODO: move to __shared__ too, no need for 100500 local variables
                 int *xShape = shape::shapeOf(tadShapeShapeInfo);
                 int *xStride = shape::stride(tadShapeShapeInfo);
                 int tadLength = shape::length(tadShapeShapeInfo);
@@ -399,6 +389,7 @@ namespace functions {
 #pragma unroll
                 for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
                     int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+                    // TODO: this case should be covered by allocationBuffer
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];
                     int dim;
@@ -432,15 +423,15 @@ namespace functions {
                     result[i] = start;
                 }
 
-                __syncthreads();
-                if (threadIdx.x == 0) {
+                    /*
+                    // tadShapeInfo was moved to __shared__ memory
                     delete[] tadShapeShapeInfo;
 
-
+                    // inputShapeInfo was moved into __shared__ memory, no need to free it
                     if(numOnes > 0) {
                         delete[] inputShapeInfo;
                     }
-                }
+                    */
             }
             else {
 
@@ -1752,31 +1743,72 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
              * @return
              */
 #ifdef __CUDACC__
-            __inline__ __device__ __host__
-#endif
+            __inline__ __device__
+            virtual functions::reduce::ReduceFunction<T> * create(int op, unsigned char *buffer) {
 
+#else
             virtual functions::reduce::ReduceFunction<T> * create(int op) {
+#endif
                 if (op == 0)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Mean<T>();
+#else
                     return new functions::reduce::ops::Mean<T>();
+#endif
                 else if (op == 1)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Sum<T>();
+#else
                     return new functions::reduce::ops::Sum<T>();
+#endif
                 else if (op == 3)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Max<T>();
+#else
                     return new functions::reduce::ops::Max<T>();
+#endif
                 else if (op == 4)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Min<T>();
+#else
                     return new functions::reduce::ops::Min<T>();
+#endif
                 else if (op == 5)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Norm1<T>();
+#else
                     return new functions::reduce::ops::Norm1<T>();
+#endif
                 else if (op == 6)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Norm2<T>();
+#else
                     return new functions::reduce::ops::Norm2<T>();
+#endif
                 else if (op == 7)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::NormMax<T>();
+#else
                     return new functions::reduce::ops::NormMax<T>();
+#endif
                 else if (op == 8)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Prod<T>();
+#else
                     return new functions::reduce::ops::Prod<T>();
+#endif
                 else if (op == 9)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::StandardDeviation<T>();
+#else
                     return new functions::reduce::ops::StandardDeviation<T>();
+#endif
                 else if (op == 10)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce::ops::Variance<T>();
+#else
                     return new functions::reduce::ops::Variance<T>();
-
+#endif
                 return NULL;
             }
 
@@ -1822,12 +1854,16 @@ __global__ void reduceGenericGlobal(
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
 
+    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce::ReduceOpFactory<T>)];
+    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce::ReduceFunction<T>)];
+
+
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op);
+		newOpFactory =  new(factoryBuffer) functions::reduce::ReduceOpFactory<T>();
+		reduceFunctionToInvoke = newOpFactory->create(op, functionBuffer);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1840,13 +1876,6 @@ __global__ void reduceGenericGlobal(
 			dimensionLength,
 			postProcessOrNot,
 			allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete reduceFunctionToInvoke;
-		delete newOpFactory;
-	}
-
 }
 
 /**
@@ -1875,12 +1904,17 @@ __device__ void reduceGeneric(
 		int dimensionLength,
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
+
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce::ReduceOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce::ReduceFunction<T>)];
+
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op);
+		newOpFactory =  new(factoryBuffer) functions::reduce::ReduceOpFactory<T>();
+		reduceFunctionToInvoke = newOpFactory->create(op, functionBuffer);
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1893,13 +1927,6 @@ __device__ void reduceGeneric(
 			dimensionLength,
 			postProcessOrNot,
 			allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete reduceFunctionToInvoke;
-		delete newOpFactory;
-	}
-
 }
 
 /**

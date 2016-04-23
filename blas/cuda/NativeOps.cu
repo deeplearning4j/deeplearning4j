@@ -56,7 +56,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if(n % num_threads) ++num_blocks;
 
-	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + (attributes.sharedSizeBytes < 1024 ? 1024 : attributes.sharedSizeBytes));
+	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + attributes.sharedSizeBytes);
 }
 
 /**
@@ -77,7 +77,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
 	//if (debug)
-	//	printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
+		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }

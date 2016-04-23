@@ -1533,22 +1533,37 @@ struct SharedSummaryStatsData<double> {
             }
 
 #ifdef __CUDACC__
-            __inline__ __host__ __device__
-#endif
+            __inline__ __device__
+            functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected, unsigned char *buffer) {
+#else
             functions::summarystats::SummaryStatsReduce<T> * getOp(int op, bool biasCorrected) {
+#endif
                 if (op ==  0) {
+#ifdef __CUDACC__
+                    return new(buffer) ops::Variance<T>(biasCorrected);
+#else
                     return new ops::Variance<T>(biasCorrected);
+#endif
                 } else if (op == 1) {
+#ifdef __CUDACC__
+                    return new(buffer) ops::StandardDeviation<T>(biasCorrected);
+#else
                     return new ops::StandardDeviation<T>(biasCorrected);
+#endif
                 }
                 return NULL;
             }
 #ifdef __CUDACC__
-            __inline__ __host__ __device__
-#endif
+            __inline__ __device__
+            functions::summarystats::SummaryStatsReduce<T> * getOp(int op, unsigned char * buffer) {
+                return this->getOp(op,true, buffer);
+            }
+#else
             functions::summarystats::SummaryStatsReduce<T> * getOp(int op) {
                 return this->getOp(op,true);
             }
+
+#endif
         };
     }
 
@@ -1581,21 +1596,19 @@ __device__ void summaryStatsReduceGeneric(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::summarystats::SummaryStatsReduce<T>)];
+
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op,biasCorrected);
+		newOpFactory = new(factoryBuffer) functions::summarystats::SummaryStatsReduceOpFactory<T>();
+		indexReduce = newOpFactory->getOp(op,biasCorrected, functionBuffer);
 	}
 	__syncthreads();
 
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete indexReduce;
-		delete newOpFactory;
-	}
 }
 
 /**

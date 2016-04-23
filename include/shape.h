@@ -221,6 +221,11 @@ namespace shape {
     __host__ __device__
 #endif
     inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride, int *buffer);
 /**
  *
  * @param length
@@ -1055,6 +1060,11 @@ namespace shape {
 #endif
     int* createShapeInfo(int *shape, int *stride, int rank);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    int* createShapeInfo(int *shape, int *stride, int rank, int *buffer);
+
     /**
  * Convert a linear index to
  * the equivalent nd index
@@ -1347,6 +1357,10 @@ namespace shape {
         bool newSqueezeDimensions = false;
         int numOnesInMiddle = 0;
 
+        // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
+        int *shapeBuffer = NULL;
+        int *strideBuffer = NULL;
+        int *outBuffer = NULL;
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1374,6 +1388,18 @@ namespace shape {
                 }
 
         }
+
+#ifdef __CUDACC__
+      __device__
+      /**
+      * This is special constructor, that allow __shared__ memory buffers to be passed in
+      **/
+      TAD(int *shapeBuffer, int *strideBuffer, int *outBuffer) {
+        this->shapeBuffer = shapeBuffer;
+        this->strideBuffer = strideBuffer;
+        this->outBuffer = outBuffer;
+      }
+#endif
 
 
 #ifdef __CUDACC__
@@ -1704,8 +1730,8 @@ namespace shape {
                                       bool *squeezeDimensionsRef,
                                       int wholeRank,
                                       int numOnes) {
-            int *squeezeShape = new int[wholeRank - numOnes];
-            int *squeezeStride = new int[wholeRank - numOnes];
+            int *squeezeShape = this->shapeBuffer == NULL ? new int[wholeRank - numOnes] : this->shapeBuffer;
+            int *squeezeStride = this->strideBuffer == NULL ? new int[wholeRank - numOnes] : this->strideBuffer;
             *squeezedRef = true;
 
             int *shape = shape::shapeOf(shapeInfo);
@@ -1730,22 +1756,17 @@ namespace shape {
             }
 
 
-
-
             //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
             //the previous pointer is just a view of a pointer to be reused that was passed in
             shape = squeezeShape;
             stride = squeezeStride;
             wholeRank -= numOnes;
 
-
             char order = shape::order(shapeInfo);
-            int *xShapeInfo = shape::createShapeInfo(shape,stride,wholeRank);
+            int *xShapeInfo = this->outBuffer == NULL ? shape::createShapeInfo(shape,stride,wholeRank) : shape::createShapeInfo(shape,stride,wholeRank, this->outBuffer);
             xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
 
-
             return xShapeInfo;
-
         }
 
 #ifdef __CUDACC__
@@ -2133,11 +2154,11 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride) {
+    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride, int *buffer) {
         int *theShape = shape::shapeOf(shapeInfo);
         int *theStride = shape::stride(shapeInfo);
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
-        int *ret = new int[shape::shapeInfoLength(rank)];
+        int *ret = buffer;
         //set the rank
         ret[0] = rank;
         int *retShape = shape::shapeOf(ret);
@@ -2193,6 +2214,17 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
+    inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride) {
+        int *theShape = shape::shapeOf(shapeInfo);
+        int *theStride = shape::stride(shapeInfo);
+        int rank = dimensionLength == 1 ? 2 : dimensionLength;
+        int *ret = new int[shape::shapeInfoLength(rank)];
+        return shapeInfoOnlyShapeAndStride(shapeInfo, dimension, dimensionLength, reverseCopyStride, ret);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     inline int * createShapeInfo(int *shape, int *stride, int rank) {
         int *ret = new int[shape::shapeInfoLength(rank)];
         ret[0] = rank;
@@ -2204,6 +2236,21 @@ namespace shape {
         }
 
         return ret;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int * createShapeInfo(int *shape, int *stride, int rank, int *buffer) {
+        buffer[0] = rank;
+        int *retShape = shape::shapeOf(buffer);
+        int *retStride = shape::stride(buffer);
+        for(int i = 0;i < rank; i++) {
+            retShape[i] = shape[i];
+            retStride[i] = stride[i];
+        }
+
+        return buffer;
     }
 
 /**
