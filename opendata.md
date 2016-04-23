@@ -28,7 +28,6 @@ layout: default
 * [CIFAR10 / CIFAR100: 32×32 natural image dataset with 10/100 categories]( http://www.cs.utoronto.ca/~kriz/cifar.html)
 * [Caltech 101: pictures of objects belonging to 101 categories](http://www.vision.caltech.edu/Image_Datasets/Caltech101/)
 * [Caltech 256: pictures of objects belonging to 256 categories](http://www.vision.caltech.edu/Image_Datasets/Caltech256/) 
-* [Caltech Silhouettes: 28×28 binary images contains silhouettes of the Caltech 101 dataset
 * [STL-10 dataset](http://www.stanford.edu/~acoates//stl10/) is an image recognition dataset for developing unsupervised feature learning, deep learning, self-taught learning algorithms. Like CIFAR-10 with some modifications. 
 * [The Street View House Numbers (SVHN) Dataset](http://ufldl.stanford.edu/housenumbers/)
 * [NORB: binocular images of toy figurines under various illumination and pose](http://www.cs.nyu.edu/~ylclab/data/norb-v1.0/)
@@ -40,15 +39,15 @@ layout: default
 
 ## Artificial Datasets
 
-Arcade Universe - An artificial dataset generator with images containing arcade games sprites such as tetris pentomino/tetromino objects. This generator is based on the O. Breleux’s bugland dataset generator.
-A collection of datasets inspired by the ideas from BabyAISchool:
-BabyAIShapesDatasets : distinguishing between 3 simple shapes
-BabyAIImageAndQuestionDatasets : a question-image-answer dataset
-Datasets generated for the purpose of an empirical evaluation of deep architectures (DeepVsShallowComparisonICML2007):
-MnistVariations : introducing controlled variations in MNIST
-RectanglesData : discriminating between wide and tall rectangles
-ConvexNonConvex : discriminating between convex and nonconvex shapes
-BackgroundCorrelation : controlling the degree of correlation in noisy MNIST backgrounds
+* [Arcade Universe](https://github.com/caglar/Arcade-Universe) - An artificial dataset generator with images containing arcade games sprites such as tetris pentomino/tetromino objects. This generator is based on the O. Breleux’s bugland dataset generator.
+* A collection of datasets inspired by the ideas from [BabyAISchool](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAISchool):
+* [BabyAIShapesDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIShapesDatasets): distinguishing between 3 simple shapes
+* [BabyAIImageAndQuestionDatasets](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BabyAIImageAndQuestionDatasets): a question-image-answer dataset
+* Datasets generated for the purpose of an empirical evaluation of deep architectures ([DeepVsShallowComparisonICML2007](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/DeepVsShallowComparisonICML2007)):
+* MnistVariations : introducing controlled variations in MNIST
+* RectanglesData : discriminating between wide and tall rectangles
+* ConvexNonConvex : discriminating between convex and nonconvex shapes
+* BackgroundCorrelation : controlling the degree of correlation in noisy MNIST backgrounds
 
 ## Faces
 
