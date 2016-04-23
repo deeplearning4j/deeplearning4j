@@ -65,7 +65,7 @@ layout: zh-default
 由于递归网络具有时间维度，所以可能用动画示意最为清楚（最先出现的节点垂直线可被视为一个前馈网络，随时间展开后变为递归网络）。 
 
 {::nomarkdown}
-<iframe src="https://i.imgur.com/6Uak4vF.gif" width="100%" height="630px;" style="border:none;"></iframe>
+<blockquote class="imgur-embed-pub" lang="en" data-id="6Uak4vF"><a href="//imgur.com/6Uak4vF">View post on imgur.com</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
 {:/nomarkdown}
 
 在[上图](https://i.imgur.com/6Uak4vF.gifv)中，每一个`x`都是一个输入样例，`w`是用于筛选输入的权重，`a`是隐藏层的激活状态（附加权重后的输入与上一个隐藏状态之和），而`b`则是隐藏层在转换，或称“挤压”后的输出，使用线性修正或sigmoid单位。 
