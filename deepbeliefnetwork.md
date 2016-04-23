@@ -21,15 +21,15 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 Traverse the input data with the IrisDataSetInterator.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=53:58"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=53:58"></script>
 
 Configure the DBN as a MultilayerNeuralNet whose layers are RBMs:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:98"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=64:98"></script>
 
 Then evaluate the performance of the net:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=102:122"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=102:122"></script>
 
 Note that the *eval* class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data. This is useful for tracking how well your network trains over time. 
 
