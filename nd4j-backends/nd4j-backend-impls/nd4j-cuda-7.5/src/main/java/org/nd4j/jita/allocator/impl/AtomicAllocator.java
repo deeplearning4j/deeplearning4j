@@ -215,8 +215,8 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     @Override
-    public Pointer getPointer(DataBuffer buffer) {
-        return memoryHandler.getDevicePointer(buffer);
+    public Pointer getPointer(DataBuffer buffer, CudaContext context) {
+        return memoryHandler.getDevicePointer(buffer, context);
     }
 
     /**
@@ -228,8 +228,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     @Deprecated
-    public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
-        return memoryHandler.getDevicePointer(buffer);
+    public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView, CudaContext context) {
+        return memoryHandler.getDevicePointer(buffer, context);
     }
 
     /**
@@ -238,8 +238,9 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
-    public Pointer getPointer(INDArray array) {
-        return memoryHandler.getDevicePointer(array.data());
+    public Pointer getPointer(INDArray array, CudaContext context) {
+    //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        return memoryHandler.getDevicePointer(array.data(), context);
     }
 
     /**

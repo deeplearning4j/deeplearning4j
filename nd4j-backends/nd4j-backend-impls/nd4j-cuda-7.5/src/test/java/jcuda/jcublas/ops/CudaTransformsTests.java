@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -457,12 +459,12 @@ public class CudaTransformsTests {
             input.putScalar(3000 * i, (i * 2) + 0.5);
         }
         System.out.println("AF: --------------------------------");
-        AtomicAllocator.getInstance().getPointer(input);
-        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
+   //     AtomicAllocator.getInstance().getPointer(input);
+      //  AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
         System.out.println("AX: --------------------------------");
-        AtomicAllocator.getInstance().getPointer(input);
-        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
+    //    AtomicAllocator.getInstance().getPointer(input);
+     //   AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
         System.out.println("AA: --------------------------------");
         float sumAll = input.sumNumber().floatValue();
@@ -545,11 +547,13 @@ public class CudaTransformsTests {
         INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,2,2);
 
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
+        System.out.println("Assertion data: " + Arrays.toString(assertion.data().asFloat()));
+        System.out.println("Result data: " + Arrays.toString(newTest.data().asFloat()));
         assertEquals(assertion,newTest);
     }
 
     @Test
-    public void testTransformExp() {
+    public void testTransformExp() throws Exception {
         INDArray array1 = Nd4j.zeros(1500,150);
         //System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
 

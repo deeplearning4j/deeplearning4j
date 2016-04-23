@@ -331,7 +331,7 @@ public class CudaFloatDataBufferTest {
 
         System.out.println("X3: ------------------------");
 
-        AtomicAllocator.getInstance().getPointer(slice.shapeInfoDataBuffer());
+   //     AtomicAllocator.getInstance().getPointer(slice.shapeInfoDataBuffer());
 
         System.out.println("X4: ------------------------");
 
@@ -458,6 +458,7 @@ public class CudaFloatDataBufferTest {
 
         AllocationPoint point = buffer.getAllocationPoint();
 
+        CudaContext context = AtomicAllocator.getInstance().getContextPool().acquireContextForDevice(0);
 
         assertEquals(true, point.isActualOnHostSide());
 
@@ -474,7 +475,7 @@ public class CudaFloatDataBufferTest {
         assertEquals(false, point.isActualOnDeviceSide());
 
 
-        AtomicAllocator.getInstance().getPointer(buffer);
+        AtomicAllocator.getInstance().getPointer(buffer, context);
 
         assertEquals(true, point.isActualOnHostSide());
 
@@ -497,6 +498,8 @@ public class CudaFloatDataBufferTest {
 
         AllocationPoint point = buffer.getAllocationPoint();
 
+        CudaContext context = AtomicAllocator.getInstance().getContextPool().acquireContextForDevice(0);
+
         assertEquals(true, point.isActualOnDeviceSide());
         assertEquals(false, point.isActualOnHostSide());
 
@@ -515,7 +518,7 @@ public class CudaFloatDataBufferTest {
         assertEquals(false, point.isActualOnDeviceSide());
 
 
-        AtomicAllocator.getInstance().getPointer(buffer);
+        AtomicAllocator.getInstance().getPointer(buffer, context);
 
         assertEquals(true, point.isActualOnHostSide());
 
@@ -539,6 +542,8 @@ public class CudaFloatDataBufferTest {
 
         AllocationPoint point = buffer.getAllocationPoint();
 
+        CudaContext context = AtomicAllocator.getInstance().getContextPool().acquireContextForDevice(0);
+
         assertEquals(true, point.isActualOnDeviceSide());
         assertEquals(false, point.isActualOnHostSide());
 
@@ -557,7 +562,7 @@ public class CudaFloatDataBufferTest {
         assertEquals(false, point.isActualOnDeviceSide());
 
 
-        AtomicAllocator.getInstance().getPointer(buffer);
+        AtomicAllocator.getInstance().getPointer(buffer, context);
 
         assertEquals(true, point.isActualOnHostSide());
 
@@ -635,7 +640,7 @@ public class CudaFloatDataBufferTest {
 
         AllocationPoint pointShape = ((BaseCudaDataBuffer) array.shapeInfoDataBuffer()).getAllocationPoint();
 
-        assertEquals(true, pointMain.isActualOnDeviceSide());
+        assertEquals(false, pointMain.isActualOnDeviceSide());
         assertEquals(true, pointMain.isActualOnHostSide());
 
         assertEquals(false, pointShape.isActualOnDeviceSide());
@@ -664,7 +669,7 @@ public class CudaFloatDataBufferTest {
         assertFalse(pointMain.isConstant());
         assertTrue(pointShape.isConstant());
 
-        assertEquals(true, pointMain.isActualOnDeviceSide());
+        assertEquals(false, pointMain.isActualOnDeviceSide());
         assertEquals(true, pointMain.isActualOnHostSide());
     }
 

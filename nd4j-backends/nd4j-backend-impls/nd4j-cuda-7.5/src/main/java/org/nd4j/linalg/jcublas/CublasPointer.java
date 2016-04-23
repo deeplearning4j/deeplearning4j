@@ -125,7 +125,7 @@ public class CublasPointer  implements AutoCloseable {
         //vector based striding won't work with an array that looks like this
 
         this.cudaContext = context;
-        this.devicePointer = new CudaPointer(AtomicAllocator.getInstance().getPointer(array).address());
+        this.devicePointer = new CudaPointer(AtomicAllocator.getInstance().getPointer(array, context).address());
 
         /*
         if(array instanceof IComplexNDArray) {

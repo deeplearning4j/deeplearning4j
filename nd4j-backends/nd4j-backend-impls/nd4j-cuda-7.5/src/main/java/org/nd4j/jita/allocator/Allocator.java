@@ -55,7 +55,7 @@ public interface Allocator {
      *
      * @param buffer
      */
-    Pointer getPointer(DataBuffer buffer);
+    Pointer getPointer(DataBuffer buffer, CudaContext context);
 
     /**
      * This method returns actual host pointer valid for current object
@@ -77,13 +77,13 @@ public interface Allocator {
      * @param buffer
      * @param shape
      */
-     Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView);
+     Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView, CudaContext context);
 
 
     /**
      * This method returns actual device pointer valid for specified INDArray
      */
-    Pointer getPointer(INDArray array);
+    Pointer getPointer(INDArray array, CudaContext context);
 
 
     /**

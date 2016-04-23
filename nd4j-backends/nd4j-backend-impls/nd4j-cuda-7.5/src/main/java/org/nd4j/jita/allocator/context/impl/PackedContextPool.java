@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PackedContextPool extends BasicContextPool implements ContextPool {
 
-    protected static final int LANES_PER_THREAD = 3;
+    protected static final int LANES_PER_THREAD = 4;
 
     private volatile Map<Long, ContextPack> contextsPool = new ConcurrentHashMap<>();
 

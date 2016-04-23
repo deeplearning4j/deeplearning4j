@@ -85,7 +85,7 @@ public class AsynchronousFlowController implements FlowController{
         cudaEvent_t event = point.getWriteLane();
         if (event != null) {
             event.synchronize();
-            event.desroy();
+            event.destroy();
         }
     }
 
@@ -95,7 +95,7 @@ public class AsynchronousFlowController implements FlowController{
         cudaEvent_t event;
         while ((event = point.getReadLane().poll()) != null) {
                 event.synchronize();
-                event.desroy();
+                event.destroy();
         }
     }
 
@@ -152,12 +152,8 @@ public class AsynchronousFlowController implements FlowController{
         return event.getLaneId();
     }
 
-    protected boolean hasActiveReads(INDArray array) {
-        if (array == null) return false;
-
-        AllocationPoint point = allocator.getAllocationPoint(array);
-
-        Queue<cudaEvent_t> events = getReadLanes(array);
+    protected boolean hasActiveReads(AllocationPoint point) {
+        Queue<cudaEvent_t> events = point.getReadLane();
 
         if (events.size() == 0) return false;
 
@@ -173,6 +169,14 @@ public class AsynchronousFlowController implements FlowController{
         return result.get();
     }
 
+    protected boolean hasActiveReads(INDArray array) {
+        if (array == null) return false;
+
+        AllocationPoint point = allocator.getAllocationPoint(array);
+
+        return hasActiveReads(point);
+    }
+
     protected boolean isMatchingLanes(int[] lanes) {
         if (lanes[0] == lanes[1] || lanes[1] == -1 || lanes[0] == -1)
             return true;
@@ -183,6 +187,43 @@ public class AsynchronousFlowController implements FlowController{
         if ((zLane == lanes[0] || zLane == lanes[1]) && isMatchingLanes(lanes))
             return true;
         return false;
+    }
+
+    protected void synchronizeReadLanes(AllocationPoint point) {
+        cudaEvent_t event;
+        int cnt = 0;
+        while ((event = point.getReadLane().poll()) != null) {
+            event.synchronize();
+            event.destroy();
+            cnt++;
+        }
+        log.info("Events synchronized: [{}]", cnt);
+    }
+
+    protected void synchronizeReadLanes(INDArray array) {
+        if (array == null) return;
+
+        AllocationPoint point = allocator.getAllocationPoint(array);
+        synchronizeReadLanes(point);
+    }
+
+    @Override
+    public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
+        cudaEvent_t event = new cudaEvent_t(nativeOps.createEvent());
+        event.setLaneId(context.getLaneId());
+        nativeOps.registerEvent(event.address(), context.getOldStream().address());
+
+        result.setWriteLane(event);
+    }
+
+    @Override
+    public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
+        if (hasActiveReads(result))
+            synchronizeReadLanes(result);
+
+        ContextPack pack = allocator.getContextPool().acquireContextPackForDevice(allocator.getDeviceId());
+
+        return pack.getContextForLane(pack.nextRandomLane());
     }
 
     @Override
@@ -199,13 +240,50 @@ public class AsynchronousFlowController implements FlowController{
         // default lane is lane_0
         int newLane = 0;
         int zLane = hasActiveWrite(result);
+        boolean zReads = hasActiveReads(result);
 
-        if (result != null && (hasActiveReads(result) || zLane >= 0)) {
+        if (result != null && (zReads || zLane >= 0)) {
             // we send this op to the same lane as active read/write event
             asyncMiss.incrementAndGet();
 
             // but we still have to check, if op.X and op.Y has pending writes on other lanes
-            log.info("Busy Z dep");
+            log.info("Busy Z dep: [{}]", zLane);
+
+            AtomicInteger cnt = new AtomicInteger(0);
+            AtomicInteger holdersCount = new AtomicInteger(0);
+            int lastLane = -1;
+            int pendingLanes[] = new int[]{-1, -1};
+            for (INDArray operand: operands) {
+                if (operand == null) continue;
+
+                int lane = hasActiveWrite(operand);
+                if (lane >= 0) {
+                    // at least one operand has pendingWrite. And we don't care about pending reads.
+                    pendingLanes[cnt.get()] = lane;
+                    holdersCount.incrementAndGet();
+                    lastLane = lane;
+                }
+                cnt.incrementAndGet();
+            }
+
+            if (zReads) {
+                log.info("Synchronizing zReads");
+                synchronizeReadLanes(result);
+            }
+
+            if (holdersCount.get() > 0) {
+                if (isMatchingLanes(zLane, pendingLanes)) {
+                    log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                    newLane = zLane;
+                } else {
+                    log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                    // now we must sync on both pendingLanes and pass data to zLane
+                    newLane = zLane;
+                }
+            } else {
+                log.info("Only Z is holder: [{}]", zLane);
+                newLane = zLane;
+            }
         } else {
             // we go and check op.X and op.Y
             AtomicInteger cnt = new AtomicInteger(0);
@@ -231,24 +309,36 @@ public class AsynchronousFlowController implements FlowController{
                 if (isMatchingLanes(pendingLanes)) {
                     // if op.X and/or op.Y has pending write in same lane - just throw op to that lane, and enjoy
                     newLane = lastLane;
-                    log.info("Paired dependencies");
+                    log.info("Paired dependencies: [{}]", newLane);
                 } else {
                     // we have different lanes for op.X and op.Y with pending write. We need to synchronize somewhere to become free.
                     // basically - synchronize on one lane, and throw task to another one
-                    log.info("Unpaired dependencies");
+                    log.info("Unpaired dependencies: [{}, {}]", pendingLanes[0], pendingLanes[1]);
+
                 }
             } else {
                 // we don't have any holders here. Totally free execution here
                 asyncHit.incrementAndGet();
 
-                log.info("Free pass here");
-                newLane = 0;
+                newLane = pack.nextRandomLane();
+
+                log.info("Free pass here: [{}]", newLane);
             }
         }
 
 
 
         CudaContext context = pack.getContextForLane(newLane);
+
+        if (result != null)
+            allocator.getAllocationPoint(result).setCurrentContext(context);
+
+        for (INDArray operand: operands) {
+            if (operand == null) continue;
+
+            allocator.getAllocationPoint(operand).setCurrentContext(context);
+        }
+
         if (context == null)
             throw new IllegalStateException("Context shouldn't be null: " + newLane);
 

@@ -45,5 +45,9 @@ public interface FlowController {
      */
     CudaContext prepareAction(INDArray result, INDArray... operands);
 
+    CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands);
+
+    void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands);
+
     void waitTillReleased(AllocationPoint point);
 }

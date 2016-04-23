@@ -86,7 +86,7 @@ public class AtomicAllocatorTest {
     public void testScalar1() throws Exception {
         INDArray array = Nd4j.scalar(17f);
 
-        allocator.getPointer(array);
+    //    allocator.getPointer(array);
 
         System.out.println("Scalar array: " + array);
     }

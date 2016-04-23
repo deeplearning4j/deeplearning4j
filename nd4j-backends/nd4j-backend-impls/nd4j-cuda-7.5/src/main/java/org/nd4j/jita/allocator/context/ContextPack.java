@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.HashMap;
@@ -33,5 +34,9 @@ public class ContextPack {
 
     public CudaContext getContextForLane(Integer laneId) {
         return lanes.get(laneId);
+    }
+
+    public int nextRandomLane() {
+        return RandomUtils.nextInt(0, availableLanes);
     }
 }

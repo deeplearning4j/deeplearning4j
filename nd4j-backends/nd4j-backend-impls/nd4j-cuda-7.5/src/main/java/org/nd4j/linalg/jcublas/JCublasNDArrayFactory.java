@@ -458,9 +458,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         int linearIndex = 0;
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
 
         for(INDArray m : matrices) {
+
+            CudaContext context =  allocator.getFlowController().prepareAction(ret, m);
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
@@ -476,19 +478,19 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
-                            allocator.getPointer(m).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
+                            allocator.getPointer(ret, context).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
+                            allocator.getPointer(m, context).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
                 } else if (m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
-                            allocator.getPointer(m).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
+                            allocator.getPointer(ret, context).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
+                            allocator.getPointer(m, context).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
 
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");

@@ -71,7 +71,7 @@ public interface MemoryHandler {
      * @param targetStatus
      * @param point
      */
-    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape);
+    void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape, CudaContext context);
 
     /**
      * Copies memory from device to host, if needed.
@@ -156,7 +156,7 @@ public interface MemoryHandler {
      * PLEASE NOTE: Specific implementation, on systems without special devices can return HostPointer here
      * @return
      */
-    Pointer getDevicePointer(DataBuffer buffer);
+    Pointer getDevicePointer(DataBuffer buffer, CudaContext context);
 
     /**
      * PLEASE NOTE: This method always returns pointer valid within OS memory space

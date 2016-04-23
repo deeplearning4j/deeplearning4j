@@ -31,7 +31,7 @@ public class cudaEvent_t extends CudaPointer{
         destroyed.set(true);
     }
 
-    public synchronized void desroy() {
+    public synchronized void destroy() {
         if (!isDestroyed()) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(this.address());
             markDestoryed();

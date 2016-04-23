@@ -346,23 +346,26 @@ public class JCublasNDArray extends BaseNDArray {
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
-        if (!isView() && ordering() == Nd4j.order()) {
+ /*       if (!isView() && ordering() == Nd4j.order()) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), ordering());
+
+
+
             allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
             return array;
-        } else return super.dup();
+        } else */return super.dup();
     }
 
     @Override
     public INDArray dup(char order) {
-
+/*
         if (!isView() && ordering() == order) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), order);
             allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
             return array;
-        } else return super.dup(order);
+        } else */ return super.dup(order);
     }
 
     @Override

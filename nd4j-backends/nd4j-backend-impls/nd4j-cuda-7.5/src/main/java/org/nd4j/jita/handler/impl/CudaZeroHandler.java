@@ -278,7 +278,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @param point
      */
     @Override
-    public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape) {
+    public void relocate(AllocationStatus currentStatus, AllocationStatus targetStatus, AllocationPoint point, AllocationShape shape, CudaContext context) {
         //log.info("RELOCATE CALLED: [" +currentStatus+ "] -> ["+targetStatus+"]");
 
      if (currentStatus == AllocationStatus.DEVICE && targetStatus == AllocationStatus.HOST) {
@@ -288,8 +288,6 @@ public class CudaZeroHandler implements MemoryHandler {
                 throw new IllegalStateException("Target buffer is NULL!");
 
             Pointer devicePointer = new CudaPointer(point.getPointers().getDevicePointer().address());
-
-            CudaContext context = getCudaContext();
 
             // we must be sure, no calculations are pending within these streams before copyback
 //            context.syncOldStream();
@@ -317,8 +315,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
             Pointer hostPointer = new CudaPointer(point.getPointers().getHostPointer().address());
 
-            CudaContext context = getCudaContext();
-
          /*
             JCuda.cudaMemcpyAsync(
                  devicePointer,
@@ -342,12 +338,14 @@ public class CudaZeroHandler implements MemoryHandler {
      * @param point
      */
     @Override
+    @Deprecated
     public void copyback(AllocationPoint point, AllocationShape shape) {
         /*
             Technically that's just a case for relocate, with source as point.getAllocationStatus() and target HOST
          */
         //   log.info("copyback() called on shape: " + point.getShape());
-        relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
+      //  relocate(point.getAllocationStatus(), AllocationStatus.HOST, point, shape);
+        throw new UnsupportedOperationException("Deprecated call");
     }
 
     /**
@@ -357,12 +355,14 @@ public class CudaZeroHandler implements MemoryHandler {
      * @param point
      */
     @Override
+    @Deprecated
     public void copyforward(AllocationPoint point, AllocationShape shape) {
         /*
             Technically that's just a case for relocate, with source as HOST and target point.getAllocationStatus()
          */
         log.info("copyforward() called on tp["+point.getObjectId()+"], shape: " + point.getShape());
-        relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
+        //relocate(AllocationStatus.HOST, point.getAllocationStatus(), point, shape);
+        throw new UnsupportedOperationException("Deprecated call");
     }
 
     /**
@@ -435,7 +435,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        CudaContext context = getCudaContext();
         AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         // we update host memory regardless.
         //Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
@@ -444,6 +443,8 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Location: " + point.getAllocationStatus());
 //        if (length > 4)
             //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
+
+        CudaContext tContext = null;
 
         if (dstBuffer.isConstant()) {
 
@@ -469,10 +470,13 @@ public class CudaZeroHandler implements MemoryHandler {
             */
             //log.info("Memcpy pointers: [{}] -> [{}]", srcPointer.address(),  dP.address());
 
+            CudaContext context = flowController.prepareAction(point);
+            tContext = context;
             if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed");
 
-            //context.syncOldStream();
+            if (point.getAllocationStatus() == AllocationStatus.HOST)
+                flowController.registerAction(context, point);
         }
 
 
@@ -500,19 +504,13 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, tContext.getOldStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
-            //context.syncOldStream();
+            flowController.registerAction(tContext, point);
         }
-
-//        context.syncOldStream();
-
-        //
         point.tickDeviceWrite();
-
-//
-    }
+  }
 
     @Override
     public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
@@ -671,7 +669,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     @Override
-    public org.bytedeco.javacpp.Pointer getDevicePointer(DataBuffer buffer) {
+    public org.bytedeco.javacpp.Pointer getDevicePointer(DataBuffer buffer, CudaContext context) {
         // TODO: It would be awesome to get rid of typecasting here
         //getCudaContext().syncOldStream();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
@@ -694,10 +692,10 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //if (buffer.isConstant()) {
-                   // log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
+                    log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
                     //throw new IllegalStateException("Constant buffer can't be expired on device side");
                 //}
-                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape());
+                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
 
                 //copyforward(dstPoint, dstPoint.getShape());
             } else {
@@ -763,7 +761,8 @@ public class CudaZeroHandler implements MemoryHandler {
             PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape);
 
             if (newPointers != null && newPointers.getDevicePointer() != null) {
-                relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
+                //relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);
+                if (1>0) throw new RuntimeException("Not supported yet");
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                 point.getPointers().setDevicePointer(newPointers.getDevicePointer());
