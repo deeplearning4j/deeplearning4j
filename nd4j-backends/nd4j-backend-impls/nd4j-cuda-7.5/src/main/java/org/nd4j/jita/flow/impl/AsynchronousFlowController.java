@@ -41,6 +41,8 @@ public class AsynchronousFlowController implements FlowController{
     protected AtomicLong asyncHit = new AtomicLong(0);
     protected AtomicLong asyncMiss = new AtomicLong(0);
 
+    private AtomicLong totalHits = new AtomicLong(0);
+
     protected static final int MAX_EXECUTION_QUEUE = 5;
 
     protected static final AtomicLong eventCounts = new AtomicLong(0);
@@ -102,6 +104,10 @@ public class AsynchronousFlowController implements FlowController{
     @Override
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
         // TODO: this should be lane-dependant context
+
+        if (totalHits.incrementAndGet() % 25000 == 0) {
+            log.debug("AsyncHit ratio: [{}]", getAsyncHitRatio());
+        }
 
         cudaEvent_t event = new cudaEvent_t(nativeOps.createEvent());
         event.setLaneId(context.getLaneId());
@@ -197,7 +203,7 @@ public class AsynchronousFlowController implements FlowController{
             event.destroy();
             cnt++;
         }
-        log.info("Events synchronized: [{}]", cnt);
+      //  log.info("Events synchronized: [{}]", cnt);
     }
 
     protected void synchronizeReadLanes(INDArray array) {
@@ -254,10 +260,10 @@ public class AsynchronousFlowController implements FlowController{
 
         if (result != null && (zReads || zLane >= 0)) {
             // we send this op to the same lane as active read/write event
-            asyncMiss.incrementAndGet();
+
 
             // but we still have to check, if op.X and op.Y has pending writes on other lanes
-            log.info("Busy Z dep: [{}], hasReads: [{}]", zLane, zReads);
+          //  log.info("Busy Z dep: [{}], hasReads: [{}]", zLane, zReads);
 
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
@@ -277,19 +283,21 @@ public class AsynchronousFlowController implements FlowController{
             }
 
             if (zReads) {
-                log.info("Synchronizing zReads");
+          //      log.info("Synchronizing zReads");
                 synchronizeReadLanes(result);
             }
 
             if (holdersCount.get() > 0) {
+                asyncMiss.incrementAndGet();
+
                 if (isMatchingLanes(zLane, pendingLanes)) {
-                    log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                 //   log.info("All matching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     if (zLane >= 0)
                         newLane = zLane;
                     else
                         newLane = pickFirstLane(pendingLanes);
                 } else {
-                    log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
+                 //   log.info("Mismatching lanes additional deps in [{}] -> [{}, {}]", zLane, pendingLanes[0], pendingLanes[1]);
                     // now we must sync on both pendingLanes and pass data to zLane
                     if (zLane >= 0)
                         newLane = zLane;
@@ -302,7 +310,10 @@ public class AsynchronousFlowController implements FlowController{
                     }
                 }
             } else {
-                log.info("Only Z is holder: [{}]", zLane);
+          //      log.info("Only Z is holder: [{}]", zLane);
+
+                asyncHit.incrementAndGet();
+
                 if (zLane < 0)
                     zLane = pack.nextRandomLane();
 
@@ -333,11 +344,11 @@ public class AsynchronousFlowController implements FlowController{
                 if (isMatchingLanes(pendingLanes)) {
                     // if op.X and/or op.Y has pending write in same lane - just throw op to that lane, and enjoy
                     newLane = lastLane;
-                    log.info("Paired dependencies: [{}]", newLane);
+               //     log.info("Paired dependencies: [{}]", newLane);
                 } else {
                     // we have different lanes for op.X and op.Y with pending write. We need to synchronize somewhere to become free.
                     // basically - synchronize on one lane, and throw task to another one
-                    log.info("Unpaired dependencies: [{}, {}]", pendingLanes[0], pendingLanes[1]);
+                    //log.info("Unpaired dependencies: [{}, {}]", pendingLanes[0], pendingLanes[1]);
                     if (pendingLanes[0] >= 0) {
                         waitTillFinished(allocator.getAllocationPoint(operands[0]));
                         newLane = pendingLanes[1];
@@ -352,7 +363,7 @@ public class AsynchronousFlowController implements FlowController{
 
                 newLane = pack.nextRandomLane();
 
-                log.info("Free pass here: [{}]", newLane);
+             //   log.info("Free pass here: [{}]", newLane);
             }
         }
 

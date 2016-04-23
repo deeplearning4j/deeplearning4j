@@ -465,13 +465,10 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             CudaContext context =  allocator.getFlowController().prepareAction(ret, m);
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
-                System.out.println("Starting memcpy...");
                 // do memcpy in proper direction and forget about that
                 allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
             } else {
-                System.out.println("Starting kernel invocation...");
-
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
 
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
