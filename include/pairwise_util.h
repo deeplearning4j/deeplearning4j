@@ -257,7 +257,7 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
 
     /* Coalesce any dimensions where possible */
     i = 0;
-    for (j = 1; j < ndim; ++j) {
+    for (j = 1; j < ndim; j++) {
         if (outShape[i] == 1) {
             /* Drop axis i */
             outShape[i] = outShape[j];

@@ -345,6 +345,22 @@ namespace shape {
 #endif
 
     inline int isVector(int *shape, int rank);
+
+
+    /**
+     * When 1 dimension is the whole length of the
+     * array
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline int oneDimEqualToLength(int *shape, int rank);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline int oneDimEqualToLength(int *shapeInfo);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1328,6 +1344,7 @@ namespace shape {
      */
     class TAD {
     public:
+        int tadElementWiseStride = 1;
         int dimensionLength;
         int *dimension = NULL;
         int *shapeInfo = NULL;
@@ -1442,6 +1459,89 @@ namespace shape {
 
         }
 
+        /**
+        * Compute the tad offset given a dimension.
+        *
+        * The general pattern for computing a tad offset is as follows:
+        * Every $STRIDE that was removed (the first dimension)
+        * do a jump by the major stride of the parent array
+        * (stride[0] of the parent array)
+        *
+        * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
+        * A tad of dimension 1 will jump 12 every 6 tads.
+        *
+        * You then end up with offsets of:
+        * 0
+        * 1
+        * 2
+        * 3
+        * 4
+        * 5
+        * 12
+        * 13
+        * 14
+        * 15
+        * 16
+        * 17
+        *
+        * notice there are 12 tads here. This same incremental jump will happen
+        * every time.
+        * Note here that by default the
+        * stride of element wise stride is used for the hops.
+        *
+        * Sometimes a jump doesn't happen. If there are less tads
+        * than the stride of the dimension you removed, the
+        * element wise stride will always be used.
+        *
+        * For example in a dimension of 0,1, you end up with offsets of:
+        * 0,1,2,3,4,5
+        *
+        * Given that the inner most stride of the dimensions that was removed (1)
+        * had a stride of 6, we never need to do a major stride jump.
+        *
+        */
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline int tadOffset(int index) {
+            if(tadOnlyShapeInfo == nullptr) {
+                this->createTadOnlyShapeInfo();
+            }
+
+            //singular dimensions wil mess with it
+            if(shape::oneDimEqualToLength(tadOnlyShapeInfo)) {
+                return index * tadLength;
+            }
+
+            if(dimensionLength > 1) {
+                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+
+                int rank = shape::rank(shapeInfo);
+                int *shape = shape::shapeOf(shapeInfo);
+                int *stride = shape::stride(shapeInfo);
+                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+                if(ret < 0) {
+                    delete[] tad2Sub;
+                    return -1;
+                }
+                delete[] tad2Sub;
+                return ret;
+
+            }
+            else {
+                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+                int rank = shape::rank(shapeInfo);
+                int *shape = shape::shapeOf(shapeInfo);
+                int *stride = shape::stride(shapeInfo);
+                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+                delete[] tad2Sub;
+                return ret;
+            }
+
+
+
+        }
+
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -1467,7 +1567,7 @@ namespace shape {
         void createOffsets() {
             this->tadOffsets = new int[this->numTads];
             for(int i = 0; i < this->numTads; i++) {
-                this->tadOffsets[i] = this->tadOffset(i,shapeInfo,dimension,dimensionLength);
+                this->tadOffsets[i] = this->tadOffset(i);
             }
         }
 
@@ -1563,40 +1663,10 @@ namespace shape {
 
             delete[] permuteIndexes;
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
+            ret[shape::shapeInfoLength(rank) - 2] = shape::tadElementWiseStride(shapeInfo,dimension,dimensionLength);
             return ret;
         }
-        /**
-         * Tad element wise stride:
-         * given the inner most dimension (the sorted dimension of the last)
-         * the element wise stride of the tad (disregarding order) is the
-         * last dimension's stride.
-         *
-         * For a given singular dimension this will just be the only entry.
-         * For example, given the following c order shape/stride:
-         * 2,2,3,2
-         * 12,6,2,1
-         *
-         * The tad element wise stride for 3 will be 1.
-         * For zero it wil be 12
-         *
-         * For 2,3 it's 1
-         *
-         * Note here that the multi dimensional 2,3 case
-         * is equivalent to the singular 3 case.
-         *
-         *
-         * Note that this is for the dimension that ultimately
-         * ends up removed.
-         *
-         * Again: this may not preserve ordering of the tad
-         * but maybe used for reductions.
-         */
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        inline int tadElementWiseStride(int *shapeInfo,int *dimension,int dimensionLength) {
-            return reductionIndexElementWiseStride(shapeInfo,dimension,dimensionLength);
-        }
+
 
 
         /**
@@ -3029,6 +3099,28 @@ namespace shape {
         return isVector(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline int oneDimEqualToLength(int *shape, int rank) {
+        int len = shape::prod(shape,rank);
+        for(int i = 0; i < rank; i++) {
+            if(shape[i] == len)
+                return 1;
+        }
+
+        return 0;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline int oneDimEqualToLength(int *shapeInfo) {
+        return oneDimEqualToLength(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
+    }
+
     /**
  * Returns whether the
  * given shape is a vector or not
@@ -3289,8 +3381,13 @@ namespace shape {
                         * we can use arr.stride(1) as a representation
                         * along which to iterate.
                         */
-                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-                return tadElementWiseStride;
+                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
+                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    return tadElementWiseStride;
+                }
+
+                return 1;
+
             }
             else {
                 /**
@@ -3302,8 +3399,12 @@ namespace shape {
                         * we can use arr.stride(1) as a representation
                         * along which to iterate.
                         */
-                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-                return tadElementWiseStride;
+                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
+                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    return tadElementWiseStride;
+                }
+
+                return 1;
             }
         }
         else {
