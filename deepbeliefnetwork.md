@@ -27,7 +27,7 @@ Set up the DBN with a `MultiLayerConfiguration` whose layers are RBMs:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=45:75"></script>
 
-Train the model:
+Train the model by calling `fit`:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=75:82"></script>
 
