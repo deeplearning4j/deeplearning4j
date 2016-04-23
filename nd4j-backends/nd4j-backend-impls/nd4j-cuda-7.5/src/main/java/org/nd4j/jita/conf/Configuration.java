@@ -2,9 +2,6 @@ package org.nd4j.jita.conf;
 
 import lombok.Data;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
-import org.nd4j.nativeblas.NativeOps;
 
 import java.io.Serializable;
 import java.util.ArrayList;
