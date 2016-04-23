@@ -42,3 +42,12 @@ Note that the *eval* class combines [confusion matrices](../glossary.html#confus
 F1 scores are expressed as percentages. They are basically the probability that your net's guesses are correct. To improve a neural net's performance, you can tune it by modifying the number and size of the hidden layers, and tweaking other parameters such as learning rate, momentum, weight distribution and various types of regularization.
 
 Next, we'll show you how to use [distributed and multithreaded computing](../iterativereduce) to train your networks more quickly. To read about another type of deep network, the deep autoencoder, [click here](../deepautoencoder). 
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](../neuralnet-overview)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Word2vec](../word2vec)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks](../convolutionalnets)
