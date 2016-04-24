@@ -22,7 +22,7 @@ layout: default
 * [MuseData: electronic library of classical music scores](http://musedata.stanford.edu/)
 * [JSB Chorales: set of four-part harmonized chorales](http://www.jsbchorales.net/index.shtml)
 
-## Natural Images
+## Natural-Image Datasets
 
 * [MNIST: handwritten digits](http://yann.lecun.com/exdb/mnist/)
 * [CIFAR10 / CIFAR100: 32×32 natural image dataset with 10/100 categories]( http://www.cs.utoronto.ca/~kriz/cifar.html)
@@ -49,7 +49,7 @@ layout: default
 * [ConvexNonConvex](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/ConvexNonConvex): discriminating between convex and nonconvex shapes
 * [BackgroundCorrelation](http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/BackgroundCorrelation): controling the degree of correlation in noisy MNIST backgrounds.
 
-## Faces
+## Facial Datasets
 
 * [Labelled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/): 13,000 images of faces collected from the web, labeled with the name of the person pictured.
 * [Olivetti: a few images of several different people](http://www.cs.nyu.edu/~roweis/data.html)
@@ -61,7 +61,7 @@ layout: default
 * [IndianFaceDatabase](http://vis-www.cs.umass.edu/~vidit/IndianFaceDatabase/)
 * [The Yale Face Database](http://vision.ucsd.edu/content/yale-face-database) and [The Yale Face Database B](http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html)). 
 
-## Text
+## Text Datasets
 
 * [20 newsgroups: classification task, mapping word occurences to newsgroup ID](http://qwone.com/~jason/20Newsgroups/)
 * [Reuters (RCV*) Corpuses: text/topic prediction](http://about.reuters.com/researchandstandards/corpus/)
@@ -69,7 +69,7 @@ layout: default
 * [Broadcast News: large text dataset, classically used for next word prediction](http://www.ldc.upenn.edu/Catalog/CatalogEntry.jsp?catalogId=LDC97S44)
 * [Multidomain sentiment analysis dataset](http://www.cs.jhu.edu/~mdredze/datasets/sentiment/)
 
-## Speech
+## Speech Datasets
 
 * [TIMIT Speech Corpus: phoneme classification](http://www.ldc.upenn.edu/Catalog/CatalogEntry.jsp?catalogId=LDC93S1)
 * [MovieLens](http://www.grouplens.org) The first dataset has 100,000 ratings for 1682 movies by 943 users, subdivided into five disjoint subsets. The second dataset has about 1 million ratings for 3900 movies by 6040 users. 
@@ -77,11 +77,11 @@ layout: default
 * [Netflix Prize](http://www.netflixprize.com/): Netflix released an anonymized version of their movie rating dataset; it consists of 100 million ratings, done by 480,000 users who have rated between 1 and all of the 17,770 movies.
 * [Book-Crossing dataset](http://www.informatik.uni-freiburg.de/~cziegler/BX/): From the Book-Crossing community. Contains 278,858 users providing 1,149,780 ratings about 271,379 books.
 
-## Misc
+## Miscellaneous Datasets
 
 * [CMU Motion Capture Database](http://mocap.cs.cmu.edu/)
 * [Brodatz dataset: texture modeling](http://www.ux.uis.no/~tranden/brodatz.html)
 * [Million Song dataset](http://labrosa.ee.columbia.edu/millionsong/)
 * [Merck Molecular Activity Challenge](http://www.kaggle.com/c/MerckActivity/data)
 
-*Thanks to deeplearning.net for many of these links and dataset descriptions.*
+*Thanks to deeplearning.net for many of these links and dataset descriptions. Any suggestions of open data sets we should include for the Deeplearning4j community are welcome!*
