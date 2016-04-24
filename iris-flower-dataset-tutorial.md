@@ -40,10 +40,12 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 The example will load the data automatically, but this is a good place to talk about how that happens. The IRIS dataset, like many others, comes as a CSV (comma-separated value) file. We use a [general machine-learning vectorization lib called Canova](http://deeplearning4j.org/canova.html) to parse it. 
 
-        log.info("Load data....");
-        DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
-        DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
+```
+log.info("Load data....");
+DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
+DataSet next = iter.next();
+next.normalizeZeroMeanZeroUnitVariance();
+```
 
 Like all Iterators, this one traverses the elements of a list. It makes a pass through the list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal. 
 
