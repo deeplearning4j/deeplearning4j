@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -214,5 +215,59 @@ public class CNNGradientCheckTest {
         }
     }
 
+
+    @Test
+    public void testCnnWithSubsampling(){
+
+        String afn = "sigmoid";
+        int nOut = 4;
+
+        int[] minibatchSizes = {1,3};
+        int width = 5;
+        int height = 5;
+        int inputDepth = 1;
+
+        int[] kernel = {2,2};
+        int[] stride = {1,1};
+        int[] padding = {0,0};
+
+        for(int minibatchSize : minibatchSizes){
+            INDArray input = Nd4j.rand(minibatchSize,width*height*inputDepth);
+            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+            for( int i=0; i<minibatchSize; i++ ){
+                labels.putScalar(new int[]{i,i%nOut}, 1.0);
+            }
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .regularization(false)
+                    .learningRate(1.0)
+                    .updater(Updater.SGD)
+                    .list()
+                    .layer(0, new ConvolutionLayer.Builder(kernel,stride,padding)
+                            .nIn(inputDepth).nOut(3)
+                            .build())//output: (5-2+0)/1+1 = 4
+                    .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                            .kernelSize(kernel)
+                            .stride(stride)
+                            .padding(padding)
+                            .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
+                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                            .nIn(3*3*3)
+                            .nOut(4)
+                            .build())
+                    .cnnInputSize(height,width,inputDepth)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+            assertTrue(gradOK);
+        }
+
+    }
 
 }
