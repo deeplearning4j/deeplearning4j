@@ -26,6 +26,7 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
+int maxThreads = 1024;
 bool debug = false;
 
 template <typename T>
@@ -36,6 +37,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	// no real sense launching more threads, then number of elements we have
 	if (num_threads > n) num_threads = n;
+
+	if (num_threads > maxThreads) num_threads = maxThreads;
 
 	// compute the number of blocks of size num_threads to launch
 	int num_blocks = n / num_threads;
@@ -2657,15 +2660,6 @@ Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId
 }
 
 
-int NativeOps::ompGetNumThreads() {
-	return blockLimit;
-}
-
-void NativeOps::setOmpNumThreads(int threads) {
-	printf("Setting max grid size to [%i]\n", threads);
-	//blockLimit = threads;
-}
-
 Nd4jPointer NativeOps::createContext() {
 	return 0L;
 }
@@ -2841,4 +2835,13 @@ void NativeOps::enableDebugMode(bool reallyEnable) {
 
 void NativeOps::setGridLimit(int gridSize) {
 	blockLimit = gridSize;
+}
+
+
+int NativeOps::ompGetNumThreads() {
+	return maxThreads;
+}
+
+void NativeOps::setOmpNumThreads(int threads) {
+	maxThreads = threads;
 }
