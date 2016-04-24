@@ -121,7 +121,7 @@ public class AtomicAllocator implements Allocator {
      * This method executes preconfigured number of host memory garbage collectors
      */
     protected void initHostCollectors() {
-        for (int i = 0; i < configuration.getNumberOfHostMemoryBuckets(); i++) {
+        for (int i = 0; i < configuration.getNumberOfGcThreads(); i++) {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
             UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
@@ -358,7 +358,7 @@ public class AtomicAllocator implements Allocator {
             point.setConstant(true);
         }
 
-        int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+        int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
         GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);

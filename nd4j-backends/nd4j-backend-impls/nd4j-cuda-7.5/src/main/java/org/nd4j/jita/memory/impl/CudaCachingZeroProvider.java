@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CudaCachingZeroProvider extends CudaDirectProvider implements MemoryProvider {
     private static Logger log = LoggerFactory.getLogger(CudaCachingZeroProvider.class);
 
+    protected final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
 
     protected final AtomicLong cacheZeroHit = new AtomicLong(0);
@@ -48,20 +51,20 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     protected final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
-    protected final long MAX_SINGLE_ALLOCATION = 32000000;
+    protected final long MAX_SINGLE_ALLOCATION = configuration.getMaximumHostCacheableLength();
 
     // maximum cached size of memory
-    protected final long MAX_CACHED_MEMORY;
+    protected final long MAX_CACHED_MEMORY = configuration.getMaximumHostCache();
 
     // memory chunks below this threshold will be guaranteed regardless of number of cache entries
     // that especially covers all possible variations of shapeInfoDataBuffers in all possible cases
     protected final long FORCED_CACHE_THRESHOLD = 96;
 
     //  number of preallocation entries for each yet-unknown shape
-    protected final int PREALLOCATION_LIMIT = 50;
+    protected final int PREALLOCATION_LIMIT = configuration.getPreallocationCalls();
 
     public CudaCachingZeroProvider() {
-        MAX_CACHED_MEMORY = Runtime.getRuntime().maxMemory() / 2;
+
     }
 
     /**

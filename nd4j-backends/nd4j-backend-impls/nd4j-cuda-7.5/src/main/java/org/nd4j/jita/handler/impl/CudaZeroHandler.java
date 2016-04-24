@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
+import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
@@ -19,8 +20,11 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
+import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
+import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -67,13 +71,13 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private ContextPool contextPool = new PackedContextPool();
+    private final ContextPool contextPool;
 
-    private final MemoryProvider provider = new CudaFullCachingProvider();
+    private final MemoryProvider provider;
 
-    private final FlowController flowController = new AsynchronousFlowController();
+    private final FlowController flowController;
 
-    private final AllocationStatus INITIAL_LOCATION = AllocationStatus.DEVICE;
+    private final AllocationStatus INITIAL_LOCATION;
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -99,13 +103,44 @@ public class CudaZeroHandler implements MemoryHandler {
 
     public CudaZeroHandler() {
         allocator = AtomicAllocator.getInstance();
+
+        this.INITIAL_LOCATION = configuration.getFirstMemory();
+
+        switch (configuration.getExecutionModel()) {
+            case OPTIMIZED:
+            case ASYNCHRONOUS: {
+                this.flowController = new AsynchronousFlowController();
+                this.contextPool =new PackedContextPool();
+            }
+            break;
+            case SEQUENTIAL: {
+                this.flowController = new SynchronousFlowController();
+                this.contextPool = new BasicContextPool();
+            }
+            break;
+            default:
+                throw new RuntimeException("Unknown ExecutionModel: ["+configuration.getExecutionModel()+"]");
+        }
+
+        switch (configuration.getAllocationModel()) {
+            case CACHE_ALL:
+                this.provider = new CudaFullCachingProvider();
+                break;
+            case CACHE_HOST:
+                this.provider = new CudaCachingZeroProvider();
+                break;
+            case DIRECT:
+                this.provider = new CudaDirectProvider();
+                break;
+            default:
+                throw new RuntimeException("Unknown AllocationModel: ["+ configuration.getAllocationModel()+"]");
+        }
     }
 
     /**
      * This method gets called from Allocator, during Allocator/MemoryHandler initialization
      *
      * @param configuration
-     * @param environment
      * @param allocator
      */
     @Override
@@ -119,7 +154,7 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
     private void pickupHostAllocation(AllocationPoint point) {
-        int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+        int numBuckets = configuration.getNumberOfGcThreads();
         long bucketId = RandomUtils.nextInt(0, numBuckets);
 
         long reqMemory = AllocationUtils.getRequiredMemory(point.getShape());
@@ -140,9 +175,6 @@ public class CudaZeroHandler implements MemoryHandler {
         zeroAllocations.get(bucketId).put(point.getObjectId(), point.getObjectId());
     }
 
-    private void pickupDeviceAllocation(AllocationPoint point) {
-
-    }
 
     /**
      * Allocate specified memory chunk on specified device/host

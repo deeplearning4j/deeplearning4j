@@ -3,6 +3,7 @@ package org.nd4j.jita.conf;
 import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -17,6 +18,24 @@ import java.util.List;
  */
 public class Configuration implements Serializable {
     private static Logger logger = LoggerFactory.getLogger(Configuration.class);
+
+    public enum ExecutionModel {
+        SEQUENTIAL,
+        ASYNCHRONOUS,
+        OPTIMIZED,
+    }
+
+    public enum AllocationModel {
+        DIRECT,
+        CACHE_HOST,
+        CACHE_ALL,
+    }
+
+    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
+
+    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
+
+    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
     /**
      * Keep this value between 0.01 and 0.95 please
@@ -36,7 +55,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfHostMemoryBuckets = 8;
+    @Getter private int numberOfGcThreads= 4;
 
     /**
      * Deallocation aggressiveness
@@ -92,6 +111,16 @@ public class Configuration implements Serializable {
     @Getter private long maximumHostCache = Long.MAX_VALUE;
 
     @Getter private long maximumDeviceCache = Long.MAX_VALUE;
+
+    @Getter private boolean usePreallocation = true;
+
+    @Getter private int preallocationCalls = 10;
+
+    @Getter private long maximumHostCacheableLength = 100663296;
+
+    @Getter private long maximumDeviceCacheableLength = 100663296;
+
+    @Getter private int commandQueueLength = 3;
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -207,7 +236,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setMaximumGridSize(int gridDim) {
-        if (gridDim <= 0 || gridDim >= 1024)
+        if (gridDim <= 0 || gridDim >= 512)
             throw new IllegalStateException("Please keep gridDim in range [64...512]");
 
         this.maximumGridSize = gridDim;
@@ -220,15 +249,16 @@ public class Configuration implements Serializable {
     /**
      * This methos allows to specify max blockSize for kernel launches
      *
-     * Default value: -1 (that means pick value automatically)
+     * Default value: -1 (that means pick value automatically, device occupancy dependent)
      *
      * @param blockDim
      * @return
      */
     public Configuration setMaximumBlockSize(int blockDim) {
-        if (blockDim <= 0 || blockDim > 1024)
-            throw new IllegalStateException("Please keep blockDim in range [64...512]");
+        if (blockDim <= 64 || blockDim > 1024)
+            throw new IllegalStateException("Please keep blockDim in range [64...1024]");
 
+        // TODO: implement that on native side
         this.maximumBlockSize = blockDim;
 
         return this;
@@ -243,7 +273,7 @@ public class Configuration implements Serializable {
      */
     public Configuration enableDebug(boolean debug) {
         this.debug = debug;
-
+        // TODO: implement that on native side
         return this;
     }
 
@@ -257,6 +287,161 @@ public class Configuration implements Serializable {
     public Configuration allowCrossDeviceAccess(boolean reallyAllow) {
         // TODO:  this thing should be implemented for specific algebra-related tasks
         this.crossDeviceAccessAllowed = reallyAllow;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify execution model for matrix/blas operations
+     *
+     * SEQUENTIAL: Issue commands in order Java compiler sees them.
+     * ASYNCHRONOUS: Issue commands asynchronously, if that's possible.
+     * OPTIMIZED: Not implemented yet. Equals to asynchronous for now.
+     *
+     * Default value: ASYNCHRONOUS
+     *
+     * @param executionModel
+     * @return
+     */
+    public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
+        this.executionModel = executionModel;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify allocation model for memory.
+     *
+     * DIRECT: Do not cache anything, release memory as soon as it's not used.
+     * CACHE_HOST: Cache host memory only, Device memory (if any) will use DIRECT mode.
+     * CACHE_ALL: All memory will be cached.
+     *
+     * Defailt value: CACHE_ALL
+     *
+     * @param allocationModel
+     * @return
+     */
+    public Configuration setAllocationModel(@NonNull AllocationModel allocationModel) {
+        this.allocationModel = allocationModel;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify initial memory to be used within system.
+     * HOST: all data is located on host memory initially, and gets into DEVICE, if used frequent enough
+     * DEVICE: all memory is located on device.
+     *
+     * PLEASE NOTE: For device memory all data still retains on host side as well.
+     *
+     * Default value: DEVICE
+     * @param initialMemory
+     * @return
+     */
+    public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
+        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST)
+            throw new IllegalStateException("First memory should be either [HOST] or [DEVICE]");
+
+        this.firstMemory = initialMemory;
+
+        return this;
+    }
+
+    /**
+     * NOT IMPLEMENTED YET
+     * @param reallyAllow
+     * @return
+     */
+    public Configuration allowFallbackFromDevice(boolean reallyAllow) {
+        this.zeroCopyFallbackAllowed = reallyAllow;
+        return this;
+    }
+
+    /**
+     * This method allows you to set number of threads that'll handle memory releases on native side.
+     *
+     * Default value: 4
+     * @return
+     */
+    public Configuration setNumberOfGcThreads(int numThreads) {
+        if (numThreads <= 0 || numThreads >20)
+            throw new IllegalStateException("Please, use something in range of [1..20] as number of GC threads");
+
+        this.numberOfGcThreads = numThreads;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify maximum length of single memory chunk that's allowed to be cached.
+     * Please note: -1 value totally disables limits here.
+     *
+     * Default value: 96 MB
+     * @param maxLen
+     * @return
+     */
+    public Configuration setMaximumHostCacheableLength(long maxLen) {
+        this.maximumHostCacheableLength = maxLen;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify maximum length of single memory chunk that's allowed to be cached.
+     * Please note: -1 value totally disables limits here.
+     *
+     * Default value: 96 MB
+     * @param maxLen
+     * @return
+     */
+    public Configuration setMaximumDeviceCacheableLength(long maxLen) {
+        this.maximumDeviceCacheableLength = maxLen;
+
+        return this;
+    }
+
+    /**
+     * If set to true, each non-cached allocation request will cause few additional allocations,
+     *
+     * Default value: true
+     *
+     * @param reallyAllow
+     * @return
+     */
+    public Configuration allowPreallocation(boolean reallyAllow) {
+        this.usePreallocation = reallyAllow;
+
+        return this;
+    }
+
+    /**
+     * This method allows to specify number of preallocation calls done by cache subsystem in parallel, to serve later requests.
+     *
+     * Default value: 25
+     *
+     * @param numCalls
+     * @return
+     */
+    public Configuration setPreallocationCalls(int numCalls) {
+        if (numCalls < 0 || numCalls > 100)
+            throw new IllegalStateException("Please use preallocation calls in range of [1..100]");
+        this.preallocationCalls = numCalls;
+
+        return this;
+    }
+
+    /**
+     * This method allows you to specify command queue length, as primary argument for asynchronous execution controller
+     *
+     * Default value: 3
+     *
+     * @param length
+     * @return
+     */
+    public Configuration setCommandQueueLength(int length) {
+        if (length <= 0)
+            throw new IllegalStateException("Command queue length can't be <= 0");
+        this.commandQueueLength = length;
 
         return this;
     }

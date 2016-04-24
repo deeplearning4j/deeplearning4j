@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
@@ -34,6 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AsynchronousFlowController implements FlowController{
     private volatile Allocator allocator;
 
+    private static final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
     private static Logger log = LoggerFactory.getLogger(AsynchronousFlowController.class);
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -47,7 +51,7 @@ public class AsynchronousFlowController implements FlowController{
 
     private AtomicLong totalHits = new AtomicLong(0);
 
-    protected static final int MAX_EXECUTION_QUEUE = 5;
+    protected static final int MAX_EXECUTION_QUEUE =  configuration.getCommandQueueLength();
 
     protected static final AtomicLong eventCounts = new AtomicLong(0);
 
