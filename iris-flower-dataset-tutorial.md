@@ -267,38 +267,47 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 That wraps up the deep net's configuration. Back to the rest of our program. 
 
 ### Building the Net
+
 ``` java
         .build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
         model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
 ```
+
 The first line above calls build on the configuration. The second passes the configuration into an instance of a MultiLayerNetwork model. The third initializes the model. The fourth sets iteration listeners, which do all kinds of neat things. 
 
 An *iterationListener* is a hook, a plugin, which monitors the iterations and reacts to what's happening. 
 
 A typical pattern for an iterationListener would be asking it to do something every 5 or 10 iterations. For example, you might ask it to print the error associated with your net's latest guess. You might ask it to plot either the latest weight distribution or the latest reconstructions your RBM imagines match the input data or the activations in the net itself. In addition, an iterationListener logs activity associated with the iteration, and helps you debug. 
+
 ``` java
 model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
 ```
+
 In this line of code, the ScoreIterationListener is passed the parameter specifying a number of iterations -- let's say you specify 10 -- and after every 10 iterations, it will print out the error or cost. (The higher the frequency, the more you slow things down).
 
 Next stage:
+
 ``` java
         log.info("Train model....");
         model.fit(train);
 ```
+
 With the line above, you tell the neural net to learn, passing it the training set. 
 
 ### Evaluating the Model
 
 Finally, we come to the evaluation stage. 
+
 ``` java
         log.info("Evaluate model....");
         Evaluation eval = new Evaluation();
         INDArray output = model.output(test.getFeatureMatrix());
 ```
+
 The output of the test set is a list of ground truth labels for the actual Iris species that each input sample refers to.
+
 ``` java
         for (int i = 0; i < output.rows(); i++) {
             String actual = train.getLabels().getRow(i).toString().trim();
@@ -306,13 +315,17 @@ The output of the test set is a list of ground truth labels for the actual Iris 
             log.info("actual " + actual + " vs predicted " + predicted);
         }
 ```
+
 Here, the program prints out how well it labeled samples by each classification. 
+
 ``` java
         eval.eval(test.getLabels(), output);
         log.info(eval.stats());
 ```
+
 Finally, we ask the program to print statistics such as accuracy and the F1 score. 
 
+```java
 		Actual Class 0 was Predicted 0 with count 13 times
 		
 		Actual Class 1 was Predicted 0 with count 2 times
@@ -327,6 +340,7 @@ Finally, we ask the program to print statistics such as accuracy and the F1 scor
 		 Recall:    1
 		 F1 Score:  0.8
 		================================================
+```
 
 In machine learning, an F1 score is a metric used to determine how well a classifier performs. It’s a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It’s basically the probability that your net’s guesses are correct. 
 
