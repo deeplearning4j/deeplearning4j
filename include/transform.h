@@ -4719,7 +4719,7 @@ namespace functions {
 				extraParams,
 				result,
 				resultShapeBuffer,
-				NULL,
+				nullptr,
 				1,
 				1, allocationPointer, reductionPointer);
 
@@ -4902,7 +4902,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer) {
-		if(extraParams == NULL || extraParams[0] == MAX_DIMENSION) {
+		if(extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
 			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer, reductionPointer);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
@@ -4975,7 +4975,7 @@ namespace functions {
                         T *result,
                         int *resultShapeBuffer,
                         T *extraParams) {
-                    if (extraParams == NULL || extraParams[0] == 0 ||
+                    if (extraParams == nullptr || extraParams[0] == 0 ||
                         (extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION)) {
                         this->doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
                     }
@@ -5560,7 +5560,7 @@ namespace functions {
 #endif
                 }
 
-                return NULL;
+                return nullptr;
             }
 
         };

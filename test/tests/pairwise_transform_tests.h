@@ -95,9 +95,9 @@ public:
 	}
 
 	virtual void freeOpAndOpFactory() override {
-		if(op != NULL)
+		if(op != nullptr)
 			delete op;
-		if(opFactory != NULL)
+		if(opFactory != nullptr)
 			delete opFactory;
 	}
 

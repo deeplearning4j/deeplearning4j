@@ -628,12 +628,12 @@ struct SharedSummaryStatsData<double> {
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
 		if (threadIdx.x == 0) {
-		    if (resultShapeInfo != NULL)
+		    if (resultShapeInfo != nullptr)
 			    resultLength = shape::length(resultShapeInfo);
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
+				if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -647,7 +647,7 @@ struct SharedSummaryStatsData<double> {
 			int *xStride = shape::stride(xShapeInfo);
 			char xOrder = shape::order(xShapeInfo);
 
-			if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
+			if (dimension != nullptr && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
 				xElementWiseStride =  xStride[dimension[0]];
 			} else {
 				xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -1551,7 +1551,7 @@ struct SharedSummaryStatsData<double> {
                     return new ops::StandardDeviation<T>(biasCorrected);
 #endif
                 }
-                return NULL;
+                return nullptr;
             }
 #ifdef __CUDACC__
             __inline__ __device__

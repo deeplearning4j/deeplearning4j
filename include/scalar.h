@@ -1155,7 +1155,7 @@ namespace functions {
 #else
                     return new functions::scalar::ops::GreaterThanOrEqual<T>();
 #endif
-                return NULL;
+                return nullptr;
             }
         };
 

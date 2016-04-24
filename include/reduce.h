@@ -70,7 +70,7 @@ namespace functions {
 #ifdef __CUDACC__
             virtual __host__ __device__
 	T * generateExtraParamsCuda(T *input,int *shapeInfo) {
-		return NULL;
+		return nullptr;
 	}
 #endif
 
@@ -282,12 +282,12 @@ namespace functions {
         //only compute the tad indexes once
         T reduction = this->startingValue(dx);
         if (threadIdx.x == 0) {
-            if (resultShapeInfo != NULL)
+            if (resultShapeInfo != nullptr)
                 resultLength = shape::length(resultShapeInfo);
             else resultLength = 1;
 
             if (dimensionLength == 1) {
-                if (dimension == NULL || dimension[0] == MAX_DIMENSION)
+                if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
                     resultScalar = 1;
                 else
                     resultScalar = 0;
@@ -311,7 +311,7 @@ namespace functions {
             int *xStride = shape::stride(xShapeInfo);
             char xOrder = shape::order(xShapeInfo);
 
-            if (dimension != NULL && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
+            if (dimension != nullptr && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
                 xElementWiseStride =  xStride[dimension[0]];
             } else {
                 xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -934,7 +934,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
                 virtual
@@ -1008,7 +1008,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
                 virtual
@@ -1091,7 +1091,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
                 virtual
 #ifdef __CUDACC__
@@ -1176,7 +1176,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
                 virtual
@@ -1261,7 +1261,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
 
@@ -1346,7 +1346,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
                 virtual
 #ifdef __CUDACC__
@@ -1435,7 +1435,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
 
@@ -1521,7 +1521,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
 
@@ -1606,7 +1606,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
                 __host__ __device__
 #endif
                 ReduceFunction<T> ** extraParamsFunctions() {
-                    return NULL;
+                    return nullptr;
                 }
 
                 virtual
@@ -1809,7 +1809,7 @@ __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
 #else
                     return new functions::reduce::ops::Variance<T>();
 #endif
-                return NULL;
+                return nullptr;
             }
 
 

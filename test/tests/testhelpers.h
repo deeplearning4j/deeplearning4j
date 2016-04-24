@@ -132,10 +132,10 @@ public:
     }
 
     virtual ~BaseTest() {
-        if(data != NULL)
+        if(data != nullptr)
             nd4j::array::NDArrays<T>::freeNDArrayOnGpuAndCpu(data);
 
-        if(extraParamsBuff != NULL)
+        if(extraParamsBuff != nullptr)
             nd4j::buffer::freeBuffer(extraParamsBuff);
 
         delete []result;
@@ -154,14 +154,14 @@ public:
 protected:
     int rank;
     Data<T> *baseData;
-    nd4j::array::NDArray<T> *data = NULL;
-    nd4j::array::NDArray<T> *result = NULL;
-    T *assertion = NULL;
-    T *extraParams = NULL;
+    nd4j::array::NDArray<T> *data = nullptr;
+    nd4j::array::NDArray<T> *result = nullptr;
+    T *assertion = nullptr;
+    T *extraParams = nullptr;
     int blockSize = 32;
     int gridSize = 64;
     int sMemSize = 3000;
-    nd4j::buffer::Buffer<T> *extraParamsBuff = NULL;
+    nd4j::buffer::Buffer<T> *extraParamsBuff = nullptr;
     int length;
     int opNum;
     int extraParamsLength;

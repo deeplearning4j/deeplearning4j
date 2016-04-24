@@ -62,7 +62,7 @@ struct SharedMemory {
 	getPointer() {
 		extern __device__ void error(void);
 		error();
-		return NULL;
+		return nullptr;
 	}
 
 	// Ensure that we won't compile any un-specialized types
@@ -72,7 +72,7 @@ struct SharedMemory {
 	getPointer(int num) {
 		extern __device__ void error(void);
 		error();
-		return NULL;
+		return nullptr;
 	}
 };
 

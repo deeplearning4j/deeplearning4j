@@ -56,7 +56,7 @@ TEST(PairWiseUtil,IterationOne) {
     for(int i = 0; i < 4; i++)
         data[i] = i;
 
-    double *out_data = NULL;
+    double *out_data = nullptr;
 
     printf("Succeeded %d\n",PrepareOneRawArrayIter(rank,shape,data,strides,&rank,shapeIter, &out_data, dstStridesIter));
 
@@ -92,7 +92,7 @@ TEST(PairWiseUtil,DifferentOrderCopy) {
     int *xShapeBuffer = shape::shapeBuffer(3,shape);
     int *yShapeBuffer = shape::shapeBuffer(3,shape);
 
-    op->exec(data, xShapeBuffer, yData, yShapeBuffer, resultData, xShapeBuffer, NULL);
+    op->exec(data, xShapeBuffer, yData, yShapeBuffer, resultData, xShapeBuffer, nullptr);
     for(int i = 0; i < 8; i++) {
         CHECK_EQUAL(resultData[i],yData[i]);
     }
@@ -123,7 +123,7 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistance) {
     Reduce3<double> *op  = new functions::reduce3::ops::EuclideanDistance<double>();
     int *xShapeBuffer = shape::shapeBuffer(rank,shapeArr);
     int *yShapeBuffer = shape::shapeBufferFortran(rank,shapeArr);
-    double result = op->execScalar(data,xShapeBuffer,NULL,yData,yShapeBuffer);
+    double result = op->execScalar(data,xShapeBuffer,nullptr,yData,yShapeBuffer);
     CHECK_EQUAL(assertion,result);
 
     delete op;
@@ -158,7 +158,7 @@ TEST(PairWiseUtil,PairWiseUtilEuclideanDistanceDimension) {
     dimension[0] = 0;
 
     int *resultShapeBuffer = shape::shapeBuffer(rank,resultShape);
-    op->exec(data,xShapeBuffer,NULL,yData,yShapeBuffer,result,resultShapeBuffer,dimension,dimensionLength);
+    op->exec(data,xShapeBuffer,nullptr,yData,yShapeBuffer,result,resultShapeBuffer,dimension,dimensionLength);
 
     delete []xShapeBuffer;
     delete []yShapeBuffer;

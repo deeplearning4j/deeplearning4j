@@ -35,8 +35,8 @@ TEST_GROUP(Transform) {
 template <typename T>
 class TransformTest : public BaseTest<T> {
 protected:
-    functions::transform::Transform<T> *op = NULL;
-    functions::transform::TransformOpFactory<T> *opFactory = NULL;
+    functions::transform::Transform<T> *op = nullptr;
+    functions::transform::TransformOpFactory<T> *opFactory = nullptr;
 
 
 public:
@@ -57,9 +57,9 @@ public:
         createOperationAndOpFactory();
     }
     virtual void freeOpAndOpFactory() override {
-        if(op != NULL)
+        if(op != nullptr)
             delete op;
-        if(opFactory != NULL)
+        if(opFactory != nullptr)
             delete opFactory;
     }
 

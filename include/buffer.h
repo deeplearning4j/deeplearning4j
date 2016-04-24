@@ -220,7 +220,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 
                 void freeBuffer(Buffer<T> *buffer) {
 #ifdef __CUDACC__
-			if(buffer->gData != NULL)
+			if(buffer->gData != nullptr)
             checkCudaErrors(cudaFree(buffer->gData));
 #endif
 

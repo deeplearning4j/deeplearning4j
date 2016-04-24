@@ -212,8 +212,8 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1, allocationPointer, reductionPointer);
 
@@ -519,7 +519,7 @@ void   NativeOps::execReduceDouble(
 			,extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1,
 			allocPointer, reductionPointer);
@@ -610,8 +610,8 @@ double NativeOps::execReduceScalarDouble(
 			xShapeInfoPointer
 			,extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1,
 			allocPointer, reductionPointer);
@@ -666,7 +666,7 @@ void   NativeOps::execReduce3Double(
 			extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1, allocationPointer);
 
@@ -712,8 +712,8 @@ double   NativeOps::execReduce3ScalarDouble(
 			yShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1, allocationPointer);
 
@@ -946,8 +946,8 @@ double   NativeOps::execSummaryStatsScalarDouble(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
@@ -994,7 +994,7 @@ void   NativeOps::execSummaryStatsDouble(
 			extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
@@ -1183,7 +1183,7 @@ void   NativeOps::execTransformDouble(
 				}
 				case 41: {
 					// IsMax along all dimensions
-					if (extraParams == NULL) {
+					if (extraParams == nullptr) {
 						int maxIdx = (int) execIndexReduceScalarDouble(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -1294,8 +1294,8 @@ float   NativeOps::execIndexReduceScalarFloat(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1, allocationPointer, reductionPointer);
 
@@ -1602,7 +1602,7 @@ void   NativeOps::execReduceFloat(
 			,extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1,
 			allocPointer, reductionPointer);
@@ -1691,8 +1691,8 @@ float NativeOps::execReduceScalarFloat(
 			xShapeInfoPointer
 			,extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1,
 			allocPointer,
@@ -1750,7 +1750,7 @@ void   NativeOps::execReduce3Float(
 			extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1, allocationPointer);
 
@@ -1796,8 +1796,8 @@ float   NativeOps::execReduce3ScalarFloat(
 			yShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1, allocationPointer);
 
@@ -2032,8 +2032,8 @@ float   NativeOps::execSummaryStatsScalarFloat(
 			xShapeInfoPointer,
 			extraParamsPointer,
 			resultPointer,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
@@ -2079,7 +2079,7 @@ void   NativeOps::execSummaryStatsFloat(
 			extraParamsPointer,
 			resultPointer,
 			resultShapeInfoPointer,
-			NULL,
+			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
 
@@ -2268,7 +2268,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
-					if (extraParams == NULL) {
+					if (extraParams == nullptr) {
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -2671,7 +2671,7 @@ Nd4jPointer NativeOps::createContext() {
 }
 
 Nd4jPointer NativeOps::createStream() {
-	Nd4jPointer nativeStream = NULL;
+	Nd4jPointer nativeStream = nullptr;
 	cudaError_t result = cudaStreamCreate((cudaStream_t *) &nativeStream);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -2680,7 +2680,7 @@ Nd4jPointer NativeOps::createStream() {
 }
 
 Nd4jPointer NativeOps::createEvent() {
-	Nd4jPointer nativeEvent= NULL;
+	Nd4jPointer nativeEvent= nullptr;
 	cudaError_t result = cudaEventCreateWithFlags((cudaEvent_t *) &nativeEvent, cudaEventBlockingSync | cudaEventDisableTiming);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -2689,7 +2689,7 @@ Nd4jPointer NativeOps::createEvent() {
 }
 
 Nd4jPointer NativeOps::createBlasHandle() {
-	Nd4jPointer nativeHandle= NULL;
+	Nd4jPointer nativeHandle= nullptr;
 	cublasStatus_t result = cublasCreate((cublasHandle_t *) &nativeHandle);
 	if (result != 0)
 		return 0L;

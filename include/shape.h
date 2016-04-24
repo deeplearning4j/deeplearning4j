@@ -62,16 +62,16 @@ namespace shape {
  */
     class TADPermuteInfo {
     public:
-        int *tensorShape = NULL;
+        int *tensorShape = nullptr;
         int xRank = 0;
-        int *reverseDimensions = NULL;
-        int *rangeRet = NULL;
+        int *reverseDimensions = nullptr;
+        int *rangeRet = nullptr;
         int removeLength;
-        int *remove = NULL;
-        int *zeroDimension = NULL;
-        int *newPermuteDims = NULL;
-        int *permutedShape = NULL;
-        int *permutedStrides = NULL;
+        int *remove = nullptr;
+        int *zeroDimension = nullptr;
+        int *newPermuteDims = nullptr;
+        int *permutedShape = nullptr;
+        int *permutedStrides = nullptr;
         int tensorShapeLength = 0;
         int tensorShapeProd = 0;
     };
@@ -1356,20 +1356,20 @@ namespace shape {
     public:
         int tadElementWiseStride = 1;
         int dimensionLength;
-        int *dimension = NULL;
-        int *shapeInfo = NULL;
-        int *tadOnlyShapeInfo = NULL;
+        int *dimension = nullptr;
+        int *shapeInfo = nullptr;
+        int *tadOnlyShapeInfo = nullptr;
         int numTads = 0;
-        int *tadShape = NULL;
-        int *tadStride = NULL;
-        int *tadOffsets = NULL;
+        int *tadShape = nullptr;
+        int *tadStride = nullptr;
+        int *tadOffsets = nullptr;
         int tadLength = 0   ;
         int rank = 0;
         int numOnes = 0;
         //pointers to original
         int originalDimensionLength;
-        int *originalDimension = NULL;
-        int *originalShapeInfo = NULL;
+        int *originalDimension = nullptr;
+        int *originalShapeInfo = nullptr;
         bool squeezed = false;
         bool newSqueezeDimensions = false;
         int numOnesInMiddle = 0;
@@ -1379,9 +1379,9 @@ namespace shape {
         bool createdNewDimension = false;
 
         // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
-        int *shapeBuffer = NULL;
-        int *strideBuffer = NULL;
-        int *outBuffer = NULL;
+        int *shapeBuffer = nullptr;
+        int *strideBuffer = nullptr;
+        int *outBuffer = nullptr;
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1484,11 +1484,11 @@ namespace shape {
             if(this->originalShapeInfo != this->shapeInfo) {
                 delete[] this->shapeInfo;
             }
-            if(this->tadOffsets != NULL) {
+            if(this->tadOffsets != nullptr) {
                 delete[] this->tadOffsets;
             }
 
-            if(this->tadOnlyShapeInfo != NULL && this->tadOnlyShapeInfo != shapeInfo) {
+            if(this->tadOnlyShapeInfo != nullptr && this->tadOnlyShapeInfo != shapeInfo) {
                 delete[] this->tadOnlyShapeInfo;
             }
 
@@ -1857,8 +1857,8 @@ namespace shape {
                                       bool *squeezeDimensionsRef,
                                       int wholeRank,
                                       int numOnes) {
-            int *squeezeShape = this->shapeBuffer == NULL ? new int[wholeRank - numOnes] : this->shapeBuffer;
-            int *squeezeStride = this->strideBuffer == NULL ? new int[wholeRank - numOnes] : this->strideBuffer;
+            int *squeezeShape = (this->shapeBuffer == nullptr ? new int[wholeRank - numOnes] : this->shapeBuffer);
+            int *squeezeStride = this->strideBuffer == nullptr ? new int[wholeRank - numOnes] : this->strideBuffer;
             *squeezedRef = true;
 
             int *shape = shape::shapeOf(shapeInfo);
@@ -1890,7 +1890,7 @@ namespace shape {
             wholeRank -= numOnes;
 
             char order = shape::order(shapeInfo);
-            int *xShapeInfo = this->outBuffer == NULL ? shape::createShapeInfo(shape,stride,wholeRank) : shape::createShapeInfo(shape,stride,wholeRank, this->outBuffer);
+            int *xShapeInfo = this->outBuffer == nullptr ? shape::createShapeInfo(shape,stride,wholeRank) : shape::createShapeInfo(shape,stride,wholeRank, this->outBuffer);
             xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
 
             return xShapeInfo;
@@ -4212,21 +4212,21 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline void freePermuteInfo(TADPermuteInfo info) {
-        if(info.tensorShape != NULL)
+        if(info.tensorShape != nullptr)
             delete[] info.tensorShape;
-        if(info.reverseDimensions != NULL)
+        if(info.reverseDimensions != nullptr)
             delete[] info.reverseDimensions;
-        if(info.rangeRet != NULL)
+        if(info.rangeRet != nullptr)
             delete[] info.rangeRet;
-        if(info.remove != NULL)
+        if(info.remove != nullptr)
             delete[] info.remove;
-        if(info.zeroDimension != NULL)
+        if(info.zeroDimension != nullptr)
             delete[] info.zeroDimension;
-        if(info.newPermuteDims != NULL)
+        if(info.newPermuteDims != nullptr)
             delete[] info.newPermuteDims;
-        if(info.permutedShape != NULL)
+        if(info.permutedShape != nullptr)
             delete[] info.permutedShape;
-        if(info.permutedStrides != NULL)
+        if(info.permutedStrides != nullptr)
             delete[] info.permutedStrides;
 
     }

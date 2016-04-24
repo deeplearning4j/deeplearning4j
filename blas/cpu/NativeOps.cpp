@@ -12,7 +12,7 @@ private:
     static DoubleNativeOpExecutioner *DOUBLE_INSTANCE;
 public:
     static DoubleNativeOpExecutioner * getInstance() {
-        if(DOUBLE_INSTANCE == NULL)
+        if(DOUBLE_INSTANCE == nullptr)
             DOUBLE_INSTANCE = new DoubleNativeOpExecutioner();
         return DOUBLE_INSTANCE;
     }
@@ -23,7 +23,7 @@ private:
     static FloatNativeOpExecutioner *FLOAT_INSTANCE ;
 public:
     static FloatNativeOpExecutioner * getInstance() {
-        if(FLOAT_INSTANCE == NULL)
+        if(FLOAT_INSTANCE == nullptr)
             FLOAT_INSTANCE = new FloatNativeOpExecutioner();
         return FLOAT_INSTANCE;
     }
@@ -32,8 +32,8 @@ public:
 
 
 
-FloatNativeOpExecutioner *FloatNativeOpExecutioner::FLOAT_INSTANCE = NULL;
-DoubleNativeOpExecutioner *DoubleNativeOpExecutioner::DOUBLE_INSTANCE = NULL;
+FloatNativeOpExecutioner *FloatNativeOpExecutioner::FLOAT_INSTANCE = nullptr;
+DoubleNativeOpExecutioner *DoubleNativeOpExecutioner::DOUBLE_INSTANCE = nullptr;
 
 
 

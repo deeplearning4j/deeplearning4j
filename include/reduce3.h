@@ -386,12 +386,12 @@ namespace functions {
 
 		T reduction = this->startingValue(dx);
 		if (tid == 0) {
-			if (resultShapeInfo != NULL)
+			if (resultShapeInfo != nullptr)
 				resultLength = shape::length(resultShapeInfo);
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
+				if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -898,7 +898,7 @@ namespace functions {
                     int tadLength = elementsPerReductionIndex;
 #pragma omp parallel for
                     for(Nd4jIndex i = 0; i < resultLength; i++) {
-                        T *localExtraParams = NULL;
+                        T *localExtraParams = nullptr;
                         if(this->extraParamsLength() > 0)
                             localExtraParams = new T[this->extraParamsLength()];
                         for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
@@ -913,7 +913,7 @@ namespace functions {
 
                         result[i] = postProcess(result[i],tadLength,&localExtraParams);
 
-                        if(localExtraParams != NULL)
+                        if(localExtraParams != nullptr)
                             delete[] localExtraParams;
                     }
 
@@ -1095,7 +1095,7 @@ namespace functions {
                 __inline__ __host__ __device__
 #endif
                 T * generateExtraParams() {
-                    return NULL;
+                    return nullptr;
                 }
                 virtual
 #ifdef __CUDACC__
@@ -1220,7 +1220,7 @@ namespace functions {
                 __inline__ __host__ __device__
 #endif
                 T * generateExtraParams() {
-                    return NULL;
+                    return nullptr;
                 }
                 virtual
 #ifdef __CUDACC__
@@ -1345,7 +1345,7 @@ namespace functions {
                 __inline__ __host__ __device__
 #endif
                 T * generateExtraParams() {
-                    return NULL;
+                    return nullptr;
                 }
                 virtual
 #ifdef __CUDACC__
@@ -1504,7 +1504,7 @@ namespace functions {
 #else
                     return new functions::reduce3::ops::Dot<T>();
 #endif
-                return NULL;
+                return nullptr;
             }
         };
 

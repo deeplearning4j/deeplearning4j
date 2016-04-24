@@ -1975,7 +1975,7 @@ namespace functions {
 #else
 					return new pairwise_transforms::ops::Set<T>();
 #endif
-			return NULL;
+			return nullptr;
 			}
 
 

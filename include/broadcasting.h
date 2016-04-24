@@ -861,7 +861,7 @@ namespace functions {
 #endif
 				}
 
-				return NULL;
+				return nullptr;
 
 			}
 

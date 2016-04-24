@@ -268,12 +268,12 @@ struct SharedIndexValue<double> {
 		IndexValue <T> reduction = {startingVal, 0};
 
 		if (threadIdx.x == 0) {
-			if (resultShapeInfo != NULL)
+			if (resultShapeInfo != nullptr)
 				resultLength = shape::length(resultShapeInfo);
 			else resultLength = 1;
 
 			if (dimensionLength == 1) {
-				if (dimension == NULL || dimension[0] == MAX_DIMENSION)
+				if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
 					resultScalar = 1;
 				else
 					resultScalar = 0;
@@ -1227,7 +1227,7 @@ struct SharedIndexValue<double> {
 					return new functions::indexreduce::ops::IMin<T>();
 #endif
 				}
-				return NULL;
+				return nullptr;
 			}
 		};
 	}
