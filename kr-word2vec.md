@@ -473,7 +473,16 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 * [Word2Vec 소개](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov'의 Word2vec 코드 원문 @구글](https://code.google.com/p/word2vec/)
 * [word2vec 설명: Mikolov et al.’의 Negative-Sampling Word-Embedding 방식 도출하기](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg와 Omer Levy
-* [Bag of Words & 용어 빈도-역 문서 빈도 (TF-IDF)](../bagofwords-tf-idf.html)
+* [Bag of Words & 용어 빈도-역 문서 빈도 (TF-IDF)](../bagofwords-tf-idf)
+
+### 다른 초보자 가이드
+
+* [심층 신경망 소개](../kr-neuralnet-overview)
+* [초보자를 위한 RNNs과 LSTM 가이드](../kr-lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](../kr-eigenvector)
+* [컨볼루션 네트워크](../kr-convolutionalnets)
+* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](../kr-restrictedboltzmannmachine)
+* [Neural Networks & Regression](../linear-regression)
 
 ### <a name="doctorow">문학 속의 Word2Vec</a>
 
