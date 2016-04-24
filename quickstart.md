@@ -6,7 +6,7 @@ layout: default
 Quick Start Guide
 =========================================
 
-This page is designed to get you up and running with DL4J 
+This page is designed to get you up and running with DL4J. 
 
 ## Prerequisites
 
