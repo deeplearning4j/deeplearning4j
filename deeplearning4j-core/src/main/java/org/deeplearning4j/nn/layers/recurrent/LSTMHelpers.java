@@ -129,7 +129,8 @@ public class LSTMHelpers {
             toReturn.oa = new INDArray[timeSeriesLength];
             toReturn.ga = new INDArray[timeSeriesLength];
         } else {
-            outputActivations = Nd4j.zeros(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength});
+//            outputActivations = Nd4j.zeros(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength});      //Before
+            outputActivations = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength},'f');   //F order to keep time steps together
             toReturn.fwdPassOutput = outputActivations;
         }
 
@@ -260,7 +261,11 @@ public class LSTMHelpers {
         }
         for (int i = 0; i < 3; i++) rwGradients[i + 4] = Nd4j.zeros(1, hiddenLayerSize);    //Order as per Nd4j.order()
 
-        INDArray epsilonNext = Nd4j.zeros(miniBatchSize, prevLayerSize, timeSeriesLength);    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+        //Original:
+        //INDArray epsilonNext = Nd4j.zeros(miniBatchSize, prevLayerSize, timeSeriesLength);    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+
+        //F order here so that content for time steps are together
+        INDArray epsilonNext = Nd4j.create(new int[]{miniBatchSize, prevLayerSize, timeSeriesLength},'f');    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         INDArray nablaCellStateNext = null;
         INDArray deltaiNext = null;
