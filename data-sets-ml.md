@@ -30,3 +30,5 @@ The second set is your **test set**. It functions as a seal of approval, and you
 If you don’t get accurate predictions, go back to the training set, look at the hyperparameters you used to tune the network, as well as the quality of your data and look at your pre-processing techniques. 
 
 Now that you have the overview, we'll show you how to create [custom datasets](../customdatasets.html).
+
+Various [repositories of open data sets](../opendata) that may be useful in training neural networks are available through the link. 
