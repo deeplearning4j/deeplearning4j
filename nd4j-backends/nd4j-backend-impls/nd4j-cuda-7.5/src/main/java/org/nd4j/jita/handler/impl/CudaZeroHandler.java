@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private AtomicLong zeroCounter = new AtomicLong(0);
 
-    protected NativeOps nativeOps = new NativeOps(); // ((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
+    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public CudaZeroHandler() {
         allocator = AtomicAllocator.getInstance();

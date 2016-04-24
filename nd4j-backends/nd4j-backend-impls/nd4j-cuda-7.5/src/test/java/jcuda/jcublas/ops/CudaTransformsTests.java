@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -21,6 +22,16 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CudaTransformsTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setMaximumBlockSize(1024)
+                .enableDebug(true);
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testPinnedCosine() throws Exception {
@@ -387,9 +398,7 @@ public class CudaTransformsTests {
     @Test
     public void testIsMaxEqualValues(){
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
-        CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
-                .enableDebug(true);
+
 
         //[1 1 1] -> [1 0 0]
         //Loop to double check against any threading weirdness...
@@ -515,8 +524,12 @@ public class CudaTransformsTests {
         INDArray arrCCopy = arrF.dup('c');
         Nd4j.getExecutioner().exec(new Tanh(arrFCopy));
         Nd4j.getExecutioner().exec(new Tanh(arrCCopy));
-        assertEquals(exp, arrFCopy);
+
+        System.out.println("ArrF shape: " + arrFCopy.shapeInfoDataBuffer());
+        System.out.println("ArrC shape: " + arrCCopy.shapeInfoDataBuffer());
+
         assertEquals(exp, arrCCopy);
+        assertEquals(exp, arrFCopy);
 
         //Second: do op with both x and z:
 
