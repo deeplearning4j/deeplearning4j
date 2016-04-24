@@ -29,12 +29,14 @@ In this way, you can use a neural network to get the function relating an arbitr
 
 To perform regression with a neural network in Deeplearning4j, you would [set up a multilayer neural network](../iris-flower-dataset-tutorial.html), and add an output layer at the end with the following properties:
 
-		//Create output layer
-		.layer()
-		.nIn($NumberOfInputFeatures)
-		.nOut(1)
-		.activationFunction('identity')
-		.lossFunction(LossFunctions.LossFunction.RMSE)
+```
+//Create output layer
+.layer()
+.nIn($NumberOfInputFeatures)
+.nOut(1)
+.activationFunction('identity')
+.lossFunction(LossFunctions.LossFunction.RMSE)
+```
 
 `nOut` is the number of nodes in any layer. `nIn` is the number of features being passed from the previous layer -- in the diagram above it would be 4. `activationFunction` should be set to `'identity'`.
 
