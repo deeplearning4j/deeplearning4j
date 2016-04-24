@@ -53,3 +53,12 @@ Here are a few of the approaches that are being made to thought vectorization:
 
 * Doc2vec: [Doc2Vec](http://deeplearning4j.org/doc2vec.html), paragraph vectors and sentence vectors are broadly synonymous. It doesn't necessarily account for word order and it is generally used in associating word groups with labels (in sentiment analysis, for example)
 * [Seq2seq bilingual translation](http://arxiv.org/pdf/1409.3215) and [skip-thought vectors](http://arxiv.org/abs/1506.06726).
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Neural Networks](../neuralnet-overview)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks](../convolutionalnets)
+* [Word2vec](../word2vec)
