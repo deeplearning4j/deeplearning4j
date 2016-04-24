@@ -21,6 +21,7 @@ Those marker words are then fed to the neural net as features in order to determ
 
 Setting up a BoW looks something like this: 
 
+``` java
     public class BagOfWordsVectorizer extends BaseTextVectorizer {
       public BagOfWordsVectorizer(){}
       protected BagOfWordsVectorizer(VocabCache cache,
@@ -38,7 +39,17 @@ Setting up a BoW looks something like this:
           super(cache, tokenizerFactory, stopWords, minWordFrequency, docIter, sentenceIterator,
               labels,index,batchSize,sample,stem,cleanup);
     }
+```
 
 Click here to see [other BoW-based text-vectorization methods](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/bagofwords/vectorizer/BagOfWordsVectorizer.java).
 
 BoW is different from [Word2vec](../word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Word2vec](../word2vec)
+* [Introduction to Neural Networks](../neuralnet-overview)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
+* [LSTMs and Recurrent Networks](../lstm)
+* [Neural Networks and Regression](../linear-regression)
+* [Convolutional Networks for Images](../convolutionalnets)
