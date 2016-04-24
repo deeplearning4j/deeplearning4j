@@ -1183,7 +1183,7 @@ void   NativeOps::execTransformDouble(
 				}
 				case 41: {
 					// IsMax along all dimensions
-					if (extraParams == nullptr) {
+					if (extraParamsPointer == nullptr) {
 						int maxIdx = (int) execIndexReduceScalarDouble(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -2268,7 +2268,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
-					if (extraParams == nullptr) {
+					if (extraParamsPointer == nullptr) {
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -2671,7 +2671,7 @@ Nd4jPointer NativeOps::createContext() {
 }
 
 Nd4jPointer NativeOps::createStream() {
-	Nd4jPointer nativeStream = nullptr;
+	Nd4jPointer nativeStream = 0;
 	cudaError_t result = cudaStreamCreate((cudaStream_t *) &nativeStream);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -2680,7 +2680,7 @@ Nd4jPointer NativeOps::createStream() {
 }
 
 Nd4jPointer NativeOps::createEvent() {
-	Nd4jPointer nativeEvent= nullptr;
+	Nd4jPointer nativeEvent= 0;
 	cudaError_t result = cudaEventCreateWithFlags((cudaEvent_t *) &nativeEvent, cudaEventBlockingSync | cudaEventDisableTiming);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -2689,7 +2689,7 @@ Nd4jPointer NativeOps::createEvent() {
 }
 
 Nd4jPointer NativeOps::createBlasHandle() {
-	Nd4jPointer nativeHandle= nullptr;
+	Nd4jPointer nativeHandle= 0;
 	cublasStatus_t result = cublasCreate((cublasHandle_t *) &nativeHandle);
 	if (result != 0)
 		return 0L;
