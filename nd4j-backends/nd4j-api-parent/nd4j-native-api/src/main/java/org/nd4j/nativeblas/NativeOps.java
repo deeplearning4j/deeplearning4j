@@ -913,4 +913,8 @@ public class NativeOps extends Pointer {
     public native long memsetAsync(long dst, int value, long size, int flags, long reserved);
 
     public native long getAvailableDevices();
+
+    public native void enableDebugMode(boolean reallyEnable);
+
+    public native void setGridLimit(int gridSize);
 }

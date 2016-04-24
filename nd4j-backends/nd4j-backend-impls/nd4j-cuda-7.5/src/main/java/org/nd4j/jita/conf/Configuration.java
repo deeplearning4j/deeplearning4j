@@ -154,6 +154,9 @@ public class Configuration implements Serializable {
         for (int i = 0; i < cnt; i++) {
             availableDevices.add(i);
         }
+
+        nativeOps.setOmpNumThreads(maximumBlockSize);
+        nativeOps.setGridLimit(maximumGridSize);
     }
 
     /**
@@ -241,7 +244,7 @@ public class Configuration implements Serializable {
 
         this.maximumGridSize = gridDim;
 
-        nativeOps.setOmpNumThreads(gridDim);
+        nativeOps.setGridLimit(maximumGridSize);
 
         return this;
     }
@@ -258,8 +261,10 @@ public class Configuration implements Serializable {
         if (blockDim <= 64 || blockDim > 1024)
             throw new IllegalStateException("Please keep blockDim in range [64...1024]");
 
-        // TODO: implement that on native side
+
         this.maximumBlockSize = blockDim;
+
+        nativeOps.setOmpNumThreads(blockDim);
 
         return this;
     }
@@ -273,7 +278,9 @@ public class Configuration implements Serializable {
      */
     public Configuration enableDebug(boolean debug) {
         this.debug = debug;
-        // TODO: implement that on native side
+
+        nativeOps.enableDebugMode(debug);
+
         return this;
     }
 
