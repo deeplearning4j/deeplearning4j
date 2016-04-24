@@ -15,6 +15,7 @@ import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
@@ -66,7 +67,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
-    private Configuration configuration = new Configuration();
+    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 

@@ -8,7 +8,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.context.ContextPool;
-import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -20,7 +19,6 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.flow.impl.SynchronousFlowController;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
@@ -212,7 +210,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     point.setAllocationStatus(AllocationStatus.HOST);
                 }
 
-                if (reqMemory < configuration.getMaximumSingleAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
+                if (reqMemory < configuration.getMaximumSingleHostAllocation() && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration.getMaximumDeviceAllocation()) {
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(), reqMemory)) {
                         point.setDeviceId(deviceId);

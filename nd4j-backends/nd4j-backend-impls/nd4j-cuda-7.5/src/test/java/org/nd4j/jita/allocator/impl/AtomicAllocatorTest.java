@@ -52,8 +52,8 @@ public class AtomicAllocatorTest {
 
 
             Configuration configuration = new Configuration();
-            configuration.setHostDeallocAggressiveness(Aggressiveness.IMMEDIATE);
-            configuration.setMaximumSingleAllocation(5000);
+      //      configuration.setHostDeallocAggressiveness(Aggressiveness.IMMEDIATE);
+            configuration.setMaximumSingleHostAllocation(5000);
             configuration.setMaximumZeroAllocation(1000000000);
 
 //            singleDevice4GBcc52 = new CudaEnvironment(configuration);
