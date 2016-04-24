@@ -34,7 +34,9 @@ RBM의 구조는 상대적으로 단순한 편입니다. RBM은 자체적으로�
 
 이제 위의 구조에 이미지를 넣었다고 가정하고 실제로 어떤 값이 어떻게 결정이 되는지 살펴보겠습니다. 아래 그림처럼 입력으로 *x*를 넣으면 그 은닉층의 노드에 있는 가중치 *w*와 곱해집니다. 그리고 바이어스(b)를 더한 값(`w*x+b`)을 활성함수 `f()`에 넣은 것이 노드의 출력이 됩니다.
 
+``` java
 		activation f((weight w * input x) + bias b ) = output a
+```
 
 ![Alt text](../img/input_path_RBM.png)
 
@@ -140,6 +142,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
 
 아래 코드는 `NeuralNetConfiguration`에서 RBM층을 만드는 과정입니다. 주석을 참고하면 가시층의 값을 가우시안으로 결정하는 과정을 볼 수 있습니다.
 
+``` java
 		public class RBMIrisExample {		
  		
      private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
@@ -202,6 +205,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
      }		
      // A single layer learns features unsupervised.	
     }
+```
 
 이 코드는 [RBM processing the Iris flower dataset](../iris-flower-dataset-tutorial.html)의 일부입니다. 자세한 설명은 해당 링크를 참고하시기 바랍니다.
 
