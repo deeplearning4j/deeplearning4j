@@ -13,6 +13,7 @@ import org.nd4j.jita.allocator.context.impl.BasicContextPool;
 import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.allocator.impl.*;
@@ -51,7 +52,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author raver119@gmail.com
  */
 public class CudaZeroHandler implements MemoryHandler {
-    private Configuration configuration;
+    private static Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     private static Allocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(CudaZeroHandler.class);

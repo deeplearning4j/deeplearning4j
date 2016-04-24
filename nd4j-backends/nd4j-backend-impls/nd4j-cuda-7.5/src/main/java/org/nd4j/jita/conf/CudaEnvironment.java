@@ -7,7 +7,7 @@ import lombok.NonNull;
  */
 public class CudaEnvironment {
     private static final CudaEnvironment INSTANCE = new CudaEnvironment();
-    private volatile Configuration configuration;
+    private static volatile Configuration configuration = new Configuration();
 
     private CudaEnvironment() {
 
