@@ -1475,17 +1475,35 @@ namespace functions {
              * @return
              */
 #ifdef __CUDACC__
-            __inline__ __host__ __device__
-#endif
+            __inline__ __device__
+            Reduce3<T> * getOp(int op, unsigned char *buffer) {
+#else
             Reduce3<T> * getOp(int op) {
+#endif
                 if (op == 0)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce3::ops::ManhattanDistance<T>();
+#else
                     return new functions::reduce3::ops::ManhattanDistance<T>();
+#endif
                 else if (op == 1)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce3::ops::EuclideanDistance<T>();
+#else
                     return new functions::reduce3::ops::EuclideanDistance<T>();
+#endif
                 else if (op == 2)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce3::ops::CosineSimilarity<T>();
+#else
                     return new functions::reduce3::ops::CosineSimilarity<T>();
+#endif
                 else if (op == 3)
+#ifdef __CUDACC__
+                    return new(buffer) functions::reduce3::ops::Dot<T>();
+#else
                     return new functions::reduce3::ops::Dot<T>();
+#endif
                 return NULL;
             }
         };
@@ -1505,25 +1523,20 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		T *result,
 		int *resultShapeInfo,
 		int postProcessOrNot, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce3::Reduce3OpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce3::Reduce3<T>)];
+
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	if(threadIdx.x == 0)
-		reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
-		op = reduce3OpFactory->getOp(opNum);
+	if(threadIdx.x == 0) {
+		reduce3OpFactory = new(factoryBuffer) functions::reduce3::Reduce3OpFactory<T>();
+		op = reduce3OpFactory->getOp(opNum, functionBuffer);
+	}
 	__syncthreads();
 
 	op->transformNoElementWiseStride(dx,xShapeInfo,dy,yShapeInfo,extraParams,result,resultShapeInfo,postProcessOrNot, allocationPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete reduce3OpFactory;
-	}
-
 }
 
 
@@ -1603,15 +1616,17 @@ __device__ void reduce3Generic(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationPointer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::reduce3::Reduce3OpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::reduce3::Reduce3<T>)];
+
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	if(threadIdx.x == 0)
-		reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-	__syncthreads();
-
-	if(threadIdx.x == 0)
-		op = reduce3OpFactory->getOp(opNum);
+	if(threadIdx.x == 0) {
+		reduce3OpFactory = new(factoryBuffer) functions::reduce3::Reduce3OpFactory<T>();
+		op = reduce3OpFactory->getOp(opNum, functionBuffer);
+	}
 	__syncthreads();
 
 	op->transform(
@@ -1624,13 +1639,6 @@ __device__ void reduce3Generic(
 			dimension,
 			dimensionLength,
 			postProcessOrNot, allocationPointer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete op;
-		delete reduce3OpFactory;
-	}
-
 }
 
 /**

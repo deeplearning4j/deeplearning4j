@@ -1209,14 +1209,23 @@ struct SharedIndexValue<double> {
 
 
 #ifdef __CUDACC__
-			__inline__ __host__ __device__
-#endif
+			__inline__ __device__
+            functions::indexreduce::IndexReduce<T> * getOp(int op, unsigned char *buffer) {
+#else
 			functions::indexreduce::IndexReduce<T> * getOp(int op) {
+#endif
 				if (op == 0) {
+#ifdef __CUDACC__
+					return new(buffer) functions::indexreduce::ops::IMax<T>();
+#else
 					return new functions::indexreduce::ops::IMax<T>();
+#endif
 				} else if (op == 1) {
+#ifdef __CUDACC__
+					return new(buffer) functions::indexreduce::ops::IMin<T>();
+#else
 					return new functions::indexreduce::ops::IMin<T>();
-
+#endif
 				}
 				return NULL;
 			}
@@ -1255,21 +1264,19 @@ __device__ void indexReduceGeneric(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
+
+	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::indexreduce::IndexReduceOpFactory<T>)];
+	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::indexreduce::IndexReduce<T>)];
+
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 	if(threadIdx.x == 0) {
-		newOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op);
+		newOpFactory = new(factoryBuffer) functions::indexreduce::IndexReduceOpFactory<T>();
+		indexReduce = newOpFactory->getOp(op, functionBuffer);
 	}
 	__syncthreads();
 
 	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
-
-	__syncthreads();
-	if(threadIdx.x == 0) {
-		delete indexReduce;
-		delete newOpFactory;
-	}
 }
 
 /**

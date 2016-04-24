@@ -73,9 +73,12 @@ public:
 	 * @return
 	 */
 #ifdef __CUDACC__
-	__host__ __device__
-#endif
+	__device__
+	virtual Op<T> * create(int op, unsigned char *buffer) = 0;
+#else
 	virtual Op<T> * create(int op) = 0;
+#endif
+
 #ifdef __CUDACC__
 	__device__ __host__
 #endif
