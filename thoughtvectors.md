@@ -43,7 +43,7 @@ This is important, because when we vectorize words, we index those words in a lo
 
 Given that neural networks are already taxing current hardware to its limits, the exponentially larger costs of manipulating a dense matrix containing all thought vectors looks impractical. For now.  
 
-The autonomous conversational agents, or chatbots, so often in the news will probably require proper thought vectors to determine the most appropriate response in a given conversation. For the moment, those chatbots are unable to deliver useful, interesting and plausible responses in a complex conversation of any duration. Our best responses tend to contain hard answers, like Watson winning at Jeopardy, or 3-5 words sentences, as you find with Google Smart Reply. As of mid-2016, we're not capable of much more than that. 
+The autonomous conversational agents, or chatbots, so much in the news will probably require proper thought vectors to determine the most appropriate response in a given conversation. For the moment, those chatbots are unable to deliver useful, interesting and plausible responses in a complex conversation of any duration. Our best tools tend to serve up hard answers, like Watson winning at Jeopardy, or 3-5 words sentences, as you find with Google Smart Reply. As of mid-2016, we're not capable of much more than that. 
 
 The future of this branch of AI will depend on advances in hardware, as well as advances in thought vectorization, or capturing thoughts with numbers in novel ways. (How do we discretize sentences? What are the fundamental units of thought?)
 
