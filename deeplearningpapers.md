@@ -244,6 +244,7 @@ Irsoy & Cardie. 2014. Uses Deep Recursive Neural Networks. Uses a parse tree.
 
 ## Other Resources
 
+* [Open Data for Deep Learning](../opndata)
 * [Machine Learning: Generative and Discriminative Models](http://www.cedar.buffalo.edu/~srihari/CSE574/Discriminative-Generative.pdf) (Power Point); Sargur N. Srihari
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
