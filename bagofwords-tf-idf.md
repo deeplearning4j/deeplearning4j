@@ -9,7 +9,7 @@ layout: default
 
 BoW lists words with their word counts per document. In the table where the words and documents effectively become vectors are stored, each row is a word, each column is a document and each cell is a word count. Each of the documents in the corpus is represented by columns of equal length. Those are wordcount vectors, an output stripped of context. 
 
-IMAGE TK
+![Alt text](../img/sweden_cosine_distance.png) 
 
 Before they're fed to the neural net, each vector of wordcounts is normalized such that all elements of the vector add up to one. Thus, the frequencies of each word is effectively converted to represent the probabilities of those words' occurrence in the document. Probabilities that surpass certain levels will activate nodes in the net and influence the document's classification. 
 
@@ -19,7 +19,7 @@ Before they're fed to the neural net, each vector of wordcounts is normalized su
 
 First, TF-IDF measures the number of times that words appear in a given document (that's term frequency). But because words such as "and" or "the" appear frequently in all documents, those are systematically discounted. That's the inverse-document frequency part. The more documents a word appears in, the less valuable that word is as a signal. That's intended to leave only the frequent AND distinctive words as markers. TF-IDF relevance is a normalized data format that also adds up to one. 
 
-IMAGE TK
+![Alt text](../img/sweden_cosine_distance.png) 
 
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them.
 
