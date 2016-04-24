@@ -1,11 +1,11 @@
 ---
-title: Data sets and machine learning
+title: "Data sets and machine learning"
 layout: default
 ---
 
 # DataSets and Machine Learning
 
-One of the hardests problems to solve in deep learning has nothing to do with neural nets: the problem of getting the right data in the right format. 
+One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the right data in the right format. 
 
 Deep learning, and machine learning more generally, needs a good training set to work properly. Collecting and constructing the training set -- a sizable body of known data -- takes time and domain-specific knowledge of where and how to gather relevant information. The training set acts as the benchmark against which deep-learning nets are trained. That is what they learn to reconstruct before they're unleashed on data they haven't seen before. 
 
