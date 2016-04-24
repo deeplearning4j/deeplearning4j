@@ -154,3 +154,10 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 * [DL4J의 RNN 소개 자료](../recurrentnet.html),
 * [DL4J의 RBM 소개 자료](../kr-restrictedboltzmannmachine.html),
 * [DL4J의 인공 신경망 소개자료](../kr-neuralnet-overview.html)도 참고하십시오.
+
+## 다른 초보자 가이드
+
+* [초보자를 위한 RNNs과 LSTM 가이드](../kr-lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](../kr-eigenvector)
+* [컨볼루션 네트워크](../kr-convolutionalnets)
+* [Neural Networks & Regression](../linear-regression)
