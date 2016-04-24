@@ -26,7 +26,7 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
-bool debug = true;
+bool debug = false;
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -44,8 +44,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if (num_blocks > blockLimit) num_blocks = blockLimit;
 
-	if (num_blocks < 8 && n > 128) {
-		num_blocks = 8;
+	if (num_blocks < 4 && n > 128) {
+		num_blocks = 4;
 		num_threads = n / num_blocks;
 	}
 
@@ -54,7 +54,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 		num_threads = num_threads / 2;
 	}
 
-	if(n % num_threads) ++num_blocks;
+	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + attributes.sharedSizeBytes);
 }
@@ -76,7 +76,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//if (debug)
+	if (debug)
 		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
@@ -2833,4 +2833,12 @@ Nd4jPointer NativeOps::getAvailableDevices() {
 	int devCnt = 0;
 	cudaGetDeviceCount(&devCnt);
 	return (Nd4jPointer) devCnt;
+}
+
+void NativeOps::enableDebugMode(bool reallyEnable) {
+	debug = reallyEnable;
+}
+
+void NativeOps::setGridLimit(int gridSize) {
+	blockLimit = gridSize;
 }

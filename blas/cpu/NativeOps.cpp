@@ -1697,3 +1697,11 @@ Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
 Nd4jPointer NativeOps::getAvailableDevices() {
     return 0L;
 }
+
+void NativeOps::enableDebugMode(bool reallyEnable) {
+    // no-op?
+}
+
+void NativeOps::setGridLimit(int gridSize) {
+    // no-op
+}
