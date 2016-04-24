@@ -932,6 +932,10 @@ public:
     Nd4jPointer memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
 
     Nd4jPointer getAvailableDevices();
+
+    void enableDebugMode(bool reallyEnable);
+
+    void setGridLimit(int gridSize);
 };
 
 

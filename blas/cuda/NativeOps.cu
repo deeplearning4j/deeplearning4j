@@ -26,7 +26,8 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
-bool debug = true;
+int maxThreads = -1;
+bool debug = false;
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -37,6 +38,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	// no real sense launching more threads, then number of elements we have
 	if (num_threads > n) num_threads = n;
 
+	if (maxThreads > 0 && num_threads > maxThreads) num_threads = maxThreads;
+
 	// compute the number of blocks of size num_threads to launch
 	int num_blocks = n / num_threads;
 
@@ -44,8 +47,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if (num_blocks > blockLimit) num_blocks = blockLimit;
 
-	if (num_blocks < 8 && n > 128) {
-		num_blocks = 8;
+	if (num_blocks < 4 && n > 128) {
+		num_blocks = 4;
 		num_threads = n / num_blocks;
 	}
 
@@ -54,7 +57,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 		num_threads = num_threads / 2;
 	}
 
-	if(n % num_threads) ++num_blocks;
+	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
 
 	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + attributes.sharedSizeBytes);
 }
@@ -76,7 +79,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	//if (debug)
+	if (debug)
 		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
@@ -2657,15 +2660,6 @@ Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId
 }
 
 
-int NativeOps::ompGetNumThreads() {
-	return blockLimit;
-}
-
-void NativeOps::setOmpNumThreads(int threads) {
-	printf("Setting max grid size to [%i]\n", threads);
-	//blockLimit = threads;
-}
-
 Nd4jPointer NativeOps::createContext() {
 	return 0L;
 }
@@ -2833,4 +2827,21 @@ Nd4jPointer NativeOps::getAvailableDevices() {
 	int devCnt = 0;
 	cudaGetDeviceCount(&devCnt);
 	return (Nd4jPointer) devCnt;
+}
+
+void NativeOps::enableDebugMode(bool reallyEnable) {
+	debug = reallyEnable;
+}
+
+void NativeOps::setGridLimit(int gridSize) {
+	blockLimit = gridSize;
+}
+
+
+int NativeOps::ompGetNumThreads() {
+	return maxThreads;
+}
+
+void NativeOps::setOmpNumThreads(int threads) {
+	maxThreads = threads;
 }
