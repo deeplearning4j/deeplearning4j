@@ -230,11 +230,17 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
         return 0;
     }
     /* Sort the axes based on the destination strides */
-    SortStrideArray(ndim, strides, strideperm);
+   /* SortStrideArray(ndim, strides, strideperm);
     for (i = 0; i < ndim; i++) {
         int iperm = strideperm[ndim - i - 1].perm;
         outShape[i] = shape[iperm];
         outStrides[i] = strides[iperm];
+    }
+*/
+
+    for (i = 0; i < ndim; i++) {
+        outShape[i] = shape[i];
+        outStrides[i] = strides[i];
     }
 
     /* Reverse any negative strides */
@@ -255,29 +261,7 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
         }
     }
 
-    /* Coalesce any dimensions where possible */
-    i = 0;
-    for (j = 1; j < ndim; ++j) {
-        if (outShape[i] == 1) {
-            /* Drop axis i */
-            outShape[i] = outShape[j];
-            outStrides[i] = outStrides[j];
-        }
-        else if (outShape[j] == 1) {
-            /* Drop axis j */
-        }
-        else if (outStrides[i] * outShape[i] == outStrides[j]) {
-            /* Coalesce axes i and j */
-            outShape[i] *= outShape[j];
-        }
-        else {
-            /* Can't coalesce, go to next i */
-            ++i;
-            outShape[i] = outShape[j];
-            outStrides[i] = outStrides[j];
-        }
-    }
-    ndim = i + 1;
+
 
 #if 0
     /* DEBUG */
