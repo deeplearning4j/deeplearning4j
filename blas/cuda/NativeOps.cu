@@ -26,7 +26,7 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
-int maxThreads = 1024;
+int maxThreads = -1;
 bool debug = false;
 
 template <typename T>
@@ -38,7 +38,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	// no real sense launching more threads, then number of elements we have
 	if (num_threads > n) num_threads = n;
 
-	if (num_threads > maxThreads) num_threads = maxThreads;
+	if (maxThreads > 0 && num_threads > maxThreads) num_threads = maxThreads;
 
 	// compute the number of blocks of size num_threads to launch
 	int num_blocks = n / num_threads;
