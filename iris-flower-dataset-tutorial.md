@@ -60,10 +60,10 @@ We then create a DataSet instance called `next` that we preprocess, setting the 
 ### Training and Test Sets
 
 ``` java
-        log.info("Split data....");
-        SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));
-        DataSet train = testAndTrain.getTrain();
-        DataSet test = testAndTrain.getTest();
+log.info("Split data....");
+SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));
+DataSet train = testAndTrain.getTrain();
+DataSet test = testAndTrain.getTest();
 ```
 
 The goal of training a neural net to learn the structure of data, and predict label y given input x, is to produce a classifier that generalizes well; i.e. that can make accurate classifications about data that it has not seen before. 
@@ -89,101 +89,101 @@ To create a neural network, we'll declare the variables and then feed them into 
 Here's the configuration in full -- we'll step through it line by line below:
 
 ``` java
-		 public class DBNIrisExample {		
-		 		
-		     private static Logger log = LoggerFactory.getLogger(DBNIrisExample.class);		
-		 		
-		     public static void main(String[] args) throws Exception {		
-		         // Customizing params		
-		         Nd4j.MAX_SLICES_TO_PRINT = -1;		
-		         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
-		 		
-		         final int numRows = 4;		
-		         final int numColumns = 1;		
-		         int outputNum = 3;		
-		         int numSamples = 150;		
-		         int batchSize = 150;		
-		         int iterations = 5;		
-		         int splitTrainNum = (int) (batchSize * .8);		
-		         int seed = 123;		
-		         int listenerFreq = 1;		
-		 		
-		         log.info("Load data....");		
-		         DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-		         DataSet next = iter.next();		
-		         next.shuffle();		
-		         next.normalizeZeroMeanZeroUnitVariance();		
-		 		
-		         log.info("Split data....");		
-		         SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));		
-		         DataSet train = testAndTrain.getTrain();		
-		         DataSet test = testAndTrain.getTest();		
-		         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
-		 		
-		         log.info("Build model....");		
-		         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()		
-		                 .seed(seed) // Locks in weight initialization for tuning		
-		                 .iterations(iterations) // # training iterations predict/classify & backprop		
-		                 .learningRate(1e-6f) // Optimization step size		
-		                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT) // Backprop to calculate gradients		
-		                 .l1(1e-1).regularization(true).l2(2e-4)		
-		                 .useDropConnect(true)		
-		                 .list(2) // # NN layers (doesn't count input layer)		
-		                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)		
-		                                 .nIn(numRows * numColumns) // # input nodes		
-		                                 .nOut(3) // # fully connected hidden layer nodes. Add list if multiple layers.		
-		                                 .weightInit(WeightInit.XAVIER) // Weight initialization		
-		                                 .k(1) // # contrastive divergence iterations		
-		                                 .activation("relu") // Activation function type		
-		                                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT) // Loss function type		
-		                                 .updater(Updater.ADAGRAD)		
-		                                 .dropOut(0.5)		
-		                                 .build()		
-		                 ) // NN layer type		
-		                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)		
-		                                 .nIn(3) // # input nodes		
-		                                 .nOut(outputNum) // # output nodes		
-		                                 .activation("softmax")		
-		                                 .build()		
-		                 ) // NN layer type		
-		                 .build();		
-		         MultiLayerNetwork model = new MultiLayerNetwork(conf);		
-		         model.init();		
-		 		
-		         model.setListeners(new ScoreIterationListener(listenerFreq));		
-		         log.info("Train model....");		
-		         model.fit(train);		
-		 		
-		         log.info("Evaluate weights....");		
-		         for(org.deeplearning4j.nn.api.Layer layer : model.getLayers()) {		
-		             INDArray w = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);		
-		             log.info("Weights: " + w);		
-		         }		
-		 		
-		         log.info("Evaluate model....");		
-		         Evaluation eval = new Evaluation(outputNum);		
-		         eval.eval(test.getLabels(), model.output(test.getFeatureMatrix(), Layer.TrainingMode.TEST));		
-		         log.info(eval.stats());		
-		 		
-		         log.info("****************Example finished********************");		
-		 		
-		         OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));		
-		         DataOutputStream dos = new DataOutputStream(fos);		
-		         Nd4j.write(model.params(), dos);		
-		         dos.flush();		
-		         dos.close();		
-		         FileUtils.writeStringToFile(new File("conf.json"), model.getLayerWiseConfigurations().toJson());		
-		 		
-		         MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File("conf.json")));			         DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"));		
-		         INDArray newParams = Nd4j.read(dis);		
-		         dis.close();		
-		         MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);		
-		         savedNetwork.init();		
-		         savedNetwork.setParams(newParams);		
-		         System.out.println("Original network params " + model.params());		
-		         System.out.println(savedNetwork.params());		
-		     }		
-		 }		
+public class DBNIrisExample {		
+		
+ private static Logger log = LoggerFactory.getLogger(DBNIrisExample.class);		
+		
+ public static void main(String[] args) throws Exception {		
+     // Customizing params		
+     Nd4j.MAX_SLICES_TO_PRINT = -1;		
+     Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
+		
+     final int numRows = 4;		
+     final int numColumns = 1;		
+     int outputNum = 3;		
+     int numSamples = 150;		
+     int batchSize = 150;		
+     int iterations = 5;		
+     int splitTrainNum = (int) (batchSize * .8);		
+     int seed = 123;		
+     int listenerFreq = 1;		
+		
+     log.info("Load data....");		
+     DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
+     DataSet next = iter.next();		
+     next.shuffle();		
+     next.normalizeZeroMeanZeroUnitVariance();		
+		
+     log.info("Split data....");		
+     SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));		
+     DataSet train = testAndTrain.getTrain();		
+     DataSet test = testAndTrain.getTest();		
+     Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
+		
+     log.info("Build model....");		
+     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()		
+             .seed(seed) // Locks in weight initialization for tuning		
+             .iterations(iterations) // # training iterations predict/classify & backprop		
+             .learningRate(1e-6f) // Optimization step size		
+             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT) // Backprop to calculate gradients		
+             .l1(1e-1).regularization(true).l2(2e-4)		
+             .useDropConnect(true)		
+             .list(2) // # NN layers (doesn't count input layer)		
+             .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)		
+                             .nIn(numRows * numColumns) // # input nodes		
+                             .nOut(3) // # fully connected hidden layer nodes. Add list if multiple layers.		
+                             .weightInit(WeightInit.XAVIER) // Weight initialization		
+                             .k(1) // # contrastive divergence iterations		
+                             .activation("relu") // Activation function type		
+                             .lossFunction(LossFunctions.LossFunction.RMSE_XENT) // Loss function type		
+                             .updater(Updater.ADAGRAD)		
+                             .dropOut(0.5)		
+                             .build()		
+             ) // NN layer type		
+             .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)		
+                             .nIn(3) // # input nodes		
+                             .nOut(outputNum) // # output nodes		
+                             .activation("softmax")		
+                             .build()		
+             ) // NN layer type		
+             .build();		
+     MultiLayerNetwork model = new MultiLayerNetwork(conf);		
+     model.init();		
+		
+     model.setListeners(new ScoreIterationListener(listenerFreq));		
+     log.info("Train model....");		
+     model.fit(train);		
+		
+     log.info("Evaluate weights....");		
+     for(org.deeplearning4j.nn.api.Layer layer : model.getLayers()) {		
+         INDArray w = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);		
+         log.info("Weights: " + w);		
+     }		
+		
+     log.info("Evaluate model....");		
+     Evaluation eval = new Evaluation(outputNum);		
+     eval.eval(test.getLabels(), model.output(test.getFeatureMatrix(), Layer.TrainingMode.TEST));		
+     log.info(eval.stats());		
+		
+     log.info("****************Example finished********************");		
+		
+     OutputStream fos = Files.newOutputStream(Paths.get("coefficients.bin"));		
+     DataOutputStream dos = new DataOutputStream(fos);		
+     Nd4j.write(model.params(), dos);		
+     dos.flush();		
+     dos.close();		
+     FileUtils.writeStringToFile(new File("conf.json"), model.getLayerWiseConfigurations().toJson());		
+		
+     MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File("conf.json")));			         DataInputStream dis = new DataInputStream(new FileInputStream("coefficients.bin"));		
+     INDArray newParams = Nd4j.read(dis);		
+     dis.close();		
+     MultiLayerNetwork savedNetwork = new MultiLayerNetwork(confFromJson);		
+     savedNetwork.init();		
+     savedNetwork.setParams(newParams);		
+     System.out.println("Original network params " + model.params());		
+     System.out.println(savedNetwork.params());		
+ }		
+}		
 ```
 
 There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it one parameter at a time:
