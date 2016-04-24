@@ -49,7 +49,8 @@ void quickSort(StridePermutation *arr, int elements);
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
             for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-                if (++(coord)[idim] == (shape)[idim]) { \
+               if(shape[idim] == 1) continue; \
+                if (++(coord)[idim] >= (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
                 } \
@@ -189,7 +190,6 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
                            T data[], int strides[],
                            int *out_ndim, int outShape[],
                            T **out_data, int *outStrides) {
-    StridePermutation strideperm[MAX_RANK];
     int i, j;
 
     /* Special case 0 and 1 dimensions */
@@ -261,29 +261,7 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
         }
     }
 
-    /* Coalesce any dimensions where possible */
-    i = 0;
-    for (j = 1; j < ndim; ++j) {
-        if (outShape[i] == 1) {
-            /* Drop axis i */
-            outShape[i] = outShape[j];
-            outStrides[i] = outStrides[j];
-        }
-        else if (outShape[j] == 1) {
-            /* Drop axis j */
-        }
-        else if (outStrides[i] * outShape[i] == outStrides[j]) {
-            /* Coalesce axes i and j */
-            outShape[i] *= outShape[j];
-        }
-        else {
-            /* Can't coalesce, go to next i */
-            ++i;
-            outShape[i] = outShape[j];
-            outStrides[i] = outStrides[j];
-        }
-    }
-    ndim = i + 1;
+
 
 #if 0
     /* DEBUG */

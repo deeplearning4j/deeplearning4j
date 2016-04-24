@@ -775,11 +775,11 @@ namespace functions {
                                                   xStridesIter) >= 0) {
 
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-                        {
-                            /* Process the innermost dimension */
-                            const T *xIter = x;
-                            start = update(start, op(xIter[0], extraParams), extraParams);
-                        }
+                            {
+                                /* Process the innermost dimension */
+                                const T *xIter = x;
+                                start = update(start, op(xIter[0], extraParams), extraParams);
+                            }
                         ND4J_RAW_ITER_ONE_NEXT(dim,
                                                rank,
                                                coord,
@@ -832,48 +832,81 @@ namespace functions {
                 }
 
                 shape::TAD tad(xShapeInfo, dimension, dimensionLength);
-                tad.squeezeDimensionsAndShapeIfNeccessary();
                 tad.createTadOnlyShapeInfo();
                 tad.createOffsets();
-
-
-#pragma omp  parallel  for
-                for (int i = 0; i < tad.numTads; i++) {
-                    int offset = tad.tadOffsets[i];
-                    int shapeIter[MAX_RANK];
-                    int coord[MAX_RANK];
-                    int dim;
-                    int rankIter = shape::rank(tad.tadOnlyShapeInfo);
-                    int xStridesIter[MAX_RANK];
-                    T *xPointer = x + offset;
-                    T start = this->startingValue(xPointer);
-                    if (PrepareOneRawArrayIter<T>(rankIter,
-                                                  tad.tadShape,
-                                                  xPointer,
-                                                  tad.tadStride,
-                                                  &rankIter,
-                                                  shapeIter,
-                                                  &xPointer,
-                                                  xStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, shape::rank(tad.tadOnlyShapeInfo), coord, shapeIter); {
-                            /* Process the innermost dimension */
-                            start = update(start, op(xPointer[0], extraParams), extraParams);
-                        }
-                        ND4J_RAW_ITER_ONE_NEXT(dim,
-                                               shape::rank(tad.tadOnlyShapeInfo),
-                                               coord,
-                                               shapeIter,
-                                               xPointer,
-                                               xStridesIter);
-                        start = postProcess(start, tad.tadLength, extraParams);
-                    }
-                    else {
-                        printf("Unable to prepare array\n");
+                if(tad.wholeThing) {
+                    T start = this->startingValue(x);
+                    for(int i = 0; i < tad.tadLength; i++) {
+                        start = update(start, op(x[i], extraParams), extraParams);
                     }
 
-                    result[i] = start;
+                    result[0] = start;
 
                 }
+                else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
+                                                                               shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) {
+#pragma omp parallel for
+                    for(int i = 0; i < tad.numTads; i++) {
+                        T *iter = x + tad.tadOffsets[i];
+                        T start = this->startingValue(iter);
+                        int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
+                        if(eleStride == 1) {
+                            for(int i = 0; i < tad.tadLength; i++) {
+                                start = update(start, op(iter[i], extraParams), extraParams);
+
+                            }
+                        }
+                        else {
+                            for(int i = 0; i < tad.tadLength; i++) {
+                                start = update(start, op(iter[i * eleStride], extraParams), extraParams);
+                            }
+                        }
+
+                        result[i] = start;
+
+                    }
+                }
+                else {
+#pragma omp  parallel  for
+                    for (int i = 0; i < tad.numTads; i++) {
+                        int offset = tad.tadOffsets[i];
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int rankIter = shape::rank(tad.tadOnlyShapeInfo);
+                        int xStridesIter[MAX_RANK];
+                        T *xPointer = x + offset;
+                        T start = this->startingValue(xPointer);
+                        if (PrepareOneRawArrayIter<T>(rankIter,
+                                                      tad.tadShape,
+                                                      xPointer,
+                                                      tad.tadStride,
+                                                      &rankIter,
+                                                      shapeIter,
+                                                      &xPointer,
+                                                      xStridesIter) >= 0) {
+                            ND4J_RAW_ITER_START(dim, shape::rank(tad.tadOnlyShapeInfo), coord, shapeIter); {
+                                    /* Process the innermost dimension */
+                                    start = update(start, op(xPointer[0], extraParams), extraParams);
+                                }
+                            ND4J_RAW_ITER_ONE_NEXT(dim,
+                                                   shape::rank(tad.tadOnlyShapeInfo),
+                                                   coord,
+                                                   shapeIter,
+                                                   xPointer,
+                                                   xStridesIter);
+                            start = postProcess(start, tad.tadLength, extraParams);
+                        }
+                        else {
+                            printf("Unable to prepare array\n");
+                        }
+
+                        result[i] = start;
+
+                    }
+                }
+
+
 
             }
 
