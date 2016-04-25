@@ -643,8 +643,6 @@ namespace functions {
                     }
 
                     else {
-
-                        printf("Parallel sum\n");
                         T finalVal = startingVal;
                         BlockInformation info(length);
                         T blocks[info.chunks];
@@ -701,8 +699,6 @@ namespace functions {
 
                         return local;
                     }
-
-                    printf("Parallel sum 2\n");
 
                     T finalVal = startingVal;
                     BlockInformation info(length);
