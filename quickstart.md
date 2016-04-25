@@ -22,6 +22,7 @@ You *must* have all of these installed to use this Quick Start guide. DL4J targe
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. **Otherwise, skip to** <a href="#examples">DL4J Examples</a>.
 
 #### <a name="Java">Java</a>
+
 If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
 ```
@@ -131,6 +132,6 @@ Additional links:
   * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
   * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
-2. Read one of our detailed tutorials. 
+2. Read the [introduction to deep neural networks](http://deeplearning4j.org/#tutorials) or one of our detailed tutorials. 
 3. Check out the more detailed [Comprehensive Setup Guide](http://deeplearning4j.org/gettingstarted).
 4. Browse all [DL4J documentation](http://deeplearning4j.org/documentation).
