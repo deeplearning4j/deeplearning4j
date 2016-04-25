@@ -280,6 +280,9 @@ public class LSTMHelpers {
             endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength);
         }
 
+        INDArray rwGradientsOut = Nd4j.create(new int[]{hiddenLayerSize, 4 * hiddenLayerSize + 3},'f');    //Order: {I,F,O,G,FF,OO,GG}
+        INDArray rwGradientsIFOG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4*hiddenLayerSize));
+
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             //Temporary:
             INDArray deltaiNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(0,hiddenLayerSize));
@@ -379,10 +382,9 @@ public class LSTMHelpers {
 
             if (iTimeIndex > 0) {
                 //If t==0, then prevHiddenUnitActivation==zeros(n^L,n^L), so dL/dW for recurrent weights will end up as 0 anyway
-                Nd4j.gemm(prevHiddenUnitActivation, deltai, rwGradients[0], true, false, 1.0, 1.0);   //rwGradients[0].addi(prevActTranspose.mmul(deltai));
-                Nd4j.gemm(prevHiddenUnitActivation, deltaf, rwGradients[1], true, false, 1.0, 1.0);   //rwGradients[1].addi(prevActTranspose.mmul(deltaf));
-                Nd4j.gemm(prevHiddenUnitActivation, deltao, rwGradients[2], true, false, 1.0, 1.0);   //rwGradients[2].addi(prevActTranspose.mmul(deltao));
-                Nd4j.gemm(prevHiddenUnitActivation, deltag, rwGradients[3], true, false, 1.0, 1.0);   //rwGradients[3].addi(prevActTranspose.mmul(deltag));
+                //At this point: deltaifog and deltaifogNext are the same thing...
+                //So what we are actually doing here is sum of (prevAct^transpose * deltaifog_current)
+                Nd4j.gemm(prevHiddenUnitActivation, deltaifogNext, rwGradientsIFOG, true, false, 1.0, 1.0);
 
                 //Shape: [1,n^L]. sum(0) is sum over examples in mini-batch.
                 //Can use axpy here because result of sum and rwGradients[4 to 6] have order Nd4j.order(), via Nd4j.create()
@@ -407,28 +409,26 @@ public class LSTMHelpers {
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
             INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0);   //This slice: f order and contiguous, due to epsilonNext being defined as f order.
-            Nd4j.gemm(deltai, wi, epsilonNextSlice, false, true, 1.0, 1.0);
-            Nd4j.gemm(deltao, wo, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltao.mmul(woTranspose))
-            Nd4j.gemm(deltag, wg, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltag.mmul(wgTranspose));
-
-            if (iTimeIndex > 0) {
-                Nd4j.gemm(deltaf, wf, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltaf.mmul(wfTranspose));
+            if(iTimeIndex > 0){
+                Nd4j.gemm(deltaifogNext, inputWeights, epsilonNextSlice, false, true, 1.0, 1.0);
+            } else {
+                //No contribution from forget gate at t=0
+                Nd4j.gemm(deltai, wi, epsilonNextSlice, false, true, 1.0, 1.0);
+                INDArray deltaog = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,4*hiddenLayerSize));
+                INDArray wog = inputWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,4*hiddenLayerSize));
+                Nd4j.gemm(deltaog, wog, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltao.mmul(woTranspose)).addi(deltag.mmul(wgTranspose));
             }
         }
 
         //Weight/bias gradients
         INDArray iwGradientsOut = Nd4j.zeros(prevLayerSize, 4 * hiddenLayerSize);
-        INDArray rwGradientsOut = Nd4j.zeros(hiddenLayerSize, 4 * hiddenLayerSize + 3);    //Order: {I,F,O,G,FF,OO,GG}
+
         INDArray bGradientsOut = Nd4j.hstack(bGradients);
         iwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(0, hiddenLayerSize)}, iwGradients[0]);
         iwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(hiddenLayerSize, 2 * hiddenLayerSize)}, iwGradients[1]);
         iwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)}, iwGradients[2]);
         iwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(3 * hiddenLayerSize, 4 * hiddenLayerSize)}, iwGradients[3]);
 
-        rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(0, hiddenLayerSize)}, rwGradients[0]);
-        rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(hiddenLayerSize, 2 * hiddenLayerSize)}, rwGradients[1]);
-        rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)}, rwGradients[2]);
-        rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(3 * hiddenLayerSize, 4 * hiddenLayerSize)}, rwGradients[3]);
         rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize)}, rwGradients[4].transpose());
         rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1)}, rwGradients[5].transpose());
         rwGradientsOut.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2)}, rwGradients[6].transpose());
