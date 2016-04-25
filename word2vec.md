@@ -136,34 +136,35 @@ While Word2vec refers to a family of related algorithms, this implementation use
 Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](../quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
 
 ``` xml
-                <properties>
-                  <nd4j.version>0.4-rc3.8</nd4j.version> // check Maven Central for latest versions!
-                  <dl4j.version>0.4-rc3.8</dl4j.version>
-                </properties>
-                
-                <dependencies>
-                  <dependency>
-                     <groupId>org.deeplearning4j</groupId>
-                     <artifactId>deeplearning4j-ui</artifactId>
-                     <version>${dl4j.version}</version>
-                   </dependency>
-                   <dependency>
-                     <groupId>org.deeplearning4j</groupId>
-                     <artifactId>deeplearning4j-nlp</artifactId>
-                     <version>${dl4j.version}</version>
-                   </dependency>
-                   <dependency>
-                     <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-x86</artifactId> 
-                     <version>${nd4j.version}</version>
-                   </dependency>
-                </dependencies>
+<properties>
+  <nd4j.version>0.4-rc3.8</nd4j.version> // check Maven Central for latest versions!
+  <dl4j.version>0.4-rc3.8</dl4j.version>
+</properties>
+
+<dependencies>
+  <dependency>
+     <groupId>org.deeplearning4j</groupId>
+     <artifactId>deeplearning4j-ui</artifactId>
+     <version>${dl4j.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.deeplearning4j</groupId>
+     <artifactId>deeplearning4j-nlp</artifactId>
+     <version>${dl4j.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.nd4j</groupId>
+     <artifactId>nd4j-x86</artifactId> 
+     <version>${nd4j.version}</version>
+   </dependency>
+</dependencies>
 ```
 
 ### Loading Data
 
 Now create and name a new class in Java. After that, you'll take the raw sentences in your .txt file, traverse them with your iterator, and subject them to some sort of preprocessing, such as converting all words to lowercase. 
 
+``` java
         log.info("Load data....");
         ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
         SentenceIterator iter = new LineSentenceIterator(resource.getFile());
@@ -173,9 +174,11 @@ Now create and name a new class in Java. After that, you'll take the raw sentenc
                 return sentence.toLowerCase();
             }
         });
+```
 
 If you want to load a text file besides the sentences provided in our example, you'd do this:
 
+``` java
         log.info("Load data....");
         SentenceIterator iter = new LineSentenceIterator(new File("/Users/cvn/Desktop/file.txt"));
         iter.setPreProcessor(new SentencePreProcessor() {
@@ -184,10 +187,13 @@ If you want to load a text file besides the sentences provided in our example, y
                 return sentence.toLowerCase();
             }
         });
+```
 
 That is, get rid of the `ClassPathResource` and feed the absolute path of your `.txt` file into the `LineSentenceIterator`. 
 
+``` java
         SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
+```
 
 In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that same directory. To that path, you'll add the file name and *voila*. 
 
@@ -195,6 +201,7 @@ In bash, you can find the absolute file path of any directory by typing `pwd` in
 
 Word2vec needs to be fed words rather than whole sentences, so the next step is to tokenize the data. To tokenize a text is to break it up into its atomic units, creating a new token each time you hit a white space, for example. 
 
+``` java
         log.info("Tokenize data....");
         final EndingPreProcessor preProcessor = new EndingPreProcessor();
         TokenizerFactory tokenizer = new DefaultTokenizerFactory();
@@ -209,6 +216,7 @@ Word2vec needs to be fed words rather than whole sentences, so the next step is 
                 return base;
             }
         });
+```
 
 That should give you one word per line. 
 
@@ -216,6 +224,7 @@ That should give you one word per line.
 
 Now that the data is ready, you can configure the Word2vec neural net and feed in the tokens. 
 
+``` java
         int batchSize = 1000;
         int iterations = 3;
         int layerSize = 150;
@@ -234,6 +243,7 @@ Now that the data is ready, you can configure the Word2vec neural net and feed i
                 .tokenizerFactory(tokenizer)
                 .build();
         vec.fit();
+```
 
 This configuration accepts a number of hyperparameters. A few require some explanation: 
 
@@ -252,6 +262,7 @@ This configuration accepts a number of hyperparameters. A few require some expla
 
 The next step is to evaluate the quality of your feature vectors. 
 
+``` java
         log.info("Evaluate model....");
         double sim = vec.similarity("people", "money");
         log.info("Similarity between people and money: " + sim);
@@ -259,23 +270,29 @@ The next step is to evaluate the quality of your feature vectors.
         log.info("Similar words to 'day' : " + similar);
         
         //output: [night, week, year, game, season, during, office, until, -]
+```
 
 The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden-Norway example above). For example:
 
+``` java
         double cosSim = vec.similarity("day", "night");
         System.out.println(cosSim);
         //output: 0.7704452276229858
+```
 
 With `vec.wordsNearest("word1", numWordsNearest)`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest. For example:
 
+``` java
         Collection<String> lst3 = vec.wordsNearest("man", 10);
         System.out.println(lst3);
         //output: [director, company, program, former, university, family, group, such, general]
+```
 
 ### Visualizing the Model
 
 We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. 
 
+``` java
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .setMaxIter(1000)
@@ -288,19 +305,24 @@ We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionalit
                 .usePca(false)
                 .build();
         vec.lookupTable().plotVocab(tsne);
+```
 
 ### Saving, Reloading & Using the Model
 
 You'll want to save the model. The normal way to save models in Deeplearning4j is via the serialization utils (Java serialization is akin to Python pickling, converting an object into a *series* of bytes).
 
+``` java
         log.info("Save vectors....");
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
+```
 
 This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
 
 To keep working with the vectors, simply call methods on `vec` like this:
 
+``` java
         Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+```
 
 The classic example of Word2vec's arithmetic of words is "king - queen = man - woman" and its logical extension "king - queen + woman = man". 
 
@@ -310,14 +332,18 @@ Any number of combinations is possible, but they will only return sensible resul
 
 You can reload the vectors into memory like this:
 
+``` java
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
+```
 
 You can then use Word2vec as a lookup table:
 
+``` java
         WeightLookupTable weightLookupTable = wordVectors.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
         INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
         double[] wordVector = wordVectors.getWordVector("myword");
+```
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
 
@@ -327,19 +353,23 @@ The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/Google
 
 If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm, this line will import the model.
 
+``` java
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
     Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+```
 
 Remember to add `import java.io.File;` to your imported packages.
 
 With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](../gettingstarted.html#trouble)), or through IntelliJ itself: 
 
+``` java
     //Click:
     IntelliJ Preferences > Compiler > Command Line Options 
     //Then paste:
     -Xms1024m
     -Xmx10g
     -XX:MaxPermSize=2g
+```
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
@@ -361,6 +391,7 @@ After following the instructions in the [Quickstart](../quickstart.html), you ca
 
 *Q: I get a lot of stack traces like this*
 
+``` bash
        java.lang.StackOverflowError: null
        at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
        at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
@@ -368,13 +399,16 @@ After following the instructions in the [Quickstart](../quickstart.html), you ca
        at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
        at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
        at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
+```
 
 *A:* Look inside the directory where you started your Word2vec application. This can, for example, be an IntelliJ project home directory or the directory where you typed Java at the command line. It should have some directories that look like:
 
+``` bash
        ehcache_auto_created2810726831714447871diskstore  
        ehcache_auto_created4727787669919058795diskstore
        ehcache_auto_created3883187579728988119diskstore  
        ehcache_auto_created9101229611634051478diskstore
+```
 
 You can shut down your Word2vec application and try to delete them.
 
@@ -382,8 +416,10 @@ You can shut down your Word2vec application and try to delete them.
 
 *A:* Try to raise the layer size via **.layerSize()** on your Word2Vec object like so
 
+``` java
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
+```
 
 *Q: How do I load my data? Why does training take forever?*
 
