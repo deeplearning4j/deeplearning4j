@@ -100,7 +100,7 @@ else
            if [ "$#" -gt 1 ]; then
               if [ "$2" == "cuda" ]; then
               if [ "$#" -gt 2 ]; then
-                   e echo "CUDA BUILD $3"
+                   echo "CUDA BUILD $3"
                    rm -rf blasbuild/cuda
                    mkdir -p blasbuild/cuda
                    cd blasbuild/cuda
