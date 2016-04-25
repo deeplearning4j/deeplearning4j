@@ -851,12 +851,14 @@ namespace functions {
                         T start = this->startingValue(iter);
                         int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         if(eleStride == 1) {
+#pragma omp simd
                             for(int i = 0; i < tad.tadLength; i++) {
                                 start = update(start, op(iter[i], extraParams), extraParams);
 
                             }
                         }
                         else {
+#pragma omp simd
                             for(int i = 0; i < tad.tadLength; i++) {
                                 start = update(start, op(iter[i * eleStride], extraParams), extraParams);
                             }
