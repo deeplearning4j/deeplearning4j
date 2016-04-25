@@ -89,7 +89,7 @@ Both Deeplearning4j and Caffe perform image classification with convolutional ne
 
 Pros and Cons:
 
-* (+) Good for feedforward networks
+* (+) Good for feedforward networks and image processing
 * (+) Good for finetuning existing networks
 * (+) Train models without writing any code
 * (+) Python interface is pretty useful
