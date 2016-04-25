@@ -23,7 +23,7 @@ You *must* have all of these installed to use this Quick Start guide. DL4J targe
 
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, skip to <a href="#examples">DL4J Examples</a>.
 
-### Java
+### <a name="Java">Java</a>
 
 To check if you have a compatible version of Java installed, use the following command:
 
@@ -33,7 +33,7 @@ java -version
 
 If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
                 
-### Apache Maven
+### <a name="Maven">Apache Maven</a>
 
 Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. To check if you have the most current version of Maven installed, enter the following:
 
