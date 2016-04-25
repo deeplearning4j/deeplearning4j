@@ -539,21 +539,20 @@ public class GradientCheckTests {
     				double l2 = l2vals[k];
     				double l1 = l1vals[k];
     				
-			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			                .regularization(l1>0.0 || l2>0.0)
-			                .l2(l2).l1(l1)
-			                .seed(12345L)
-			                .list()
+			        NeuralNetConfiguration.Builder conf = new NeuralNetConfiguration.Builder()
+			                .regularization(l1>0.0 || l2>0.0).seed(12345L);
+					if(l1>0.0) conf.l1(l1);
+					if(l2>0.0) conf.l2(l2);
+					NeuralNetConfiguration.ListBuilder conf2 = conf.list()
 			                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
 			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.activation(afn).updater(Updater.NONE).build())
 			                .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut)
 			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.updater(Updater.NONE).build())
-			                .pretrain(false).backprop(true)
-			                .build();
+			                .pretrain(false).backprop(true);
 			
-			        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+			        MultiLayerNetwork mln = new MultiLayerNetwork(conf2.build());
 			        mln.init();
 
 			        if( PRINT_RESULTS ){
