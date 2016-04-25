@@ -4884,6 +4884,17 @@ __device__ int tadOffset(int *xInfo, int offset) {
         return ret;
     }
 
+#ifdef __CUDACC__
+    __device__ inline void sweepShapeInfoBuffer(int *shapeInfoBuffer, int *targetBuffer) {
+        // we read first element, to find out length of our shapeInfoBuffer
+        int rank = shapeInfoBuffer[0];
+        int len = rank * 2 + 4;
+        for (int i = threadIdx.x; i < len; i += blockDim.x)
+            targetBuffer[i] = shapeInfoBuffer[i];
+
+        __syncthreads();
+    }
+#endif
 }
 
 #endif /* SHAPE_H_ */

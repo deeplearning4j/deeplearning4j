@@ -50,7 +50,69 @@
 //      ...
 //   }
 //****************************************************************************
+template<typename T>
+class UnifiedSharedMemory{
+    // we accept whole buffer at once
+    protected:
+    int *sharedMemory;
+    const int maxShapeBufferLength = MAX_RANK * 2 + 4;
 
+    int allocationOffset = 0;
+    int unifiedSize = 0;
+    int factorySize = 0;
+    int functionSize = 0;
+
+    public:
+    __device__ UnifiedSharedMemory(int unifiedSize, int factorySize, int functionSize) {
+        extern __shared__ int shMem[];
+        sharedMemory = shMem;
+
+        allocationOffset = unifiedSize + factorySize + functionSize;
+        this->unifiedSize = unifiedSize;
+        this->factorySize = factorySize;
+        this->functionSize = functionSize;
+    }
+
+
+    __device__ ~UnifiedSharedMemory() { }
+
+    __device__ unsigned char * getUnifiedSpace() {
+       return (unsigned char * ) sharedMemory;
+    }
+
+    __device__ unsigned char * getFactorySpace() {
+       return (unsigned char * ) sharedMemory + unifiedSize;
+    }
+
+    __device__ unsigned char * getFunctionSpace() {
+       return (unsigned char * ) sharedMemory + unifiedSize + factorySize;
+    }
+
+    __device__ int * getXShapeBuffer() {
+        // TODO: provide base offset here, to make use of shmem for initial allocation
+        return sharedMemory + allocationOffset;
+    }
+
+    __device__ int * getYShapeBuffer() {
+        return getXShapeBuffer() + maxShapeBufferLength;
+    }
+
+    __device__ int * getZShapeBuffer() {
+        return getYShapeBuffer() + maxShapeBufferLength;
+    }
+
+    __device__ int * getT1ShapeBuffer() {
+        return getZShapeBuffer() + maxShapeBufferLength;
+    }
+
+    __device__ int * getT2ShapeBuffer() {
+        return getT1ShapeBuffer() + maxShapeBufferLength;
+    }
+
+    __device__ T * getSharedReductionBuffer() {
+        return (T *) ((int *)getT2ShapeBuffer() + maxShapeBufferLength);
+    }
+};
 // This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 template<typename T>

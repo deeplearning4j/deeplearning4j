@@ -3863,7 +3863,7 @@ namespace functions {
 			maxResult[tid] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -3883,7 +3883,7 @@ namespace functions {
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		//divide by the sum
@@ -4132,7 +4132,7 @@ namespace functions {
 		int maxShape[2] = {shape[0], 1};
 		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4148,7 +4148,7 @@ namespace functions {
 		__syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		//divide by the sum
@@ -4429,7 +4429,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4449,7 +4449,7 @@ namespace functions {
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
 		__syncthreads();
 
 		//divide by the sum

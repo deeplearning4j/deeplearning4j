@@ -58,8 +58,8 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	}
 
 	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
-
-	return dim3(num_blocks,num_threads, (num_threads * sizeof(T)) + attributes.sharedSizeBytes);
+    //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
+	return dim3(num_blocks,num_threads, 5000);
 }
 
 /**
