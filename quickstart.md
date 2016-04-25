@@ -21,7 +21,7 @@ You *must* have all of these installed to use this Quick Start guide. DL4J targe
 
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. **Otherwise, skip to** <a href="#examples">DL4J Examples</a>.
 
-### <a name="Java">Java</a>
+#### <a name="Java">Java</a>
 If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
 ```
@@ -40,7 +40,7 @@ Maven is widely used among Java developers and it's not optional for working wit
 
 ### <a name="IntelliJ">IntelliJ IDEA</a>
 
-An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) allows you to work with our API and build neural nets with a few clicks. We strongly recommend using IntelliJ, which communicates with Maven to handle dependencies. The [community edition of IntelliJ](https://www.jetbrains.com/idea/download/) is freely available. 
+An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) allows you to work with our API and build neural nets with a few clicks. We strongly recommend using [IntelliJ](https://www.jetbrains.com/idea/download/), which communicates with Maven to handle dependencies. The [community edition of IntelliJ](https://www.jetbrains.com/idea/download/) is freely available. 
 
 There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and [Netbeans](http://wiki.netbeans.org/MavenBestPractices). IntelliJ is preferred, and using it will make finding help on [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) easier if you need it.
 
