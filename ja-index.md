@@ -5,11 +5,11 @@ layout: ja-default
 
 # Deeplearning4jとは何か?
 
-Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレードで、オープンソースの分散ディープラーニング・ライブラリです。Hadoopや [Spark](../spark.html)と連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。[Skymind](http://skymind.io)は、その商業的サポートを行っています。
+Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレードで、オープンソースの分散ディープラーニング・ライブラリです。Hadoopや Sparkと連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。[Skymind](http://skymind.io)は、その商業的サポートを行っています。
 
 DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定よりも非研究者でも手軽にプロトタイピングできるように作られています。DL4Jはスケーラブルでカスタマイズ可能です。Apache 2.0で配布されており、DL4Jの派生物はすべてその著者に帰属します。
 
-弊社の[クイックスタート](../ja-quickstart.html)にある手順に従いさえすれば、初めてのニューラルネットワークのexampleを数分で使用することができます。
+弊社の[クイックスタート](../ja-quickstart)にある手順に従いさえすれば、初めてのニューラルネットワークのexampleを数分で使用することができます。
 
 ### [Deep Learningのユースケース](../use_cases.html)
 
@@ -51,13 +51,14 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 
 ディープラーニングで学習させるときには非常に多くのパラメタを調整することになります。Deeplearning4jをDIY（自助）ツールとして、Javaや[Scala](https://github.com/deeplearning4j/nd4s)、[Clojure](https://github.com/whilo/clj-nd4j)のプログラマーの方々がご利用できるよう、ご説明して参りました。
 
-分からないことなど質問があれば、是非、[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)にご連絡ください。プレミアムサポートをご希望の方は、[Skymind](http://www.skymind.io/contact/)までご連絡ください。[ND4Jは、Javaベースの科学的計算エンジン](http://nd4j.org/)で、弊社の行列演算に使われています。弊社にて、大規模な行列で測定したところ、その処理速度は、[Numpyの約2倍の速さ](http://nd4j.org/benchmarking)でした。
+分からないことなど質問があれば、是非、[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)にご連絡ください。プレミアムサポートをご希望の方は、[Skymind](http://www.skymind.io/contact/)までご連絡ください。[ND4Jは、Javaベースの科学的計算エンジン](http://nd4j.org/ja-index)で、弊社の行列演算に使われています。弊社にて、大規模な行列で測定したところ、その処理速度は、[Numpyの約2倍の速さ](http://nd4j.org/benchmarking)でした。
 
 ### Deeplearning4jのチュートリアル
 
 * [ディープ・ニューラル・ネットワークのご紹介](../ja-neuralnet-overview.html)
 * [制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)
 * [固有ベクトル、PCA（主成分分析）、エントリピー](../ja-eigenvector.html)
+* [Word2vec](../ja-word2vec)
 * [畳込みネットワークのチュートリアル](../convolutionalnets.html)
 * [LSTMと回帰ネットワークのチュートリアル](../lstm.html)
 * [回帰ネットワークをDL4Jに使用しましょう](../usingrnns.html)
