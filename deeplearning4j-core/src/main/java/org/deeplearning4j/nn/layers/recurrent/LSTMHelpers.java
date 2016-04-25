@@ -248,6 +248,8 @@ public class LSTMHelpers {
         INDArray wOOTranspose = fwdPass.paramsMmulCompatible[7];
         INDArray wGGTranspose = fwdPass.paramsMmulCompatible[10];
 
+        INDArray wIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4*hiddenLayerSize));
+
         //Parameter gradients, summed across time. bias gradients, input weight gradients, recurrent weight gradients
         INDArray[] bGradients = new INDArray[4];
         INDArray[] iwGradients = new INDArray[4];
@@ -266,10 +268,8 @@ public class LSTMHelpers {
         INDArray epsilonNext = Nd4j.create(new int[]{miniBatchSize, prevLayerSize, timeSeriesLength},'f');    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         INDArray nablaCellStateNext = null;
-        INDArray deltaiNext = null;
-        INDArray deltafNext = null;
-        INDArray deltaoNext = null;
-        INDArray deltagNext = null;
+
+        INDArray deltaifogNext = Nd4j.create(new int[]{miniBatchSize,4*hiddenLayerSize},'f');
 
         Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
         int endIdx = 0;
@@ -279,6 +279,21 @@ public class LSTMHelpers {
         }
 
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
+            //Temporary:
+            INDArray deltaiNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(0,hiddenLayerSize));
+            INDArray deltafNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(hiddenLayerSize,2*hiddenLayerSize));
+            INDArray deltaoNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
+            INDArray deltagNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize));
+
+            //First: calclate the components of nablaCellState that relies on the next time step deltas, so we can overwrite the deltas
+            INDArray nablaCellState;
+            if(iTimeIndex != timeSeriesLength -1){
+                nablaCellState = deltafNext.dup('f').muliRowVector(wFFTranspose);
+                l1BLAS.axpy(nablaCellState.length(), 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose), nablaCellState);
+            } else {
+                nablaCellState = Nd4j.create(new int[]{miniBatchSize,hiddenLayerSize},'f');
+            }
+
             int time = iTimeIndex;
             int inext = 1;
 
@@ -297,10 +312,7 @@ public class LSTMHelpers {
             INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
             if (iTimeIndex != timeSeriesLength - 1) {
                 //if t == timeSeriesLength-1 then deltaiNext etc are zeros
-                Nd4j.gemm(deltaiNext, wI, nablaOut, false, true, 1.0, 1.0);   //nablaOut.addi(deltaiNext.mmul(wITranspose))
-                Nd4j.gemm(deltafNext, wF, nablaOut, false, true, 1.0, 1.0);   //nablaOut.addi(deltafNext.mmul(wFTranspose))
-                Nd4j.gemm(deltaoNext, wO, nablaOut, false, true, 1.0, 1.0);   //nablaOut.addi(deltaoNext.mmul(wOTranspose))
-                Nd4j.gemm(deltagNext, wG, nablaOut, false, true, 1.0, 1.0);   //nablaOut.addi(deltagNext.mmul(wGTranspose));
+                Nd4j.gemm(deltaifogNext, wIFOG, nablaOut, false, true, 1.0, 1.0);
             }
 
             //Output gate deltas:
@@ -312,15 +324,13 @@ public class LSTMHelpers {
 
             //Memory cell error:
             INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
-            INDArray nablaCellState = ao.muli(nablaOut).muli(sigmahPrimeOfS);
+            l1BLAS.axpy(nablaCellState.length(), 1.0, ao.muli(nablaOut).muli(sigmahPrimeOfS), nablaCellState);
             INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
             if (iTimeIndex != timeSeriesLength - 1) {
                 INDArray nextForgetGateAs = fwdPass.fa[time + inext];
                 int length = nablaCellState.length();
                 l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState);       //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
-                l1BLAS.axpy(length, 1.0, deltafNext.dup('f').muliRowVector(wFFTranspose), nablaCellState);    //nablaCellState.addi(deltafNext.mulRowVector(wFFTranspose))
-                l1BLAS.axpy(length, 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose), nablaCellState);   //nablaCellState.addi(deltagNext.mulRowVector(wGGTranspose));
             }
             nablaCellStateNext = nablaCellState;    //Store for use in next iteration
 
@@ -385,7 +395,8 @@ public class LSTMHelpers {
 
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
-            INDArray epsilonNextSlice = Nd4j.gemm(deltai,wi,false,true);
+            INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0);   //This slice: f order and contiguous, due to epsilonNext being defined as f order.
+            Nd4j.gemm(deltai, wi, epsilonNextSlice, false, true, 1.0, 1.0);
             Nd4j.gemm(deltao, wo, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltao.mmul(woTranspose))
             Nd4j.gemm(deltag, wg, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltag.mmul(wgTranspose));
 
@@ -393,12 +404,10 @@ public class LSTMHelpers {
                 Nd4j.gemm(deltaf, wf, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltaf.mmul(wfTranspose));
             }
 
-            epsilonNext.tensorAlongDimension(time, 1, 0).assign(epsilonNextSlice);
-
-            deltaiNext = deltai;
-            deltafNext = deltaf;
-            deltaoNext = deltao;
-            deltagNext = deltag;
+            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(0,hiddenLayerSize)},deltai);
+            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize,2*hiddenLayerSize)},deltaf);
+            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize)},deltao);
+            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize)},deltag);
         }
 
         //Weight/bias gradients
