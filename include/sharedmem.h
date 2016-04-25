@@ -69,25 +69,26 @@ class UnifiedSharedMemory{
     }
 
     __device__ void init (int unifiedSize, int factorySize, int functionSize) {
-        allocationOffset = unifiedSize + factorySize + functionSize;
         this->unifiedSize = unifiedSize < 64 ? 64 : unifiedSize;
         this->factorySize = factorySize < 64 ? 64: factorySize;
         this->functionSize = functionSize < 64 ? 64 : functionSize;
+
+        allocationOffset = this->unifiedSize + this->factorySize + this->functionSize;
     }
 
 
     __device__ ~UnifiedSharedMemory() { }
 
     __device__ unsigned char * getUnifiedSpace() {
-       return (unsigned char * ) sharedMemory;
+       return (unsigned char * ) ((int *)sharedMemory);
     }
 
     __device__ unsigned char * getFactorySpace() {
-       return (unsigned char * ) sharedMemory + unifiedSize;
+       return (unsigned char * ) ((int *)sharedMemory + unifiedSize);
     }
 
     __device__ unsigned char * getFunctionSpace() {
-       return (unsigned char * ) sharedMemory + unifiedSize + factorySize;
+       return (unsigned char * ) ((int *)sharedMemory + unifiedSize + factorySize);
     }
 
     __device__ int * getXShapeBuffer() {

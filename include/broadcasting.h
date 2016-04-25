@@ -865,7 +865,8 @@ __device__ void broadcastGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>));
     }
     __syncthreads();

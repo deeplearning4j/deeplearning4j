@@ -2019,7 +2019,8 @@ __device__ void pairWiseTransformGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>));
     }
     __syncthreads();
@@ -2167,7 +2168,8 @@ __device__ void pairWiseTransformGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>));
     }
     __syncthreads();
@@ -2333,7 +2335,8 @@ __device__ void pairWiseTransformStridedGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>));
     }
     __syncthreads();

@@ -1178,7 +1178,8 @@ __device__ void scalarGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
     }
     __syncthreads();
@@ -1239,7 +1240,8 @@ __device__ void scalarGenericIndexes(
     __shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
     }
     __syncthreads();
@@ -1309,7 +1311,8 @@ __device__ void scalarGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
     }
     __syncthreads();
@@ -1317,15 +1320,15 @@ __device__ void scalarGeneric(
 	__shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != NULL) {
+	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
 
-    if (resultShapeInfo != NULL) {
+    if (resultShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
 
 	if(threadIdx.x == 0) {

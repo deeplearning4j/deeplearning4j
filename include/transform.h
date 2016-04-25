@@ -5581,9 +5581,9 @@ __device__ void transformGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
 	if(threadIdx.x == 0) {
-	    manager = new UnifiedSharedMemory<T>();
+	    extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
-	    printf("Sizes: [%i], [%i], [%i]\n", sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
 
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
         op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
@@ -5685,21 +5685,22 @@ __device__ void transformGeneric(
     __shared__ int *ptrSharedZShapeInfo;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
     }
     __syncthreads();
 
 
-	if (xShapeInfo != NULL) {
+	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
 
-    if (resultShapeInfo != NULL) {
+    if (resultShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
@@ -5808,17 +5809,18 @@ __device__ void transformGenericIndexes(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
     }
     __syncthreads();
 
 	__shared__ int *ptrSharedXShapeInfo;
 
-	if (xShapeInfo != NULL) {
+	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
 
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();

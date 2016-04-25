@@ -345,20 +345,21 @@ namespace functions {
                 int wholeRank = shape::rank(inputShapeInfo);
 
                 if(threadIdx.x == 0) {
+                    printf("Going multidimensional\n");
+
                     numOnes = 0;
                     for(int i = 0; i < wholeRank; i++) {
                         if(shape[i] == 1)
                             numOnes++;
                     }
 
-                    __shared__ int *sqShape;//sqShape[MAX_RANK * 2 + 4];
-                    __shared__ int *sqOut;//sqOut[MAX_RANK * 2 + 4];
+                    int *sqShape;//sqShape[MAX_RANK * 2 + 4];
+                    int *sqOut;//sqOut[MAX_RANK * 2 + 4];
 
                     sqShape = manager->getT1ShapeBuffer();
                     sqOut = manager->getT2ShapeBuffer();
 
-                    __shared__ int *sqStride;
-                    sqStride = sqShape + MAX_RANK;
+                    int *sqStride = manager->getYShapeBuffer();//sqShape + MAX_RANK;
 
                     //squeeze the dimensions
                     if(numOnes > 0) {
@@ -437,7 +438,7 @@ namespace functions {
                     */
             }
             else {
-
+                printf("Going singledimension\n");
                 int resultLength = shape::length(resultShapeInfo);
 
                 /**
@@ -502,6 +503,7 @@ namespace functions {
 
         }
         else {
+            printf("Going scalar\n");
             this->execScalarCuda(
                     dx,
                     xShapeInfo,
@@ -1894,7 +1896,8 @@ __global__ void reduceGenericGlobal(
     __shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>));
     }
     __syncthreads();
@@ -1905,15 +1908,15 @@ __global__ void reduceGenericGlobal(
 	__shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != NULL) {
+	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
 
-    if (resultShapeInfo != NULL) {
+    if (resultShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
 	if(threadIdx.x == 0) {
 		newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
@@ -1922,14 +1925,14 @@ __global__ void reduceGenericGlobal(
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
 			dx,
-			ptrSharedXShapeInfo
-			,extraParams,
+			ptrSharedXShapeInfo,
+			extraParams,
 			result,
 			ptrSharedZShapeInfo,
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer, reductionBuffer, &manager);
+			allocationBuffer, reductionBuffer, manager);
 }
 
 /**
@@ -1965,7 +1968,8 @@ __device__ void reduceGeneric(
 	__shared__ UnifiedSharedMemory<T> *manager;
 
      if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory<T>();
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>));
     }
     __syncthreads();
@@ -1973,15 +1977,15 @@ __device__ void reduceGeneric(
 	__shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != NULL) {
+	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
 
-    if (resultShapeInfo != NULL) {
+    if (resultShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
 	if(threadIdx.x == 0) {
 		newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
