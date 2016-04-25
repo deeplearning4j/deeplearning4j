@@ -63,12 +63,20 @@ public class LSTMHelpers {
 
         INDArray inputWeights = originalInputWeights;
         INDArray prevOutputActivations = originalPrevOutputActivations;
-        INDArray prevMemCellState = originalPrevMemCellState;
 
         boolean is2dInput = input.rank() < 3;        //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         int timeSeriesLength = (is2dInput ? 1 : input.size(2));
         int hiddenLayerSize = recurrentWeights.size(0);
         int miniBatchSize = input.size(0);
+
+        INDArray prevMemCellState;
+        if (originalPrevMemCellState == null) {
+            prevMemCellState = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize},'f');
+        } else {
+            prevMemCellState = originalPrevMemCellState.dup('f');
+        }
+
+
 
         INDArray recurrentWeightsIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4*hiddenLayerSize)).dup('f');
 
@@ -116,10 +124,6 @@ public class LSTMHelpers {
             prevOutputActivations = Nd4j.zeros(new int[]{miniBatchSize, hiddenLayerSize});
         }
 
-        if (prevMemCellState == null) {
-            prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize, hiddenLayerSize});
-        }
-
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
             int time = iTimeIndex;
 
@@ -132,7 +136,7 @@ public class LSTMHelpers {
             miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
 
-            //Calculate activations for: network input + forget, output, input modulation gates.
+            //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
             INDArray ifogActivations = miniBatchData.mmul(inputWeights);    //Shape: [miniBatch,4*layerSize]
             Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
             ifogActivations.addiRowVector(biases);
@@ -157,8 +161,15 @@ public class LSTMHelpers {
             if (forBackprop) toReturn.ga[time] = inputModGateActivations;
 
             //Memory cell state
-            INDArray currentMemoryCellState = forgetGateActivations.dup('f').muli(prevMemCellState);
-            INDArray inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
+            INDArray currentMemoryCellState;
+            INDArray inputModMulInput;
+            if(forBackprop){
+                currentMemoryCellState = prevMemCellState.dup('f').muli(forgetGateActivations);
+                inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
+            } else {
+                currentMemoryCellState = forgetGateActivations.muli(prevMemCellState);
+                inputModMulInput = inputModGateActivations.muli(inputActivations);
+            }
             l1BLAS.axpy(currentMemoryCellState.length(), 1.0, inputModMulInput, currentMemoryCellState);   //currentMemoryCellState.addi(inputModMulInput)
 
             INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
@@ -169,7 +180,12 @@ public class LSTMHelpers {
 
             //LSTM unit outputs:
             INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
-            INDArray currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
+            INDArray currHiddenUnitActivations;
+            if(forBackprop){
+                currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
+            } else {
+                currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
+            }
 
             if (forBackprop) {
                 toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
