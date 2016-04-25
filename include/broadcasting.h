@@ -73,7 +73,7 @@ namespace functions {
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength) {
+			int dimensionLength, UnifiedSharedMemory<T> *manager) {
 		__shared__ int *tadShapeShapeInfo;
 		__shared__ int tads;
 		__shared__ int numOnes;
@@ -859,14 +859,39 @@ __device__ void broadcastGeneric(
 		int *dimension,
 		int dimensionLength) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::broadcast::BroadcastOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::broadcast::Broadcast<T>)];
-
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>));
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+	__shared__ int *ptrSharedYShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
+
+    if (yShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
+
+    if (resultShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
+
 	if(threadIdx.x == 0) {
-		newOpFactory =  new(factoryBuffer) functions::broadcast::BroadcastOpFactory<T>();
-		op = newOpFactory->getOp(opNum, functionBuffer);
+		newOpFactory =  new(manager->getFactorySpace()) functions::broadcast::BroadcastOpFactory<T>();
+		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
@@ -879,7 +904,7 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength);
+			dimensionLength, manager);
 }
 
 /**

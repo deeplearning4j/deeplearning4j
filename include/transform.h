@@ -3873,7 +3873,7 @@ namespace functions {
 		if (isVector) {
 			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -3890,7 +3890,7 @@ namespace functions {
 		if (isVector) {
 			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -4139,7 +4139,7 @@ namespace functions {
 		if (isVector) {
 			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -4155,7 +4155,7 @@ namespace functions {
 		if (isVector) {
 			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
 		} else {
-			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -4439,7 +4439,7 @@ namespace functions {
 		if (isVector) {
 			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -4456,7 +4456,7 @@ namespace functions {
 		if (isVector) {
 			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
+			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
