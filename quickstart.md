@@ -37,7 +37,7 @@ Maven is a dependency management and automated build tool for Java projects. It 
 mvn --version
 ```
 
-Maven is widely used among Java developers and it's not optional for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html). 
+Maven is widely used among Java developers and it's not optional for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. 
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
 
@@ -59,10 +59,12 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 ```
 git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
+cd dl4j-0.4-examples/
+mvn clean install
 ```
 
 2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
-![choose directory](../img/Install_IntJ_1.png)
+![select directory](../img/Install_IntJ_1.png)
 
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
@@ -70,7 +72,7 @@ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
 4. Continue through the wizard's options, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
-![run example in IntelliJ](../img/Install_IntJ_3.png)
+![run IntelliJ example](../img/Install_IntJ_3.png)
 Right-click the file to run. 
 
 ## Using DL4J In Your Own Projects: A Minimal pom.xml File
