@@ -60,7 +60,7 @@ public class ShapeTests extends BaseNd4jTest {
     public void testTensorAlongDimension() {
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
         INDArray tensors = twoTwoByThree.tensorAlongDimension(0, 1, 2);
-        assertArrayEquals(new int[]{3, 2}, tensors.shape());
+        assertArrayEquals(new int[]{2,3}, tensors.shape());
         assertEquals(2, twoTwoByThree.tensorssAlongDimension(1, 2));
         double[][] dataInit = new double[][]{{1,2},{3,4}};
         INDArray firstTensor = Nd4j.create(dataInit);

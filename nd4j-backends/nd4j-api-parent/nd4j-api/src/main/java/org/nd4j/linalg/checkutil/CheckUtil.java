@@ -28,7 +28,8 @@ public class CheckUtil {
 	 * @return true if OK, false if result incorrect
 	 */
 	public static boolean checkMmul(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference) {
-		if(first.size(1) != second.size(0)) throw new IllegalArgumentException("first.columns != second.rows");
+		if(first.size(1) != second.size(0))
+            throw new IllegalArgumentException("first.columns != second.rows");
 		RealMatrix rmFirst = convertToApacheMatrix(first);
 		RealMatrix rmSecond = convertToApacheMatrix(second);
 

@@ -1436,19 +1436,20 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(shape);
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
-        assertArrayEquals(tad.shape(), new int[]{7, 5});
+        assertArrayEquals(tad.shape(), new int[]{5,7});
 
 
-        INDArray copy = Nd4j.zeros(7,5).assign(0.0);
-        for( int i = 0; i < 7; i++) {
-            for( int j = 0; j < 5; j++) {
+        INDArray copy = Nd4j.zeros(5,7).assign(0.0);
+        for( int i = 0; i < 5; i++) {
+            for( int j = 0; j < 7; j++) {
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
 
 
         assertTrue(tad.equals(copy));
-
+        tad = tad.reshape(7,5);
+        copy = copy.reshape(7,5);
         INDArray first = Nd4j.rand(new int[]{2, 7});
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
@@ -1468,18 +1469,20 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
         boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
-        assertArrayEquals(tad.shape(),new int[]{7,5});
+        assertArrayEquals(tad.shape(),new int[]{5,7});
 
 
-        INDArray copy = Nd4j.zeros(7,5);
-        for( int i = 0; i < 7; i++ ){
-            for( int j = 0; j < 5; j++ ){
+        INDArray copy = Nd4j.zeros(5,7);
+        for( int i = 0; i < 5; i++) {
+            for( int j = 0; j < 7; j++) {
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
 
         assertTrue(tad.equals(copy));
 
+        tad = tad.reshape(7,5);
+        copy = copy.reshape(7,5);
         INDArray first = Nd4j.rand(new int[]{2, 7});
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
