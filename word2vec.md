@@ -485,10 +485,10 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](../bagofwords-tf-idf.html)
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
+* [Introduction to Neural Networks](../neuralnet-overview)
 * [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
 * [LSTMs and Recurrent Networks](../lstm)
-* [Neural Networks](../neuralnet-overview)
 * [Neural Networks and Regression](../linear-regression)
 * [Convolutional Networks](../convolutionalnets)
 
