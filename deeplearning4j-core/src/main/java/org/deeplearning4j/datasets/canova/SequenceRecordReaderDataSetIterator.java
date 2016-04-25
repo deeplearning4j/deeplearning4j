@@ -147,9 +147,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             listLabels.add(fl[1]);
         }
 
-        //Convert to 3d minibatch:
-        INDArray featuresOut = Nd4j.create(listFeatures.size(),listFeatures.get(0).size(1),maxLength);
-        INDArray labelsOut = Nd4j.create(listFeatures.size(),(regression ? 1 : numPossibleLabels),maxLength);
+        //Convert to 3d minibatch
+        //Note: using f order here, as each  time step is contiguous in the buffer with f order (isn't the case with c order)
+        INDArray featuresOut = Nd4j.create(new int[]{listFeatures.size(),listFeatures.get(0).size(1),maxLength},'f');
+        INDArray labelsOut = Nd4j.create(new int[]{listFeatures.size(),(regression ? 1 : numPossibleLabels),maxLength},'f');
         INDArray featuresMask = null;
         INDArray labelsMask = null;
 
@@ -213,8 +214,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             labelShape[1] = labelList.get(0).size(1);   //label vector size
             labelShape[2] = labelList.get(0).size(0);   //time series/sequence length
 
-            featuresOut = Nd4j.create(featureShape);
-            labelsOut = Nd4j.create(labelShape);
+            featuresOut = Nd4j.create(featureShape,'f');
+            labelsOut = Nd4j.create(labelShape,'f');
             for (int i = 0; i < featureList.size(); i++) {
                 featuresOut.tensorAlongDimension(i, 1, 2).assign(featureList.get(i));
                 labelsOut.tensorAlongDimension(i, 1, 2).assign(labelList.get(i));
@@ -237,8 +238,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                     labelList.get(0).size(1), //example vector size
                     longestTimeSeries};
 
-            featuresOut = Nd4j.create(featuresShape);
-            labelsOut = Nd4j.create(labelsShape);
+            featuresOut = Nd4j.create(featuresShape,'f');
+            labelsOut = Nd4j.create(labelsShape,'f');
             featuresMask = Nd4j.ones(featureList.size(),longestTimeSeries);
             labelsMask = Nd4j.ones(labelList.size(),longestTimeSeries);
             int[] temp = new int[2];
@@ -279,8 +280,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                     labelList.get(0).size(1), //example vector size
                     longestTimeSeries};
 
-            featuresOut = Nd4j.create(featuresShape);
-            labelsOut = Nd4j.create(labelsShape);
+            featuresOut = Nd4j.create(featuresShape,'f');
+            labelsOut = Nd4j.create(labelsShape,'f');
             featuresMask = Nd4j.ones(featureList.size(), longestTimeSeries);
             labelsMask = Nd4j.ones(labelList.size(), longestTimeSeries);
             int[] temp = new int[2];
@@ -430,7 +431,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             Collection<Writable> step = iter.next();
             if (i == 0) {
                 shape[1] = step.size();
-                out = Nd4j.create(shape);
+                out = Nd4j.create(shape,'f');
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
@@ -461,7 +462,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 } else {
                     shape[1] = numPossibleLabels;
                 }
-                out = Nd4j.create(shape);
+                out = Nd4j.create(shape,'f');
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
