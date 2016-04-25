@@ -9,7 +9,6 @@ public class FwdPassReturn {
     //First: needed by standard forward pass only
     public INDArray fwdPassOutput;
     //Arrays: Needed for backpropGradient only
-    public INDArray[] paramsMmulCompatible;    //{wi,wI,wf,wF,wFF,wo,wO,wOO,wg,wG,wGG}
     public INDArray[] fwdPassOutputAsArrays;
     public INDArray[] memCellState;        //Pre nonlinearity
     public INDArray[] memCellActivations;    //Post nonlinearity
