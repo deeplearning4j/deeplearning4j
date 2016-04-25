@@ -1891,7 +1891,13 @@ __global__ void reduceGenericGlobal(
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
 
-    UnifiedSharedMemory<T> manager(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ReduceFunction<T>));
+    __shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>));
+    }
+    __syncthreads();
 
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
@@ -1900,18 +1906,18 @@ __global__ void reduceGenericGlobal(
     __shared__ int *ptrSharedZShapeInfo;
 
 	if (xShapeInfo != NULL) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager.getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager.getXShapeBuffer();
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
 
     if (resultShapeInfo != NULL) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager.getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager.getZShapeBuffer();
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new(manager.getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op, manager.getFunctionSpace());
+		newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+		reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1953,27 +1959,33 @@ __device__ void reduceGeneric(
 		int postProcessOrNot,
 		int *allocationBuffer, T *reductionBuffer) {
 
-    UnifiedSharedMemory<T> manager(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ReduceFunction<T>));
-
 	__shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 	__shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>));
+    }
+    __syncthreads();
 
 	__shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
 	if (xShapeInfo != NULL) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager.getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager.getXShapeBuffer();
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
 
     if (resultShapeInfo != NULL) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager.getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager.getZShapeBuffer();
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
 
 	if(threadIdx.x == 0) {
-		newOpFactory =  new(manager.getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-		reduceFunctionToInvoke = newOpFactory->create(op, manager.getFunctionSpace());
+		newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+		reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
 	}
 	__syncthreads();
 	reduceFunctionToInvoke->transformCuda(
@@ -1985,7 +1997,7 @@ __device__ void reduceGeneric(
 			dimension,
 			dimensionLength,
 			postProcessOrNot,
-			allocationBuffer, reductionBuffer, &manager);
+			allocationBuffer, reductionBuffer, manager);
 }
 
 /**

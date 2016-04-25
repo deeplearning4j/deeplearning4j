@@ -2168,7 +2168,7 @@ void   NativeOps::execTransformFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	transformFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
 			opNum,
 			n,
 			xPointer,

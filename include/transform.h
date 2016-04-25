@@ -62,7 +62,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) = 0;
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) = 0;
 #endif
             /**
              * The op for transforms
@@ -125,10 +125,10 @@ namespace functions {
 			T *params,
 			T *result,
 			int *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 
 		if(this->requiresSpecial) {
-			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer);
+			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
 			return;
 		}
 
@@ -157,7 +157,7 @@ namespace functions {
 					xElementWiseStride,
 					params,
 					result,
-					resultElementWiseStride, allocationPointer, reductionPointer);
+					resultElementWiseStride, allocationPointer, reductionPointer, manager);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
@@ -194,7 +194,7 @@ namespace functions {
 			T *params,
 			T *result,
 			int resultStride,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -458,7 +458,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -530,7 +530,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -602,7 +602,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -675,7 +675,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -749,7 +749,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -821,7 +821,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -895,7 +895,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -966,7 +966,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1035,7 +1035,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1107,7 +1107,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1179,7 +1179,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1260,7 +1260,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1332,7 +1332,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1405,7 +1405,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1479,7 +1479,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1561,7 +1561,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -1634,7 +1634,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1706,7 +1706,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1779,7 +1779,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1851,7 +1851,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1923,7 +1923,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -1995,7 +1995,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2068,7 +2068,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2141,7 +2141,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2215,7 +2215,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2290,7 +2290,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2364,7 +2364,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2438,7 +2438,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2511,7 +2511,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2585,7 +2585,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2659,7 +2659,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2732,7 +2732,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2805,7 +2805,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -2878,7 +2878,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -2953,7 +2953,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -3033,7 +3033,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
 
@@ -3107,7 +3107,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {}
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {}
 #endif
 
                 /**
@@ -3169,7 +3169,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 		/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 		int kernelWidth = (int) extraParams[0];
 		int kernelHeight = (int) extraParams[1];
@@ -3495,7 +3495,7 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 		int *inShape = shape::shapeOf(xShapeBuffer);
 		int *inStride = shape::stride(xShapeBuffer);
 
@@ -3814,7 +3814,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 
 		int *shape = shape::shapeOf(xShapeBuffer);
 		__shared__ T *maxResult;
@@ -3863,7 +3863,7 @@ namespace functions {
 			maxResult[tid] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -3878,12 +3878,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//divide by the sum
@@ -4091,7 +4091,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 		int *shape = shape::shapeOf(xShapeBuffer);
 		int *stride = shape::stride(xShapeBuffer);
 		//iterate along rows
@@ -4132,7 +4132,7 @@ namespace functions {
 		int maxShape[2] = {shape[0], 1};
 		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4144,11 +4144,11 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//divide by the sum
@@ -4160,7 +4160,7 @@ namespace functions {
 		__syncthreads();
 
 
-		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer);
+		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 
 		__syncthreads();
 		if(threadIdx.x == 0) {
@@ -4379,7 +4379,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 
 
 		int *shape = shape::shapeOf(xShapeBuffer);
@@ -4429,7 +4429,7 @@ namespace functions {
 			maxResult[threadIdx.x] = (T) 0.0;
 		__syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, NULL);
+		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4444,12 +4444,12 @@ namespace functions {
 		__syncthreads();
 
 		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer);
+		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, NULL);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//divide by the sum
@@ -4702,7 +4702,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 
 		__shared__ functions::indexreduce::ops::IMax<T> *max;
 		__shared__ int maxIdx;
@@ -4901,9 +4901,9 @@ namespace functions {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory<T> *manager) {
 		if(extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
-			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer, reductionPointer);
+			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer, reductionPointer, manager);
 		} else {
 			__shared__ functions::indexreduce::ops::IMax<T> *max;
 			__shared__ int maxIdx;
@@ -5575,20 +5575,22 @@ __device__ void transformGeneric(
 		T *result,
 		int resultStride, int *allocationPointer, T *reductionPointer) {
 
-
-    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
-    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
-
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-        op = doubleTransformFactory->getOp(opNum, functionBuffer);
+	    manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
+	    printf("Sizes: [%i], [%i], [%i]\n", sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
+
+		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+        op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer);
+	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer, manager);
 }
 
 /**
@@ -5670,24 +5672,51 @@ template <typename T>
 __device__ void transformGeneric(
 		int opNum,
 		T *dy,
-		int *shapeInfo,
+		int *xShapeInfo,
 		T *params,
 		T *result,int *resultShapeInfo, int *allocationPointer, T *reductionPointer) {
-
-    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
-    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+	__shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
+    }
+    __syncthreads();
+
+
+	if (xShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+
+    if (resultShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, functionBuffer);
+		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,resultShapeInfo, allocationPointer, reductionPointer);
+	op->transformCuda(
+	    dy,
+	    ptrSharedXShapeInfo,
+	    params,
+	    result,
+	    ptrSharedZShapeInfo,
+	    allocationPointer,
+	    reductionPointer,
+	    manager);
 }
 
 
@@ -5769,24 +5798,36 @@ template <typename T>
 __device__ void transformGenericIndexes(
 		int opNum,
 		T *dy,
-		int *shapeInfo,
+		int *xShapeInfo,
 		T *params,
 		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
-
-    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::transform::TransformOpFactory<T>)];
-    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::transform::Transform<T>)];
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>));
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+
+	if (xShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+
 	if(threadIdx.x == 0) {
-		doubleTransformFactory = new(factoryBuffer) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, functionBuffer);
+		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
 
-	op->transformCuda(dy,shapeInfo,params,result,indexes,allocationPointer, reductionPointer);
+	op->transformCuda(dy,ptrSharedXShapeInfo,params,result,indexes,allocationPointer, reductionPointer, manager);
 }
 
 

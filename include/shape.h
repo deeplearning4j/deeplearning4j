@@ -4891,8 +4891,6 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int len = rank * 2 + 4;
         for (int i = threadIdx.x; i < len; i += blockDim.x)
             targetBuffer[i] = shapeInfoBuffer[i];
-
-        __syncthreads();
     }
 #endif
 }

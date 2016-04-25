@@ -63,14 +63,16 @@ class UnifiedSharedMemory{
     int functionSize = 0;
 
     public:
-    __device__ UnifiedSharedMemory(int unifiedSize, int factorySize, int functionSize) {
+    __device__ UnifiedSharedMemory() {
         extern __shared__ int shMem[];
         sharedMemory = shMem;
+    }
 
+    __device__ void init (int unifiedSize, int factorySize, int functionSize) {
         allocationOffset = unifiedSize + factorySize + functionSize;
-        this->unifiedSize = unifiedSize;
-        this->factorySize = factorySize;
-        this->functionSize = functionSize;
+        this->unifiedSize = unifiedSize < 64 ? 64 : unifiedSize;
+        this->factorySize = factorySize < 64 ? 64: factorySize;
+        this->functionSize = functionSize < 64 ? 64 : functionSize;
     }
 
 
