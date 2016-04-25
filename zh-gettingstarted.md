@@ -7,13 +7,13 @@ layout: zh-default
 
 安装过程为多步骤。如果您希望提问或反馈，我们强烈建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)，以便我们引导您完成安装过程。即使您加入后无意发言，或更希望自行研究，也欢迎加入交流群默默潜水学习。此外，如果您对深度学习刚刚入门，我们还准备了一份[上手时需要学习的清单](../deeplearningforbeginners.html)。 
 
-现在，请先访问我们的[快速入门页](../quickstart.html)。仅需几步即可运行我们的示例。请在完成之后，再开始本页的安装过程。如此，上手DL4J会较为容易。 
+现在，请先访问我们的[快速入门页](../zh-quickstart.html)。仅需几步即可运行我们的示例。请在完成之后，再开始本页的安装过程。如此，上手DL4J会较为容易。 
 
-安装Deeplearning4j必备组件已列明于[ND4J入门指南页](http://nd4j.org/getstarted.html)。ND4J是驱动DL4J神经网络的代数引擎：
+安装Deeplearning4j必备组件已列明于[ND4J入门指南页](http://nd4j.org/zh-getstarted.html)。ND4J是驱动DL4J神经网络的代数引擎：
 
-1.[Java 7或以上版本](http://nd4j.org/getstarted.html#java) 
-2.[集成开发环境：IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
-3.[Maven](http://nd4j.org/getstarted.html#maven)
+1.[Java 7或以上版本](http://nd4j.org/zh-getstarted.html#java) 
+2.[集成开发环境：IntelliJ](http://nd4j.org/zh-getstarted.html#ide-for-java) 
+3.[Maven](http://nd4j.org/zh-getstarted.html#maven)
 
 在安装这些必备组件之后，请阅读以下内容：
 
@@ -21,7 +21,7 @@ layout: zh-default
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-8.[GitHub](http://nd4j.org/getstarted.html#github)
+8.[GitHub](http://nd4j.org/zh-getstarted.html#github)
 9.<a href="#eclipse">Eclipse</a>
 10.<a href="#trouble">疑难解答</a>
 11.<a href="#results">可复现结果</a>
@@ -61,7 +61,7 @@ layout: zh-default
 
 ### <a name="windows">Windows</a>
 
-* 虽然我们的Windows安装过程并不总是简单便利，但Deeplearning4j是少数几个对Windows社区提供实际支持的开源深度学习项目。请参见[ND4J页面Windows部分](http://nd4j.org/getstarted.html#windows)以了解更多信息。 
+* 虽然我们的Windows安装过程并不总是简单便利，但Deeplearning4j是少数几个对Windows社区提供实际支持的开源深度学习项目。请参见[ND4J页面Windows部分](http://nd4j.org/zh-getstarted.html#windows)以了解更多信息。 
 
 * 即使您的系统为64位，仍请安装[32位MinGW](http://www.mingw.org/)（下载目录见右上角），然后[使用Mingw下载预安装的动态库](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)。 
 
@@ -81,8 +81,10 @@ layout: zh-default
 
 若要使x86后端上原生库的正常运转，需要在系统目录添加`/opt/OpenBLAS/lib`。然后在终端中输入以下命令
 
+``` java
 			sudo cp libopenblas.so liblapack.so.3
 			sudo cp libopenblas.so libblas.so.3
+```
 
 如此，可使[Spark](http://deeplearning4j.org/spark)与OpenBlas兼容工作。
 
@@ -128,7 +130,7 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
       * Java版本（7、8）：type java -version in your terminal/CMD
       * Maven版本：type mvn --version in your terminal/CMD
       * Stacktrace：请在Gist上发布错误代码，并将链接分享给我们：[https://gist.github.com/](https://gist.github.com/)
-* 如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)中的最新版本相符。使用源进行升级时，可以在[ND4J](http://nd4j.org/getstarted.html)、Canova和DL4J上运行`git clone`，并以此顺序在所有三个目录内运行`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`。
+* 如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)中的最新版本相符。使用源进行升级时，可以在[ND4J](http://nd4j.org/zh-getstarted.html)、Canova和DL4J上运行`git clone`，并以此顺序在所有三个目录内运行`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`。
 * 在运行示例时，可能会得到较低的[f1分数](../glossary.html#f1)。这一分数评估的，是网络分类准确的可能性。在这一情况下，f1分数分数低并不表明表现不佳，因为示例是通过小数据组进行定型的。之所以数据组较小，是为了加快运行速度。因为小数据组相比大数据组较不具有代表性，所以其生成的结果也会有很大差异性。比如说，在示例数据量微小的情况下，我们的深度置信网络f1分数目前为从0.32到1.0不等。 
 * Deeplearning4j包括**自动完成功能**。如果您不确定哪些命令可用，可任意按下某一字母键，将出现如下所示的下拉式菜单：
 ![Alt text](../img/dl4j_autocomplete.png)
@@ -159,6 +161,6 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
 
 欲开始创建神经网络，请参见[神经网络简介](http://deeplearning4j.org/neuralnet-overview.html)获得更多信息。
 
-阅读[IRIS教程](../iris-flower-dataset-tutorial.html)以迅速上手。同时请参阅我们关于[受限玻尔兹曼机](../restrictedboltzmannmachine.html)的说明，以理解*深度置信网络*的基本机制。
+阅读[IRIS教程](../zh-iris-flower-dataset-tutorial.html)以迅速上手。同时请参阅我们关于[受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)的说明，以理解*深度置信网络*的基本机制。
 
-根据[ND4J入门指南](http://nd4j.org/getstarted.html)上的说明创建新项目，并将必要的[POM依赖项](http://nd4j.org/dependencies.html)包括在内。
+根据[ND4J入门指南](http://nd4j.org/zh-getstarted.html)上的说明创建新项目，并将必要的[POM依赖项](http://nd4j.org/dependencies.html)包括在内。
