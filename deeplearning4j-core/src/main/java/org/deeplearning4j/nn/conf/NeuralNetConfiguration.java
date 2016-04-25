@@ -828,7 +828,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.lrPolicyDecayRate = lrPolicyDecayRate;
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
-            String layerName = layer.getLayerName() == null? "Layer " + layer.getLayerName(): "Layer not named";
+            String layerName;
+            if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
+            else layerName = "Layer " + layer.getLayerName() ;
             learningRateValidation(layerName);
 
             if(layer != null ) {
