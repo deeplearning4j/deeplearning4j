@@ -643,9 +643,11 @@ namespace functions {
                     }
 
                     else {
+
+                        printf("Parallel sum\n");
                         T finalVal = startingVal;
                         BlockInformation info(length);
-
+                        T blocks[info.chunks];
 #pragma omp parallel
                         {
                             T local = this->startingValue(x);
@@ -661,7 +663,7 @@ namespace functions {
                                 if (newOffset + info.items >= length) {
                                     itemsToLoop = length - newOffset;
                                 }
-
+#pragma omp simd
                                 for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
                                     T curr = op(chunk[j], extraParams);
                                     local = update(local, curr, extraParams);
@@ -669,11 +671,12 @@ namespace functions {
 
                             }
 
-#pragma omp critical
-                            {
-                                finalVal = update(finalVal, local, extraParams);
+                            blocks[omp_get_thread_num()] = local;
+                        }
 
-                            }
+#pragma omp simd
+                        for(int i = 0; i < info.threads; i++) {
+                            finalVal = update(finalVal,blocks[i],extraParams);
                         }
 
 
@@ -699,8 +702,12 @@ namespace functions {
                         return local;
                     }
 
+                    printf("Parallel sum 2\n");
+
                     T finalVal = startingVal;
                     BlockInformation info(length);
+                    T blocks[info.chunks];
+
 
 #pragma omp parallel
                     {
@@ -719,13 +726,15 @@ namespace functions {
 
                         }
 
-#pragma omp critical
-                        {
-                            finalVal = update(finalVal, local, extraParams);
+                        blocks[omp_get_thread_num()] = local;
 
-                        }
+
                     }
 
+#pragma omp simd
+                    for(int i = 0; i < info.threads; i++) {
+                        finalVal = update(finalVal,blocks[i],extraParams);
+                    }
 
                     finalVal = postProcess(finalVal, length, extraParams);
                     return finalVal;
@@ -774,12 +783,11 @@ namespace functions {
                                                   &x,
                                                   xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-                            {
-                                /* Process the innermost dimension */
-                                const T *xIter = x;
-                                start = update(start, op(xIter[0], extraParams), extraParams);
-                            }
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                            /* Process the innermost dimension */
+                            const T *xIter = x;
+                            start = update(start, op(xIter[0], extraParams), extraParams);
+                        }
                         ND4J_RAW_ITER_ONE_NEXT(dim,
                                                rank,
                                                coord,
@@ -888,9 +896,9 @@ namespace functions {
                                                       &xPointer,
                                                       xStridesIter) >= 0) {
                             ND4J_RAW_ITER_START(dim, shape::rank(tad.tadOnlyShapeInfo), coord, shapeIter); {
-                                    /* Process the innermost dimension */
-                                    start = update(start, op(xPointer[0], extraParams), extraParams);
-                                }
+                                /* Process the innermost dimension */
+                                start = update(start, op(xPointer[0], extraParams), extraParams);
+                            }
                             ND4J_RAW_ITER_ONE_NEXT(dim,
                                                    shape::rank(tad.tadOnlyShapeInfo),
                                                    coord,

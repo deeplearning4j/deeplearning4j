@@ -24,35 +24,35 @@
 #include <cuda_runtime.h>
 #endif
 namespace functions {
-	namespace pairwise_transforms {
+    namespace pairwise_transforms {
 #define MIN 1e-12
 
 /**
  * Transforms involving 2 arrays
  */
-		template<typename T>
-		class PairWiseTransform : public virtual functions::ops::Op<T> {
-		protected:
-			bool requiresSpecial = false;
-		public:
-			virtual
+        template<typename T>
+        class PairWiseTransform : public virtual functions::ops::Op<T> {
+        protected:
+            bool requiresSpecial = false;
+        public:
+            virtual
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-			T op(T d1, T d2, T *params) = 0;
+            T op(T d1, T d2, T *params) = 0;
 
-			virtual
+            virtual
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-			T op(T d1, T *params) = 0;
+            T op(T d1, T *params) = 0;
 
 #ifdef __CUDACC__
-			/**
+            /**
 	 *
 	 */
 	virtual __inline__ __device__ void transform(
@@ -170,7 +170,7 @@ namespace functions {
 
 
 		Nd4jIndex n = shape::length(xShapeBuffer);
-		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == yOrder && resultOrder == xOrder) {
+		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == yOrder && resultOrder == xOrder && xElementWiseStride == yElementWiseStride) {
 			transformCuda(
 					n,
 					dx,
@@ -285,10 +285,10 @@ namespace functions {
 	}
 
 #endif
-		public:
+        public:
 
 
-			/**
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -302,30 +302,30 @@ namespace functions {
              * @param extraParams the extra parameters for the transform
              * @param n the length of the input
              */
-			virtual void exec(
-					T *dx,
-					int *xShapeBuffer,
-					T *y,
-					int *yShapeBuffer,
-					T *result,
-					int *resultShapeBuffer,
-					T *extraParams,
-					int *indexes,
-					int *yIndexes) {
-				exec(dx,
-					 xShapeBuffer,
-					 y,
-					 yShapeBuffer,
-					 result,
-					 resultShapeBuffer,
-					 extraParams,
-					 indexes,
-					 yIndexes,
-					 indexes);
-			}
+            virtual void exec(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int *indexes,
+                    int *yIndexes) {
+                exec(dx,
+                     xShapeBuffer,
+                     y,
+                     yShapeBuffer,
+                     result,
+                     resultShapeBuffer,
+                     extraParams,
+                     indexes,
+                     yIndexes,
+                     indexes);
+            }
 
 
-			/**
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -339,30 +339,30 @@ namespace functions {
              * @param extraParams the extra parameters for the transform
              * @param n the length of the input
              */
-			virtual void exec(
-					T *dx,
-					int *xShapeBuffer,
-					T *y,
-					int *yShapeBuffer,
-					T *result,
-					int *resultShapeBuffer,
-					T *extraParams,
-					int *indexes,
-					int *yIndexes,
-					int *resultIndexes) {
-				Nd4jIndex n = shape::length(xShapeBuffer);
+            virtual void exec(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int *indexes,
+                    int *yIndexes,
+                    int *resultIndexes) {
+                Nd4jIndex n = shape::length(xShapeBuffer);
 #pragma omp parallel for
-				for (Nd4jIndex i = 0; i < n; i++) {
-					result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
+                for (Nd4jIndex i = 0; i < n; i++) {
+                    result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
-				}
-			}
-
-
+                }
+            }
 
 
 
-			/**
+
+
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -376,25 +376,25 @@ namespace functions {
              * @param extraParams the extra parameters for the transform
                  * @param indexes which indexes to copy
              */
-			virtual void exec(
-					T *dx,
-					int *xShapeBuffer,
-					T *y,
-					int *yShapeBuffer,
-					T *result,
-					int *resultShapeBuffer,
-					T *extraParams,
-					int *indexes) {
-				Nd4jIndex n = shape::length(xShapeBuffer);
+            virtual void exec(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams,
+                    int *indexes) {
+                Nd4jIndex n = shape::length(xShapeBuffer);
 #pragma omp parallel for
-				for (Nd4jIndex i = 0; i < n; i++) {
-					result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
+                for (Nd4jIndex i = 0; i < n; i++) {
+                    result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
 
-				}
+                }
 
-			}
+            }
 
-			/**
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -407,15 +407,15 @@ namespace functions {
              * @param resultStride the stride for the buffer
              * @param extraParams the extra parameters for the transform
              */
-			virtual void execSpecial(
-					T *dx,
-					int *xShapeBuffer,
-					T *y,
-					int *yShapeBuffer,
-					T *result,
-					int *resultShapeBuffer,
-					T *extraParams) = 0;
-			/**
+            virtual void execSpecial(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) = 0;
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -428,164 +428,164 @@ namespace functions {
              * @param resultStride the stride for the buffer
              * @param extraParams the extra parameters for the transform
              */
-			virtual void exec(
-					T *dx,
-					int *xShapeBuffer,
-					T *y,
-					int *yShapeBuffer,
-					T *result,
-					int *resultShapeBuffer,
-					T *extraParams) {
-				Nd4jIndex n = shape::length(xShapeBuffer);
-				int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
-				int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
-				int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
+            virtual void exec(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *y,
+                    int *yShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams) {
+                Nd4jIndex n = shape::length(xShapeBuffer);
+                int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 
-				bool sameShape = shape::shapeEquals(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer),
-													shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer));
-				//ignore everything else
-				if (this->requiresSpecial) {
-					this->execSpecial(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-					return;
-				}
-
-
-				if (xElementWiseStride >= 1 &&
-					yElementWiseStride >= 1 &&
-					resultElementWiseStride >= 1 &&
-					shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
-					shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) &&
-					sameShape) {
-					exec(dx,
-						 xElementWiseStride,
-						 y,
-						 yElementWiseStride,
-						 result,
-						 resultElementWiseStride,
-						 extraParams,
-						 n);
-				}
-					//not same shape
-				else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
-						 shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
-						 yElementWiseStride >= 1 &&
-						 resultElementWiseStride >= 1) {
-					exec(dx,
-						 xElementWiseStride,
-						 y,
-						 yElementWiseStride,
-						 result,
-						 resultElementWiseStride,
-						 extraParams,
-						 shape::length(yShapeBuffer));
-				}
-
-				else if (sameShape) {
-					int rank = shape::rank(xShapeBuffer);
-					int *xShape = shape::shapeOf(xShapeBuffer);
-
-					int *xStride = shape::stride(xShapeBuffer);
-					int *yStride = shape::stride(yShapeBuffer);
-					int *resultStride = shape::stride(resultShapeBuffer);
-
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int xStridesIter[MAX_RANK];
-					int yStridesIter[MAX_RANK];
-					int resultStridesIter[MAX_RANK];
-					if (PrepareThreeRawArrayIter<T>(rank,
-													xShape,
-													dx,
-													xStride,
-													y,
-													yStride,
-													result,
-													resultStride,
-													rank,
-													shapeIter,
-													&dx,
-													xStridesIter,
-													&y,
-													yStridesIter,
-													&result,
-													resultStridesIter) >= 0) {
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-						{
-							/* Process the innermost dimension */
-							T *xIter = dx;
-							T *yIter = y;
-							T *resultIter = result;
-							resultIter[0] = op(xIter[0], yIter[0], extraParams);
-						}
-						ND4J_RAW_ITER_THREE_NEXT(dim,
-												 rank,
-												 coord,
-												 shapeIter,
-												 dx,
-												 xStridesIter,
-												 y,
-												 yStridesIter,
-												 result,
-												 resultStridesIter);
-					}
-					else {
-						printf("Unable to prepare array\n");
-					}
-
-				}
-
-				else {
-					Nd4jIndex len = shape::length(xShapeBuffer);
-					int xRank = shape::rank(xShapeBuffer);
-					int yRank = shape::rank(yShapeBuffer);
-					int resultRank = shape::rank(resultShapeBuffer);
-					int *xCoord = new int[xRank];
-					int *yCoord = new int[yRank];
-					int *resultCoord = new int[resultRank];
-
-					int *xShape = shape::shapeOf(xShapeBuffer);
-					int *xStride = shape::stride(xShapeBuffer);
-
-					int *yShape = shape::shapeOf(yShapeBuffer);
-					int *yStride = shape::stride(yShapeBuffer);
-
-					int *resultShape = shape::shapeOf(resultShapeBuffer);
-					if(dx == result) {
-						for (Nd4jIndex i = 0; i < len; i++) {
-							shape::ind2subC(xRank,xShape, i, xCoord);
-							shape::ind2subC(yRank,yShape, i, yCoord);
-							shape::ind2subC(resultRank,resultShape, i, resultCoord);
-
-							Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-							Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-							result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
-
-						}
-					}
-					else {
-						for (Nd4jIndex i = 0; i < len; i++) {
-							shape::ind2subC(xRank,xShape, i, xCoord);
-							shape::ind2subC(yRank,yShape, i, yCoord);
-							shape::ind2subC(resultRank,resultShape, i, resultCoord);
-
-							Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-							Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-							Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
-							result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
-
-						}
-					}
+                bool sameShape = shape::shapeEquals(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer),
+                                                    shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer));
+                //ignore everything else
+                if (this->requiresSpecial) {
+                    this->execSpecial(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+                    return;
+                }
 
 
-					delete[] xCoord;
-					delete[] yCoord;
-					delete []resultCoord;
-				}
-			}
+                if (xElementWiseStride >= 1 &&
+                    yElementWiseStride >= 1 &&
+                    resultElementWiseStride >= 1 &&
+                    shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+                    shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) &&
+                    sameShape &&  xElementWiseStride == yElementWiseStride) {
+
+                    exec(dx,
+                         xElementWiseStride,
+                         y,
+                         yElementWiseStride,
+                         result,
+                         resultElementWiseStride,
+                         extraParams,
+                         n);
+                }
+                    //not same shape
+                else if (!sameShape && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) &&
+                         shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
+                         yElementWiseStride >= 1 &&
+                         resultElementWiseStride >= 1 && xElementWiseStride == yElementWiseStride) {
+                    exec(dx,
+                         xElementWiseStride,
+                         y,
+                         yElementWiseStride,
+                         result,
+                         resultElementWiseStride,
+                         extraParams,
+                         shape::length(yShapeBuffer));
+                }
+
+                else if (sameShape) {
+                    int rank = shape::rank(xShapeBuffer);
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+
+                    int *xStride = shape::stride(xShapeBuffer);
+                    int *yStride = shape::stride(yShapeBuffer);
+                    int *resultStride = shape::stride(resultShapeBuffer);
+
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int resultStridesIter[MAX_RANK];
+                    if (PrepareThreeRawArrayIter<T>(rank,
+                                                    xShape,
+                                                    dx,
+                                                    xStride,
+                                                    y,
+                                                    yStride,
+                                                    result,
+                                                    resultStride,
+                                                    rank,
+                                                    shapeIter,
+                                                    &dx,
+                                                    xStridesIter,
+                                                    &y,
+                                                    yStridesIter,
+                                                    &result,
+                                                    resultStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                T *xIter = dx;
+                                T *yIter = y;
+                                T *resultIter = result;
+                                resultIter[0] = op(xIter[0], yIter[0], extraParams);
+                            }
+                        ND4J_RAW_ITER_THREE_NEXT(dim,
+                                                 rank,
+                                                 coord,
+                                                 shapeIter,
+                                                 dx,
+                                                 xStridesIter,
+                                                 y,
+                                                 yStridesIter,
+                                                 result,
+                                                 resultStridesIter);
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
+                }
+
+                else {
+                    Nd4jIndex len = shape::length(xShapeBuffer);
+                    int xRank = shape::rank(xShapeBuffer);
+                    int yRank = shape::rank(yShapeBuffer);
+                    int resultRank = shape::rank(resultShapeBuffer);
+                    int *xCoord = new int[xRank];
+                    int *yCoord = new int[yRank];
+                    int *resultCoord = new int[resultRank];
+
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+                    int *xStride = shape::stride(xShapeBuffer);
+
+                    int *yShape = shape::shapeOf(yShapeBuffer);
+                    int *yStride = shape::stride(yShapeBuffer);
+
+                    int *resultShape = shape::shapeOf(resultShapeBuffer);
+                    if(dx == result) {
+                        for (Nd4jIndex i = 0; i < len; i++) {
+                            shape::ind2subC(xRank,xShape, i, xCoord);
+                            shape::ind2subC(yRank,yShape, i, yCoord);
+                            shape::ind2subC(resultRank,resultShape, i, resultCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+                        }
+                    }
+                    else {
+                        for (Nd4jIndex i = 0; i < len; i++) {
+                            shape::ind2subC(xRank,xShape, i, xCoord);
+                            shape::ind2subC(yRank,yShape, i, yCoord);
+                            shape::ind2subC(resultRank,resultShape, i, resultCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+                            result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
+
+                        }
+                    }
 
 
-			/**
+                    delete[] xCoord;
+                    delete[] yCoord;
+                    delete []resultCoord;
+                }
+            }
+
+
+            /**
              * CPU operation execution
              * @param dx the input data
              * @param xStride the stride to iterate over
@@ -599,81 +599,93 @@ namespace functions {
              * @param extraParams the extra parameters for the transform
              * @param n the length of the input
              */
-			virtual void exec(T *dx, int xStride, T *y, int yStride, T *result,
-							  int resultStride, T *extraParams,  Nd4jIndex n) {
-				if (xStride == 1 && yStride == 1 && resultStride == 1) {
-					if(n < 8000) {
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = op(dx[i], y[i], extraParams);
-						}
-					}
-					else {
+            virtual void exec(T *dx,
+                              Nd4jIndex xStride,
+                              T *y,
+                              Nd4jIndex yStride,
+                              T *result,
+                              Nd4jIndex resultStride,
+                              T *extraParams,
+                              Nd4jIndex n) {
+
+                if (xStride == 1 && yStride == 1 && resultStride == 1) {
+                    if(n < 8000) {
+
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
+
+
+                    }
+                    else {
 #pragma omp parallel for
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i] = op(dx[i], y[i], extraParams);
-						}
-					}
+                        for (Nd4jIndex i = 0; i < n; i++) {
+                            result[i] = op(dx[i], y[i], extraParams);
+                        }
+                    }
 
 
 
-				}
+                }
 
-				else {
-					if(n < 8000) {
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i * resultStride] = op(dx[i * xStride],
-														  y[i * yStride], extraParams);
-						}
-					}
-					else {
+                else {
+                    if(n < 8000) {
+#pragma omp simd
+                        for (Nd4jIndex i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
+                    }
+                    else {
 #pragma omp parallel for
-						for (Nd4jIndex i = 0; i < n; i++) {
-							result[i * resultStride] = op(dx[i * xStride],
-														  y[i * yStride], extraParams);
-						}
-					}
+                        for (Nd4jIndex i = 0; i < n; i++) {
+                            result[i * resultStride] = op(dx[i * xStride],
+                                                          y[i * yStride], extraParams);
+                        }
+                    }
 
 
 
-				}
+                }
 
-			}
+            }
 
-			virtual inline
+            virtual inline
 #ifdef __CUDACC__
-			__host__ __device__
+            __host__ __device__
 #endif
-			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-				//no extra params aggregation needs to happen
-			}
+            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
+                //no extra params aggregation needs to happen
+            }
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-			virtual ~PairWiseTransform() {
-			}
+            virtual ~PairWiseTransform() {
+            }
 #ifdef __CUDACC__
-			inline __host__ __device__
+            inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-			PairWiseTransform() {
-			}
+            PairWiseTransform() {
+            }
 
-		};
+        };
 
-		namespace ops {
+        namespace ops {
 /**
  * x + y
  */
-			template<typename T>
-			class Add: public virtual PairWiseTransform<T> {
-			public:
+            template<typename T>
+            class Add: public virtual PairWiseTransform<T> {
+            public:
 
-				/**
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -687,62 +699,62 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {
-					//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {
+                    //no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 + d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 + d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Add() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Add() {
-				}
-			};
+                virtual ~Add() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Add() {
+                }
+            };
 
 /**
  * Copy y to x
  */
-			template<typename T>
-			class Copy: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Copy: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -756,63 +768,63 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					(void)d1;
-					(void)params;
-					return d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    (void)d1;
+                    (void)params;
+                    return d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					(void)params;
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    (void)params;
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Copy() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Copy() {
-				}
-			};
+                virtual ~Copy() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Copy() {
+                }
+            };
 
 /**
  * Divide x / y
  */
-			template<typename T>
-			class Divide: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Divide: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -826,62 +838,62 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 / d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 / d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Divide() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Divide() {
-				}
-			};
+                virtual ~Divide() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Divide() {
+                }
+            };
 
 
 
 /**
  *Set x to y
  */
-			template<typename T>
-			class Set: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Set: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -895,63 +907,63 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Set() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Set() {
-				}
-			};
+                virtual ~Set() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Set() {
+                }
+            };
 
 
 /**
  * Whether 2 elements in an array
  * are epsilion equal
  */
-			template<typename T>
-			class Epsilon: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Epsilon: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -965,65 +977,65 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					T diff = d1 - d2;
-					T absDiff = abs(diff);
-					if (absDiff > MIN)
-						return 1;
-					return 0;
-				}
+                T op(T d1, T d2, T *params) {
+                    T diff = d1 - d2;
+                    T absDiff = abs(diff);
+                    if (absDiff > MIN)
+                        return 1;
+                    return 0;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Epsilon() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Epsilon() {
-				}
-			};
+                virtual ~Epsilon() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Epsilon() {
+                }
+            };
 
 /**
  * x == y (binary result)
  */
-			template<typename T>
-			class EqualTo: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class EqualTo: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1037,62 +1049,62 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 == d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 == d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~EqualTo() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				EqualTo() {
-				}
-			};
+                virtual ~EqualTo() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                EqualTo() {
+                }
+            };
 
 /**
  * x == y (binary result)
  */
-			template<typename T>
-			class NotEqualTo: public virtual PairWiseTransform<T> {
-			public:
+            template<typename T>
+            class NotEqualTo: public virtual PairWiseTransform<T> {
+            public:
 
-				/**
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1106,62 +1118,62 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 != d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 != d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~NotEqualTo() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				NotEqualTo() {
-				}
-			};
+                virtual ~NotEqualTo() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                NotEqualTo() {
+                }
+            };
 
 
 
 /**
  * Whether x > y
  */
-			template<typename T>
-			class GreaterThanOrEqual: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class GreaterThanOrEqual: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1175,61 +1187,61 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 >= d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 >= d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~GreaterThanOrEqual() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				GreaterThanOrEqual() {
-				}
-			};
+                virtual ~GreaterThanOrEqual() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                GreaterThanOrEqual() {
+                }
+            };
 
 
 /**
  * Whether x > y
  */
-			template<typename T>
-			class GreaterThan: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class GreaterThan: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1243,60 +1255,60 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 > d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 > d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~GreaterThan() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				GreaterThan() {
-				}
-			};
+                virtual ~GreaterThan() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                GreaterThan() {
+                }
+            };
 
 /**
  * Whether x < y
  */
-			template<typename T>
-			class LessThan: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class LessThan: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1310,60 +1322,60 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 < d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 < d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~LessThan() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				LessThan() {
-				}
-			};
+                virtual ~LessThan() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                LessThan() {
+                }
+            };
 
 /**
  * Whether x < y
  */
-			template<typename T>
-			class LessThanOrEqual: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class LessThanOrEqual: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1377,61 +1389,61 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 <= d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 <= d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~LessThanOrEqual() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				LessThanOrEqual() {
-				}
-			};
+                virtual ~LessThanOrEqual() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                LessThanOrEqual() {
+                }
+            };
 
 /**
  * x * y
  */
-			template<typename T>
-			class Multiply: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Multiply: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1445,62 +1457,62 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 * d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 * d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Multiply() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Multiply() {
-				}
-			};
+                virtual ~Multiply() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Multiply() {
+                }
+            };
 
 /**
  * y / x
  */
-			template<typename T>
-			class ReverseDivide: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class ReverseDivide: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1514,60 +1526,60 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d2 / d1;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d2 / d1;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~ReverseDivide() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				ReverseDivide() {
-				}
-			};
+                virtual ~ReverseDivide() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                ReverseDivide() {
+                }
+            };
 
 /**
  * y - x
  */
-			template<typename T>
-			class ReverseSubtraction: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class ReverseSubtraction: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1581,61 +1593,61 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d2 - d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d2 - d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~ReverseSubtraction() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				ReverseSubtraction() {
-				}
-			};
+                virtual ~ReverseSubtraction() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                ReverseSubtraction() {
+                }
+            };
 
 /**
  * x - y
  */
-			template<typename T>
-			class Subtract: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Subtract: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1649,130 +1661,61 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return d1 - d2;
-				}
+                T op(T d1, T d2, T *params) {
+                    return d1 - d2;
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Subtract() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Subtract() {
-				}
-			};
-
-
-/**
- * x - y
- */
-			template<typename T>
-			class Max: public virtual PairWiseTransform<T> {
-			public:
-				/**
-                 * CPU operation execution
-                 * @param dx the input data
-                 * @param xStride the stride to iterate over
-                 * the x input
-                 * @param y the y data
-                 * @param yStride the stride to iterate
-                 * over the y buffer
-                 * @param result the buffer
-                 * to store the result in
-                 * @param resultStride the stride for the buffer
-                 * @param extraParams the extra parameters for the transform
-                 * @param n the length of the input
-                 */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
-
-				virtual
+                virtual ~Subtract() {
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				T op(T d1, T d2, T *params) {
-					return nd4j::math::nd4j_max<T>(d1,d2);
-				}
-
-				virtual
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				T op(T d1, T *params) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				virtual ~Max() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				Max() {
-				}
-			};
-
+                Subtract() {
+                }
+            };
 
 
 /**
  * x - y
  */
-			template<typename T>
-			class Min: public virtual PairWiseTransform<T> {
-			public:
-				/**
+            template<typename T>
+            class Max: public virtual PairWiseTransform<T> {
+            public:
+                /**
                  * CPU operation execution
                  * @param dx the input data
                  * @param xStride the stride to iterate over
@@ -1786,72 +1729,141 @@ namespace functions {
                  * @param extraParams the extra parameters for the transform
                  * @param n the length of the input
                  */
-				virtual void execSpecial(
-						T *dx,
-						int *xShapeBuffer,
-						T *y,
-						int *yShapeBuffer,
-						T *result,
-						int *resultShapeBuffer,
-						T *extraParams) {//no-op
-				}
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T d2, T *params) {
-					return nd4j::math::nd4j_min(d1,d2);
-				}
+                T op(T d1, T d2, T *params) {
+                    return nd4j::math::nd4j_max<T>(d1,d2);
+                }
 
-				virtual
+                virtual
 #ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
-				T op(T d1, T *params) {
-					return d1;
-				}
+                T op(T d1, T *params) {
+                    return d1;
+                }
 #ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-				virtual ~Min() {
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
+                inline __host__ __device__
 #elif defined(__GNUC__)
 
 
 #endif
-				Min() {
-				}
-			};
+                virtual ~Max() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
 
 
-		}
+#endif
+                Max() {
+                }
+            };
+
+
+
+/**
+ * x - y
+ */
+            template<typename T>
+            class Min: public virtual PairWiseTransform<T> {
+            public:
+                /**
+                 * CPU operation execution
+                 * @param dx the input data
+                 * @param xStride the stride to iterate over
+                 * the x input
+                 * @param y the y data
+                 * @param yStride the stride to iterate
+                 * over the y buffer
+                 * @param result the buffer
+                 * to store the result in
+                 * @param resultStride the stride for the buffer
+                 * @param extraParams the extra parameters for the transform
+                 * @param n the length of the input
+                 */
+                virtual void execSpecial(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *y,
+                        int *yShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams) {//no-op
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T d2, T *params) {
+                    return nd4j::math::nd4j_min(d1,d2);
+                }
+
+                virtual
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+                T op(T d1, T *params) {
+                    return d1;
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                virtual ~Min() {
+                }
+#ifdef __CUDACC__
+                inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+                Min() {
+                }
+            };
+
+
+        }
 
 /**
  * Creates pair wise operations.
  */
-		template<typename T>
-		class PairWiseTransformOpFactory {
-		public:
+        template<typename T>
+        class PairWiseTransformOpFactory {
+        public:
 
 
 
 #ifdef __CUDACC__
-			__host__ __device__
+            __host__ __device__
 #endif
-			PairWiseTransformOpFactory() {
-			}
+            PairWiseTransformOpFactory() {
+            }
 
-			/**
+            /**
              * Create an operation
              * @param op the op number
              * 0: Add
@@ -1867,121 +1879,121 @@ namespace functions {
              * @return the operation based on the op number
              */
 #ifdef __CUDACC__
-			__inline__ __device__
+            __inline__ __device__
             PairWiseTransform<T> * getOp(int op, unsigned char *buffer) {
 #else
-			PairWiseTransform<T> * getOp(int op) {
+            PairWiseTransform<T> * getOp(int op) {
 #endif
 
-				if (op == 0)
+                if (op == 0)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Add<T>();
+                    return new(buffer) pairwise_transforms::ops::Add<T>();
 #else
-					return new pairwise_transforms::ops::Add<T>();
+                    return new pairwise_transforms::ops::Add<T>();
 #endif
-				else if (op == 1)
+                else if (op == 1)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Copy<T>();
+                    return new(buffer) pairwise_transforms::ops::Copy<T>();
 #else
-					return new pairwise_transforms::ops::Copy<T>();
+                    return new pairwise_transforms::ops::Copy<T>();
 #endif
-				else if (op == 2)
+                else if (op == 2)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Divide<T>();
+                    return new(buffer) pairwise_transforms::ops::Divide<T>();
 #else
-					return new pairwise_transforms::ops::Divide<T>();
+                    return new pairwise_transforms::ops::Divide<T>();
 #endif
-				else if (op == 3)
+                else if (op == 3)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::EqualTo<T>();
+                    return new(buffer) pairwise_transforms::ops::EqualTo<T>();
 #else
-					return new pairwise_transforms::ops::EqualTo<T>();
+                    return new pairwise_transforms::ops::EqualTo<T>();
 #endif
-				else if (op == 4)
+                else if (op == 4)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::GreaterThan<T>();
+                    return new(buffer) pairwise_transforms::ops::GreaterThan<T>();
 #else
-					return new pairwise_transforms::ops::GreaterThan<T>();
+                    return new pairwise_transforms::ops::GreaterThan<T>();
 #endif
-				else if (op == 5)
+                else if (op == 5)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::LessThan<T>();
+                    return new(buffer) pairwise_transforms::ops::LessThan<T>();
 #else
-					return new pairwise_transforms::ops::LessThan<T>();
+                    return new pairwise_transforms::ops::LessThan<T>();
 #endif
-				else if (op == 6)
+                else if (op == 6)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Multiply<T>();
+                    return new(buffer) pairwise_transforms::ops::Multiply<T>();
 #else
-					return new pairwise_transforms::ops::Multiply<T>();
+                    return new pairwise_transforms::ops::Multiply<T>();
 #endif
-				if (op == 7)
+                if (op == 7)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::ReverseDivide<T>();
+                    return new(buffer) pairwise_transforms::ops::ReverseDivide<T>();
 #else
-					return new pairwise_transforms::ops::ReverseDivide<T>();
+                    return new pairwise_transforms::ops::ReverseDivide<T>();
 #endif
-				if (op == 8)
+                if (op == 8)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::ReverseSubtraction<T>();
+                    return new(buffer) pairwise_transforms::ops::ReverseSubtraction<T>();
 #else
-					return new pairwise_transforms::ops::ReverseSubtraction<T>();
+                    return new pairwise_transforms::ops::ReverseSubtraction<T>();
 #endif
-				if (op == 9)
+                if (op == 9)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Subtract<T>();
+                    return new(buffer) pairwise_transforms::ops::Subtract<T>();
 #else
-					return new pairwise_transforms::ops::Subtract<T>();
+                    return new pairwise_transforms::ops::Subtract<T>();
 #endif
-				if (op == 10)
+                if (op == 10)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Epsilon<T>();
+                    return new(buffer) pairwise_transforms::ops::Epsilon<T>();
 #else
-					return new pairwise_transforms::ops::Epsilon<T>();
+                    return new pairwise_transforms::ops::Epsilon<T>();
 #endif
-				if(op == 11)
+                if(op == 11)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::GreaterThanOrEqual<T>();
+                    return new(buffer) pairwise_transforms::ops::GreaterThanOrEqual<T>();
 #else
-					return new pairwise_transforms::ops::GreaterThanOrEqual<T>();
+                    return new pairwise_transforms::ops::GreaterThanOrEqual<T>();
 #endif
-				if(op == 12)
+                if(op == 12)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::LessThanOrEqual<T>();
+                    return new(buffer) pairwise_transforms::ops::LessThanOrEqual<T>();
 #else
-					return new pairwise_transforms::ops::LessThanOrEqual<T>();
+                    return new pairwise_transforms::ops::LessThanOrEqual<T>();
 #endif
-				if(op == 13)
+                if(op == 13)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Max<T>();
+                    return new(buffer) pairwise_transforms::ops::Max<T>();
 #else
-					return new pairwise_transforms::ops::Max<T>();
+                    return new pairwise_transforms::ops::Max<T>();
 #endif
-				if(op == 14)
+                if(op == 14)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Min<T>();
+                    return new(buffer) pairwise_transforms::ops::Min<T>();
 #else
-					return new pairwise_transforms::ops::Min<T>();
+                    return new pairwise_transforms::ops::Min<T>();
 #endif
-				if(op == 15)
+                if(op == 15)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::NotEqualTo<T>();
+                    return new(buffer) pairwise_transforms::ops::NotEqualTo<T>();
 #else
-					return new pairwise_transforms::ops::NotEqualTo<T>();
+                    return new pairwise_transforms::ops::NotEqualTo<T>();
 #endif
-				if(op == 16)
+                if(op == 16)
 #ifdef __CUDACC__
-					return new(buffer) pairwise_transforms::ops::Set<T>();
+                    return new(buffer) pairwise_transforms::ops::Set<T>();
 #else
-					return new pairwise_transforms::ops::Set<T>();
+                    return new pairwise_transforms::ops::Set<T>();
 #endif
-			return nullptr;
-			}
+                return nullptr;
+            }
 
 
 
-		};
-	}
+        };
+    }
 }
 
 #ifdef __CUDACC__
