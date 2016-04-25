@@ -455,12 +455,10 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
     }
 
     /* Sort the axes based on the destination strides */
-    SortStrideArray(ndim, stridesA, strideperm);
     for (i = 0; i < ndim; ++i) {
-        int iperm = strideperm[ndim - i - 1].perm;
-        outShape[i] = shape[iperm];
-        outStridesA[i] = stridesA[iperm];
-        outStridesB[i] = stridesB[iperm];
+        outShape[i] = shape[i];
+        outStridesA[i] = stridesA[i];
+        outStridesB[i] = stridesB[i];
     }
 
     /* Reverse any negative strides of operand A */
@@ -487,33 +485,6 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
         }
     }
 
-    /* Coalesce any dimensions where possible */
-    i = 0;
-    for (j = 1; j < ndim; j++) {
-        if (outShape[i] == 1) {
-            /* Drop axis i */
-            outShape[i] = outShape[j];
-            outStridesA[i] = outStridesA[j];
-            outStridesB[i] = outStridesB[j];
-        }
-        else if (outShape[j] == 1) {
-            /* Drop axis j */
-        }
-        else if (outStridesA[i] * outShape[i] == outStridesA[j] &&
-                 outStridesB[i] * outShape[i] == outStridesB[j]) {
-            /* Coalesce axes i and j */
-            outShape[i] *= outShape[j];
-        }
-        else {
-            /* Can't coalesce, go to next i */
-            i++;
-            outShape[i] = outShape[j];
-            outStridesA[i] = outStridesA[j];
-            outStridesB[i] = outStridesB[j];
-        }
-    }
-
-    ndim = i + 1;
 
     *out_dataA = dataA;
     *out_dataB = dataB;
@@ -619,14 +590,11 @@ int  PrepareThreeRawArrayIter(int ndim, int shape[],
         return 0;
     }
 
-    /* Sort the axes based on the destination strides */
-    SortStrideArray(ndim, stridesA, strideperm);
     for (int i = 0; i < ndim; ++i) {
-        int iperm = strideperm[ndim - i - 1].perm;
-        outShape[i] = shape[iperm];
-        outStridesA[i] = stridesA[iperm];
-        outStridesB[i] = stridesB[iperm];
-        outStridesC[i] = stridesC[iperm];
+        outShape[i] = shape[i];
+        outStridesA[i] = stridesA[i];
+        outStridesB[i] = stridesB[i];
+        outStridesC[i] = stridesC[i];
     }
 
     /* Reverse any negative strides of operand A */
@@ -658,35 +626,6 @@ int  PrepareThreeRawArrayIter(int ndim, int shape[],
         }
     }
 
-    /* Coalesce any dimensions where possible */
-    int i = 0;
-    for (int j = 1; j < ndim; ++j) {
-        if (outShape[i] == 1) {
-            /* Drop axis i */
-            outShape[i] = outShape[j];
-            outStridesA[i] = outStridesA[j];
-            outStridesB[i] = outStridesB[j];
-            outStridesC[i] = outStridesC[j];
-        }
-        else if (outShape[j] == 1) {
-            /* Drop axis j */
-        }
-        else if (outStridesA[i] * outShape[i] == outStridesA[j] &&
-                 outStridesB[i] * outShape[i] == outStridesB[j] &&
-                 outStridesC[i] * outShape[i] == outStridesC[j]) {
-            /* Coalesce axes i and j */
-            outShape[i] *= outShape[j];
-        }
-        else {
-            /* Can't coalesce, go to next i */
-            ++i;
-            outShape[i] = outShape[j];
-            outStridesA[i] = outStridesA[j];
-            outStridesB[i] = outStridesB[j];
-            outStridesC[i] = outStridesC[j];
-        }
-    }
-    ndim = i+1;
 
     *out_dataA = dataA;
     *out_dataB = dataB;

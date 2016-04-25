@@ -712,18 +712,18 @@ namespace functions {
                                                  &y,
                                                  yStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                            /* Process the innermost dimension */
-                            T *xIter = x;
-                            T *yIter = y;
-                            startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
-                        } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                 rank,
-                                                 coord,
-                                                 shapeIter,
-                                                 x,
-                                                 xStridesIter,
-                                                 y,
-                                                 yStridesIter);
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *yIter = y;
+                                startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 
                         return postProcess(startingVal,n,&extraParamsVals);
                     }
@@ -824,6 +824,8 @@ namespace functions {
                     return;
                 }
 
+
+
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
                 if(xOrder != yOrder) {
@@ -855,26 +857,28 @@ namespace functions {
                         Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
                         Nd4jIndex tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                            /* Process the innermost dimension */
-                            T *xIter = x;
-                            T *yIter = y;
-                            Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
-                            int reductionIndex = xOffset / resultLength;
-                            result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
-                        } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                 rank,
-                                                 coord,
-                                                 shapeIter,
-                                                 x,
-                                                 xStridesIter,
-                                                 y,
-                                                 yStridesIter);
+                                /* Process the innermost dimension */
+                                T *xIter = x;
+                                T *yIter = y;
+                                Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
+                                int reductionIndex = xOffset / resultLength;
+                                result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 
 
 #pragma  omp parallel for
                         for(Nd4jIndex i = 0; i < resultLength ;i++) {
                             result[i] = postProcess(result[i],tadLength,&extraParamsVals);
-                        }}
+                        }
+                    }
+
                     else {
                         printf("Unable to prepare array\n");
                     }
@@ -882,8 +886,11 @@ namespace functions {
                 else {
                     T startingVal = this->startingValue(x);
 
-                    shape::TADPermuteInfo tadPermuteInfo = shape::tadInfo(xShapeInfo,dimension, dimensionLength);
                     Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
+                    shape::TAD xTad(yShapeInfo,dimension,dimensionLength);
+                    xTad.createTadOnlyShapeInfo();
+                    xTad.createOffsets();
+
                     /**
                      * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
@@ -893,9 +900,8 @@ namespace functions {
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-                    int tadElementWiseStride = dimensionLength > 1 ? shape::stride(xShapeInfo)[dimensionLength - 1] : shape::computeElementWiseStride(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),shape::order(xShapeInfo) == 'f',dimension,dimensionLength);
-                    int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-                    int tadLength = elementsPerReductionIndex;
+                    int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+                    int tadLength = xTad.tadLength;
 #pragma omp parallel for
                     for(Nd4jIndex i = 0; i < resultLength; i++) {
                         T *localExtraParams = nullptr;
@@ -905,9 +911,9 @@ namespace functions {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
 
-                        int offset = dimensionLength > 1 ? i : shape::offset(i,xShapeInfo,dimension,dimensionLength,tadPermuteInfo);
+                        Nd4jIndex offset = xTad.tadOffsets[i];
                         result[i] = op(x[offset], y[offset],&localExtraParams);
-                        for(int j = 1; j < elementsPerReductionIndex; j++) {
+                        for(int j = 1; j < tadLength; j++) {
                             result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
                         }
 
@@ -917,11 +923,6 @@ namespace functions {
                             delete[] localExtraParams;
                     }
 
-
-
-
-
-                    shape::freePermuteInfo(tadPermuteInfo);
                 }
 
 
