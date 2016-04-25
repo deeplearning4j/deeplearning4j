@@ -25,7 +25,7 @@ If you are new to Java or unfamiliar with these tools, read the details below fo
 
 If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
-```
+``` shell
 java -version
 ```
 
@@ -33,7 +33,7 @@ java -version
 
 Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. [Install or update Maven](https://maven.apache.org/download.cgi) to the latest release following [their instructions](https://maven.apache.org/install.html) for your system. To check if you have the most recent version of Maven installed, enter the following:
 
-```
+``` shell
 mvn --version
 ```
 
@@ -57,7 +57,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 * Use command line to enter the following:
 
-```
+``` shell
 $ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
 $ cd dl4j-0.4-examples/
 $ mvn clean install
