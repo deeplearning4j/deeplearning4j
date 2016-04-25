@@ -681,6 +681,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testSoftmaxDerivative() {
+        INDArray input = Nd4j.create(new double[]{ -1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).transpose();
+        INDArray output = Nd4j.create(10,1);
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
+    }
+
+    @Test
     public void testSumAlongDim1sEdgeCases() {
         int[][] shapes = new int[][]{
                 //Standard case:
