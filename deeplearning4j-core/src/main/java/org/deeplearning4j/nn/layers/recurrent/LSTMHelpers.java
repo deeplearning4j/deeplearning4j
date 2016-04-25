@@ -67,6 +67,7 @@ public class LSTMHelpers {
         int hiddenLayerSize = recurrentWeights.size(0);
         int miniBatchSize = input.size(0);
 
+        INDArray recurrentWeightsIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4*hiddenLayerSize)).dup('f');
 
 
         //Apply dropconnect to input (not recurrent) weights only:
@@ -156,74 +157,28 @@ public class LSTMHelpers {
             INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(time, 1, 0));    //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
             miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
-//            //Calculate activations for: network input + forget, output, input modulation gates.
-//            INDArray inputActivations = miniBatchData.mmul(wi);
-//            Nd4j.gemm(prevOutputActivations, wI, inputActivations, false, false, 1.0, 1.0);
-//            inputActivations.addiRowVector(bi);
-//            if (forBackprop) toReturn.iz[time] = inputActivations.dup('f');
-//            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
-//            if (forBackprop) toReturn.ia[time] = inputActivations;
-//
-//            INDArray forgetGateActivations = miniBatchData.mmul(wf);
-//            Nd4j.gemm(prevOutputActivations, wF, forgetGateActivations, false, false, 1.0, 1.0);
-//            INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
-//            l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
-//            //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
-//            forgetGateActivations.addiRowVector(bf);
-//            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
-//            if (forBackprop) toReturn.fa[time] = forgetGateActivations;
-//
-//
-//            INDArray inputModGateActivations = miniBatchData.mmul(wg);
-//            Nd4j.gemm(prevOutputActivations, wG, inputModGateActivations, false, false, 1.0, 1.0);
-//            INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
-//            l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
-//            inputModGateActivations.addiRowVector(bg);
-//            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
-//            if (forBackprop) toReturn.ga[time] = inputModGateActivations;
-//
-//            //Memory cell state
-//            INDArray currentMemoryCellState = forgetGateActivations.dup('f').muli(prevMemCellState);
-//            INDArray inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
-//            l1BLAS.axpy(currentMemoryCellState.length(), 1.0, inputModMulInput, currentMemoryCellState);   //currentMemoryCellState.addi(inputModMulInput)
-//
-//            INDArray outputGateActivations = miniBatchData.mmul(wo);
-//            Nd4j.gemm(prevOutputActivations, wO, outputGateActivations, false, false, 1.0, 1.0);
-//            INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
-//            l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
-//            outputGateActivations.addiRowVector(bo);
-//            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
-//            if (forBackprop) toReturn.oa[time] = outputGateActivations;
-
 
             //Calculate activations for: network input + forget, output, input modulation gates.
             INDArray ifogActivations = miniBatchData.mmul(inputWeights);    //Shape: [miniBatch,4*layerSize]
+            Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
+            ifogActivations.addiRowVector(biases);
 
-//            INDArray inputActivations = miniBatchData.mmul(wi);
             INDArray inputActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0,hiddenLayerSize));
-            Nd4j.gemm(prevOutputActivations, wI, inputActivations, false, false, 1.0, 1.0);
-            inputActivations.addiRowVector(bi);
             if (forBackprop) toReturn.iz[time] = inputActivations.dup('f');
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
             if (forBackprop) toReturn.ia[time] = inputActivations;
 
-//            INDArray forgetGateActivations = miniBatchData.mmul(wf);
             INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(hiddenLayerSize,2*hiddenLayerSize));
-            Nd4j.gemm(prevOutputActivations, wF, forgetGateActivations, false, false, 1.0, 1.0);
             INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
             l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
-            forgetGateActivations.addiRowVector(bf);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
             if (forBackprop) toReturn.fa[time] = forgetGateActivations;
 
 
-//            INDArray inputModGateActivations = miniBatchData.mmul(wg);
             INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize));
-            Nd4j.gemm(prevOutputActivations, wG, inputModGateActivations, false, false, 1.0, 1.0);
             INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
             l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
-            inputModGateActivations.addiRowVector(bg);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
             if (forBackprop) toReturn.ga[time] = inputModGateActivations;
 
@@ -232,12 +187,9 @@ public class LSTMHelpers {
             INDArray inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
             l1BLAS.axpy(currentMemoryCellState.length(), 1.0, inputModMulInput, currentMemoryCellState);   //currentMemoryCellState.addi(inputModMulInput)
 
-//            INDArray outputGateActivations = miniBatchData.mmul(wo);
             INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
-            Nd4j.gemm(prevOutputActivations, wO, outputGateActivations, false, false, 1.0, 1.0);
             INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
-            outputGateActivations.addiRowVector(bo);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
             if (forBackprop) toReturn.oa[time] = outputGateActivations;
 
