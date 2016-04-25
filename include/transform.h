@@ -5071,37 +5071,21 @@ namespace functions {
                         int numOnes = 0;
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int wholeRank = shape::rank(xShapeBuffer);
-                        bool squeezed = false;
-                        bool newSqueezeDimensions = false;
 
-                        for (int i = 0; i < wholeRank; i++) {
-                            if (shape[i] == 1)
-                                numOnes++;
-                        }
 
-                        //squeeze the dimensions
-                        if (numOnes > 0 && wholeRank > 2) {
-                            shape::TAD singularDimension;
-                            xShapeBuffer = singularDimension.squeezeDimensions(
-                                    xShapeBuffer,
-                                    &dimension,
-                                    &dimensionLength,
-                                    &squeezed,
-                                    &newSqueezeDimensions,
-                                    wholeRank,
-                                    numOnes);
-                        }
+                        shape::TAD tad(xShapeBuffer,dimension,dimensionLength);
+                        tad.createTadOnlyShapeInfo();
+                        tad.createOffsets();
 
-                        int tads = shape::tensorsAlongDimension(xShapeBuffer, dimension, dimensionLength);
+                        int tads = tad.numTads;
                         //decompose in to several sub tads after
                         //moving all dimensions (in sorted order)
                         //to the back.
                         //permuted version of the x shape info for setting up the tad problem
-                        int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeBuffer, dimension,
-                                                                                    dimensionLength, false);
+                        int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 #pragma omp  parallel  for
                         for (int i = 0; i < tads; i++) {
-                            int offset = shape::tadOffset(i, xShapeBuffer, dimension, dimensionLength);
+                            int offset = tad.tadOffsets[i];
                             int shapeIter[MAX_RANK];
                             int coord[MAX_RANK];
                             int dim;
@@ -5149,21 +5133,8 @@ namespace functions {
                                 maxCursor = reinterpret_cast<T *>(maxCursorLong);
                                 maxCursor[0] = 1.0;
                             }
-
-
-
-
                         }
 
-
-                        delete[] tadShapeShapeInfo;
-                        if (newSqueezeDimensions) {
-                            delete[] dimension;
-                        }
-
-                        if (numOnes > 0) {
-                            delete[] xShapeBuffer;
-                        }
                     }
                 }
 
