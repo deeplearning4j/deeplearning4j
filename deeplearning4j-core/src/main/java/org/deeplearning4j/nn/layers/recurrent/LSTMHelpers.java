@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.TimesOneMinus;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -320,7 +322,10 @@ public class LSTMHelpers {
             INDArray ao = fwdPass.oa[time];
             INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ao.dup('f')));    //Equivalent to sigmoid deriv on zo
             //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
-            INDArray deltao = nablaOut.dup('f').muli(sigmahOfS).muli(sigmaoPrimeOfZo); //Shape: [m,n^L]
+//            INDArray deltao = nablaOut.dup('f').muli(sigmahOfS).muli(sigmaoPrimeOfZo); //Shape: [m,n^L]
+            INDArray deltao = deltaoNext;
+            Nd4j.getExecutioner().exec(new MulOp(nablaOut,sigmahOfS,deltao));
+            deltao.muli(sigmaoPrimeOfZo);
 
             //Memory cell error:
             INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
@@ -338,22 +343,28 @@ public class LSTMHelpers {
             INDArray af = fwdPass.fa[time];
             INDArray deltaf = null;
             if (iTimeIndex > 0) {
-                deltaf = nablaCellState.dup('f').muli(prevMemCellState)
-                        .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", af.dup('f'))));    //Equivalent to sigmoid deriv on zf
+                deltaf = deltafNext;
+                Nd4j.getExecutioner().exec(new TimesOneMinus(af,deltaf));
+                deltaf.muli(nablaCellState);
+                deltaf.muli(prevMemCellState);
             }
             //Shape: [m,n^L]
 
             //Input modulation gate delta:
             INDArray ag = fwdPass.ga[time];
             INDArray ai = fwdPass.ia[time];
-            INDArray deltag = ai.muli(nablaCellState)
-                    .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ag.dup('f'))));    //Equivalent to sigmoid deriv on zg
+            INDArray deltag = deltagNext;
+            Nd4j.getExecutioner().exec(new TimesOneMinus(ag,deltag));   //Equivalent to sigmoid deriv on zg
+            deltag.muli(ai);
+            deltag.muli(nablaCellState);
             //Shape: [m,n^L]
 
             //Network input delta:
             INDArray zi = fwdPass.iz[time];
-            INDArray deltai = ag.muli(nablaCellState)
-                    .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi).derivative()));
+            INDArray deltai = deltaiNext;
+            Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi, null, deltai).derivative());
+            deltai.muli(ag);
+            deltai.muli(nablaCellState);
             //Shape: [m,n^L]
 
             INDArray prevLayerActivationSlice = Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
@@ -403,11 +414,6 @@ public class LSTMHelpers {
             if (iTimeIndex > 0) {
                 Nd4j.gemm(deltaf, wf, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltaf.mmul(wfTranspose));
             }
-
-            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(0,hiddenLayerSize)},deltai);
-            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize,2*hiddenLayerSize)},deltaf);
-            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize)},deltao);
-            deltaifogNext.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize)},deltag);
         }
 
         //Weight/bias gradients
