@@ -192,7 +192,7 @@ If you want to load a text file besides the sentences provided in our example, y
 That is, get rid of the `ClassPathResource` and feed the absolute path of your `.txt` file into the `LineSentenceIterator`. 
 
 ``` java
-        SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
+SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
 ```
 
 In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that same directory. To that path, you'll add the file name and *voila*. 
@@ -321,7 +321,7 @@ This will save the vectors to a file called `words.txt` that will appear in the 
 To keep working with the vectors, simply call methods on `vec` like this:
 
 ``` java
-        Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
 ```
 
 The classic example of Word2vec's arithmetic of words is "king - queen = man - woman" and its logical extension "king - queen + woman = man". 
@@ -333,7 +333,7 @@ Any number of combinations is possible, but they will only return sensible resul
 You can reload the vectors into memory like this:
 
 ``` java
-        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
+WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
 ```
 
 You can then use Word2vec as a lookup table:
@@ -391,7 +391,7 @@ After following the instructions in the [Quickstart](../quickstart.html), you ca
 
 *Q: I get a lot of stack traces like this*
 
-``` bash
+``` java
        java.lang.StackOverflowError: null
        at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
        at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
@@ -403,7 +403,7 @@ After following the instructions in the [Quickstart](../quickstart.html), you ca
 
 *A:* Look inside the directory where you started your Word2vec application. This can, for example, be an IntelliJ project home directory or the directory where you typed Java at the command line. It should have some directories that look like:
 
-``` bash
+``` 
        ehcache_auto_created2810726831714447871diskstore  
        ehcache_auto_created4727787669919058795diskstore
        ehcache_auto_created3883187579728988119diskstore  
@@ -453,7 +453,9 @@ While words in all languages may be converted into vectors with Word2vec, and th
 
 Loading and saving GloVe models to word2vec can be done like so:
 
+``` java
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
+```
 
 ### <a name="sequence">Sequence Vectors</a>
 
