@@ -21,9 +21,9 @@ layout: ja-default
 
 ## <a name="intro">Word2Vecとは？</a>
 
-Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](../neuralnet-overview.html)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。 
+Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](../ja-neuralnet-overview)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。 
 
-Word2vecのアプリケーションが適用できる分野は、世間で使われる文の構文解析だけにとどまりません。パターンが識別される可能性のある<a href="#sequence">遺伝子、コード、再生リスト、ソーシャルメディアのグラフ、その他の文字列や記号列</a>にも適用できるのです。[Deeplearning4j](http://deeplearning4j.org/quickstart.html)は、SparkやGPUで動作するJavaや[Scala](../scala.html)用の分散型Word2vecを実装しています。 
+Word2vecのアプリケーションが適用できる分野は、世間で使われる文の構文解析だけにとどまりません。パターンが識別される可能性のある<a href="#sequence">遺伝子、コード、再生リスト、ソーシャルメディアのグラフ、その他の文字列や記号列</a>にも適用できるのです。[Deeplearning4j](http://deeplearning4j.org/ja-quickstart.html)は、SparkやGPUで動作するJavaや[Scala](../scala.html)用の分散型Word2vecを実装しています。 
 
 Word2vecの目的及び有用性は、類似語のベクトルをベクトルスペースにグループ化することです。つまり、数値に基づいて類似性を検知するのです。 Word2vecは、分散した語の特徴（例えば個々の語のコンテキストなど）の数値表現であるベクトルを作成します。これは人間の介在なしに行われます。 
 
@@ -45,7 +45,7 @@ Word2vecのニューラルネットワークで出力されるものは、語の
 
 つまり、ニューラルネットワーク語の埋め込みとは、数値の付与された語のことなのです。シンプルですが、翻訳とはまた異なります。 
 
-Word2vecは、各語をベクトル化してエンコードするオートエンコーダーと似てはいますが、[制限付きボルツマン・マシン](../restrictedboltzmannmachine.html)のように、入力された語を[再構成](../restrictedboltzmannmachine.html#reconstruct)させてトレーニングするのではなく、word2vecはある語をその語に近い語との関連性に基づいてトレーニングします。 
+Word2vecは、各語をベクトル化してエンコードするオートエンコーダーと似てはいますが、[制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)のように、入力された語を[再構成](../ja-restrictedboltzmannmachine.html#reconstruct)させてトレーニングするのではなく、word2vecはある語をその語に近い語との関連性に基づいてトレーニングします。 
 
 一般に語のトレーニングには、2つの方法があります。コンテクストを使って対象語を推測する方法（continuous bag of words、CBOWと呼ばれる）、そして、ある語を使って、対象であるコンテクストを推測する方法です。後者の方法は、skip-gramと呼ばれますが、この方法を弊社は使用しています。こちらの方が、大きなデータセットでは、より精確な結果を生み出すからです。
 
@@ -133,6 +133,7 @@ Word2vecは、関連したアルゴリズム群を使いますが、その実装
 
 Mavenを使ってIntelliJに新規プロジェクトを作成します。その方法が分からない方は、[クイックスタート](../quickstart.html)をお読みください。そして、これらのプロパティーと依存関係を、プロジェクトのルートディレクトリにあるPOM.xmlファイルに入れます。（最新のバージョンは[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) でチェックします。)
 
+``` java
                 <properties>
                   <nd4j.version>0.4-rc3.8</nd4j.version> //最新バージョンは、Maven Centralで調べましょう!
                   <dl4j.version>0.4-rc3.8</dl4j.version>
@@ -155,11 +156,13 @@ Mavenを使ってIntelliJに新規プロジェクトを作成します。その�
                      <version>${nd4j.version}</version>
                    </dependency>
                 </dependencies>
+```
 
 ### データのローディング
 
 Javaに新しいクラスを作成し、名前を付け、.txtファイルの生の文章をイテレータで巡回します。そして、すべての語を小文字に変換するなど、何らかの処理を行います。 
 
+``` java
         log.info("Load data....");
         ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
         SentenceIterator iter = new LineSentenceIterator(resource.getFile());
@@ -169,9 +172,11 @@ Javaに新しいクラスを作成し、名前を付け、.txtファイルの生
                 return sentence.toLowerCase();
             }
         });
+```
 
 弊社が提供した例にある文章とは異なるテキストファイルをロードさせたい方は、以下のコマンドを使ってください。
 
+``` java
         log.info("Load data....");
         SentenceIterator iter = new LineSentenceIterator(new File("/Users/cvn/Desktop/file.txt"));
         iter.setPreProcessor(new SentencePreProcessor() {
@@ -180,10 +185,13 @@ Javaに新しいクラスを作成し、名前を付け、.txtファイルの生
                 return sentence.toLowerCase();
             }
         });
+```
 
 つまり、`ClassPathResource`は削除し、お使いの`.txt`ファイルの絶対パスを`LineSentenceIterator`に入力します。 
 
+``` java
         SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
+```
 
 どのディレクトリの絶対パスも、そのディレクトリ内のコマンドラインに`pwd`と入力すると見つかります。そのパスにファイル名を入れると、*完了*です。 
 
@@ -191,6 +199,7 @@ Javaに新しいクラスを作成し、名前を付け、.txtファイルの生
 
 Word2vecに入力するものは、文章でなく語であるため、次はデータをトークン化していきます。テキストのトークン化とは、あるテキストを原子レベルの単位にまで分割させることで、例えば、余白にキーを打つたびに新しいトークンが作成されるという意味です。 
 
+``` java
         log.info("Tokenize data....");
         final EndingPreProcessor preProcessor = new EndingPreProcessor();
         TokenizerFactory tokenizer = new DefaultTokenizerFactory();
@@ -205,6 +214,7 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
                 return base;
             }
         });
+```
 
 上記のようなコマンド入力により、一行につき一語が表示されます。 
 
@@ -212,6 +222,7 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
 
 データの準備ができたら、Word2vecニューラルネットワークを設定し、トークンを入力していくことができます。 
 
+``` java
         int batchSize = 1000;
         int iterations = 3;
         int layerSize = 150;
@@ -230,6 +241,7 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
                 .tokenizerFactory(tokenizer)
                 .build();
         vec.fit();
+```
 
 この設定は、数多くのハイパーパラメーターに対応しています。以下は、その説明です。 
 
@@ -248,6 +260,7 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
 
 次に、特徴量ベクトルの質を評価します。 
 
+``` java
         log.info("Evaluate model....");
         double sim = vec.similarity("people", "money");
         log.info("Similarity between people and money:" + sim);
@@ -255,23 +268,29 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
         log.info("Similar words to 'day' :" + similar);
         
         //出力結果: [night, week, year, game, season, during, office, until, -]
+```
 
 コマンドの`vec.similarity("word1","word2")`により、入力した2つの語のコサイン類似性が出力結果に現れます。数値が、1に近ければ近いほど、ネットワークはそれらの語が類似していると認識しているということになります（上記のスウェーデンとノルウェーの例をご覧ください）。例えば、以下をご覧ください。
 
+``` java
         double cosSim = vec.similarity("day", "night");
         System.out.println(cosSim);
         //出力結果: 0.7704452276229858
+```
 
 コマンドの`vec.wordsNearest("word1", numWordsNearest)`を入力すると、意味的に類似した語がネットワーク上に集まって配置されているかを目で調べることができます。近い語の出力語数を2つ目のパラメターのwordsNearestで設定することができます。 例えば、以下をご覧ください。
 
+``` java
         Collection<String> lst3 = vec.wordsNearest("man", 10);
         System.out.println(lst3);
         //出力結果: [director, company, program, former, university, family, group, such, general]
+```
 
 ### モデルを視覚化
 
 弊社では、[t-SNE](https://lvdmaaten.github.io/tsne/)を使って語の特徴量ベクトルの次元を減少させ、語を2次元、または3次元空間に表示します。 
 
+``` java
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .setMaxIter(1000)
@@ -284,19 +303,24 @@ Word2vecに入力するものは、文章でなく語であるため、次はデ
                 .usePca(false)
                 .build();
         vec.lookupTable().plotVocab(tsne);
+```
 
 ### モデルの保存、再ロード、使用
 
 モデルを保存したい場合、Deeplearning4jで行う最も一般的な方法は、シリアライゼーションを行うことです。（Javaのシリアライゼーションは、オブジェクトをバイトの*列*に変換するPythonのピクリングに似ています。）
 
+``` java
         log.info("Save vectors....");
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
+```
 
 上記のコマンドを使うと、ベクトルが`words.txt`という名のファイルに保存されますが、このファイルは、Word2vecがトレーニングを受けるルートディレクトルに現れるものです。このファイルへの出力結果は、一行につき一語で、隣に数字列も表示されていますが、これはベクトル表現です。
 
 ベクトルを継続して使用するには、以下のような`vec`コマンドを使います。
 
+``` java
         Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+```
 
 Word2vecの算術に一般に使用している語は、"king - queen = man - woman"ですが、その論理的延長は"king - queen + woman = man"です。 
 
@@ -306,14 +330,18 @@ Word2vecの算術に一般に使用している語は、"king - queen = man - wo
 
 以下のようにベクトルをメモリーに再度ロードさせることができます。
 
+``` java
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
+```
 
 そして、Word2vecを参照テーブルとして使用することができます。
 
+``` java
         WeightLookupTable weightLookupTable = wordVectors.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
         INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
         double[] wordVector = wordVectors.getWordVector("myword");
+```
 
 ある語が、語彙になければ、Word2vecはゼロと返します。
 
@@ -323,12 +351,14 @@ Word2vecの算術に一般に使用している語は、"king - queen = man - wo
 
 [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit)やGensimmでトレーニングした場合、こちらのコマンドラインでモデルをインポートできます。
 
+``` java
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
     Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+```
 
 インポートしたパッケージに`import java.io.File;`と入力することを忘れないようにしてください。
 
-大規模なモデルでは、ヒープスペースの問題が生じるかもしれません。Googleモデルだと、RAMが10G必要なことがあり、JVMは、RAMが256 MB確保されていないと作動しません。このため、これに応じてヒープスペースを調整する必要が出てくるかもしれません。これは、`bash_profile`ファイル（ [トラブルシューティング](../gettingstarted.html#trouble)をお読みください。）、またはIntelliJで調整可能です。 
+大規模なモデルでは、ヒープスペースの問題が生じるかもしれません。Googleモデルだと、RAMが10G必要なことがあり、JVMは、RAMが256 MB確保されていないと作動しません。このため、これに応じてヒープスペースを調整する必要が出てくるかもしれません。これは、`bash_profile`ファイル（ [トラブルシューティング](../ja-gettingstarted.html#trouble)をお読みください。）、またはIntelliJで調整可能です。 
 
     //以下をクリックし、
     IntelliJ Preferences > Compiler > Command Line Options 
@@ -351,12 +381,13 @@ Word2Vecのセットアップ方法の基本を説明して参りましたが、
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-[クイックスタート](../quickstart.html)にある手順に従った後、この例をIntelliJで開き、それが動作するかを調べてみてください。トレーニングのコーパスにない語でクエリを行うと、Word2vecモデルは結果をゼロと返します。 
+[クイックスタート](../ja-quickstart.html)にある手順に従った後、この例をIntelliJで開き、それが動作するかを調べてみてください。トレーニングのコーパスにない語でクエリを行うと、Word2vecモデルは結果をゼロと返します。 
 
 ### <a name="trouble">トラブルシューティング & Word2Vecの調整</a>
 
 *質問：以下のようなスタックトレースがたくさん表示されるのですが、どうすればいいでしょうか。*
 
+``` java
        java.lang.StackOverflowError: null
        at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
        at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
@@ -364,6 +395,7 @@ Word2Vecのセットアップ方法の基本を説明して参りましたが、
        at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
        at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
        at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
+```
 
 *回答：* Word2vecアプリケーションを開始したディレクトリ内を見てください。これは、IntelliJプロジェクトのホームディレクトリかもしれないし、コマンドラインにJavaを入力したディレクトリかもしれません。以下のようなディレクトリがあるはずです。
 
@@ -378,8 +410,10 @@ Word2vecアプリケーションをシャットダウンすると、削除でき
 
 *回答：* Word2Vecオブジェクトのレイヤーのサイズを**.layerSize()**を入力して上げてみてください。以下はその例です。
 
+``` java
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
+```
 
 *質問：データをロード方法を教えてください。トレーニングが終わりそうもないのですが、どうしてですか?*
 
@@ -397,7 +431,7 @@ Google Scholarを使うと、Deeplearning4jにWord2vecを実装した調査に�
 
 Andreas Klintberg氏は、Deeplearning4jにWord2vecを実装したものをスウェーデン語に適用し、[Mediumに徹底ガイド](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb)を執筆しました。 
 
-また、Word2Vecは、DL4Jが[ディープ・オートエンコーダ](../deepautoencoder.html)を使って実装するため、情報検索やQAシステム用のテキストベースデータを準備する際にも、特に役立ちます。 
+また、Word2Vecは、DL4Jが[ディープ・オートエンコーダ](../deepautoencoder)を使って実装するため、情報検索やQAシステム用のテキストベースデータを準備する際にも、特に役立ちます。 
 
 そして、マーケテイング担当者が、リコメンデーションエンジンを構築するために製品間の関係を求めたり、研究者が、ソーシャルグラフを分析して、シングルグループのメンバーやメンバーと場所や財政的支援などと関連する可能性のある関係を求めるのに利用できるでしょう。 
 
@@ -439,7 +473,7 @@ Deeplearning4jには、[列ベクトル（SequenceVectors）](https://github.com
 * [Word2Vec: an introduction（Word2Vecの紹介）](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google（GoogleでのMikolovのオリジナルWord2vecコード）](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method（word2vecの説明：Mikolov et al.のネガティブサンプリング語埋め込みメソッド）](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
-* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)（CBOW＆単語の出現頻度）](../bagofwords-tf-idf.html)
+* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)（CBOW＆単語の出現頻度）](../bagofwords-tf-idf)
 
 ### <a name="doctorow">文学作品の中のWord2Vec</a>
 
