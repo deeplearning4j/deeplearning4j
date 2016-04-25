@@ -51,7 +51,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 在定型深度学习网络的过程中，有许多可供调节的参数。我们已尽可能对这些参数进行解释，从而使Deeplearning4j能够成为Java、[Scala](https://github.com/deeplearning4j/nd4s)和[Clojure](https://github.com/whilo/clj-nd4j)编程人员的DIY工具。
 
-如果您有任何问题，请[在Gitter上加入我们](https://gitter.im/deeplearning4j/deeplearning4j)；如果需要高级支持，则[请与Skymind联系](http://www.skymind.io/contact/)。[ND4J是基于Java的科学运算引擎](http://nd4j.org/)，用来驱动矩阵操作。在大型矩阵上，我们的基准显示ND4J[较Numpy运算速度快大约一倍](http://nd4j.org/benchmarking)。
+如果您有任何问题，请[在Gitter上加入我们](https://gitter.im/deeplearning4j/deeplearning4j)；如果需要高级支持，则[请与Skymind联系](http://www.skymind.io/contact/)。[ND4J是基于Java的科学运算引擎](http://nd4j.org/zh-index)，用来驱动矩阵操作。在大型矩阵上，我们的基准显示ND4J[较Numpy运算速度快大约一倍](http://nd4j.org/benchmarking)。
 
 ### Deeplearning4j教程
 
