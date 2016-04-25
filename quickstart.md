@@ -88,7 +88,7 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
 - canova-api - Canova is our library vectorizing and loading data
 
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -126,15 +126,6 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
     </dependencies>
 </project>
 ```
-
-Optional dependencies you might want include:
-
-- `deeplearning4j-ui`: contains the browser-based user-interface ([details here](http://deeplearning4j.org/visualization))
-- `deeplearning4j-nlp`: contains the [Word2Vec](http://deeplearning4j.org/word2vec) implementation
-- `dl4j-spark`: contains code for distributed training of neural networks on Apache Spark
-- `canova-nd4j-image`: contains code for loading images
-- `canova-nd4j-codec`: contains code for loading video files
-
 Additional links:
 
 - [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
@@ -143,4 +134,10 @@ Additional links:
 
 ## Next Steps
 
-Once you are done running the examples, have a look at our [documentation](http://deeplearning4j.org/documentation), our [more comprehensive setup guide](http://deeplearning4j.org/gettingstarted), or drop by [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). We have three big community channels on Gitter: 1) The [main channel](https://gitter.im/deeplearning4j/deeplearning4j) for anything and everything. Most people hang out here. 2) The [tuning help channel](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) for people just getting started with neural networks. Beginners please visit us here! 3) The [early adopters channel](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
+1. Join us on Gitter. We have three big community channels.
+    - [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
+    - [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
+    - [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
+2. Read one of our detailed tutorials. 
+3. Check out the more detailed [Comprehensive Setup Guide](http://deeplearning4j.org/gettingstarted).
+4. Browse all [DL4J documentation](http://deeplearning4j.org/documentation).
