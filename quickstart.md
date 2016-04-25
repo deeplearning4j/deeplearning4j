@@ -21,7 +21,7 @@ If you are new to deep learning, we've included [a road map for beginners](../de
 
 You *must* have all of these installed to use this Quick Start guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience in these areas.
 
-If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, skip to <a href="#examples">DL4J Examples</a>.
+If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. **Otherwise, skip to** <a href="#examples">DL4J Examples</a>.
 
 ### <a name="Java">Java</a>
 
@@ -73,7 +73,7 @@ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
 
-4. Continue through the options screens, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+4. Continue through the wizard's options, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
 ![run example in IntelliJ](../img/Install_IntJ_3.png)
