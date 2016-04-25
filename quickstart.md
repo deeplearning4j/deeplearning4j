@@ -22,24 +22,19 @@ You *must* have all of these installed to use this Quick Start guide. DL4J targe
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. **Otherwise, skip to** <a href="#examples">DL4J Examples</a>.
 
 ### <a name="Java">Java</a>
-
-To check if you have a compatible version of Java installed, use the following command:
+If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
 ```
 java -version
 ```
 
-If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
-                
 ### <a name="Maven">Apache Maven</a>
 
-Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. To check if you have the most current version of Maven installed, enter the following:
+Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. [Install or update Maven](https://maven.apache.org/download.cgi) to the latest release following [their instructions](https://maven.apache.org/install.html) for your system. To check if you have the most recent version of Maven installed, enter the following:
 
 ```
 mvn --version
 ```
-
-[Install or update Maven](https://maven.apache.org/download.cgi) to the latest release following [their instructions](https://maven.apache.org/install.html) for your system.
 
 Maven is widely used among Java developers and it's not optional for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html). 
 
