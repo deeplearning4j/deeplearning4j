@@ -7,13 +7,13 @@ title: "Deeplearning4jのフルインストール"
 
 このインストールは複数の段階の手順に従って行います。質問やコメント等は、是非、[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)でお聞かせください。弊社のスタッフがお手伝いいたします。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、[ディープラーニングの初心者ガイド](../deeplearningforbeginners.html)もご用意いたしました。 
 
-exampleを簡単なステップで走らせるには、[クイックスタート](../quickstart.html)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。 
+exampleを簡単なステップで走らせるには、[クイックスタート](../ja-quickstart.html)をお読みください。また、もしクイックスタートをまだ読まれていない方は、以下の説明をおお読みになる前に、是非そちらを読まれることをお勧めします。DL4Jを始めるごく簡単な方法をご紹介しているからです。 
 
-Deeplearning4jのインストールに必要なものは、[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)でご紹介しています。ND4Jとは、DL4Jのニューラルネットワークが使用する線形代数の計算エンジンです。
+Deeplearning4jのインストールに必要なものは、[ND4Jを「はじめましょう」](http://nd4j.org/ja-getstarted.html)でご紹介しています。ND4Jとは、DL4Jのニューラルネットワークが使用する線形代数の計算エンジンです。
 
-1. [Java 7、またはそれ以降のバージョン](http://nd4j.org/getstarted.html#java) 
-2. [統合開発環境：IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
-3. [Maven](http://nd4j.org/getstarted.html#maven)
+1. [Java 7、またはそれ以降のバージョン](http://nd4j.org/ja-getstarted.html#java) 
+2. [統合開発環境：IntelliJ](http://nd4j.org/ja-getstarted.html#ide-for-java) 
+3. [Maven](http://nd4j.org/ja-getstarted.html#maven)
 
 上記をインストールした後、以下をお読みください。
 
@@ -21,7 +21,7 @@ Deeplearning4jのインストールに必要なものは、[ND4Jを「はじめ�
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-8. [GitHub](http://nd4j.org/getstarted.html#github)
+8. [GitHub](http://nd4j.org/ja-getstarted.html#github)
 9. <a href="#eclipse">Eclipse</a>
 10. <a href="#trouble">トラブルシューティング</a>
 11. <a href="#results">再現可能な結果</a>
@@ -128,7 +128,7 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
       * Javaバージョン（7、8） : ターミナル/コマンドプロンプトにjava -versionと入力すると分かります。 
       * Maven のバージョン : ターミナル/コマンドプロンプトにmvn --versionと入力すると分かります。
       * スタックトレース:gistのエラーコードをペーストし、リンクをお送りください。[https://gist.github.com/](https://gist.github.com/)
-* 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`と実行してください。
+* 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/ja-getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`と実行してください。
 * exampleを実行するとき、[F1スコア](../glossary.html#f1)結果が低くなるかもしれません。F1スコアとは、ネットの分類作業の精確さを示すものです。しかし、この場合、 F1値が低い原因は、精確性が低いからではなく、小さいデータセットを使用しているためです。小さめのデータセットだと素早く走らせることができるからです。小さめのデータセットは、大きいものより代表的にはなりませんが、結果は様々に異なります。例えば、非常に小さいexampleのデータでは、弊社のディープ・ビリーフ・ネットワークのF1スコアは0.32から1.0にまで及びます。 
 * Deeplearning4jには**オートコンプリート機能**が含まれます。どのコマンドが使用可能か分からないときは、任意の文字を1つ打つと、ドロップダウンメニューが下記のように
 ![Alt text](../img/dl4j_autocomplete.png)表示されます。
@@ -138,12 +138,12 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 * 3.0.4などのMavenの以前のバージョンは、NoSuchMethodErrorなどの例外を送出する傾向があります。このようなトラブルは、Mavenの最新バージョン（現在は3.3.x）にアップグレードすることによって解消されます。お使いのMavenバージョンを調べるには、コマンドラインに`mvn -v`と入力してください。
 * Mavenをインストールした後、`mvn is not recognised as an internal or external command, operable program or batch file.`と書かれたメッセージが表示される可能性があります。これは、他の環境変数と同様に変更可能な[PATH変数](https://www.java.com/en/download/help/path.xml)にMavenが必要であるということを意味します。  
 * エラーの`Invalid JDK version in profile 'java8-and-higher':Unbounded range:[1.8, for project com.github.jai-imageio:jai-imageio-core com.github.jai-imageio:jai-imageio-core:jar:1.3.0`が見つかった場合、Maven関連の問題が発生している可能性がありますので、Mavenのバージョンを3.3.xにアップデートしてください。
-* ND4Jの依存関係をコンパイルするには、CとC++の**開発ツール**をインストールする必要があります。[弊社のND4Jガイドをお読みください。](http://nd4j.org/getstarted.html#devtools)
-* [Java CPP](https://github.com/bytedeco/javacpp)のinclude pathは、常に**Windows**で動作するとは限りません。これを解決する1つの方法はVisual Studioのincludeディレクトリからヘッダーファイルを取り、それらをJavaがインストールされたJava Run-Time Environment (JRE)のincludeディレクトリに入れることです。これによりstandardio.hなどのファイルに影響が出ます。詳細については[こちら](http://nd4j.org/getstarted.html#windows)をお読みください。 
-* GPUのモニターに関する説明ガイドは、[こちら](http://nd4j.org/getstarted.html#gpu)をお読みください。
+* ND4Jの依存関係をコンパイルするには、CとC++の**開発ツール**をインストールする必要があります。[弊社のND4Jガイドをお読みください。](http://nd4j.org/ja-getstarted.html#devtools)
+* [Java CPP](https://github.com/bytedeco/javacpp)のinclude pathは、常に**Windows**で動作するとは限りません。これを解決する1つの方法はVisual Studioのincludeディレクトリからヘッダーファイルを取り、それらをJavaがインストールされたJava Run-Time Environment (JRE)のincludeディレクトリに入れることです。これによりstandardio.hなどのファイルに影響が出ます。詳細については[こちら](http://nd4j.org/ja-getstarted.html#windows)をお読みください。 
+* GPUのモニターに関する説明ガイドは、[こちら](http://nd4j.org/ja-getstarted.html#gpu)をお読みください。
 * Javaを使用する主な理由の一つは、 **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**に既に診断機能があるからです。Javaがインストールされていれば、コマンドラインに`jvisualvm`と入れさえすると、 CPU、ヒープ、PermGen、クラス、スレッドのビジュアル情報を見ることができます。例えば、以下の例をご覧ください。右上の`サンプラ`タブをクリックし、CPU、またはメモリーボタンを押します。すると、ビジュアル情報が得られます。 
 ![Alt text](../img/jvisualvm.png)
-* DL4Jを使用している際に発生する問題の原因は、ユーザーが機械学習に関する情報やテクニックに十分精通していないためである場合もあります。 Deeplearning4jのユーザー皆さんに、このサイト以外のリソースも利用して基礎を学習することをお勧めします。機械学習やディープラーニングの学習リソースのリストを準備しましたので、[こちら](../deeplearningpapers.html)をお読みください。弊社はDL4Jを一部ドキュメント化しましたが、ディープラーニング用に使用するには、コードの一部は生で、ドメイン固有言語のままです。
+* DL4Jを使用している際に発生する問題の原因は、ユーザーが機械学習に関する情報やテクニックに十分精通していないためである場合もあります。 Deeplearning4jのユーザー皆さんに、このサイト以外のリソースも利用して基礎を学習することをお勧めします。機械学習やディープラーニングの学習リソースのリストを準備しましたので、[こちら](../deeplearningpapers)をお読みください。弊社はDL4Jを一部ドキュメント化しましたが、ディープラーニング用に使用するには、コードの一部は生で、ドメイン固有言語のままです。
 * **Clojure**アプリケーションから`deeplearning4j-nlp`を使い、Leiningenでuberjarを構築するときは、akkaの`reference.conf`リソースファイルが適切にマージされるよう、`project.clj`に、`:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`と指定してください。（.propertiesファイルのマップへの最初の入力は、通常のデフォルトであることにご注意ください）。この設定が行われていない場合、結果のuberjarから実行しようとすると、次のような例外が送出されます。`Exception in thread "main" com.typesafe.config.ConfigException$Missing:No configuration setting found for key 'akka.version'`
 * OSXの浮動小数点のサポートにはバグが多くあります。examplsの実行でNaNが数多く表示される場合、データのタイプを`double`に切り替えてください。
 * Java 7のfork-joinにはバグがありますが、Java 8にアップデートすることにより修正されます。以下のようなOutofMemoryエラーが発生する場合は、fork-joinに問題があります。`java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
@@ -157,8 +157,8 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ### <a name="next">次のステップ:IRISのexampleとニューラルネットワークの構築</a>
 
-ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/neuralnet-overview.html)にて詳細をお読みください。
+ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/ja-neuralnet-overview.html)にて詳細をお読みください。
 
-素早く走らせるには[IRISのチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../restrictedboltzmannmachine.html)をお読みください。
+素早く走らせるには[IRISのチュートリアル](../iris-flower-dataset-tutorial.html)をお読みください。 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)をお読みください。
 
-新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/getstarted.html)をお読みください。 
+新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/ja-getstarted.html)をお読みください。 
