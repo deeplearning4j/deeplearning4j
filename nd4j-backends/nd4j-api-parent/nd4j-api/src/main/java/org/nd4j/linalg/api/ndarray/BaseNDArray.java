@@ -768,19 +768,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret2 = permuted.slice(sliceIdx);
         if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length())
-            return ret2;
+            return ret2.reshape(tensorShape);
 
         int length = ArrayUtil.prod(tensorShape);
         int tensorLength = ArrayUtil.prod(tensorShape);
         int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
 
         if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
-            return ret2.slice(offset);
+            return ret2.slice(offset).reshape(tensorShape);
 
         else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
-            return ret2;
+            return ret2.reshape(tensorShape);
         }
 
         while(ret2.length() > length) {
@@ -789,7 +789,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret2 = ret2.slice(sliceIdx);
         }
 
-        return  ret2;
+        return  ret2.reshape(tensorShape);
     }
 
 
