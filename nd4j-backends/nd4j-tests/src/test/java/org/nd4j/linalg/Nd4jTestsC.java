@@ -663,6 +663,22 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testBroadcastRepeated(){
+        INDArray z = Nd4j.create(1, 4, 4, 3);
+        INDArray bias = Nd4j.create(1, 3);
+        BroadcastOp op = new BroadcastAddOp(z, bias, z, 3);
+        Nd4j.getExecutioner().exec(op);
+        System.out.println("First: OK");
+        //OK at this point: executes successfully
+
+
+        z = Nd4j.create(1, 4, 4, 3);
+        bias = Nd4j.create(1, 3);
+        op = new BroadcastAddOp(z, bias, z, 3);
+        Nd4j.getExecutioner().exec(op);         //Crashing here, when we are doing exactly the same thing as before...
+        System.out.println("Second: OK");
+    }
 
     @Test
     public void testSumAlongDim1sEdgeCases() {
