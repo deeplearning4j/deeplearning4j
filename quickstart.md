@@ -8,9 +8,7 @@ Quick Start Guide
 
 Can't wait to start with Deeplearning4j? This is everything you need to run DL4J examples and begin your own projects.
 
-We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). You may want to lurk and learn at first - you can also request help and give feedback, but do use this guide before asking questions already answered below. 
-
-If you are new to deep learning, we've included [a road map for beginners](../deeplearningforbeginners.html) with links to courses, readings and other resources. 
+We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). You may want to lurk and learn at first - you can also request help and give feedback, but do use this guide before asking questions already answered below. If you are new to deep learning, we've included [a road map for beginners](../deeplearningforbeginners.html) with links to courses, readings and other resources. 
 
 ## Prerequisites
 
@@ -135,9 +133,9 @@ Additional links:
 ## Next Steps
 
 1. Join us on Gitter. We have three big community channels.
-    - [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
-    - [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
-    - [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
+  * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
+  * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
+  * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
 2. Read one of our detailed tutorials. 
 3. Check out the more detailed [Comprehensive Setup Guide](http://deeplearning4j.org/gettingstarted).
 4. Browse all [DL4J documentation](http://deeplearning4j.org/documentation).
