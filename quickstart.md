@@ -55,23 +55,21 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 
-* Use command line to enter the following:
+1. Use command line to enter the following:
 
-``` shell
-$ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
-$ cd dl4j-0.4-examples/
-$ mvn clean install
-```
+        $ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
+        $ cd dl4j-0.4-examples/
+        $ mvn clean install
 
-* Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
+2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
 ![select directory](../img/Install_IntJ_1.png)
 
-* Choose 'Import project from external model' and ensure that Maven is selected. 
+3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
 
-* Continue through the wizard's options, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+4. Continue through the wizard's options, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
-* Pick an example from the file tree on the left.
+5. Pick an example from the file tree on the left.
 ![run IntelliJ example](../img/Install_IntJ_3.png)
 Right-click the file to run. 
 
