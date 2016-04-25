@@ -3871,7 +3871,7 @@ namespace functions {
 
 		//subtract max of each row
 		if (isVector) {
-			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer );
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
 			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -3888,7 +3888,7 @@ namespace functions {
 
 		//divide by the sum
 		if (isVector) {
-			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer );
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
 			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -4137,7 +4137,7 @@ namespace functions {
 
 		//subtract max of each row
 		if (isVector) {
-			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer );
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
 			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -4153,7 +4153,7 @@ namespace functions {
 
 		//divide by the sum
 		if (isVector) {
-			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer);
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
 		} else {
 			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -4437,7 +4437,7 @@ namespace functions {
 
 		//subtract max of each row
 		if (isVector) {
-			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer );
+			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
 			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -4454,7 +4454,7 @@ namespace functions {
 
 		//divide by the sum
 		if (isVector) {
-			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
 			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1);
 		}
@@ -4721,7 +4721,7 @@ namespace functions {
 				resultShapeBuffer,
 				nullptr,
 				1,
-				1, allocationPointer, reductionPointer);
+				1, allocationPointer, reductionPointer, manager);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4934,7 +4934,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1, allocationPointer, reductionPointer);
+					1, allocationPointer, reductionPointer, manager);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {

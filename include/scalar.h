@@ -60,7 +60,7 @@ namespace functions {
 			T *dy,
 			T *params,
 			T *result,
-			int *indexes, int *allocationBuffer) {
+			int *indexes, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -87,7 +87,7 @@ namespace functions {
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result, int *resultShapeInfo, int *allocationBuffer) {
+			T *result, int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -112,7 +112,7 @@ namespace functions {
 					dy,
 					xElementWiseStride,
 					params,
-					result,resultElementWiseStride, allocationBuffer);
+					result,resultElementWiseStride, allocationBuffer, manager);
 		}
 		else {
 			/* equal, positive, non-unit increments. */
@@ -155,7 +155,7 @@ namespace functions {
 			T *dy,
 			int incy,
 			T *params,
-			T *result,int resultStride, int *allocationBuffer) {
+			T *result,int resultStride, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = tid;
@@ -1172,20 +1172,26 @@ __device__ void scalarGeneric(
 		int incy, T *params,
 		T *result,int resultStride, int *allocationBuffer) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
-
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
+    }
+    __syncthreads();
+
+
 	if(threadIdx.x == 0) {
-		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
+		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
+		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
 
-	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer);
+	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer, manager);
 }
 
 __global__ void scalarDouble(
@@ -1227,19 +1233,24 @@ __device__ void scalarGenericIndexes(
         T *params,
         T *result,int *indexes, int *allocationBuffer) {
 
-    __shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
-    __shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
-
     __shared__ functions::scalar::ScalarTransform<T> *op;
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
-    if(threadIdx.x == 0) {
-        scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-        op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
+    __shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
     }
     __syncthreads();
 
-    op->transform(n,dx,dy,params,result,indexes, allocationBuffer);
+    if(threadIdx.x == 0) {
+        scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
+        op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
+    }
+    __syncthreads();
+
+    op->transform(n,dx,dy,params,result,indexes, allocationBuffer, manager);
 }
 
  __global__ void scalarDoubleIndexes(
@@ -1288,24 +1299,43 @@ __device__ void scalarGeneric(
 		int opNum,
 		T dx,
 		T *dy,
-		int *shapeInfo,
+		int *xShapeInfo,
 		T *params,
 		T *result,int *resultShapeInfo, int *allocationBuffer) {
-
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::scalar::ScalarOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::scalar::ScalarTransform<T>)];
 
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>));
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+
+    if (resultShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+
+
 	if(threadIdx.x == 0) {
-		scalarDoubleOpFactory = new(factoryBuffer) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum, functionBuffer);
+		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
+		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
 
-	op->transformCuda(dx,dy,shapeInfo,params,result,resultShapeInfo, allocationBuffer);
+	op->transformCuda(dx,dy,ptrSharedXShapeInfo,params,result,ptrSharedZShapeInfo, allocationBuffer, manager);
 }
 
 extern "C" __global__ void scalarDouble(

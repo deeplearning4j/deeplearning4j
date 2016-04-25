@@ -2029,7 +2029,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2075,7 +2075,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2123,7 +2123,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,

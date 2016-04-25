@@ -233,7 +233,7 @@ struct SharedIndexValue<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -245,9 +245,9 @@ struct SharedIndexValue<double> {
 		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
 		IndexValue<T> *sPartials;
-		functions::indexreduce::SharedIndexValue<T> holder;
+		//functions::indexreduce::SharedIndexValue<T> holder;
 
-		sPartials = holder.getPointer();
+		sPartials = (IndexValue<T> *)manager->getSharedReductionBuffer(); //holder.getPointer();
 		T startingVal = this->startingValue(dx);
 
 #pragma unroll
@@ -1265,18 +1265,48 @@ __device__ void indexReduceGeneric(
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::indexreduce::IndexReduceOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::indexreduce::IndexReduce<T>)];
-
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>));
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+
+    if (resultShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+
 	if(threadIdx.x == 0) {
-		newOpFactory = new(factoryBuffer) functions::indexreduce::IndexReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op, functionBuffer);
+		newOpFactory = new(manager->getFactorySpace()) functions::indexreduce::IndexReduceOpFactory<T>();
+		indexReduce = newOpFactory->getOp(op, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
+	indexReduce->transform(
+			dx,
+			ptrSharedXShapeInfo,
+			extraParams,
+			result,
+			ptrSharedZShapeInfo,
+			dimension,
+			dimensionLength,
+			postProcessOrNot,
+			allocationBuffer,
+			reductionBuffer,
+			manager);
 }
 
 /**

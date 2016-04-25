@@ -590,7 +590,7 @@ struct SharedSummaryStatsData<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager) {
 
 
 		/**
@@ -604,9 +604,9 @@ struct SharedSummaryStatsData<double> {
 		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
 		SummaryStatsData<T> *sPartials;
-		functions::summarystats::SharedSummaryStatsData<T> holder;
+		//functions::summarystats::SharedSummaryStatsData<T> holder;
 
-		sPartials = holder.getPointer();
+		sPartials = (SummaryStatsData<T> *) manager->getSharedReductionBuffer(); //holder.getPointer();
 		T startingVal = this->startingValue(dx);
 #pragma unroll
 		for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
@@ -661,6 +661,11 @@ struct SharedSummaryStatsData<double> {
 		__syncthreads();
 		if (!resultScalar) {
 		    if (dimensionLength > 1) {
+
+
+                if (threadIdx.x == 0)
+                    printf("Multidimensional summary\n");
+
                 __shared__ int numOnes;
 				__shared__ bool squeezed;
 				__shared__ bool newSqueezeDimensions;
@@ -773,7 +778,8 @@ struct SharedSummaryStatsData<double> {
 					}
 				}
 		    } else {
-
+                if (threadIdx.x == 0)
+                    printf("Non scalar summary\n");
 
                 int xLength = shape::length(xShapeInfo);
 				int tadLength = xLength / resultLength;
@@ -845,6 +851,9 @@ struct SharedSummaryStatsData<double> {
 		else if (resultScalar) {
 			if (threadIdx.x == 0)
 			    xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+
+			if (threadIdx.x == 0)
+                printf("Scalar summary\n");
 
             int n = shape::length(xShapeInfo);
 
@@ -1597,18 +1606,38 @@ __device__ void summaryStatsReduceGeneric(
 		int *dimension,
 		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::summarystats::SummaryStatsReduce<T>)];
-
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        printf("summaryStatsReduce called: [%i]\n", op);
+        manager = new UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>));
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = NULL;
+
+    if (resultShapeInfo != NULL) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = NULL;
+
 	if(threadIdx.x == 0) {
-		newOpFactory = new(factoryBuffer) functions::summarystats::SummaryStatsReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op,biasCorrected, functionBuffer);
+		newOpFactory = new(manager->getFactorySpace()) functions::summarystats::SummaryStatsReduceOpFactory<T>();
+		indexReduce = newOpFactory->getOp(op,biasCorrected, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	indexReduce->transform(dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer);
+	indexReduce->transform(dx,ptrSharedXShapeInfo,extraParams,result,ptrSharedZShapeInfo,dimension,dimensionLength,postProcessOrNot, allocationBuffer, reductionBuffer, manager);
 }
 
 /**
