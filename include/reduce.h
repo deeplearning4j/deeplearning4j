@@ -840,7 +840,7 @@ namespace functions {
                         start = update(start, op(x[i], extraParams), extraParams);
                     }
 
-                    result[0] = start;
+                    result[0] = this->postProcess(start,tad.tadLength,extraParams);
 
                 }
                 else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
@@ -862,7 +862,7 @@ namespace functions {
                             }
                         }
 
-                        result[i] = start;
+                        result[i] = this->postProcess(start,tad.tadLength,extraParams);
 
                     }
                 }
@@ -902,7 +902,6 @@ namespace functions {
                         }
 
                         result[i] = start;
-
                     }
                 }
 
