@@ -560,6 +560,19 @@ public class Shape {
         return perm;
     }
 
+    /**
+     * If a shape array is ony 1 in length
+     * it returns a row vector
+     * @param shape the shape of the array
+     * @return the shape as is if its already >= 2 in length
+     * otherwise a row vector shape
+     */
+    public static int[] ensureAtMinRowVector(int...shape) {
+        if(shape.length >= 2)
+            return shape;
+        return new int[] {1,shape[0]};
+    }
+
 
     /**
      *
@@ -1167,7 +1180,7 @@ public class Shape {
         return ret;
     }
 
-        /**
+    /**
      * Gets the rank given the shape info buffer
      * @param buffer the buffer to get the rank for
      * @return the rank for the shape buffer
@@ -1240,6 +1253,17 @@ public class Shape {
     public static IntBuffer shapeOf(IntBuffer buffer) {
         IntBuffer ret =  (IntBuffer) buffer.position(1);
         return ret.slice();
+    }
+
+
+    /**
+     * Prints the shape
+     * for this shape information
+     * @param arr the shape information to print
+     * @return the shape information to string
+     */
+    public static String shapeToString(INDArray arr) {
+        return shapeToString(arr.shapeInfo());
     }
 
     /**

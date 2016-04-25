@@ -1093,21 +1093,22 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testDupAndDupWithOrder(){
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
-
-        for(Pair<INDArray,String> pair : testInputs ){
-
+        int count = 0;
+        for(Pair<INDArray,String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
+            System.out.println("Count " + count);
             INDArray dup = in.dup();
             INDArray dupc = in.dup('c');
             INDArray dupf = in.dup('f');
 
             assertEquals(msg,in,dup);
-            assertEquals(msg,dup.ordering(),(char)Nd4j.order());
+            assertEquals(msg,dup.ordering(),(char) Nd4j.order());
             assertEquals(msg,dupc.ordering(),'c');
             assertEquals(msg,dupf.ordering(),'f');
             assertEquals(msg,in,dupc);
             assertEquals(msg,in,dupf);
+            count++;
         }
     }
 
