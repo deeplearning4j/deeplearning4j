@@ -226,8 +226,8 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     public void testMulDivOnCheckUtilMatrices() {
         List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        for( int i=0; i<first.size(); i++ ){
-            for( int j=0; j<second.size(); j++ ){
+        for( int i = 0; i < first.size(); i++) {
+            for( int j = 0; j < second.size(); j++) {
                 Pair<INDArray,String> p1 = first.get(i);
                 Pair<INDArray,String> p2 = second.get(j);
                 String errorMsg1 = getTestWithOpsErrorMsg(i, j, "mul", p1, p2);
@@ -244,7 +244,7 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     private static String getGemmErrorMsg(int i, int j, boolean transposeA, boolean transposeB, double alpha, double beta,
                                           Pair<INDArray,String> first, Pair<INDArray,String> second){
-        return i + "," + j + " - gemm(tA="+transposeA+",tB="+transposeB+",alpha="+alpha+",beta="+beta+"). A="
+        return i + "," + j + " - gemm(tA=" + transposeA +",tB= " + transposeB + ",alpha=" + alpha + ",beta= " + beta + "). A="
                 + first.getSecond() + ", B=" + second.getSecond();
     }
 }

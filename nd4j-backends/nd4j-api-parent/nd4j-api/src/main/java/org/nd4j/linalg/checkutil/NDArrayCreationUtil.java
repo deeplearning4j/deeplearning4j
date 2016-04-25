@@ -116,54 +116,44 @@ public class NDArrayCreationUtil {
         INDArray[] out = new INDArray[12];
 
         INDArray temp01 = Nd4j.linspace(1,cols * rows * 4,cols * rows * 4).reshape(cols,rows,4);
-        out[0] = temp01.tensorAlongDimension(0, 0,1);
-        Nd4j.getRandom().setSeed(seed);
+        out[0] = temp01.tensorAlongDimension(0, 0,1).reshape(rows,cols);
         int[] temp01Shape = new int[]{cols, rows, 4};
         int len = ArrayUtil.prod(temp01Shape);
         temp01 = Nd4j.linspace(1,len,len).reshape(temp01Shape);
-        out[1] = temp01.tensorAlongDimension(2, 0, 1);
+        out[1] = temp01.tensorAlongDimension(2, 0, 1).reshape(rows,cols);
 
         Nd4j.getRandom().setSeed(seed);
         INDArray temp02 = Nd4j.linspace(1, len,len).reshape(new int[]{
                 cols, 4, rows});
-        out[2] = temp02.tensorAlongDimension(0, 0,2);
-        Nd4j.getRandom().setSeed(seed);
+        out[2] = temp02.tensorAlongDimension(0, 0,2).reshape(rows,cols);
         temp02 = Nd4j.linspace(1, len,len).reshape(cols, 4, rows);
-        out[3] = temp02.tensorAlongDimension(2, 0,2);
+        out[3] = temp02.tensorAlongDimension(2, 0,2).reshape(rows,cols);
 
-        Nd4j.getRandom().setSeed(seed);
         INDArray temp10 = Nd4j.linspace(1, len,len).reshape(rows, cols, 4);
-        out[4] = temp10.tensorAlongDimension(0, 1,0);
-        Nd4j.getRandom().setSeed(seed);
+        out[4] = temp10.tensorAlongDimension(0, 1,0).reshape(rows,cols);
         temp10 = Nd4j.linspace(1, len,len).reshape(rows, cols, 4);
-        out[5] = temp10.tensorAlongDimension(2, 1,0);
+        out[5] = temp10.tensorAlongDimension(2, 1,0).reshape(rows,cols);
 
-        Nd4j.getRandom().setSeed(seed);
         INDArray temp12 = Nd4j.linspace(1, len,len).reshape(4, cols, rows);
-        out[6] = temp12.tensorAlongDimension(0, 1,2);
-        Nd4j.getRandom().setSeed(seed);
+        out[6] = temp12.tensorAlongDimension(0, 1,2).reshape(rows,cols);
         temp12 = Nd4j.linspace(1, len,len).reshape(4,cols,rows);
-        out[7] = temp12.tensorAlongDimension(2, 1,2);
+        out[7] = temp12.tensorAlongDimension(2, 1,2).reshape(rows,cols);
 
-        Nd4j.getRandom().setSeed(seed);
         INDArray temp20 = Nd4j.linspace(1, len,len).reshape(rows, 4, cols);
-        out[8] = temp20.tensorAlongDimension(0, 2,0);
-        Nd4j.getRandom().setSeed(seed);
+        out[8] = temp20.tensorAlongDimension(0, 2,0).reshape(rows,cols);
         temp20 = Nd4j.linspace(1, len,len).reshape(rows, 4, cols);
-        out[9] = temp20.tensorAlongDimension(2, 2,0);
+        out[9] = temp20.tensorAlongDimension(2, 2,0).reshape(rows,cols);
 
-        Nd4j.getRandom().setSeed(seed);
         INDArray temp21 = Nd4j.linspace(1, len,len).reshape(4, rows, cols);
-        out[10] = temp21.tensorAlongDimension(0, 2,1);
-        Nd4j.getRandom().setSeed(seed);
+        out[10] = temp21.tensorAlongDimension(0, 2,1).reshape(rows,cols);
         temp21 = Nd4j.linspace(1, len,len).reshape(4, rows, cols);
-        out[11] = temp21.tensorAlongDimension(2, 2, 1);
+        out[11] = temp21.tensorAlongDimension(2, 2, 1).reshape(rows,cols);
 
         String baseMsg = "getTensorAlongDimensionMatricesWithShape(" + rows +"," + cols + "," + seed + ")";
         List<Pair<INDArray,String>> list = new ArrayList<>(12);
 
-        for( int i =0 ; i < out.length; i++ )
-            list.add(new Pair<>(out[i],baseMsg + ".get("+i+")"));
+        for( int i = 0 ; i < out.length; i++ )
+            list.add(new Pair<>(out[i],baseMsg + ".get(" + i + ")"));
 
         return list;
     }
