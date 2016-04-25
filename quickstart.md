@@ -56,13 +56,12 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 
 1. Use command line to enter the following:
-
-```
-git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
-cd dl4j-0.4-examples/
-mvn clean install
-```
-
+     
+        ```
+        git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
+        cd dl4j-0.4-examples/
+        mvn clean install
+        ```
 2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
 ![select directory](../img/Install_IntJ_1.png)
 
