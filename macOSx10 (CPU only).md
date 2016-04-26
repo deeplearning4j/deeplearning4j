@@ -5,7 +5,7 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 1. Make sure you have all the Apple updates installed (at time of writing 10.11.4
 
 2. Make sure you have the latest XCode (go to the app store and make sure you have the latest, at time of writing 7.3)
-  Now that that is done proceed...
+  You will also want to run `xcode-select --install` to ensure the correct version of clang is available.
 
 3. Make sure you have brew (if not get it http://brew.sh)
 
