@@ -265,8 +265,7 @@ namespace functions {
                 __shared__ int xElementWiseStride;
 
         //shared memory space for storing intermediate results
-        SharedMemory <T> val;
-        volatile T *sPartials = val.getPointer();
+        volatile T *sPartials = manager->getSharedReductionBuffer();
         int numElements = blockDim.x;
         T init = this->startingValue(dx);
         for (int i = threadIdx.x; i < numElements; i += blockDim.x)
@@ -322,30 +321,33 @@ namespace functions {
                 if (!resultScalar) {
                     __shared__ shape::TAD *tad;
                     if (threadIdx.x == 0) {
-                        tad = new(manager->getTADSpace()) shape::TAD(xShapeInfo,dimension,dimensionLength);
+                        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                        tad->init(xShapeInfo,dimension,dimensionLength);
                         tad->createTadOnlyShapeInfo();
-                        tad->createOffsetForBlock();
                     }
                     __syncthreads();
 
                     if(tad->tadElementWiseStride > 0) {
                         for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
+                            if (threadIdx.x == 0)
+                                tad->createOffsetForBlock(r);
+                            __syncthreads();
+
                             T *xVal = dx + tad->tadOffsets[r];
-                            T localVal = this->startingValue(xVal);
-                            sPartials[threadIdx.x] = localVal;
-                            for(int i = threadIdx; i < tad->tadLength; i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[i * tad->tadElementWiseStride], extraParams);
+                            sPartials[threadIdx.x] = this->startingValue(xVal);
+                            for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[i *  tad->tadElementWiseStride], extraParams);
                             }
                             __syncthreads();
 
-                            // aggregate
+                            // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
                             aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
 
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[0], nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+                                result[r] = this->postProcess(sPartials[threadIdx.x], nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
                         }
 
                 }

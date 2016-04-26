@@ -1330,6 +1330,13 @@ namespace shape {
         __host__ __device__
 #endif
         TAD(int *shapeInfo,int *dimension,int dimensionLength) {
+            this->init(shapeInfo, dimension, dimensionLength);
+        }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+        inline void init(int *shapeInfo,int *dimension,int dimensionLength) {
             this->originalShapeInfo = shapeInfo;
             this->originalDimension = dimension;
             this->originalDimensionLength = dimensionLength;
@@ -1343,7 +1350,7 @@ namespace shape {
             bool nonOneEncountered = false;
             int trailingDimensionDecrement = 0;
             int firstNonOneIndex = -1;
-            for(int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
+            for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
                 if (shape::shapeOf(shapeInfo)[i] == 1) {
                     this->numOnes++;
                     if (i > 0 && i < shape::rank(shapeInfo) - 1)
@@ -1357,16 +1364,14 @@ namespace shape {
             //this->rank -= trailingDimensionDecrement;
             //this->dimensionLength -= trailingDimensionDecrement;
             //move dimension ones where dimensions + 1 s overlap
-            if(numOnes > 0) {
+            if (numOnes > 0) {
                 this->collapse();
             }
 
-            this->numTads = this->tensorsAlongDimension(this->shapeInfo,this->dimension,this->dimensionLength);
+            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
             wholeThing = this->numTads == 1 || this->dimensionLength == this->rank;
 
-
         }
-
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -1771,8 +1776,8 @@ namespace shape {
         __device__
 
 
-    inline void createOffsetForBlock() {
-        int offset = this->tadOffset(blockIdx.x);
+    inline void createOffsetForBlock(int blockIdx) {
+        int offset = this->tadOffset(blockIdx);
         this->tadOffsets = &offset;
     }
 #endif
