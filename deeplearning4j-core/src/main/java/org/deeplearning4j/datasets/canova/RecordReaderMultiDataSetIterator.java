@@ -238,10 +238,10 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         INDArray arr;
         if(details.entireReader){
             int size = list.get(0).iterator().next().size();
-            arr = Nd4j.create(minValues,size,maxTSLength);
+            arr = Nd4j.create(new int[]{minValues,size,maxTSLength},'f');
         }
-        else if(details.oneHot) arr = Nd4j.create(minValues,details.oneHotNumClasses,maxTSLength);
-        else arr = Nd4j.create(minValues,details.subsetEndInclusive-details.subsetStart+1,maxTSLength);
+        else if(details.oneHot) arr = Nd4j.create(new int[]{minValues,details.oneHotNumClasses,maxTSLength},'f');
+        else arr = Nd4j.create(new int[]{minValues,details.subsetEndInclusive-details.subsetStart+1,maxTSLength},'f');
 
         boolean needMaskArray = false;
         for( Collection<Collection<Writable>> c : list ){

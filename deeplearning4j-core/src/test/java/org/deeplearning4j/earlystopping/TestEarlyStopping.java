@@ -348,6 +348,43 @@ public class TestEarlyStopping {
         assertEquals(expDetails, result.getTerminationDetails());
     }
 
+    @Test
+    public void testEarlyStoppingGetBestModel(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .updater(Updater.SGD)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.setListeners(new ScoreIterationListener(1));
+
+        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        MultipleEpochsIterator mIter = new MultipleEpochsIterator(10, irisIter);
+
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculator(irisIter,true))
+                .modelSaver(saver)
+                .build();
+
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf,net,mIter);
+
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+        System.out.println(result);
+
+        MultiLayerNetwork mln = result.getBestModel();
+
+        assertEquals(net.getnLayers(), mln.getnLayers());
+        assertEquals(net.conf().getNumIterations(), mln.conf().getNumIterations());
+        assertEquals(net.conf().getOptimizationAlgo(), mln.conf().getOptimizationAlgo());
+        assertEquals(net.conf().getLayer().getActivationFunction(), mln.conf().getLayer().getActivationFunction());
+        assertEquals(net.conf().getLayer().getUpdater(), mln.conf().getLayer().getUpdater());
+    }
 
     @Test
     public void testListeners(){
