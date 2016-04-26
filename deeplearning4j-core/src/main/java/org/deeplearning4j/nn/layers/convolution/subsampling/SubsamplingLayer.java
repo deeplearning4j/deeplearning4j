@@ -97,41 +97,16 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                     //Assuming c order and sensible strides, we can treat the 6d matrix as 5d, and do IsMax along 1d, instead of on 2d...
                 INDArray im2col5d = im2col.reshape(im2col.ordering(), s6d[0], s6d[1], s6d[2]*s6d[3], s6d[4], s6d[5]);
+                //Appling the IsMax operation gives us a 1.0 at the maximum value along that dimension, 0.0 at other values on that dimension
                 Nd4j.getExecutioner().exec(new IsMax(im2col5d,2));
 
-                    //Broadcast muli of epsilons:
+                    //Broadcast muli of epsilons after the ismax. This is how we assign responsibility for the output (i.e., undo the max op)
                     //Shape of eps: [numExamples, depth, outH, outW]
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(im2col5d,epsilon,im2col5d,0,1,3,4));
 
-                //Do col2im
+                //Do col2im to reduce
                 INDArray outEpsilon = Convolution.col2im(im2col,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,outEpsilon);
-
-//                int n = epsilon.size(0);
-//                int c = epsilon.size(1);
-//                int outH = epsilon.size(2);
-//                int outW = epsilon.size(3);
-//                //compute backwards kernel based on rearranging the given error
-//                retE = Nd4j.zeros(n, c, layerConf().getKernelSize()[0], layerConf().getKernelSize()[1], outH, outW);
-//                reshaped = retE.reshape(n, c, -1, outH, outW);
-//                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
-//
-//                final INDArray finalEps = epsilon;
-//                final INDArray reshapedEps = reshapeEpsilon;
-//
-//                NdIndexIterator iter = new NdIndexIterator(maxIndexes.shape());
-//                while(iter.hasNext()) {
-//                    int[] i = iter.next();
-//                    // recover the index to put epsilon on new shape
-//                    int idx = maxIndexes.getInt(i);
-//                    double epsGet = finalEps.getDouble(i);
-//                    INDArrayIndex t = NDArrayIndex.point(idx);
-//                    INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
-//                    sliceToGetFrom.putScalar(i, epsGet);
-//                }
-//
-//                reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
-//                return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
                 retE = epsilon.get(
