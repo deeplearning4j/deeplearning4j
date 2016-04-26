@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -72,8 +73,9 @@ public class LayerConfigValidationTest {
         net.init();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testWeightInitDistNotSet() {
+        // Warning thrown only since global dist can be set with a different weight init locally
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
                 .dist(new GaussianDistribution(1e-3, 2))
@@ -274,6 +276,84 @@ public class LayerConfigValidationTest {
             ComputationGraph cg = new ComputationGraph(conf);
             cg.init();
         }
+
+
+    @Test
+    public void testPredefinedConfigValues() {
+        double expectedMomentum = 0.9;
+        double expectedAdamMeanDecay = 0.9;
+        double expectedAdamVarDecay = 0.999;
+        double expectedRmsDecay = 0.95;
+        Distribution expectedDist = new NormalDistribution(1e-3, 1);
+        double expectedL1 = 0.0;
+        double expectedL2 = 0.0;
+
+        // Nesterovs Updater
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.3)
+                .updater(Updater.NESTEROVS)
+                .regularization(true)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).momentum(0.4).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Layer layerConf = net.getLayer(0).conf().getLayer();
+        assertEquals(expectedMomentum, layerConf.getMomentum(), 1e-3);
+        assertEquals(expectedL1, layerConf.getL1(), 1e-3);
+        assertEquals(0.5, layerConf.getL2(), 1e-3);
+
+        Layer layerConf1 = net.getLayer(1).conf().getLayer();
+        assertEquals(0.4, layerConf1.getMomentum(), 1e-3);
+
+        // Adam Updater
+        conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.3)
+                .updater(Updater.ADAM)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).l1(0.3).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .build();
+        net = new MultiLayerNetwork(conf);
+        net.init();
+
+        layerConf = net.getLayer(0).conf().getLayer();
+        assertEquals(0.3, layerConf.getL1(), 1e-3);
+        assertEquals(0.5, layerConf.getL2(), 1e-3);
+
+        layerConf1 = net.getLayer(1).conf().getLayer();
+        assertEquals(expectedAdamMeanDecay, layerConf1.getAdamMeanDecay(), 1e-3);
+        assertEquals(expectedAdamVarDecay, layerConf1.getAdamVarDecay(), 1e-3);
+        assertEquals(expectedDist, layerConf1.getDist());
+        // l1 & l2 local should still be set whether regularization true or false
+        assertEquals(expectedL1, layerConf1.getL1(), 1e-3);
+        assertEquals(expectedL2, layerConf1.getL2(), 1e-3);
+
+        //RMSProp Updater
+        conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.3)
+                .updater(Updater.RMSPROP)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(0.4).build())
+                .build();
+        net = new MultiLayerNetwork(conf);
+        net.init();
+
+        layerConf = net.getLayer(0).conf().getLayer();
+        assertEquals(expectedRmsDecay, layerConf.getRmsDecay(), 1e-3);
+        assertEquals(expectedL1, layerConf.getL1(), 1e-3);
+        assertEquals(expectedL2, layerConf.getL2(), 1e-3);
+
+        layerConf1 = net.getLayer(1).conf().getLayer();
+        assertEquals(0.4, layerConf1.getRmsDecay(), 1e-3);
+
+
     }
+
+}
 
 

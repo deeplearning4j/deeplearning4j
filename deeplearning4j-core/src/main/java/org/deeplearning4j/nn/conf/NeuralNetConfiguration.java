@@ -699,7 +699,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public void updaterValidation(String layerName){
+        // VALIDATION SECTION //
+        private void updaterValidation(String layerName){
             if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
                 log.warn(layerName + " momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
             if ((momentumSchedule != null || layer.getMomentumSchedule() != null) && layer.getUpdater() != Updater.NESTEROVS)
@@ -755,7 +756,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         }
 
-        public void learningRateValidation(String layerName){
+        private void learningRateValidation(String layerName){
             if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
                 throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
@@ -785,26 +786,37 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         }
 
-        public void generalValidation(String layerName){
+        private void generalValidation(String layerName){
             if (useDropConnect && (Double.isNaN(momentum) && (Double.isNaN(layer.getMomentum()))))
                 throw new IllegalStateException(layerName +" dropConnect is set to true but momentum has not been added to configuration.");
             if (useRegularization && (Double.isNaN(l1) && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
                 log.warn(layerName +" regularization is set to true but l1 or l2 has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
             if (layer != null) {
-                if ((!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2())) && !useRegularization)
-                    throw new IllegalStateException(layerName +" l1 or l2 has been added to configuration but useRegularization is set to false.");
+                if (useRegularization) {
+                    if (!Double.isNaN(l1) && Double.isNaN(layer.getL1()))
+                        layer.setL1(l1);
+                    if (!Double.isNaN(l2) && Double.isNaN(layer.getL2()))
+                        layer.setL2(l2);
+                } else if (!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2()))
+                    log.warn(layerName +" l1 or l2 has been added to configuration but useRegularization is set to false.");
+                if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
+                    layer.setL2(0.0);
+                if (Double.isNaN(l1) && Double.isNaN(layer.getL1()))
+                    layer.setL1(0.0);
                 if (layer.getWeightInit() == WeightInit.DISTRIBUTION) {
                     if (dist != null && layer.getDist() == null)
                         layer.setDist(dist);
                     else if (dist == null && layer.getDist() == null) {
                         layer.setDist(new NormalDistribution(1e-3, 1));
-                        log.warn(layerName +" distribution is automatically set to mean 1e-3 and variance 1.");
+                        log.warn(layerName +" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
                     }
                 } else if ((dist != null || layer.getDist() != null))
                     log.warn(layerName + " distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
             }
         }
+
+        ////////////////
 
         /**
          * Return a configuration based on this builder
@@ -828,7 +840,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.lrPolicyDecayRate = lrPolicyDecayRate;
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
-            String layerName = layer.getLayerName() == null? "Layer " + layer.getLayerName(): "Layer not named";
+            String layerName;
+            if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
+            else layerName = "Layer " + layer.getLayerName() ;
             learningRateValidation(layerName);
 
             if(layer != null ) {

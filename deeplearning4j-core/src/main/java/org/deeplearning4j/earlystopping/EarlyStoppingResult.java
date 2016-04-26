@@ -64,4 +64,8 @@ public class EarlyStoppingResult<T extends Model> implements Serializable {
 
     }
 
+    public T getBestModel(){
+        return bestModel;
+    }
+
 }
