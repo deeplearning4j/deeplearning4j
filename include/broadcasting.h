@@ -87,32 +87,7 @@ namespace functions {
 					numOnes++;
 			}
 
-			//squeeze the dimensions
-			if (numOnes > 0 && wholeRank > 2) {
-				int numOnes = 0;
-				int *shape = shape::shapeOf(xShapeInfo);
-				int *stride = shape::stride(xShapeInfo);
-				int wholeRank = shape::rank(xShapeInfo);
-				bool squeezed = false;
-				bool newSqueezeDimensions = false;
-				for (int i = 0; i < wholeRank; i++) {
-					if (shape[i] == 1)
-						numOnes++;
-				}
 
-				//squeeze the dimensions
-				if (numOnes > 0) {
-				    shape::TAD tad;
-					xShapeInfo = tad.squeezeDimensions(
-							xShapeInfo,
-							&dimension,
-							&dimensionLength,
-							&squeezed,
-							&newSqueezeDimensions,
-							wholeRank,
-							numOnes);
-				}
-			}
 
 		}
 

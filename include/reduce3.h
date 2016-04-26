@@ -459,20 +459,7 @@ namespace functions {
 							numOnes++;
 					}
 
-					//squeeze the dimensions
-					if(numOnes > 0) {
-						squeezed = false;
-						newSqueezeDimensions = false;
-					    shape::TAD singularDimension;
-                        inputShapeInfo = singularDimension.squeezeDimensions(
-                                inputShapeInfo,
-                                &dimension,
-                                &dimensionLength,
-                                &squeezed,
-                                &newSqueezeDimensions,
-                                wholeRank,
-                                numOnes);
-					}
+
 				}
 
 				__syncthreads();

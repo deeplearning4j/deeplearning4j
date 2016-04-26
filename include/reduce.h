@@ -326,7 +326,8 @@ namespace functions {
                     if(tad.tadElementWiseStride > 0) {
                         T *xVal = dx + tad.tadOffsets[blockIdx.x];
                         T localVal = this->startingValue(xVal);
-                        sPartials[tid] = xVal + tid;
+                        sPartials[tid] = xVal[0];
+                        __syncthreads();
                         if(tad.tadElementWiseStride == 1) {
                             for(int i = threadIdx.x + blockIdx.x * blockDim.x; i < tad.tadLength; i+= gridDim.x * blockDim.x) {
                                reduction = this->update(reduction,dx[i],extraParams);

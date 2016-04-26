@@ -59,27 +59,6 @@ namespace shape {
 
     };
 
-/**
- * TADPermuteInfo is for intermediate information
- * needed for computing tensor along dimension.
- *
- *
- */
-    class TADPermuteInfo {
-    public:
-        int *tensorShape = nullptr;
-        int xRank = 0;
-        int *reverseDimensions = nullptr;
-        int *rangeRet = nullptr;
-        int removeLength;
-        int *remove = nullptr;
-        int *zeroDimension = nullptr;
-        int *newPermuteDims = nullptr;
-        int *permutedShape = nullptr;
-        int *permutedStrides = nullptr;
-        int tensorShapeLength = 0;
-        int tensorShapeProd = 0;
-    };
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -818,27 +797,6 @@ namespace shape {
     inline int offset(int index, int rank, shape::ShapeInformation *info, int *dimension,
                       int dimensionLength);
 
-/**
- * Given the shape information and dimensions
- * returns common information
- * needed for tensor along dimension
- * calculations
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength);
-
-/**
- * Frees the permute information
- * @param info the info to free
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline void freePermuteInfo(TADPermuteInfo info);
 
 /**
  * Computes the number
@@ -863,33 +821,7 @@ namespace shape {
 
     inline int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength);
 
-/**
- *
- * @param info
- * @param dimension
- * @param dimensionLength
- * @return
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
 
-    inline int tensorsAlongDimension(TADPermuteInfo info);
-
-/**
- * Computes the tensor along dimension
- * offset
- * @param index the index to get the offset for the tad for
- * @param rank the rank of the shapes and strides
- * @param info the shape information to use for tad
- * @param dimension the dimensions to use for computing the tensor along dimensions
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
-                      TADPermuteInfo info);
 
 /**
  * Returns the tensor along dimension
@@ -1456,7 +1388,7 @@ namespace shape {
         }
 
 #ifdef __CUDACC__
-      __device__
+        __device__
       /**
       * This is special constructor, that allow __shared__ memory buffers to be passed in
       **/
@@ -1836,12 +1768,13 @@ namespace shape {
 
 #ifdef __CUDACC__
         __device__
-#endif
+
 
     inline void createOffsetForBlock() {
-        this->tadOffsets = &(this->tadOffset(blockIdx.x));
+        int offset = this->tadOffset(blockIdx.x);
+        this->tadOffsets = &offset;
     }
-
+#endif
 
 
 #ifdef __CUDACC__
@@ -4091,95 +4024,6 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
 
 /**
- * Given the shape information and dimensions
- * returns common information
- * needed for tensor along dimension
- * calculations
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline TADPermuteInfo tadInfo(int *xShapeInfo, int *dimension, int dimensionLength) {
-        int *shapeOfX = shape::shapeOf(xShapeInfo);
-        int xRank = shape::rank(xShapeInfo);
-        int *tensorShape = shape::keep(shapeOfX, dimension, dimensionLength, xRank);
-        if (dimensionLength == 1) {
-            int *newTensorShape = shape::ensureVectorShape(tensorShape,
-                                                           dimension[0]);
-            delete[] tensorShape;
-            tensorShape = newTensorShape;
-        }
-
-
-        int removeLength = nd4j::math::nd4j_abs<int>(xRank - dimensionLength);
-        int tensorShapeLength = shape::rank(xShapeInfo) - removeLength;
-        if (tensorShapeLength < 2)
-            tensorShapeLength = 2;
-
-        int tensorShapeProd = shape::prod(tensorShape, tensorShapeLength);
-        int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
-        int *rangeRet = shape::range(0, xRank);
-
-        int *remove = new int[removeLength];
-        shape::removeIndex(rangeRet, dimension, xRank, dimensionLength, remove);
-
-        int *zeroDimension = new int[1];
-        zeroDimension[0] = 0;
-
-        int *newPermuteDims = shape::concat(remove, removeLength, reverseDimensions,
-                                            dimensionLength);
-        int *permutedShape = shape::copyOf(shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo));
-        int *permutedStrides = shape::copyOf(shape::rank(xShapeInfo),shape::stride(xShapeInfo));
-        shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedShape,newPermuteDims);
-        shape::doPermuteSwap(shape::rank(xShapeInfo),&permutedStrides,newPermuteDims);
-        TADPermuteInfo info;
-        info.tensorShape = tensorShape;
-        info.xRank = xRank;
-        info.reverseDimensions = reverseDimensions;
-        info.rangeRet = rangeRet;
-        info.removeLength = removeLength;
-        info.remove = remove;
-        info.zeroDimension = zeroDimension;
-        info.newPermuteDims =  newPermuteDims;
-        info.permutedShape = permutedShape;
-        info.permutedStrides = permutedStrides;
-        info.tensorShapeLength = tensorShapeLength;
-        info.tensorShapeProd = tensorShapeProd;
-
-
-        return info;
-    }
-
-/**
- * Frees the permute information
- * @param info the info to free
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline void freePermuteInfo(TADPermuteInfo info) {
-        if(info.tensorShape != nullptr)
-            delete[] info.tensorShape;
-        if(info.reverseDimensions != nullptr)
-            delete[] info.reverseDimensions;
-        if(info.rangeRet != nullptr)
-            delete[] info.rangeRet;
-        if(info.remove != nullptr)
-            delete[] info.remove;
-        if(info.zeroDimension != nullptr)
-            delete[] info.zeroDimension;
-        if(info.newPermuteDims != nullptr)
-            delete[] info.newPermuteDims;
-        if(info.permutedShape != nullptr)
-            delete[] info.permutedShape;
-        if(info.permutedStrides != nullptr)
-            delete[] info.permutedStrides;
-
-    }
-
-/**
  * Computes the number
  * of tensors along
  * a given dimension
@@ -4215,191 +4059,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         return ret;
     }
 
-/**
- *
- * @param info
- * @param dimension
- * @param dimensionLength
- * @return
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
 
-    inline int tensorsAlongDimension(TADPermuteInfo info) {
-        int length = shape::prodLong(info.permutedShape, info.xRank);
-        return length / shape::prodLong(info.tensorShape, info.tensorShapeLength);
-    }
-
-/**
- *
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline int * tadShapeInfo(int index, int *xShapeInfo, int *dimension,
-                              int dimensionLength) {
-        TADPermuteInfo tadInfo = shape::tadInfo(xShapeInfo, dimension,
-                                                dimensionLength);
-        int sliceIdx = shape::sliceOffsetForTensor(rank(xShapeInfo), index,
-                                                   tadInfo.permutedShape, tadInfo.tensorShape,
-                                                   tadInfo.tensorShapeLength, tadInfo.zeroDimension, 1);
-
-        //no more dimensions
-        if (tadInfo.xRank <= 2) {
-            shape::freePermuteInfo(tadInfo);
-            return xShapeInfo;
-        }
-
-        //determine offset here
-
-        int *ret2 = shape::slice(tadInfo.permutedShape);
-        int *ret2Stride = shape::slice(tadInfo.permutedStrides);
-        int ret2Length = shape::prod(ret2, shape::rank(xShapeInfo) - 1);
-        int ret2Rank = tadInfo.xRank - 1;
-
-        int retOffset = sliceIdx * tadInfo.permutedStrides[0];
-        int tensorShapeProd = tadInfo.tensorShapeProd;
-        int delta = nd4j::math::nd4j_abs<int>(
-                tadInfo.tensorShapeLength - dimensionLength);
-        int tensorShapeRoughlyEquals = dimensionLength == 1 && delta <= 1;
-        if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
-            || dimensionLength == tadInfo.tensorShapeLength) {
-            ShapeInformation *info = new ShapeInformation();
-            //row vector
-            if (ret2Rank == 1) {
-                ret2Rank++;
-                ret2 = shape::ensureVectorShape(ret2);
-                ret2Stride = shape::ensureVectorShape(ret2Stride);
-            }
-            info->shape = ret2;
-            info->stride = ret2Stride;
-            info->offset = retOffset;
-            info->rank = ret2Rank;
-            info->elementWiseStride = ret2Stride[ret2Rank - 1];
-            int *shapeInfoRet = shape::toShapeBuffer(info);
-            delete info;
-            shape::freePermuteInfo(tadInfo);
-            return shapeInfoRet;
-        }
-
-        int length = tadInfo.tensorShapeProd;
-        int tensorLength = length;
-        int sliceOffset = index * tensorLength
-                          / shape::lengthPerSlice(ret2Rank, ret2, tadInfo.zeroDimension, 1);
-        /**
-         * Need to do slice(offset) here
-         */
-        int lengthPerSlice2 = shape::lengthPerSlice(ret2Rank, ret2,
-                                                    tadInfo.zeroDimension, 1);
-
-        if (sliceIdx == 0 && length == lengthPerSlice2) {
-            ret2 = slice(ret2);
-            ret2Stride = shape::slice(ret2Stride);
-            ret2Rank--;
-            ret2Length = shape::prod(ret2, ret2Rank);
-            int newStride = ret2Stride[ret2Rank - 1];
-            retOffset += (sliceOffset * ret2Length * newStride);
-
-            if (retOffset < 0)
-                retOffset = 0;
-            //row vector
-            if (ret2Rank == 1) {
-                ret2Rank++;
-                ret2 = shape::ensureVectorShape(ret2);
-                ret2Stride = shape::ensureVectorShape(ret2Stride);
-            }
-            ShapeInformation *info = new ShapeInformation();
-            info->shape = ret2;
-            info->stride = ret2Stride;
-            info->offset = retOffset;
-            info->rank = ret2Rank;
-            info->elementWiseStride = ret2Stride[ret2Rank - 1];
-            int *shapeInfoRet = shape::toShapeBuffer(info);
-            delete info;
-            shape::freePermuteInfo(tadInfo);
-            return shapeInfoRet;
-        }
-
-            //determine offset here
-            //note here offset doesn't change, just the shape
-            //of the tad
-        else if (length == lengthPerSlice2) {
-            sliceOffset -= ret2[0] * (sliceOffset / ret2[0]);
-            //set offset here
-            ret2 = slice(ret2);
-            ret2Stride = slice(ret2Stride);
-            ret2Rank--;
-            //accumulate from the slice
-            int newStride = ret2Stride[ret2Rank - 1];
-            retOffset += (lengthPerSlice2 * newStride * sliceOffset);
-
-            if (retOffset < 0)
-                retOffset = 0;
-
-            ShapeInformation *info = new ShapeInformation();
-            //row vector
-            if (ret2Rank == 1) {
-                ret2Rank++;
-                ret2 = ensureVectorShape(ret2);
-                ret2Stride = ensureVectorShape(ret2Stride);
-            }
-            info->shape = ret2;
-            info->stride = ret2Stride;
-            info->offset = retOffset;
-            info->rank = ret2Rank;
-            info->elementWiseStride = ret2Stride[ret2Rank - 1];
-            int *shapeInfoRet = shape::toShapeBuffer(info);
-            delete info;
-            shape::freePermuteInfo(tadInfo);
-            return shapeInfoRet;
-        }
-
-        else {
-            ret2Length = prod(ret2, ret2Rank);
-            //start at zero incrementing whenever we hit a slice > 0
-            while (ret2Length > length && ret2Rank > 0) {
-                sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2,
-                                                tadInfo.tensorShape, tadInfo.tensorShapeLength,
-                                                tadInfo.zeroDimension, 1);
-                sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
-                if (sliceIdx > 0) {
-                    if (ret2Rank > 1) {
-                        retOffset += sliceIdx * ret2Stride[0];
-                    } else {
-                        retOffset += sliceIdx;
-                    }
-                }
-                //set offset
-                ret2 = shape::slice(ret2);
-                ret2Stride = shape::slice(ret2Stride);
-                //bump the offset wrt the slice idx when its not just truncating output
-
-                ret2Rank--;
-                ret2Length = shape::prod(ret2, ret2Rank);
-            }
-
-            ShapeInformation *info = new ShapeInformation();
-            //row vector
-            if (ret2Rank == 1) {
-                ret2Rank++;
-                ret2 = ensureVectorShape(ret2);
-                ret2Stride = ensureVectorShape(ret2Stride);
-            }
-            info->shape = ret2;
-            info->stride = ret2Stride;
-            info->offset = retOffset;
-            info->rank = ret2Rank;
-            info->elementWiseStride = ret2Stride[ret2Rank - 1];
-
-            int *shapeInfoRet = shape::toShapeBuffer(info);
-            delete info;
-            shape::freePermuteInfo(tadInfo);
-            return shapeInfoRet;
-        }
-
-    }
 
 
 /**
@@ -4433,124 +4093,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     }
 
 
-/**
- * Computes the tensor along dimension
- * offset
- * @param index the index to get the offset for the tad for
- * @param rank the rank of the shapes and strides
- * @param info the shape information to use for tad
- * @param dimension the dimensions to use for computing the tensor along dimensions
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
 
-    inline int offset(int index, int *xShapeInfo,int *dimension, int dimensionLength,
-                      TADPermuteInfo info) {
-        int sliceIdx = sliceOffsetForTensor(rank(xShapeInfo), index,
-                                            info.permutedShape, info.tensorShape, info.tensorShapeLength,
-                                            info.zeroDimension, 1);
-
-        //determine offset here
-
-        int *ret2 = slice(info.permutedShape);
-        int *ret2Stride = slice(info.permutedStrides);
-        int ret2Length = prod(ret2, rank(xShapeInfo) - 1);
-        int ret2Rank = info.xRank - 1;
-
-        int retOffset = sliceIdx * info.permutedStrides[0];
-        if(dimension[0] == 0 ) {
-            return sliceIdx;
-            /*
-            char xOrder = order(xShapeInfo);
-            if (xOrder == 'c') {
-                return sliceIdx;
-            } else {
-                // special case for F ordering on 0 dimension
-                return index * info.tensorShapeProd;
-            }
-             */
-        }
-
-        int tensorShapeProd = info.tensorShapeProd;
-        int val = nd4j::math::nd4j_abs<int>(
-                info.tensorShapeLength - dimensionLength) <= 1;
-        int tensorShapeRoughlyEquals = dimensionLength == 1 && val;
-        if ((tensorShapeProd == ret2Length && tensorShapeRoughlyEquals == 1)
-            || (dimensionLength == info.tensorShapeLength && dimensionLength > 0)) {
-            return retOffset;
-        }
-
-        int length = info.tensorShapeProd;
-        int tensorLength = length;
-        int sliceOffset = index * tensorLength
-                          / lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
-        /**
-         * Need to do slice(offset) here
-         */
-        int lengthPerSlice2 = lengthPerSlice(ret2Rank, ret2, info.zeroDimension, 1);
-
-        if (sliceIdx == 0 && length == lengthPerSlice2) {
-            ret2 = slice(ret2);
-            ret2Stride = slice(ret2Stride);
-            ret2Rank--;
-            ret2Length = prod(ret2, ret2Rank);
-            int newStride = ret2Stride[ret2Rank - 1];
-            retOffset += (sliceOffset * ret2Length * newStride);
-
-            if (retOffset < 0)
-                retOffset = 0;
-
-            return retOffset;
-        }
-
-            //determine offset here
-            //note here offset doesn't change, just the shape
-            //of the tad
-        else if (length == lengthPerSlice2) {
-            sliceOffset -= ret2[0] * (sliceOffset / ret2[0]);
-            //set offset here
-            ret2 = slice(ret2);
-            ret2Stride = slice(ret2Stride);
-            ret2Rank--;
-            //accumulate from the slice
-            int newStride = ret2Stride[ret2Rank - 1];
-            retOffset += (lengthPerSlice2 * newStride * sliceOffset);
-
-            if (retOffset < 0)
-                retOffset = 0;
-
-            return retOffset;
-        }
-
-        else {
-            ret2Length = prod(ret2, ret2Rank);
-            //start at zero incrementing whenever we hit a slice > 0
-            while (ret2Length > length && ret2Rank > 0) {
-                sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2,
-                                                info.tensorShape, info.tensorShapeLength,
-                                                info.zeroDimension, 1);
-                sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
-                if (sliceIdx > 0) {
-                    if (ret2Rank > 1) {
-                        retOffset += sliceIdx * ret2Stride[0];
-                    } else {
-                        retOffset += sliceIdx;
-                    }
-                }
-                //set offset
-                ret2 = slice(ret2);
-                ret2Stride = slice(ret2Stride);
-                //bump the offset wrt the slice idx when its not just truncating output
-
-                ret2Rank--;
-                ret2Length = prod(ret2, ret2Rank);
-            }
-
-            return retOffset;
-        }
-
-    }
 
 /**
  * Returns the tensor along dimension
