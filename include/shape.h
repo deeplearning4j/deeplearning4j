@@ -19,6 +19,11 @@
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
 #define PREALLOC_SIZE 33554432
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 
 namespace shape {
 
@@ -1613,24 +1618,7 @@ namespace shape {
         }
 
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        inline void squeezeDimensionsAndShapeIfNeccessary() {
-            if(squeezed) return;
-            if (this->numOnes > 0) {
-                //note here dimension length can shrinken on the edge case where 0 is also a dimension that is a singular dimension
-                this->shapeInfo = this->squeezeDimensions(
-                        this->shapeInfo ,
-                        &(this->dimension),
-                        &(this->dimensionLength),
-                        &(this->squeezed),
-                        &(this->newSqueezeDimensions),
-                        this->rank,
-                        this->numOnes);
-            }
 
-        }
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1665,7 +1653,7 @@ namespace shape {
 
 
             if(dimensionLength == 1) {
-                if(numOnes < 1 && !shape::isMatrix(shapeInfo) || this->rank == 2) {
+                if((numOnes < 1 && !shape::isMatrix(shapeInfo)) || this->rank == 2) {
                     int *permuteShape = shape::shapeOf(toPermute);
                     int *permuteStride = shape::stride(toPermute);
                     if(dimension[0] == 0) {
@@ -1846,55 +1834,15 @@ namespace shape {
             return wholeLength / tadLength;
         }
 
-
 #ifdef __CUDACC__
-        __host__ __device__
+        __device__
 #endif
-        inline int* squeezeDimensions(int *shapeInfo,
-                                      int **dimensionRef,
-                                      int *dimensionLengthRef,
-                                      bool *squeezedRef,
-                                      bool *squeezeDimensionsRef,
-                                      int wholeRank,
-                                      int numOnes) {
-            int *squeezeShape = (this->shapeBuffer == nullptr ? new int[wholeRank - numOnes] : this->shapeBuffer);
-            int *squeezeStride = this->strideBuffer == nullptr ? new int[wholeRank - numOnes] : this->strideBuffer;
-            *squeezedRef = true;
 
-            int *shape = shape::shapeOf(shapeInfo);
-            int *stride = shape::stride(shapeInfo);
-
-            int numEncountered = 0;
-            int numDimensionsOne = 0;
-            for(int i = 0; i < wholeRank; i++) {
-                if(shape[i] != 1) {
-                    squeezeShape[numEncountered] = shape[i];
-                    squeezeStride[numEncountered] = stride[i];
-                    numEncountered++;
-                }
-                else {
-                    numDimensionsOne++;
-                }
-            }
-
-            //move dimension ones where dimensions + 1 s overlap
-            if(numOnes > 0) {
-                this->collapse();
-            }
+    inline void createOffsetForBlock() {
+        this->tadOffsets = &(this->tadOffset(blockIdx.x));
+    }
 
 
-            //update the stride and shape, note that this will not be a memory leak due to the pointers being declared differently
-            //the previous pointer is just a view of a pointer to be reused that was passed in
-            shape = squeezeShape;
-            stride = squeezeStride;
-            wholeRank -= numOnes;
-
-            char order = shape::order(shapeInfo);
-            int *xShapeInfo = this->outBuffer == nullptr ? shape::createShapeInfo(shape,stride,wholeRank) : shape::createShapeInfo(shape,stride,wholeRank, this->outBuffer);
-            xShapeInfo[shape::shapeInfoLength(wholeRank) - 1] = order;
-
-            return xShapeInfo;
-        }
 
 #ifdef __CUDACC__
         __host__ __device__

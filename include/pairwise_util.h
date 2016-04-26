@@ -229,15 +229,6 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
 
         return 0;
     }
-    /* Sort the axes based on the destination strides */
-   /* SortStrideArray(ndim, strides, strideperm);
-    for (i = 0; i < ndim; i++) {
-        int iperm = strideperm[ndim - i - 1].perm;
-        outShape[i] = shape[iperm];
-        outStrides[i] = strides[iperm];
-    }
-*/
-
     for (i = 0; i < ndim; i++) {
         outShape[i] = shape[i];
         outStrides[i] = strides[i];
@@ -402,7 +393,6 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T **out_dataA, int *outStridesA,
                            T **out_dataB, int *outStridesB)
 {
-    StridePermutation strideperm[MAX_RANK];
     int i, j;
 
     /* Special case 0 and 1 dimensions */
@@ -549,7 +539,6 @@ int  PrepareThreeRawArrayIter(int ndim, int shape[],
                               T **out_dataB, int outStridesB[],
                               T **out_dataC, int outStridesC[])
 {
-    StridePermutation strideperm[MAX_RANK];
 
     /* Special case 0 and 1 dimensions */
     if (ndim == 0) {
