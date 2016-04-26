@@ -60,7 +60,7 @@ else
     elif [ "$1" ==  "eclipse" ]; then
             cd eclipse
             export GENERATOR="Eclipse CDT4 - Unix Makefiles"
-            eval $CMAKE_COMMAND -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
+            eval $CMAKE_COMMAND -DDEV=FALSE -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE ..
             python ./nsight-err-parse-patch.py ./project
             mv eclipse/.cproject .
             mv eclipse/.project .
@@ -68,14 +68,14 @@ else
          rm -rf library  build
          mkdir librarybuild
          cd librarybuild
-          eval $CMAKE_COMMAND -DLIBRARY=TRUE ..
+          eval $CMAKE_COMMAND -DDEV=FALSE -DLIBRARY=TRUE ..
          eval $MAKE_COMMAND && cd ..
      elif [ "$1" ==  "test" ]; then
            if [ "$#" -gt "1" ]; then
                 rm -rf testbuild
                 mkdir testbuild
                 cd testbuild
-                 eval $CMAKE_COMMAND  -DRUN_TEST=TRUE ..
+                 eval $CMAKE_COMMAND  -DDEV=FALSE -DRUN_TEST=TRUE ..
                 eval $MAKE_COMMAND && cd ..
                 mv testbuild/test/libnd4jtests .
                ./libnd4jtests -n "$2"
@@ -83,7 +83,7 @@ else
                rm -rf testbuild
                mkdir testbuild
                cd testbuild
-               eval $CMAKE_COMMAND -DRUN_TEST=TRUE ..
+               eval $CMAKE_COMMAND -DDEV=FALSE -DRUN_TEST=TRUE ..
                eval $MAKE_COMMAND && cd ..
                mv testbuild/test/libnd4jtests .
                ./libnd4jtests
@@ -93,7 +93,7 @@ else
             rm -rf cubinbuild
            mkdir cubinbuild
            cd cubinbuild
-            eval $CMAKE_COMMAND -DCUBIN=TRUE ..
+            eval $CMAKE_COMMAND -DDEV=FALSE -DCUBIN=TRUE ..
            eval $MAKE_COMMAND && cd ..
            mv cubinbuild/cubin/cuda_compile_cubin_generated_all.cu.cubin all.cubin
      elif [ "$1" == "blas" ]; then
@@ -104,14 +104,14 @@ else
                    rm -rf blasbuild/cuda
                    mkdir -p blasbuild/cuda
                    cd blasbuild/cuda
-                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=$3 ../..
+                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DDEV=FALSE -DBLAS=TRUE -DCMAKE_BUILD_TYPE=$3 ../..
                    eval $MAKE_COMMAND && cd ../..
               else
                    echo "CUDA BUILD RELEASE"
                    rm -rf blasbuild/cuda
                    mkdir -p blasbuild/cuda
                    cd blasbuild/cuda
-                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=Release../..
+                   eval $CMAKE_COMMAND -DCUDA_BLAS=true -DBLAS=TRUE -DDEV=FALSE -DCMAKE_BUILD_TYPE=Release../..
                    eval $MAKE_COMMAND && cd ../..
               fi
               elif [ "$2" == "cpu" ]; then
@@ -121,7 +121,7 @@ else
                      rm -rf blasbuild/cpu
                      mkdir -p blasbuild/cpu
                    cd blasbuild/cpu
-                   eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=$3  ../..
+                   eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DDEV=FALSE -DCMAKE_BUILD_TYPE=$3  ../..
                    eval $MAKE_COMMAND && cd ../..
 
               else
@@ -130,7 +130,7 @@ else
 
                         mkdir -p blasbuild/cpu
                     cd blasbuild/cpu
-                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DCMAKE_BUILD_TYPE=Release ../..
+                    eval $CMAKE_COMMAND -DCPU_BLAS=true -DBLAS=TRUE -DDEV=FALSE -DCMAKE_BUILD_TYPE=Release ../..
                    eval $MAKE_COMMAND && cd ../..
               fi
 
@@ -142,7 +142,7 @@ else
 
             else
 
-                   eval $CMAKE_COMMAND  -DCPU_BLAS=true -DBLAS=TRUE ..
+                   eval $CMAKE_COMMAND  -DCPU_BLAS=true -DDEV=FALSE -DBLAS=TRUE ..
                   eval $MAKE_COMMAND && cd ..
            fi
 
@@ -151,7 +151,7 @@ else
            rm -rf ptxbuild
            mkdir ptxbuild
            cd ptxbuild
-            eval $CMAKE_COMMAND -DPTX=TRUE ..
+            eval $CMAKE_COMMAND -DDEV=FALSE -DPTX=TRUE ..
            eval $MAKE_COMMAND && cd ..
            echo "FINISHING BUILD"
            mv ptxbuild/ptx/cuda_compile_ptx_generated_all.cu.ptx all.ptx
@@ -159,7 +159,7 @@ else
            rm -rf fatbuild
            mkdir fatbuild
            cd fatbuild
-            eval $CMAKE_COMMAND -DFATBIN=TRUE ..
+            eval $CMAKE_COMMAND -DDEV=FALSE -DFATBIN=TRUE ..
            eval $MAKE_COMMAND && cd ..
            echo "FINISHING BUILD"
            mv fatbuild/fatbin/cuda_compile_fatbin_generated_all.cu.fatbin all.fatbin
