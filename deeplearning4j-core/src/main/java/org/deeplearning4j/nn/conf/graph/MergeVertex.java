@@ -62,7 +62,7 @@ public class MergeVertex extends GraphVertex {
             //FF or RNN data inputs
             int size = 0;
             boolean ff = true;
-            for( int i=1; i<vertexInputs.length; i++ ){
+            for( int i=0; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
                     throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge activations of different types:"
                             + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
