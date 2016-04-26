@@ -19,6 +19,7 @@
 package org.deeplearning4j.earlystopping.trainer;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNetwork> {
 
     private MultiLayerNetwork net;
+    private boolean isMultiEpoch = false;
 
 
     public EarlyStoppingTrainer(EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration, MultiLayerConfiguration configuration,
@@ -52,7 +54,6 @@ public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNet
         super(esConfig, net, train, null, listener);
         this.net = net;
     }
-
 
     @Override
     protected void fit(DataSet ds) {
