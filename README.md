@@ -22,13 +22,18 @@ Linux:
 Depends on the distro - ask in the earlyadopters channel for specifics
 on distro
 
+Ubuntu Linux 16.04
+* sudo apt install libopenblas-dev
+* sudo apt install cmake
+
 The standard development headers are needed.
 
 Windows:
 see windows.md
 
 
-1. Set a LIBND4J_HOME as an environment variable.
+1. Set a LIBND4J_HOME as an environment variable to the libnd4j folder you've obtained from GIT
+
 This is required for building nd4j as well.
 
 2. For cpu followed by gpu run:
