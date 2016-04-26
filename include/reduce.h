@@ -320,21 +320,23 @@ namespace functions {
                 __syncthreads();
 
                 if (!resultScalar) {
-                    shape::TAD tad(xShapeInfo,dimension,dimensionLength);
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsetForBlock();
-                    if(tad.tadElementWiseStride > 0) {
+                    __shared__ shape::TAD *tad;
+                    if (threadIdx.x == 0) {
+                        tad = new(manager->getTADSpace) shape::TAD(xShapeInfo,dimension,dimensionLength);
+                        tad.createTadOnlyShapeInfo();
+                        tad.createOffsetForBlock();
+                    }
+                    __syncthreads();
+
+                    if(tad->tadElementWiseStride > 0) {
                         T *xVal = dx + tad.tadOffsets[blockIdx.x];
                         T localVal = this->startingValue(xVal);
-                        sPartials[tid] = xVal + tid;
+                        sPartials[threadIdx.x] = xVal + tid;
                         if(tad.tadElementWiseStride == 1) {
-                            for(int i = threadIdx.x + blockIdx.x * blockDim.x; i < tad.tadLength; i+= gridDim.x * blockDim.x) {
+                            for(int i = threadIdx; i < tad.tadLength; i+= blockDim.x) {
                                reduction = this->update(reduction,dx[i],extraParams);
                             }
-
-
-                        }
-                        else {
+                        } else {
                             for(int i = 0; i < tad.tadLength; i++) {
 
                             }
@@ -345,28 +347,15 @@ namespace functions {
 
                 }
 
-            }
-            else {
+            } else {
                 this->execScalarCuda(
                         dx,
                         xShapeInfo,
                         extraParams,
                         result,
                         resultShapeInfo,
-                        allocationBuffer, reductionBuffer);
+                        allocationBuffer, reductionBuffer, manager);
             }
-        }
-        }
-        else {
-            printf("Going scalar\n");
-            this->execScalarCuda(
-                    dx,
-                    xShapeInfo,
-                    extraParams,
-                    result,
-                    resultShapeInfo,
-                    allocationBuffer, reductionBuffer, manager);
-        }
     }
 
             /**
