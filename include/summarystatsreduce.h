@@ -694,20 +694,7 @@ struct SharedSummaryStatsData<double> {
 							numOnes++;
 					}
 
-					//squeeze the dimensions
-					if(numOnes > 0) {
-						squeezed = false;
-						newSqueezeDimensions = false;
-						 shape::TAD tad;
-						inputShapeInfo = tad.squeezeDimensions(
-							inputShapeInfo,
-							&dimension,
-							&dimensionLength,
-							&squeezed,
-							&newSqueezeDimensions,
-							wholeRank,
-							numOnes);
-					}
+				
 				}
 
 				__syncthreads();
@@ -1093,18 +1080,7 @@ struct SharedSummaryStatsData<double> {
                             numOnes++;
                     }
 
-                    //squeeze the dimensions
-                    if (numOnes > 0 && wholeRank > 2) {
-                        shape::TAD singularDimension;
-                        xShapeInfo = singularDimension.squeezeDimensions(
-                                xShapeInfo,
-                                &dimension,
-                                &dimensionLength,
-                                &squeezed,
-                                &newSqueezeDimensions,
-                                wholeRank,
-                                numOnes);
-                    }
+
 
                     /**
                      * The element wise stride belong longs to a reduction index.
