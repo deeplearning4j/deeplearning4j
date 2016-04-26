@@ -260,11 +260,9 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
         this.listener = listener;
     }
 
-
     protected void reset() {
         if (train != null) train.reset();
         if (trainMulti != null) trainMulti.reset();
-        ;
     }
 
 
