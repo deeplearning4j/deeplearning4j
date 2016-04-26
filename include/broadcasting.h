@@ -98,12 +98,16 @@ namespace functions {
 		//moving all dimensions (in sorted order)
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
-		if(threadIdx.x == 0) {
-			tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo, dimension, dimensionLength, false);
-			tads = shape::tensorsAlongDimension(xShapeInfo, dimension, dimensionLength);
-		}
+	  __shared__ shape::TAD *tad;
+        if (threadIdx.x == 0) {
+              tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+              tad->setExternalBuffers((void *) manager);
+              tad->init(xShapeInfo,dimension,dimensionLength);
+              tad->createTadOnlyShapeInfo();
 
-		__syncthreads();
+        }
+       __syncthreads();
+
 
 
 		int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -124,7 +128,7 @@ namespace functions {
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
-				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
+                tad->tadOffset(i);
 				T *xIter = x + offset;
 				T *resultIter = result + offset;
 				int shapeIter[MAX_RANK];
@@ -134,7 +138,7 @@ namespace functions {
 				int resultStridesIter[MAX_RANK];
 				int rank = shape::rank(tadShapeShapeInfo);
 				int vectorIdx = 0;
-
+         
 				if (PrepareTwoRawArrayIter<T>(rank,
 						xShape,
 						xIter,
@@ -147,11 +151,9 @@ namespace functions {
 						xStridesIter,
 						&resultIter,
 						resultStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-					{
+					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
 						/* Process the innermost dimension */
 						T val = this->op(xIter[0], y[vectorIdx]);
-						// printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
 						xIter[0] = val;
 						vectorIdx += shape::elementWiseStride(yShapeInfo);
 					}
@@ -172,7 +174,7 @@ namespace functions {
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
-				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
+				int offset = tad->tadOffset(i);
 				T *xIter = x + offset;
 				T *resultIter = result + offset;
 				int shapeIter[MAX_RANK];
@@ -194,8 +196,7 @@ namespace functions {
 						xStridesIter,
 						&resultIter,
 						resultStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-					{
+					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
 						/* Process the innermost dimension */
 						T val = this->op(xIter[0], y[vectorIdx]);
 						resultIter[0] = val;
@@ -219,13 +220,7 @@ namespace functions {
 		}
 
 		__syncthreads();
-		if(threadIdx.x == 0 && numOnes > 0)  {
-			delete[] xShapeInfo;
-		}
 
-		if(threadIdx.x == 0) {
-			delete[] tadShapeShapeInfo;
-		}
 
 	}
 #endif
@@ -249,8 +244,8 @@ namespace functions {
 							  int *dimension,
 							  int dimensionLength) {
 				shape::TAD tad(xShapeInfo,dimension,dimensionLength);
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
+				tad.createTadOnlyShapeInfo();
+				tad.createOffsets();
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
 				//to the back.
