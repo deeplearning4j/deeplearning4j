@@ -259,7 +259,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
     public void setListener(EarlyStoppingListener<T> listener) {
         this.listener = listener;
     }
-    
+
     protected void reset() {
         if (train != null) train.reset();
         if (trainMulti != null) trainMulti.reset();
