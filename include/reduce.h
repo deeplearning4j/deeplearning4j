@@ -334,7 +334,7 @@ namespace functions {
                                 tad->createOffsetForBlock(r);
                             __syncthreads();
 
-                            T *xVal = dx + tad->tadOffsets[r];
+                            T *xVal = dx + tad->tadOffsets[0];
                             sPartials[threadIdx.x] = this->startingValue(xVal);
                             for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
                                 sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[i *  tad->tadElementWiseStride], extraParams);
