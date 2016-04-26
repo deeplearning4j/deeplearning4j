@@ -2338,11 +2338,7 @@ __device__ void pairWiseTransformStridedGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
-    }
-    __syncthreads();
-
-	if (threadIdx.x == 0) {
-		newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+    	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
