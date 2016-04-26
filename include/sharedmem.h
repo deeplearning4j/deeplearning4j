@@ -136,7 +136,7 @@ class UnifiedSharedMemory{
     }
 
     __device__ __host__ T * getSharedReductionBuffer() {
-        return (T *) ((int *)getTempRankBuffer3() + MAX_RANK);
+        return (T *) ((int *)getTempRankBuffer4() + MAX_RANK);
     }
 };
 // This is the un-specialized struct.  Note that we prevent instantiation of this

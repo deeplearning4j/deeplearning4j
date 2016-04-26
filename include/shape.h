@@ -119,6 +119,15 @@ namespace shape {
 #endif
     inline int *shapeBufferFortran(int rank, int *shape);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
     __inline__ __device__ int *cuMalloc(int *buffer, long size);
@@ -1402,7 +1411,14 @@ namespace shape {
 
         inline void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out) {
             memcpy(out,shapeBuffer,sizeof(int) * shape::shapeInfoLength(this->rank));
+#ifdef __CUDACC__
+            if (ptrManager != nullptr) {
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer2());
+            } else doPermuteShapeBuffer(this->rank,out,rearrange);
+#else
             doPermuteShapeBuffer(this->rank,out,rearrange);
+#endif
         }
 
 #ifdef __CUDACC__
@@ -1457,9 +1473,16 @@ namespace shape {
             int dimIdx = 0;
             //loop backwards assuming dimension is sorted
 
-            traceNew(0);
+#ifdef __CUDACC__
 
+            int *permuteDims;
+            if (ptrManager != nullptr) {
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                 permuteDims = manager->getT2ShapeBuffer();
+            } else permuteDims = new int[rank];
+#else
             int *permuteDims = new int[rank];
+#endif
             for(int i = 0; i < rank; i++) {
                 bool found = false;
                 for(int j = 0; j < dimensionLength; j++) {
@@ -1600,8 +1623,11 @@ namespace shape {
             int *theStride = shape::stride(shapeInfo);
             int rank = dimensionLength == 1 ? 2 : dimensionLength;
 #ifdef __CUDACC__
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-            int *ret = manager->getT1ShapeBuffer();
+            int *ret;
+            if (ptrManager != nullptr) {
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                ret = manager->getT1ShapeBuffer();
+            } else ret = new int[shape::shapeInfoLength(rank)];
 #else
             int *ret = new int[shape::shapeInfoLength(rank)];
 #endif
@@ -1617,7 +1643,10 @@ namespace shape {
             int *permuteIndexes = this->permuteDims();
 
 #ifdef __CUDACC__
-            int *toPermute = manager->getTempRankBuffer1();
+            int *toPermute;
+            if (ptrManager != nullptr) {
+                toPermute = manager->getTempRankBuffer1();
+            } else toPermute = new int[MAX_RANK];
 #else
             int *toPermute = new int[MAX_RANK];
 #endif
@@ -1823,7 +1852,7 @@ namespace shape {
 
     inline void createOffsetForBlock(int blockIdx) {
         int offset = this->tadOffset(blockIdx);
-        this->tadOffsets = &offset;
+        this->tadOffsets[0] = offset;
     }
 #endif
 
@@ -2045,11 +2074,22 @@ namespace shape {
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - dimensionLength;
 #ifdef __CUDACC__
-        UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-        int *ret = manager->getTempRankBuffer1();
-        int *tadShape = manager->getTempRankBuffer2();
-        int *leftOverIndexes = manager->getTempRankBuffer3();
-        int *sub = manager->getTempRankBuffer4();
+        int *ret;
+        int *tadShape;
+        int *leftOverIndexes;
+        int *sub;
+        if (ptrManager != nullptr) {
+            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            ret = manager->getTempRankBuffer1();
+            tadShape = manager->getTempRankBuffer2();
+            leftOverIndexes = manager->getTempRankBuffer3();
+            sub = manager->getTempRankBuffer4();
+        } else {
+            ret = new int[rank];
+            tadShape = new int[leftOverIndexLen];
+            leftOverIndexes = new int[leftOverIndexLen];
+            sub = new int[rank];
+        }
 #else
         int *ret = new int[rank];
         //shape of the tad
@@ -3057,6 +3097,25 @@ namespace shape {
         shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
         delete[] rearrangeCopy2;
     }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer) {
+        int *shapeRef = shapeBuffer;
+        //rank of the rearrange array == rank of shape buffer
+        int rearrageRank = shape::rank(shapeRef);
+        int *shape = shape::shapeOf(shapeRef);
+        int *stride = shape::stride(shapeRef);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&shape,tmpBuffer);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
+    }
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -3074,6 +3133,24 @@ namespace shape {
         shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
         shapeBuffer[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
         delete[] rearrangeCopy2;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer) {
+        int *shapeRef = shapeBuffer;
+        //rank of the rearrange array == rank of shape buffer
+        int rearrageRank = rank;
+        int *shape = shape::shapeOf(shapeRef);
+        int *stride = shape::stride(shapeRef);
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&shape,tmpBuffer);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
+        shapeBuffer[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
     }
 
 
