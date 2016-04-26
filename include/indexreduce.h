@@ -339,7 +339,7 @@ struct SharedIndexValue<double> {
 
 #pragma unroll
 				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength, nullptr);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
@@ -394,7 +394,7 @@ struct SharedIndexValue<double> {
 #pragma unroll
 				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 					if (threadIdx.x == 0)
-						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, manager);
 					__syncthreads();
 					sPartials[threadIdx.x] = {dx[offsetForTad], 0};
 #pragma unroll
@@ -776,7 +776,7 @@ struct SharedIndexValue<double> {
 					int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
 					for(int i = 0; i < resultLength; i++) {
-						int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
 						int shapeIter[MAX_RANK];
 						int coord[MAX_RANK];
 						int dim;
@@ -823,7 +823,7 @@ struct SharedIndexValue<double> {
 					int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 #pragma omp parallel for
 					for(int i = 0;  i < resultLength; i++) {
-						int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+						int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
 						IndexValue<T> indexValue;
 						indexValue.index = 0;
 						indexValue.value = x[baseOffset];

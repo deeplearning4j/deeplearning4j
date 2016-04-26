@@ -124,7 +124,7 @@ namespace functions {
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
-				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 				T *xIter = x + offset;
 				T *resultIter = result + offset;
 				int shapeIter[MAX_RANK];
@@ -172,7 +172,7 @@ namespace functions {
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
-				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+				int offset = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 				T *xIter = x + offset;
 				T *resultIter = result + offset;
 				int shapeIter[MAX_RANK];

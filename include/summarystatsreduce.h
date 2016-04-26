@@ -662,112 +662,7 @@ struct SharedSummaryStatsData<double> {
 		if (!resultScalar) {
 		    if (dimensionLength > 1) {
 
-
-                if (threadIdx.x == 0)
-                    printf("Multidimensional summary\n");
-
-                __shared__ int numOnes;
-				__shared__ bool squeezed;
-				__shared__ bool newSqueezeDimensions;
-				__shared__ int *inputShapeInfo;
-				//decompose in to several sub tads after
-				//moving all dimensions (in sorted order)
-				//to the back.
-				//permuted version of the x shape info for setting up the tad problem
-
-				__shared__ int *tadShapeShapeInfo;
-
-				if(threadIdx.x == 0) {
-					inputShapeInfo = xShapeInfo;
-				}
-
-				__syncthreads();
-
-				int *shape = shape::shapeOf(inputShapeInfo);
-				int *stride = shape::stride(inputShapeInfo);
-				int wholeRank = shape::rank(inputShapeInfo);
-
-				if(threadIdx.x == 0) {
-					numOnes = 0;
-					for(int i = 0; i < wholeRank; i++) {
-						if(shape[i] == 1)
-							numOnes++;
-					}
-
-				
-				}
-
-				__syncthreads();
-
-				//decompose in to several sub tads after
-				//moving all dimensions (in sorted order)
-				//to the back.
-				//permuted version of the x shape info for setting up the tad problem
-				if(threadIdx.x == 0)
-					tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
-				__syncthreads();
-
-				int *xShape = shape::shapeOf(tadShapeShapeInfo);
-				int *xStride = shape::stride(tadShapeShapeInfo);
-				int tadLength = shape::length(tadShapeShapeInfo);
-				int rank = shape::rank(tadShapeShapeInfo);
-#pragma unroll
-				for(int i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int rankIter = rank;
-					int xStridesIter[MAX_RANK];
-					T *xPointer = dx + offset;
-					SummaryStatsData<T> start;
-                    start.initWithValue(dx[offset]);
-                    start = op(start, extraParams);
-
-					if(PrepareOneRawArrayIter<T>(rankIter,
-							xShape,
-							xPointer,
-							xStride,
-							&rankIter,
-							shapeIter,
-							&xPointer,
-							xStridesIter) >= 0) {
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-							/* Process the innermost dimension */
-							//start = update(start,op(xPointer[0],extraParams),extraParams);
-							SummaryStatsData <T> indexVal2;
-                            indexVal2.initWithValue(xPointer[0]);
-                            start = update(start, indexVal2, extraParams);
-						} ND4J_RAW_ITER_ONE_NEXT(dim,
-								rank,
-								coord,
-								shapeIter,
-								xPointer,
-								xStridesIter);
-					}
-					else {
-						printf("Unable to prepare array\n");
-					}
-
-					result[i] = getValue(start);
-				}
-
-				__syncthreads();
-				if (threadIdx.x == 0) {
-					delete tadShapeShapeInfo;
-
-					if(newSqueezeDimensions) {
-						delete dimension;
-					}
-
-					if(numOnes > 0) {
-						delete xShapeInfo;
-					}
-				}
 		    } else {
-                if (threadIdx.x == 0)
-                    printf("Non scalar summary\n");
-
                 int xLength = shape::length(xShapeInfo);
 				int tadLength = xLength / resultLength;
 
@@ -775,7 +670,7 @@ struct SharedSummaryStatsData<double> {
 #pragma unroll
 				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 					if (threadIdx.x == 0)
-						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
+						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, manager);
 					__syncthreads();
 					int indexX = offsetForTad + xElementWiseStride * threadIdx.x;
 					if (threadIdx.x < tadLength) {
@@ -1099,7 +994,7 @@ struct SharedSummaryStatsData<double> {
                     int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
-                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -1158,7 +1053,7 @@ struct SharedSummaryStatsData<double> {
                         int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 #pragma omp parallel for
                         for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[baseOffset]);
 
@@ -1177,7 +1072,7 @@ struct SharedSummaryStatsData<double> {
                         int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 #pragma omp parallel for
                         for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength);
+                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[baseOffset]);
                             for(int j = 1; j < tadLength; j++) {

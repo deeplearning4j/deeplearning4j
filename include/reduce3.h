@@ -478,7 +478,7 @@ namespace functions {
 				int rank = shape::rank(tadShapeShapeInfo);
 #pragma unroll
 				for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength);
+					int offset = shape::tadOffset(i,inputShapeInfo,dimension,dimensionLength, nullptr);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
@@ -557,8 +557,8 @@ namespace functions {
 
 #pragma unroll
 				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-					int offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength);
-					int yOffsetFOrTad = shape::tadOffset(i,yShapeInfo,dimension,dimensionLength);
+					int offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
+					int yOffsetFOrTad = shape::tadOffset(i,yShapeInfo,dimension,dimensionLength, nullptr);
 					sPartials[tid] = op(dx[offsetForTad],dy[yOffsetFOrTad], &extraParams);
 					for(j = 1; j < tadLength; j++) {
 						sPartials[i] =  update(sPartials[i],op(dx[offsetForTad + xElementWiseStride * j],dy[yOffsetFOrTad + yElementWiseStride * j], &extraParams), &extraParams);

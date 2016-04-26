@@ -322,6 +322,7 @@ namespace functions {
                     __shared__ shape::TAD *tad;
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                        tad->setExternalBuffers((void *) manager);
                         tad->init(xShapeInfo,dimension,dimensionLength);
                         tad->createTadOnlyShapeInfo();
                     }

@@ -69,7 +69,7 @@ class UnifiedSharedMemory{
         sharedMemory = shMem;
     }
 
-    __device__ void init (int unifiedSize, int factorySize, int functionSize, int tadSize) {
+    __device__ __host__ void init (int unifiedSize, int factorySize, int functionSize, int tadSize) {
         this->unifiedSize = unifiedSize < 8 ? 8 : unifiedSize;
         this->factorySize = factorySize < 8 ? 8: factorySize;
         this->functionSize = functionSize < 8 ? 8 : functionSize;
@@ -80,47 +80,63 @@ class UnifiedSharedMemory{
     }
 
 
-    __device__ ~UnifiedSharedMemory() { }
+    __device__ __host__ ~UnifiedSharedMemory() { }
 
-    __device__ unsigned char * getUnifiedSpace() {
+    __device__ __host__ unsigned char * getUnifiedSpace() {
        return (unsigned char * ) ((int *)sharedMemory);
     }
 
-    __device__ unsigned char * getFactorySpace() {
+    __device__ __host__ unsigned char * getFactorySpace() {
        return (unsigned char * ) ((int *)sharedMemory + (unifiedSize));
     }
 
-    __device__ unsigned char * getFunctionSpace() {
+    __device__ __host__ unsigned char * getFunctionSpace() {
        return (unsigned char * ) ((int *)sharedMemory + (unifiedSize + factorySize));
     }
 
-    __device__ unsigned char * getTADSpace() {
+    __device__ __host__ unsigned char * getTADSpace() {
        return (unsigned char * ) ((int *)sharedMemory + (unifiedSize + factorySize + functionSize));
     }
 
-    __device__ int * getXShapeBuffer() {
+    __device__ __host__ int * getXShapeBuffer() {
         // TODO: provide base offset here, to make use of shmem for initial allocation
         return sharedMemory + allocationOffset;
     }
 
-    __device__ int * getYShapeBuffer() {
+    __device__ __host__ int * getYShapeBuffer() {
         return getXShapeBuffer() + maxShapeBufferLength;
     }
 
-    __device__ int * getZShapeBuffer() {
+    __device__ __host__ int * getZShapeBuffer() {
         return getYShapeBuffer() + maxShapeBufferLength;
     }
 
-    __device__ int * getT1ShapeBuffer() {
+    __device__ __host__ int * getT1ShapeBuffer() {
         return getZShapeBuffer() + maxShapeBufferLength;
     }
 
-    __device__ int * getT2ShapeBuffer() {
+    __device__ __host__ int * getT2ShapeBuffer() {
         return getT1ShapeBuffer() + maxShapeBufferLength;
     }
 
-    __device__ T * getSharedReductionBuffer() {
-        return (T *) ((int *)getT2ShapeBuffer() + maxShapeBufferLength);
+    __device__ __host__ int * getTempRankBuffer1() {
+        return getT2ShapeBuffer() + maxShapeBufferLength;
+    }
+
+    __device__ __host__ int * getTempRankBuffer2() {
+        return getTempRankBuffer1() + MAX_RANK;
+    }
+
+    __device__ __host__ int * getTempRankBuffer3() {
+        return getTempRankBuffer2() + MAX_RANK;
+    }
+
+    __device__ __host__ int * getTempRankBuffer4() {
+        return getTempRankBuffer3() + MAX_RANK;
+    }
+
+    __device__ __host__ T * getSharedReductionBuffer() {
+        return (T *) ((int *)getTempRankBuffer3() + MAX_RANK);
     }
 };
 // This is the un-specialized struct.  Note that we prevent instantiation of this
