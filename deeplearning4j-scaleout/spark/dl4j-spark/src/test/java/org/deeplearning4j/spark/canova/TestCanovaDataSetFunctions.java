@@ -64,7 +64,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         ImageRecordReader irr = new ImageRecordReader(28,28,1,true);
         irr.initialize(is);
 
-        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(irr,1,28*28,2);
+        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(irr,1,1,2);
         List<DataSet> listLocal = new ArrayList<>(4);
         while(iter.hasNext()){
             listLocal.add(iter.next());
