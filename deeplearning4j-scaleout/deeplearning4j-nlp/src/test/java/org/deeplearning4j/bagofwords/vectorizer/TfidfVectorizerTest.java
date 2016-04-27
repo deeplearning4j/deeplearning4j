@@ -117,43 +117,5 @@ public class TfidfVectorizerTest {
         assertEquals(vector, dataSet.getFeatureMatrix());
     }
 
-    @Test
-    @Ignore
-    public void testLegacyTFIDF() throws Exception{
-        File rootDir = new ClassPathResource("rootdir").getFile();
-        LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
-        List<String> docStrings = new ArrayList<>();
 
-        while(iter.hasNext())
-            docStrings.add(iter.nextSentence());
-
-        iter.reset();
-
-        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
-
-        List<String> labels = Arrays.asList("label1","label2");
-        TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizer = new LegacyTfidfVectorizer.Builder()
-                .minWords(1)
-//                .index(index)
-                .cache(cache)
-                .stopWords(new ArrayList<String>())
-                .tokenize(tokenizerFactory)
-                .labels(labels)
-                .iterate(iter)
-                .build();
-
-        vectorizer.fit();
-        try {
-            vectorizer.vectorize("",null);
-            fail("Vectorizer should receive non-null label.");
-        } catch (IllegalArgumentException e) {
-            ;
-        }
-
-        INDArray vector = vectorizer.transform("This is 1 file.");
-        log.info("Vector: " + vector);
-
-
-    }
 }
