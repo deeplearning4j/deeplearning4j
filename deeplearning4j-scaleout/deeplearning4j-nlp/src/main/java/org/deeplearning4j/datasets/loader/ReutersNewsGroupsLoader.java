@@ -26,9 +26,9 @@ import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.bagofwords.vectorizer.LegacyBagOfWordsVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
-import org.deeplearning4j.bagofwords.vectorizer.LegacyTfidfVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,78 +40,78 @@ import java.util.List;
 /**
  * @author Adam Gibson
  */
-public class ReutersNewsGroupsLoader extends BaseDataFetcher {
+// public class ReutersNewsGroupsLoader extends BaseDataFetcher {
 
-    private TextVectorizer textVectorizer;
-    private boolean tfidf;
-    public final static String NEWSGROUP_URL = "http://qwone.com/~jason/20Newsgroups/20news-18828.tar.gz";
-    private File reutersRootDir;
-    private static final Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
-    private DataSet load;
-
-
-    public ReutersNewsGroupsLoader(boolean tfidf) throws Exception {
-        getIfNotExists();
-        LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(reutersRootDir);
-        List<String> labels =new ArrayList<>();
-        for(File f : reutersRootDir.listFiles()) {
-            if(f.isDirectory())
-                labels.add(f.getName());
-        }
-        TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
-        if(tfidf)
-            this.textVectorizer = new LegacyTfidfVectorizer.Builder()
-                    .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
-
-        else
-            this.textVectorizer = new LegacyBagOfWordsVectorizer.Builder()
-                    .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
-
-        load = this.textVectorizer.vectorize();
-    }
-
-    private void getIfNotExists() throws Exception {
-        String home = System.getProperty("user.home");
-        String rootDir = home + File.separator + "reuters";
-        reutersRootDir = new File(rootDir);
-        if(!reutersRootDir.exists())
-            reutersRootDir.mkdir();
-        else if(reutersRootDir.exists())
-            return;
+//     private TextVectorizer textVectorizer;
+//     private boolean tfidf;
+//     public final static String NEWSGROUP_URL = "http://qwone.com/~jason/20Newsgroups/20news-18828.tar.gz";
+//     private File reutersRootDir;
+//     private static final Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
+//     private DataSet load;
 
 
-        File rootTarFile = new File(reutersRootDir,"20news-18828.tar.gz");
-        if(rootTarFile.exists())
-            rootTarFile.delete();
-        rootTarFile.createNewFile();
+//     public ReutersNewsGroupsLoader(boolean tfidf) throws Exception {
+//         getIfNotExists();
+//         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(reutersRootDir);
+//         List<String> labels =new ArrayList<>();
+//         for(File f : reutersRootDir.listFiles()) {
+//             if(f.isDirectory())
+//                 labels.add(f.getName());
+//         }
+//         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
-        FileUtils.copyURLToFile(new URL(NEWSGROUP_URL), rootTarFile);
-        ArchiveUtils.unzipFileTo(rootTarFile.getAbsolutePath(), reutersRootDir.getAbsolutePath());
-        rootTarFile.delete();
-        FileUtils.copyDirectory(new File(reutersRootDir,"20news-18828"),reutersRootDir);
-        FileUtils.deleteDirectory(new File(reutersRootDir,"20news-18828"));
-        if(reutersRootDir.listFiles() == null)
-            throw new IllegalStateException("No files found!");
+//         if(tfidf)
+//             this.textVectorizer = new TfidfVectorizer.Builder()
+//                     .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
 
-    }
+//         else
+//             this.textVectorizer = new BagOfWordsVectorizer.Builder()
+//                     .iterate(iter).labels(labels).tokenize(tokenizerFactory).build();
+
+//         load = this.textVectorizer.vectorize();
+//     }
+
+//     private void getIfNotExists() throws Exception {
+//         String home = System.getProperty("user.home");
+//         String rootDir = home + File.separator + "reuters";
+//         reutersRootDir = new File(rootDir);
+//         if(!reutersRootDir.exists())
+//             reutersRootDir.mkdir();
+//         else if(reutersRootDir.exists())
+//             return;
 
 
-    /**
-     * Fetches the next dataset. You need to call this
-     * to getFromOrigin a new dataset, otherwise {@link #next()}
-     * just returns the last data applyTransformToDestination fetch
-     *
-     * @param numExamples the number of examples to fetch
-     */
-    @Override
-    public void fetch(int numExamples) {
-        List<DataSet> newData = new ArrayList<>();
-        for(int grabbed = 0; grabbed < numExamples && cursor < load.numExamples(); cursor++,grabbed++) {
-            newData.add(load.get(cursor));
-        }
+//         File rootTarFile = new File(reutersRootDir,"20news-18828.tar.gz");
+//         if(rootTarFile.exists())
+//             rootTarFile.delete();
+//         rootTarFile.createNewFile();
 
-        this.curr = DataSet.merge(newData);
+//         FileUtils.copyURLToFile(new URL(NEWSGROUP_URL), rootTarFile);
+//         ArchiveUtils.unzipFileTo(rootTarFile.getAbsolutePath(), reutersRootDir.getAbsolutePath());
+//         rootTarFile.delete();
+//         FileUtils.copyDirectory(new File(reutersRootDir,"20news-18828"),reutersRootDir);
+//         FileUtils.deleteDirectory(new File(reutersRootDir,"20news-18828"));
+//         if(reutersRootDir.listFiles() == null)
+//             throw new IllegalStateException("No files found!");
 
-    }
-}
+//     }
+
+
+//     /**
+//      * Fetches the next dataset. You need to call this
+//      * to getFromOrigin a new dataset, otherwise {@link #next()}
+//      * just returns the last data applyTransformToDestination fetch
+//      *
+//      * @param numExamples the number of examples to fetch
+//      */
+//     @Override
+//     public void fetch(int numExamples) {
+//         List<DataSet> newData = new ArrayList<>();
+//         for(int grabbed = 0; grabbed < numExamples && cursor < load.numExamples(); cursor++,grabbed++) {
+//             newData.add(load.get(cursor));
+//         }
+
+//         this.curr = DataSet.merge(newData);
+
+//     }
+// }
