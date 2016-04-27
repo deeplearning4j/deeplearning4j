@@ -710,15 +710,15 @@ namespace functions {
                         int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         if(eleStride == 1) {
 #pragma omp simd
-                            for(int i = 0; i < tad.tadLength; i++) {
-                                start = update(start, op(iter[i], extraParams), extraParams);
+                            for(int j = 0; j < tad.tadLength; j++) {
+                                start = update(start, op(iter[j], extraParams), extraParams);
 
                             }
                         }
                         else {
 #pragma omp simd
-                            for(int i = 0; i < tad.tadLength; i++) {
-                                start = update(start, op(iter[i * eleStride], extraParams), extraParams);
+                            for(int j = 0; j < tad.tadLength; j++) {
+                                start = update(start, op(iter[j * eleStride], extraParams), extraParams);
                             }
                         }
 
