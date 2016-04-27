@@ -1359,14 +1359,14 @@ namespace shape {
         }
 
 #ifdef __CUDACC__
-       __host__ __device__
+        __host__ __device__
 #endif
         inline void setExternalBuffers(void *ptrManager) {
             this->ptrManager = ptrManager;
         }
 
 #ifdef __CUDACC__
-    __host__ __device__
+        __host__ __device__
 #endif
         inline void init(int *shapeInfo,int *dimension,int dimensionLength) {
             this->originalShapeInfo = shapeInfo;
@@ -1379,7 +1379,7 @@ namespace shape {
             this->rank = shape::rank(shapeInfo);
             //ensure we get rid of trailing ones in the dimensions
             //we can do this with a simple decrement of the dimension length for trailing ones
-              for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
+            for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
                 if (shape::shapeOf(shapeInfo)[i] == 1) {
                     this->numOnes++;
                     if (i > 0 && i < shape::rank(shapeInfo) - 1)
@@ -1475,7 +1475,7 @@ namespace shape {
             int *permuteDims;
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                 permuteDims = manager->getT2ShapeBuffer();
+                permuteDims = manager->getT2ShapeBuffer();
             } else permuteDims = new int[rank];
 #else
             int *permuteDims = new int[rank];
@@ -1613,20 +1613,22 @@ namespace shape {
         __host__ __device__
 #endif
         inline int *shapeInfoOnlyShapeAndStride() {
-            if(wholeThing)
+            if(wholeThing || dimensionLength < 1)
                 return shapeInfo;
 
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
-            int rank = dimensionLength == 1 ? 2 : dimensionLength;
-#ifdef __CUDACC__
+            int rank = dimensionLength <= 1 ? 2 : dimensionLength;
             int *ret;
+#ifdef __CUDACC__
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
                 ret = manager->getT1ShapeBuffer();
-            } else ret = new int[shape::shapeInfoLength(rank)];
+            }
+            else
+                ret = new int[shape::shapeInfoLength(rank)];
 #else
-            int *ret = new int[shape::shapeInfoLength(rank)];
+            ret = new int[shape::shapeInfoLength(rank)];
 #endif
 
 
@@ -1644,7 +1646,8 @@ namespace shape {
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
                 toPermute = manager->getTempRankBuffer1();
-            } else toPermute = new int[MAX_RANK];
+            }
+            else toPermute = new int[MAX_RANK];
 #else
             int *toPermute = new int[MAX_RANK];
 #endif
@@ -1734,7 +1737,8 @@ namespace shape {
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
             if(wholeThing)
                 ret[shape::shapeInfoLength(rank) - 2] = 1;
-            ret[shape::shapeInfoLength(rank) - 2] = shape::tadElementWiseStride(shapeInfo,dimension,dimensionLength);
+            else
+                ret[shape::shapeInfoLength(rank) - 2] = shape::tadElementWiseStride(this->shapeInfo,dimension,dimensionLength);
 
             if (this->ptrManager == nullptr) {
                 delete[] permuteIndexes;
@@ -1848,10 +1852,10 @@ namespace shape {
         __device__
 
 
-    inline void createOffsetForBlock(int blockIdx) {
-        int offset = this->tadOffset(blockIdx);
-        this->tadOffsets[0] = offset;
-    }
+        inline void createOffsetForBlock(int blockIdx) {
+            int offset = this->tadOffset(blockIdx);
+            this->tadOffsets[0] = offset;
+        }
 #endif
 
 
@@ -3783,9 +3787,9 @@ namespace shape {
  */
 #ifdef __CUDACC__
     __device__ int tadOffset(ShapeInformation *xInfo, int offset) {
-	return offset + threadIdx.x * xInfo->elementWiseStride;
+        return offset + threadIdx.x * xInfo->elementWiseStride;
 
-}
+    }
 
 #endif
 
@@ -4086,10 +4090,10 @@ namespace shape {
  * a global element given the shape information
  * and the offset to be read.
  */
-__device__ int tadOffset(int *xInfo, int offset) {
-	return offset + threadIdx.x * elementWiseStride(xInfo);
+    __device__ int tadOffset(int *xInfo, int offset) {
+        return offset + threadIdx.x * elementWiseStride(xInfo);
 
-}
+    }
 #endif
 
 /**
