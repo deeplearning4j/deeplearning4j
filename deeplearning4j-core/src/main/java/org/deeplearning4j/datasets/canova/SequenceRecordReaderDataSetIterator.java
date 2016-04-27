@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.canova;
 
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -11,7 +12,11 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Sequence record reader data set iterator
@@ -438,7 +443,16 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             int f = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                out.put(i, f++, current.toDouble());
+                try {
+                    out.put(i, f++, current.toDouble());
+                } catch (UnsupportedOperationException e) {
+                    // This isn't a scalar, so check if we got an array already
+                    if (current instanceof NDArrayWritable) {
+                        out.putRow(i, ((NDArrayWritable)current).get());
+                    } else {
+                        throw e;
+                    }
+                }
             }
             i++;
         }
@@ -514,7 +528,16 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                     }
                 } else {
                     //feature
-                    features.put(i, countFeatures++, current.toDouble());
+                    try {
+                        features.put(i, countFeatures++, current.toDouble());
+                    } catch (UnsupportedOperationException e) {
+                        // This isn't a scalar, so check if we got an array already
+                        if (current instanceof NDArrayWritable) {
+                            features.putRow(i, ((NDArrayWritable)current).get());
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             }
             i++;
