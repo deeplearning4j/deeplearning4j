@@ -5068,7 +5068,6 @@ namespace functions {
                             dimension[i] = (int) extraParams[i + 1];
                         }
 
-                        int numOnes = 0;
                         int *shape = shape::shapeOf(xShapeBuffer);
                         int wholeRank = shape::rank(xShapeBuffer);
 

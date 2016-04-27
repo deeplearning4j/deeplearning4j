@@ -1379,10 +1379,7 @@ namespace shape {
             this->rank = shape::rank(shapeInfo);
             //ensure we get rid of trailing ones in the dimensions
             //we can do this with a simple decrement of the dimension length for trailing ones
-            bool nonOneEncountered = false;
-            int trailingDimensionDecrement = 0;
-            int firstNonOneIndex = -1;
-            for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
+              for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
                 if (shape::shapeOf(shapeInfo)[i] == 1) {
                     this->numOnes++;
                     if (i > 0 && i < shape::rank(shapeInfo) - 1)
@@ -1645,6 +1642,7 @@ namespace shape {
 #ifdef __CUDACC__
             int *toPermute;
             if (ptrManager != nullptr) {
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
                 toPermute = manager->getTempRankBuffer1();
             } else toPermute = new int[MAX_RANK];
 #else

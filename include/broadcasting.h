@@ -128,7 +128,7 @@ namespace functions {
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
-                tad->tadOffset(i);
+                Nd4jIndex offset = tad->tadOffset(i);
 				T *xIter = x + offset;
 				T *resultIter = result + offset;
 				int shapeIter[MAX_RANK];
@@ -138,7 +138,7 @@ namespace functions {
 				int resultStridesIter[MAX_RANK];
 				int rank = shape::rank(tadShapeShapeInfo);
 				int vectorIdx = 0;
-         
+
 				if (PrepareTwoRawArrayIter<T>(rank,
 						xShape,
 						xIter,

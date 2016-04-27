@@ -258,11 +258,8 @@ namespace functions {
                 /**
                  * Gpu information for the problem
                  */
-                int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
                 __shared__ volatile int resultScalar;
 
-                __shared__ int xElementWiseStride;
 
         //shared memory space for storing intermediate results
         volatile T *sPartials = manager->getSharedReductionBuffer();
@@ -309,12 +306,7 @@ namespace functions {
 
                     int *xStride = shape::stride(xShapeInfo);
                     char xOrder = shape::order(xShapeInfo);
-
-                    if (dimension != nullptr && (dimension[0] != MAX_DIMENSION && dimensionLength == 1)) {
-                        xElementWiseStride =  xStride[dimension[0]];
-                    } else {
-                        xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                    }
+                    
                 }
                 __syncthreads();
 

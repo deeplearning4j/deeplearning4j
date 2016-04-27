@@ -293,8 +293,6 @@ struct SharedIndexValue<double> {
 		if (!resultScalar) {
 			if (dimensionLength > 1) {
 				__shared__ int numOnes;
-				__shared__ bool squeezed;
-				__shared__ bool newSqueezeDimensions;
 				__shared__ int *inputShapeInfo;
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)

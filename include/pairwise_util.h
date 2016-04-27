@@ -190,7 +190,7 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
                            T data[], int strides[],
                            int *out_ndim, int outShape[],
                            T **out_data, int *outStrides) {
-    int i, j;
+    int i;
 
     /* Special case 0 and 1 dimensions */
     if (ndim == 0) {
@@ -393,7 +393,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T **out_dataA, int *outStridesA,
                            T **out_dataB, int *outStridesB)
 {
-    int i, j;
+    int i;
 
     /* Special case 0 and 1 dimensions */
     if (ndim == 0) {

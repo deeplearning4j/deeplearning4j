@@ -968,8 +968,6 @@ struct SharedSummaryStatsData<double> {
                     int numOnes = 0;
                     int *shape = shape::shapeOf(xShapeInfo);
                     int wholeRank = shape::rank(xShapeInfo);
-                    bool squeezed = false;
-                    bool newSqueezeDimensions = false;
                     for (int i = 0; i < wholeRank; i++) {
                         if (shape[i] == 1)
                             numOnes++;
@@ -1038,13 +1036,8 @@ struct SharedSummaryStatsData<double> {
 
                     delete[] tadShapeShapeInfo;
 
-                    if (newSqueezeDimensions) {
-                        delete[] dimension;
-                    }
 
-                    if (numOnes > 0) {
-                        delete[] xShapeInfo;
-                    }
+
                 }
 
                 else {
