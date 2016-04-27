@@ -789,7 +789,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private void generalValidation(String layerName){
             if (useDropConnect && (Double.isNaN(momentum) && (Double.isNaN(layer.getMomentum()))))
                 throw new IllegalStateException(layerName +" dropConnect is set to true but momentum has not been added to configuration.");
-            if (useRegularization && (Double.isNaN(l1) && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
+            if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
                 log.warn(layerName +" regularization is set to true but l1 or l2 has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
             if (layer != null) {
