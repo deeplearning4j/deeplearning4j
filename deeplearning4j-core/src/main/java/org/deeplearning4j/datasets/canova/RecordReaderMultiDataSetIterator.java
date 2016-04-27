@@ -22,14 +22,22 @@ import lombok.AllArgsConstructor;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**RecordReaderMultiDataSetIterator: A {@link MultiDataSetIterator} for data from one or more RecordReaders and SequenceRecordReaders<br>
  * The idea: generate multiple inputs and multiple outputs from one or more Sequence/RecordReaders. Inputs and outputs
@@ -204,7 +212,16 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 int j = 0;
                 for (Writable w : c) {
                     idx[1] = j++;
-                    arr.putScalar(idx, w.toDouble());
+                    try {
+                        arr.putScalar(idx, w.toDouble());
+                    } catch (UnsupportedOperationException e) {
+                        // This isn't a scalar, so check if we got an array already
+                        if (w instanceof NDArrayWritable) {
+                            arr.putRow(idx[0], ((NDArrayWritable)w).get());
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             } else if(details.oneHot){
                 //Convert a single column to a one-hot representation
@@ -223,7 +240,18 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 int k=0;
                 for( int j=details.subsetStart; j<=details.subsetEndInclusive; j++){
                     idx[1] = k++;
-                    arr.putScalar(idx,iter.next().toDouble());
+                    Writable w = iter.next();
+                    try {
+                        arr.putScalar(idx,w.toDouble());
+                    } catch (UnsupportedOperationException e) {
+                        // This isn't a scalar, so check if we got an array already
+                        if (w instanceof NDArrayWritable) {
+                            arr.putRow(idx[0], ((NDArrayWritable)w).get().get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(details.subsetStart, details.subsetEndInclusive + 1)));
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             }
         }
@@ -278,7 +306,18 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     int j = 0;
                     while (iter.hasNext()) {
                         idx[1] = j++;
-                        arr.putScalar(idx,iter.next().toDouble());
+                        Writable w = iter.next();
+                        try {
+                            arr.putScalar(idx,w.toDouble());
+                        } catch (UnsupportedOperationException e) {
+                            // This isn't a scalar, so check if we got an array already
+                            if (w instanceof NDArrayWritable) {
+                                arr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
+                                        .putRow(0, ((NDArrayWritable)w).get());
+                            } else {
+                                throw e;
+                            }
+                        }
                     }
                 } else if(details.oneHot){
                     //Convert a single column to a one-hot representation
@@ -298,7 +337,19 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     int k=0;
                     for( int j=details.subsetStart; j<=details.subsetEndInclusive; j++){
                         idx[1] = k++;
-                        arr.putScalar(idx,iter.next().toDouble());
+                        Writable w = iter.next();
+                        try {
+                            arr.putScalar(idx,w.toDouble());
+                        } catch (UnsupportedOperationException e) {
+                            // This isn't a scalar, so check if we got an array already
+                            if (w instanceof NDArrayWritable) {
+                                arr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
+                                        .putRow(0, ((NDArrayWritable)w).get().get(NDArrayIndex.all(),
+                                                NDArrayIndex.interval(details.subsetStart, details.subsetEndInclusive + 1)));
+                            } else {
+                                throw e;
+                            }
+                        }
                     }
                 }
             }
