@@ -1328,6 +1328,7 @@ namespace shape {
         int *tadShape = nullptr;
         int *tadStride = nullptr;
         int *tadOffsets = nullptr;
+        int tadOffsetForBlock = 0;
         int tadLength = 0   ;
         int rank = 0;
         int numOnes = 0;
@@ -1740,6 +1741,8 @@ namespace shape {
             else
                 ret[shape::shapeInfoLength(rank) - 2] = shape::tadElementWiseStride(this->shapeInfo,dimension,dimensionLength);
 
+            this->tadElementWiseStride = ret[shape::shapeInfoLength(rank) - 2];
+
             if (this->ptrManager == nullptr) {
                 delete[] permuteIndexes;
                 delete[] toPermute;
@@ -1849,12 +1852,9 @@ namespace shape {
         }
 
 #ifdef __CUDACC__
-        __device__
-
-
+        __device__ __host__
         inline void createOffsetForBlock(int blockIdx) {
-            int offset = this->tadOffset(blockIdx);
-            this->tadOffsets[0] = offset;
+            this->tadOffsetForBlock= this->tadOffset(blockIdx);
         }
 #endif
 
@@ -2932,7 +2932,6 @@ namespace shape {
             denom /= shape[i];
             ret[i] = index / denom;
             index %= denom;
-
         }
     }
 
