@@ -30,6 +30,10 @@ layout: default
 * [r/MachineLearning](https://www.reddit.com/r/MachineLearning/)
 * [Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)
 
+## Reinforcement Learning
+
+* [Sutton & Barto's RL book](https://webdocs.cs.ualberta.ca/~sutton/book/the-book.html)
+
 ## Academic Papers and Other Writings
 
 **[Deep Learning Boook](http://www.deeplearningbook.org/)**; Yoshua Bengio, Ian Goodfellow, Aaron Courville; MIT Press
