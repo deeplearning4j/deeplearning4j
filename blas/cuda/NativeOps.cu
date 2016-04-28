@@ -59,7 +59,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
     //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
-	return dim3(num_blocks,num_threads, 7000);
+	return dim3(num_blocks,num_threads, 10000);
 }
 
 /**
@@ -2362,6 +2362,16 @@ __device__ void flattenKernelGeneric(int dOffset,
 					int *resultShapeInfo,
 					T *input,
 					int *inputShapeInfo, int *allocationPointer) {
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+		manager = new(shmem) UnifiedSharedMemory<T>();
+		manager->init(sizeof(UnifiedSharedMemory<T>), 4, 4, sizeof(shape::TAD));
+	}
+	__syncthreads();
+
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 	int *zShape = shape::shapeOf(resultShapeInfo);
@@ -2384,7 +2394,7 @@ __device__ void flattenKernelGeneric(int dOffset,
 		} else {
 			int rank = shape::rank(inputShapeInfo);
 			long allocSize = sizeof(int) * rank;
-			int *coord = shape::cuMalloc(allocationPointer, allocSize);
+			int *coord = shape::cuMalloc(allocationPointer, allocSize, manager);
 
 			if(order == 'f') {
 				for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
@@ -2401,14 +2411,14 @@ __device__ void flattenKernelGeneric(int dOffset,
 				}
 			}
 
-			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+			if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
 				free(coord);
 			}
 		}
 	} else {
 		int rank = shape::rank(inputShapeInfo);
 		long allocSize = sizeof(int) * rank;
-		int *coord = shape::cuMalloc(allocationPointer, allocSize);
+		int *coord = shape::cuMalloc(allocationPointer, allocSize, manager);
 		if(order == 'f') {
 			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
 				shape::ind2sub(rank,yShape,i,coord);
@@ -2423,7 +2433,7 @@ __device__ void flattenKernelGeneric(int dOffset,
 				result[i+dOffset] = input[offset];
 			}
 		}
-		if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+		if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
 			free(coord);
 		}
 	}

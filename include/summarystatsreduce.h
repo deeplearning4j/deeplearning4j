@@ -760,7 +760,7 @@ struct SharedSummaryStatsData<double> {
             } else {
                 int rank = shape::rank(xShapeInfo);
                 long allocSize = sizeof(int) * rank;
-    			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize); //(int *) malloc(sizeof(int) * rank);
+    			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager); //(int *) malloc(sizeof(int) * rank);
 #pragma unroll
 	    		for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
     				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
@@ -770,7 +770,7 @@ struct SharedSummaryStatsData<double> {
     				reduction =  update(reduction,indexVal2, extraParams);
 			    }
 
-                if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
                     free(ind2sub);
                 }
             }

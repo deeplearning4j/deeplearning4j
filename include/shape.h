@@ -18,6 +18,7 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define MAX_COORD 3
 #define PREALLOC_SIZE 33554432
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -130,7 +131,8 @@ namespace shape {
     inline void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
-    __inline__ __device__ int *cuMalloc(int *buffer, long size);
+    template <typename T>
+    __inline__ __device__ int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager);
 #endif
 
 /**
@@ -1439,7 +1441,6 @@ namespace shape {
             this->tadLength = shape::length(this->tadOnlyShapeInfo);
             this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
             this->tadStride = shape::stride(this->tadOnlyShapeInfo);
-
         }
 #ifdef __CUDACC__
         __host__ __device__
@@ -1743,6 +1744,9 @@ namespace shape {
 
             this->tadElementWiseStride = ret[shape::shapeInfoLength(rank) - 2];
 
+            // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
+            ret[shape::shapeInfoLength(rank) - 3] = 0;
+
             if (this->ptrManager == nullptr) {
                 delete[] permuteIndexes;
                 delete[] toPermute;
@@ -2028,14 +2032,22 @@ namespace shape {
 
 
 #ifdef __CUDACC__
-    __inline__ __device__ int *cuMalloc(int *buffer, long size) {
-        int tid = blockIdx.x * blockDim.x + threadIdx.x;
-        if (tid * size > PREALLOC_SIZE - size) {
-            return (int *) malloc(size);
+    template <typename T>
+    __inline__ __device__ int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
+        // if we go for 3 dimensions coord space or below - just use shared memory for that
+        if (size <= MAX_COORD * 4) {
+            int *ptr = manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
+            return ptr;
         } else {
-            int *ret = buffer;
-            ret += (tid * size);
-            return ret;
+            // otherwise go to preallocated global memory :(
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+            if (tid * size > PREALLOC_SIZE - size) {
+                return (int *) malloc(size);
+            } else {
+                int *ret = buffer;
+                ret += (tid * size);
+                return ret;
+            }
         }
     }
 #endif
@@ -4296,7 +4308,7 @@ namespace shape {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i]) {
-                //printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
+                printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
                 return -1;
             }
 

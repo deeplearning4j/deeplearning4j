@@ -117,7 +117,7 @@ namespace functions {
 		else {
 			/* equal, positive, non-unit increments. */
 			long allocSize = sizeof(int) * xRank;
-			int *xIdx = shape::cuMalloc(allocationBuffer, allocSize);
+			int *xIdx = shape::cuMalloc(allocationBuffer, allocSize, manager);
 
 #pragma unroll
 			for (; i < n; i+= totalThreads) {
@@ -127,7 +127,7 @@ namespace functions {
 				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
 
-			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+			if (xRank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
                 free(xIdx);
             }
 		}

@@ -185,7 +185,7 @@ namespace functions {
 		else {
 
 			long allocSize = sizeof(int) * (xRank + yRank + resultRank);
-			int *tB = shape::cuMalloc(allocationPointer, allocSize);
+			int *tB = shape::cuMalloc(allocationPointer, allocSize, manager);
 
 			int *xCoord = tB;
 			int *yCoord = tB + xRank;
@@ -214,7 +214,7 @@ namespace functions {
 				}
 			}
 
-			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+			if ((xRank + yRank + resultRank) > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
                 free(tB);
             }
 		}
