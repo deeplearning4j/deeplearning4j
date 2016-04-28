@@ -1844,9 +1844,7 @@ namespace shape {
 #endif
 
         inline int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
-            int tadLength = 1;
-            for(int i = 0; i < dimensionLength; i++)
-                tadLength *= shape::shapeOf(shapeInfo)[dimension[i]];
+            int tadLength = shape::tadLength(shapeInfo,dimension,dimensionLength);
             int wholeLength = shape::length(shapeInfo);
             return wholeLength / tadLength;
         }
@@ -2011,6 +2009,7 @@ namespace shape {
 
                 //converge when there are no singular dimensions specified in the reduce
                 done = (!oneEncountered && nonOneEncountered) || hitBeginning;
+                delete[] intermediaryResult;
             }
 
             //nothing changed but need to collapse dimension

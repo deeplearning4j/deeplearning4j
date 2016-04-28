@@ -681,7 +681,12 @@ namespace functions {
                 if(tad.dimensionLength < 1)
                     return;
 
+
                 int resultLength = shape::length(resultShapeInfoBuffer);
+                if(tad.numTads != resultLength) {
+                    printf("Result length %d not equal to tad.numTads %d\n",resultLength,tad.numTads);
+                }
+
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
                 //the squeezed information doesn't render the right strides for
