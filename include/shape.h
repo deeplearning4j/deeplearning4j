@@ -132,8 +132,13 @@ namespace shape {
 
 #ifdef __CUDACC__
     template <typename T>
-    __inline__ __device__ int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager);
+    __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager);
+
+
+    __device__ inline int *cuMalloc(int *buffer, long size);
 #endif
+
+
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -2033,7 +2038,7 @@ namespace shape {
 
 #ifdef __CUDACC__
     template <typename T>
-    __inline__ __device__ int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
+    __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
         // if we go for 3 dimensions coord space or below - just use shared memory for that
         if (size <= MAX_COORD * 4) {
             int *ptr = manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
@@ -2049,6 +2054,17 @@ namespace shape {
                 return ret;
             }
         }
+    }
+#endif
+
+#ifdef __CUDACC__
+    /**
+    * BEWARE: THIS METHOD DOES NOT CHECKS ALLOCATION BOUNDARIES
+    */
+    __device__ inline int *cuMalloc(int *buffer, long size) {
+        int *ret = buffer;
+        ret += (threadIdx.x * size);
+        return ret;
     }
 #endif
 

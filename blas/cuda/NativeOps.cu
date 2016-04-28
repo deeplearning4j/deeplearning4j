@@ -26,7 +26,7 @@
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
-int maxThreads = -1;
+int maxThreads = 512;
 bool debug = false;
 
 template <typename T>
