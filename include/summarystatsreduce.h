@@ -623,7 +623,6 @@ struct SharedSummaryStatsData<double> {
 		__shared__ volatile int resultLength;
 
 
-
 		SummaryStatsData <T> reduction;
 		reduction.initWithValue(0.0);
 		reduction.n = 0;
@@ -660,103 +659,93 @@ struct SharedSummaryStatsData<double> {
 		}
 		__syncthreads();
 		if (!resultScalar) {
-		    if (dimensionLength > 1) {
 
+            __shared__ shape::TAD *tad;
+            if (threadIdx.x == 0) {
+                tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                tad->setExternalBuffers((void *) manager);
+                tad->init(xShapeInfo,dimension,dimensionLength);
+                tad->createTadOnlyShapeInfo();
+            }
+            __syncthreads();
+
+		    if (dimensionLength > 1) {
+                int rank = shape::rank(tad->tadOnlyShapeInfo);
+                long allocSize = sizeof(int) * rank;
+                int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
+                    if (threadIdx.x == 0)
+                        tad->createOffsetForBlock(r);
+                    __syncthreads();
+
+                    for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
+                        shape::ind2subC(rank,tad->tadShape, i, xCoord);
+                        Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+
+						SummaryStatsData <T> indexVal2;
+					    indexVal2.initWithValue(dx[xOffset]);
+
+                        sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
+                    }
+                    __syncthreads();
+                    aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength) ,extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[r] = getValue(sPartials[threadIdx.x]);
+					}
+
+                }
 		    } else {
                 int xLength = shape::length(xShapeInfo);
 				int tadLength = xLength / resultLength;
 
-                __shared__ int offsetForTad;
+
 #pragma unroll
 				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-					if (threadIdx.x == 0)
-						offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, manager);
-					__syncthreads();
-					int indexX = offsetForTad + xElementWiseStride * threadIdx.x;
-					if (threadIdx.x < tadLength) {
+		    		if (threadIdx.x == 0)
+                        tad->createOffsetForBlock(i);
+                    __syncthreads();
+
+					int indexX = tad->tadOffsetForBlock + xElementWiseStride * threadIdx.x;
+
+					if (threadIdx.x < tad->tadLength) {
 					    SummaryStatsData <T> indexVal;
 				        indexVal.initWithValue(dx[indexX]);
 					    sPartials[threadIdx.x] = op(indexVal, extraParams);
 					}
 #pragma unroll
 					for (int x = threadIdx.x + blockDim.x; x < tadLength; x+= blockDim.x) {
-						indexX = offsetForTad + xElementWiseStride * x;
+						indexX = tad->tadOffsetForBlock + x * xElementWiseStride;
 						SummaryStatsData <T> indexVal2;
 					    indexVal2.initWithValue(dx[indexX]);
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength) ,extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
 						result[i] = getValue(sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
 					}
 				}
-
-				/**
-				 * The element wise stride belong longs to a reduction index.
-				 * When used out of order, we can get rid of the data
-				 * dependencies and rely on using the max dimension
-				 * specified for stride instead.
-				 * Say we take the sum(0,1) along long arr
-				 * we can use arr.stride(1) as a representation
-				 * along long which to iterate.
-				 */
-				/*
-				int resultLength = shape::length(resultShapeInfo);
-				int elementsPerReductionIndex = shape::length(xShapeInfo) / resultLength;
-				int xLength = shape::length(xShapeInfo);
-				int i = 0,j = 0;
-
-#pragma unroll
-				for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-					int offsetForTad = shape::tadOffset(tid, xShapeInfo, dimension, dimensionLength);
-					SummaryStatsData <T> indexVal;
-				    indexVal.initWithValue(dx[offsetForTad]);
-				    sPartials[tid] = op(indexVal, extraParams);
-
-					for(j = 1; j < elementsPerReductionIndex; j++) {
-					    SummaryStatsData <T> indexVal2;
-					    indexVal2.initWithValue(dx[offsetForTad + xElementWiseStride * j]);
-						sPartials[tid] =  update(sPartials[tid],op(indexVal2, extraParams), extraParams);
-					}
-
-					result[i] = getValue(sPartials[tid]);
-				}
-
-				__syncthreads();
-                */
 		    }
 		}
 		else if (resultScalar) {
-			if (threadIdx.x == 0)
+		    __shared__ int n;
+			if (threadIdx.x == 0) {
 			    xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-
-			if (threadIdx.x == 0)
-                printf("Scalar summary\n");
-
-            int n = shape::length(xShapeInfo);
-
+                n = shape::length(xShapeInfo);
+            }
 			__syncthreads();
 
 			if(xElementWiseStride >= 1) {
-                if(xElementWiseStride == 1) {
-#pragma unroll
-				    for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-					    SummaryStatsData <T> indexVal2;
-					    indexVal2.initWithValue(dx[i]);
-						reduction =  update(reduction,indexVal2, extraParams);
-				    }
-			    } else {
-#pragma unroll
-				    for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
-                        SummaryStatsData <T> indexVal2;
-					    indexVal2.initWithValue(dx[i * xElementWiseStride]);
-						reduction =  update(reduction,indexVal2, extraParams);
-    				}
-	    		}
+				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+                    SummaryStatsData <T> indexVal2;
+				    indexVal2.initWithValue(dx[i * xElementWiseStride]);
+					reduction =  update(reduction,indexVal2, extraParams);
+    			}
             } else {
                 int rank = shape::rank(xShapeInfo);
                 long allocSize = sizeof(int) * rank;
@@ -822,7 +811,7 @@ struct SharedSummaryStatsData<double> {
 
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = result[0] = getValue(sPartials[0]);
+						result[0] = getValue(sPartials[0]);
 					}
 				}
 			} else {

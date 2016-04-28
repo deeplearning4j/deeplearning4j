@@ -59,7 +59,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
     //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
-	return dim3(num_blocks,num_threads, 10000);
+	return dim3(num_blocks,num_threads, 20000);
 }
 
 /**
@@ -209,7 +209,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 4, *stream>>>(
+	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -261,7 +261,7 @@ void   NativeOps::execIndexReduceDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
+	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -943,7 +943,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -990,7 +990,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1038,7 +1038,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z * 10, *stream>>>(
+	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1137,7 +1137,7 @@ void   NativeOps::execTransformDouble(
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
-			transformDouble<<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
+			transformDouble<<< 1, launchDims.y, launchDims.z, *stream >>> (
 					opNum,
 							xPointer,
 							xShapeInfoPointer,
@@ -1209,7 +1209,7 @@ void   NativeOps::execTransformDouble(
 			}
 		}
 	} else {
-		transformDouble<<<launchDims.x, launchDims.y, launchDims.z * 3, *stream>>> (
+		transformDouble<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 						xPointer,
 						xShapeInfoPointer,
@@ -1291,7 +1291,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z * 2, *stream>>>(
+	indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -1342,7 +1342,7 @@ void   NativeOps::execIndexReduceFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
+	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2029,7 +2029,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2075,7 +2075,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2123,7 +2123,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 3, *stream>>>(
+	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2168,7 +2168,7 @@ void   NativeOps::execTransformFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	transformFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
+	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			n,
 			xPointer,
@@ -2222,7 +2222,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
-			transformFloat <<< 1, launchDims.y, launchDims.z * 3, *stream >> > (
+			transformFloat <<< 1, launchDims.y, launchDims.z, *stream >> > (
 					opNum,
 					xPointer,
 					xShapeInfoPointer,
@@ -2294,7 +2294,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
-		transformFloat <<<launchDims.x, launchDims.y, launchDims.z * 3, *stream>>> (
+		transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				xPointer,
 				xShapeInfoPointer,

@@ -144,7 +144,8 @@ namespace functions {
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
+
+
 		__shared__ int length;
 		if(threadIdx.x == 0)
 			length = shape::length(shapeInfo);
@@ -162,19 +163,15 @@ namespace functions {
 		else {
 			/* equal, positive, non-unit increments. */
 			long allocSize = sizeof(int) * xRank;
-			int *xIdx = shape::cuMalloc(allocationPointer, allocSize, manager);
+			int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
 #pragma unroll
-			for (; i < n; i+= totalThreads) {
+			for (int i = tid; i < n; i+= gridDim.x * blockDim.x) {
 				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xIdx);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
 				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
-
 			}
-            if (xRank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                free(xIdx);
-            }
 		}
 	}
 
