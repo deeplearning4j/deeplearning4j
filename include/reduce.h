@@ -346,14 +346,15 @@ namespace functions {
 
                     }
                     else {
+
+                        int rank = shape::rank(tad->tadOnlyShapeInfo);
+                        long allocSize = sizeof(int) * rank;
+                        int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+
                         for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
                             __syncthreads();
-
-                            int rank = shape::rank(tad->tadOnlyShapeInfo);
-                            long allocSize = sizeof(int) * rank;
-                            int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
 
                             sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
 
@@ -374,9 +375,11 @@ namespace functions {
                             if (threadIdx.x == 0)
                                 result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
 
-                            if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                                free(xCoord);
-                            }
+
+                        }
+
+                        if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
+                            free(xCoord);
                         }
                     }
                 } else {

@@ -74,26 +74,8 @@ namespace functions {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength, UnifiedSharedMemory<T> *manager) {
-		__shared__ int *tadShapeShapeInfo;
-		__shared__ int tads;
-		__shared__ int numOnes;
-		if(threadIdx.x == 0) {
-			numOnes = 0;
-			int *shape = shape::shapeOf(xShapeInfo);
-			int *stride = shape::stride(xShapeInfo);
-			int wholeRank = shape::rank(xShapeInfo);
-			for (int i = 0; i < wholeRank; i++) {
-				if (shape[i] == 1)
-					numOnes++;
-			}
 
-
-
-		}
-
-		__syncthreads();
-
-
+		int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
 		//to the back.
@@ -110,21 +92,47 @@ namespace functions {
 
 
 
-		int *xShape = shape::shapeOf(tadShapeShapeInfo);
-		int *xStride = shape::stride(tadShapeShapeInfo);
-		int tadLength = shape::length(tadShapeShapeInfo);
-		int rank = shape::rank(tadShapeShapeInfo);
-		int *resultStride = shape::stride(tadShapeShapeInfo);
+		int *xShape = tad->tadShape;
+		int *xStride = tad->tadStride; //shape::stride(tadShapeShapeInfo);
+		int tadLength = tad->tadLength; //shape::length(tadShapeShapeInfo);
+		int rank = tad->rank; //shape::rank(tadShapeShapeInfo);
+		//int *resultStride = shape::stride(tadShapeShapeInfo);
 
 
 
 		//length for the tad
-		int yLength = shape::length(yShapeInfo);
+//		int yLength = shape::length(yShapeInfo);
 		//length for the tad
-		int xLength = shape::length(xShapeInfo);
+	//	int xLength = shape::length(xShapeInfo);
 
-		int resultLength = shape::length(resultShapeInfo);
+	//	int resultLength = shape::length(resultShapeInfo);
 		if (result == x) {
+
+			int rank = shape::rank(tad->tadOnlyShapeInfo);
+            long allocSize = sizeof(int) * rank;
+            int *xCoord = shape::cuMalloc(NULL, allocSize, manager);
+
+			for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+				if (threadIdx.x == 0)
+                	tad->createOffsetForBlock(r);
+                __syncthreads();
+
+                for (int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
+					// now we need coords for both X, Y. Z is uses the same coord as X in this case
+					// Y is always vector, however it might be stided
+					shape::ind2subC(rank,tad->tadShape, i, xCoord);
+                    Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+
+					result[xOffset] = this->op(x[xOffset], y[i]);
+                }
+			}
+
+			// TODO: to be removed, reduction buffer should be used here
+			if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
+            	free(xCoord);
+            }
+
+			/*
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
@@ -152,7 +160,6 @@ namespace functions {
 						&resultIter,
 						resultStridesIter) >= 0) {
 					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						/* Process the innermost dimension */
 						T val = this->op(xIter[0], y[vectorIdx]);
 						xIter[0] = val;
 						vectorIdx += shape::elementWiseStride(yShapeInfo);
@@ -169,8 +176,12 @@ namespace functions {
 
 				}
 			}
+			*/
 		}
 		else {
+			printf("bcast not fully implemented yet");
+		/*
+
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
@@ -197,7 +208,6 @@ namespace functions {
 						&resultIter,
 						resultStridesIter) >= 0) {
 					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						/* Process the innermost dimension */
 						T val = this->op(xIter[0], y[vectorIdx]);
 						resultIter[0] = val;
 						vectorIdx += shape::elementWiseStride(yShapeInfo);
@@ -215,7 +225,7 @@ namespace functions {
 				}
 			}
 
-
+			*/
 
 		}
 
