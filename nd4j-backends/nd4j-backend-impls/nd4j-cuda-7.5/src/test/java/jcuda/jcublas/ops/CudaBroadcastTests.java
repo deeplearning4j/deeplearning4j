@@ -53,10 +53,12 @@ public class CudaBroadcastTests {
 
         array1.subiRowVector(array2);
 
-        System.out.println("Array1: " + array1);
-        System.out.println("Array2: " + array2);
+     //   System.out.println("Array1: " + array1);
+//        System.out.println("Array2: " + array2);
 
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(-3.0f, array1.getRow(0).getFloat(2), 0.01);
+        assertEquals(-10.0f, array1.getRow(0).getFloat(9), 0.01);
     }
 
     @Test
@@ -84,8 +86,8 @@ public class CudaBroadcastTests {
 
         array1.subiRowVector(array2);
 
-        //System.out.println("Array1: " + array1);
-        //System.out.println("Array2: " + array2);
+        System.out.println("Array1: " + array1.shapeInfoDataBuffer());
+        System.out.println("Array2: " + array2.shapeInfoDataBuffer());
 
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
@@ -103,7 +105,7 @@ public class CudaBroadcastTests {
 
         array1.rsubiRowVector(array2);
 
-        //System.out.println("Array1: " + array1);
+        System.out.println("Array1: " + array1);
         //System.out.println("Array2: " + array2);
 
         assertEquals(2.0f, array1.getRow(0).getFloat(0), 0.01);

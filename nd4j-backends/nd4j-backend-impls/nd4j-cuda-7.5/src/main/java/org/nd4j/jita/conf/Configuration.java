@@ -107,7 +107,7 @@ public class Configuration implements Serializable {
 
     @Getter private int maximumGridSize = 128;
 
-    @Getter private int maximumBlockSize = -1;
+    @Getter private int maximumBlockSize = 512;
 
     @Getter private long maximumHostCache = Long.MAX_VALUE;
 
