@@ -703,8 +703,8 @@ namespace functions {
                 }
                 else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
                                                                                shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) {
-#pragma omp parallel for
-                    for(int i = 0; i < tad.numTads; i++) {
+//#pragma omp parallel for
+                    for(int i = 0; i < resultLength; i++) {
                         T *iter = x + tad.tadOffsets[i];
                         T start = this->startingValue(iter);
                         int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
@@ -727,8 +727,8 @@ namespace functions {
                     }
                 }
                 else {
-#pragma omp  parallel  for
-                    for (int i = 0; i < tad.numTads; i++) {
+//#pragma omp  parallel  for
+                    for (int i = 0; i <  resultLength; i++) {
                         int offset = tad.tadOffsets[i];
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
