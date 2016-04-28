@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
@@ -109,31 +110,29 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
         DataSet first = data.get(0);
-        if(first.getFeatures().rank() == 3 && first.getLabels().rank() == 3 ){
+        if(first.getFeatures().rank() == 3 && first.getLabels().rank() == 3) {
             return mergeTimeSeries(data);
         }
 
         int numExamples = totalExamples(data);
-        INDArray in = Nd4j.create(numExamples, first.getFeatures().columns());
-        INDArray out = Nd4j.create(numExamples, first.getLabels().columns());
-        int count = 0;
+        //get the remaining shape
+        int[] otherShape = first.getFeatureMatrix().slice(0).shape();
+        int[] otherLabelsShape = first.getLabels().slice(0).shape();
+        INDArray in = Nd4j.create(ArrayUtil.combine(new int[]{numExamples},otherShape));
+        INDArray out = Nd4j.create(ArrayUtil.combine(new int[]{numExamples},otherLabelsShape));
 
         for (int i = 0; i < data.size(); i++) {
             DataSet d1 = data.get(i);
-            for (int j = 0; j < d1.numExamples(); j++) {
-                DataSet example = d1.get(j);
-                in.putRow(count, clone ? example.getFeatures().dup() : example.getFeatures());
-                out.putRow(count, clone ? example.getLabels().dup() : example.getLabels());
-                count++;
-            }
-
+            in.putSlice(i,d1.getFeatureMatrix());
+            out.putSlice(i,d1.getLabels());
 
         }
         return new DataSet(in, out);
     }
 
-    private static DataSet mergeTimeSeries(List<DataSet> data){
-        if(data.size() == 1) return data.get(0);
+    private static DataSet mergeTimeSeries(List<DataSet> data) {
+        if(data.size() == 1)
+            return data.get(0);
 
         //Complications with time series:
         //(a) They may have different lengths (if so: need input + output masking arrays)
@@ -205,7 +204,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                     }
                 }
 
-                if(needOutputMask){
+                if(needOutputMask) {
                     INDArray outputMask = ds.getLabelsMaskArray();
                     if(outputMask != null){
                         //Combine the output mask for this dataset with the overall (merged) output mask

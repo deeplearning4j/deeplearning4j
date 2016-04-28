@@ -739,18 +739,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+
         if(dimension.length >= rank())
             return this;
+        for(int i = 0; i < dimension.length; i++)
+            if(dimension[i] < 0)
+                dimension[i] += rank();
+
+        Arrays.sort(dimension);
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-
-        for(int i = 0; i < dimension.length; i++)
-            if(dimension[i] < 0)
-                dimension[i] += rank();
 
 
         if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
@@ -843,6 +845,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray vectorAlongDimension(int index, int dimension) {
         if(dimension < 0)
             dimension = Shape.rank(shapeInformation.asNioInt()) + dimension;
+
         //return the whole thing
         if(dimension == Shape.rank(shapeInformation.asNioInt())- 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return this;
