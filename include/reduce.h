@@ -355,6 +355,8 @@ namespace functions {
                             long allocSize = sizeof(int) * rank;
                             int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
 
+                            sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+
                             for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
                                 shape::ind2subC(rank,tad->tadShape, i, xCoord);
                                 Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
