@@ -74,26 +74,8 @@ namespace functions {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength, UnifiedSharedMemory<T> *manager) {
-		__shared__ int *tadShapeShapeInfo;
-		__shared__ int tads;
-		__shared__ int numOnes;
-		if(threadIdx.x == 0) {
-			numOnes = 0;
-			int *shape = shape::shapeOf(xShapeInfo);
-			int *stride = shape::stride(xShapeInfo);
-			int wholeRank = shape::rank(xShapeInfo);
-			for (int i = 0; i < wholeRank; i++) {
-				if (shape[i] == 1)
-					numOnes++;
-			}
 
-
-
-		}
-
-		__syncthreads();
-
-
+		int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
 		//to the back.
@@ -110,21 +92,32 @@ namespace functions {
 
 
 
-		int *xShape = shape::shapeOf(tadShapeShapeInfo);
-		int *xStride = shape::stride(tadShapeShapeInfo);
-		int tadLength = shape::length(tadShapeShapeInfo);
-		int rank = shape::rank(tadShapeShapeInfo);
-		int *resultStride = shape::stride(tadShapeShapeInfo);
+		int *xShape = tad->tadShape;
+		int *xStride = tad->tadStride;
+		int tadLength = tad->tadLength;
+		int rank = tad->rank;
 
+        int *xCoord = shape::cuMalloc(manager->getT1ShapeBuffer(), sizeof(int) * shape::rank(tad->tadOnlyShapeInfo));
 
+		for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+			if (threadIdx.x == 0)
+            	tad->createOffsetForBlock(r);
+            __syncthreads();
 
-		//length for the tad
-		int yLength = shape::length(yShapeInfo);
-		//length for the tad
-		int xLength = shape::length(xShapeInfo);
+            for (int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
+				// now we need coords for both X, Y. Z is uses the same coord as X in this case
+				// Y is always vector, however it might be stided
+				shape::ind2subC(rank,tad->tadShape, i, xCoord);
+                Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
 
-		int resultLength = shape::length(resultShapeInfo);
-		if (result == x) {
+				int yStride = shape::elementWiseStride(yShapeInfo);
+
+				result[xOffset] = this->op(x[xOffset], y[i * yStride]);
+            }
+            __syncthreads();
+		}
+
+			/*
 			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
 					i < tads;
 					i += blockDim.x * gridDim.x) {
@@ -152,7 +145,6 @@ namespace functions {
 						&resultIter,
 						resultStridesIter) >= 0) {
 					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						/* Process the innermost dimension */
 						T val = this->op(xIter[0], y[vectorIdx]);
 						xIter[0] = val;
 						vectorIdx += shape::elementWiseStride(yShapeInfo);
@@ -169,59 +161,10 @@ namespace functions {
 
 				}
 			}
-		}
-		else {
-			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-					i < tads;
-					i += blockDim.x * gridDim.x) {
-				int offset = tad->tadOffset(i);
-				T *xIter = x + offset;
-				T *resultIter = result + offset;
-				int shapeIter[MAX_RANK];
-				int coord[MAX_RANK];
-				int dim;
-				int xStridesIter[MAX_RANK];
-				int resultStridesIter[MAX_RANK];
-				int rank = shape::rank(tadShapeShapeInfo);
-				int vectorIdx = 0;
-				if (PrepareTwoRawArrayIter<T>(rank,
-						xShape,
-						xIter,
-						xStride,
-						resultIter,
-						resultStride,
-						&rank,
-						shapeIter,
-						&xIter,
-						xStridesIter,
-						&resultIter,
-						resultStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						/* Process the innermost dimension */
-						T val = this->op(xIter[0], y[vectorIdx]);
-						resultIter[0] = val;
-						vectorIdx += shape::elementWiseStride(yShapeInfo);
-					}
-					ND4J_RAW_ITER_TWO_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							xIter,
-							xStridesIter,
-							resultIter,
-							resultStridesIter);
+			*/
 
-
-				}
-			}
-
-
-
-		}
 
 		__syncthreads();
-
-
 	}
 #endif
 

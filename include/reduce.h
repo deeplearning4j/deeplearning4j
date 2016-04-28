@@ -166,7 +166,7 @@ namespace functions {
                 else {
                     int rank = shape::rank(xShapeInfo);
                     long allocSize = sizeof(int) * rank;
-                    int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize);
+                    int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager);
 #pragma unroll
                     for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
@@ -175,7 +175,7 @@ namespace functions {
                         __syncthreads();
                     }
 
-                    if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+                    if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
                         free(ind2sub);
                     }
                 }
@@ -260,6 +260,7 @@ namespace functions {
                  */
                 __shared__ volatile int resultScalar;
 
+                int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
                 //shared memory space for storing intermediate results
                 volatile T *sPartials = manager->getSharedReductionBuffer();
@@ -320,7 +321,7 @@ namespace functions {
                     }
                     __syncthreads();
 
-                    if(tad->tadElementWiseStride > 0) {
+                    if(dimensionLength == 1) {
                         for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
@@ -345,9 +346,42 @@ namespace functions {
 
                     }
                     else {
-                        printf("Not implemented yet\n");
-                    }
 
+                        int rank = shape::rank(tad->tadOnlyShapeInfo);
+                        long allocSize = sizeof(int) * rank;
+                        int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+
+                        for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
+                            if (threadIdx.x == 0)
+                                tad->createOffsetForBlock(r);
+                            __syncthreads();
+
+                            sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+
+                            for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
+                                shape::ind2subC(rank,tad->tadShape, i, xCoord);
+                                Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
+                            }
+                             __syncthreads();
+
+                            // aggregate. do NOT reduce for elements > tadLength
+                            T **sPartialsRef = (T **) &sPartials;
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+
+
+                            __syncthreads();
+                            if (threadIdx.x == 0)
+                                result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
+
+
+                        }
+
+                        if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
+                            free(xCoord);
+                        }
+                    }
                 } else {
                     this->execScalarCuda(
                             dx,

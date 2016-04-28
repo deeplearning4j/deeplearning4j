@@ -56,6 +56,7 @@ class UnifiedSharedMemory{
     protected:
     int *sharedMemory;
     const int maxShapeBufferLength = MAX_RANK * 2 + 4;
+    const int MAX_THREADS = 512;
 
     int allocationOffset = 0;
     int unifiedSize = 0;
@@ -135,8 +136,12 @@ class UnifiedSharedMemory{
         return getTempRankBuffer3() + MAX_RANK;
     }
 
+    __device__ __host__ int * getSharedCoordBuffer() {
+        return getTempRankBuffer4() + MAX_RANK;
+    }
+
     __device__ __host__ T * getSharedReductionBuffer() {
-        return (T *) ((int *)getTempRankBuffer4() + MAX_RANK);
+        return (T *) ((int *)getSharedCoordBuffer() + (MAX_THREADS * MAX_COORD));
     }
 };
 // This is the un-specialized struct.  Note that we prevent instantiation of this

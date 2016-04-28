@@ -302,7 +302,7 @@ namespace functions {
 					int rank = shape::rank(xShapeInfo);
 
 					long allocSize = sizeof(int) * rank;
-					int *idx = shape::cuMalloc(allocationBuffer, allocSize);
+					int *idx = shape::cuMalloc(allocationBuffer, allocSize, manager);
 
 					//shared memory space for storing intermediate results
 					int numElements = blockDim.x;
@@ -319,7 +319,7 @@ namespace functions {
 						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
 					}
 
-					if (tid * allocSize > PREALLOC_SIZE - allocSize) {
+					if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
 						free(idx);
 					}
 
