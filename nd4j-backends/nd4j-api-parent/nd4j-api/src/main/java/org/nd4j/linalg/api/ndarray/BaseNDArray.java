@@ -739,18 +739,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+
         if(dimension.length >= rank())
             return this;
+        for(int i = 0; i < dimension.length; i++)
+            if(dimension[i] < 0)
+                dimension[i] += rank();
+
+        Arrays.sort(dimension);
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
-
-        for(int i = 0; i < dimension.length; i++)
-            if(dimension[i] < 0)
-                dimension[i] += rank();
 
 
         if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
@@ -843,6 +845,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray vectorAlongDimension(int index, int dimension) {
         if(dimension < 0)
             dimension = Shape.rank(shapeInformation.asNioInt()) + dimension;
+
         //return the whole thing
         if(dimension == Shape.rank(shapeInformation.asNioInt())- 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return this;
@@ -4356,12 +4359,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         write(out);
     }
 
-
+    //Custom serialization for Java serialization
     protected void write(ObjectOutputStream out) throws IOException {
-        shapeInformation.write(out);
-        data().write(out);
+        if(this.isView()){
+            //As per Nd4j.write, duplicate before writing to the output stream
+            //BaseDataBuffer.write(...) doesn't know about strides etc, so dup (or equiv. strategy) is necessary here
+            //Furthermore, because we only want to save the *actual* data for a view (not the full data), the shape info
+            // (mainly strides, offset, element-wise stride) may be different in the duped array vs. the view array
+            INDArray copy = this.dup();
+            copy.shapeInfoDataBuffer().write(out);
+            copy.data().write(out);
+        } else {
+            shapeInformation.write(out);
+            data().write(out);
+        }
     }
 
+    //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) {
         shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank)],0);
         shapeInformation.read(s);

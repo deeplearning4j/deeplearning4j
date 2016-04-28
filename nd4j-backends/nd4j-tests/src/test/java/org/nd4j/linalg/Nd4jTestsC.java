@@ -694,17 +694,38 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
     }
 
+
+    @Test
+    public void testVStackDifferentOrders(){
+
+        INDArray expected = Nd4j.linspace(1,9,9).reshape('c',3,3);
+
+        for(char order : new char[]{'c','f'}){
+            System.out.println(order);
+            Nd4j.factory().setOrder(order);
+
+            INDArray arr1 = Nd4j.linspace(1,6,6).reshape('c',2,3);
+            INDArray arr2 = Nd4j.linspace(7,9,3).reshape('c',1,3);
+
+            INDArray merged = Nd4j.vstack(arr1,arr2);
+            System.out.println(merged);
+            System.out.println(expected);
+
+            assertEquals(expected, merged);
+        }
+    }
+
     @Test
     public void testSumAlongDim1sEdgeCases() {
         int[][] shapes = new int[][]{
-                //Standard case:
+             /*   //Standard case:
                 {2,2,3,4},
                 //Leading 1s:
                 {1,2,3,4},
                 {1,1,2,3},
                 //Trailing 1s:
                 {4,3,2,1},
-                {4,3,1,1},
+                {4,3,1,1},*/
                 //1s for non-leading/non-trailing dimensions
                 {4,1,3,2},
                 {4,3,1,2},
@@ -712,8 +733,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         };
 
         int[][] sumDims = {
-                {0}, {1}, {2}, {3},
-                {0,1}, {0,2}, {0,3}, {1,2}, {1,3},
+              /*  {0}, {1}, {2}, {3},
+                {0,1}, {0,2}, {0,3}, {1,2}, {1,3},*/
                 {0,1,2}, {0,1,3}, {0,2,3},
                 {0,1,2,3}
         };
