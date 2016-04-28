@@ -81,7 +81,7 @@ public class TestSerialization extends BaseNd4jTest {
             arr2 = Nd4j.read(dis);
         }
 
-        assertEquals(sub,arr2);   //java.lang.IndexOutOfBoundsException: 55
+        assertEquals(sub,arr2);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TestSerialization extends BaseNd4jTest {
             arr2 = (INDArray) ois.readObject();
         }
 
-        assertEquals(sub,arr2);   //java.lang.IndexOutOfBoundsException: 55
+        assertEquals(sub,arr2);
     }
 
     @Override

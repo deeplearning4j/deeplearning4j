@@ -1970,6 +1970,11 @@ public class Nd4j {
      * @throws IOException
      */
     public static void write(INDArray arr, DataOutputStream dataOutputStream) throws IOException {
+        //BaseDataBuffer.write(...) doesn't know about strides etc, so dup (or equiv. strategy) is necessary here
+        //Furthermore, because we only want to save the *actual* data for a view (not the full data), the shape info
+        // (mainly strides, offset, element-wise stride) may be different in the duped array vs. the view array
+        if(arr.isView()) arr = arr.dup();
+
         arr.shapeInfoDataBuffer().write(dataOutputStream);
         arr.data().write(dataOutputStream);
     }
