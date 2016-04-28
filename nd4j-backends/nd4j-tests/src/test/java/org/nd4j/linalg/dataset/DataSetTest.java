@@ -339,9 +339,6 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void testCnnMerge(){
         //Test merging of CNN data sets
-
-        System.out.println(Nd4j.factory().getClass());
-
         int nOut = 3;
         int width = 5;
         int height = 4;
@@ -358,9 +355,6 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray labels1 = Nd4j.linspace(1,nExamples1*nOut,nExamples1*nOut).reshape('c',nExamples1,nOut);
         INDArray labels2 = Nd4j.linspace(1,nExamples2*nOut,nExamples2*nOut).reshape('c',nExamples2,nOut);
 
-        INDArray tempppp = Nd4j.vstack(labels1,labels2);
-        System.out.println(tempppp);
-
         DataSet ds1 = new DataSet(first,labels1);
         DataSet ds2 = new DataSet(second,labels2);
 
@@ -372,8 +366,6 @@ public class DataSetTest extends BaseNd4jTest {
         assertArrayEquals(new int[]{nExamples1+nExamples2,depth,width,height}, fMerged.shape());
         assertArrayEquals(new int[]{nExamples1+nExamples2,nOut}, lMerged.shape());
 
-        INDArray temp = fMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-        INDArray temp2 = lMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all());
         assertEquals(first, fMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(second, fMerged.get(NDArrayIndex.interval(nExamples1,nExamples1+nExamples2), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(labels1, lMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all()));
