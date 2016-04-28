@@ -34,6 +34,7 @@ layout: default
 
 * [Sutton & Barto's RL book](https://webdocs.cs.ualberta.ca/~sutton/book/the-book.html)
 * [David Silver Deepmind class](http://www0.cs.ucl.ac.uk/staff/D.Silver/web/Teaching.html)
+* [OpenAI RL tutorial](https://gym.openai.com/docs/rl)
 
 ## Academic Papers and Other Writings
 
