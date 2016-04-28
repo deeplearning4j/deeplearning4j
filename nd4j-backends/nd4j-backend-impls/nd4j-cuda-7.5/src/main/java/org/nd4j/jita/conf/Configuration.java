@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author raver119@gmail.com
@@ -31,11 +32,13 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
+    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
+    @Getter private AllocationModel allocationModel = AllocationModel.DIRECT;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
+    @Getter private AllocationStatus firstMemory = AllocationStatus.HOST;
+
+    @Getter private boolean debug = true;
 
     /**
      * Keep this value between 0.01 and 0.95 please
@@ -102,8 +105,6 @@ public class Configuration implements Serializable {
 
     @Getter private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private boolean debug = false;
-
     @Getter private int maximumGridSize = 128;
 
     @Getter private int maximumBlockSize = -1;
@@ -122,8 +123,17 @@ public class Configuration implements Serializable {
 
     @Getter private int commandQueueLength = 3;
 
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
+
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+    public boolean isInitialized() {
+        return initialized.get();
+    }
+
+    public void setInitialized() {
+        this.initialized.compareAndSet(false, true);
+    }
 
     public Configuration setMinimumRelocationThreshold(int threshold) {
         this.maximumDeviceAllocation = Math.max(2, threshold);

@@ -3,6 +3,7 @@ package jcuda.jcublas.ops;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -27,6 +28,7 @@ public class CudaTransformsTests {
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.HOST)
                 .setMaximumBlockSize(1024)
                 .enableDebug(true);
 
@@ -365,7 +367,7 @@ public class CudaTransformsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f}).dup('f');
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});//.dup('f');
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 

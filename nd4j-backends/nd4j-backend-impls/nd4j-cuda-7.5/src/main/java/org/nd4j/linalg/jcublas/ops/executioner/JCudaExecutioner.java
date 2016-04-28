@@ -162,7 +162,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
         long[] xShapeInfoHostPointer = new long[]{ AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
         long extraArgs = op.extraArgs() != null && op instanceof Variance ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
-       // long extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
+        //long extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
         long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
 
        // log.info("Extras: {}",op.extraArgsDataBuff());

@@ -106,6 +106,8 @@ public class CudaZeroHandler implements MemoryHandler {
     public CudaZeroHandler() {
         allocator = AtomicAllocator.getInstance();
 
+        configuration.setInitialized();
+
         this.INITIAL_LOCATION = configuration.getFirstMemory();
 
         switch (configuration.getExecutionModel()) {

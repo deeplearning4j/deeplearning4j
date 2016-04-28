@@ -22,6 +22,7 @@ package org.nd4j.linalg.ops;
 import static org.junit.Assert.*;
 
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -475,9 +476,24 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     public void tescodtSum6d() {
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
         INDArray arr6s = arr6.sum(2,3);
-        for( int i = 0; i < arr6s.length(); i++)
-            assertEquals(arr6s.getDouble(i),16,1e-1);
 
+        System.out.println("Arr6s: " + arr6.length());
+        for( int i = 0; i < arr6s.length(); i++)
+            assertEquals(16, arr6s.getDouble(i),1e-1);
+    }
+
+    @Test
+    public void testSum6d2() throws Exception {
+        INDArray arr6 = Nd4j.linspace(1, 256, 256).reshape(1, 1, 4, 4, 4, 4);
+        INDArray arr6s = arr6.sum(2, 3);
+
+        assertEquals(136, arr6s.getDouble(0), 1e-1);
+        assertEquals(1160, arr6s.getDouble(1), 1e-1);
+        assertEquals(2184, arr6s.getDouble(2), 1e-1);
+        assertEquals(3208, arr6s.getDouble(3), 1e-1);
+        assertEquals(392, arr6s.getDouble(4), 1e-1);
+        assertEquals(1416, arr6s.getDouble(5), 1e-1);
+        assertEquals(2440, arr6s.getDouble(6), 1e-1);
     }
 
 
@@ -489,7 +505,14 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr6m = arr6.mean(2, 3);
         for( int i = 0; i < arr6m.length(); i++)
             assertEquals(1.0,arr6m.getDouble(i),1e-1);
-
+/*
+        System.out.println("Arr6 shapeInfo: " + arr6.shapeInfoDataBuffer());
+        System.out.println("Arr6 length: " + arr6.length());
+        System.out.println("Arr6 shapeLlength: " + arr6.shapeInfoDataBuffer().length());
+        System.out.println("Arr6s shapeInfo: " + arr6s.shapeInfoDataBuffer());
+        System.out.println("Arr6s length: " + arr6s.length());
+        System.out.println("Arr6s shapeLength: " + arr6s.shapeInfoDataBuffer().length());
+ */
     }
 
 

@@ -1,7 +1,11 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -19,7 +23,17 @@ import static org.junit.Assert.assertNotEquals;
 @Ignore
 public class CudaAccumTests {
 
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.HOST)
+                .setMaximumBlockSize(1024)
+                .setMaximumGridSize(256)
+                .enableDebug(true);
 
+        System.out.println("Init called");
+    }
 
     /**
      * Sum call
@@ -55,6 +69,17 @@ public class CudaAccumTests {
 
         result = Nd4j.getExecutioner().exec(sum, 1);
         assertEquals(50945.52f, result.getFloat(0), 0.01f);
+    }
+
+    @Test
+    public void testPinnedSum3() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.linspace(1, 100000, 100000).reshape(100,1000);
+
+        for (int x = 0; x < 100000; x++ ){
+            assertEquals("Failed on iteration [" + x + "]", x+1, array1.getFloat(x), 0.01f);
+        }
     }
 
     @Test
@@ -376,9 +401,13 @@ public class CudaAccumTests {
         INDArray array1 = Nd4j.linspace(1, 76800,76800).reshape(256, 300);
 
 
+
         long time1 = System.currentTimeMillis();
         INDArray array = array1.max(0);
         long time2 = System.currentTimeMillis();
+
+        System.out.println("Array1 shapeInfo: " + array1.shapeInfoDataBuffer());
+        System.out.println("Result shapeInfo: " + array.shapeInfoDataBuffer());
 
         System.out.println("Time elapsed: "+ (time2 - time1) );
 

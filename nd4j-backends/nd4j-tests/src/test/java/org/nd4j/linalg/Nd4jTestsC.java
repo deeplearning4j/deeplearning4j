@@ -665,6 +665,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testSumAlongDim1sEdgeCases() {
         int[][] shapes = new int[][]{
                 //Standard case:
