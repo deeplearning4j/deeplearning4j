@@ -5,13 +5,13 @@ layout: zh-default
 
 # Deeplearning4j是什么？
 
-Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和[Spark](../spark.html)集成，为商业环境（而非研究工具目的）所设计。[Skymind](http://skymind.io)是DL4J的商业支持机构。
+Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和[Spark](../spark)集成，为商业环境（而非研究工具目的）所设计。[Skymind](http://skymind.io)是DL4J的商业支持机构。
 
 Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使用，避免太多配置，让非研究人员也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。
 
-您可以根据我们[在快速入门页上的说明](../zh-quickstart.html)，在几分钟内运行您的首个定型神经网络示例。
+您可以根据我们[在快速入门页上的说明](../zh-quickstart)，在几分钟内运行您的首个定型神经网络示例。
 
-### [神经网络使用情景](../use_cases.html)
+### [神经网络使用情景](../use_cases)
 
 * 人脸／图像识别
 * 语音搜索
@@ -19,7 +19,7 @@ Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使
 * 垃圾邮件筛选（异常情况探测）
 * 欺诈探测 
 * 推荐系统（客户关系管理、广告技术、避免用户流失）
-* [回归分析](../linear-regression.html)
+* [回归分析](../linear-regression)
 
 ### 为何选择Deeplearning4j？ 
 
@@ -33,17 +33,17 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### DL4J神经网络
 
-* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
-* [卷积网络](../zh-convolutionalnets.html) （图像）
-* [递归网络](../zh-usingrnns.html)/[LSTMs](../zh-lstm.html)（时间序列和传感器数据）
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
+* [卷积网络](../zh-convolutionalnets) （图像）
+* [递归网络](../zh-usingrnns)/[LSTMs](../zh-lstm)（时间序列和传感器数据）
 * [递归自动编码器](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
-* [深度置信网络](../deepbeliefnetwork.html)
-* [深度自动编码器](http://deeplearning4j.org/deepautoencoder.html)（问－答／数据压缩）
+* [深度置信网络](../deepbeliefnetwork)
+* [深度自动编码器](../deepautoencoder)（问－答／数据压缩）
 * 递归神经传感器网络（场景、分析）
-* [堆叠式降噪自动编码器](../stackeddenoisingautoencoder.html)
-* 更多用途请参见[《如何选择神经网络》](../neuralnetworktable.html)
+* [堆叠式降噪自动编码器](../stackeddenoisingautoencoder)
+* 更多用途请参见[《如何选择神经网络》](../neuralnetworktable)
 
-深度神经网络能够实现[前所未有的准确度](../accuracy.html)。对神经网络的简介请参见[概览](../neuralnet-overview.html)页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为`layer`）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。
+深度神经网络能够实现[前所未有的准确度](../accuracy)。对神经网络的简介请参见[概览](../neuralnet-overview)页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为`layer`）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。
 
 此处为我们已经建立的各个库及其在系统整体中的所处位置：
 
@@ -74,7 +74,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### 为Deeplearning4j做出贡献
 
-想要为Deeplearning4j作出贡献的开发人员可先阅读[开发人员指南](../devguide.html)。
+想要为Deeplearning4j作出贡献的开发人员可先阅读[开发人员指南](../devguide)。
 
 ### DL4J功能强大但非常复杂，如何能轻松驾驭？
  
