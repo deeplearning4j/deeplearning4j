@@ -4,36 +4,74 @@ layout: default
 ---
 
 Quick Start Guide
-=========================================
+=================
 
-This page is designed to get you up and running with DL4J. 
+Can't wait to start with Deeplearning4j? This is everything you need to run DL4J examples and begin your own projects.
+
+We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). You may want to lurk and learn at first - you can also request help and give feedback, but do use this guide before asking questions already answered below. If you are new to deep learning, we've included [a road map for beginners](../deeplearningforbeginners.html) with links to courses, readings and other resources. 
 
 ## Prerequisites
 
-This Quick Start guide assumes that you have the following already installed:
+* [Java (developer version)](#Java) 1.7 or later
+* [Apache Maven](#Maven)
+* [IntelliJ IDEA](#IntelliJ) 
+* [Git](#Git)
 
-1. Java 7 or later
-2. IntelliJ (or another IDE)
-3. [Maven](https://maven.apache.org/) (Dependency management and automated build tool)
-4. [Git](https://git-scm.com/)
- 
-If you need to install any of the above, please read the [ND4J Getting Started guide](http://nd4j.org/getstarted.html). (ND4J is the scientific computing engine we use to make deep learning work, and instructions there apply to both projects.) For the examples, don't install everything listed on that page, just the software listed above. 
+You *must* have all of these installed to use this Quick Start guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience in these areas.
 
-We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social, feel free to lurk and learn. In addition, if you are brand-new to deep learning, we've included [a road map of what to learn when you're starting out](../deeplearningforbeginners.html). 
+If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. **Otherwise, skip to** <a href="#examples">DL4J Examples</a>.
 
-Deeplearning4j is an open-source project targetting professional Java developers familiar with production deployments, an IDE such as IntelliJ and an automated build tool such as Maven. Our tool will serve you best if you have those tools under your belt already.
+#### <a name="Java">Java</a>
 
-## DL4J Examples in a Few Easy Steps
+If you don't have Java 1.7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
-To start running the DL4J examples, follow these instructions:
+``` shell
+java -version
+```
 
-* Enter `git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git` in your command line
-* In IntelliJ, create a new project using Maven by going to `File/New/Project from Existing Sources` in the menu tree. Point to the root directory of the examples above, and that will open them in your IDE. 
-![creating a new project in IntelliJ](../img/IntelliJ_New_Project.png)
-* Wait for IntelliJ to download all the dependencies. (You’ll see the horizontal bar working on the lower right.)
-* Select an example from the lefthand file tree.
-* Hit run! (It's the green button that appears when you right-click on the source file...)
+#### <a name="Maven">Apache Maven</a>
 
+Maven is a dependency management and automated build tool for Java projects. It works well with IDEs such as IntelliJ and lets you install DL4J project libraries easily. [Install or update Maven](https://maven.apache.org/download.cgi) to the latest release following [their instructions](https://maven.apache.org/install.html) for your system. To check if you have the most recent version of Maven installed, enter the following:
+
+``` shell
+mvn --version
+```
+
+Maven is widely used among Java developers and it's not optional for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. 
+
+#### <a name="IntelliJ">IntelliJ IDEA</a>
+
+An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) allows you to work with our API and build neural nets with a few clicks. We strongly recommend using [IntelliJ](https://www.jetbrains.com/idea/download/), which communicates with Maven to handle dependencies. The [community edition of IntelliJ](https://www.jetbrains.com/idea/download/) is freely available. 
+
+There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and [Netbeans](http://wiki.netbeans.org/MavenBestPractices). IntelliJ is preferred, and using it will make finding help on [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) easier if you need it.
+
+#### <a name="Git">Git</a>
+
+Install the [latest version of Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). If you already have Git, you can update to the latest version using Git itself:
+
+```
+$ git clone git://git.kernel.org/pub/scm/git/git.git
+```
+
+## <a name="examples">DL4J Examples in a Few Easy Steps</a>
+
+1. Use command line to enter the following:
+
+        $ git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
+        $ cd dl4j-0.4-examples/
+        $ mvn clean install
+
+2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
+![select directory](../img/Install_IntJ_1.png)
+
+3. Choose 'Import project from external model' and ensure that Maven is selected. 
+![import project](../img/Install_IntJ_2.png)
+
+4. Continue through the wizard's options. If you are prompted to select a project SDK, make sure Java is selected in the menu to the left, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+
+5. Pick an example from the file tree on the left.
+![run IntelliJ example](../img/Install_IntJ_3.png)
+Right-click the file to run. 
 
 ## Using DL4J In Your Own Projects: A Minimal pom.xml File
 
@@ -44,7 +82,7 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
 - canova-api - Canova is our library vectorizing and loading data
 
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -82,15 +120,6 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
     </dependencies>
 </project>
 ```
-
-Optional dependencies you might want include:
-
-- `deeplearning4j-ui`: contains the browser-based user-interface ([details here](http://deeplearning4j.org/visualization))
-- `deeplearning4j-nlp`: contains the [Word2Vec](http://deeplearning4j.org/word2vec) implementation
-- `dl4j-spark`: contains code for distributed training of neural networks on Apache Spark
-- `canova-nd4j-image`: contains code for loading images
-- `canova-nd4j-codec`: contains code for loading video files
-
 Additional links:
 
 - [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
@@ -99,4 +128,10 @@ Additional links:
 
 ## Next Steps
 
-Once you are done running the examples, have a look at our [documentation](http://deeplearning4j.org/documentation), our [more comprehensive setup guide](http://deeplearning4j.org/gettingstarted), or drop by [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). We have three big community channels on Gitter: 1) The [main channel](https://gitter.im/deeplearning4j/deeplearning4j) for anything and everything. Most people hang out here. 2) The [tuning help channel](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) for people just getting started with neural networks. Beginners please visit us here! 3) The [early adopters channel](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
+1. Join us on Gitter. We have three big community channels.
+  * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
+  * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
+  * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
+2. Read the introduction to deep neural networks or one of our detailed tutorials. 
+3. Check out the more detailed [Comprehensive Setup Guide](http://deeplearning4j.org/gettingstarted).
+4. Browse all [DL4J documentation](http://deeplearning4j.org/documentation).
