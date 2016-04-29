@@ -62,14 +62,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	return dim3(num_blocks,num_threads, 3000);
 }
 
-dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
-	int num_blocks = numTads;
-	int num_threads = tadLength;
-
-	if (num_threads > maxThreads) num_threads = maxThreads;
-	if (num_blocks > blockLimit) num_blocks = blockLimit;
-
-	// since we use shared memory as fast memory for some cases - we need to count that in
+int getBaseMemorySize(int xRank, int yRank, int zRank) {
 	int memory_limit = 256;
 
 	if (xRank == 0) xRank = 2;
@@ -79,6 +72,16 @@ dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int z
 	memory_limit += zRank == 0 ? 0 : (zRank * 2 + 4);
 	memory_limit += xRank * 6;
 	memory_limit += MAX_RANK; // special case, needed roughtly in one pase
+
+	return memory_limit;
+}
+
+dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
+	int num_blocks = nd4j::math::nd4j_min<int>(numTads, blockLimit);
+	int num_threads = nd4j::math::nd4j_min<int>(tadLength, maxThreads);
+
+	// since we use shared memory as fast memory for some cases - we need to count that in
+	int memory_limit = getBaseMemorySize(xRank, yRank, zRank);
 
 	// at this momen we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block;
@@ -1700,8 +1703,8 @@ void   NativeOps::execReduceFloat(
 			0,
 			shape::rank(resultShapeInfoPointer),
 			dimensionLength,
-			sizeof(double),
-			8
+			sizeof(float),
+			2
 	);
 
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
