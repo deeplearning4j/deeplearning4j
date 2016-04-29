@@ -1568,7 +1568,38 @@ namespace shape {
                 return index;
 
 
-           return index * shape::stride(tadOnlyShapeInfo)[0];
+            if(originalDimensionLength > 1) {
+                int *tad2Sub = shape::tad2Sub(index,originalDimension,originalDimensionLength,this->originalShapeInfo, this->ptrManager);
+
+                int rank = shape::rank(originalShapeInfo);
+                int *shape = shape::shapeOf(originalShapeInfo);
+                int *stride = shape::stride(originalShapeInfo);
+                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+                if(ret < 0) {
+                    if (ptrManager == nullptr)
+                        delete[] tad2Sub;
+                    return -1;
+                }
+                if (ptrManager == nullptr)
+                    delete[] tad2Sub;
+
+                return ret;
+
+            }
+            else {
+                int *tad2Sub = shape::tad2Sub(index,originalDimension,originalDimensionLength,originalShapeInfo, this->ptrManager);
+                int rank = shape::rank(originalShapeInfo);
+                int *shape = shape::shapeOf(originalShapeInfo);
+                int *stride = shape::stride(originalShapeInfo);
+                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+
+                if (ptrManager == nullptr)
+                    delete[] tad2Sub;
+
+                return ret;
+            }
+
+
 
         }
 
