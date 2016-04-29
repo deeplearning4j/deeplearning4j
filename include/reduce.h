@@ -141,6 +141,9 @@ namespace functions {
 
                 int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
+                if (threadIdx.x == 0)
+                    printf("Scalar launch. Stride: [%i]\n", elementWiseStride);
+
                 //shared memory space for storing intermediate results
                 //SharedMemory <T> val;
                 volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
@@ -158,26 +161,33 @@ namespace functions {
                     }
                     else {
 #pragma unroll
-                        for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
+                        for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+                        //for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
                             sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
                         }
                     }
                 }
                 else {
+                    /*
+                        int rank = shape::rank(xShapeInfo);
+                        long allocSize = sizeof(int) * rank;
+                        int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                    */
                     int rank = shape::rank(xShapeInfo);
-                    long allocSize = sizeof(int) * rank;
-                    int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                    int ind2sub[MAX_RANK];
 #pragma unroll
                     for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-                        int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
+                        int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
                         sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[offset],extraParams),extraParams);
                         __syncthreads();
                     }
 
-                    if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                        free(ind2sub);
-                    }
+                    /*
+                        if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
+                            free(ind2sub);
+                        }
+                    */
                 }
 
                 __syncthreads();
@@ -198,7 +208,7 @@ namespace functions {
                     __syncthreads();
                     __threadfence();
 
-                    if (tid==0) {
+                    if (threadIdx.x==0) {
                         unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
                         amLast = (ticket == gridDim.x-1);
                     }
@@ -219,12 +229,12 @@ namespace functions {
                         aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x, extraParams);
 
                         __syncthreads();
-                        if (tid == 0) {
+                        if (threadIdx.x == 0) {
                             result[0] = this->postProcess(sPartials[0],n,extraParams);
                         }
                     }
                 } else {
-                    if (tid == 0) {
+                    if (threadIdx.x == 0) {
                         unsigned int *tc = (unsigned *) reductionBuffer;
                         tc[4096] = 0;
                         result[0] = this->postProcess(sPartials[0],n,extraParams);
@@ -258,21 +268,19 @@ namespace functions {
                 /**
                  * Gpu information for the problem
                  */
-                __shared__ volatile int resultScalar;
+                __shared__ int resultScalar;
+                __shared__ int resultLength;
 
                 int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
                 //shared memory space for storing intermediate results
                 volatile T *sPartials = manager->getSharedReductionBuffer();
-                int numElements = blockDim.x;
+
                 T init = this->startingValue(dx);
-                for (int i = threadIdx.x; i < numElements; i += blockDim.x)
-                    sPartials[i] = init;
+                sPartials[threadIdx.x] = init;
                 __syncthreads();
 
                 //length for the tad
-
-                __shared__ int resultLength;
 
 
 
@@ -313,25 +321,29 @@ namespace functions {
 
                 if (!resultScalar) {
                     __shared__ shape::TAD *tad;
+                    __shared__ int tadRank;
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
                         tad->init(xShapeInfo,dimension,dimensionLength);
                         tad->createTadOnlyShapeInfo();
+                        tadRank = shape::rank(tad->tadOnlyShapeInfo);
                     }
                     __syncthreads();
 
                     if(dimensionLength == 1) {
-                        for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
+                        for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
                             __syncthreads();
 
-                            T *xVal = dx + tad->tadOffsetForBlock;
+                            int tadOffsetForBlock = tad->tadOffsetForBlock;
+                            T *xVal = dx + tadOffsetForBlock;
+
 
                             sPartials[threadIdx.x] = this->startingValue(xVal);
                             for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tad->tadOffsetForBlock + i *  tad->tadElementWiseStride], extraParams);
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i *  tad->tadElementWiseStride], extraParams);
                             }
                             __syncthreads();
 
@@ -342,26 +354,29 @@ namespace functions {
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+                                result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
                         }
 
                     }
                     else {
-
-                        int rank = shape::rank(tad->tadOnlyShapeInfo);
+                        /*
                         long allocSize = sizeof(int) * rank;
                         int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                        */
+                        int xCoord[MAX_RANK];
 
                         for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
                             __syncthreads();
 
-                            sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+                            int tadOffsetForBlock = tad->tadOffsetForBlock;
+
+                            sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
 
                             for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
-                                shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                                Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                                shape::ind2subC(tadRank,tad->tadShape, i, xCoord);
+                                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
 
                                 sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
                             }
@@ -379,9 +394,11 @@ namespace functions {
 
                         }
 
-                        if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                            free(xCoord);
-                        }
+                        /*
+                            if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
+                                free(xCoord);
+                            }
+                        */
                     }
                 } else {
                     this->execScalarCuda(
@@ -1777,10 +1794,10 @@ template <typename T>
 __global__ void reduceGenericGlobal(
         int op,
         T *dx,
-        int *xShapeInfo,
+        int *xShapeInfo, int xRank,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        int *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
@@ -1792,6 +1809,11 @@ __global__ void reduceGenericGlobal(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
         manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
+
+        manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
 
@@ -1846,10 +1868,10 @@ template <typename T>
 __device__ void reduceGeneric(
         int op,
         T *dx,
-        int *xShapeInfo,
+        int *xShapeInfo, int xRank,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        int *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
@@ -1864,6 +1886,11 @@ __device__ void reduceGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
         manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
+
+        manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
 
@@ -1914,10 +1941,10 @@ __device__ void reduceGeneric(
 extern "C" __global__ void reduceDouble(
         int op,
         double *dx,
-        int *xShapeInfo,
+        int *xShapeInfo, int xRank,
         double *extraParams,
         double *result,
-        int *resultShapeInfo,
+        int *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
@@ -1925,10 +1952,10 @@ extern "C" __global__ void reduceDouble(
     reduceGeneric<double>(
             op,
             dx,
-            xShapeInfo
-            ,extraParams,
+            xShapeInfo, xRank,
+            extraParams,
             result,
-            resultShapeInfo,
+            resultShapeInfo, zRank,
             dimension,
             dimensionLength,
             postProcessOrNot,
@@ -1953,10 +1980,10 @@ extern "C" __global__ void reduceDouble(
 extern "C" __global__ void reduceFloat(
         int op,
         float *dx,
-        int *xShapeInfo,
+        int *xShapeInfo, int xRank,
         float *extraParams,
         float *result,
-        int *resultShapeInfo,
+        int *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
@@ -1966,10 +1993,10 @@ extern "C" __global__ void reduceFloat(
     reduceGeneric<float>(
             op,
             dx,
-            xShapeInfo
-            ,extraParams,
+            xShapeInfo, xRank,
+            extraParams,
             result,
-            resultShapeInfo,
+            resultShapeInfo, zRank,
             dimension,
             dimensionLength,
             postProcessOrNot,

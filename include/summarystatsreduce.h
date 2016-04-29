@@ -671,8 +671,12 @@ struct SharedSummaryStatsData<double> {
 
 		    if (dimensionLength > 1) {
                 int rank = shape::rank(tad->tadOnlyShapeInfo);
+                /*
                 long allocSize = sizeof(int) * rank;
                 int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                */
+                int xCoord[MAX_RANK];
+
                 for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
                     if (threadIdx.x == 0)
                         tad->createOffsetForBlock(r);
@@ -748,8 +752,11 @@ struct SharedSummaryStatsData<double> {
     			}
             } else {
                 int rank = shape::rank(xShapeInfo);
+                /*
                 long allocSize = sizeof(int) * rank;
     			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager); //(int *) malloc(sizeof(int) * rank);
+    			*/
+    			int ind2sub[MAX_RANK];
 #pragma unroll
 	    		for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
     				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
@@ -758,10 +765,6 @@ struct SharedSummaryStatsData<double> {
 					indexVal2.initWithValue(dx[offset]);
     				reduction =  update(reduction,indexVal2, extraParams);
 			    }
-
-                if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                    free(ind2sub);
-                }
             }
 
             __syncthreads();
@@ -1452,10 +1455,10 @@ template <typename T>
 __device__ void summaryStatsReduceGeneric(
 		int op,
 		T *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		T *extraParams,
 		T *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer) {
 
@@ -1468,6 +1471,11 @@ __device__ void summaryStatsReduceGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD));
+
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
 
@@ -1510,10 +1518,10 @@ __device__ void summaryStatsReduceGeneric(
 __global__ void summaryStatsReduceDouble(
 		int op,
 		double *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		double *extraParams,
 		double *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
@@ -1521,10 +1529,10 @@ __global__ void summaryStatsReduceDouble(
 	summaryStatsReduceGeneric<double>(
 			op,
 			dx,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			extraParams,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
 			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer);
@@ -1548,20 +1556,20 @@ __global__ void summaryStatsReduceDouble(
  __global__ void summaryStatsReduceFloat(
 		int op,
 		float *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		float *extraParams,
 		float *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer) {
 	summaryStatsReduceGeneric<float>(
 			op,
 			dx,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			extraParams,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
 			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer);

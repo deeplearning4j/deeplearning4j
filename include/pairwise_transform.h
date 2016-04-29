@@ -183,13 +183,18 @@ namespace functions {
 		}
 
 		else {
-
+            /*
 			long allocSize = sizeof(int) * (xRank + yRank + resultRank);
 			int *tB = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
 
 			int *xCoord = tB;
 			int *yCoord = tB + xRank;
 			int *resultCoord = yCoord + yRank;
+			*/
+
+			int xCoord[MAX_RANK];
+			int yCoord[MAX_RANK];
+			int resultCoord[MAX_RANK];
 
 
 			if (dx == result) {
@@ -2017,9 +2022,9 @@ __device__ void pairWiseTransformGeneric(
 		T *dy,
 		T *params,
 		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
@@ -2030,6 +2035,10 @@ __device__ void pairWiseTransformGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(yRank);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(0);
     }
     __syncthreads();
 
@@ -2084,18 +2093,18 @@ extern "C" __global__ void pairWiseTransformDouble(
 		double *dy,
 		double *params,
 		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 	pairWiseTransformGeneric<double>(
 			opNum,
 			dx,
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo, allocationPointer);
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank, allocationPointer);
 
 }
 
@@ -2123,18 +2132,18 @@ extern "C" __global__ void pairWiseTransformFloat(
 		float *dy,
 		float *params,
 		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 	pairWiseTransformGeneric<float>(
 			opNum,
 			dx,
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo, allocationPointer);
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank, allocationPointer);
 
 }
 
@@ -2163,9 +2172,9 @@ __device__ void pairWiseTransformGeneric(
 		T *dy,
 		T *params,
 		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
@@ -2179,6 +2188,10 @@ __device__ void pairWiseTransformGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(yRank);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(0);
     }
     __syncthreads();
 
@@ -2244,9 +2257,9 @@ __global__ void pairWiseTransformDoubleIndex(
 		double *dy,
 		double *params,
 		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
@@ -2256,9 +2269,9 @@ __global__ void pairWiseTransformDoubleIndex(
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank,
 			xIndexes,
 			yIndexes,
 			resultIndexes, allocationPointer);
@@ -2289,9 +2302,9 @@ __global__ void pairWiseTransformFloatIndex(
 		float *dy,
 		float *params,
 		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
@@ -2301,9 +2314,9 @@ __global__ void pairWiseTransformFloatIndex(
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank,
 			xIndexes,
 			yIndexes,
 			resultIndexes, allocationPointer);
@@ -2346,6 +2359,10 @@ __device__ void pairWiseTransformStridedGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(0);
+	    manager->setYSpace(0);
+	    manager->setZSpace(0);
+	    manager->setTADSpace(0);
     	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}

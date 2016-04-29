@@ -1420,7 +1420,7 @@ namespace shape {
 #ifdef __CUDACC__
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer2());
+                doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer6());
             } else doPermuteShapeBuffer(this->rank,out,rearrange);
 #else
             doPermuteShapeBuffer(this->rank,out,rearrange);
@@ -1483,7 +1483,7 @@ namespace shape {
             int *permuteDims;
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                permuteDims = manager->getT2ShapeBuffer();
+                permuteDims = manager->getTempRankBuffer5();
             } else permuteDims = new int[rank];
 #else
             int *permuteDims = new int[rank];
@@ -1655,7 +1655,7 @@ namespace shape {
             int *toPermute;
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                toPermute = manager->getTempRankBuffer1();
+                toPermute = manager->getSharedCoordBuffer();
             }
             else toPermute = new int[MAX_RANK];
 #else
@@ -3520,6 +3520,8 @@ namespace shape {
 #endif
 
     inline int rank( int *buffer) {
+        if (buffer == nullptr) return 0;
+
         return buffer[0];
     }
 

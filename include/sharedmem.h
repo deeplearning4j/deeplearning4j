@@ -95,6 +95,7 @@ class UnifiedSharedMemory{
 
     __device__ void setXSpace(short xRank) {
         this->xSpace = xRank * 2 + 4;
+        this->tadSpace = xRank;
     }
 
     __device__ void setYSpace(short yRank) {
@@ -106,7 +107,7 @@ class UnifiedSharedMemory{
     }
 
     __device__ void setTADSpace(short tadRank) {
-        this->tadSpace = tadRank * 2 + 4;
+        //this->tadSpace = tadRank;
     }
 
     __device__ __host__ ~UnifiedSharedMemory() { }
@@ -116,20 +117,20 @@ class UnifiedSharedMemory{
     }
 
     __device__ __host__ unsigned char * getFactorySpace() {
-       return (unsigned char * ) ((int *)sharedMemory + (unifiedSize));
+       return (unsigned char * ) ((int *) getUnifiedSpace() + (unifiedSize / 2));
     }
 
     __device__ __host__ unsigned char * getFunctionSpace() {
-       return (unsigned char * ) ((int *)sharedMemory + (unifiedSize + factorySize));
+       return (unsigned char * ) ((int *)getFactorySpace()  + (factorySize  / 2 ));
     }
 
     __device__ __host__ unsigned char * getTADSpace() {
-       return (unsigned char * ) ((int *)sharedMemory + (unifiedSize + factorySize + functionSize));
+       return (unsigned char * ) ((int *)getFunctionSpace() + (functionSize / 2));
     }
 
     __device__ __host__ int * getXShapeBuffer() {
         // TODO: provide base offset here, to make use of shmem for initial allocation
-        return sharedMemory + allocationOffset;
+        return sharedMemory + (allocationOffset / 2);
     }
 
     __device__ __host__ int * getYShapeBuffer() {
@@ -145,11 +146,11 @@ class UnifiedSharedMemory{
     }
 
     __device__ __host__ int * getT2ShapeBuffer() {
-        return getT1ShapeBuffer() + tadSpace;
+        return getT1ShapeBuffer() + xSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer1() {
-        return getT2ShapeBuffer() + tadSpace;
+        return getT2ShapeBuffer() + xSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer2() {
@@ -164,12 +165,20 @@ class UnifiedSharedMemory{
         return getTempRankBuffer3() + tadSpace;
     }
 
-    __device__ __host__ int * getSharedCoordBuffer() {
+    __device__ __host__ int * getTempRankBuffer5() {
         return getTempRankBuffer4() + tadSpace;
     }
 
+    __device__ __host__ int * getTempRankBuffer6() {
+    	return getTempRankBuffer5() + tadSpace;
+    }
+
+    __device__ __host__ int * getSharedCoordBuffer() {
+        return getTempRankBuffer6() + tadSpace;
+    }
+
     __device__ __host__ T * getSharedReductionBuffer() {
-        return (T *) ((int *)getSharedCoordBuffer() + (MAX_THREADS * MAX_COORD));
+        return (T *) ((int *)getSharedCoordBuffer() + MAX_RANK);
     }
 };
 // This is the un-specialized struct.  Note that we prevent instantiation of this
