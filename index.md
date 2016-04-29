@@ -58,7 +58,7 @@ If you have any questions, please join [us on Gitter](https://gitter.im/deeplear
 * [Convolutional Networks Tutorial](../convolutionalnets)
 * [LSTM and Recurrent Network Tutorial](../lstm)
 * [Using Recurrent Nets With DL4J](../usingrnns)
-* [Deep-Belief Networks With MNIST](../mnist-tutorial)
+* [Deep-Belief Networks With MNIST](../deepbeliefnetwork)
 * [Customizing Data Pipelines With Canova](../image-data-pipeline)
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine)
 * [Eigenvectors, PCA and Entropy](../eigenvector)
