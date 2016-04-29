@@ -96,8 +96,6 @@ namespace functions {
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
         int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 
-		Nd4jIndex n = shape::length(shapeInfo);
-
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -118,11 +116,14 @@ namespace functions {
 		}
 		else {
 			/* equal, positive, non-unit increments. */
+			/*
 			long allocSize = sizeof(int) * xRank;
 			int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
+            */
+            int xIdx[MAX_RANK];
 
 #pragma unroll
-			for (int i = tid; i < n; i+= totalThreads) {
+			for (int i = tid; i < length; i+= totalThreads) {
 				shape::ind2sub(xRank, xShape, i,xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 				int resultOffset = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
@@ -1299,9 +1300,9 @@ __device__ void scalarGeneric(
 		int opNum,
 		T dx,
 		T *dy,
-		int *xShapeInfo,
+		int *xShapeInfo,int xRank,
 		T *params,
-		T *result,int *resultShapeInfo, int *allocationBuffer) {
+		T *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
 
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
@@ -1312,6 +1313,11 @@ __device__ void scalarGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD));
+
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(1);
     }
     __syncthreads();
 
@@ -1343,31 +1349,31 @@ extern "C" __global__ void scalarDouble(
 		int opNum,
 		double dx,
 		double *dy,
-		int *shapeInfo, double *params,
-		double *result,int *resultShapeInfo, int *allocationBuffer) {
+		int *shapeInfo, int xRank, double *params,
+		double *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
 	scalarGeneric<double>(
 			opNum,
 			dx,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
-			result,resultShapeInfo, allocationBuffer);
+			result,resultShapeInfo, zRank, allocationBuffer);
 }
 
 extern "C" __global__ void scalarFloat(
 		int opNum,
 		float dx,
 		float *dy,
-		int *shapeInfo,
+		int *shapeInfo, int xRank,
 		float *params,
-		float *result,int *resultShapeInfo, int *allocationBuffer) {
+		float *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
 	scalarGeneric<float>(
 			opNum,
 			dx,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
-			result,resultShapeInfo, allocationBuffer);
+			result,resultShapeInfo, zRank, allocationBuffer);
 }
 
 #endif

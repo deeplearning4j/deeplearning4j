@@ -300,29 +300,31 @@ namespace functions {
 
 					//int *idx = (int *) malloc(sizeof(int) * shape::rank(xShapeInfo));
 					int rank = shape::rank(xShapeInfo);
-
+					/*
 					long allocSize = sizeof(int) * rank;
 					int *idx = shape::cuMalloc(allocationBuffer, allocSize, manager);
+					*/
+					int idx[MAX_RANK];
 
 					//shared memory space for storing intermediate results
 					int numElements = blockDim.x;
-					for (int i = threadIdx.x; i < numElements; i += blockDim.x)
-						sPartials[i] = startingVal;
-					__syncthreads();
+
+					sPartials[threadIdx.x] = startingVal;
 
 
 #pragma unroll
-					for(unsigned int i = blockIdx.x * gridDim.x + threadIdx.x;i < n; i += gridDim.x * blockDim.x) {
+					for(unsigned int i = tid ;i < n; i += gridDim.x * blockDim.x) {
 						shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
 						Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 						Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
 						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
 					}
 
+/*
 					if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
 						free(idx);
 					}
-
+*/
 
 					T **sPartialsRef = (T **) &sPartials;
 					aggregatePartials(sPartialsRef, threadIdx.x, &extraParams);
@@ -364,7 +366,7 @@ namespace functions {
 				/**
                  * Gpu information for the problem
                  */
-				int tid = threadIdx.x;
+				int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
 				__shared__ volatile int resultScalar;
 
@@ -375,9 +377,8 @@ namespace functions {
 				volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
 				int numElements = blockDim.x;
 				T init = this->startingValue(dx);
-				for (int i = tid; i < numElements; i += blockDim.x)
-					sPartials[i] = init;
-				__syncthreads();
+				sPartials[threadIdx.x] = init;
+
 
 				//length for the tad
 
@@ -385,7 +386,7 @@ namespace functions {
 
 
 				T reduction = this->startingValue(dx);
-				if (tid == 0) {
+				if (threadIdx.x == 0) {
 					if (resultShapeInfo != nullptr)
 						resultLength = shape::length(resultShapeInfo);
 					else resultLength = 1;
@@ -426,10 +427,19 @@ namespace functions {
 				__syncthreads();
 
 
-
-
-
 				if (!resultScalar) {
+					__shared__ shape::TAD *tad;
+                    __shared__ int tadRank;
+                    if (threadIdx.x == 0) {
+                        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                        tad->setExternalBuffers((void *) manager);
+                        tad->init(xShapeInfo,dimension,dimensionLength);
+                        tad->createTadOnlyShapeInfo();
+                        tadRank = shape::rank(tad->tadOnlyShapeInfo);
+                    }
+                    __syncthreads();
+
+
 					if(dimensionLength > 1) {
 						//decompose in to several sub tads after
 						//moving all dimensions (in sorted order)
@@ -442,24 +452,8 @@ namespace functions {
 						if(tid == 0) {
 							inputShapeInfo = xShapeInfo;
 						}
-
 						__syncthreads();
 
-						int *shape = shape::shapeOf(inputShapeInfo);
-						int *stride = shape::stride(inputShapeInfo);
-						int wholeRank = shape::rank(inputShapeInfo);
-						int numOnes = 0;
-						if(tid == 0) {
-							numOnes = 0;
-							for(int i = 0; i < wholeRank; i++) {
-								if(shape[i] == 1)
-									numOnes++;
-							}
-
-
-						}
-
-						__syncthreads();
 
 						//decompose in to several sub tads after
 						//moving all dimensions (in sorted order)
@@ -524,19 +518,14 @@ namespace functions {
 						}
 
 						__syncthreads();
+
 						if (tid == 0) {
 							delete[] tadShapeShapeInfo;
-
-
-							if(numOnes > 0) {
-								delete[] xShapeInfo;
-							}
 						}
 
 
 					}
 					else {
-
 
 						/**
                          * The element wise stride belong longs to a reduction index.
@@ -551,8 +540,36 @@ namespace functions {
 						Nd4jIndex tadLength = xLength / resultLength;
 
 						Nd4jIndex i = 0,j = 0;
+/*
+						for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+                            if (threadIdx.x == 0)
+                                tad->createOffsetForBlock(r);
+                            __syncthreads();
 
-#pragma unroll
+                            int tadOffsetForBlock = tad->tadOffsetForBlock;
+                            T *xVal = dx + tadOffsetForBlock;
+
+
+                            sPartials[threadIdx.x] = this->startingValue(xVal);
+                            for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
+                    			int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
+								int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
+
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i *  tad->tadElementWiseStride], extraParams);
+                            }
+                            __syncthreads();
+
+                            // aggregate. do NOT reduce for elements > tadLength
+                            T **sPartialsRef = (T **) &sPartials;
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+
+
+                            __syncthreads();
+                            if (threadIdx.x == 0)
+                                result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
+                        }
+
+*/
 						for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 							int offsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							int yOffsetFOrTad = shape::tadOffset(i,yShapeInfo,dimension,dimensionLength, nullptr);
@@ -564,11 +581,7 @@ namespace functions {
 							result[i] = postProcess(sPartials[i],tadLength,&extraParams);
 						}
 
-
-
 					}
-
-
 				}
 				else {
 					this->execScalarCuda(

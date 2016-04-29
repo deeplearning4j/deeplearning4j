@@ -303,8 +303,11 @@ struct SharedIndexValue<double> {
 
 			if (dimensionLength > 1) {
 				int rank = shape::rank(tad->tadOnlyShapeInfo);
+				/*
                 long allocSize = sizeof(int) * rank;
                 int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
+                */
+                int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
 					if (threadIdx.x == 0)
@@ -327,10 +330,11 @@ struct SharedIndexValue<double> {
 						result[r] = sPartials[threadIdx.x].index;
 					}
 				}
-
+				/*
 				if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
                 	free(xCoord);
                 }
+                */
 			} else {
 
 #pragma unroll
@@ -1159,10 +1163,10 @@ template <typename T>
 __device__ void indexReduceGeneric(
 		int op,
 		T *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		T *extraParams,
 		T *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer) {
@@ -1176,6 +1180,11 @@ __device__ void indexReduceGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD));
+
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
 
@@ -1230,20 +1239,20 @@ __device__ void indexReduceGeneric(
 __global__ void indexReduceDouble(
 		int op,
 		double *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		double *extraParams,
 		double *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			extraParams,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
 			postProcessOrNot, allocationBuffer, reductionBuffer);
@@ -1268,20 +1277,20 @@ __global__ void indexReduceDouble(
 __global__ void indexReduceFloat(
 		int op,
 		float *dx,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		float *extraParams,
 		float *result,
-		int *resultShapeInfo,
+		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			extraParams,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
 			postProcessOrNot, allocationBuffer, reductionBuffer);

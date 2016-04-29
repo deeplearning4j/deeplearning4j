@@ -212,10 +212,10 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
 			resultPointer,
-			nullptr,
+			nullptr, 0,
 			nullptr,
 			1,
 			1, allocationPointer, reductionPointer);
@@ -264,10 +264,10 @@ void   NativeOps::execIndexReduceDouble(
 	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer,
+			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
 			dimensionPointer,
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
@@ -861,9 +861,9 @@ void NativeOps::execScalarDouble(
 			opNum,
 			scalar,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer);
+			resultPointer,resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocPointer);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1294,10 +1294,10 @@ float   NativeOps::execIndexReduceScalarFloat(
 	indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
 			resultPointer,
-			nullptr,
+			nullptr, 0,
 			nullptr,
 			1,
 			1, allocationPointer, reductionPointer);
@@ -1345,10 +1345,10 @@ void   NativeOps::execIndexReduceFloat(
 	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer,
+			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
 			dimensionPointer,
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
@@ -1947,9 +1947,9 @@ void NativeOps::execScalarFloat(
 			opNum,
 			scalar,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, allocPointer );
+			resultPointer,resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocPointer );
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2283,7 +2283,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-						execIndexReduceFloat(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) dimension, 1);
+						execIndexReduceFloat(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) &extraParams[1], extraParams[0]);
 					}
 					break;
 				}
@@ -2556,7 +2556,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
 
-	void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo,float *params, float *result,int *resultShapeInfo, int *allocPointer) = scalarFloat;
+	void (*scalarFloatPointer1)(int opNum, float dx,float *dy, int *shapeInfo, int xRank, float *params, float *result,int *resultShapeInfo, int zRank, int *allocPointer) = scalarFloat;
 	cudaFuncGetAttributes(&funcAttributes[5], scalarFloatPointer1);
 
 	void (*scalarFloatPointer2)(int opNum, Nd4jIndex n,float dx, float *dy, int incy, float *params, float *result,int resultStride, int *allocPointer) = scalarFloat;
@@ -2590,7 +2590,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	cudaFuncGetAttributes(&funcAttributes[18], scalarDoubleIndexes);
 
-	void (*scalarDoublePointer1)(int opNum, double dx,double *dy, int *shapeInfo,double *params, double *result,int *resultShapeInfo, int *allocPointer) = scalarDouble;
+	void (*scalarDoublePointer1)(int opNum, double dx,double *dy, int *shapeInfo, int xRank, double *params, double *result,int *resultShapeInfo, int zRank, int *allocPointer) = scalarDouble;
 	cudaFuncGetAttributes(&funcAttributes[19], scalarDoublePointer1);
 
 
