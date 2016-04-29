@@ -70,7 +70,7 @@ dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int z
 	if (num_blocks > blockLimit) num_blocks = blockLimit;
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
-	int memory_limit = 200;
+	int memory_limit = 256;
 
 	if (xRank == 0) xRank = 2;
 

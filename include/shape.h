@@ -3520,8 +3520,6 @@ namespace shape {
 #endif
 
     inline int rank( int *buffer) {
-        if (buffer == nullptr) return 0;
-
         return buffer[0];
     }
 
