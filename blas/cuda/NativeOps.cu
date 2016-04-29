@@ -62,6 +62,47 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 	return dim3(num_blocks,num_threads, 3000);
 }
 
+dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
+	int num_blocks = numTads;
+	int num_threads = tadLength;
+
+	if (num_threads > maxThreads) num_threads = maxThreads;
+	if (num_blocks > blockLimit) num_blocks = blockLimit;
+
+	// since we use shared memory as fast memory for some cases - we need to count that in
+	int memory_limit = 200;
+
+	if (xRank == 0) xRank = 2;
+
+	memory_limit += (xRank * 2 + 4) * 3; // we reserve memory for xShape + T1/T2 shapes
+	memory_limit += yRank == 0 ? 0 : (yRank * 2 + 4);
+	memory_limit += zRank == 0 ? 0 : (zRank * 2 + 4);
+	memory_limit += xRank * 6;
+	memory_limit += MAX_RANK; // special case, needed roughtly in one pase
+
+	// at this momen we've stored all required information for things. time to count in reduction multipliers
+	if (reduction > 0)
+		while (true) {
+			if (memory_limit + (num_threads * elementSize * reduction) < 5000) {
+				memory_limit += (num_threads * elementSize * reduction);
+				break;
+			} else {
+				if (num_threads >= 128) {
+					num_threads /= 2;
+				} else {
+					memory_limit += (num_threads * elementSize * reduction);
+					break;
+				}
+			}
+		}
+
+
+	if (debug)
+		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i]\n", num_blocks, num_threads, memory_limit);
+
+	return dim3(num_blocks,num_threads, memory_limit);
+}
+
 /**
  * Returns optimal launch parameters
  * given the extra pointers passed in.
@@ -1598,6 +1639,8 @@ void   NativeOps::execReduceFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
+	printf("reducefloat 1\n");
+
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
@@ -1645,6 +1688,18 @@ void   NativeOps::execReduceFloat(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
+	printf("reducefloat 2\n");
+	dim3 temp = getBetterDimensions(
+			shape::length((int *) xShapeInfoPointer),
+			512,
+			shape::rank(xShapeInfoPointer),
+			0,
+			shape::rank(resultShapeInfoPointer),
+			dimensionLength,
+			sizeof(float),
+			1
+	);
 
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2283,7 +2338,6 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-						execIndexReduceFloat(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) &extraParams[1], extraParams[0]);
 					}
 					break;
 				}

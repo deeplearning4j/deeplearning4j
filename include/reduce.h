@@ -141,9 +141,6 @@ namespace functions {
 
                 int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
-                if (threadIdx.x == 0)
-                    printf("Scalar launch. Stride: [%i]\n", elementWiseStride);
-
                 //shared memory space for storing intermediate results
                 //SharedMemory <T> val;
                 volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
