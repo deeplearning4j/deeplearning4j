@@ -64,6 +64,12 @@ class UnifiedSharedMemory{
     int functionSize = 0;
     int tadSize = 0;
 
+    unsigned short xSpace = 0;
+    unsigned short ySpace = 0;
+    unsigned short zSpace = 0;
+    unsigned short tadSpace = 0;
+    unsigned short rankSpace = 0;
+
     public:
     __device__ UnifiedSharedMemory() {
         extern __shared__ int shMem[];
@@ -80,6 +86,28 @@ class UnifiedSharedMemory{
         //printf("Creating USM<T> -> seflSize: [%i], factorySize: [%i], functionSize: [%i], tadSize: [%i], totalOffset: [%i]\n", this->unifiedSize, this->factorySize, this->functionSize, this->tadSize, this->allocationOffset);
     }
 
+    __device__ void setShapeBoundaries(short xRank, short yRank, short zRank, short tadRank ) {
+        this->setXSpace(xRank);
+        this->setYSpace(yRank);
+        this->setZSpace(zRank);
+        this->setTADSpace(tadRank);
+    }
+
+    __device__ void setXSpace(short xRank) {
+        this->xSpace = xRank * 2 + 4;
+    }
+
+    __device__ void setYSpace(short yRank) {
+        this->ySpace = yRank * 2 + 4;
+    }
+
+    __device__ void setZSpace(short zRank) {
+        this->zSpace = zRank * 2 + 4;
+    }
+
+    __device__ void setTADSpace(short tadRank) {
+        this->tadSpace = tadRank * 2 + 4;
+    }
 
     __device__ __host__ ~UnifiedSharedMemory() { }
 
@@ -105,39 +133,39 @@ class UnifiedSharedMemory{
     }
 
     __device__ __host__ int * getYShapeBuffer() {
-        return getXShapeBuffer() + maxShapeBufferLength;
+        return getXShapeBuffer() + zSpace;
     }
 
     __device__ __host__ int * getZShapeBuffer() {
-        return getYShapeBuffer() + maxShapeBufferLength;
+        return getYShapeBuffer() + ySpace;
     }
 
     __device__ __host__ int * getT1ShapeBuffer() {
-        return getZShapeBuffer() + maxShapeBufferLength;
+        return getZShapeBuffer() + zSpace;
     }
 
     __device__ __host__ int * getT2ShapeBuffer() {
-        return getT1ShapeBuffer() + maxShapeBufferLength;
+        return getT1ShapeBuffer() + tadSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer1() {
-        return getT2ShapeBuffer() + maxShapeBufferLength;
+        return getT2ShapeBuffer() + tadSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer2() {
-        return getTempRankBuffer1() + MAX_RANK;
+        return getTempRankBuffer1() + tadSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer3() {
-        return getTempRankBuffer2() + MAX_RANK;
+        return getTempRankBuffer2() + tadSpace;
     }
 
     __device__ __host__ int * getTempRankBuffer4() {
-        return getTempRankBuffer3() + MAX_RANK;
+        return getTempRankBuffer3() + tadSpace;
     }
 
     __device__ __host__ int * getSharedCoordBuffer() {
-        return getTempRankBuffer4() + MAX_RANK;
+        return getTempRankBuffer4() + tadSpace;
     }
 
     __device__ __host__ T * getSharedReductionBuffer() {

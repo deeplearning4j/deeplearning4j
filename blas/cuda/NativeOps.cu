@@ -59,7 +59,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 
 	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
     //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
-	return dim3(num_blocks,num_threads, 20000);
+	return dim3(num_blocks,num_threads, 2000);
 }
 
 /**
@@ -312,11 +312,11 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			yPointer,
-			yShapeInfoPointer,
+			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
 			resultPointer,
-			resultShapeInfoPointer,
+			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
 			dimensionPointer,
 			dimensionLength);
 
@@ -1394,11 +1394,11 @@ void   NativeOps::execBroadcastFloat(
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,
+			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
 			yPointer,
-			yShapeInfoPointer,
+			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
 			resultPointer,
-			resultShapeInfoPointer,
+			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
 			dimensionPointer,
 			dimensionLength);
 
