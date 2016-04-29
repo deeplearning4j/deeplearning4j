@@ -203,25 +203,23 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         else if(details.oneHot) arr = Nd4j.zeros(minValues, details.oneHotNumClasses);
         else arr = Nd4j.create(minValues, details.subsetEndInclusive-details.subsetStart + 1);
 
-        int[] idx = new int[2];
         for( int i=0; i<minValues; i++){
-            idx[0] = i;
             Collection<Writable> c = list.get(i);
             if(details.entireReader) {
                 //Convert entire reader contents, without modification
                 int j = 0;
                 for (Writable w : c) {
-                    idx[1] = j++;
                     try {
-                        arr.putScalar(idx, w.toDouble());
+                        arr.putScalar(i,j, w.toDouble());
                     } catch (UnsupportedOperationException e) {
                         // This isn't a scalar, so check if we got an array already
                         if (w instanceof NDArrayWritable) {
-                            arr.putRow(idx[0], ((NDArrayWritable)w).get());
+                            arr.putRow(i, ((NDArrayWritable)w).get());
                         } else {
                             throw e;
                         }
                     }
+                    j++;
                 }
             } else if(details.oneHot){
                 //Convert a single column to a one-hot representation
@@ -231,27 +229,27 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     Iterator<Writable> iter = c.iterator();
                     for( int k=0; k<=details.subsetStart; k++ ) w = iter.next();
                 }
-                idx[1] = w.toInt();     //Index of class
-                arr.putScalar(idx,1.0);
+                //Index of class
+                arr.putScalar(i,w.toInt(),1.0);
             } else {
                 //Convert a subset of the columns
                 Iterator<Writable> iter = c.iterator();
                 for( int j=0; j<details.subsetStart; j++ ) iter.next();
                 int k=0;
                 for( int j=details.subsetStart; j<=details.subsetEndInclusive; j++){
-                    idx[1] = k++;
                     Writable w = iter.next();
                     try {
-                        arr.putScalar(idx,w.toDouble());
+                        arr.putScalar(i,k,w.toDouble());
                     } catch (UnsupportedOperationException e) {
                         // This isn't a scalar, so check if we got an array already
                         if (w instanceof NDArrayWritable) {
-                            arr.putRow(idx[0], ((NDArrayWritable)w).get().get(NDArrayIndex.all(),
+                            arr.putRow(i, ((NDArrayWritable)w).get().get(NDArrayIndex.all(),
                                     NDArrayIndex.interval(details.subsetStart, details.subsetEndInclusive + 1)));
                         } else {
                             throw e;
                         }
                     }
+                    k++;
                 }
             }
         }
@@ -279,11 +277,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         if(needMaskArray) maskArray = Nd4j.ones(minValues,maxTSLength);
         else maskArray = null;
 
-
-        int[] idx = new int[3];
-        int[] maskIdx = new int[2];
         for( int i=0; i<minValues; i++ ){
-            idx[0] = i;
             Collection<Collection<Writable>> sequence = list.get(i);
 
             //Offset for alignment:
@@ -297,27 +291,28 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             }
 
             int t=0;
+            int k;
             for (Collection<Writable> timeStep : sequence) {
-                idx[2] = startOffset + t++;
+                k = startOffset + t++;
 
                 if(details.entireReader) {
                     //Convert entire reader contents, without modification
                     Iterator<Writable> iter = timeStep.iterator();
                     int j = 0;
                     while (iter.hasNext()) {
-                        idx[1] = j++;
                         Writable w = iter.next();
                         try {
-                            arr.putScalar(idx,w.toDouble());
+                            arr.putScalar(i,j,k,w.toDouble());
                         } catch (UnsupportedOperationException e) {
                             // This isn't a scalar, so check if we got an array already
                             if (w instanceof NDArrayWritable) {
-                                arr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
+                                arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(k))
                                         .putRow(0, ((NDArrayWritable)w).get());
                             } else {
                                 throw e;
                             }
                         }
+                        j++;
                     }
                 } else if(details.oneHot){
                     //Convert a single column to a one-hot representation
@@ -325,25 +320,23 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     if(timeStep instanceof List) w = ((List<Writable>)timeStep).get(details.subsetStart);
                     else{
                         Iterator<Writable> iter = timeStep.iterator();
-                        for( int k=0; k<=details.subsetStart; k++ ) w = iter.next();
+                        for( int x=0; x<=details.subsetStart; x++ ) w = iter.next();
                     }
                     int classIdx = w.toInt();
-                    idx[1] = classIdx;
-                    arr.putScalar(idx,1.0);
+                    arr.putScalar(i,classIdx,k,1.0);
                 } else {
                     //Convert a subset of the columns...
                     Iterator<Writable> iter = timeStep.iterator();
                     for( int j=0; j<details.subsetStart; j++ ) iter.next();
-                    int k=0;
+                    int l = 0;
                     for( int j=details.subsetStart; j<=details.subsetEndInclusive; j++){
-                        idx[1] = k++;
                         Writable w = iter.next();
                         try {
-                            arr.putScalar(idx,w.toDouble());
+                            arr.putScalar(i,l++,k,w.toDouble());
                         } catch (UnsupportedOperationException e) {
                             // This isn't a scalar, so check if we got an array already
                             if (w instanceof NDArrayWritable) {
-                                arr.get(NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[2]))
+                                arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(k))
                                         .putRow(0, ((NDArrayWritable)w).get().get(NDArrayIndex.all(),
                                                 NDArrayIndex.interval(details.subsetStart, details.subsetEndInclusive + 1)));
                             } else {
@@ -356,20 +349,17 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
             //For any remaining time steps: set mask array to 0 (just padding)
             if(needMaskArray){
-                maskIdx[0] = i;
                 //Masking array entries at start (for align end)
                 if(alignmentMode == AlignmentMode.ALIGN_END) {
                     for (int t2 = 0; t2 < startOffset; t2++) {
-                        maskIdx[1] = t2;
-                        maskArray.putScalar(maskIdx, 0.0);
+                        maskArray.putScalar(i,t2, 0.0);
                     }
                 }
 
                 //Masking array entries at end (for align start)
                 if(alignmentMode == AlignmentMode.ALIGN_START) {
                     for (int t2 = t; t2 < maxTSLength; t2++) {
-                        maskIdx[1] = t2;
-                        maskArray.putScalar(maskIdx, 0.0);
+                        maskArray.putScalar(i,t2, 0.0);
                     }
                 }
             }
