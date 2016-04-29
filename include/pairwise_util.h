@@ -49,7 +49,6 @@ void quickSort(StridePermutation *arr, int elements);
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
             for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-               if(shape[idim] == 1) continue; \
                 if (++(coord)[idim] >= (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (data) -= ((shape)[idim] - 1) * (strides)[idim]; \

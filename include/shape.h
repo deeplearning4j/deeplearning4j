@@ -1385,6 +1385,8 @@ namespace shape {
             this->dimensionLength = dimensionLength;
             this->dimension = dimension;
             this->rank = shape::rank(shapeInfo);
+            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
+
             //ensure we get rid of trailing ones in the dimensions
             //we can do this with a simple decrement of the dimension length for trailing ones
             for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
@@ -1405,7 +1407,6 @@ namespace shape {
                 this->collapse();
             }
 
-            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
             wholeThing = this->numTads == 1 || this->dimensionLength == this->rank;
 
         }

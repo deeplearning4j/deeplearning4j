@@ -365,7 +365,7 @@ namespace functions {
 
                                 sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
                             }
-                             __syncthreads();
+                            __syncthreads();
 
                             // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
@@ -718,9 +718,6 @@ namespace functions {
 
 
                 int resultLength = shape::length(resultShapeInfoBuffer);
-                if(tad.numTads != resultLength) {
-                    printf("Result length %d not equal to tad.numTads %d\n",resultLength,tad.numTads);
-                }
 
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
@@ -778,9 +775,9 @@ namespace functions {
                         T *xPointer = x + offset;
                         T start = this->startingValue(xPointer);
                         if (PrepareOneRawArrayIter<T>(rankIter,
-                                                      tad.tadShape,
+                                                      shape::shapeOf(tad.tadOnlyShapeInfo),
                                                       xPointer,
-                                                      tad.tadStride,
+                                                      shape::stride(tad.tadOnlyShapeInfo),
                                                       &rankIter,
                                                       shapeIter,
                                                       &xPointer,
