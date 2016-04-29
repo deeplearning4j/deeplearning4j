@@ -12,9 +12,9 @@ We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning
 
 ## Prerequisites
 
-* [Java](#Java) 7 or later
+* [Java (developer version)](#Java) 1.7 or later
 * [Apache Maven](#Maven)
-* [IntelliJ IDEA](#IntelliJ) (preferred IDE)
+* [IntelliJ IDEA](#IntelliJ) 
 * [Git](#Git)
 
 You *must* have all of these installed to use this Quick Start guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience in these areas.
@@ -23,7 +23,7 @@ If you are new to Java or unfamiliar with these tools, read the details below fo
 
 #### <a name="Java">Java</a>
 
-If you don't have Java 7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
+If you don't have Java 1.7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
 
 ``` shell
 java -version
@@ -67,7 +67,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
 
-4. Continue through the wizard's options, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+4. Continue through the wizard's options. If you are prompted to select a project SDK, make sure Java is selected in the menu to the left, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
 ![run IntelliJ example](../img/Install_IntJ_3.png)
