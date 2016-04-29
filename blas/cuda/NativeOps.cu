@@ -81,24 +81,27 @@ dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int z
 	memory_limit += MAX_RANK; // special case, needed roughtly in one pase
 
 	// at this momen we've stored all required information for things. time to count in reduction multipliers
+	int reduction_per_block;
+	bool found = false;
 	if (reduction > 0)
-		while (true) {
-			if (memory_limit + (num_threads * elementSize * reduction) < 5000) {
-				memory_limit += (num_threads * elementSize * reduction);
-				break;
+		while (!found) {
+			reduction_per_block = (num_threads * elementSize * reduction);
+			if (memory_limit + reduction_per_block < 5000) {
+				memory_limit += reduction_per_block;
+				found = true;
 			} else {
 				if (num_threads >= 128) {
-					num_threads /= 2;
+					num_threads -= 32;
 				} else {
-					memory_limit += (num_threads * elementSize * reduction);
-					break;
+					memory_limit += reduction_per_block;
+					found = true;
 				}
 			}
 		}
 
 
 	if (debug)
-		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i]\n", num_blocks, num_threads, memory_limit);
+		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block);
 
 	return dim3(num_blocks,num_threads, memory_limit);
 }
@@ -1692,13 +1695,13 @@ void   NativeOps::execReduceFloat(
 	printf("reducefloat 2\n");
 	dim3 temp = getBetterDimensions(
 			shape::length((int *) xShapeInfoPointer),
-			512,
+			2048,
 			shape::rank(xShapeInfoPointer),
 			0,
 			shape::rank(resultShapeInfoPointer),
 			dimensionLength,
-			sizeof(float),
-			1
+			sizeof(double),
+			8
 	);
 
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
