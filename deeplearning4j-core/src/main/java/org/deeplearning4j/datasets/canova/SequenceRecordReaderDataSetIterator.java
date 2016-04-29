@@ -247,7 +247,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             labelsOut = Nd4j.create(labelsShape,'f');
             featuresMask = Nd4j.ones(featureList.size(),longestTimeSeries);
             labelsMask = Nd4j.ones(labelList.size(),longestTimeSeries);
-            int[] temp = new int[2];
             for (int i = 0; i < featureList.size(); i++) {
                 INDArray f = featureList.get(i);
                 INDArray l = labelList.get(i);
@@ -256,14 +255,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                         .put(new INDArrayIndex[]{NDArrayIndex.interval(0, f.size(0)), NDArrayIndex.all()}, f);
                 labelsOut.tensorAlongDimension(i, 1, 2)
                         .put(new INDArrayIndex[]{NDArrayIndex.interval(0, l.size(0)), NDArrayIndex.all()}, l);
-                temp[0] = i;
                 for( int j=f.size(0); j<longestTimeSeries; j++ ){
-                    temp[1] = j;
-                    featuresMask.putScalar(temp,0.0);
+                    featuresMask.putScalar(i,j,0.0);
                 }
                 for( int j=l.size(0); j<longestTimeSeries; j++ ){
-                    temp[1] = j;
-                    labelsMask.putScalar(temp,0.0);
+                    labelsMask.putScalar(i,j,0.0);
                 }
             }
         } else if( alignmentMode == AlignmentMode.ALIGN_END ){    //Align at end
@@ -289,14 +285,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             labelsOut = Nd4j.create(labelsShape,'f');
             featuresMask = Nd4j.ones(featureList.size(), longestTimeSeries);
             labelsMask = Nd4j.ones(labelList.size(), longestTimeSeries);
-            int[] temp = new int[2];
             for (int i = 0; i < featureList.size(); i++) {
                 INDArray f = featureList.get(i);
                 INDArray l = labelList.get(i);
 
                 int fLen = f.size(0);
                 int lLen = l.size(0);
-                temp[0] = i;
 
                 if(fLen >= lLen){
                     //Align labels with end of features (features are longer)
@@ -306,18 +300,15 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                             .put(new INDArrayIndex[]{NDArrayIndex.interval(fLen-lLen, fLen), NDArrayIndex.all()}, l);
 
                     for( int j=fLen; j<longestTimeSeries; j++ ){
-                        temp[1] = j;
-                        featuresMask.putScalar(temp,0.0);
+                        featuresMask.putScalar(i,j,0.0);
                     }
                     //labels mask: component before labels
                     for( int j=0; j<fLen-lLen; j++ ){
-                        temp[1] = j;
-                        labelsMask.putScalar(temp,0.0);
+                        labelsMask.putScalar(i,j,0.0);
                     }
                     //labels mask: component after labels
                     for( int j=fLen; j<longestTimeSeries; j++ ){
-                        temp[1] = j;
-                        labelsMask.putScalar(temp,0.0);
+                        labelsMask.putScalar(i,j,0.0);
                     }
                 } else {
                     //Align features with end of labels (labels are longer)
@@ -328,19 +319,16 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
                     //features mask: component before features
                     for( int j=0; j<lLen-fLen; j++ ){
-                        temp[1] = j;
-                        featuresMask.putScalar(temp,0.0);
+                        featuresMask.putScalar(i,j,0.0);
                     }
                     //features mask: component after features
                     for( int j=lLen; j<longestTimeSeries; j++ ){
-                        temp[1] = j;
-                        featuresMask.putScalar(temp,0.0);
+                        featuresMask.putScalar(i,j,0.0);
                     }
 
                     //labels mask
                     for( int j=lLen; j<longestTimeSeries; j++ ){
-                        temp[1] = j;
-                        labelsMask.putScalar(temp,0.0);
+                        labelsMask.putScalar(i,j,0.0);
                     }
                 }
             }
