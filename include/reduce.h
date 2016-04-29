@@ -767,6 +767,7 @@ namespace functions {
 //#pragma omp  parallel  for
                     for (int i = 0; i <  resultLength; i++) {
                         int offset = tad.tadOffsets[i];
+                        printf("Offsets for %d is %d\n",i,offset);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -784,10 +785,12 @@ namespace functions {
                                                       xStridesIter) >= 0) {
                             ND4J_RAW_ITER_START(dim, shape::rank(tad.tadOnlyShapeInfo), coord, shapeIter); {
                                     /* Process the innermost dimension */
-                                    start = update(start, op(xPointer[0], extraParams), extraParams);
+                                    if(xPointer > 0)
+                                        start = update(start, op(xPointer[0], extraParams), extraParams);
+                                    else printf("Xpointer is < 0\n");
                                 }
                             ND4J_RAW_ITER_ONE_NEXT(dim,
-                                                   shape::rank(tad.tadOnlyShapeInfo),
+                                                   rankIter,
                                                    coord,
                                                    shapeIter,
                                                    xPointer,

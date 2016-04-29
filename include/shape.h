@@ -1568,38 +1568,7 @@ namespace shape {
                 return index;
 
 
-            if(dimensionLength > 1) {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo, this->ptrManager);
-
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                if(ret < 0) {
-                    if (ptrManager == nullptr)
-                        delete[] tad2Sub;
-                    return -1;
-                }
-                if (ptrManager == nullptr)
-                    delete[] tad2Sub;
-
-                return ret;
-
-            }
-            else {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo, this->ptrManager);
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-
-                if (ptrManager == nullptr)
-                    delete[] tad2Sub;
-
-                return ret;
-            }
-
-
+           return index * shape::stride(tadOnlyShapeInfo)[0];
 
         }
 
@@ -1614,6 +1583,8 @@ namespace shape {
             this->tadOffsets = new int[this->numTads];
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
+                printf("TAD offset for tad %d is %d\n",i,this->tadOffsets[i]);
+
             }
         }
 
@@ -4183,7 +4154,7 @@ namespace shape {
     int getOffset(int baseOffset,  int *shape,  int *stride,  int *indices, int rank) {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
-            if(indices[i] >= shape[i]) {
+            if(indices[i] >= shape[i] && shape[i] != 1) {
                 printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
                 return -1;
             }
