@@ -63,7 +63,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 }
 
 int getBaseMemorySize(int xRank, int yRank, int zRank) {
-	int memory_limit = 256;
+	int memory_limit = 768;
 
 	if (xRank == 0) xRank = 2;
 
@@ -152,6 +152,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
 	if (debug)
 		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block);
@@ -1745,20 +1746,33 @@ void   NativeOps::execReduceFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	printf("reducefloat 2\n");
+//	shape::TAD *tad = new shape::TAD();
+//	tad->init(xShapeInfoPointer, dimensionPointer, dimensionLength);
+//	tad->setOutputBuffer(allocPointer);
+//	tad->createTadOnlyShapeInfo();
+
+//	shape::printShapeInfo(tad->tadOnlyShapeInfo);
+
+	int tadLength = shape::length((int *) xShapeInfoPointer) / shape::length(resultShapeInfoPointer);
+	int numTads = shape::length((int *) xShapeInfoPointer) / tadLength;
+
+	printf("numTads: [%i], tadLength: [%i]\n", numTads, tadLength);
+
+// dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction)
+
 	dim3 temp = getBetterDimensions(
 			(int) extraPointers[2],
-			shape::length((int *) xShapeInfoPointer),
-			2048,
+			numTads,
+			tadLength,
 			shape::rank(xShapeInfoPointer),
 			0,
 			shape::rank(resultShapeInfoPointer),
 			dimensionLength,
 			sizeof(float),
-			2
+			1
 	);
 
-	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<temp.x,temp.y,temp.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
@@ -1772,6 +1786,8 @@ void   NativeOps::execReduceFloat(
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+	//delete tad;
 }
 
 /**
