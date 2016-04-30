@@ -76,12 +76,56 @@ int getBaseMemorySize(int xRank, int yRank, int zRank) {
 	return memory_limit;
 }
 
-dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
-	int num_blocks = nd4j::math::nd4j_min<int>(numTads, blockLimit);
+int getDeviceBlockThreshold(int deviceId) {
+	int ccMinor = deviceProperties[deviceId].minor;
+	int ccMajor = deviceProperties[deviceId].major;
+
+	int blockThreshold;
+
+	if (ccMajor >= 5)
+		blockThreshold = 32;
+	else if (ccMajor == 3)
+		blockThreshold = 16;
+	else if (ccMajor < 3)
+		blockThreshold = 8;
+
+	return blockThreshold;
+}
+
+int getDeviceSharedThreshold(int deviceId) {
+	int ccMinor = deviceProperties[deviceId].minor;
+	int ccMajor = deviceProperties[deviceId].major;
+
+	// please note threshold isn't multiple of 32, and that's NOT a mistake
+
+	int shmemThreshold;
+	if (ccMajor == 5 && ccMinor == 2)
+		shmemThreshold = 96000;
+	else if (ccMajor == 5)
+		shmemThreshold = 64000;
+	else if (ccMajor == 3 && ccMinor == 7)
+		shmemThreshold = 112000;
+	else shmemThreshold = 48000;
+
+	return shmemThreshold;
+}
+
+dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
+
 	int num_threads = nd4j::math::nd4j_min<int>(tadLength, maxThreads);
+
+
+
+	int countMP = deviceProperties[deviceId].multiProcessorCount;
+	int regPerBlock = deviceProperties[deviceId].regsPerBlock;
+
+	int blockThreshold = getDeviceBlockThreshold(deviceId);
+	int shmemThreshold = getDeviceSharedThreshold(deviceId);
+
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, yRank, zRank);
+	int effective_block_limit =  countMP * blockThreshold;
 
 	// at this momen we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block;
@@ -102,6 +146,12 @@ dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int z
 			}
 		}
 
+	// at this moment we know total memory used per block, and we also know per-mp limit.
+	int max_active_blocks = shmemThreshold % memory_limit;
+
+	// we don't want to spawn more blocks, that gpu can actually handle without queue
+	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 
 	if (debug)
 		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block);
@@ -1697,6 +1747,7 @@ void   NativeOps::execReduceFloat(
 
 	printf("reducefloat 2\n");
 	dim3 temp = getBetterDimensions(
+			(int) extraPointers[2],
 			shape::length((int *) xShapeInfoPointer),
 			2048,
 			shape::rank(xShapeInfoPointer),
