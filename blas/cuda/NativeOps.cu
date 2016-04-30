@@ -63,7 +63,7 @@ dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceP
 }
 
 int getBaseMemorySize(int xRank, int yRank, int zRank) {
-	int memory_limit = 256;
+	int memory_limit = 768;
 
 	if (xRank == 0) xRank = 2;
 
@@ -76,14 +76,59 @@ int getBaseMemorySize(int xRank, int yRank, int zRank) {
 	return memory_limit;
 }
 
-dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
-	int num_blocks = nd4j::math::nd4j_min<int>(numTads, blockLimit);
+int getDeviceBlockThreshold(int deviceId) {
+	int ccMinor = deviceProperties[deviceId].minor;
+	int ccMajor = deviceProperties[deviceId].major;
+
+	int blockThreshold;
+
+	if (ccMajor >= 5)
+		blockThreshold = 32;
+	else if (ccMajor == 3)
+		blockThreshold = 16;
+	else if (ccMajor < 3)
+		blockThreshold = 8;
+
+	return blockThreshold;
+}
+
+int getDeviceSharedThreshold(int deviceId) {
+	int ccMinor = deviceProperties[deviceId].minor;
+	int ccMajor = deviceProperties[deviceId].major;
+
+	// please note threshold isn't multiple of 32, and that's NOT a mistake
+
+	int shmemThreshold;
+	if (ccMajor == 5 && ccMinor == 2)
+		shmemThreshold = 96000;
+	else if (ccMajor == 5)
+		shmemThreshold = 64000;
+	else if (ccMajor == 3 && ccMinor == 7)
+		shmemThreshold = 112000;
+	else shmemThreshold = 48000;
+
+	return shmemThreshold;
+}
+
+dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction) {
+
 	int num_threads = nd4j::math::nd4j_min<int>(tadLength, maxThreads);
+
+
+
+	int countMP = deviceProperties[deviceId].multiProcessorCount;
+	int regPerBlock = deviceProperties[deviceId].regsPerBlock;
+
+	int blockThreshold = getDeviceBlockThreshold(deviceId);
+	int shmemThreshold = getDeviceSharedThreshold(deviceId);
+
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, yRank, zRank);
+	int memory_floor = memory_limit;
+	int effective_block_limit =  countMP * blockThreshold;
 
-	// at this momen we've stored all required information for things. time to count in reduction multipliers
+	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block;
 	bool found = false;
 	if (reduction > 0)
@@ -102,9 +147,32 @@ dim3 getBetterDimensions(int numTads, int tadLength, int xRank, int yRank, int z
 			}
 		}
 
+	// at this moment we know total memory used per block, and we also know per-mp limit.
+	int max_active_blocks = shmemThreshold / memory_limit;
+
+	// we don't want to spawn more blocks, that gpu can actually handle without queue
+	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
+	if (num_blocks % countMP != 0)
+		num_blocks = num_blocks - (num_blocks % countMP);
+
+	int targetBlocksPerMP = num_blocks / countMP;
+
+	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
+	if (targetBlocksPerMP * num_threads > 2048) {
+		while (targetBlocksPerMP * num_threads > 2048) {
+			num_threads -= 32;
+			if (num_threads <= 96)
+				break;
+		}
+
+		memory_limit = memory_floor + (num_threads * elementSize * reduction);
+	}
+
 
 	if (debug)
-		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block);
+		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i], blocksPerMP: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block, targetBlocksPerMP);
 
 	return dim3(num_blocks,num_threads, memory_limit);
 }
@@ -1695,19 +1763,33 @@ void   NativeOps::execReduceFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	printf("reducefloat 2\n");
+//	shape::TAD *tad = new shape::TAD();
+//	tad->init(xShapeInfoPointer, dimensionPointer, dimensionLength);
+//	tad->setOutputBuffer(allocPointer);
+//	tad->createTadOnlyShapeInfo();
+
+//	shape::printShapeInfo(tad->tadOnlyShapeInfo);
+
+	int tadLength = shape::length((int *) xShapeInfoPointer) / shape::length(resultShapeInfoPointer);
+	int numTads = shape::length((int *) xShapeInfoPointer) / tadLength;
+
+	printf("numTads: [%i], tadLength: [%i]\n", numTads, tadLength);
+
+// dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction)
+
 	dim3 temp = getBetterDimensions(
-			shape::length((int *) xShapeInfoPointer),
-			2048,
+			(int) extraPointers[2],
+			numTads,
+			tadLength,
 			shape::rank(xShapeInfoPointer),
 			0,
 			shape::rank(resultShapeInfoPointer),
 			dimensionLength,
 			sizeof(float),
-			2
+			1
 	);
 
-	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceFloat<<<temp.x,temp.y,temp.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
@@ -1721,6 +1803,8 @@ void   NativeOps::execReduceFloat(
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+	//delete tad;
 }
 
 /**

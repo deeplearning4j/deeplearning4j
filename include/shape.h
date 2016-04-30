@@ -1229,6 +1229,7 @@ namespace shape {
 
         // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
         void *ptrManager = nullptr;
+        int *ptrOutput = nullptr;
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1248,6 +1249,39 @@ namespace shape {
         inline void setExternalBuffers(void *ptrManager) {
             this->ptrManager = ptrManager;
         }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline void setOutputBuffer(int *ptrOutput) {
+            this->ptrOutput = ptrOutput;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        /**
+         * This methos is for GPU mostly, it allows to initialize TAD instance with precalculated tadOnlyShapeInfo
+         */
+        inline void initWithExternalTAD(int *existingTAD, int *originalShape, int *dimension, int dimensionLength) {
+            this->tadOnlyShapeInfo = existingTAD;
+            this->rank = shape::rank(originalShape);
+
+            this->originalShapeInfo = originalShape;
+            this->originalDimension = dimension;
+            this->originalDimensionLength = dimensionLength;
+
+            this->shapeInfo = originalShape;
+            this->dimension = dimension;
+            this->dimensionLength = dimensionLength;
+
+            //this->tadLength = shape::length(existingTAD);
+
+            this->numTads = shape::length(originalShape) / shape::length(existingTAD);
+
+            this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
+        }
+
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -1745,11 +1779,11 @@ namespace shape {
             int *ret;
 #ifdef __CUDACC__
             if (ptrManager != nullptr) {
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-            ret = manager->getT1ShapeBuffer();
-        }
-        else
-            ret = new int[shape::shapeInfoLength(rank)];
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                ret = manager->getT1ShapeBuffer();
+            }  else if (this->ptrOutput != nullptr) {
+                ret = this->ptrOutput;
+            } else ret = new int[shape::shapeInfoLength(rank)];
 #else
             ret = new int[shape::shapeInfoLength(rank)];
 #endif

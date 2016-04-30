@@ -318,15 +318,19 @@ namespace functions {
 
                 if (!resultScalar) {
                     __shared__ shape::TAD *tad;
-                    __shared__ int tadRank;
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
+                    //    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
                         tad->init(xShapeInfo,dimension,dimensionLength);
-                        tad->createTadOnlyShapeInfo();
-                        tadRank = shape::rank(tad->tadOnlyShapeInfo);
+            	        tad->createTadOnlyShapeInfo();
                     }
                     __syncthreads();
+
+                    int tadLength = shape::length(tad->tadOnlyShapeInfo);
+                    int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+                    int tadRank = shape::rank(tad->tadOnlyShapeInfo);
+
 
                     if(dimensionLength == 1) {
                         for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
@@ -337,23 +341,21 @@ namespace functions {
                             int tadOffsetForBlock = tad->tadOffsetForBlock;
                             T *xVal = dx + tadOffsetForBlock;
 
-
                             sPartials[threadIdx.x] = this->startingValue(xVal);
-                            for(int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i * shape::elementWiseStride(tad->tadOnlyShapeInfo)], extraParams);
+
+                            for(int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i * tadEWS], extraParams);
                             }
                             __syncthreads();
 
                             // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)), extraParams);
-
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], shape::length(tad->tadOnlyShapeInfo), extraParams);
+                                result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
                         }
-
                     }
                     else {
                         /*
@@ -362,7 +364,7 @@ namespace functions {
                         */
                         int xCoord[MAX_RANK];
 
-                        for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
+                        for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
                             __syncthreads();
@@ -371,8 +373,8 @@ namespace functions {
 
                             sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
 
-                            for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
-                                shape::ind2subC(tadRank,tad->tadShape, i, xCoord);
+                            for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                                shape::ind2subC(tadRank, tad->tadShape, i, xCoord);
                                 Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
 
                                 sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
@@ -381,14 +383,12 @@ namespace functions {
 
                             // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)), extraParams);
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], shape::length(tad->tadOnlyShapeInfo), extraParams);
-
-
+                                result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
                         }
 
                         /*
@@ -1827,6 +1827,9 @@ __global__ void reduceGenericGlobal(
 
     if (resultShapeInfo != nullptr) {
         shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+
+    //    shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
+
         if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
@@ -1901,6 +1904,9 @@ __device__ void reduceGeneric(
 
     if (resultShapeInfo != nullptr) {
         shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+
+//        shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
+
         if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
 
