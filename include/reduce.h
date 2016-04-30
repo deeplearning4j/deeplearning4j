@@ -195,7 +195,7 @@ namespace functions {
                 __syncthreads();
 
                 if (gridDim.x > 1) {
-                    unsigned int *tc = (unsigned *) reductionBuffer;
+                    unsigned int *tc = (unsigned int *) reductionBuffer;
                     __shared__ bool amLast;
                     int rank = shape::rank(xShapeInfo);
                     tid = threadIdx.x;

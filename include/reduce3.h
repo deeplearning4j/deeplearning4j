@@ -241,7 +241,6 @@ namespace functions {
 //		SharedMemory <T> val;
 				volatile T *sPartials = manager->getSharedReductionBuffer(); // val.getPointer();
 
-
 				T startingVal = this->startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -251,12 +250,12 @@ namespace functions {
 				char yOrder = shape::order(yShapeInfo);
 				if(xOrder == yOrder) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-						for(Nd4jIndex i = 0; i < length; i+= gridDim.x * blockDim.x) {
+						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = update(startingVal, this->opAtomic(dx[i], dy[i], &extraParams), &extraParams);
 						}
 					}
 					else {
-						for(int i = 0; i < length; i+= gridDim.x * blockDim.x) {
+						for(int i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = update(startingVal, this->opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
 						}
 					}
