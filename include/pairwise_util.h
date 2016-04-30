@@ -4,7 +4,11 @@
 
 #ifndef NATIVEOPERATIONS_PAIRWISE_UTIL_H
 #define NATIVEOPERATIONS_PAIRWISE_UTIL_H
-#include <array.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 #include <dll.h>
 #include <nd4jmemset.h>
 #include <omp.h>
@@ -152,7 +156,7 @@ void quickSort(StridePermutation *arr, int elements);
 __host__ __device__
 #endif
 inline void  SortStrideArray(int ndim, int strides[],
-                      StridePermutation *out_strideperm) {
+                             StridePermutation *out_strideperm) {
 
     /* Set up the strideperm values */
     for (int i = 0; i < ndim; i++) {
@@ -186,9 +190,9 @@ template <typename T>
 __host__ __device__
 #endif
 inline int PrepareOneRawArrayIter(int ndim, int shape[],
-                           T data[], int strides[],
-                           int *out_ndim, int outShape[],
-                           T **out_data, int *outStrides) {
+                                  T data[], int strides[],
+                                  int *out_ndim, int outShape[],
+                                  T **out_data, int *outStrides) {
 
     for (int i = 0; i < ndim; i++) {
         if(shape[i] != 1) {
@@ -337,67 +341,17 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataB, int *stridesB,
                            int *out_ndim, int *outShape,
                            T **out_dataA, int *outStridesA,
-                           T **out_dataB, int *outStridesB)
-{
+                           T **out_dataB, int *outStridesB) {
     int i;
 
-    /* Special case 0 and 1 dimensions */
-    if (ndim == 0) {
-        *out_ndim = 1;
-        *out_dataA = dataA;
-        *out_dataB = dataB;
-        outShape[0] = 1;
-        outStridesA[0] = 0;
-        outStridesB[0] = 0;
-        return 0;
-    }
-    else if (ndim <= 2 || shape::isVector(shape,ndim)) {
-        *out_ndim = 2;
-        outShape[0] = shape[0];
-        outShape[1] = shape[1];
-        *out_dataA = dataA;
-        *out_dataB = dataB;
-        outStridesA[0] = stridesA[0];
-        outStridesA[1] = stridesA[1];
-        outStridesB[0] = stridesB[0];
-        outStridesB[1] = stridesB[1];
-#if 0
-        /* DEBUG */
-        {
-            printf("raw iter ndim %d\n", ndim);
-            printf("shape: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outShape[i]);
-            }
-            printf("\n");
-            printf("strides a: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outStridesA[i]);
-            }
-
-            printf("\n");
-            printf("strides b: ");
-
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outStridesB[i]);
-            }
-
-            printf("\n");
-
-        }
-#endif
-
-        return 0;
-    }
-
-    /* Sort the axes based on the destination strides */
+/* Sort the axes based on the destination strides */
     for (i = 0; i < ndim; ++i) {
         outShape[i] = shape[i];
         outStridesA[i] = stridesA[i];
         outStridesB[i] = stridesB[i];
     }
 
-    /* Reverse any negative strides of operand A */
+/* Reverse any negative strides of operand A */
     for (i = 0; i < ndim; i++) {
         int stride_entryA = outStridesA[i];
         int stride_entryB = outStridesB[i];
@@ -409,7 +363,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
             outStridesA[i] = -stride_entryA;
             outStridesB[i] = -stride_entryB;
         }
-        /* Detect 0-size arrays here */
+/* Detect 0-size arrays here */
         if (shape_entry == 0) {
             *out_ndim = 1;
             *out_dataA = dataA;
