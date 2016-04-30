@@ -2058,7 +2058,57 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray permuted = toPermute.permute(2, 1, 0);
         INDArray assertion = Nd4j.create(new float[]{0, 4, 2, 6, 1, 5, 3, 7}, new int[]{2, 2, 2});
         assertEquals(permuted, assertion);
+    }
 
+    @Test
+    public void testPermutei(){
+        //Check in-place permute vs. copy array permute
+
+        //2d:
+        INDArray orig = Nd4j.linspace(1,3*4,3*4).reshape('c',3,4);
+        INDArray exp01 = orig.permute(0,1);
+        INDArray exp10 = orig.permute(1,0);
+        List<Pair<INDArray,String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(3,4,12345);
+        List<Pair<INDArray,String>> list2 = NDArrayCreationUtil.getAllTestMatricesWithShape(3,4,12345);
+        for( int i=0; i<list1.size(); i++ ){
+            INDArray p1 = list1.get(i).getFirst().assign(orig).permutei(0,1);
+            INDArray p2 = list2.get(i).getFirst().assign(orig).permutei(1,0);
+
+            assertEquals(exp01, p1);
+            assertEquals(exp10, p2);
+        }
+
+        //3d:
+        INDArray orig3d = Nd4j.linspace(1,3*4*5,3*4*5).reshape('c',3,4,5);
+        INDArray exp012 = orig3d.permute(0,1,2);
+        INDArray exp021 = orig3d.permute(0,2,1);
+        INDArray exp120 = orig3d.permute(1,2,0);
+        INDArray exp102 = orig3d.permute(1,0,2);
+        INDArray exp201 = orig3d.permute(2,0,1);
+        INDArray exp210 = orig3d.permute(2,1,0);
+
+        List<Pair<INDArray,String>> list012 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list021 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list120 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list102 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list201 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list210 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+
+        for( int i=0; i<list012.size(); i++ ){
+            INDArray p1 = list012.get(i).getFirst().assign(orig3d).permutei(0,1,2);
+            INDArray p2 = list021.get(i).getFirst().assign(orig3d).permutei(0,2,1);
+            INDArray p3 = list120.get(i).getFirst().assign(orig3d).permutei(1,2,0);
+            INDArray p4 = list102.get(i).getFirst().assign(orig3d).permutei(1,0,2);
+            INDArray p5 = list201.get(i).getFirst().assign(orig3d).permutei(2,0,1);
+            INDArray p6 = list210.get(i).getFirst().assign(orig3d).permutei(2,1,0);
+
+            assertEquals(exp012, p1);
+            assertEquals(exp021, p2);
+            assertEquals(exp120, p3);
+            assertEquals(exp102, p4);
+            assertEquals(exp201, p5);
+            assertEquals(exp210, p6);
+        }
     }
 
 

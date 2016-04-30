@@ -4092,7 +4092,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (rearrange.length != rank())
             return dup();
         boolean alreadyInOrder = true;
-        for(int i = 0; i < Shape.rank(shapeInfo()); i++) {
+        IntBuffer shapeInfo = shapeInfo();
+        for(int i = 0; i < Shape.rank(shapeInfo); i++) {
             if(rearrange[i] != i) {
                 alreadyInOrder = false;
                 break;
@@ -4103,8 +4104,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         checkArrangeArray(rearrange);
-        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation.asNioInt()), rearrange);
-        int[] newStride = doPermuteSwap(Shape.stride(shapeInformation.asNioInt()), rearrange);
+        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInfo), rearrange);
+        int[] newStride = doPermuteSwap(Shape.stride(shapeInfo), rearrange);
         char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
         INDArray value = create(
@@ -4114,6 +4115,45 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 offset(),
                 newOrder);
         return value;
+    }
+
+    /**
+     * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
+     * is modified by this operation (but not the data itself)
+     * See: http://www.mathworks.com/help/matlab/ref/permute.html
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the current array
+     */
+    @Override
+    public INDArray permutei(int...rearrange) {
+        boolean alreadyInOrder = true;
+        IntBuffer shapeInfo = shapeInfo();
+        int rank = Shape.rank(shapeInfo);
+        for(int i = 0; i < rank; i++) {
+            if(rearrange[i] != i) {
+                alreadyInOrder = false;
+                break;
+            }
+        }
+
+        if(alreadyInOrder)
+            return this;
+
+        checkArrangeArray(rearrange);
+        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInfo), rearrange);
+        int[] newStride = doPermuteSwap(Shape.stride(shapeInfo), rearrange);
+        char newOrder = Shape.getOrder(newShape, newStride, elementStride());
+
+        //Set the shape information of this array: shape, stride, order.
+        //Shape info buffer: [rank, [shape], [stride], offset, elementwiseStride, order]
+        for( int i=0; i<rank; i++ ){
+            shapeInfo.put(1+i,newShape[i]);
+            shapeInfo.put(1+i+rank,newStride[i]);
+        }
+        shapeInfo.put(3+2*rank,newOrder);
+
+        return this;
     }
 
 
