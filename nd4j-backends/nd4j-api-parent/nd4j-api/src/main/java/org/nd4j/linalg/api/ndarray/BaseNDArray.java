@@ -102,6 +102,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int linearStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
 
+    //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
+    private static final int[][] tadFinalPermuteDimensions;
+    static{
+        tadFinalPermuteDimensions = new int[32][0];
+        for( int i=1; i<32; i++ ){
+            tadFinalPermuteDimensions[i] = new int[i];
+            for( int k=i-1, j=0; k>=0; k--, j++) tadFinalPermuteDimensions[i][j] = k;
+        }
+    }
 
     public BaseNDArray() {
     }
@@ -721,13 +730,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int tensorssAlongDimension(int... dimension) {
+        if(dimension == null || dimension.length == 0)
+            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         if(dimension.length >= rank())
             return 1;
         for(int i = 0; i < dimension.length; i++)
             if(dimension[i] < 0)
                 dimension[i] += rank();
-        if(dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         int[] tensorShape = ArrayUtil.keep(shape(), dimension);
         long len =  ArrayUtil.prodLong(tensorShape);
         if(len == 0)
@@ -739,6 +748,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        if(dimension == null || dimension.length == 0)
+            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
         if(dimension.length >= rank())
             return this;
@@ -751,8 +762,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
-        if(dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
 
         if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
@@ -764,25 +773,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);
         int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension);
         int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
+        int[] finalPermuteDims = tadFinalPermuteDimensions[dimension.length];
 
         INDArray permuted = permute(newPermuteDims);
         int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
 
         INDArray ret2 = permuted.slice(sliceIdx);
-        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length())
-            return ret2.reshape(Shape.ensureAtMinRowVector(tensorShape));
+        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()){
+            return ret2.permute(finalPermuteDims);
+        }
+
 
         int length = ArrayUtil.prod(tensorShape);
         int tensorLength = ArrayUtil.prod(tensorShape);
         int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
 
-        if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
-            return ret2.slice(offset).reshape(Shape.ensureAtMinRowVector(tensorShape));
+        if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2)) {
+            INDArray temp = ret2.slice(offset);
+            return temp.permute(finalPermuteDims);
+        }
 
         else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
-            return ret2.reshape(Shape.ensureAtMinRowVector(tensorShape));
+            return ret2.permute(finalPermuteDims);
         }
 
         while(ret2.length() > length) {
@@ -791,7 +805,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret2 = ret2.slice(sliceIdx);
         }
 
-        return ret2.reshape(Shape.ensureAtMinRowVector(tensorShape));
+        return ret2.permute(finalPermuteDims);
     }
 
 
