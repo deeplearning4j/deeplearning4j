@@ -102,9 +102,15 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 
 	int num_blocks = 64;
 
-	int memory = (sharedMemoryPerThread * num_threads) + getBaseMemorySize(1,0,0);
+	int memory_limit = (sharedMemoryPerThread * num_threads) + getBaseMemorySize(1,0,0);
 
-	return dim3(num_blocks, num_threads, memory);
+	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
+
+	if (debug)
+		printf("Preliminary basic launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i]\n", num_blocks, num_threads, memory_limit);
+
+
+	return launchDims;
 }
 
 int getDeviceSharedThreshold(int deviceId) {
@@ -702,7 +708,7 @@ void NativeOps::execPairwiseTransformDouble(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(double), 0);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
 
 	pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -911,7 +917,9 @@ void   NativeOps::execReduce3Double(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(double), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(double), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -963,7 +971,9 @@ double   NativeOps::execReduce3ScalarDouble(
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(double), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(double), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1026,7 +1036,9 @@ void   NativeOps::execReduce3Double(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(double), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(double), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1891,7 +1903,8 @@ void NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(float), 0);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(float), 0);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
 
 	pairWiseTransformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -2116,7 +2129,9 @@ void   NativeOps::execReduce3Float(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2168,7 +2183,9 @@ float   NativeOps::execReduce3ScalarFloat(
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(float), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(float), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2232,7 +2249,9 @@ void   NativeOps::execReduce3Float(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
+	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
+	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
