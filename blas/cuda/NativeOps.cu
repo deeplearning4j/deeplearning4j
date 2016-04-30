@@ -28,7 +28,7 @@ cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
 int maxThreads = 512;
 bool debug = true;
-bool verbose = true;
+bool verbose = false;
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -148,6 +148,8 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	// round num_threads to nearest warpSize
 	num_threads -= num_threads % warpSize;
 
+	num_threads = nd4j::math::nd4j_max<int>(32, num_threads);
+
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, yRank, zRank);
@@ -188,9 +190,10 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
 	if (targetBlocksPerMP * num_threads > 2048) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			num_threads -= 32;
 			if (num_threads <= 96)
 				break;
+
+			num_threads -= 32;
 		}
 
 		memory_limit = memory_floor + (num_threads * elementSize * reduction);
@@ -252,8 +255,8 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo) {
 
 dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *zShapeInfo, int dimensionLength, int elementSize, int reductionSize) {
 
-	int tadLength;
-	int numTads;
+	int tadLength = 0;
+	int numTads = 0;
 	if (zShapeInfo != nullptr) {
 		tadLength = shape::length(xShapeInfo) / shape::length(zShapeInfo);
 		numTads = shape::length(xShapeInfo) / tadLength;
@@ -263,6 +266,7 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *
 		}
 	} else{
 		// we have special case - reduction along all dimensions
+		printf("zShapeInfo is nullPtr\n");
 		tadLength = 2048;
 		numTads = shape::length(xShapeInfo) / tadLength;
 	}
