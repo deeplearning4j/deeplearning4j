@@ -28,8 +28,8 @@ public class CudaAccumTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.HOST)
-                .setMaximumBlockSize(1024)
-                .setMaximumGridSize(256)
+                .setMaximumBlockSize(512)
+                .setMaximumGridSize(512)
                 .enableDebug(true);
 
         System.out.println("Init called");
@@ -247,7 +247,11 @@ public class CudaAccumTests {
         INDArray n = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
 
+        long time1 = System.currentTimeMillis();
         INDArray sum = n.sum(new int[]{1});
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: " + (time2 - time1));
 
         System.out.println("elementWiseStride: " + n.elementWiseStride());
         System.out.println("elementStride: " + n.elementStride());

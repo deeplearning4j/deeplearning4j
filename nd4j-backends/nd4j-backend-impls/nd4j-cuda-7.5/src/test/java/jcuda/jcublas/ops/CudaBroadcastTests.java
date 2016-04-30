@@ -1,9 +1,15 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 
 import static org.junit.Assert.assertEquals;
@@ -13,6 +19,18 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CudaBroadcastTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(128)
+                .setMaximumGridSize(128)
+                .enableDebug(true);
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testPinnedAddiRowVector() throws Exception {
@@ -51,7 +69,14 @@ public class CudaBroadcastTests {
         INDArray array1 = Nd4j.zeros(1500,150);
         INDArray array2 = Nd4j.linspace(1,150,150);
 
+        AtomicAllocator.getInstance().getPointer(array1, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        AtomicAllocator.getInstance().getPointer(array2, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+
+        long time1 = System.currentTimeMillis();
         array1.subiRowVector(array2);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: " + (time2 - time1));
 
      //   System.out.println("Array1: " + array1);
 //        System.out.println("Array2: " + array2);
@@ -69,8 +94,8 @@ public class CudaBroadcastTests {
 
         array1.subiColumnVector(array2);
 
-        System.out.println("Array1: " + array1);
-        System.out.println("Array2: " + array2);
+//        System.out.println("Array1: " + array1);
+//        System.out.println("Array2: " + array2);
 
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);
         assertEquals(-1.0f, array1.getRow(0).getFloat(0), 0.01);

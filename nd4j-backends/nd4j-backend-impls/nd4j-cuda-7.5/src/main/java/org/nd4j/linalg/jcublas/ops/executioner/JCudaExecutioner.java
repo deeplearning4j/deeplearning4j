@@ -77,7 +77,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         Arrays.sort(dimension);
-        log.info("B OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
+        //log.info("B OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
 
         CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
         
