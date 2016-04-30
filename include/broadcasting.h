@@ -81,90 +81,39 @@ namespace functions {
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
 	  __shared__ shape::TAD *tad;
+	  __shared__ int rank;
         if (threadIdx.x == 0) {
-              tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-              tad->setExternalBuffers((void *) manager);
-              tad->init(xShapeInfo,dimension,dimensionLength);
-              tad->createTadOnlyShapeInfo();
-
+            tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+            tad->setExternalBuffers((void *) manager);
+            tad->init(xShapeInfo,dimension,dimensionLength);
+            tad->createTadOnlyShapeInfo();
+			rank = shape::rank(tad->tadOnlyShapeInfo);
         }
        __syncthreads();
 
 
+        //int *xCoord = shape::cuMalloc(manager->getSharedCoordBuffer(), rank);
+        int xCoord[MAX_RANK];
 
-		int *xShape = tad->tadShape;
-		int *xStride = tad->tadStride;
-		int tadLength = tad->tadLength;
-		int rank = tad->rank;
-
-        int *xCoord = shape::cuMalloc(manager->getT1ShapeBuffer(), sizeof(int) * shape::rank(tad->tadOnlyShapeInfo));
 
 		for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
 			if (threadIdx.x == 0)
             	tad->createOffsetForBlock(r);
             __syncthreads();
 
+			int tadOffsetForBlock = tad->tadOffsetForBlock;
+
             for (int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
 				// now we need coords for both X, Y. Z is uses the same coord as X in this case
 				// Y is always vector, however it might be stided
 				shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
 
 				int yStride = shape::elementWiseStride(yShapeInfo);
 
 				result[xOffset] = this->op(x[xOffset], y[i * yStride]);
             }
-            __syncthreads();
 		}
-
-			/*
-			for (int i = blockIdx.x * blockDim.x + threadIdx.x;
-					i < tads;
-					i += blockDim.x * gridDim.x) {
-                Nd4jIndex offset = tad->tadOffset(i);
-				T *xIter = x + offset;
-				T *resultIter = result + offset;
-				int shapeIter[MAX_RANK];
-				int coord[MAX_RANK];
-				int dim;
-				int xStridesIter[MAX_RANK];
-				int resultStridesIter[MAX_RANK];
-				int rank = shape::rank(tadShapeShapeInfo);
-				int vectorIdx = 0;
-
-				if (PrepareTwoRawArrayIter<T>(rank,
-						xShape,
-						xIter,
-						xStride,
-						resultIter,
-						resultStride,
-						&rank,
-						shapeIter,
-						&xIter,
-						xStridesIter,
-						&resultIter,
-						resultStridesIter) >= 0) {
-					ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-						T val = this->op(xIter[0], y[vectorIdx]);
-						xIter[0] = val;
-						vectorIdx += shape::elementWiseStride(yShapeInfo);
-					}
-					ND4J_RAW_ITER_TWO_NEXT(dim,
-							rank,
-							coord,
-							shapeIter,
-							xIter,
-							xStridesIter,
-							resultIter,
-							resultStridesIter);
-
-
-				}
-			}
-			*/
-
-
-		__syncthreads();
 	}
 #endif
 
@@ -765,10 +714,13 @@ __device__ void broadcastGeneric(
 		int opNum,
 		T *x,
 		int *xShapeInfo,
+		int xRank,
 		T *y,
 		int *yShapeInfo,
+		int yRank,
 		T *result,
 		int *resultShapeInfo,
+		int zRank,
 		int *dimension,
 		int dimensionLength) {
 
@@ -781,6 +733,10 @@ __device__ void broadcastGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD));
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(yRank);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
 
@@ -838,19 +794,19 @@ __device__ void broadcastGeneric(
  */
 extern "C" __global__ void broadcastDouble(
 		int opNum,
-		double *x, int *xShapeInfo,
-		double *y, int *yShapeInfo,
-		double *result, int *resultShapeInfo,
+		double *x, int *xShapeInfo, int xRank,
+		double *y, int *yShapeInfo, int yRank,
+		double *result, int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength) {
 	broadcastGeneric<double>(
 			opNum,
 			x,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			y,
-			yShapeInfo,
+			yShapeInfo, yRank,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength);
 
@@ -874,19 +830,19 @@ extern "C" __global__ void broadcastDouble(
  */
 extern "C" __global__ void broadcastFloat(
 		int opNum,
-		float *x, int *xShapeInfo,
-		float *y, int *yShapeInfo,
-		float *result, int *resultShapeInfo,
+		float *x, int *xShapeInfo, int xRank,
+		float *y, int *yShapeInfo, int yRank,
+		float *result, int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength) {
 	broadcastGeneric<float>(
 			opNum,
 			x,
-			xShapeInfo,
+			xShapeInfo, xRank,
 			y,
-			yShapeInfo,
+			yShapeInfo, yRank,
 			result,
-			resultShapeInfo,
+			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength);
 

@@ -136,7 +136,6 @@ namespace functions {
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
 		char resultOrder = shape::order(resultShapeInfo);
-		Nd4jIndex n = shape::length(shapeInfo);
 		int xRank = shape::rank(shapeInfo);
 		int xOffset = shape::offset(shapeInfo);
 
@@ -162,14 +161,16 @@ namespace functions {
 		}
 		else {
 			/* equal, positive, non-unit increments. */
-			long allocSize = sizeof(int) * xRank;
-			int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
+			//long allocSize = sizeof(int) * xRank;
+			//int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
+			int xCoord[MAX_RANK];
+
 #pragma unroll
-			for (int i = tid; i < n; i+= gridDim.x * blockDim.x) {
+			for (int i = tid; i < length; i+= gridDim.x * blockDim.x) {
 				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
-				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xIdx);
-				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
-				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
+				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
+				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
 				result[resultOffset2] = op(dy[xOffset2], params);
 			}
 		}
@@ -5581,6 +5582,11 @@ __device__ void transformGeneric(
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
 
+        manager->setXSpace(0);
+	    manager->setYSpace(0);
+	    manager->setZSpace(0);
+	    manager->setTADSpace(0);
+
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
         op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
@@ -5668,9 +5674,9 @@ template <typename T>
 __device__ void transformGeneric(
 		int opNum,
 		T *dy,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		T *params,
-		T *result,int *resultShapeInfo, int *allocationPointer, T *reductionPointer) {
+		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
 
 	__shared__ functions::transform::Transform<T> *op;
 	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
@@ -5683,6 +5689,12 @@ __device__ void transformGeneric(
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
+
+        manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(0);
+
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
     }
     __syncthreads();
@@ -5734,16 +5746,16 @@ __device__ void transformGeneric(
 extern "C" __global__ void transformDouble(
 		int opNum,
 		double *dy,
-		int *shapeInfo,
+		int *shapeInfo, int xRank,
 		double *params,
-		double *result,int *resultShapeInfo, int *allocationPointer, double *reductionPointer) {
+		double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) {
 
 	transformGeneric<double>(
 			opNum,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
-			result,resultShapeInfo, allocationPointer, reductionPointer);
+			result,resultShapeInfo, zRank, allocationPointer, reductionPointer);
 }
 
 /**
@@ -5762,17 +5774,17 @@ extern "C" __global__ void transformDouble(
 extern "C" __global__ void transformFloat(
 		int opNum,
 		float *dy,
-		int *shapeInfo,
+		int *shapeInfo, int xRank,
 		float *params,
-		float *result,int *resultShapeInfo, int *allocationPointer, float *reductionPointer) {
+		float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) {
 
 	transformGeneric<float>(
 			opNum,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
 			result,
-			resultShapeInfo,allocationPointer, reductionPointer);
+			resultShapeInfo, zRank, allocationPointer, reductionPointer);
 
 }
 
@@ -5795,7 +5807,7 @@ template <typename T>
 __device__ void transformGenericIndexes(
 		int opNum,
 		T *dy,
-		int *xShapeInfo,
+		int *xShapeInfo, int xRank,
 		T *params,
 		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
 
@@ -5808,6 +5820,11 @@ __device__ void transformGenericIndexes(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
+
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(0);
+	    manager->setZSpace(0);
+	    manager->setTADSpace(0);
     }
     __syncthreads();
 
@@ -5846,14 +5863,14 @@ __device__ void transformGenericIndexes(
 extern "C" __global__ void transformDoubleIndexes(
 		int opNum,
 		double *dy,
-		int *shapeInfo,
+		int *shapeInfo, int xRank,
 		double *params,
 		double *result,int *indexes, int *allocationPointer, double *reductionPointer) {
 
 	transformGenericIndexes<double>(
 			opNum,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
 			result,indexes, allocationPointer, reductionPointer);
 }
@@ -5874,14 +5891,14 @@ extern "C" __global__ void transformDoubleIndexes(
 extern "C" __global__ void transformFloatIndexes(
 		int opNum,
 		float *dy,
-		int *shapeInfo,
+		int *shapeInfo, int xRank,
 		float *params,
 		float *result,int *indexes, int *allocationPointer, float *reductionPointer) {
 
 	transformGenericIndexes<float>(
 			opNum,
 			dy,
-			shapeInfo,
+			shapeInfo, xRank,
 			params,
 			result,indexes, allocationPointer, reductionPointer);
 
