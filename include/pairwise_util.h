@@ -8,7 +8,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
-
+#include <pairwise_util.h>
+#include <pointercast.h>
 #include <dll.h>
 #include <nd4jmemset.h>
 #include <omp.h>
