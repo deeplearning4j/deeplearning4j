@@ -1865,6 +1865,16 @@ public interface INDArray extends Serializable  {
     INDArray permute(int... rearrange);
 
     /**
+     * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
+     * is modified by this operation (but not the data itself)
+     * See: http://www.mathworks.com/help/matlab/ref/permute.html
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the current array
+     */
+    INDArray permutei(int... rearrange);
+
+    /**
      * Dimshuffle: an extension of permute that adds the ability
      * to broadcast various dimensions.
      * This will only accept integers and xs.
