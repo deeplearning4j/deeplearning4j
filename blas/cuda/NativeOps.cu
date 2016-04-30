@@ -125,9 +125,10 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
 	int memory_limit = getBaseMemorySize(xRank, yRank, zRank);
+	int memory_floor = memory_limit;
 	int effective_block_limit =  countMP * blockThreshold;
 
-	// at this momen we've stored all required information for things. time to count in reduction multipliers
+	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block;
 	bool found = false;
 	if (reduction > 0)
@@ -153,9 +154,25 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
+	if (num_blocks % countMP != 0)
+		num_blocks = num_blocks - (num_blocks % countMP);
+
+	int targetBlocksPerMP = num_blocks / countMP;
+
+	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
+	if (targetBlocksPerMP * num_threads > 2048) {
+		while (targetBlocksPerMP * num_threads > 2048) {
+			num_threads -= 32;
+			if (num_threads <= 96)
+				break;
+		}
+
+		memory_limit = memory_floor + (num_threads * elementSize * reduction);
+	}
+
 
 	if (debug)
-		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block);
+		printf("Preliminary launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i], blocksPerMP: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block, targetBlocksPerMP);
 
 	return dim3(num_blocks,num_threads, memory_limit);
 }
