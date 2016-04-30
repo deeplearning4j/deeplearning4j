@@ -745,11 +745,11 @@ namespace functions {
 
                 if(tad.wholeThing) {
                     T start = this->startingValue(x);
-                    for(int i = 0; i < tad.tadLength; i++) {
+                    for(int i = 0; i < shape::length(tad.tadOnlyShapeInfo); i++) {
                         start = update(start, op(x[i], extraParams), extraParams);
                     }
 
-                    result[0] = this->postProcess(start,tad.tadLength,extraParams);
+                    result[0] = this->postProcess(start,shape::length(tad.tadOnlyShapeInfo),extraParams);
 
                 }
                 else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
@@ -761,19 +761,19 @@ namespace functions {
                         int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         if(eleStride == 1) {
 #pragma omp simd
-                            for(int j = 0; j < tad.tadLength; j++) {
+                            for(int j = 0; j < shape::length(tad.tadOnlyShapeInfo); j++) {
                                 start = update(start, op(iter[j], extraParams), extraParams);
 
                             }
                         }
                         else {
 #pragma omp simd
-                            for(int j = 0; j < tad.tadLength; j++) {
+                            for(int j = 0; j < shape::length(tad.tadOnlyShapeInfo); j++) {
                                 start = update(start, op(iter[j * eleStride], extraParams), extraParams);
                             }
                         }
 
-                        result[i] = this->postProcess(start,tad.tadLength,extraParams);
+                        result[i] = this->postProcess(start,shape::length(tad.tadOnlyShapeInfo),extraParams);
 
                     }
                 }
@@ -809,7 +809,7 @@ namespace functions {
                                                    shapeIter,
                                                    xPointer,
                                                    xStridesIter);
-                            start = postProcess(start, tad.tadLength, extraParams);
+                            start = postProcess(start, shape::length(tad.tadOnlyShapeInfo), extraParams);
                         }
                         else {
                             printf("Unable to prepare array\n");

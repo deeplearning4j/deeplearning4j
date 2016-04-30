@@ -945,27 +945,17 @@ struct SharedSummaryStatsData<double> {
                 }
 
 
+                shape::TAD tad(xShapeInfo,dimension,dimensionLength);
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+
+                //no-op
+                if(tad.dimensionLength < 1)
+                    return;
+
+
                 int resultLength = shape::length(resultShapeInfoBuffer);
-                /**
-                 * The element wise stride belong longs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along long arr
-                 * we can use arr.stride(1) as a representation
-                 * along long which to iterate.
-                 */
-
-                if (dimensionLength > 1) {
-                    int numOnes = 0;
-                    int *shape = shape::shapeOf(xShapeInfo);
-                    int wholeRank = shape::rank(xShapeInfo);
-                    for (int i = 0; i < wholeRank; i++) {
-                        if (shape[i] == 1)
-                            numOnes++;
-                    }
-
-
+                if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0) {
 
                     /**
                      * The element wise stride belong longs to a reduction index.
@@ -977,14 +967,14 @@ struct SharedSummaryStatsData<double> {
                      * along long which to iterate.
                      */
 
-                    int *tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,shape::order(xShapeInfo) == 'f');
+                    int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp  parallel  for
                     for (int i = 0; i < resultLength; i++) {
-                        int offset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
+                        int offset = tad.tadOffsets[i];
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -1018,60 +1008,28 @@ struct SharedSummaryStatsData<double> {
                             printf("Unable to prepare array\n");
                         }
 
-
+                        result[i] = getValue(comp);
+                    }
+                }
+                else {
+                    int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
+                    int tadLength = shape::length(tad.tadOnlyShapeInfo);
+#pragma omp parallel for
+                    for(int i = 0;  i < resultLength; i++) {
+                        int baseOffset = tad.tadOffsets[i];
+                        SummaryStatsData<T> comp;
+                        comp.initWithValue(x[baseOffset]);
+#pragma omp simd
+                        for(int j = 1; j < tadLength; j++) {
+                            SummaryStatsData<T> comp2;
+                            comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
+                            comp = update(comp, comp2, extraParams);
+                        }
 
                         result[i] = getValue(comp);
-
-
                     }
-
-
-                    delete[] tadShapeShapeInfo;
-
-
 
                 }
-
-                else {
-                    if(shape::order(xShapeInfo) == 'f') {
-                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
-                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-#pragma omp parallel for
-                        for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
-                            SummaryStatsData<T> comp;
-                            comp.initWithValue(x[baseOffset]);
-
-                            for(int j = 1; j < tadLength; j++) {
-                                SummaryStatsData<T> comp2;
-                                comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
-                                comp = update(comp, comp2, extraParams);
-                            }
-
-                            result[i] = getValue(comp);
-                        }
-
-                    }
-                    else {
-                        int tadElementWiseStride = shape::reductionIndexElementWiseStride(xShapeInfo, dimension, dimensionLength);
-                        int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-#pragma omp parallel for
-                        for(int i = 0;  i < resultLength; i++) {
-                            int baseOffset = shape::tadOffset(i,xShapeInfo,dimension,dimensionLength, nullptr);
-                            SummaryStatsData<T> comp;
-                            comp.initWithValue(x[baseOffset]);
-                            for(int j = 1; j < tadLength; j++) {
-                                SummaryStatsData<T> comp2;
-                                comp2.initWithValue(x[baseOffset + tadElementWiseStride * j]);
-                                comp = update(comp, comp2, extraParams);
-                            }
-
-                            result[i] = getValue(comp);
-                        }
-
-                    }
-                }
-
             }
 
             virtual

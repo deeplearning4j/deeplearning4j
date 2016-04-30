@@ -898,7 +898,7 @@ namespace functions {
                      * along long which to iterate.
                      */
 					int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
-					int tadLength = xTad.tadLength;
+					int tadLength = shape::length(xTad.tadOnlyShapeInfo);
 #pragma omp parallel for
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						T *localExtraParams = nullptr;
