@@ -2223,22 +2223,12 @@ namespace shape {
 
         if(dimensionLength == 1) {
             if(shape::isMatrix(theShape,shape::rank(shapeInfo))) {
-                if(dimension[0] == 0) {
-                    int newStride[2] = {theStride[dimension[0]],1};
-                    int newShape[2] = {theShape[dimension[0]],1};
-                    retShape[0] = newShape[0];
-                    retShape[1] = newShape[1];
-                    retStride[0] = newStride[0];
-                    retStride[1] = newStride[1];
-                }
-                else {
-                    int newStride[2] = {theStride[dimension[0]],1};
-                    int newShape[2] = {theShape[dimension[0]],1};
-                    retShape[0] = newShape[0];
-                    retShape[1] = newShape[1];
-                    retStride[0] = newStride[0];
-                    retStride[1] = newStride[1];
-                }
+                int newStride[2] = {theStride[dimension[0]],1};
+                int newShape[2] = {theShape[dimension[0]],1};
+                retShape[0] = newShape[0];
+                retShape[1] = newShape[1];
+                retStride[0] = newStride[0];
+                retStride[1] = newStride[1];
             }
             else {
                 int newStride[2] = {1,theStride[dimension[0]]};
@@ -3411,42 +3401,21 @@ namespace shape {
 
     inline int reductionIndexElementWiseStride(int *buffer, int *dimension, int dimensionLength) {
         if(dimensionLength > 1) {
-            char order = shape::order(buffer);
-            if(order == 'f') {
-                /**
-                        * The element wise stride belongs to a reduction index.
-                        * When used out of order, we can get rid of the data
-                        * dependencies and rely on using the max dimension
-                        * specified for stride instead.
-                        * Say we take the sum(0,1) along arr
-                        * we can use arr.stride(1) as a representation
-                        * along which to iterate.
-                        */
-                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
-                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-                    return tadElementWiseStride;
-                }
-
-                return 1;
-
+            /**
+                    * The element wise stride belongs to a reduction index.
+                    * When used out of order, we can get rid of the data
+                    * dependencies and rely on using the max dimension
+                    * specified for stride instead.
+                    * Say we take the sum(0,1) along arr
+                    * we can use arr.stride(1) as a representation
+                    * along which to iterate.
+                    */
+            if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
+                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                return tadElementWiseStride;
             }
-            else {
-                /**
-                        * The element wise stride belongs to a reduction index.
-                        * When used out of order, we can get rid of the data
-                        * dependencies and rely on using the max dimension
-                        * specified for stride instead.
-                        * Say we take the sum(0,1) along arr
-                        * we can use arr.stride(1) as a representation
-                        * along which to iterate.
-                        */
-                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
-                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-                    return tadElementWiseStride;
-                }
 
-                return 1;
-            }
+            return 1;
         }
         else {
             char order = shape::order(buffer);
@@ -4008,7 +3977,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         delete[] reverseDimensions;
         delete[] rangeRet;
         delete[] remove;
-        delete[] copy;
+        delete copy;
         //free the new pointer
         if (rank <= 2) {
             delete[] tensorShape;
@@ -4324,52 +4293,24 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         int rank = shape::rank(data);
 
-
-        if(shape::order(data) == 'f') {
-            int dimIdx = dimensionLength - 1;
-            for(int i = rank - 1; i >= 0; i--) {
-                /**
-                 * Needs to find an algorithm such that:
-                 * looping backwards will find the highest dimension left
-                 * that isn't included in the dimension index list.
-                 *
-                 * This can also be thought of as the last item of the first index
-                 * of the difference between the full list of indices and
-                 * the dimension indices.
-                 *
-                 * We should avoid excessive object creation by only looping backwards.
-                 */
-                if(dimension[dimIdx--] != i) {
-                    int ret = stride[i];
-                    return ret;
-                }
+        int dimIdx = dimensionLength - 1;
+        for(int i = rank - 1; i >= 0; i--) {
+            /**
+                * Needs to find an algorithm such that:
+                * looping backwards will find the highest dimension left
+                * that isn't included in the dimension index list.
+                *
+                * This can also be thought of as the last item of the first index
+                * of the difference between the full list of indices and
+                * the dimension indices.
+                *
+                * We should avoid excessive object creation by only looping backwards.
+                */
+            if(dimension[dimIdx--] != i) {
+                int ret = stride[i];
+                return ret;
             }
         }
-
-        else {
-            int dimIdx = dimensionLength - 1;
-
-            for(int i = rank - 1; i >= 0; i--) {
-                /**
-                 * Needs to find an algorithm such that:
-                 * looping backwards will find the highest dimension left
-                 * that isn't included in the dimension index list.
-                 *
-                 * This can also be thought of as the last item of the first index
-                 * of the difference between the full list of indices and
-                 * the dimension indices.
-                 *
-                 * We should avoid excessive object creation by only looping backwards.
-                 */
-                if(dimension[dimIdx--] != i) {
-                    int ret = stride[i];
-                    return ret;
-                }
-            }
-        }
-
-
-
 
         int ret = stride[0];
         return ret;
