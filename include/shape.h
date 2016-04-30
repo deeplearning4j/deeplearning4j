@@ -1274,11 +1274,7 @@ namespace shape {
             this->shapeInfo = originalShape;
             this->dimension = dimension;
             this->dimensionLength = dimensionLength;
-
-            //this->tadLength = shape::length(existingTAD);
-
             this->numTads = shape::length(originalShape) / shape::length(existingTAD);
-
             this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
         }
 
@@ -1905,7 +1901,7 @@ namespace shape {
             if(wholeThing)
                 ret[shape::shapeInfoLength(rank) - 2] = 1;
             else
-                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,originalDimension,originalDimensionLength);
+                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,dimension,dimensionLength);
 
 
             // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
