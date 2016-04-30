@@ -1204,7 +1204,6 @@ namespace shape {
      */
     class TAD {
     public:
-        int tadElementWiseStride = 1;
         int dimensionLength;
         int *dimension = nullptr;
         int *shapeInfo = nullptr;
@@ -1511,12 +1510,12 @@ namespace shape {
             permuteDims = manager->getTempRankBuffer5();
         } else permuteDims = new int[rank];
 #else
-            int *permuteDims = new int[rank];
+            int *permuteDims = new int[shape::rank(shapeInfo)];
 #endif
-            for(int i = 0; i < rank; i++) {
+            for(int i = 0; i < shape::rank(shapeInfo); i++) {
                 bool found = false;
-                for(int j = 0; j < dimensionLength; j++) {
-                    if(i == dimension[j]) {
+                for(int j = 0; j < originalDimensionLength; j++) {
+                    if(i == originalDimension[j]) {
                         found = true;
                         break;
                     }
@@ -1530,8 +1529,8 @@ namespace shape {
             }
 
 
-            for(int i = dimensionLength - 1; i >= 0; i--) {
-                permuteDims[dimIdx++] = dimension[i];
+            for(int i = originalDimensionLength - 1; i >= 0; i--) {
+                permuteDims[dimIdx++] = originalDimension[i];
             }
 
 
@@ -1742,7 +1741,7 @@ namespace shape {
 
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
-            int rank = dimensionLength <= 1 ? 2 : dimensionLength;
+            int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
             int *ret;
 #ifdef __CUDACC__
             if (ptrManager != nullptr) {
@@ -1779,21 +1778,21 @@ namespace shape {
             this->permuteShapeBufferInPlace(shapeInfo,permuteIndexes,toPermute);
 
 
-            if(dimensionLength == 1) {
+            if(originalDimensionLength == 1) {
                 if((numOnes < 1 && !shape::isMatrix(shapeInfo)) || this->rank == 2) {
                     int *permuteShape = shape::shapeOf(toPermute);
                     int *permuteStride = shape::stride(toPermute);
-                    if(dimension[0] == 0) {
-                        int newStride[2] = {1,theStride[dimension[0]]};
-                        int newShape[2] = {1,theShape[dimension[0]]};
+                    if(originalDimension[0] == 0) {
+                        int newStride[2] = {1,theStride[originalDimension[0]]};
+                        int newShape[2] = {1,theShape[originalDimension[0]]};
                         retShape[0] = newShape[0];
                         retShape[1] = newShape[1];
                         retStride[0] = newStride[0];
                         retStride[1] = newStride[1];
                     }
                     else {
-                        int newStride[2] = {theStride[dimension[0]],1};
-                        int newShape[2] = {theShape[dimension[0]],1};
+                        int newStride[2] = {theStride[originalDimension[0]],1};
+                        int newShape[2] = {theShape[originalDimension[0]],1};
                         retShape[0] = newShape[0];
                         retShape[1] = newShape[1];
                         retStride[0] = newStride[0];
@@ -1801,16 +1800,26 @@ namespace shape {
                     }
 
                 }
+                else if(originalDimensionLength > 1) {
+                    int shapeOffset = shape::rank(shapeInfo) - originalDimensionLength;
+                    int *permutedShape = shape::shapeOf(toPermute) + shapeOffset;
+                    int *permutedStride = shape::stride(toPermute) + shapeOffset;
+                    //now that the dimensions are permuted, all of the tad shapes/strides are in the back
+                    //all we need to do is copy from the start of the tad dimensions to the end since they are
+                    //arranged in the right order
+                    shape::copyTo(originalDimensionLength, permutedStride, retStride);
+                    shape::copyTo(originalDimensionLength, permutedShape, retShape);
+                }
                 else {
                     if(shape::rank(toPermute) > 2) {
                         //get the last 2 dimensions
-                        int *lastDimensionShape = shape::shapeOf(toPermute) + shape::rank(toPermute) - 2;
-                        int *lastDimensionStride = shape::stride(toPermute) + shape::rank(toPermute) - 2;
+                        int *lastDimensionShape = shape::shapeOf(toPermute) + shape::rank(toPermute) - originalDimensionLength;
+                        int *lastDimensionStride = shape::stride(toPermute) + shape::rank(toPermute) - originalDimensionLength;
 
                         //the last dimension specified and a matrix are an equivalent edge case
-                        if(theShape[dimension[0]] == 1 || shape::shapeOf(toPermute)[shape::rank(toPermute) - 1] == 1) {
-                            int newStride[2] = {theStride[dimension[0]],1};
-                            int newShape[2] = {theShape[dimension[0]],1};
+                        if(theShape[originalDimension[0]] == 1 || shape::shapeOf(toPermute)[shape::rank(toPermute) - 1] == 1) {
+                            int newStride[2] = {theStride[originalDimension[0]],1};
+                            int newShape[2] = {theShape[originalDimension[0]],1};
                             retShape[0] = newShape[0];
                             retShape[1] = newShape[1];
                             //when the actual shape matches the last 2 dimensions of the permuted array, use those strides instead
@@ -1825,8 +1834,8 @@ namespace shape {
 
                         }
                         else {
-                            int newStride[2] = {1,theStride[dimension[0]]};
-                            int newShape[2] = {1,theShape[dimension[0]]};
+                            int newStride[2] = {1,theStride[originalDimension[0]]};
+                            int newShape[2] = {1,theShape[originalDimension[0]]};
                             retShape[0] = newShape[0];
                             retShape[1] = newShape[1];
                             //when the actual shape matches the last 2 dimensions of the permuted array, use those strides instead
@@ -1848,23 +1857,22 @@ namespace shape {
             }
             else {
                 //copy starting from the tad shapes/strides that got permuted to the back
-                int shapeOffset = shape::rank(shapeInfo) - dimensionLength;
+                int shapeOffset = shape::rank(shapeInfo) - originalDimensionLength;
                 int *permutedShape = shape::shapeOf(toPermute) + shapeOffset;
                 int *permutedStride = shape::stride(toPermute) + shapeOffset;
                 //now that the dimensions are permuted, all of the tad shapes/strides are in the back
                 //all we need to do is copy from the start of the tad dimensions to the end since they are
                 //arranged in the right order
-                shape::copyTo(dimensionLength, permutedStride, retStride);
-                shape::copyTo(dimensionLength, permutedShape, retShape);
+                shape::copyTo(originalDimensionLength, permutedStride, retStride);
+                shape::copyTo(originalDimensionLength, permutedShape, retShape);
             }
 
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
             if(wholeThing)
                 ret[shape::shapeInfoLength(rank) - 2] = 1;
             else
-                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,dimension,dimensionLength);
+                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,originalDimension,originalDimensionLength);
 
-            this->tadElementWiseStride = ret[shape::shapeInfoLength(rank) - 2];
 
             // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
             ret[shape::shapeInfoLength(rank) - 3] = 0;
