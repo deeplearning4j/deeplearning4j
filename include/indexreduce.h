@@ -408,7 +408,7 @@ struct SharedIndexValue<double> {
 
 			if (gridDim.x > 1) {
 				__shared__ bool amLast;
-				unsigned int *tc = (unsigned *) reductionBuffer;
+				unsigned int *tc = (unsigned int *) reductionBuffer;
 				int rank = shape::rank(xShapeInfo);
 				tid = threadIdx.x;
 				if (threadIdx.x == 0) {
