@@ -147,7 +147,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 		}
 
 	// at this moment we know total memory used per block, and we also know per-mp limit.
-	int max_active_blocks = shmemThreshold % memory_limit;
+	int max_active_blocks = shmemThreshold / memory_limit;
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
