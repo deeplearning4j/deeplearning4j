@@ -196,11 +196,8 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
                                   T **out_data, int *outStrides) {
 
     for (int i = 0; i < ndim; i++) {
-        if(shape[i] != 1) {
-            outShape[i] = shape[i];
-            outStrides[i] = strides[i];
-        }
-
+        outShape[i] = shape[i];
+        outStrides[i] = strides[i];
     }
 
 
@@ -211,12 +208,12 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
         printf("raw iter ndim %d\n", ndim);
         printf("shape: ");
         for (int i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outShape[i]);
+            printf("%d ", outShape[i]);
         }
         printf("\n");
         printf("strides: ");
         for (int i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outStrides[i]);
+            printf("%d ", outStrides[i]);
         }
         printf("\n");
     }
