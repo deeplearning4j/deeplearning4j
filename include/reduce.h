@@ -737,7 +737,7 @@ namespace functions {
                 //shape information for tad offset
                 //the squeezed information doesn't render the right strides for
                 //tad offset
-                if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo)) {
+                if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
                     result[0] = execScalar(x, xShapeInfo, extraParams);
                     return;
                 }
@@ -754,6 +754,7 @@ namespace functions {
                 }
                 else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
                                                                                shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) {
+
 #pragma omp parallel for
                     for(int i = 0; i < resultLength; i++) {
                         T *iter = x + tad.tadOffsets[i];
@@ -781,7 +782,6 @@ namespace functions {
 #pragma omp  parallel  for
                     for (int i = 0; i <  resultLength; i++) {
                         int offset = tad.tadOffsets[i];
-                        printf("Offsets for %d is %d\n",i,offset);
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
