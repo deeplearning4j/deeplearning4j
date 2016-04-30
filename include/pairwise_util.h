@@ -202,7 +202,7 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
 
 
 
-#if 1
+#if 0
     /* DEBUG */
     {
         printf("raw iter ndim %d\n", ndim);

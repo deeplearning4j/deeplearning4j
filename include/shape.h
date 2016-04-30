@@ -1296,7 +1296,7 @@ namespace shape {
         void printTADsND(T *x) {
             for (int i = 0; i <  numTads; i++) {
                 int offset = tadOffsets[i];
-                printf("Offsets for %d is %d\n",i,offset);
+               // printf("Offsets for %d is %d\n",i,offset);
                 int shapeIter[MAX_RANK];
                 int coord[MAX_RANK];
                 int dim;
@@ -1703,6 +1703,7 @@ namespace shape {
 
         if (ptrManager == nullptr) {
             delete[] leftOverIndexes;
+            delete[] tadShape;
             delete[] sub;
         }
 
@@ -1719,7 +1720,6 @@ namespace shape {
         this->tadOffsets = new int[this->numTads];
         for(int i = 0; i < this->numTads; i++) {
             this->tadOffsets[i] = this->tadOffset(i);
-            printf("TAD offset for tad %d is %d\n",i,this->tadOffsets[i]);
 
         }
     }
