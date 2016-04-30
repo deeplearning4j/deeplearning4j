@@ -1704,6 +1704,7 @@ namespace shape {
         if (ptrManager == nullptr) {
             delete[] leftOverIndexes;
             delete[] sub;
+            delete[] tadShape;
         }
 
         return  ret;
