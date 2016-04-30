@@ -528,6 +528,7 @@ namespace functions {
 
 
                     finalVal = postProcess(finalVal, length, extraParams);
+					delete[] blocks;
                     return finalVal;
 
                 }
@@ -581,6 +582,7 @@ namespace functions {
                 }
 
                 finalVal = postProcess(finalVal, length, extraParams);
+				delete[] blocks;
                 return finalVal;
 
             }
