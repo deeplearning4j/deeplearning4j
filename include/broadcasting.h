@@ -103,7 +103,7 @@ namespace functions {
 
 			int tadOffsetForBlock = tad->tadOffsetForBlock;
 
-            for (int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
+            for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
 				// now we need coords for both X, Y. Z is uses the same coord as X in this case
 				// Y is always vector, however it might be stided
 				shape::ind2subC(rank,tad->tadShape, i, xCoord);

@@ -314,7 +314,7 @@ struct SharedIndexValue<double> {
                     	tad->createOffsetForBlock(r);
                     __syncthreads();
 
-                    for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
+                    for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
                         shape::ind2subC(rank,tad->tadShape, i, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
 						IndexValue<T> comp {dx[xOffset], i};
@@ -323,7 +323,7 @@ struct SharedIndexValue<double> {
                     }
 
                     __syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength),extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -345,14 +345,14 @@ struct SharedIndexValue<double> {
 
 					sPartials[threadIdx.x] = {dx[tad->tadOffsetForBlock], 0};
 #pragma unroll
-					for (int x = threadIdx.x; x < tad->tadLength; x+= blockDim.x) {
+					for (int x = threadIdx.x; x < shape::length(tad->tadOnlyShapeInfo); x+= blockDim.x) {
 						int indexX = tad->tadOffsetForBlock + x * xElementWiseStride;
 						IndexValue<T> comp {dx[indexX], x};
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength),extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {

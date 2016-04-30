@@ -307,8 +307,6 @@ namespace functions {
 					int idx[MAX_RANK];
 
 					//shared memory space for storing intermediate results
-					int numElements = blockDim.x;
-
 					sPartials[threadIdx.x] = startingVal;
 
 
@@ -375,7 +373,6 @@ namespace functions {
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
 				volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
-				int numElements = blockDim.x;
 				T init = this->startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
@@ -429,13 +426,11 @@ namespace functions {
 
 				if (!resultScalar) {
 					__shared__ shape::TAD *tad;
-                    __shared__ int tadRank;
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
                         tad->init(xShapeInfo,dimension,dimensionLength);
                         tad->createTadOnlyShapeInfo();
-                        tadRank = shape::rank(tad->tadOnlyShapeInfo);
                     }
                     __syncthreads();
 

@@ -339,19 +339,19 @@ namespace functions {
 
 
                             sPartials[threadIdx.x] = this->startingValue(xVal);
-                            for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i *  tad->tadElementWiseStride], extraParams);
+                            for(int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i * shape::elementWiseStride(tad->tadOnlyShapeInfo)], extraParams);
                             }
                             __syncthreads();
 
                             // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)), extraParams);
 
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
+                                result[r] = this->postProcess(sPartials[threadIdx.x], shape::length(tad->tadOnlyShapeInfo), extraParams);
                         }
 
                     }
@@ -371,7 +371,7 @@ namespace functions {
 
                             sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
 
-                            for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
+                            for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
                                 shape::ind2subC(tadRank,tad->tadShape, i, xCoord);
                                 Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
 
@@ -381,12 +381,12 @@ namespace functions {
 
                             // aggregate. do NOT reduce for elements > tadLength
                             T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
+                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)), extraParams);
 
 
                             __syncthreads();
                             if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
+                                result[r] = this->postProcess(sPartials[threadIdx.x], shape::length(tad->tadOnlyShapeInfo), extraParams);
 
 
                         }

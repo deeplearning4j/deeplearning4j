@@ -141,7 +141,6 @@ namespace functions {
 
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
 		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 

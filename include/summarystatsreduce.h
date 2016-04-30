@@ -682,7 +682,7 @@ struct SharedSummaryStatsData<double> {
                         tad->createOffsetForBlock(r);
                     __syncthreads();
 
-                    for(int i = threadIdx.x;i < tad->tadLength; i += blockDim.x) {
+                    for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
                         shape::ind2subC(rank,tad->tadShape, i, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
 
@@ -692,7 +692,7 @@ struct SharedSummaryStatsData<double> {
                         sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
                     }
                     __syncthreads();
-                    aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength) ,extraParams);
+                    aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -713,7 +713,7 @@ struct SharedSummaryStatsData<double> {
 
 					int indexX = tad->tadOffsetForBlock + xElementWiseStride * threadIdx.x;
 
-					if (threadIdx.x < tad->tadLength) {
+					if (threadIdx.x < shape::length(tad->tadOnlyShapeInfo)) {
 					    SummaryStatsData <T> indexVal;
 				        indexVal.initWithValue(dx[indexX]);
 					    sPartials[threadIdx.x] = op(indexVal, extraParams);
@@ -727,7 +727,7 @@ struct SharedSummaryStatsData<double> {
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength) ,extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
