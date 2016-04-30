@@ -494,7 +494,7 @@ namespace functions {
                 else {
                     T finalVal = startingVal;
                     BlockInformation info(length);
-                    T blocks[info.chunks];
+                    T *blocks = new T[info.chunks];
 #pragma omp parallel
                     {
                         T local = this->startingValue(x);
@@ -551,8 +551,7 @@ namespace functions {
 
                 T finalVal = startingVal;
                 BlockInformation info(length);
-                T blocks[info.chunks];
-
+                T *blocks = new T[info.chunks];
 
 #pragma omp parallel
                 {
