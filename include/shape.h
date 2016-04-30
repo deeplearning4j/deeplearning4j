@@ -1705,6 +1705,7 @@ namespace shape {
             delete[] leftOverIndexes;
             delete[] tadShape;
             delete[] sub;
+            delete[] tadShape;
         }
 
         return  ret;
@@ -1936,7 +1937,7 @@ namespace shape {
 #ifdef __CUDACC__
         if (ptrManager != nullptr) {
             UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
-            this->dimension = manager->getSharedCoordBuffer();
+            this->dimension = manager->getT2ShapeBuffer();
         } else  this->dimension =  new int[dimensionLength];
         memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
 #else
