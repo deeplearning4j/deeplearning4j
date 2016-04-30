@@ -29,6 +29,15 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         super(backend);
     }
 
+    @Test
+    public void testTadShapesEdgeCases(){
+
+        INDArray row = Nd4j.create(1,5);
+        INDArray col = Nd4j.create(5,1);
+
+        assertArrayEquals(new int[]{1,5}, row.tensorAlongDimension(0,1).shape());
+        assertArrayEquals(new int[]{1,5}, col.tensorAlongDimension(0,0).shape());
+    }
 
     @Test
     public void testTadShapes1d(){

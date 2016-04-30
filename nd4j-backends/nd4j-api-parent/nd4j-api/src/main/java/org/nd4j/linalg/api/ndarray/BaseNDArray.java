@@ -106,7 +106,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     private static final int[][] tadFinalPermuteDimensions;
     static{
         tadFinalPermuteDimensions = new int[32][0];
-        for( int i=1; i<32; i++ ){
+        tadFinalPermuteDimensions[1] = new int[]{1,0};  //Edge case for 1d tensors: selectively apply to column vectors
+        for( int i=2; i<32; i++ ){
             tadFinalPermuteDimensions[i] = new int[i];
             for( int k=i-1, j=0; k>=0; k--, j++) tadFinalPermuteDimensions[i][j] = k;
         }
@@ -764,8 +765,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
 
 
-        if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
-            return this;
+        if(dimension.length == 1){
+            if(dimension[0] == 0 && isColumnVector()){
+                return this.transpose();
+            } else if(dimension[0] == 1 && isRowVector()){
+                return this;
+            }
         }
 
 
@@ -780,7 +785,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret2 = permuted.slice(sliceIdx);
         if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()){
-            return ret2.permute(finalPermuteDims);
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
         }
 
 
@@ -789,14 +795,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
 
         if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2)) {
-            INDArray temp = ret2.slice(offset);
-            return temp.permute(finalPermuteDims);
+            ret2 = ret2.slice(offset);
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
         }
 
         else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
-            return ret2.permute(finalPermuteDims);
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
         }
 
         while(ret2.length() > length) {
@@ -805,7 +813,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret2 = ret2.slice(sliceIdx);
         }
 
-        return ret2.permute(finalPermuteDims);
+        if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+        return ret2.permutei(finalPermuteDims);
     }
 
 
@@ -4093,7 +4102,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return dup();
         boolean alreadyInOrder = true;
         IntBuffer shapeInfo = shapeInfo();
-        for(int i = 0; i < Shape.rank(shapeInfo); i++) {
+        int rank = Shape.rank(shapeInfo);
+        for(int i = 0; i < rank; i++) {
             if(rearrange[i] != i) {
                 alreadyInOrder = false;
                 break;
