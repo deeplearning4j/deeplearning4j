@@ -754,7 +754,7 @@ namespace functions {
                 }
                 else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
                                                                                shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) {
-//#pragma omp parallel for
+#pragma omp parallel for
                     for(int i = 0; i < resultLength; i++) {
                         T *iter = x + tad.tadOffsets[i];
                         T start = this->startingValue(iter);
@@ -778,7 +778,7 @@ namespace functions {
                     }
                 }
                 else {
-//#pragma omp  parallel  for
+#pragma omp  parallel  for
                     for (int i = 0; i <  resultLength; i++) {
                         int offset = tad.tadOffsets[i];
                         printf("Offsets for %d is %d\n",i,offset);
