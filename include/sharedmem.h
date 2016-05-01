@@ -77,9 +77,9 @@ class UnifiedSharedMemory{
     }
 
     __device__ __host__ void init (int unifiedSize, int factorySize, int functionSize, int tadSize) {
-        this->unifiedSize = unifiedSize < 8 ? 8 : unifiedSize;
-        this->factorySize = factorySize < 8 ? 8: factorySize;
-        this->functionSize = functionSize < 8 ? 8 : functionSize;
+        this->unifiedSize = unifiedSize < 16 ? 16 : unifiedSize;
+        this->factorySize = factorySize < 16 ? 16: factorySize;
+        this->functionSize = functionSize < 32 ? 32 : functionSize;
         this->tadSize = tadSize < 196 ? 196 : tadSize;
 
         this->allocationOffset = (this->unifiedSize + this->factorySize + this->functionSize + this->tadSize);
