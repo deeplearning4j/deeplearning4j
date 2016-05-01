@@ -5,6 +5,7 @@ import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -14,6 +15,8 @@ import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -21,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +67,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
-    private Configuration configuration = new Configuration();
+    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
     @Getter private transient MemoryHandler memoryHandler;
     private AtomicLong allocationsCounter = new AtomicLong(0);
 
@@ -116,7 +121,7 @@ public class AtomicAllocator implements Allocator {
      * This method executes preconfigured number of host memory garbage collectors
      */
     protected void initHostCollectors() {
-        for (int i = 0; i < configuration.getNumberOfHostMemoryBuckets(); i++) {
+        for (int i = 0; i < configuration.getNumberOfGcThreads(); i++) {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
             UnifiedGarbageCollectorThread uThread = new UnifiedGarbageCollectorThread(i, queue);
@@ -212,8 +217,8 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     @Override
-    public Pointer getPointer(DataBuffer buffer) {
-        return memoryHandler.getDevicePointer(buffer);
+    public Pointer getPointer(DataBuffer buffer, CudaContext context) {
+        return memoryHandler.getDevicePointer(buffer, context);
     }
 
     /**
@@ -225,8 +230,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     @Deprecated
-    public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView) {
-        return memoryHandler.getDevicePointer(buffer);
+    public Pointer getPointer(DataBuffer buffer, AllocationShape shape, boolean isView, CudaContext context) {
+        return memoryHandler.getDevicePointer(buffer, context);
     }
 
     /**
@@ -235,8 +240,9 @@ public class AtomicAllocator implements Allocator {
      * @param array
      */
     @Override
-    public Pointer getPointer(INDArray array) {
-        return memoryHandler.getDevicePointer(array.data());
+    public Pointer getPointer(INDArray array, CudaContext context) {
+    //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        return memoryHandler.getDevicePointer(array.data(), context);
     }
 
     /**
@@ -352,7 +358,7 @@ public class AtomicAllocator implements Allocator {
             point.setConstant(true);
         }
 
-        int numBuckets = configuration.getNumberOfHostMemoryBuckets();
+        int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
         GarbageReference reference = new GarbageReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
@@ -766,8 +772,8 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
-    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset);
+    public void memcpyDevice(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset, CudaContext context) {
+        this.memoryHandler.memcpyDevice(dstBuffer, srcPointer, length, dstOffset, context);
     }
 
     /**
@@ -838,7 +844,17 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
-    public void registerAction(INDArray result, INDArray... operands) {
-        memoryHandler.registerAction(result, operands);
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
+        memoryHandler.registerAction(context, result, operands);
+    }
+
+    @Override
+    public FlowController getFlowController() {
+        return memoryHandler.getFlowController();
+    }
+
+    @Override
+    public ContextPool getContextPool() {
+        return memoryHandler.getContextPool();
     }
 }

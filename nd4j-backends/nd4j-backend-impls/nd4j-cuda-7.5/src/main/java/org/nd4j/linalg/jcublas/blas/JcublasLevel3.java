@@ -38,7 +38,7 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         A = Shape.toOffsetZero(A);
         B = Shape.toOffsetZero(B);
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
         CublasPointer cBPointer = new CublasPointer(B, ctx);
@@ -66,12 +66,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A, B);
     }
 
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A, ctx);
         CublasPointer bPointer = new CublasPointer(B, ctx);
@@ -95,12 +95,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A, B);
     }
 
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta, INDArray C, int ldc) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
@@ -112,7 +112,7 @@ public class JcublasLevel3 extends BaseLevel3 {
             nd4jBlas.ssyrk(new long[]{ctx.getHandle().address()}, Order, Uplo, Trans, N, K, alpha, aPointer.getDevicePointer().address(), lda, beta, cPointer.getDevicePointer().address(), ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
@@ -151,14 +151,14 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B, A);
     }
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         A = Shape.toOffsetZero(A);
         B = Shape.toOffsetZero(B);
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
 
@@ -174,12 +174,12 @@ public class JcublasLevel3 extends BaseLevel3 {
             ctx.syncOldStream();
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A, B);
     }
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
@@ -205,12 +205,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A, B);
     }
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer cPointer = new CublasPointer(C,ctx);
@@ -232,12 +232,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A);
     }
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
@@ -263,12 +263,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldc);
         }
 
-        allocator.registerAction(C);
+        allocator.registerAction(ctx, C, A, B);
     }
 
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
@@ -292,12 +292,12 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B, A);
     }
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(B, A);
 
         CublasPointer aPointer = new CublasPointer(A,ctx);
         CublasPointer bPointer = new CublasPointer(B,ctx);
@@ -321,7 +321,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                     ldb);
         }
 
-        allocator.registerAction(B);
+        allocator.registerAction(ctx, B, A);
     }
 
     @Override

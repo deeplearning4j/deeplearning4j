@@ -758,7 +758,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public List<DataSet> asList() {
         List<DataSet> list = new ArrayList<>(numExamples());
         for (int i = 0; i < numExamples(); i++) {
-            list.add(new DataSet(getFeatures().getRow(i), getLabels().getRow(i)));
+            list.add(new DataSet(getFeatures().slice(i), getLabels().slice(i)));
         }
         return list;
     }

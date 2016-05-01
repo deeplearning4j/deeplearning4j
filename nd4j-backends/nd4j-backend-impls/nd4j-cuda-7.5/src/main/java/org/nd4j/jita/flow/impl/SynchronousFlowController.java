@@ -1,16 +1,15 @@
-package org.nd4j.jita.allocator.flow.impl;
+package org.nd4j.jita.flow.impl;
 
 
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
-import org.nd4j.jita.allocator.flow.FlowController;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -78,9 +77,41 @@ public class SynchronousFlowController implements FlowController {
         context.syncOldStream();
     }
 
-    public void registerAction(INDArray result, INDArray... operands) {
+    public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
         if (result == null) return;
         AllocationPoint point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
+    }
+
+    @Override
+    public CudaContext prepareAction(INDArray result, INDArray... operands) {
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+        if (result != null)
+            allocator.getAllocationPoint(result).setCurrentContext(context);
+
+        for (INDArray operand: operands) {
+            if (operand == null) continue;
+
+            allocator.getAllocationPoint(operand).setCurrentContext(context);
+        }
+
+        return context;
+    }
+
+    @Override
+    public void waitTillReleased(AllocationPoint point) {
+        waitTillFinished(point);
+    }
+
+    @Override
+    public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
+        context.syncOldStream();
+    }
+
+    @Override
+    public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        return context;
     }
 }

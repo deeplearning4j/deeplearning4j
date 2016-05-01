@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.List;
 
@@ -349,7 +350,13 @@ public class JCublasNDArray extends BaseNDArray {
         if (!isView() && ordering() == Nd4j.order()) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), ordering());
-            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+
+            CudaContext context = allocator.getFlowController().prepareAction(array, this);
+
+
+            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context ), this.data.length() * this.data().getElementSize(), 0, context);
+
+            allocator.getFlowController().registerAction(context, array, this);
             return array;
         } else return super.dup();
     }
@@ -360,9 +367,15 @@ public class JCublasNDArray extends BaseNDArray {
         if (!isView() && ordering() == order) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
             INDArray array = Nd4j.create(shape(), order);
-            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data), this.data.length() * this.data().getElementSize(), 0);
+
+            CudaContext context = allocator.getFlowController().prepareAction(array, this);
+
+            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context ), this.data.length() * this.data().getElementSize(), 0, context);
+
+            allocator.getFlowController().registerAction(context, array, this);
+
             return array;
-        } else return super.dup(order);
+        } else  return super.dup(order);
     }
 
     @Override

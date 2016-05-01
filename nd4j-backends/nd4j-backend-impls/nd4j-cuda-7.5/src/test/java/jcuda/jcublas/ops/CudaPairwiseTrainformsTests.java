@@ -1,7 +1,11 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -14,6 +18,19 @@ import static org.junit.Assert.assertNotEquals;
  */
 @Ignore
 public class CudaPairwiseTrainformsTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(256)
+                .setMaximumGridSize(64)
+                .enableDebug(true);
+
+        System.out.println("Init called");
+    }
+
 
     @Test
     public void testPinnedAddiRowVector() throws Exception {
@@ -43,7 +60,7 @@ public class CudaPairwiseTrainformsTests {
 
         System.out.println("Array1: " + array1);
         System.out.println("Array2: " + array2);
-        System.out.println("Array3: " + result);
+        System.out.println("Result: " + result);
 
         assertEquals(0.75f, array1.getRow(0).getFloat(0), 0.01);
     }
@@ -156,9 +173,16 @@ public class CudaPairwiseTrainformsTests {
 
         System.out.println("a4 stride: " + array4.elementWiseStride());
 
+        long time1 = System.currentTimeMillis();
         array1.muli(array2);
+        long time2 = System.currentTimeMillis();
 
+        System.out.println("Execution time 1: " + (time2 - time1));
+
+        time1 = System.currentTimeMillis();
         array3.muli(array4);
+        time2 = System.currentTimeMillis();
+        System.out.println("Execution time 2: " + (time2 - time1));
 
         assertEquals(array3, array1);
     }

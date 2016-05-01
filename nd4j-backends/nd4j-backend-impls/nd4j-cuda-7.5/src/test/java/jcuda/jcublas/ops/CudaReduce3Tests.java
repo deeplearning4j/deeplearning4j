@@ -105,6 +105,6 @@ public class CudaReduce3Tests {
 
         float result = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(array1, array2)).getFinalResult().floatValue();
 
-        assertEquals(49000.004f, result, 0.001f);
+        assertEquals(49000.004f, result, 0.01f);
     }
 }

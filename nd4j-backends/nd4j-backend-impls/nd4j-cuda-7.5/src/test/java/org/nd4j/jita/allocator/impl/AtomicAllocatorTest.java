@@ -52,8 +52,8 @@ public class AtomicAllocatorTest {
 
 
             Configuration configuration = new Configuration();
-            configuration.setHostDeallocAggressiveness(Aggressiveness.IMMEDIATE);
-            configuration.setMaximumSingleAllocation(5000);
+      //      configuration.setHostDeallocAggressiveness(Aggressiveness.IMMEDIATE);
+            configuration.setMaximumSingleHostAllocation(5000);
             configuration.setMaximumZeroAllocation(1000000000);
 
 //            singleDevice4GBcc52 = new CudaEnvironment(configuration);
@@ -86,7 +86,7 @@ public class AtomicAllocatorTest {
     public void testScalar1() throws Exception {
         INDArray array = Nd4j.scalar(17f);
 
-        allocator.getPointer(array);
+    //    allocator.getPointer(array);
 
         System.out.println("Scalar array: " + array);
     }

@@ -41,7 +41,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         DataTypeValidation.assertSameDataType(X, Y);
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
 
@@ -62,6 +62,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
+        allocator.registerAction(ctx, null, X, Y);
+
         return ret;
     }
 
@@ -73,7 +75,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         double ret;
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
         CublasPointer yCPointer = new CublasPointer(Y, ctx);
@@ -89,6 +91,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     yCPointer.getDevicePointer().address(),
                     incY);
         }
+
+        allocator.registerAction(ctx, null, X, Y);
 
         return ret;
     }
@@ -123,7 +127,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
 
         CublasPointer cAPointer = new CublasPointer(X, ctx);
@@ -137,12 +141,15 @@ public class JcublasLevel1 extends BaseLevel1 {
                     cAPointer.getDevicePointer().address(),
                     incX);
         }
+
+        allocator.registerAction(ctx, null, X);
+
         return ret;
     }
 
     @Override
     protected float sasum(int N, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -155,6 +162,9 @@ public class JcublasLevel1 extends BaseLevel1 {
                     N, xCPointer.getDevicePointer().address(),
                     incX);
         }
+
+        allocator.registerAction(ctx, null, X);
+
         return ret;
     }
 
@@ -167,7 +177,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected double dnrm2(int N, INDArray X, int incX) {
         double ret;
 
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
 
         CublasPointer cAPointer = new CublasPointer(X, ctx);
 
@@ -180,12 +190,15 @@ public class JcublasLevel1 extends BaseLevel1 {
                     cAPointer.getDevicePointer().address(),
                     incX);
         }
+
+        allocator.registerAction(ctx, null, X);
+
         return ret;
     }
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         double ret;
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -199,6 +212,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     xCPointer.getDevicePointer().address(),
                     incX);
         }
+        allocator.registerAction(ctx, null, X);
+
         return ret;
     }
 
@@ -271,7 +286,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -286,6 +301,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
 
         }
+        allocator.registerAction(ctx, null, X);
+
         return  ret2 - 1;
     }
 
@@ -296,7 +313,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         int ret2;
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
@@ -311,6 +328,8 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
 
         }
+
+        allocator.registerAction(ctx, null, X);
 
         return  ret2 - 1 ;
     }
@@ -333,7 +352,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
         CublasPointer yCPointer = new CublasPointer(Y, ctx);
@@ -349,12 +368,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
         CublasPointer yCPointer = new CublasPointer(Y, ctx);
@@ -371,7 +390,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -381,7 +400,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
@@ -400,7 +419,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -410,7 +429,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
         CublasPointer yCPointer = new CublasPointer(Y, ctx);
@@ -427,12 +446,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
         CublasPointer yCPointer = new CublasPointer(Y, ctx);
@@ -448,7 +467,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -458,7 +477,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
         CublasPointer xAPointer = new CublasPointer(X, ctx);
         CublasPointer xBPointer = new CublasPointer(Y, ctx);
@@ -473,7 +492,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, X);
     }
 
     @Override
@@ -565,7 +584,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sscal(int N, float alpha, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
 
@@ -578,12 +597,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.registerAction(X);
+        allocator.registerAction(ctx, X);
     }
 
     @Override
     protected void dscal(int N, double alpha, INDArray X, int incX) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(X);
 
         CublasPointer xCPointer = new CublasPointer(X, ctx);
 
@@ -598,7 +617,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                     incX);
         }
 
-        allocator.registerAction(X);
+        allocator.registerAction(ctx, X);
     }
 
     @Override

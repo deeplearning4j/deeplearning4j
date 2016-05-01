@@ -1,7 +1,11 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
@@ -16,6 +20,18 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CudaIndexReduceTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(64)
+                .setMaximumGridSize(64)
+                .enableDebug(true);
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testPinnedIMax() throws Exception {
@@ -121,8 +137,11 @@ public class CudaIndexReduceTests {
     public void testIMax4() {
         INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
+        long time1 = System.currentTimeMillis();
         INDArray  argMax = Nd4j.argMax(array1, 0,1);
+        long time2 = System.currentTimeMillis();
 
+        System.out.println("Execution time: " + (time2 - time1));
 
         assertEquals(127999f, argMax.getFloat(0), 0.001f);
     }

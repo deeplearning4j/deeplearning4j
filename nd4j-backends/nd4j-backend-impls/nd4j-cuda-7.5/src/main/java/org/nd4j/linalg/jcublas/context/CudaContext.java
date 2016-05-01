@@ -51,6 +51,8 @@ public class CudaContext {
     private long bufferScalar;
     private long bufferSpecial;
 
+    private int laneId = 0;
+
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 

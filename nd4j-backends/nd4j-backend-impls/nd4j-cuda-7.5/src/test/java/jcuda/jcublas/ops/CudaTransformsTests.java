@@ -1,13 +1,19 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -17,6 +23,17 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CudaTransformsTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.HOST)
+                .setMaximumBlockSize(1024)
+                .enableDebug(true);
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testPinnedCosine() throws Exception {
@@ -297,9 +314,11 @@ public class CudaTransformsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{0.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
-        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
+        //INDArray array1 = Nd4j.create(new float[]{0.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});
+        //INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
+        INDArray array1 = Nd4j.create(new float[]{0.01f, 1.01f, });
+        INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, });
 
         Nd4j.getExecutioner().exec(new ASin(array1, array2));
 
@@ -348,7 +367,7 @@ public class CudaTransformsTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f}).dup('f');
+        INDArray array1 = Nd4j.create(new float[]{1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f, 1.01f});//.dup('f');
         INDArray array2 = Nd4j.create(new float[]{1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f});
 
 
@@ -381,6 +400,7 @@ public class CudaTransformsTests {
     @Test
     public void testIsMaxEqualValues(){
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
+
 
         //[1 1 1] -> [1 0 0]
         //Loop to double check against any threading weirdness...
@@ -457,12 +477,12 @@ public class CudaTransformsTests {
             input.putScalar(3000 * i, (i * 2) + 0.5);
         }
         System.out.println("AF: --------------------------------");
-        AtomicAllocator.getInstance().getPointer(input);
-        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
+   //     AtomicAllocator.getInstance().getPointer(input);
+      //  AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
         System.out.println("AX: --------------------------------");
-        AtomicAllocator.getInstance().getPointer(input);
-        AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
+    //    AtomicAllocator.getInstance().getPointer(input);
+     //   AtomicAllocator.getInstance().getPointer(input.shapeInfoDataBuffer());
 
         System.out.println("AA: --------------------------------");
         float sumAll = input.sumNumber().floatValue();
@@ -506,8 +526,12 @@ public class CudaTransformsTests {
         INDArray arrCCopy = arrF.dup('c');
         Nd4j.getExecutioner().exec(new Tanh(arrFCopy));
         Nd4j.getExecutioner().exec(new Tanh(arrCCopy));
-        assertEquals(exp, arrFCopy);
+
+        System.out.println("ArrF shape: " + arrFCopy.shapeInfoDataBuffer());
+        System.out.println("ArrC shape: " + arrCCopy.shapeInfoDataBuffer());
+
         assertEquals(exp, arrCCopy);
+        assertEquals(exp, arrFCopy);
 
         //Second: do op with both x and z:
 
@@ -545,19 +569,25 @@ public class CudaTransformsTests {
         INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,2,2);
 
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
+        System.out.println("Assertion data: " + Arrays.toString(assertion.data().asFloat()));
+        System.out.println("Result data: " + Arrays.toString(newTest.data().asFloat()));
         assertEquals(assertion,newTest);
     }
 
     @Test
-    public void testTransformExp() {
+    public void testTransformExp() throws Exception {
         INDArray array1 = Nd4j.zeros(1500,150);
         //System.out.println("ShapeBuffer: " + array1.shapeInfoDataBuffer());
 
         Exp exp = new Exp(array1);
+        long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(exp);
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: ["+ (time2 - time1)+"]");
 
         for (int x = 0; x < 1500 * 150; x++) {
-            assertEquals(1f, array1.getFloat(x), 0.0001f);
+            assertEquals("Failed on iteration ["+ x+"]",1f, array1.getFloat(x), 0.0001f);
         }
 
     }

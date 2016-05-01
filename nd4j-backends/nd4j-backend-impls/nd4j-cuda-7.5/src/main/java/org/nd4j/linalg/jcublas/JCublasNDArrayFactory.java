@@ -458,16 +458,16 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         int linearIndex = 0;
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
 
         for(INDArray m : matrices) {
+
+            CudaContext context =  allocator.getFlowController().prepareAction(ret, m);
 
             if(m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride() && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
                 allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
-
-                if (ret != null) allocator.registerAction(ret);
             } else {
                 long[] extras = new long[]{ AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()), context.getOldStream().getNativePointer(), allocator.getDeviceId(), context.getBufferAllocation(), context.getBufferReduction(), context.getBufferScalar()};
 
@@ -476,25 +476,25 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
-                            allocator.getPointer(m).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
+                            allocator.getPointer(ret, context).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
+                            allocator.getPointer(m, context).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
                 } else if (m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer()).address(),
-                            allocator.getPointer(m).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer()).address());
+                            allocator.getPointer(ret, context).address(),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
+                            allocator.getPointer(m, context).address(),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
 
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
                 }
 
-                if (ret != null) allocator.registerAction(ret);
+
 
                 //Works for all cases...
 
@@ -505,6 +505,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
                 linearIndex += m.length();
             }
+
+            if (ret != null) allocator.registerAction(context, ret, m);
         }
         return ret;
     }

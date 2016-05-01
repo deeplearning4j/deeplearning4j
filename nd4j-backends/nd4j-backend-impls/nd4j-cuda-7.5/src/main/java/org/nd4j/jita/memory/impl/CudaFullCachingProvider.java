@@ -20,7 +20,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
-    protected final long MAX_GPU_ALLOCATION = 32000000;
+    protected final long MAX_GPU_ALLOCATION = configuration.getMaximumSingleDeviceAllocation();
+
+    protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
 
 
 
@@ -65,7 +67,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_CACHED_MEMORY) {
+            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get() >= MAX_GPU_CACHE) {
                 super.free(point);
                 return;
             }
@@ -86,12 +88,12 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                //if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                     cache.put(new CudaPointer(point.getDevicePointer().address()));
                     return;
-                } else {
-                    super.free(point);
-                }
+                //} else {
+                //    super.free(point);
+               // }
             }
         }
         super.free(point);

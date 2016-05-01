@@ -18,6 +18,7 @@ import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -26,8 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -66,6 +71,10 @@ public class AllocationPoint {
 
     protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+    @Getter @Setter protected volatile cudaEvent_t writeLane;
+
+    @Getter protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
+
     @Getter @Setter private boolean constant;
 
     // TODO: timer should be instantiated externally
@@ -95,6 +104,11 @@ public class AllocationPoint {
 
     private cudaEvent_t lastEvent;
 
+    @Getter @Setter private volatile CudaContext currentContext;
+
+    public void addReadLane(cudaEvent_t event) {
+        readLane.add(event);
+    }
 
     public void setLastEvent(cudaEvent_t event) {
         if (event != null) {

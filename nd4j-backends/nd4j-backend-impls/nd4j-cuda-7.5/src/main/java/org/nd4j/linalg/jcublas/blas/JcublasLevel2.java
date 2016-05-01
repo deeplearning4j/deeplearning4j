@@ -25,7 +25,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
         CublasPointer cBPointer = new CublasPointer(X, ctx);
@@ -44,7 +44,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, A, X);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        CudaContext ctx = CudaContext.getBlasContext();
+        CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
         CublasPointer cBPointer = new CublasPointer(X, ctx);
@@ -109,7 +109,7 @@ public class JcublasLevel2 extends BaseLevel2 {
                     incY);
         }
 
-        allocator.registerAction(Y);
+        allocator.registerAction(ctx, Y, A, X);
     }
 
     @Override
