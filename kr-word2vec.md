@@ -483,6 +483,7 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 * [컨볼루션 네트워크](../kr-convolutionalnets)
 * [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](../kr-restrictedboltzmannmachine)
 * [Neural Networks & Regression](../linear-regression)
+* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
 
 ### <a name="doctorow">문학 속의 Word2Vec</a>
 
