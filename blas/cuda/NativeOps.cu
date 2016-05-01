@@ -27,7 +27,7 @@ cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
 int maxThreads = 512;
-bool debug = true;
+bool debug = false;
 bool verbose = false;
 
 template <typename T>
@@ -106,7 +106,7 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 
 	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
 
-	if (debug)
+	if (debug && verbose)
 		printf("Preliminary basic launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i]\n", num_blocks, num_threads, memory_limit);
 
 
@@ -148,7 +148,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	// round num_threads to nearest warpSize
 	num_threads -= num_threads % warpSize;
 
-	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
+	num_threads = nd4j::math::nd4j_max<int>(32, num_threads);
 
 
 	// since we use shared memory as fast memory for some cases - we need to count that in
@@ -202,7 +202,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 
 
 
-	if (debug)
+	if (debug && verbose)
 		printf("Preliminary reduce launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i], blocksPerMP: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block, targetBlocksPerMP);
 
 	return dim3(num_blocks,num_threads, memory_limit);
@@ -225,13 +225,16 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo) {
 	int xLength = shape::length(xShapeInfo);
 
 
+	int num_threads = nd4j::math::nd4j_min<int>(maxThreads, xLength);
 
 	int memory_floor = memory_limit;
 	int effective_block_limit =  countMP * blockThreshold;
 
-	int num_blocks = nd4j::math::nd4j_min<int>(blockLimit, effective_block_limit);
+	int num_blocks = xLength / num_threads;
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
+	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
-	int num_threads = 1024;
+
 
 	int targetBlocksPerMP = num_blocks / countMP;
 
@@ -246,7 +249,7 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo) {
 
 	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
 
-	if (debug)
+	if (debug && verbose)
 		printf("Preliminary scalar launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], blocksPerMP: [%i], problemLength: [%i]\n", num_blocks, num_threads, memory_limit, targetBlocksPerMP, xLength);
 
 
@@ -262,14 +265,19 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *
 		numTads = shape::length(xShapeInfo) / tadLength;
 
 		if (tadLength == 1) {
-			printf("xLength: [%i], zLength: [%i]\n", shape::length(xShapeInfo), shape::length(zShapeInfo));
+			if (debug && verbose)
+				printf("xLength: [%i], zLength: [%i]\n", shape::length(xShapeInfo), shape::length(zShapeInfo));
 		}
 	} else{
 		// we have special case - reduction along all dimensions
-		printf("zShapeInfo is nullPtr\n");
+		if (debug && verbose)
+			printf("zShapeInfo is nullPtr\n");
 		tadLength = 2048;
 		numTads = shape::length(xShapeInfo) / tadLength;
 	}
+
+	if (debug && verbose)
+		printf("xLength: [%i], numTads: [%i], tadLength: [%i]\n", shape::length(xShapeInfo), numTads, tadLength);
 
 	int xRank = shape::rank(xShapeInfo);
 	int yRank = yShapeInfo == nullptr ? 0 : shape::rank(yShapeInfo);
@@ -295,7 +303,7 @@ dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes a
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
 
-	if (debug)
+	if (debug && verbose)
 		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
@@ -3318,6 +3326,10 @@ void NativeOps::enableDebugMode(bool reallyEnable) {
 }
 
 void NativeOps::setGridLimit(int gridSize) {
+	if (gridSize > 1024)
+		gridSize = 1024;
+	if (gridSize < 1)
+		gridSize = 1;
 	blockLimit = gridSize;
 }
 
@@ -3327,5 +3339,9 @@ int NativeOps::ompGetNumThreads() {
 }
 
 void NativeOps::setOmpNumThreads(int threads) {
+	if (threads > 1024)
+		threads = 1024;
+	if (threads < 32)
+		threads = 32;
 	maxThreads = threads;
 }
