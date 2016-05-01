@@ -87,46 +87,13 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
 - `nd4j-x86`, the CPU version of the ND4J library that powers DL4J
 - `canova-api` - Canova is our library vectorizing and loading data
 
+Here is how the POM file should appear when you run your examples, and here is [a link to it on Github](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
 
-``` xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml?slice=1:175"></script>
 
-    <groupId>MyGroupID</groupId>
-    <artifactId>MyArtifactId</artifactId>
-    <version>1.0-SNAPSHOT</version>
+Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). 
 
-    <properties>
-        <nd4j.version>0.4-rc3.8</nd4j.version>
-        <dl4j.version>0.4-rc3.8</dl4j.version>
-        <canova.version>0.0.0.14</canova.version>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-x86</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-        
-        <dependency>
-            <artifactId>canova-api</artifactId>
-            <groupId>org.nd4j</groupId>
-            <version>${canova.version}</version>
-        </dependency>
-    </dependencies>
-</project>
-```
-Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). To run the example, right click on it and select the green button in the drop-down menu. You will see, in IntelliJ's bottom window, a series of scores. The rightmost number is the error score for the network's classifications. If your network is learning, then that number will decrease over time with each batch it processes. At the end, this window will tell you how accurate your neural-network model has become:
+To run the example, right click on it and select the green button in the drop-down menu. You will see, in IntelliJ's bottom window, a series of scores. The rightmost number is the error score for the network's classifications. If your network is learning, then that number will decrease over time with each batch it processes. At the end, this window will tell you how accurate your neural-network model has become:
 
 ![run IntelliJ example](../img/mlp_classifier_results.png)
 
