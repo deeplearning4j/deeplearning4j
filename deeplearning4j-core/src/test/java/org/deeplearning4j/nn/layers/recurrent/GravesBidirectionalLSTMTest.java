@@ -359,7 +359,7 @@ public class GravesBidirectionalLSTMTest {
         final INDArray activation3Reverse = activation3.dup();
 		reverseColumnsInPlace(activation3Reverse);
 
-        assertArrayEquals(activation3Reverse.data().asFloat(),activation1.data().asFloat(),1e-5f);
+		assertEquals(activation3Reverse,activation1);
         assertArrayEquals(activation3Reverse.shape(),activation1.shape());
 
 		//test backprop now
