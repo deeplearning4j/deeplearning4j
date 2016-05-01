@@ -73,9 +73,9 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
 
-4. Continue through the wizard's options. You will see a screen like this where you must click on the plus sign on the upper left:
+4. Continue through the wizard's options. You may see a screen like this (IntelliJ versions differ) where you must click on the plus sign on the upper left:
 ![run IntelliJ example](../img/intellij-sdk.png)
-Once you see a the directory tree appear, select the folder that begins with jdk, under Java.
+Once you see a the directory tree appear, select the folder that begins with `jdk`, under Java.
 ![run IntelliJ example](../img/intellij-sdk2.png)
 
 Then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
@@ -131,7 +131,7 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
     </dependencies>
 </project>
 ```
-Now you will need to choose within IntelliJ the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). 
+Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). 
 
 Additional links:
 
