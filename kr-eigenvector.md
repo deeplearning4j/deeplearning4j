@@ -224,9 +224,9 @@ vs.
 * [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
 * [자연어처리: Word2vec](../kr-word2vec.html)
 * [인공 신경망](../kr-neuralnet-overview.html)
-* [인공 신경망과 회귀](../kr-linear-regression.html)
 * [컨볼루션 네트워크](../kr-convolutionalnets.html)
 * [RNNs 및 LSTM (Long Short-Term Memory)](../kr-lstm.html)
+* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
 
 
 <a name="ref">1)</a> *고유 벡터의 최대 값은 행렬의 차원 수와 같습으며 때로는 행렬의 고유 벡터 수가 전체 차원의 수보다 적기도 합니다.*
