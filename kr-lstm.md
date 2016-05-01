@@ -202,8 +202,8 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * [아이겐벡터, 공분산, 주성분분석, 엔트로피](../kr-eigenvector.html)
 * [자연어처리: Word2vec](../kr-word2vec.html)
 * [인공 신경망](../kr-neuralnet-overview.html)
-* [인공 신경망과 회귀](../kr-linear-regression.html)
 * [컨볼루션 네트워크](../kr-convolutionalnets.html)
+* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
 
 ## 그 외
 * [RNNs 튜토리알(AIKorea 번역)](http://aikorea.org/blog/rnn-tutorial-1/)
