@@ -1394,6 +1394,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
+                    wrappedBuffer = pointer.asByteBuffer();
                 }
                 else {
                     indexer = null;
@@ -1418,7 +1419,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
-
+                    wrappedBuffer = pointer.asByteBuffer();
                 }
                 else {
                     indexer = null;
@@ -1442,7 +1443,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readInt());
                     }
-
+                    wrappedBuffer = pointer.asByteBuffer();
                 }
                 else {
                     indexer = null;

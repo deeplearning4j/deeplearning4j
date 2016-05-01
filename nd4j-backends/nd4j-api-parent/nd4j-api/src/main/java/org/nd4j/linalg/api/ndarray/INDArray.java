@@ -267,6 +267,39 @@ public interface INDArray extends Serializable  {
     INDArray putScalar(int[] i, double value);
 
     /**
+     * Insert the value at the specified indices, in a 2d (rank 2) NDArray<br>
+     * Equivalent to {@link #putScalar(int[], double)} but avoids int[] creation
+     * @param row      Row (dimension 0) index
+     * @param col      Column (dimension 1) index
+     * @param value    Value to put
+     * @return         This INDArray
+     */
+    INDArray putScalar(int row, int col, double value);
+
+    /**
+     * Insert the value at the specified indices, in a 3d (rank 3) NDArray<br>
+     * Equivalent to {@link #putScalar(int[], double)} but avoids int[] creation
+     * @param dim0     Dimension 0 index
+     * @param dim1     Dimension 1 index
+     * @param dim2     Dimension 2 index
+     * @param value    Value to put
+     * @return         This INDArray
+     */
+    INDArray putScalar(int dim0, int dim1, int dim2, double value);
+
+    /**
+     * Insert the value at the specified indices, in a 4d (rank 4) NDArray<br>
+     * Equivalent to {@link #putScalar(int[], double)} but avoids int[] creation
+     * @param dim0     Dimension 0 index
+     * @param dim1     Dimension 1 index
+     * @param dim2     Dimension 2 index
+     * @param dim3     Dimension 3 index
+     * @param value    Value to put
+     * @return         This INDArray
+     */
+    INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value);
+
+    /**
      * Returns an ndarray with 1 if the element is less than
      * the given element 0 other wise
      *
@@ -1830,6 +1863,16 @@ public interface INDArray extends Serializable  {
      * @return the newly permuted array
      */
     INDArray permute(int... rearrange);
+
+    /**
+     * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
+     * is modified by this operation (but not the data itself)
+     * See: http://www.mathworks.com/help/matlab/ref/permute.html
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the current array
+     */
+    INDArray permutei(int... rearrange);
 
     /**
      * Dimshuffle: an extension of permute that adds the ability
