@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
@@ -35,10 +36,10 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSixteenZeroOne() {
         INDArray baseArr = Nd4j.linspace(1,16,16).reshape(2, 2, 2, 2);
         assertEquals(4,baseArr.tensorssAlongDimension(0, 1));
-        INDArray columnVectorFirst = Nd4j.create(new double[]{1,9,5,13},new int[]{2,2});
-        INDArray columnVectorSecond = Nd4j.create(new double[]{2,10,6,14},new int[]{2,2});
-        INDArray columnVectorThird = Nd4j.create(new double[]{3,11,7,15},new int[]{2,2});
-        INDArray columnVectorFourth = Nd4j.create(new double[]{4,12,8,16},new int[]{2,2});
+        INDArray columnVectorFirst = Nd4j.create(new double[][]{{1,5},{9,13}});
+        INDArray columnVectorSecond = Nd4j.create(new double[][]{{2,6},{10,14}});
+        INDArray columnVectorThird = Nd4j.create(new double[][]{{3,7},{11,15}});
+        INDArray columnVectorFourth = Nd4j.create(new double[][]{{4,8},{12,16}});
         INDArray[] assertions = new INDArray[] {
                 columnVectorFirst,columnVectorSecond,columnVectorThird,columnVectorFourth
         };
@@ -167,8 +168,8 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testEight() {
         INDArray baseArr = Nd4j.linspace(1,8,8).reshape(2, 2, 2);
         assertEquals(2,baseArr.tensorssAlongDimension(0,1));
-        INDArray columnVectorFirst = Nd4j.create(new double[]{1,5,3,7}, new int[]{2,2});
-        INDArray columnVectorSecond = Nd4j.create(new double[]{2, 6,4, 8}, new int[]{2, 2});
+        INDArray columnVectorFirst = Nd4j.create(new double[][]{{1,3},{5,7}});
+        INDArray columnVectorSecond = Nd4j.create(new double[][]{{2,4},{6,8}});
         INDArray test1 = baseArr.tensorAlongDimension(0, 0, 1);
         assertEquals(columnVectorFirst,test1);
         INDArray test2 = baseArr.tensorAlongDimension(1, 0, 1);
@@ -393,6 +394,52 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray tensorLinspaceRaveled = tensorLinSpace.ravel();
         assertEquals(linspaced,tensorLinspaceRaveled);
 
+    }
+
+    @Test
+    public void testPutScalar(){
+        //Check that the various putScalar methods have the same result...
+        int[][] shapes = new int[][]{
+                {3,4}, {1,4}, {3,1},
+                {3,4,5}, {1,4,5}, {3,1,5}, {3,4,1}, {1,1,5},
+                {3,4,5,6}, {1,4,5,6}, {3,1,5,6}, {3,4,1,6}, {3,4,5,1}, {1,1,5,6}, {3,1,1,6}, {3,1,1,1}
+        };
+
+        for(int[] shape : shapes){
+            int rank = shape.length;
+            NdIndexIterator iter = new NdIndexIterator(shape);
+            INDArray firstC = Nd4j.create(shape,'c');
+            INDArray firstF = Nd4j.create(shape,'f');
+            INDArray secondC = Nd4j.create(shape,'c');
+            INDArray secondF = Nd4j.create(shape,'f');
+
+            int i=0;
+            while(iter.hasNext()){
+                int[] currIdx = iter.next();
+                firstC.putScalar(currIdx,i);
+                firstF.putScalar(currIdx,i);
+
+                switch(rank){
+                    case 2:
+                        secondC.putScalar(currIdx[0], currIdx[1], i);
+                        secondF.putScalar(currIdx[0], currIdx[1], i);
+                        break;
+                    case 3:
+                        secondC.putScalar(currIdx[0], currIdx[1], currIdx[2], i);
+                        secondF.putScalar(currIdx[0], currIdx[1], currIdx[2], i);
+                        break;
+                    case 4:
+                        secondC.putScalar(currIdx[0], currIdx[1], currIdx[2], currIdx[3], i);
+                        secondF.putScalar(currIdx[0], currIdx[1], currIdx[2], currIdx[3], i);
+                        break;
+                    default: throw new RuntimeException();
+                }
+                i++;
+            }
+            assertEquals(firstC, firstF);
+            assertEquals(firstC, secondC);
+            assertEquals(firstC, secondF);
+        }
     }
 
     @Override

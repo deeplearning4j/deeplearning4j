@@ -663,6 +663,57 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testBroadcastRepeated(){
+        INDArray z = Nd4j.create(1, 4, 4, 3);
+        INDArray bias = Nd4j.create(1, 3);
+        BroadcastOp op = new BroadcastAddOp(z, bias, z, 3);
+        Nd4j.getExecutioner().exec(op);
+        System.out.println("First: OK");
+        //OK at this point: executes successfully
+
+
+        z = Nd4j.create(1, 4, 4, 3);
+        bias = Nd4j.create(1, 3);
+        op = new BroadcastAddOp(z, bias, z, 3);
+        Nd4j.getExecutioner().exec(op);         //Crashing here, when we are doing exactly the same thing as before...
+        System.out.println("Second: OK");
+    }
+
+    @Test
+    public void testTadShape() {
+        INDArray arr = Nd4j.linspace(1,12,12).reshape(4,3,1,1);
+        INDArray tad = arr.tensorAlongDimension(0,0,2,3);
+        assertArrayEquals(new int[]{4,1,1},tad.shape());
+    }
+
+    @Test
+    public void testSoftmaxDerivative() {
+        INDArray input = Nd4j.create(new double[]{ -1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).transpose();
+        INDArray output = Nd4j.create(10,1);
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
+    }
+
+
+    @Test
+    public void testVStackDifferentOrders(){
+
+        INDArray expected = Nd4j.linspace(1,9,9).reshape('c',3,3);
+
+        for(char order : new char[]{'c','f'}){
+            System.out.println(order);
+            Nd4j.factory().setOrder(order);
+
+            INDArray arr1 = Nd4j.linspace(1,6,6).reshape('c',2,3);
+            INDArray arr2 = Nd4j.linspace(7,9,3).reshape('c',1,3);
+
+            INDArray merged = Nd4j.vstack(arr1,arr2);
+            System.out.println(merged);
+            System.out.println(expected);
+
+            assertEquals(expected, merged);
+        }
+    }
 
     @Test
     @Ignore
@@ -688,8 +739,28 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 {0,1,2}, {0,1,3}, {0,2,3},
                 {0,1,2,3}
         };
+/*        for( int[] shape : shapes) {
+            for (int[] dims : sumDims) {
+                System.out.println("Shape");
+                System.out.println(Arrays.toString(shape));
+                System.out.println("Dimensions");
+                System.out.println(Arrays.toString(dims));
+                int length = ArrayUtil.prod(shape);
+                INDArray inC = Nd4j.linspace(1, length, length).reshape('c', shape);
+                System.out.println("TAD shape");
+                System.out.println(Arrays.toString((inC.tensorAlongDimension(0,dims).shape())));
 
-        for( int[] shape : shapes ){
+                INDArray inF = inC.dup('f');
+                System.out.println("C stride " + Arrays.toString(inC.tensorAlongDimension(0,dims).stride()) + " and f stride " + Arrays.toString(inF.tensorAlongDimension(0,dims).stride()));
+                for(int i = 0; i < inC.tensorssAlongDimension(dims); i++) {
+                    System.out.println(inC.tensorAlongDimension(i,dims).ravel());
+                }
+                for(int i = 0; i < inF.tensorssAlongDimension(dims); i++) {
+                    System.out.println(inF.tensorAlongDimension(i,dims).ravel());
+                }
+            }
+        }*/
+        for( int[] shape : shapes) {
             for(int[] dims : sumDims) {
                 System.out.println("Shape: " + Arrays.toString(shape) + ", sumDims=" + Arrays.toString(dims));
                 int length = ArrayUtil.prod(shape);
@@ -1407,19 +1478,20 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(shape);
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
-        assertArrayEquals(tad.shape(), new int[]{7, 5});
+        assertArrayEquals(tad.shape(), new int[]{5,7});
 
 
-        INDArray copy = Nd4j.zeros(7,5).assign(0.0);
-        for( int i = 0; i < 7; i++) {
-            for( int j = 0; j < 5; j++) {
+        INDArray copy = Nd4j.zeros(5,7).assign(0.0);
+        for( int i = 0; i < 5; i++) {
+            for( int j = 0; j < 7; j++) {
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
 
 
         assertTrue(tad.equals(copy));
-
+        tad = tad.reshape(7,5);
+        copy = copy.reshape(7,5);
         INDArray first = Nd4j.rand(new int[]{2, 7});
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
@@ -1439,18 +1511,20 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
         boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
-        assertArrayEquals(tad.shape(),new int[]{7,5});
+        assertArrayEquals(tad.shape(),new int[]{5,7});
 
 
-        INDArray copy = Nd4j.zeros(7,5);
-        for( int i = 0; i < 7; i++ ){
-            for( int j = 0; j < 5; j++ ){
+        INDArray copy = Nd4j.zeros(5,7);
+        for( int i = 0; i < 5; i++) {
+            for( int j = 0; j < 7; j++) {
                 copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
             }
         }
 
         assertTrue(tad.equals(copy));
 
+        tad = tad.reshape(7,5);
+        copy = copy.reshape(7,5);
         INDArray first = Nd4j.rand(new int[]{2, 7});
         INDArray mmul = first.mmul(tad);
         INDArray mmulCopy = first.mmul(copy);
@@ -2005,7 +2079,57 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray permuted = toPermute.permute(2, 1, 0);
         INDArray assertion = Nd4j.create(new float[]{0, 4, 2, 6, 1, 5, 3, 7}, new int[]{2, 2, 2});
         assertEquals(permuted, assertion);
+    }
 
+    @Test
+    public void testPermutei(){
+        //Check in-place permute vs. copy array permute
+
+        //2d:
+        INDArray orig = Nd4j.linspace(1,3*4,3*4).reshape('c',3,4);
+        INDArray exp01 = orig.permute(0,1);
+        INDArray exp10 = orig.permute(1,0);
+        List<Pair<INDArray,String>> list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(3,4,12345);
+        List<Pair<INDArray,String>> list2 = NDArrayCreationUtil.getAllTestMatricesWithShape(3,4,12345);
+        for( int i=0; i<list1.size(); i++ ){
+            INDArray p1 = list1.get(i).getFirst().assign(orig).permutei(0,1);
+            INDArray p2 = list2.get(i).getFirst().assign(orig).permutei(1,0);
+
+            assertEquals(exp01, p1);
+            assertEquals(exp10, p2);
+        }
+
+        //3d:
+        INDArray orig3d = Nd4j.linspace(1,3*4*5,3*4*5).reshape('c',3,4,5);
+        INDArray exp012 = orig3d.permute(0,1,2);
+        INDArray exp021 = orig3d.permute(0,2,1);
+        INDArray exp120 = orig3d.permute(1,2,0);
+        INDArray exp102 = orig3d.permute(1,0,2);
+        INDArray exp201 = orig3d.permute(2,0,1);
+        INDArray exp210 = orig3d.permute(2,1,0);
+
+        List<Pair<INDArray,String>> list012 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list021 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list120 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list102 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list201 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+        List<Pair<INDArray,String>> list210 = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,3,4,5);
+
+        for( int i=0; i<list012.size(); i++ ){
+            INDArray p1 = list012.get(i).getFirst().assign(orig3d).permutei(0,1,2);
+            INDArray p2 = list021.get(i).getFirst().assign(orig3d).permutei(0,2,1);
+            INDArray p3 = list120.get(i).getFirst().assign(orig3d).permutei(1,2,0);
+            INDArray p4 = list102.get(i).getFirst().assign(orig3d).permutei(1,0,2);
+            INDArray p5 = list201.get(i).getFirst().assign(orig3d).permutei(2,0,1);
+            INDArray p6 = list210.get(i).getFirst().assign(orig3d).permutei(2,1,0);
+
+            assertEquals(exp012, p1);
+            assertEquals(exp021, p2);
+            assertEquals(exp120, p3);
+            assertEquals(exp102, p4);
+            assertEquals(exp201, p5);
+            assertEquals(exp210, p6);
+        }
     }
 
 

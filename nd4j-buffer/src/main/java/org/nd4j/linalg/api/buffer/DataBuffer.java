@@ -95,7 +95,7 @@ public interface DataBuffer extends Serializable {
     /**
      * Returns a view of this as an
      * nio byte buffer
-     * @return a view of this as an nio double buffer
+     * @return a view of this as an nio int buffer
      */
     java.nio.IntBuffer asNioInt();
     /**

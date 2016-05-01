@@ -286,11 +286,77 @@ public class Shape {
         long offset = baseOffset;
         for(int i = 0; i < shape.length; i++) {
             if(indices[i] >= shape[i])
-                throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[d].",i));
+                throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[%d]=%d.",i,i,shape[i]));
             if(shape[i] != 1) {
                 offset += indices[i] * stride[i];
             }
         }
+
+        return offset;
+    }
+
+    public static long getOffset(IntBuffer shapeInformation, int... indices){
+        int rank = rank(shapeInformation);
+        if(indices.length != rank) throw new IllegalArgumentException("Indexes must be same length as array rank");
+        long offset = 0;
+        for( int i=0; i<rank; i++ ){
+            int size_dimi = size(shapeInformation,i);
+            if(indices[i] > size_dimi)
+                throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[%d]=%d.",i,i,size_dimi));
+            if(size_dimi != 1){
+                offset += indices[i] * stride(shapeInformation,i);
+            }
+        }
+        return offset;
+    }
+
+    public static long getOffset(IntBuffer shapeInformation, int row, int col){
+        int rank = rank(shapeInformation);
+        if(rank != 2) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
+        long offset = 0;
+        int size_0 = size(shapeInformation,0);
+        int size_1 = size(shapeInformation,1);
+        if(row >= size_0 || col >= size_1) throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a " +
+            Arrays.toString(shape(shapeInformation)) + " NDArray");
+
+        if(size_0 != 1) offset += row * stride(shapeInformation, 0);
+        if(size_1 != 1) offset += col * stride(shapeInformation, 1);
+
+        return offset;
+    }
+
+    public static long getOffset(IntBuffer shapeInformation, int dim0, int dim1, int dim2){
+        int rank = rank(shapeInformation);
+        if(rank != 3) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
+        long offset = 0;
+        int size_0 = size(shapeInformation,0);
+        int size_1 = size(shapeInformation,1);
+        int size_2 = size(shapeInformation,2);
+        if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2) throw new IllegalArgumentException("Invalid indices: cannot get ["
+                + dim0 + "," + dim1 + "," + dim2 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+
+        if(size_0 != 1) offset += dim0 * stride(shapeInformation, 0);
+        if(size_1 != 1) offset += dim1 * stride(shapeInformation, 1);
+        if(size_2 != 1) offset += dim2 * stride(shapeInformation, 2);
+
+        return offset;
+    }
+
+    public static long getOffset(IntBuffer shapeInformation, int dim0, int dim1, int dim2, int dim3){
+        int rank = rank(shapeInformation);
+        if(rank != 4) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
+        long offset = 0;
+        int size_0 = size(shapeInformation,0);
+        int size_1 = size(shapeInformation,1);
+        int size_2 = size(shapeInformation,2);
+        int size_3 = size(shapeInformation,3);
+        if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3) throw new IllegalArgumentException("Invalid indices: cannot get ["
+                + dim0 + "," + dim1 + "," + dim2 + "," + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+
+        if(size_0 != 1) offset += dim0 * stride(shapeInformation, 0);
+        if(size_1 != 1) offset += dim1 * stride(shapeInformation, 1);
+        if(size_2 != 1) offset += dim2 * stride(shapeInformation, 2);
+        if(size_3 != 1) offset += dim3 * stride(shapeInformation, 3);
 
         return offset;
     }
@@ -558,6 +624,19 @@ public class Shape {
         StridePermutation[] perm = StridePermutation.create(strides);
         Arrays.sort(perm);
         return perm;
+    }
+
+    /**
+     * If a shape array is ony 1 in length
+     * it returns a row vector
+     * @param shape the shape of the array
+     * @return the shape as is if its already >= 2 in length
+     * otherwise a row vector shape
+     */
+    public static int[] ensureAtMinRowVector(int...shape) {
+        if(shape.length >= 2)
+            return shape;
+        return new int[] {1,shape[0]};
     }
 
 
@@ -1186,6 +1265,25 @@ public class Shape {
         return ret.get(0);
     }
 
+    public static int size(IntBuffer buffer, int dimension){
+        int rank = rank(buffer);
+        if(dimension >= rank) throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer.get(1+dimension);
+    }
+
+    public static int[] shape(IntBuffer buffer ) {
+        int[] ret = new int[rank(buffer)];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = buffer.get(i);
+        return ret;
+    }
+
+    public static int stride(IntBuffer buffer, int dimension){
+        int rank = rank(buffer);
+        if(dimension >= rank) throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer.get(1+rank+dimension);
+    }
+
     /**
      * Return the shape info length
      * given the rank
@@ -1240,6 +1338,17 @@ public class Shape {
     public static IntBuffer shapeOf(IntBuffer buffer) {
         IntBuffer ret =  (IntBuffer) buffer.position(1);
         return ret.slice();
+    }
+
+
+    /**
+     * Prints the shape
+     * for this shape information
+     * @param arr the shape information to print
+     * @return the shape information to string
+     */
+    public static String shapeToString(INDArray arr) {
+        return shapeToString(arr.shapeInfo());
     }
 
     /**

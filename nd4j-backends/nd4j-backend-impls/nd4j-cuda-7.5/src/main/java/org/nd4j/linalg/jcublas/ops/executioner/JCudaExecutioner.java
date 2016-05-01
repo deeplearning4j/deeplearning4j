@@ -926,7 +926,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                             extraArgs);
                 }
             } else {
-                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
                     nativeOps.execPairwiseTransformFloat(
                             xShapeInfoHostPointer,
                             op.opNum(),
@@ -955,7 +955,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
+                if(op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     nativeOps.execTransformDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),
