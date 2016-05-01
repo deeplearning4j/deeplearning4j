@@ -162,3 +162,4 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 * [컨볼루션 네트워크](../kr-convolutionalnets)
 * [Word2vec](../kr-word2vec)
 * [Neural Networks & Regression](../linear-regression)
+* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
