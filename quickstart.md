@@ -75,7 +75,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 4. Continue through the wizard's options. You may see a screen like this (IntelliJ versions differ) where you must click on the plus sign on the upper left:
 ![run IntelliJ example](../img/intellij-sdk.png)
-Once you see a the directory tree appear, select the folder that begins with `jdk`, under Java.
+Once you see the directory tree appear, select the folder that begins with `jdk`, under Java.
 ![run IntelliJ example](../img/intellij-sdk2.png)
 
 Then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
