@@ -2698,7 +2698,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
-					shape::printShapeInfo(maxShapeBuffer);
+					//shape::printShapeInfo(maxShapeBuffer);
 
 					// max 3
 					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
