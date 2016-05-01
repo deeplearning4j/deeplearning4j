@@ -112,12 +112,12 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if(seed != null) builder.seed(seed);
         if(optimizationAlgo != null) builder.optimizationAlgo(optimizationAlgo.getValue(values));
         if(regularization != null) builder.regularization(regularization.getValue(values));
-        if(schedules != null) builder.schedules(schedules.getValue(values));
+       // if(schedules != null) builder.learningRateSchedule(schedules.getValue(values));
         if(activationFunction != null) builder.activation(activationFunction.getValue(values));
         if(weightInit != null) builder.weightInit(weightInit.getValue(values));
         if(dist != null) builder.dist(dist.getValue(values));
         if(learningRate != null) builder.learningRate(learningRate.getValue(values));
-        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.getValue(values));
+        if(learningRateAfter != null) builder.learningRateSchedule(learningRateAfter.getValue(values));
         if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.getValue(values));
         if(l1 != null) builder.l1(l1.getValue(values));
         if(l2 != null) builder.l2(l2.getValue(values));
