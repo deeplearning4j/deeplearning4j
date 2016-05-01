@@ -20,11 +20,9 @@ package org.deeplearning4j.ui.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.math.stat.descriptive.rank.Percentile;
-import org.deeplearning4j.berkeley.Pair;
+
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
-import org.deeplearning4j.ui.storage.HistoryStorage;
 import org.deeplearning4j.ui.storage.SessionStorage;
 import org.deeplearning4j.ui.storage.def.ObjectType;
 import org.deeplearning4j.ui.uploads.FileResource;
@@ -34,11 +32,9 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
