@@ -52,7 +52,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         INDArray in2d;
         if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
-            in2d = input.tensorAlongDimension(0, 1, 2);
+            in2d = input.tensorAlongDimension(0, 1, 2).permutei(1,0);
         } else if (shape[2] == 1) {
             //Edge case: time series length = 1
             in2d = input.tensorAlongDimension(0, 1, 0);
