@@ -679,17 +679,18 @@ struct SharedIndexValue<double> {
 				tad.createOffsets();
                 if(tad.dimensionLength < 1)
                     return;
-
-                if(shape::elementWiseStride(tad.tadOnlyShapeInfo) < 1) {
+				if(!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
+																			shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing))) {
 					/**
-                     * The element wise stride belong longs to a reduction index.
-                     * When used out of order, we can get rid of the data
-                     * dependencies and rely on using the max dimension
-                     * specified for stride instead.
-                     * Say we take the sum(0,1) along long arr
-                     * we can use arr.stride(1) as a representation
-                     * along long which to iterate.
-                     */
+                                 * The element wise stride belong longs to a reduction index.
+                                 * When used out of order, we can get rid of the data
+                                 * dependencies and rely on using the max dimension
+                                 * specified for stride instead.
+                                 * Say we take the sum(0,1) along long arr
+                                 * we can use arr.stride(1) as a representation
+                                 * along long which to iterate.
+                                 */
+				
 					int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 					int *xShape = shape::shapeOf(tadShapeShapeInfo);
 					int *xStride = shape::stride(tadShapeShapeInfo);

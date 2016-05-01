@@ -955,7 +955,17 @@ struct SharedSummaryStatsData<double> {
 
 
                 int resultLength = shape::length(resultShapeInfoBuffer);
-                if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0) {
+                //pre squeezed: this is for keeping the pointer to the original
+                //shape information for tad offset
+                //the squeezed information doesn't render the right strides for
+                //tad offset
+                if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
+                    result[0] = execScalar(x, xShapeInfo, extraParams);
+                    return;
+                }
+
+                if(!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
+                                                                            shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing))) {
 
                     /**
                      * The element wise stride belong longs to a reduction index.
@@ -982,8 +992,7 @@ struct SharedSummaryStatsData<double> {
                         int xStridesIter[MAX_RANK];
                         T *xPointer = x + offset;
                         SummaryStatsData<T> comp;
-                        comp.initWithValue(x[offset]);
-                        comp = op(comp, extraParams);
+                        comp.initWithValue(0.0);
                         if(PrepareOneRawArrayIter<T>(rankIter,
                                                      xShape,
                                                      xPointer,
