@@ -37,7 +37,7 @@ Maven is a dependency management and automated build tool for Java projects. It 
 mvn --version
 ```
 
-If you are working on a Mac, you can simply enter into the command line:
+If you are working on a Mac, you can simply enter the following into the command line:
 
 ``` shell
 brew install maven
