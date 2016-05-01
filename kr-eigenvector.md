@@ -220,7 +220,6 @@ vs.
 
 ## <a name="resources">초보자용 다른 가이드들</a>
 
-* [회귀 분석 & 신경망](../kr-linear-regression.html)
 * [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
 * [자연어처리: Word2vec](../kr-word2vec.html)
 * [인공 신경망](../kr-neuralnet-overview.html)
