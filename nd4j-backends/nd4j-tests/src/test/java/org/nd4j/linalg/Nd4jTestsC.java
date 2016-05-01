@@ -715,6 +715,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test(expected = AssertionError.class)
+    public void testBroadcastIllegalArgument() {
+        Nd4j.ones(3,5).addiRowVector(Nd4j.ones(1,3));
+    }
+
     @Test
     @Ignore
     public void testSumAlongDim1sEdgeCases() {
