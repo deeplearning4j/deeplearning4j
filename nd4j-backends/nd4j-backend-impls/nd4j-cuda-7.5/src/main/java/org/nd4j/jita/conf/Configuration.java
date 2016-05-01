@@ -268,8 +268,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setMaximumBlockSize(int blockDim) {
-        if (blockDim < 64 || blockDim > 1024)
-            throw new IllegalStateException("Please keep blockDim in range [64...1024]");
+        if (blockDim < 64 || blockDim > 512)
+            throw new IllegalStateException("Please keep blockDim in range [64...512]");
 
 
         this.maximumBlockSize = blockDim;

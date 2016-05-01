@@ -27,8 +27,8 @@ public class CudaAccumTests {
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
-                .setFirstMemory(AllocationStatus.HOST)
-                .setMaximumBlockSize(512)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(1024)
                 .setMaximumGridSize(512)
                 .enableDebug(true);
 
@@ -63,12 +63,13 @@ public class CudaAccumTests {
         INDArray array1 = Nd4j.linspace(1, 10000, 100000).reshape(100,1000);
 
         Sum sum = new Sum(array1);
-        INDArray result = Nd4j.getExecutioner().exec(sum, 0);
+        INDArray result;/* = Nd4j.getExecutioner().exec(sum, 0);
 
         assertEquals(495055.44f, result.getFloat(0), 0.01f);
-
+*/
         result = Nd4j.getExecutioner().exec(sum, 1);
         assertEquals(50945.52f, result.getFloat(0), 0.01f);
+
     }
 
     @Test
@@ -99,7 +100,11 @@ public class CudaAccumTests {
 
         INDArray array1 = Nd4j.ones(128000);
 
+        long time1 = System.currentTimeMillis();
         float sum = array1.sumNumber().floatValue();
+        long time2 = System.currentTimeMillis();
+
+        System.out.println("Execution time: " + (time2 - time1));
 
         assertEquals(128000f, sum, 0.01f);
     }

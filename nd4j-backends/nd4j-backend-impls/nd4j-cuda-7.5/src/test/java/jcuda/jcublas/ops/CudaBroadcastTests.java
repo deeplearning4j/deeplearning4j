@@ -134,6 +134,8 @@ public class CudaBroadcastTests {
         //System.out.println("Array2: " + array2);
 
         assertEquals(2.0f, array1.getRow(0).getFloat(0), 0.01);
+        assertEquals(2.0f, array1.getRow(1).getFloat(0), 0.01);
+        assertEquals(2.0f, array1.getRow(3).getFloat(3), 0.01);
     }
 
     @Test

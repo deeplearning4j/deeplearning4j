@@ -1,7 +1,11 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -18,10 +22,21 @@ import static org.junit.Assert.assertEquals;
 @Ignore
 public class CudaScalarsTests {
 
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(1024)
+                .setMaximumGridSize(256)
+                .enableDebug(true);
 
+        System.out.println("Init called");
+    }
 
-
-
+ // dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+ // dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(float), 2);
+ // dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
     @Test
     public void testPinnedScalarDiv() throws Exception {
         // simple way to stop test if we're not on CUDA backend here
@@ -187,8 +202,17 @@ public class CudaScalarsTests {
         INDArray array1 = Nd4j.linspace(1, 784000, 784000).reshape(784, 1000);
         INDArray array2 = Nd4j.linspace(1, 784000, 784000).reshape(784, 1000).dup('f');
 
+        long time1 = System.currentTimeMillis();
         array1.muli(0.5f);
+        long time2 = System.currentTimeMillis();
+        System.out.println("Execution time 1: " + (time2 - time1));
+
+        time1 = System.currentTimeMillis();
         array2.muli(0.5f);
+        time2 = System.currentTimeMillis();
+        System.out.println("Execution time 2: " + (time2 - time1));
+
+
         //System.out.println("MUL result: " + array1);
         assertEquals(0.5f, array1.getDouble(0), 0.0001f);
         assertEquals(392000f, array1.getDouble(783999), 0.0001f);

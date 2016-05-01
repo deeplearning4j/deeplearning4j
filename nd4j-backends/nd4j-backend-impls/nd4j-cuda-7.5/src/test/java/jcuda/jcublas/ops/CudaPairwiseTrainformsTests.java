@@ -60,7 +60,7 @@ public class CudaPairwiseTrainformsTests {
 
         System.out.println("Array1: " + array1);
         System.out.println("Array2: " + array2);
-        System.out.println("Array3: " + result);
+        System.out.println("Result: " + result);
 
         assertEquals(0.75f, array1.getRow(0).getFloat(0), 0.01);
     }
