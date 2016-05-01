@@ -87,7 +87,7 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
 - `nd4j-x86`, the CPU version of the ND4J library that powers DL4J
 - `canova-api` - Canova is our library vectorizing and loading data
 
-Here is how the POM file should appear when you run your examples, and here is [a link to it on Github](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
+Every Maven project has a POM file. Here is how the POM file should appear when you run your examples, and here is [a link to it on Github](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml?slice=1:175"></script>
 
