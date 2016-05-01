@@ -137,7 +137,7 @@ Within IntelliJ, you will need to choose the first Deeplearning4j example you're
 
 In another window, a graph will appear, showing you how the multilayer perceptron (MLP) has classified the data in the example. It will look like this:
 
-![run IntelliJ example](../img/mlp_classifier_results.png)
+![run IntelliJ example](../img/mlp_classifier_viz.png)
 
 And congratulations! You just trained your first neural network with Deeplearning4j...
 
