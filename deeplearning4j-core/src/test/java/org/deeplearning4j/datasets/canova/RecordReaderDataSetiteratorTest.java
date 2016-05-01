@@ -416,24 +416,24 @@ public class RecordReaderDataSetiteratorTest {
         expF0.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{10, 11, 12}));
         expF0.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{20, 21, 22}));
         expF0.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{30, 31, 32}));
-        assertEquals(dsListAlignStart.get(0).getFeatureMatrix(), expF0);
-        assertEquals(dsListAlignEnd.get(0).getFeatureMatrix(), expF0);
+        assertEquals(expF0, dsListAlignStart.get(0).getFeatureMatrix());
+        assertEquals(expF0, dsListAlignEnd.get(0).getFeatureMatrix());
 
         INDArray expF1 = Nd4j.create(1, 3, 4);
         expF1.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{100, 101, 102}));
         expF1.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{110, 111, 112}));
         expF1.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{120, 121, 122}));
         expF1.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{130, 131, 132}));
-        assertEquals(dsListAlignStart.get(1).getFeatureMatrix(), expF1);
-        assertEquals(dsListAlignEnd.get(1).getFeatureMatrix(), expF1);
+        assertEquals(expF1, dsListAlignStart.get(1).getFeatureMatrix());
+        assertEquals(expF1, dsListAlignEnd.get(1).getFeatureMatrix());
 
         INDArray expF2 = Nd4j.create(1, 3, 4);
         expF2.tensorAlongDimension(0, 1).assign(Nd4j.create(new double[]{200, 201, 202}));
         expF2.tensorAlongDimension(1, 1).assign(Nd4j.create(new double[]{210, 211, 212}));
         expF2.tensorAlongDimension(2, 1).assign(Nd4j.create(new double[]{220, 221, 222}));
         expF2.tensorAlongDimension(3, 1).assign(Nd4j.create(new double[]{230, 231, 232}));
-        assertEquals(dsListAlignStart.get(2).getFeatureMatrix(), expF2);
-        assertEquals(dsListAlignEnd.get(2).getFeatureMatrix(), expF2);
+        assertEquals(expF2, dsListAlignStart.get(2).getFeatureMatrix());
+        assertEquals(expF2, dsListAlignEnd.get(2).getFeatureMatrix());
 
         //Check features mask array:
         INDArray featuresMaskExpected = Nd4j.ones(1,4); //1 example, 4 values: same for both start/end align here
