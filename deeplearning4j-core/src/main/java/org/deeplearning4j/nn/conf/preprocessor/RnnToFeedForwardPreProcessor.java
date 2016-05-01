@@ -28,7 +28,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 		if( input.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
 		
 		int[] shape = input.shape();
-		if(shape[0]==1) return input.tensorAlongDimension(0,1,2);	//Edge case: miniBatchSize==1
+		if(shape[0]==1) return input.tensorAlongDimension(0,1,2).permutei(1,0);	//Edge case: miniBatchSize==1
 		if(shape[2]==1) return input.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
 		INDArray permuted = input.permute(0,2,1);	//Permute, so we get correct order after reshaping
 		return permuted.reshape(shape[0]*shape[2],shape[1]);

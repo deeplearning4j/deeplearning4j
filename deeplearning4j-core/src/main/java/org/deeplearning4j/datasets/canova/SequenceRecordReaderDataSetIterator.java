@@ -161,8 +161,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
         if(minLength == maxLength){
             for (int i = 0; i < listFeatures.size(); i++) {
-                featuresOut.tensorAlongDimension(i, 1, 2).assign(listFeatures.get(i));
-                labelsOut.tensorAlongDimension(i, 1, 2).assign(listLabels.get(i));
+                //Note: this TAD gives us shape [vectorSize,tsLength] whereas we need a [vectorSize,timeSeriesLength] matrix (that listFeatures contains)
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0).assign(listFeatures.get(i));
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0).assign(listLabels.get(i));
             }
         } else {
             featuresMask = Nd4j.ones(listFeatures.size(),maxLength);
@@ -171,8 +172,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 INDArray f = listFeatures.get(i);
                 int tsLength = f.size(0);
 
-                featuresOut.tensorAlongDimension(i, 1, 2).put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, f);
-                labelsOut.tensorAlongDimension(i, 1, 2).put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, listLabels.get(i));
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
+                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, f);
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
+                        .put(new INDArrayIndex[]{NDArrayIndex.interval(0, tsLength), NDArrayIndex.all()}, listLabels.get(i));
                 for( int j=tsLength; j<maxLength; j++ ){
                     featuresMask.put(i,j,0.0);
                     labelsMask.put(i,j,0.0);
@@ -222,8 +225,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             featuresOut = Nd4j.create(featureShape,'f');
             labelsOut = Nd4j.create(labelShape,'f');
             for (int i = 0; i < featureList.size(); i++) {
-                featuresOut.tensorAlongDimension(i, 1, 2).assign(featureList.get(i));
-                labelsOut.tensorAlongDimension(i, 1, 2).assign(labelList.get(i));
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
+                        .assign(featureList.get(i));
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
+                        .assign(labelList.get(i));
             }
         } else if( alignmentMode == AlignmentMode.ALIGN_START ){
             int longestTimeSeries = 0;
@@ -251,9 +256,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 INDArray f = featureList.get(i);
                 INDArray l = labelList.get(i);
 
-                featuresOut.tensorAlongDimension(i, 1, 2)
+                //Again, permute is to put [timeSeriesLength,vectorSize] into a [vectorSize,timeSeriesLength] matrix
+                featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                         .put(new INDArrayIndex[]{NDArrayIndex.interval(0, f.size(0)), NDArrayIndex.all()}, f);
-                labelsOut.tensorAlongDimension(i, 1, 2)
+                labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                         .put(new INDArrayIndex[]{NDArrayIndex.interval(0, l.size(0)), NDArrayIndex.all()}, l);
                 for( int j=f.size(0); j<longestTimeSeries; j++ ){
                     featuresMask.putScalar(i,j,0.0);
@@ -294,9 +300,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
                 if(fLen >= lLen){
                     //Align labels with end of features (features are longer)
-                    featuresOut.tensorAlongDimension(i, 1, 2)
+                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                             .put(new INDArrayIndex[]{NDArrayIndex.interval(0, fLen), NDArrayIndex.all()}, f);
-                    labelsOut.tensorAlongDimension(i, 1, 2)
+                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                             .put(new INDArrayIndex[]{NDArrayIndex.interval(fLen-lLen, fLen), NDArrayIndex.all()}, l);
 
                     for( int j=fLen; j<longestTimeSeries; j++ ){
@@ -312,9 +318,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                     }
                 } else {
                     //Align features with end of labels (labels are longer)
-                    featuresOut.tensorAlongDimension(i, 1, 2)
+                    featuresOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                             .put(new INDArrayIndex[]{NDArrayIndex.interval(lLen-fLen, lLen), NDArrayIndex.all()}, f);
-                    labelsOut.tensorAlongDimension(i, 1, 2)
+                    labelsOut.tensorAlongDimension(i, 1, 2).permutei(1,0)
                             .put(new INDArrayIndex[]{NDArrayIndex.interval(0, lLen), NDArrayIndex.all()}, l);
 
                     //features mask: component before features
