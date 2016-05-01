@@ -124,8 +124,8 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         if(biasInit != null) builder.biasInit(biasInit.getValue(values));
         if(dist != null) builder.dist(dist.getValue(values));
         if(learningRate != null) builder.learningRate(learningRate.getValue(values));
-        if(learningRateAfter != null) builder.learningRateAfter(learningRateAfter.getValue(values));
-        if(lrScoreBasedDecay != null) builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.getValue(values));
+        if(learningRateAfter != null) builder.learningRateSchedule(learningRateAfter.getValue(values));
+        if(lrScoreBasedDecay != null) builder.learningRate(lrScoreBasedDecay.getValue(values));
         if(l1 != null) builder.l1(l1.getValue(values));
         if(l2 != null) builder.l2(l2.getValue(values));
         if(dropOut != null) builder.dropOut(dropOut.getValue(values));
