@@ -102,6 +102,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected int linearStride = -1;
     protected boolean attemptedToFindElementWiseStride = false;
 
+    //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
+    private static final int[][] tadFinalPermuteDimensions;
+    static{
+        tadFinalPermuteDimensions = new int[32][0];
+        tadFinalPermuteDimensions[1] = new int[]{1,0};  //Edge case for 1d tensors: selectively apply to column vectors
+        for( int i=2; i<32; i++ ){
+            tadFinalPermuteDimensions[i] = new int[i];
+            for( int k=i-1, j=0; k>=0; k--, j++) tadFinalPermuteDimensions[i][j] = k;
+        }
+    }
 
     public BaseNDArray() {
     }
@@ -721,13 +731,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int tensorssAlongDimension(int... dimension) {
+        if(dimension == null || dimension.length == 0)
+            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         if(dimension.length >= rank())
             return 1;
         for(int i = 0; i < dimension.length; i++)
             if(dimension[i] < 0)
                 dimension[i] += rank();
-        if(dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         int[] tensorShape = ArrayUtil.keep(shape(), dimension);
         long len =  ArrayUtil.prodLong(tensorShape);
         if(len == 0)
@@ -739,22 +749,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        if(dimension.length >= rank())
-            return this;
-
-        int tads = tensorssAlongDimension(dimension);
-        if(index >= tads)
-            throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
+        if(dimension.length >= rank())
+            return this;
         for(int i = 0; i < dimension.length; i++)
             if(dimension[i] < 0)
                 dimension[i] += rank();
 
+        Arrays.sort(dimension);
 
-        if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
-            return this;
+        int tads = tensorssAlongDimension(dimension);
+        if(index >= tads)
+            throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
+
+
+        if(dimension.length == 1){
+            if(dimension[0] == 0 && isColumnVector()){
+                return this.transpose();
+            } else if(dimension[0] == 1 && isRowVector()){
+                return this;
+            }
         }
 
 
@@ -762,25 +778,33 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);
         int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension);
         int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
+        int[] finalPermuteDims = tadFinalPermuteDimensions[dimension.length];
 
         INDArray permuted = permute(newPermuteDims);
         int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
 
         INDArray ret2 = permuted.slice(sliceIdx);
-        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length())
-            return ret2;
+        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()){
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
+        }
+
 
         int length = ArrayUtil.prod(tensorShape);
         int tensorLength = ArrayUtil.prod(tensorShape);
         int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
 
-        if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
-            return ret2.slice(offset);
+        if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2)) {
+            ret2 = ret2.slice(offset);
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
+        }
 
         else if(length == NDArrayMath.lengthPerSlice(ret2)) {
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
-            return ret2;
+            if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            return ret2.permutei(finalPermuteDims);
         }
 
         while(ret2.length() > length) {
@@ -789,7 +813,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret2 = ret2.slice(sliceIdx);
         }
 
-        return  ret2;
+        if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+        return ret2.permutei(finalPermuteDims);
     }
 
 
@@ -843,6 +868,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray vectorAlongDimension(int index, int dimension) {
         if(dimension < 0)
             dimension = Shape.rank(shapeInformation) + dimension;
+
         //return the whole thing
         if(dimension == Shape.rank(shapeInformation) - 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return this;
@@ -1072,6 +1098,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         data.put(offset, value);
         return this;
     }
+
+    @Override
+    public INDArray putScalar(int row, int col, double value){
+        long offset = Shape.getOffset(shapeInfo(), row, col);
+        data.put(offset, value);
+        return this;
+    }
+
+    @Override
+    public INDArray putScalar(int dim0, int dim1, int dim2, double value){
+        long offset = Shape.getOffset(shapeInfo(), dim0, dim1, dim2);
+        data.put(offset, value);
+        return this;
+    }
+
+    @Override
+    public INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value){
+        long offset = Shape.getOffset(shapeInfo(), dim0, dim1, dim2, dim3);
+        data.put(offset, value);
+        return this;
+    }
+
 
     @Override
     public INDArray putScalar(int[] indexes, float value) {
@@ -4053,7 +4101,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (rearrange.length != rank())
             return dup();
         boolean alreadyInOrder = true;
-        for(int i = 0; i < Shape.rank(shapeInfo()); i++) {
+        IntBuffer shapeInfo = shapeInfo();
+        int rank = Shape.rank(shapeInfo);
+        for(int i = 0; i < rank; i++) {
             if(rearrange[i] != i) {
                 alreadyInOrder = false;
                 break;
@@ -4066,6 +4116,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation), rearrange);
         int[] newStride = doPermuteSwap(Shape.stride(shapeInformation), rearrange);
+    
         char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
         INDArray value = create(
@@ -4075,6 +4126,45 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 offset(),
                 newOrder);
         return value;
+    }
+
+    /**
+     * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
+     * is modified by this operation (but not the data itself)
+     * See: http://www.mathworks.com/help/matlab/ref/permute.html
+     *
+     * @param rearrange the dimensions to swap to
+     * @return the current array
+     */
+    @Override
+    public INDArray permutei(int...rearrange) {
+        boolean alreadyInOrder = true;
+        IntBuffer shapeInfo = shapeInfo();
+        int rank = Shape.rank(shapeInfo);
+        for(int i = 0; i < rank; i++) {
+            if(rearrange[i] != i) {
+                alreadyInOrder = false;
+                break;
+            }
+        }
+
+        if(alreadyInOrder)
+            return this;
+
+        checkArrangeArray(rearrange);
+        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInfo), rearrange);
+        int[] newStride = doPermuteSwap(Shape.stride(shapeInfo), rearrange);
+        char newOrder = Shape.getOrder(newShape, newStride, elementStride());
+
+        //Set the shape information of this array: shape, stride, order.
+        //Shape info buffer: [rank, [shape], [stride], offset, elementwiseStride, order]
+        for( int i=0; i<rank; i++ ){
+            shapeInfo.put(1+i,newShape[i]);
+            shapeInfo.put(1+i+rank,newStride[i]);
+        }
+        shapeInfo.put(3+2*rank,newOrder);
+
+        return this;
     }
 
 
@@ -4363,12 +4453,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         write(out);
     }
 
-
+    //Custom serialization for Java serialization
     protected void write(ObjectOutputStream out) throws IOException {
-        shapeInformation.write(out);
-        data().write(out);
+        if(this.isView()){
+            //As per Nd4j.write, duplicate before writing to the output stream
+            //BaseDataBuffer.write(...) doesn't know about strides etc, so dup (or equiv. strategy) is necessary here
+            //Furthermore, because we only want to save the *actual* data for a view (not the full data), the shape info
+            // (mainly strides, offset, element-wise stride) may be different in the duped array vs. the view array
+            INDArray copy = this.dup();
+            copy.shapeInfoDataBuffer().write(out);
+            copy.data().write(out);
+        } else {
+            shapeInformation.write(out);
+            data().write(out);
+        }
     }
 
+    //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) {
         shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank)],0);
         shapeInformation.read(s);
