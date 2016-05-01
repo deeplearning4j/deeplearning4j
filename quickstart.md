@@ -37,6 +37,12 @@ Maven is a dependency management and automated build tool for Java projects. It 
 mvn --version
 ```
 
+If you are working on a Mac, you can simply enter into the command line:
+
+``` shell
+brew install maven
+```
+
 Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. 
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
@@ -49,7 +55,7 @@ There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclip
 
 Install the [latest version of Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). If you already have Git, you can update to the latest version using Git itself:
 
-```
+``` shell
 $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
 
