@@ -822,10 +822,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return (int)(length / size(realDimension));
         }
 
-        if (dimension >= Shape.rank(shapeInformation.asNioInt())) {
-            if(length / size(Shape.rank(shapeInformation.asNioInt()) - 1) >= Integer.MAX_VALUE)
+        if (dimension >= Shape.rank(shapeInformation)) {
+            if(length / size(Shape.rank(shapeInformation) - 1) >= Integer.MAX_VALUE)
                 throw new IllegalArgumentException("Vectors along dimension can not be >= Integer.MAX_VALUE");
-            return (int)(length / size(Shape.rank(shapeInformation.asNioInt()) - 1));
+            return (int)(length / size(Shape.rank(shapeInformation) - 1));
         }
         if(length / size(dimension) >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Vectors along dimension can not be >= Integer.MAX_VALUE");
@@ -842,9 +842,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
         if(dimension < 0)
-            dimension = Shape.rank(shapeInformation.asNioInt()) + dimension;
+            dimension = Shape.rank(shapeInformation) + dimension;
         //return the whole thing
-        if(dimension == Shape.rank(shapeInformation.asNioInt())- 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
+        if(dimension == Shape.rank(shapeInformation) - 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return this;
         }
 
@@ -863,7 +863,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setShape(int... shape) {
-        IntBuffer shapeView = Shape.shapeOf(shapeInformation.asNioInt());
+        DataBuffer shapeView = Shape.shapeOf(shapeInformation);
         for(int i = 0; i < shape.length; i++) {
             shapeView.put(i,shape[i]);
         }
@@ -1422,12 +1422,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Shape.rank(shapeInfo()) > 2) {
             isScalar = false;
         }
-        else if (Shape.rank(shapeInformation.asNioInt()) == 1) {
-            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1;
+        else if (Shape.rank(shapeInformation) == 1) {
+            isScalar = Shape.shapeOf(shapeInformation).getInt(0) == 1;
         }
-        else if (Shape.rank(shapeInformation.asNioInt()) == 2) {
-            isScalar = Shape.shapeOf(shapeInformation.asNioInt()).get(0) == 1
-                    && Shape.shapeOf(shapeInformation.asNioInt()).get(1) == 1;
+        else if (Shape.rank(shapeInformation) == 2) {
+            isScalar = Shape.shapeOf(shapeInformation).getInt(0) == 1
+                    && Shape.shapeOf(shapeInformation).getInt(1) == 1;
         }
 
         else
@@ -1764,7 +1764,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (shape.length == rank() && Shape.contentEquals(shape, Shape.shapeOf(shapeInformation.asNioInt()))) {
+        if (shape.length == rank() && Shape.contentEquals(shape, Shape.shapeOf(shapeInformation))) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -1791,7 +1791,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (Shape.contentEquals(shape,Shape.shapeOf(shapeInformation.asNioInt()))) {
+        if (Shape.contentEquals(shape,Shape.shapeOf(shapeInformation))) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -1837,7 +1837,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setStride(int[] stride) {
-        IntBuffer strideView = Shape.stride(shapeInformation.asNioInt());
+        DataBuffer strideView = Shape.stride(shapeInformation);
         for(int i = 0; i < stride.length; i++)
             strideView.put(i,stride[i]);
     }
@@ -2091,10 +2091,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int stride(int dimension) {
-        int rank = Shape.rank(shapeInformation.asNioInt());
+        int rank = Shape.rank(shapeInformation);
         if(dimension < 0)
-            return Shape.stride(shapeInformation.asNioInt()).get(dimension + rank);
-        return Shape.stride(shapeInformation.asNioInt()).get(dimension);
+            return Shape.stride(shapeInformation).getInt(dimension + rank);
+        return Shape.stride(shapeInformation).getInt(dimension);
     }
 
     @Override
@@ -2822,7 +2822,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int linearIndex(int i) {
         setLinearStride();
         int idx = i;
-        for(int j = 0; j < Shape.rank(shapeInformation.asNioInt()) - 1; j++) {
+        for(int j = 0; j < Shape.rank(shapeInformation) - 1; j++) {
             if(size(i) == 1)
                 continue;
             idx += i * stride(j);
@@ -2854,7 +2854,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(shapeInformation.asNioInt()) == 0) {
+        if (Shape.rank(shapeInformation) == 0) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
             else
@@ -2935,7 +2935,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(shapeInformation.asNioInt()) == 0) {
+        if (Shape.rank(shapeInformation) == 0) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
             else
@@ -3287,8 +3287,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void checkDimensions(INDArray other) {
-        assert Shape.contentEquals(other.shape(), Shape.shapeOf(shapeInformation.asNioInt())) : " Other array should have been shape: " + Shape.toString(Shape.shapeOf(shapeInformation.asNioInt())) + " but was " + Arrays.toString(other.shape());
-        assert Shape.contentEquals(other.stride(), Shape.stride(shapeInformation.asNioInt())) : " Other array should have been stride: " + Shape.toString(Shape.stride(shapeInformation.asNioInt())) + " but was " + Arrays.toString(other.stride());
+        assert Shape.contentEquals(other.shape(), Shape.shapeOf(shapeInformation)) : " Other array should have been shape: " + Shape.toString(Shape.shapeOf(shapeInformation)) + " but was " + Arrays.toString(other.shape());
+        assert Shape.contentEquals(other.stride(), Shape.stride(shapeInformation)) : " Other array should have been stride: " + Shape.toString(Shape.stride(shapeInformation)) + " but was " + Arrays.toString(other.stride());
         assert Shape.offset(shapeInfo()) == other.offset() : "Offset of this array is " + Shape.offset(shapeInfo()) + " but other was " + other.offset();
 
     }
@@ -3434,7 +3434,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isVector()) {
             if (isColumnVector())
                 return 1;
-            else if(isRowVector() && Shape.rank(shapeInformation.asNioInt()) > 1)
+            else if(isRowVector() && Shape.rank(shapeInformation) > 1)
                 return size(1);
             else
                 return size(0);
@@ -3759,9 +3759,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public int[] shape() {
         int[] ret = new int[rank()];
-        IntBuffer buffer = Shape.shapeOf(shapeInformation.asNioInt());
+        DataBuffer buffer = Shape.shapeOf(shapeInformation);
         for(int i = 0; i < ret.length; i++)
-            ret[i] = buffer.get(i);
+            ret[i] = buffer.getInt(i);
         return ret;
     }
 
@@ -3772,10 +3772,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int[] stride() {
-        int[] ret = new int[Shape.rank(shapeInformation.asNioInt())];
-        IntBuffer buffer = Shape.stride(shapeInformation.asNioInt());
+        int[] ret = new int[Shape.rank(shapeInformation)];
+        DataBuffer buffer = Shape.stride(shapeInformation);
         for(int i = 0; i < ret.length; i++)
-            ret[i] = buffer.get(i);
+            ret[i] = buffer.getInt(i);
         return ret;
     }
 
@@ -3810,11 +3810,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(dimension < 0) {
-            return Shape.shapeOf(shapeInformation.asNioInt()).get(dimension + Shape.rank(shapeInformation.asNioInt()));
+            return Shape.shapeOf(shapeInformation).getInt(dimension + Shape.rank(shapeInformation));
         }
 
 
-        return Shape.shapeOf(shapeInformation.asNioInt()).get(dimension);
+        return Shape.shapeOf(shapeInformation).getInt(dimension);
     }
 
     @Override
@@ -3857,7 +3857,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         boolean compatible = true;
         int count = shape.length - 1;
-        int thisCount = Shape.rank(shapeInformation.asNioInt()) - 1;
+        int thisCount = Shape.rank(shapeInformation) - 1;
         for (int i = shape.length - 1; i > 0; i--) {
             if (count < 0 || thisCount < 0)
                 break;
@@ -3950,7 +3950,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable) {
-        if(broadCastable.length != Shape.rank(shapeInformation.asNioInt()))
+        if(broadCastable.length != Shape.rank(shapeInformation))
             throw new IllegalArgumentException("The broadcastable dimensions must be the same length as the current shape");
 
         boolean broadcast = false;
@@ -4064,8 +4064,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         checkArrangeArray(rearrange);
-        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation.asNioInt()), rearrange);
-        int[] newStride = doPermuteSwap(Shape.stride(shapeInformation.asNioInt()), rearrange);
+        int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation), rearrange);
+        int[] newStride = doPermuteSwap(Shape.stride(shapeInformation), rearrange);
         char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
         INDArray value = create(
@@ -4095,11 +4095,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
+    protected int[] doPermuteSwap(DataBuffer shape, int[] rearrange) {
+        int[] ret = new int[rearrange.length];
+        for (int i = 0; i < rearrange.length; i++) {
+            ret[i] = shape.getInt(rearrange[i]);
+        }
 
+        return ret;
+    }
 
 
     protected void checkArrangeArray(int[] arr) {
-        assert arr.length == Shape.rank(shapeInformation.asNioInt()) : "Invalid rearrangement: number of arrangement != shape";
+        assert arr.length == Shape.rank(shapeInformation) : "Invalid rearrangement: number of arrangement != shape";
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= arr.length)
                 throw new IllegalArgumentException("The specified dimensions can't be swapped. Given element " + i + " was >= number of dimensions");

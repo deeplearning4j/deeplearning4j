@@ -1167,7 +1167,7 @@ public class Shape {
         return ret;
     }
 
-        /**
+    /**
      * Gets the rank given the shape info buffer
      * @param buffer the buffer to get the rank for
      * @return the rank for the shape buffer
@@ -1418,6 +1418,15 @@ public class Shape {
 
 
     /**
+     * To String for an int buffer
+     * @param buffer
+     * @return
+     */
+    public static String toString(DataBuffer buffer) {
+        return buffer.toString();
+    }
+
+    /**
      * Returns true if the given array
      * is meant for the whole dimension
      * @param arr the array to test
@@ -1426,7 +1435,22 @@ public class Shape {
     public static boolean wholeArrayDimension(int...arr) {
         return arr.length == 1 && arr[0] == Integer.MAX_VALUE;
     }
-
+    /**
+     *
+     * Compare the contents of a buffer and
+     * an array for equals
+     * @param arr the array
+     * @param other the buffer
+     * @return true if the content equals false otherwise
+     */
+    public static boolean contentEquals(int[] arr,DataBuffer other) {
+        for(int i = 0; i < arr.length; i++) {
+            if(other.getInt(i) != arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
     /**
      *
      * Compare the contents of a buffer and
