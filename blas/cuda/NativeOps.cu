@@ -148,7 +148,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	// round num_threads to nearest warpSize
 	num_threads -= num_threads % warpSize;
 
-	num_threads = nd4j::math::nd4j_max<int>(32, num_threads);
+	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
 
 
 	// since we use shared memory as fast memory for some cases - we need to count that in

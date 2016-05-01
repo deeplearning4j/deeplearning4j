@@ -238,6 +238,9 @@ namespace functions {
 					T *result,
 					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
 
+				if (threadIdx.x == 0)
+					printf("Going for scalar reduce 3");
+
 //		SharedMemory <T> val;
 				volatile T *sPartials = manager->getSharedReductionBuffer(); // val.getPointer();
 
@@ -454,7 +457,7 @@ namespace functions {
 						//to the back.
 						//permuted version of the x shape info for setting up the tad problem
 						if(tid == 0)
-							tadShapeShapeInfo = shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
+							tadShapeShapeInfo = tad->tadOnlyShapeInfo;//shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
 						__syncthreads();
 
 						int *xShape = shape::shapeOf(tadShapeShapeInfo);
@@ -514,7 +517,7 @@ namespace functions {
 						__syncthreads();
 
 						if (tid == 0) {
-							delete[] tadShapeShapeInfo;
+						//	delete[] tadShapeShapeInfo;
 						}
 
 
@@ -564,14 +567,19 @@ namespace functions {
                         }
 
 */
+
 						for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-							int offsetForTad = tad->tadOffset(i);
-							int yOffsetFOrTad = tad->tadOffset(i);
-							sPartials[tid] = op(dx[offsetForTad],dy[yOffsetFOrTad], &extraParams);
+							int xOffsetForTad = tad->tadOffset(i);
+							int yOffsetForTad = yOffsetForTad;//tad->tadOffset(i);
+							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
+							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
+
+							sPartials[tid] = op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
 							for(j = 1; j < tadLength; j++) {
-								sPartials[i] =  update(sPartials[i],op(dx[offsetForTad + xElementWiseStride * j],dy[yOffsetFOrTad + yElementWiseStride * j], &extraParams), &extraParams);
+								sPartials[i] =  update(sPartials[i],op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
 							}
 
+							printf("Updating result: [%i] -> [%f]\n", i, sPartials[i]);
 							result[i] = postProcess(sPartials[i],tadLength,&extraParams);
 						}
 

@@ -333,6 +333,7 @@ namespace functions {
 
 
                     if(dimensionLength == 1) {
+
                         for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
@@ -344,7 +345,7 @@ namespace functions {
                             sPartials[threadIdx.x] = this->startingValue(xVal);
 
                             for(int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],dx[tadOffsetForBlock + i * tadEWS], extraParams);
+                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
                             }
                             __syncthreads();
 
@@ -352,9 +353,11 @@ namespace functions {
                             T **sPartialsRef = (T **) &sPartials;
                             aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
+
                             __syncthreads();
-                            if (threadIdx.x == 0)
+                            if (threadIdx.x == 0) {
                                 result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+                            }
                         }
                     }
                     else {
