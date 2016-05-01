@@ -73,7 +73,12 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
 ![import project](../img/Install_IntJ_2.png)
 
-4. Continue through the wizard's options. If you are prompted to select a project SDK, make sure Java is selected in the menu to the left, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+4. Continue through the wizard's options. You will see a screen like this where you must click on the plus sign on the upper left:
+![run IntelliJ example](../img/intellij-sdk.png)
+Once you see a the directory tree appear, select the folder that begins with jdk, under Java.
+![run IntelliJ example](../img/intellij-sdk2.png)
+
+If you are prompted to select a project SDK, make sure Java is selected in the menu to the left, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
 ![run IntelliJ example](../img/Install_IntJ_3.png)
