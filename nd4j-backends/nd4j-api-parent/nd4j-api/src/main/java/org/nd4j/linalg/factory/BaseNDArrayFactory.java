@@ -989,6 +989,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        allC &= (ret.ordering() == 'c');
         if(ret.isVector()) {
             int offset = 0;
             for(INDArray arr : toConcat) {
@@ -1044,8 +1045,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                     int idx = j + arrOffset;
                     retLinear.putScalar(idx,arrTensor.getDouble(j));
                 }
-
-
             }
 
             //bump the sliding window
