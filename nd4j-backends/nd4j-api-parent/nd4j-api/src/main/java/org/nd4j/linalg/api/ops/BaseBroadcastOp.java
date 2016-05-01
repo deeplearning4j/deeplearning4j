@@ -14,7 +14,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         for(int i = 0; i < dimension.length; i++)
             if(dimension[i] < 0)
                 dimension[i] += x.rank();
-        if(y.length() != x.size(dimension[0])) {
+        if(dimension.length == 1 && y.length() != x.size(dimension[0])) {
             throw new IllegalArgumentException("Unable to broadcast y along dimension " + dimension[0] + " dimension must be same length");
         }
     }
