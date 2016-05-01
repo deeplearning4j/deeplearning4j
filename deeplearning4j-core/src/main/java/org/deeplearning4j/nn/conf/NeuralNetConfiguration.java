@@ -757,8 +757,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         private void learningRateValidation(String layerName){
-            if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
-                throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
+            if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate) ) {
+                //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
+                if(!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null) &&
+                        !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
+                    throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
             switch (learningRatePolicy) {
                 case Inverse:
@@ -787,8 +790,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         private void generalValidation(String layerName){
-            if (useDropConnect && (Double.isNaN(momentum) && (Double.isNaN(layer.getMomentum()))))
-                throw new IllegalStateException(layerName +" dropConnect is set to true but momentum has not been added to configuration.");
+            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
+                throw new IllegalStateException(layerName +" dropConnect is set to true but dropout rate has not been added to configuration.");
             if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
                 log.warn(layerName +" regularization is set to true but l1 or l2 has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
