@@ -78,7 +78,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 Once you see a the directory tree appear, select the folder that begins with jdk, under Java.
 ![run IntelliJ example](../img/intellij-sdk2.png)
 
-If you are prompted to select a project SDK, make sure Java is selected in the menu to the left, then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+Then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
 ![run IntelliJ example](../img/Install_IntJ_3.png)
@@ -86,11 +86,11 @@ Right-click the file to run.
 
 ## Using DL4J In Your Own Projects: A Minimal pom.xml File
 
-To run DL4J in your own projects, we highly recommend using Apache Maven for Java users, or a tool such as SBT for Scala. The basic set of dependencies and their versions are shown below. This includes:
+To run DL4J in your own projects, we highly recommend using Maven for Java users, or a tool such as SBT for Scala. The basic set of dependencies and their versions are shown below. This includes:
 
-- deeplearning4j-core, which contains the neural network implementations
-- nd4j-x86, the CPU version of the ND4J library that powers DL4J
-- canova-api - Canova is our library vectorizing and loading data
+- `deeplearning4j-core`, which contains the neural network implementations
+- `nd4j-x86`, the CPU version of the ND4J library that powers DL4J
+- `canova-api` - Canova is our library vectorizing and loading data
 
 
 ``` xml
@@ -131,6 +131,8 @@ To run DL4J in your own projects, we highly recommend using Apache Maven for Jav
     </dependencies>
 </project>
 ```
+Now you will need to choose within IntelliJ the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). 
+
 Additional links:
 
 - [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
