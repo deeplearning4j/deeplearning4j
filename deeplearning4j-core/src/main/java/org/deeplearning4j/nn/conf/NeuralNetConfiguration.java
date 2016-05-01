@@ -757,8 +757,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         private void learningRateValidation(String layerName){
-            if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
-                throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
+            if(learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate) ) {
+                //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
+                if(!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null) &&
+                        !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
+                    throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
             switch (learningRatePolicy) {
                 case Inverse:
