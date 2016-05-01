@@ -112,6 +112,8 @@ public class TestPreProcessors {
             int layerSize = 7;
             int timeSeriesLength = timeSeriesLengths[x];
 
+            String msg = "minibatch=" + miniBatchSize;
+
             FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor();
 
             NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
@@ -144,15 +146,15 @@ public class TestPreProcessors {
                 INDArray row3dc = activations3dc.tensorAlongDimension(time, 1, 0).getRow(example);
                 INDArray row3df = activations3df.tensorAlongDimension(time, 1, 0).getRow(example);
 
-                assertTrue(row2d.equals(row3dc));
-                assertTrue(row2d.equals(row3df));
+                assertEquals(row2d, row3dc);
+                assertEquals(row2d, row3df);
             }
 
             //Again epsilons and activations have same shape, we can do this (even though it's not the intended use)
             INDArray epsilon2d1 = proc.backprop(activations3dc, miniBatchSize);
             INDArray epsilon2d2 = proc.backprop(activations3df, miniBatchSize);
-            assertTrue(epsilon2d1.equals(activations2dc));
-            assertTrue(epsilon2d2.equals(activations2dc));
+            assertEquals(msg, activations2dc, epsilon2d1);
+            assertEquals(msg, activations2dc, epsilon2d2);
 
             //Also check backprop with 3d activations in f order vs. c order:
             INDArray act3d_c = Nd4j.create(activations3dc.shape(), 'c');
@@ -160,8 +162,8 @@ public class TestPreProcessors {
             INDArray act3d_f = Nd4j.create(activations3dc.shape(), 'f');
             act3d_f.assign(activations3dc);
 
-            assertEquals(activations2dc, proc.backprop(act3d_c, miniBatchSize));
-            assertEquals(activations2dc, proc.backprop(act3d_f, miniBatchSize));
+            assertEquals(msg, activations2dc, proc.backprop(act3d_c, miniBatchSize));
+            assertEquals(msg, activations2dc, proc.backprop(act3d_f, miniBatchSize));
         }
     }
 
