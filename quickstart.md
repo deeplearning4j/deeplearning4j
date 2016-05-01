@@ -79,7 +79,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ![run IntelliJ example](../img/Install_IntJ_3.png)
 Right-click the file to run. 
 
-## Using DL4J In Your Own Projects: A Minimal pom.xml File
+## Using DL4J In Your Own Projects: Configuring the POM.xml File
 
 To run DL4J in your own projects, we highly recommend using Maven for Java users, or a tool such as SBT for Scala. The basic set of dependencies and their versions are shown below. This includes:
 
