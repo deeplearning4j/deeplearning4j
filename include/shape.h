@@ -18,12 +18,15 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define MAX_COORD 3
 #define PREALLOC_SIZE 33554432
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <sharedmem.h>
 #endif
 
+#include <pairwise_util.h>
 
 namespace shape {
 
@@ -86,6 +89,18 @@ namespace shape {
 
 #ifdef __CUDACC__
     __host__ __device__
+    inline void traceNew(int id) {
+        //TODO: remove this method before going to release
+        printf("new happened: [%i]\n", id);
+    }
+#else
+    inline void traceNew(int id) {
+        //no-op
+    }
+#endif
+
+#ifdef __CUDACC__
+    __host__ __device__
 #endif
 
     inline int tadIndexForLinear(int linearIndex, int tadLength);
@@ -106,10 +121,25 @@ namespace shape {
 #endif
     inline int *shapeBufferFortran(int rank, int *shape);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
-    __inline__ __device__ int *cuMalloc(int *buffer, long size);
+    __host__ __device__
 #endif
+    inline void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer);
+
+#ifdef __CUDACC__
+    template <typename T>
+    __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager);
+
+
+    __device__ inline int *cuMalloc(int *buffer, long size);
+#endif
+
+
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -394,6 +424,12 @@ namespace shape {
 
     int *copyOf(int length, int *toCopy);
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int *copyOf(int length, int *toCopy, int *ret);
+
     /**
  * Return a copy of a buffer.
  * This buffer allocates memory
@@ -626,38 +662,6 @@ namespace shape {
 #endif
     inline int* createScalarShapeInfo();
 
-    /**
-     * Generate a coordinate tuple
-     * from the given tad dimension specifications.
-     * For example given a shape of:
-     * 2,3,2,2
-     *
-     * Dimension of:
-     * 0,2
-     *
-     * The output from this function will be (given the index):
-     * 0 -> (0,0,0,0)
-     * 1 -> (0,0,0,1)
-     * 2 -> (0,1,0,0)
-     * 3 -> (0,1,0,1)
-     * 4 -> (0,2,0,0)
-     * 5 -> (0,2,0,1)
-     *
-     *
-     * We called the specified dimensions
-     * in dimension the hold out dimensions.
-     *
-     * The hold out dimensions are the indexes of the coordinate
-     * tuple that will be frozen at zero while the goal will be to
-     * iterate over the possible values (relative to the index)
-     * to generate the appropriate coordinate tuple
-     * given a tensor along dimension, index, and shape information
-     */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    inline int* tad2Sub(int index, int *dimension, int dimensionLength, int *shapeInfo);
-
 
 /**
  * Generate an int buffer
@@ -772,15 +776,6 @@ namespace shape {
     inline int sliceOffsetForTensor(int rank, int index, int *shape, int *tensorShape,
                                     int tensorShapeLength, int *dimension, int dimensionLength);
 
-/**
- * Computes the offset for accessing
- * a global element given the shape information
- * and the offset to be read.
- */
-#ifdef __CUDACC__
-    __device__
-#endif
-    inline int tadOffset(int *xInfo, int offset);
 
 /**
  * Computes the tensor along dimension
@@ -1173,98 +1168,16 @@ namespace shape {
 #endif
     void  ind2subOrder(int *shapeInfo,int index,int *out);
 
-    /**
-   * Tad element wise stride:
-   * given the inner most dimension (the sorted dimension of the last)
-   * the element wise stride of the tad (disregarding order) is the
-   * last dimension's stride.
-   *
-   * For a given singular dimension this will just be the only entry.
-   * For example, given the following c order shape/stride:
-   * 2,2,3,2
-   * 12,6,2,1
-   *
-   * The tad element wise stride for 3 will be 1.
-   * For zero it wil be 12
-   *
-   * For 2,3 it's 1
-   *
-   * Note here that the multi dimensional 2,3 case
-   * is equivalent to the singular 3 case.
-   *
-   *
-   * Note that this is for the dimension that ultimately
-   * ends up removed.
-   *
-   * Again: this may not preserve ordering of the tad
-   * but maybe used for reductions.
-   */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    int tadElementWiseStride(int *shapeInfo, int *dimension, int dimensionLength);
-
-    /**
-     * Length of a tad given
-     * the shape information
-     */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    int tadLength(int *shapeInfo, int *dimension, int dimensionLength);
-    /**
-     * Compute the tad offset given a dimension.
-     *
-     * The general pattern for computing a tad offset is as follows:
-     * Every $STRIDE that was removed (the first dimension)
-     * do a jump by the major stride of the parent array
-     * (stride[0] of the parent array)
-     *
-     * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
-     * A tad of dimension 1 will jump 12 every 6 tads.
-     *
-     * You then end up with offsets of:
-     * 0
-     * 1
-     * 2
-     * 3
-     * 4
-     * 5
-     * 12
-     * 13
-     * 14
-     * 15
-     * 16
-     * 17
-     *
-     * notice there are 12 tads here. This same incremental jump will happen
-     * every time.
-     * Note here that by default the
-     * stride of element wise stride is used for the hops.
-     *
-     * Sometimes a jump doesn't happen. If there are less tads
-     * than the stride of the dimension you removed, the
-     * element wise stride will always be used.
-     *
-     * For example in a dimension of 0,1, you end up with offsets of:
-     * 0,1,2,3,4,5
-     *
-     * Given that the inner most stride of the dimensions that was removed (1)
-     * had a stride of 6, we never need to do a major stride jump.
-     *
-     */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    int tadOffset(int index, int *shapeInfo, int *dimension, int dimensionLength);
-
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
     void printShapeInfo(int *shapeInfo);
 
-
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printIntArray(int *arr,int length);
 
     /**
      * Dimension collapse is an algorithm
@@ -1291,7 +1204,6 @@ namespace shape {
      */
     class TAD {
     public:
-        int tadElementWiseStride = 1;
         int dimensionLength;
         int *dimension = nullptr;
         int *shapeInfo = nullptr;
@@ -1300,7 +1212,7 @@ namespace shape {
         int *tadShape = nullptr;
         int *tadStride = nullptr;
         int *tadOffsets = nullptr;
-        int tadLength = 0   ;
+        int tadOffsetForBlock = 0;
         int rank = 0;
         int numOnes = 0;
         //pointers to original
@@ -1316,9 +1228,8 @@ namespace shape {
         bool createdNewDimension = false;
 
         // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
-        int *shapeBuffer = nullptr;
-        int *strideBuffer = nullptr;
-        int *outBuffer = nullptr;
+        void *ptrManager = nullptr;
+        int *ptrOutput = nullptr;
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1329,6 +1240,49 @@ namespace shape {
         __host__ __device__
 #endif
         TAD(int *shapeInfo,int *dimension,int dimensionLength) {
+            this->init(shapeInfo, dimension, dimensionLength);
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline void setExternalBuffers(void *ptrManager) {
+            this->ptrManager = ptrManager;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline void setOutputBuffer(int *ptrOutput) {
+            this->ptrOutput = ptrOutput;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        /**
+         * This methos is for GPU mostly, it allows to initialize TAD instance with precalculated tadOnlyShapeInfo
+         */
+        inline void initWithExternalTAD(int *existingTAD, int *originalShape, int *dimension, int dimensionLength) {
+            this->tadOnlyShapeInfo = existingTAD;
+            this->rank = shape::rank(originalShape);
+
+            this->originalShapeInfo = originalShape;
+            this->originalDimension = dimension;
+            this->originalDimensionLength = dimensionLength;
+
+            this->shapeInfo = originalShape;
+            this->dimension = dimension;
+            this->dimensionLength = dimensionLength;
+            this->numTads = shape::length(originalShape) / shape::length(existingTAD);
+            this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
+        }
+
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline void init(int *shapeInfo,int *dimension,int dimensionLength) {
             this->originalShapeInfo = shapeInfo;
             this->originalDimension = dimension;
             this->originalDimensionLength = dimensionLength;
@@ -1337,12 +1291,11 @@ namespace shape {
             this->dimensionLength = dimensionLength;
             this->dimension = dimension;
             this->rank = shape::rank(shapeInfo);
+            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
+
             //ensure we get rid of trailing ones in the dimensions
             //we can do this with a simple decrement of the dimension length for trailing ones
-            bool nonOneEncountered = false;
-            int trailingDimensionDecrement = 0;
-            int firstNonOneIndex = -1;
-            for(int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
+            for (int i = shape::rank(shapeInfo) - 1; i >= 0; i--) {
                 if (shape::shapeOf(shapeInfo)[i] == 1) {
                     this->numOnes++;
                     if (i > 0 && i < shape::rank(shapeInfo) - 1)
@@ -1356,13 +1309,63 @@ namespace shape {
             //this->rank -= trailingDimensionDecrement;
             //this->dimensionLength -= trailingDimensionDecrement;
             //move dimension ones where dimensions + 1 s overlap
-            if(numOnes > 0) {
+            if (numOnes > 0) {
                 this->collapse();
             }
 
-            this->numTads = this->tensorsAlongDimension(this->shapeInfo,this->dimension,this->dimensionLength);
-            wholeThing = this->numTads == 1 || this->dimensionLength == this->rank;
+            wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
 
+        }
+
+        template <typename T>
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        void printTADsND(T *x) {
+            if(wholeThing) {
+                for(int i = 0; i < shape::length(tadOnlyShapeInfo); i++) {
+                    printf(" %f ",x[i]);
+                }
+                printf("\n");
+            }
+            else {
+                for (int i = 0; i <  numTads; i++) {
+                    int offset = tadOffsets[i];
+                    // printf("Offsets for %d is %d\n",i,offset);
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int rankIter = shape::rank(tadOnlyShapeInfo);
+                    int xStridesIter[MAX_RANK];
+                    T *xPointer = x + offset;
+                    if (PrepareOneRawArrayIter<T>(rankIter,
+                                                  shape::shapeOf(tadOnlyShapeInfo),
+                                                  xPointer,
+                                                  shape::stride(tadOnlyShapeInfo),
+                                                  &rankIter,
+                                                  shapeIter,
+                                                  &xPointer,
+                                                  xStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, shape::rank(tadOnlyShapeInfo), coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                printf(" %f ",xPointer[0]);
+                            }
+                        ND4J_RAW_ITER_ONE_NEXT(dim,
+                                               rankIter,
+                                               coord,
+                                               shapeIter,
+                                               xPointer,
+                                               xStridesIter);
+                        printf("\n");
+
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+
+                }
+            }
 
         }
 
@@ -1373,7 +1376,14 @@ namespace shape {
 
         inline void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out) {
             memcpy(out,shapeBuffer,sizeof(int) * shape::shapeInfoLength(this->rank));
+#ifdef __CUDACC__
+            if (ptrManager != nullptr) {
+            UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
+            doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer6());
+        } else doPermuteShapeBuffer(this->rank,out,rearrange);
+#else
             doPermuteShapeBuffer(this->rank,out,rearrange);
+#endif
         }
 
 #ifdef __CUDACC__
@@ -1387,29 +1397,111 @@ namespace shape {
             return copy;
         }
 
-#ifdef __CUDACC__
-        __device__
-      /**
-      * This is special constructor, that allow __shared__ memory buffers to be passed in
-      **/
-      TAD(int *shapeBuffer, int *strideBuffer, int *outBuffer) {
-        this->shapeBuffer = shapeBuffer;
-        this->strideBuffer = strideBuffer;
-        this->outBuffer = outBuffer;
-      }
-#endif
-
 
 #ifdef __CUDACC__
         __host__ __device__
 #endif
         void createTadOnlyShapeInfo() {
             this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
-            this->tadLength = shape::length(this->tadOnlyShapeInfo);
             this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
             this->tadStride = shape::stride(this->tadOnlyShapeInfo);
+        }
+
+
+
+
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline int * tad2Sub(int index) {
+            int *shape = shape::shapeOf(shapeInfo);
+            int rank = shape::rank(shapeInfo);
+            int leftOverIndexLen = rank - originalDimensionLength;
+#ifdef __CUDACC__
+            int *ret;
+        int *tadShape;
+        int *leftOverIndexes;
+        int *sub;
+        if (ptrManager != nullptr) {
+            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            ret = manager->getTempRankBuffer1();
+            tadShape = manager->getTempRankBuffer2();
+            leftOverIndexes = manager->getTempRankBuffer3();
+            sub = manager->getTempRankBuffer4();
+        } else {
+            ret = new int[rank];
+            tadShape = new int[leftOverIndexLen];
+            leftOverIndexes = new int[leftOverIndexLen];
+            sub = new int[rank];
+        }
+#else
+            int *ret = new int[rank];
+            //shape of the tad
+            int *tadShape = new int[leftOverIndexLen];
+            int *leftOverIndexes = new int[leftOverIndexLen];
+            int *sub = new int[rank];
+#endif
+
+            //indexes not specified in the tad indexes
+
+            //every coordinate starts as zero
+            memset(ret,0,sizeof(int) * rank);
+
+            //find the length of the elements we
+            //are iterating over
+            int len = 1;
+            //left over index cursor for initializing elements
+            int leftOverIndex = 0;
+            for(int i = 0; i < rank; i++) {
+                //look for dimensions NOT found in dimension length (basically compute shape - dimension (set difference)
+                bool found = false;
+                for(int j = 0; j < originalDimensionLength; j++) {
+                    //skip over specified dimensions when computing left over length
+                    if(i == originalDimension[j]) {
+                        found = true;
+                        break;
+                    }
+
+                }
+
+                //add to the indexes that aren't specified as part of the tad dimension
+                //indexes
+                if(!found) {
+                    //accumulate the list of indexes left over used for initializing the return value
+                    leftOverIndexes[leftOverIndex] = i;
+                    //accumulate the tad shape
+                    tadShape[leftOverIndex] = shape[i];
+                    //accumulate the length (product) of the indexes that will be iterated over
+                    len *= shape[i];
+                    leftOverIndex++;
+
+                }
+            }
+
+
+            //sub for indices
+            /* int *sub = new int[leftOverIndexLen];
+             shape::ind2subOrder(tadShape,index,len,sub);
+            */
+            shape::ind2subC(leftOverIndexLen,tadShape,index,len, sub);
+
+
+            for(int i = 0; i < leftOverIndexLen; i++) {
+                ret[leftOverIndexes[i]] = sub[i];
+            }
+
+            if (ptrManager == nullptr) {
+                delete[] tadShape;
+                delete[] leftOverIndexes;
+                delete[] sub;
+            }
+
+            return  ret;
 
         }
+
+
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -1439,11 +1531,21 @@ namespace shape {
             //permute dimensions for tad
             int dimIdx = 0;
             //loop backwards assuming dimension is sorted
-            int *permuteDims = new int[rank];
-            for(int i = 0; i < rank; i++) {
+
+#ifdef __CUDACC__
+
+            int *permuteDims;
+        if (ptrManager != nullptr) {
+            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            permuteDims = manager->getTempRankBuffer5();
+        } else permuteDims = new int[rank];
+#else
+            int *permuteDims = new int[shape::rank(shapeInfo)];
+#endif
+            for(int i = 0; i < shape::rank(shapeInfo); i++) {
                 bool found = false;
-                for(int j = 0; j < dimensionLength; j++) {
-                    if(i == dimension[j]) {
+                for(int j = 0; j < originalDimensionLength; j++) {
+                    if(i == originalDimension[j]) {
                         found = true;
                         break;
                     }
@@ -1457,8 +1559,8 @@ namespace shape {
             }
 
 
-            for(int i = dimensionLength - 1; i >= 0; i--) {
-                permuteDims[dimIdx++] = dimension[i];
+            for(int i = originalDimensionLength - 1; i >= 0; i--) {
+                permuteDims[dimIdx++] = originalDimension[i];
             }
 
 
@@ -1521,27 +1623,33 @@ namespace shape {
 
 
             if(dimensionLength > 1) {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+                int *tad2Sub = this->tad2Sub(index,ptrManager);
 
                 int rank = shape::rank(shapeInfo);
                 int *shape = shape::shapeOf(shapeInfo);
                 int *stride = shape::stride(shapeInfo);
                 int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
                 if(ret < 0) {
-                    delete[] tad2Sub;
+                    if (ptrManager == nullptr)
+                        delete[] tad2Sub;
                     return -1;
                 }
-                delete[] tad2Sub;
+                if (ptrManager == nullptr)
+                    delete[] tad2Sub;
+
                 return ret;
 
             }
             else {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
+                int *tad2Sub = this->tad2Sub(index,ptrManager);
                 int rank = shape::rank(shapeInfo);
                 int *shape = shape::shapeOf(shapeInfo);
                 int *stride = shape::stride(shapeInfo);
                 int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                delete[] tad2Sub;
+
+                if (ptrManager == nullptr)
+                    delete[] tad2Sub;
+
                 return ret;
             }
 
@@ -1549,15 +1657,108 @@ namespace shape {
 
         }
 
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        inline int * tad2Sub(int index, void *ptrManager) {
+            int *shape = shape::shapeOf(shapeInfo);
+            int rank = shape::rank(shapeInfo);
+            int leftOverIndexLen = rank - originalDimensionLength;
+            int *tadShape;
+            int *leftOverIndexes;
+            int *sub;
+            int *ret;
 
+#ifdef __CUDACC__
+
+            if (ptrManager != nullptr) {
+            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            ret = manager->getTempRankBuffer1();
+            tadShape = manager->getTempRankBuffer2();
+            leftOverIndexes = manager->getTempRankBuffer3();
+            sub = manager->getTempRankBuffer4();
+        } else {
+            ret = new int[rank];
+            tadShape = new int[leftOverIndexLen];
+            leftOverIndexes = new int[leftOverIndexLen];
+            sub = new int[rank];
+        }
+#else
+            ret = new int[rank];
+            //shape of the tad
+            leftOverIndexes = new int[leftOverIndexLen];
+            sub = new int[rank];
+            tadShape = new int[leftOverIndexLen];
+#endif
+
+            //indexes not specified in the tad indexes
+
+            //every coordinate starts as zero
+            memset(ret,0,sizeof(int) * rank);
+
+
+            //find the length of the elements we
+            //are iterating over
+            int len = 1;
+            //left over index cursor for initializing elements
+            int leftOverIndex = 0;
+            for(int i = 0; i < rank; i++) {
+                //look for dimensions NOT found in dimension length (basically compute shape - dimension (set difference)
+                bool found = false;
+                for(int j = 0; j < originalDimensionLength; j++) {
+                    //skip over specified dimensions when computing left over length
+                    if(i == originalDimension[j])  {
+                        found = true;
+                        break;
+                    }
+
+                }
+
+                //add to the indexes that aren't specified as part of the tad dimension
+                //indexes
+                if(!found) {
+                    //accumulate the list of indexes left over used for initializing the return value
+                    leftOverIndexes[leftOverIndex] = i;
+                    //accumulate the tad shape
+                    tadShape[leftOverIndex] = shape[i];
+                    //accumulate the length (product) of the indexes that will be iterated over
+                    leftOverIndex++;
+                    len *= shape[i];
+
+                }
+            }
+
+
+            //sub for indices
+            /* int *sub = new int[leftOverIndexLen];
+             shape::ind2subOrder(tadShape,index,len,sub);
+            */
+            shape::ind2subC(leftOverIndexLen,tadShape,index,len, sub);
+
+            for(int i = 0; i < leftOverIndexLen; i++) {
+                ret[leftOverIndexes[i]] = sub[i];
+            }
+
+            if (ptrManager == nullptr) {
+                delete[] leftOverIndexes;
+                delete[] tadShape;
+                delete[] sub;
+            }
+
+            return  ret;
+
+        }
 
 #ifdef __CUDACC__
         __host__ __device__
 #endif
         void createOffsets() {
+            traceNew(1);
+
             this->tadOffsets = new int[this->numTads];
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
+
             }
         }
 
@@ -1565,13 +1766,25 @@ namespace shape {
         __host__ __device__
 #endif
         inline int *shapeInfoOnlyShapeAndStride() {
-            if(wholeThing)
+            if(wholeThing || dimensionLength < 1)
                 return shapeInfo;
 
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
-            int rank = dimensionLength == 1 ? 2 : dimensionLength;
-            int *ret = new int[shape::shapeInfoLength(rank)];
+            int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
+            int *ret;
+#ifdef __CUDACC__
+            if (ptrManager != nullptr) {
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                ret = manager->getT1ShapeBuffer();
+            }  else if (this->ptrOutput != nullptr) {
+                ret = this->ptrOutput;
+            } else ret = new int[shape::shapeInfoLength(rank)];
+#else
+            ret = new int[shape::shapeInfoLength(rank)];
+#endif
+
+
             //set the rank
             ret[0] = rank;
             int *retShape = shape::shapeOf(ret);
@@ -1580,25 +1793,36 @@ namespace shape {
 
             int shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfo));
             int *permuteIndexes = this->permuteDims();
-            int toPermute[MAX_RANK];
+
+#ifdef __CUDACC__
+            int *toPermute;
+        if (ptrManager != nullptr) {
+            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            toPermute = manager->getSharedCoordBuffer();
+        }
+        else toPermute = new int[MAX_RANK];
+#else
+            int *toPermute = new int[MAX_RANK];
+#endif
+
             this->permuteShapeBufferInPlace(shapeInfo,permuteIndexes,toPermute);
 
 
-            if(dimensionLength == 1) {
+            if(originalDimensionLength == 1) {
                 if((numOnes < 1 && !shape::isMatrix(shapeInfo)) || this->rank == 2) {
                     int *permuteShape = shape::shapeOf(toPermute);
                     int *permuteStride = shape::stride(toPermute);
-                    if(dimension[0] == 0) {
-                        int newStride[2] = {1,theStride[dimension[0]]};
-                        int newShape[2] = {1,theShape[dimension[0]]};
+                    if(originalDimension[0] == 0) {
+                        int newStride[2] = {1,theStride[originalDimension[0]]};
+                        int newShape[2] = {1,theShape[originalDimension[0]]};
                         retShape[0] = newShape[0];
                         retShape[1] = newShape[1];
                         retStride[0] = newStride[0];
                         retStride[1] = newStride[1];
                     }
                     else {
-                        int newStride[2] = {theStride[dimension[0]],1};
-                        int newShape[2] = {theShape[dimension[0]],1};
+                        int newStride[2] = {theStride[originalDimension[0]],1};
+                        int newShape[2] = {theShape[originalDimension[0]],1};
                         retShape[0] = newShape[0];
                         retShape[1] = newShape[1];
                         retStride[0] = newStride[0];
@@ -1606,16 +1830,26 @@ namespace shape {
                     }
 
                 }
+                else if(originalDimensionLength > 1) {
+                    int shapeOffset = shape::rank(shapeInfo) - originalDimensionLength;
+                    int *permutedShape = shape::shapeOf(toPermute) + shapeOffset;
+                    int *permutedStride = shape::stride(toPermute) + shapeOffset;
+                    //now that the dimensions are permuted, all of the tad shapes/strides are in the back
+                    //all we need to do is copy from the start of the tad dimensions to the end since they are
+                    //arranged in the right order
+                    shape::copyTo(originalDimensionLength, permutedStride, retStride);
+                    shape::copyTo(originalDimensionLength, permutedShape, retShape);
+                }
                 else {
                     if(shape::rank(toPermute) > 2) {
                         //get the last 2 dimensions
-                        int *lastDimensionShape = shape::shapeOf(toPermute) + shape::rank(toPermute) - 2;
-                        int *lastDimensionStride = shape::stride(toPermute) + shape::rank(toPermute) - 2;
+                        int *lastDimensionShape = shape::shapeOf(toPermute) + shape::rank(toPermute) - originalDimensionLength;
+                        int *lastDimensionStride = shape::stride(toPermute) + shape::rank(toPermute) - originalDimensionLength;
 
                         //the last dimension specified and a matrix are an equivalent edge case
-                        if(theShape[dimension[0]] == 1 || shape::shapeOf(toPermute)[shape::rank(toPermute) - 1] == 1) {
-                            int newStride[2] = {theStride[dimension[0]],1};
-                            int newShape[2] = {theShape[dimension[0]],1};
+                        if(theShape[originalDimension[0]] == 1 || shape::shapeOf(toPermute)[shape::rank(toPermute) - 1] == 1) {
+                            int newStride[2] = {theStride[originalDimension[0]],1};
+                            int newShape[2] = {theShape[originalDimension[0]],1};
                             retShape[0] = newShape[0];
                             retShape[1] = newShape[1];
                             //when the actual shape matches the last 2 dimensions of the permuted array, use those strides instead
@@ -1630,8 +1864,8 @@ namespace shape {
 
                         }
                         else {
-                            int newStride[2] = {1,theStride[dimension[0]]};
-                            int newShape[2] = {1,theShape[dimension[0]]};
+                            int newStride[2] = {1,theStride[originalDimension[0]]};
+                            int newShape[2] = {1,theShape[originalDimension[0]]};
                             retShape[0] = newShape[0];
                             retShape[1] = newShape[1];
                             //when the actual shape matches the last 2 dimensions of the permuted array, use those strides instead
@@ -1653,101 +1887,64 @@ namespace shape {
             }
             else {
                 //copy starting from the tad shapes/strides that got permuted to the back
-                int shapeOffset = shape::rank(shapeInfo) - dimensionLength;
+                int shapeOffset = shape::rank(shapeInfo) - originalDimensionLength;
                 int *permutedShape = shape::shapeOf(toPermute) + shapeOffset;
                 int *permutedStride = shape::stride(toPermute) + shapeOffset;
                 //now that the dimensions are permuted, all of the tad shapes/strides are in the back
                 //all we need to do is copy from the start of the tad dimensions to the end since they are
                 //arranged in the right order
-                shape::copyTo(dimensionLength, permutedStride, retStride);
-                shape::copyTo(dimensionLength, permutedShape, retShape);
+                shape::copyTo(originalDimensionLength, permutedStride, retStride);
+                shape::copyTo(originalDimensionLength, permutedShape, retShape);
             }
 
-            delete[] permuteIndexes;
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
             if(wholeThing)
                 ret[shape::shapeInfoLength(rank) - 2] = 1;
-            ret[shape::shapeInfoLength(rank) - 2] = shape::tadElementWiseStride(shapeInfo,dimension,dimensionLength);
+            else
+                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,dimension,dimensionLength);
+
+
+            // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
+            ret[shape::shapeInfoLength(rank) - 3] = 0;
+
+            if (this->ptrManager == nullptr) {
+                delete[] permuteIndexes;
+                delete[] toPermute;
+            }
+
             return ret;
         }
 
 
 
+
         /**
-        * Compute the tad offset given a dimension.
-        *
-        * The general pattern for computing a tad offset is as follows:
-        * Every $STRIDE that was removed (the first dimension)
-        * do a jump by the major stride of the parent array
-        * (stride[0] of the parent array)
-        *
-        * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
-        * A tad of dimension 1 will jump 12 every 6 tads.
-        *
-        * You then end up with offsets of:
-        * 0
-        * 1
-        * 2
-        * 3
-        * 4
-        * 5
-        * 12
-        * 13
-        * 14
-        * 15
-        * 16
-        * 17
-        *
-        * notice there are 12 tads here. This same incremental jump will happen
-        * every time.
-        * Note here that by default the
-        * stride of element wise stride is used for the hops.
-        *
-        * Sometimes a jump doesn't happen. If there are less tads
-        * than the stride of the dimension you removed, the
-        * element wise stride will always be used.
-        *
-        * For example in a dimension of 0,1, you end up with offsets of:
-        * 0,1,2,3,4,5
-        *
-        * Given that the inner most stride of the dimensions that was removed (1)
-        * had a stride of 6, we never need to do a major stride jump.
-        *
-        */
+       * Length of a tad given
+       * the shape information
+       */
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        inline int tadOffset(int index, int *shapeInfo, int *dimension, int dimensionLength) {
-            if(dimensionLength > 1) {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
-
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                if(ret < 0) {
-                    delete[] tad2Sub;
-                    return -1;
-                }
-                delete[] tad2Sub;
-                return ret;
-
+        inline int tadLength(int *shapeInfo, int *dimension, int dimensionLength) {
+            int *shapeTwo = shape::shapeOf(shapeInfo);
+            int rank = shape::rank(shapeInfo);
+            if(dimensionLength == 1) {
+                return shapeTwo[dimension[0]];
             }
             else {
-                int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-                delete[] tad2Sub;
+                int ret = 1;
+                for(int i = 0; i < rank; i++) {
+                    for(int j = 0; j < dimensionLength; j++) {
+                        if(i == dimension[j])
+                            ret *= shapeTwo[dimension[j]];
+                    }
+                }
                 return ret;
-            }
 
+            }
 
 
         }
-
-
 
 /**
  * Computes the number
@@ -1759,20 +1956,15 @@ namespace shape {
 #endif
 
         inline int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
-            int tadLength = 1;
-            for(int i = 0; i < dimensionLength; i++)
-                tadLength *= shape::shapeOf(shapeInfo)[dimension[i]];
+            int theTadLength = this->tadLength(shapeInfo,dimension,dimensionLength);
             int wholeLength = shape::length(shapeInfo);
-            return wholeLength / tadLength;
+            return wholeLength / theTadLength;
         }
 
 #ifdef __CUDACC__
-        __device__
-
-
-    inline void createOffsetForBlock() {
-        int offset = this->tadOffset(blockIdx.x);
-        this->tadOffsets = &offset;
+        __device__ __host__
+    inline void createOffsetForBlock(int blockIdx) {
+        this->tadOffsetForBlock= this->tadOffset(blockIdx);
     }
 #endif
 
@@ -1788,6 +1980,16 @@ namespace shape {
                     (dimension)[i] += shape::rank(this->shapeInfo);
             }
 
+#ifdef __CUDACC__
+            if (ptrManager != nullptr) {
+            UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
+            this->dimension = manager->getT2ShapeBuffer();
+        } else  this->dimension =  new int[dimensionLength];
+        memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
+#else
+            this->dimension =  new int[dimensionLength];
+            memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
+#endif
 
             //we can drop trailing dimensions where it's all singular for example:
             // shape: 4,3,1,2
@@ -1850,7 +2052,9 @@ namespace shape {
                     break;
                 }
                 //captures intermediary result from the for loop
-                int intermediaryResult[MAX_RANK];
+                traceNew(3);
+
+                int *intermediaryResult = new int[MAX_RANK];
                 for(int i = 0; i < dimensionLength; i++) {
                     intermediaryResult[i] = (dimension)[i];
                 }
@@ -1927,6 +2131,7 @@ namespace shape {
 
                 //converge when there are no singular dimensions specified in the reduce
                 done = (!oneEncountered && nonOneEncountered) || hitBeginning;
+                delete[] intermediaryResult;
             }
 
             //nothing changed but need to collapse dimension
@@ -1944,7 +2149,14 @@ namespace shape {
 
 
 #ifdef __CUDACC__
-    __inline__ __device__ int *cuMalloc(int *buffer, long size) {
+    template <typename T>
+__device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
+    // if we go for 3 dimensions coord space or below - just use shared memory for that
+    if (size <= MAX_COORD * 4) {
+        int *ptr = manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
+        return ptr;
+    } else {
+        // otherwise go to preallocated global memory :(
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
         if (tid * size > PREALLOC_SIZE - size) {
             return (int *) malloc(size);
@@ -1954,12 +2166,24 @@ namespace shape {
             return ret;
         }
     }
+}
 #endif
 
+#ifdef __CUDACC__
     /**
-   * Length of a tad given
-   * the shape information
-   */
+* BEWARE: THIS METHOD DOES NOT CHECKS ALLOCATION BOUNDARIES
+*/
+__device__ inline int *cuMalloc(int *buffer, long size) {
+    int *ret = buffer;
+    ret += (threadIdx.x * size);
+    return ret;
+}
+#endif
+
+/**
+* Length of a tad given
+* the shape information
+*/
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -1984,101 +2208,34 @@ namespace shape {
 
     }
 
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    inline int * tad2Sub(int index, int *dimension, int dimensionLength, int *shapeInfo) {
-        int *shape = shape::shapeOf(shapeInfo);
-        int rank = shape::rank(shapeInfo);
-        int leftOverIndexLen = rank - dimensionLength;
-        int *ret = new int[rank];
-        //shape of the tad
-        int *tadShape = new int[leftOverIndexLen];
-        //indexes not specified in the tad indexes
-        int *leftOverIndexes = new int[leftOverIndexLen];
-        //every coordinate starts as zero
-        for(int i = 0; i < rank; i++)
-            ret[i] = 0;
 
 
-        //find the length of the elements we
-        //are iterating over
-        int len = 1;
-        //left over index cursor for initializing elements
-        int leftOverIndex = 0;
-        for(int i = 0; i < rank; i++) {
-            //look for dimensions NOT found in dimension length (basically compute shape - dimension (set difference)
-            bool found = false;
-            for(int j = 0; j < dimensionLength; j++) {
-                //skip over specified dimensions when computing left over length
-                if(i == dimension[j]) {
-                    found = true;
-                    break;
-                }
-
-            }
-
-            //add to the indexes that aren't specified as part of the tad dimension
-            //indexes
-            if(!found) {
-                //accumulate the list of indexes left over used for initializing the return value
-                leftOverIndexes[leftOverIndex] = i;
-                //accumulate the tad shape
-                tadShape[leftOverIndex] = shape[i];
-                //accumulate the length (product) of the indexes that will be iterated over
-                len *= shape[i];
-                leftOverIndex++;
-
-            }
-        }
-
-
-        //sub for indices
-        /* int *sub = new int[leftOverIndexLen];
-         shape::ind2subOrder(tadShape,index,len,sub);
-        */
-        int *sub = shape::ind2subC(leftOverIndexLen,tadShape,index,len);
-
-
-        for(int i = 0; i < leftOverIndexLen; i++) {
-            ret[leftOverIndexes[i]] = sub[i];
-        }
-
-
-        delete[] tadShape;
-        delete[] leftOverIndexes;
-        delete[] sub;
-
-        return  ret;
-
-    }
-
-    /**
-     * Tad element wise stride:
-     * given the inner most dimension (the sorted dimension of the last)
-     * the element wise stride of the tad (disregarding order) is the
-     * last dimension's stride.
-     *
-     * For a given singular dimension this will just be the only entry.
-     * For example, given the following c order shape/stride:
-     * 2,2,3,2
-     * 12,6,2,1
-     *
-     * The tad element wise stride for 3 will be 1.
-     * For zero it wil be 12
-     *
-     * For 2,3 it's 1
-     *
-     * Note here that the multi dimensional 2,3 case
-     * is equivalent to the singular 3 case.
-     *
-     *
-     * Note that this is for the dimension that ultimately
-     * ends up removed.
-     *
-     * Again: this may not preserve ordering of the tad
-     * but maybe used for reductions.
-     */
+/**
+ * Tad element wise stride:
+ * given the inner most dimension (the sorted dimension of the last)
+ * the element wise stride of the tad (disregarding order) is the
+ * last dimension's stride.
+ *
+ * For a given singular dimension this will just be the only entry.
+ * For example, given the following c order shape/stride:
+ * 2,2,3,2
+ * 12,6,2,1
+ *
+ * The tad element wise stride for 3 will be 1.
+ * For zero it wil be 12
+ *
+ * For 2,3 it's 1
+ *
+ * Note here that the multi dimensional 2,3 case
+ * is equivalent to the singular 3 case.
+ *
+ *
+ * Note that this is for the dimension that ultimately
+ * ends up removed.
+ *
+ * Again: this may not preserve ordering of the tad
+ * but maybe used for reductions.
+ */
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -2087,76 +2244,7 @@ namespace shape {
     }
 
 
-    /**
-    * Compute the tad offset given a dimension.
-    *
-    * The general pattern for computing a tad offset is as follows:
-    * Every $STRIDE that was removed (the first dimension)
-    * do a jump by the major stride of the parent array
-    * (stride[0] of the parent array)
-    *
-    * For example given a c ordered 2,2,3,2 with stride 12,6,2,1
-    * A tad of dimension 1 will jump 12 every 6 tads.
-    *
-    * You then end up with offsets of:
-    * 0
-    * 1
-    * 2
-    * 3
-    * 4
-    * 5
-    * 12
-    * 13
-    * 14
-    * 15
-    * 16
-    * 17
-    *
-    * notice there are 12 tads here. This same incremental jump will happen
-    * every time.
-    * Note here that by default the
-    * stride of element wise stride is used for the hops.
-    *
-    * Sometimes a jump doesn't happen. If there are less tads
-    * than the stride of the dimension you removed, the
-    * element wise stride will always be used.
-    *
-    * For example in a dimension of 0,1, you end up with offsets of:
-    * 0,1,2,3,4,5
-    *
-    * Given that the inner most stride of the dimensions that was removed (1)
-    * had a stride of 6, we never need to do a major stride jump.
-    *
-    */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-    inline int tadOffset(int index, int *shapeInfo, int *dimension, int dimensionLength) {
-        if(dimensionLength > 1) {
-            int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
 
-            int rank = shape::rank(shapeInfo);
-            int *shape = shape::shapeOf(shapeInfo);
-            int *stride = shape::stride(shapeInfo);
-            int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-            if(ret < 0) {
-                delete[] tad2Sub;
-                return -1;
-            }
-            delete[] tad2Sub;
-            return ret;
-
-        }
-        else {
-            int *tad2Sub = shape::tad2Sub(index,dimension,dimensionLength,shapeInfo);
-            int rank = shape::rank(shapeInfo);
-            int *shape = shape::shapeOf(shapeInfo);
-            int *stride = shape::stride(shapeInfo);
-            int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
-            delete[] tad2Sub;
-            return ret;
-        }
-    }
 
 
 #ifdef __CUDACC__
@@ -2223,12 +2311,22 @@ namespace shape {
 
         if(dimensionLength == 1) {
             if(shape::isMatrix(theShape,shape::rank(shapeInfo))) {
-                int newStride[2] = {theStride[dimension[0]],1};
-                int newShape[2] = {theShape[dimension[0]],1};
-                retShape[0] = newShape[0];
-                retShape[1] = newShape[1];
-                retStride[0] = newStride[0];
-                retStride[1] = newStride[1];
+                if(dimension[0] == 0) {
+                    int newStride[2] = {theStride[dimension[0]],1};
+                    int newShape[2] = {theShape[dimension[0]],1};
+                    retShape[0] = newShape[0];
+                    retShape[1] = newShape[1];
+                    retStride[0] = newStride[0];
+                    retStride[1] = newStride[1];
+                }
+                else {
+                    int newStride[2] = {theStride[dimension[0]],1};
+                    int newShape[2] = {theShape[dimension[0]],1};
+                    retShape[0] = newShape[0];
+                    retShape[1] = newShape[1];
+                    retStride[0] = newStride[0];
+                    retStride[1] = newStride[1];
+                }
             }
             else {
                 int newStride[2] = {1,theStride[dimension[0]]};
@@ -2264,6 +2362,9 @@ namespace shape {
         int *theShape = shape::shapeOf(shapeInfo);
         int *theStride = shape::stride(shapeInfo);
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
+
+        traceNew(4);
+
         int *ret = new int[shape::shapeInfoLength(rank)];
         return shapeInfoOnlyShapeAndStride(shapeInfo, dimension, dimensionLength, reverseCopyStride, ret);
     }
@@ -2272,6 +2373,9 @@ namespace shape {
     __host__ __device__
 #endif
     inline int * createShapeInfo(int *shape, int *stride, int rank) {
+
+        traceNew(5);
+
         int *ret = new int[shape::shapeInfoLength(rank)];
         ret[0] = rank;
         int *retShape = shape::shapeOf(ret);
@@ -2311,6 +2415,9 @@ namespace shape {
 #endif
     inline int * calcStridesFortran(int *shape, int rank, int startNum) {
         if (isVector(shape, rank)) {
+
+            traceNew(5);
+
             int *ret = new int[2];
             for (int i = 0; i < 2; i++)
                 ret[i] = 1;
@@ -2319,6 +2426,9 @@ namespace shape {
         }
 
         int dimensions = rank;
+
+        traceNew(6);
+
         int *stride = new int[dimensions];
         int st = startNum;
         for (int j = 0; j < rank; j++) {
@@ -2340,6 +2450,9 @@ namespace shape {
     __host__ __device__
 #endif
     inline int * calcStrides(int *shape, int rank, int startNum) {
+
+        traceNew(7);
+
         int *stride = new int[rank];
 
         if (shape::isVector(shape, rank)) {
@@ -2397,9 +2510,13 @@ namespace shape {
     inline ShapeInformation *shapeCopy( ShapeInformation *toCopy) {
         ShapeInformation *copy = new ShapeInformation;
 
+        traceNew(8);
+
         copy->shape = new int[toCopy->rank];
 
         memcpy(copy->shape, toCopy->shape, toCopy->rank * sizeof(int));
+
+        traceNew(9);
 
         copy->stride = new int[toCopy->rank];
         for (int i = 0; i < toCopy->rank; i++) {
@@ -2426,6 +2543,9 @@ namespace shape {
             int *oldstrides = shape::copyOf(rank, stride);
             int np, op, last_stride;
             int oi, oj, ok, ni, nj, nk;
+
+            traceNew(10);
+
             int *newStrides = new int[rank];
             oldnd = 0;
             //set the shape to be 1 x length
@@ -2563,6 +2683,9 @@ namespace shape {
 #endif
     inline int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
+
+        traceNew(11);
+
         shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
         shapeInfo->stride = stride;
@@ -2586,6 +2709,9 @@ namespace shape {
 #endif
     inline int *shapeBufferFortran(int rank, int *shape) {
         int *stride = shape::calcStridesFortran(shape,rank);
+
+        traceNew(12);
+
         shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
         shapeInfo->stride = stride;
@@ -2609,6 +2735,9 @@ namespace shape {
 #endif
     inline Nd4jIndex *computeIndices(int rank, int *shape,  int *stride) {
         int length = shape::prodLong(shape,rank);
+
+        traceNew(13);
+
         Nd4jIndex *ret = new Nd4jIndex[length];
         for(int i = 0; i < length; i++) {
             int *idx = shape::ind2sub(rank, shape, i);
@@ -2664,15 +2793,11 @@ namespace shape {
     __host__ __device__
 #endif
     inline int* ind2sub(int rank,  int *shape, int index,int numIndices) {
-        int denom = numIndices;
+
+        traceNew(14);
+
         int *ret = new int[rank];
-
-        for(int i = rank - 1; i >= 0; i--) {
-            denom /= shape[i];
-            ret[i] = index / denom;
-            index %= denom;
-
-        }
+        ind2sub(rank, shape, index, numIndices, ret);
         return ret;
     }
 
@@ -2741,15 +2866,11 @@ namespace shape {
     __host__ __device__
 #endif
     inline int * ind2subC(int rank, int *shape, int index, int numIndices) {
-        int denom = numIndices;
+
+        traceNew(15);
+
         int *ret = new int[rank];
-
-        for(int i = 0; i < rank; i++) {
-            denom /= shape[i];
-            ret[i] = index / denom;
-            index %= denom;
-
-        }
+        ind2subC(rank, shape, index, numIndices, ret);
         return ret;
     }
 
@@ -2784,8 +2905,13 @@ namespace shape {
         int denom = numIndices;
         for(int i = 0; i < rank; i++) {
             denom /= shape[i];
-            ret[i] = index / denom;
-            index %= denom;
+            if(denom > 0) {
+                ret[i] = index / denom;
+                index %= denom;
+            }
+            else
+                ret[i] = 0;
+
 
         }
     }
@@ -2875,6 +3001,9 @@ namespace shape {
 #endif
 
     inline int *doPermuteSwap(int length, int *shape, int *rearrange) {
+
+        traceNew(16);
+
         int *ret = new int[length];
         for (int i = 0; i < length; i++) {
             ret[i] = shape[rearrange[i]];
@@ -2950,6 +3079,25 @@ namespace shape {
         shape::doPermuteSwap(rearrageRank,&stride,rearrangeCopy2);
         delete[] rearrangeCopy2;
     }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer) {
+        int *shapeRef = shapeBuffer;
+        //rank of the rearrange array == rank of shape buffer
+        int rearrageRank = shape::rank(shapeRef);
+        int *shape = shape::shapeOf(shapeRef);
+        int *stride = shape::stride(shapeRef);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&shape,tmpBuffer);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
+    }
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -2969,12 +3117,33 @@ namespace shape {
         delete[] rearrangeCopy2;
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    inline void doPermuteShapeBuffer(int rank,int *shapeBuffer,int *rearrange, int *tmpBuffer) {
+        int *shapeRef = shapeBuffer;
+        //rank of the rearrange array == rank of shape buffer
+        int rearrageRank = rank;
+        int *shape = shape::shapeOf(shapeRef);
+        int *stride = shape::stride(shapeRef);
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&shape,tmpBuffer);
+
+        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
+        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
+        shapeBuffer[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
+    }
+
 
 #ifdef __CUDACC__
     __host__ __device__
 #endif
     inline int *createPermuteIndexes(int originalRank,int *dimension,int dimensionLength) {
         int delta = originalRank - dimensionLength;
+
+        traceNew(17);
+
         int *ret = new int[originalRank];
         for(int i = 0; i < delta; i++) {
             ret[i] = i + dimensionLength;
@@ -3203,7 +3372,16 @@ namespace shape {
 #endif
 
     inline int *copyOf(int length, int *toCopy) {
+        traceNew(18);
+
         int *ret = new int[length];
+        return copyOf(length, toCopy, ret);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int *copyOf(int length, int *toCopy, int *ret) {
         memcpy(ret, toCopy, sizeof(int)*length);
         return ret;
     }
@@ -3311,6 +3489,9 @@ namespace shape {
 #endif
 
     inline ShapeInformation *infoFromBuffer(int *buffer) {
+
+        traceNew(19);
+
         ShapeInformation *info = new ShapeInformation;
         int length = shapeInfoLength(rank(buffer));
         int rank = buffer[0];
@@ -3401,21 +3582,42 @@ namespace shape {
 
     inline int reductionIndexElementWiseStride(int *buffer, int *dimension, int dimensionLength) {
         if(dimensionLength > 1) {
-            /**
-                    * The element wise stride belongs to a reduction index.
-                    * When used out of order, we can get rid of the data
-                    * dependencies and rely on using the max dimension
-                    * specified for stride instead.
-                    * Say we take the sum(0,1) along arr
-                    * we can use arr.stride(1) as a representation
-                    * along which to iterate.
-                    */
-            if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
-                int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-                return tadElementWiseStride;
-            }
+            char order = shape::order(buffer);
+            if(order == 'f') {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
+                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    return tadElementWiseStride;
+                }
 
-            return 1;
+                return 1;
+
+            }
+            else {
+                /**
+                        * The element wise stride belongs to a reduction index.
+                        * When used out of order, we can get rid of the data
+                        * dependencies and rely on using the max dimension
+                        * specified for stride instead.
+                        * Say we take the sum(0,1) along arr
+                        * we can use arr.stride(1) as a representation
+                        * along which to iterate.
+                        */
+                if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
+                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    return tadElementWiseStride;
+                }
+
+                return 1;
+            }
         }
         else {
             char order = shape::order(buffer);
@@ -3531,6 +3733,9 @@ namespace shape {
 #endif
     inline int* everyIndexBut(int *indexes,int indexesLength,int begin,int end) {
         int len = end - indexesLength;
+
+        traceNew(20);
+
         int *ret = new int[len];
         int retIdx = 0;
         //not here that we do 0 based indexing for end - this assumes things like:
@@ -3562,7 +3767,7 @@ namespace shape {
  */
 #ifdef __CUDACC__
     __device__ int tadOffset(ShapeInformation *xInfo, int offset) {
-	return offset + threadIdx.x * xInfo->elementWiseStride;
+    return offset + threadIdx.x * xInfo->elementWiseStride;
 
 }
 
@@ -3581,6 +3786,9 @@ namespace shape {
 #endif
 
     inline int *ensureVectorShape(int *shape, int dimension) {
+
+        traceNew(21);
+
         int *ret = new int[2];
 
         if (dimension == 0) {
@@ -3624,6 +3832,9 @@ namespace shape {
         int diff = nd4j::math::nd4j_abs<int>(from - to);
         int retLength = diff / increment;
         int *ret;
+
+        traceNew(22);
+
         if(diff / increment < 1)
             ret = new int[1];
         else
@@ -3676,6 +3887,9 @@ namespace shape {
 #endif
 
     inline int *keep(volatile int *data, int *index, int indexLength, int dataLength) {
+
+        traceNew(23);
+
         int *ret = new int[indexLength];
         int count = 0;
         for (int i = 0; i < dataLength; i++) {
@@ -3704,6 +3918,8 @@ namespace shape {
     inline int *reverseCopy(int *data, int length) {
         if (length < 1)
             return nullptr;
+
+        traceNew(24);
 
         int *copy = new int[length];
         for (int i = 0; i <= length / 2; i++) {
@@ -3758,6 +3974,9 @@ namespace shape {
 #endif
 
     inline int *concat(int *arr1, int arr1Length, int *arr2, int arr2Length) {
+
+        traceNew(25);
+
         int *ret = new int[arr1Length + arr2Length];
         std::memcpy(ret, arr1, arr1Length * sizeof(int));
         std::memcpy(ret + arr1Length, arr2, arr2Length * sizeof(int));
@@ -3777,6 +3996,9 @@ namespace shape {
 #endif
 
     inline int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
+
+        traceNew(26);
+
         int *ret = new int[numTotalElements];
         int count = 0;
 #pragma omp simd
@@ -3807,6 +4029,9 @@ namespace shape {
 
     inline int lengthPerSlice(int rank, int *shape, int *dimension, int dimensionLength) {
         int absSelta = nd4j::math::nd4j_abs<int>(rank - dimensionLength);
+
+        traceNew(27);
+
         int *ret2 = new int[absSelta];
         removeIndex(shape, dimension, rank, dimensionLength, ret2);
         int length = rank - dimensionLength;
@@ -3841,153 +4066,16 @@ namespace shape {
 #ifdef __CUDACC__
 
     /**
- * Computes the offset for accessing
- * a global element given the shape information
- * and the offset to be read.
- */
+* Computes the offset for accessing
+* a global element given the shape information
+* and the offset to be read.
+*/
 __device__ int tadOffset(int *xInfo, int offset) {
-	return offset + threadIdx.x * elementWiseStride(xInfo);
+    return offset + threadIdx.x * elementWiseStride(xInfo);
 
 }
 #endif
 
-/**
- * Computes the tensor along dimension
- * offset
- * @param index the index to get the offset for the tad for
- * @param rank the rank of the shapes and strides
- * @param info the shape information to use for tad
- * @param dimension the dimensions to use for computing the tensor along dimensions
- */
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
-
-    inline int offset(int index, int rank, ShapeInformation *info, int *dimension,
-                      int dimensionLength) {
-        int *tensorShape = keep(info->shape, dimension, dimensionLength, rank);
-        if (dimensionLength == 1) {
-            int *newTensorShape = ensureVectorShape(tensorShape, dimension[0]);
-            delete[] tensorShape;
-            tensorShape = newTensorShape;
-        }
-
-        //change the value
-        ShapeInformation *copy = shapeCopy(info);
-        info = copy;
-
-        int *reverseDimensions = reverseCopy(dimension, dimensionLength);
-        int *rangeRet = range(0, rank);
-        int *remove = new int[rank - dimensionLength];
-        removeIndex(rangeRet, dimension, rank, dimensionLength, remove);
-
-        int *zeroDimension = new int[1];
-        zeroDimension[0] = 0;
-
-        int removeLength = rank - dimensionLength;
-        int *newPermuteDims = concat(remove, removeLength, reverseDimensions,
-                                     dimensionLength);
-
-        permute(&info, newPermuteDims, rank);
-
-        int *permuted = info->shape;
-        int *permutedStrides = info->stride;
-        int tensorShapeLength = rank - removeLength;
-        if (tensorShapeLength < 2)
-            tensorShapeLength = 2;
-        int sliceIdx = sliceOffsetForTensor(rank, index, permuted, tensorShape,
-                                            tensorShapeLength, zeroDimension, 1);
-
-        //determine offset here
-
-        int *ret2 = slice(info->shape);
-        int *ret2Stride = slice(info->stride);
-
-        int ret2Length = prod(ret2, rank - 1);
-        int ret2Rank = rank - 1;
-
-        int retOffset = sliceIdx * permutedStrides[0];
-
-        int length = prod(tensorShape, tensorShapeLength);
-        int tensorLength = length;
-        //__device__ int lengthPerSlice(int rank,int *shape,int *dimension) {
-        int offset = index * tensorLength
-                     / lengthPerSlice(ret2Rank, ret2, zeroDimension, 1);
-        /**
-         * Need to do slice(offset) here
-         */
-        if (sliceIdx == 0
-            && length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
-            /**
-             * NOTE STRIDE[1] HERE. WE DO THIS TO AVOID CREATING A NEW SLICE OBJECT.
-             */
-            //account for shape[i] == 1
-            int strideIndex = 1;
-            for (int i = 0; i < info->rank; i++) {
-                if (info->shape[i] == 1)
-                    strideIndex++;
-            }
-
-            if (strideIndex >= info->rank)
-                strideIndex = info->rank - 1;
-
-            retOffset = info->offset + offset * info->stride[strideIndex];
-        }
-
-            //determine offset here
-            //note here offset doesn't change, just the shape
-            //of the tad
-        else if (length == lengthPerSlice(ret2Rank, ret2, zeroDimension, 1)) {
-            offset -= ret2[0] * (offset / ret2[0]);
-            //set offset here
-            ret2 = slice(ret2);
-            ret2Rank--;
-            //account for shape[i] == 1
-            int strideIndex = 1;
-            for (int i = 0; i < info->rank; i++) {
-                if (info->shape[i] == 1)
-                    strideIndex++;
-            }
-
-            if (strideIndex >= info->rank)
-                strideIndex = info->rank - 1;
-
-            retOffset += info->stride[strideIndex] * offset;
-        }
-
-        else {
-
-            while (ret2Length > length) {
-                sliceIdx = sliceOffsetForTensor(ret2Rank, index, ret2, tensorShape,
-                                                tensorShapeLength, zeroDimension, 1);
-                sliceIdx -= ret2[0] * (sliceIdx / ret2[0]);
-                //set offset
-                ret2 = slice(ret2);
-                ret2Stride = slice(ret2Stride);
-                ret2Rank--;
-                //slice wise offsets are offset + i * majorStride()
-                //dividing by the slice index will adjust the offset by a factor of sliceIndex
-                ret2Length = prod(ret2, ret2Rank);
-
-            }
-        }
-
-        retOffset = info->offset + sliceIdx;
-
-        delete[] reverseDimensions;
-        delete[] rangeRet;
-        delete[] remove;
-        delete copy;
-        //free the new pointer
-        if (rank <= 2) {
-            delete[] tensorShape;
-        }
-
-        if (retOffset < 0)
-            retOffset = 0;
-
-        return retOffset;
-    }
 
 
 
@@ -4048,8 +4136,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
     int getOffset(int baseOffset,  int *shape,  int *stride,  int *indices, int rank) {
         int offset = baseOffset;
         for(int i = 0; i < rank; i++) {
-            if(indices[i] >= shape[i]) {
-                //printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
+            if(indices[i] >= shape[i] && shape[i] != 1) {
+                printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
                 return -1;
             }
 
@@ -4101,6 +4189,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
 #endif
 
     inline int *toShapeBuffer( ShapeInformation *info) {
+
+        traceNew(29);
+
         int *ret = new int[shapeInfoLength(info->rank)];
         int count = 1;
         int rank = info->rank;
@@ -4122,7 +4213,16 @@ __device__ int tadOffset(int *xInfo, int offset) {
         return ret;
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printIntArray(int *arr,int length) {
+        for(int i = 0; i < length; i++) {
+            printf(" %d ",arr[i]);
+        }
 
+        printf("\n");
+    }
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -4232,6 +4332,9 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __host__ __device__
 #endif
     inline int* createScalarShapeInfo() {
+
+        traceNew(30);
+
         int *shape = new int[2];
         shape[0] = 1;
         shape[1] = 1;
@@ -4293,29 +4396,66 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
         int rank = shape::rank(data);
 
-        int dimIdx = dimensionLength - 1;
-        for(int i = rank - 1; i >= 0; i--) {
-            /**
-                * Needs to find an algorithm such that:
-                * looping backwards will find the highest dimension left
-                * that isn't included in the dimension index list.
-                *
-                * This can also be thought of as the last item of the first index
-                * of the difference between the full list of indices and
-                * the dimension indices.
-                *
-                * We should avoid excessive object creation by only looping backwards.
-                */
-            if(dimension[dimIdx--] != i) {
-                int ret = stride[i];
-                return ret;
+
+        if(shape::order(data) == 'f') {
+            int dimIdx = dimensionLength - 1;
+            for(int i = rank - 1; i >= 0; i--) {
+                /**
+                 * Needs to find an algorithm such that:
+                 * looping backwards will find the highest dimension left
+                 * that isn't included in the dimension index list.
+                 *
+                 * This can also be thought of as the last item of the first index
+                 * of the difference between the full list of indices and
+                 * the dimension indices.
+                 *
+                 * We should avoid excessive object creation by only looping backwards.
+                 */
+                if(dimension[dimIdx--] != i) {
+                    int ret = stride[i];
+                    return ret;
+                }
             }
         }
+
+        else {
+            int dimIdx = dimensionLength - 1;
+
+            for(int i = rank - 1; i >= 0; i--) {
+                /**
+                 * Needs to find an algorithm such that:
+                 * looping backwards will find the highest dimension left
+                 * that isn't included in the dimension index list.
+                 *
+                 * This can also be thought of as the last item of the first index
+                 * of the difference between the full list of indices and
+                 * the dimension indices.
+                 *
+                 * We should avoid excessive object creation by only looping backwards.
+                 */
+                if(dimension[dimIdx--] != i) {
+                    int ret = stride[i];
+                    return ret;
+                }
+            }
+        }
+
+
+
 
         int ret = stride[0];
         return ret;
     }
 
+#ifdef __CUDACC__
+    __device__ inline void sweepShapeInfoBuffer(int *shapeInfoBuffer, int *targetBuffer) {
+    // we read first element, to find out length of our shapeInfoBuffer
+    int rank = shapeInfoBuffer[0];
+    int len = rank * 2 + 4;
+    for (int i = threadIdx.x; i < len; i += blockDim.x)
+        targetBuffer[i] = shapeInfoBuffer[i];
+}
+#endif
 }
 
 #endif /* SHAPE_H_ */

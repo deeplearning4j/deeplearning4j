@@ -64,7 +64,7 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			Nd4jIndex n,
-			int *indexes,int *allocationPointer) {
+			int *indexes,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -74,7 +74,7 @@ namespace functions {
 				extraParams,
 				indexes,
 				indexes,
-				indexes, allocationPointer);
+				indexes, allocationPointer, manager);
 	}
 
 	/**
@@ -90,7 +90,7 @@ namespace functions {
 			T *extraParams,
 			int *indexes,
 			int *yIndexes,
-			int *resultIndexes,int *allocationPointer) {
+			int *resultIndexes,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = tid;
@@ -113,7 +113,7 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *indexes,
-			int *yIndexes,int *allocationPointer) {
+			int *yIndexes,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -123,7 +123,7 @@ namespace functions {
 				extraParams,
 				indexes,
 				yIndexes,
-				indexes, allocationPointer);
+				indexes, allocationPointer, manager);
 	}
 
 	/**
@@ -136,7 +136,7 @@ namespace functions {
 			int *yShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer) {
+			T *extraParams, int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = tid;
@@ -179,17 +179,22 @@ namespace functions {
 					yElementWiseStride,
 					extraParams,
 					result,
-					resultElementWiseStride, allocationPointer);
+					resultElementWiseStride, allocationPointer, manager);
 		}
 
 		else {
-
+            /*
 			long allocSize = sizeof(int) * (xRank + yRank + resultRank);
-			int *tB = shape::cuMalloc(allocationPointer, allocSize);
+			int *tB = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
 
 			int *xCoord = tB;
 			int *yCoord = tB + xRank;
 			int *resultCoord = yCoord + yRank;
+			*/
+
+			int xCoord[MAX_RANK];
+			int yCoord[MAX_RANK];
+			int resultCoord[MAX_RANK];
 
 
 			if (dx == result) {
@@ -213,10 +218,6 @@ namespace functions {
 					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
 				}
 			}
-
-			if (tid * allocSize > PREALLOC_SIZE - allocSize) {
-                free(tB);
-            }
 		}
 
 
@@ -247,7 +248,7 @@ namespace functions {
 			int incy,
 			T *params,
 			T *result,
-			int incz,int *allocationPointer) {
+			int incz,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = tid;
@@ -2021,22 +2022,52 @@ __device__ void pairWiseTransformGeneric(
 		T *dy,
 		T *params,
 		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
-
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
+
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(yRank);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(0);
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+	__shared__ int *ptrSharedYShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
+
+    if (yShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
+
+    if (resultShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
+
 	if(threadIdx.x == 0) {
-		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, functionBuffer);
+		newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	op->transformCuda(dx,xShapeInfo,dy,yShapeInfo,result,resultShapeInfo,params, allocationPointer);
+	op->transformCuda(dx,ptrSharedXShapeInfo,dy,ptrSharedYShapeInfo,result,ptrSharedZShapeInfo,params, allocationPointer, manager);
 }
 
 
@@ -2062,18 +2093,18 @@ extern "C" __global__ void pairWiseTransformDouble(
 		double *dy,
 		double *params,
 		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 	pairWiseTransformGeneric<double>(
 			opNum,
 			dx,
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo, allocationPointer);
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank, allocationPointer);
 
 }
 
@@ -2101,18 +2132,18 @@ extern "C" __global__ void pairWiseTransformFloat(
 		float *dy,
 		float *params,
 		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo, int *allocationPointer) {
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank, int *allocationPointer) {
 	pairWiseTransformGeneric<float>(
 			opNum,
 			dx,
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo, allocationPointer);
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank, allocationPointer);
 
 }
 
@@ -2141,36 +2172,65 @@ __device__ void pairWiseTransformGeneric(
 		T *dy,
 		T *params,
 		T *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
-
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(xRank);
+	    manager->setYSpace(yRank);
+	    manager->setZSpace(zRank);
+	    manager->setTADSpace(0);
+    }
+    __syncthreads();
+
+	__shared__ int *ptrSharedXShapeInfo;
+	__shared__ int *ptrSharedYShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+	if (xShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
+
+    if (yShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
+
+    if (resultShapeInfo != nullptr) {
+    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
+
 	if(threadIdx.x == 0) {
-		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, functionBuffer);
+		newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
 	op->transform(
 			dx,
-			xShapeInfo,
+			ptrSharedXShapeInfo,
 			dy,
-			yShapeInfo,
+			ptrSharedYShapeInfo,
 			result,
-			resultShapeInfo,
+			ptrSharedZShapeInfo,
 			params,
 			xIndexes,
 			yIndexes,
-			resultIndexes, allocationPointer);
+			resultIndexes, allocationPointer, manager);
 
 }
 
@@ -2197,9 +2257,9 @@ __global__ void pairWiseTransformDoubleIndex(
 		double *dy,
 		double *params,
 		double *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
@@ -2209,9 +2269,9 @@ __global__ void pairWiseTransformDoubleIndex(
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank,
 			xIndexes,
 			yIndexes,
 			resultIndexes, allocationPointer);
@@ -2242,9 +2302,9 @@ __global__ void pairWiseTransformFloatIndex(
 		float *dy,
 		float *params,
 		float *result,
-		int *xShapeInfo,
-		int *yShapeInfo,
-		int *resultShapeInfo,
+		int *xShapeInfo, int xRank,
+		int *yShapeInfo, int yRank,
+		int *resultShapeInfo, int zRank,
 		int *xIndexes,
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer) {
@@ -2254,9 +2314,9 @@ __global__ void pairWiseTransformFloatIndex(
 			dy,
 			params,
 			result,
-			xShapeInfo,
-			yShapeInfo,
-			resultShapeInfo,
+			xShapeInfo, xRank,
+			yShapeInfo, yRank,
+			resultShapeInfo, zRank,
 			xIndexes,
 			yIndexes,
 			resultIndexes, allocationPointer);
@@ -2290,19 +2350,25 @@ __device__ void pairWiseTransformStridedGeneric(
 		T *result,
 		int incz, int *allocationPointer) {
 
-	__shared__ unsigned char  __align__(8) factoryBuffer[sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>)];
-	__shared__ unsigned char  __align__(8) functionBuffer[sizeof(functions::pairwise_transforms::PairWiseTransform<T>)];
-
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
-	if (threadIdx.x == 0) {
-		newOpFactory = new(factoryBuffer) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, functionBuffer);
+	__shared__ UnifiedSharedMemory<T> *manager;
+
+     if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
+	    manager->setXSpace(0);
+	    manager->setYSpace(0);
+	    manager->setZSpace(0);
+	    manager->setTADSpace(0);
+    	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	op->transformCuda(n, dx, dy, incx, incy, params, result, incz, allocationPointer);
+	op->transformCuda(n, dx, dy, incx, incy, params, result, incz, allocationPointer, manager);
 
 }
 

@@ -1413,13 +1413,13 @@ void flattenGeneric(Nd4jPointer *extraPointers,
     else {
         dimension = rank - 1;
     }
-    stride  = xStride[ dimension ];
+    stride  = xStride[dimension];
     // numTads is product of length of all dimensions excluding
     // the one we do the tad on
     numTads = 1;
-    for ( int i = 0; i < rank; i++ ) {
-        if ( i != dimension )
-            numTads *= xShape[ i ];
+    for (int i = 0; i < rank; i++) {
+        if (i != dimension)
+            numTads *= xShape[i];
     }
 
     if (inputOrder == order) {
@@ -1468,18 +1468,20 @@ void flattenGeneric(Nd4jPointer *extraPointers,
     else {
         int rank = shape::rank(inputShapeInfoPointer);
         int *xShape = shape::shapeOf(inputShapeInfoPointer);
-        int tadShape = xShape[ dimension ];
+        int tadShape = xShape[dimension];
+        shape::TAD tad(inputShapeInfoPointer,&dimension,dimensionLength);
+        tad.createTadOnlyShapeInfo();
  #pragma omp  parallel  for
          for(int i = 0; i < numTads; i++) {
  
              int resultOffset;
  
-             if ( order == 'f' ) {
+             if (order == 'f') {
                  // 1. get c ordering coordinates
-                 int *cIndexCoordinates = (int*)malloc((rank - 1) * sizeof( int ));
+                 int *cIndexCoordinates = new int[rank - 1];
                  int divisor = 1;
                  for (int dim = rank - 1; dim > 0; dim--) {
-                     cIndexCoordinates[dim-1] = ( i / divisor ) % xShape[dim];
+                     cIndexCoordinates[dim - 1] = (i / divisor) % xShape[dim];
                      divisor *= xShape[dim];
                  }
  
@@ -1488,22 +1490,23 @@ void flattenGeneric(Nd4jPointer *extraPointers,
                  int fIndex = 0;
                  int multiplier = 1;
                  for (int dim = 1; dim <= rank - 1; dim++) {
-                     fIndex += cIndexCoordinates[dim-1]*multiplier;
+                     fIndex += cIndexCoordinates[dim - 1] * multiplier;
                      multiplier *= xShape[dim];
                  }
-                 resultOffset = fIndex*tadShape;
-                 free( cIndexCoordinates );
+
+                 resultOffset = fIndex * tadShape;
+                 delete[] cIndexCoordinates;
  
              }
              else {
                  resultOffset = i *  tadShape;
              }
  
-             int tadOffset = shape::tadOffset(i,inputShapeInfoPointer,&dimension,dimensionLength);
+             int tadOffset = tad.tadOffset(i);
              for( int j = 0; j < tadShape; j++) {
  
                  // TAD are returned in C ordering always
-                 resultPointer[resultOffset + j] = inputPointer[tadOffset + j*stride];
+                 resultPointer[resultOffset + j] = inputPointer[tadOffset + j * stride];
 
              }
          }

@@ -4,7 +4,12 @@
 
 #ifndef NATIVEOPERATIONS_PAIRWISE_UTIL_H
 #define NATIVEOPERATIONS_PAIRWISE_UTIL_H
-#include <array.h>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+#include <pairwise_util.h>
+#include <pointercast.h>
 #include <dll.h>
 #include <nd4jmemset.h>
 #include <omp.h>
@@ -49,8 +54,7 @@ void quickSort(StridePermutation *arr, int elements);
 /* Increment to the next n-dimensional coordinate for one raw array */
 #define ND4J_RAW_ITER_ONE_NEXT(idim, ndim, coord, shape, data, strides) \
             for ((idim) = 0; (idim) < (ndim); (idim)++) { \
-               if(shape[idim] == 1) continue; \
-                if (++(coord)[idim] >= (shape)[idim]) { \
+                if (++(coord)[idim] == (shape)[idim]) { \
                     (coord)[idim] = 0; \
                     (data) -= ((shape)[idim] - 1) * (strides)[idim]; \
                 } \
@@ -153,7 +157,7 @@ void quickSort(StridePermutation *arr, int elements);
 __host__ __device__
 #endif
 inline void  SortStrideArray(int ndim, int strides[],
-                      StridePermutation *out_strideperm) {
+                             StridePermutation *out_strideperm) {
 
     /* Set up the strideperm values */
     for (int i = 0; i < ndim; i++) {
@@ -187,69 +191,13 @@ template <typename T>
 __host__ __device__
 #endif
 inline int PrepareOneRawArrayIter(int ndim, int shape[],
-                           T data[], int strides[],
-                           int *out_ndim, int outShape[],
-                           T **out_data, int *outStrides) {
-    int i, j;
+                                  T data[], int strides[],
+                                  int *out_ndim, int outShape[],
+                                  T **out_data, int *outStrides) {
 
-    /* Special case 0 and 1 dimensions */
-    if (ndim == 0) {
-        *out_ndim = 1;
-        *out_data = data;
-        outShape[0] = 1;
-        outStrides[0] = 0;
-        return 0;
-    }
-    else if (ndim <= 2 || shape::isVector(shape,ndim)) {
-        *out_ndim = 2;
-        outShape[0] = shape[0];
-        outShape[1] = shape[1];
-        *out_data = data;
-        outStrides[0] = strides[0];
-        outStrides[1] = strides[1];
- \
-#if 0
-        /* DEBUG */
-        {
-            printf("raw iter ndim %d\n", ndim);
-            printf("shape: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outShape[i]);
-            }
-            printf("\n");
-            printf("strides a: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outStrides[i]);
-            }
-
-            printf("\n");
-
-        }
-#endif
-
-        return 0;
-    }
-    for (i = 0; i < ndim; i++) {
+    for (int i = 0; i < ndim; i++) {
         outShape[i] = shape[i];
         outStrides[i] = strides[i];
-    }
-
-    /* Reverse any negative strides */
-    for (i = 0; i < ndim; ++i) {
-        int stride_entry = outStrides[i], shape_entry = outShape[i];
-
-        if (stride_entry < 0) {
-            data += stride_entry * (shape_entry - 1);
-            outStrides[i] = -stride_entry;
-        }
-        /* Detect 0-size arrays here */
-        if (shape_entry == 0) {
-            *out_ndim = 1;
-            *out_data = data;
-            outShape[0] = 0;
-            outStrides[0] = 0;
-            return 0;
-        }
     }
 
 
@@ -259,13 +207,13 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
     {
         printf("raw iter ndim %d\n", ndim);
         printf("shape: ");
-        for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outShape[i]);
+        for (int i = 0; i < ndim; ++i) {
+            printf("%d ", outShape[i]);
         }
         printf("\n");
         printf("strides: ");
-        for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outStrides[i]);
+        for (int i = 0; i < ndim; ++i) {
+            printf("%d ", outStrides[i]);
         }
         printf("\n");
     }
@@ -391,67 +339,17 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
                            T *dataB, int *stridesB,
                            int *out_ndim, int *outShape,
                            T **out_dataA, int *outStridesA,
-                           T **out_dataB, int *outStridesB)
-{
-    int i, j;
+                           T **out_dataB, int *outStridesB) {
+    int i;
 
-    /* Special case 0 and 1 dimensions */
-    if (ndim == 0) {
-        *out_ndim = 1;
-        *out_dataA = dataA;
-        *out_dataB = dataB;
-        outShape[0] = 1;
-        outStridesA[0] = 0;
-        outStridesB[0] = 0;
-        return 0;
-    }
-    else if (ndim <= 2 || shape::isVector(shape,ndim)) {
-        *out_ndim = 2;
-        outShape[0] = shape[0];
-        outShape[1] = shape[1];
-        *out_dataA = dataA;
-        *out_dataB = dataB;
-        outStridesA[0] = stridesA[0];
-        outStridesA[1] = stridesA[1];
-        outStridesB[0] = stridesB[0];
-        outStridesB[1] = stridesB[1];
-#if 0
-        /* DEBUG */
-        {
-            printf("raw iter ndim %d\n", ndim);
-            printf("shape: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outShape[i]);
-            }
-            printf("\n");
-            printf("strides a: ");
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outStridesA[i]);
-            }
-
-            printf("\n");
-            printf("strides b: ");
-
-            for (i = 0; i < ndim; ++i) {
-                printf("%d ", (int)outStridesB[i]);
-            }
-
-            printf("\n");
-
-        }
-#endif
-
-        return 0;
-    }
-
-    /* Sort the axes based on the destination strides */
+/* Sort the axes based on the destination strides */
     for (i = 0; i < ndim; ++i) {
         outShape[i] = shape[i];
         outStridesA[i] = stridesA[i];
         outStridesB[i] = stridesB[i];
     }
 
-    /* Reverse any negative strides of operand A */
+/* Reverse any negative strides of operand A */
     for (i = 0; i < ndim; i++) {
         int stride_entryA = outStridesA[i];
         int stride_entryB = outStridesB[i];
@@ -463,7 +361,7 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
             outStridesA[i] = -stride_entryA;
             outStridesB[i] = -stride_entryB;
         }
-        /* Detect 0-size arrays here */
+/* Detect 0-size arrays here */
         if (shape_entry == 0) {
             *out_ndim = 1;
             *out_dataA = dataA;

@@ -50,7 +50,137 @@
 //      ...
 //   }
 //****************************************************************************
+template<typename T>
+class UnifiedSharedMemory{
+    // we accept whole buffer at once
+    protected:
+    int *sharedMemory;
+    const int maxShapeBufferLength = MAX_RANK * 2 + 4;
+    const int MAX_THREADS = 512;
 
+    int allocationOffset = 0;
+    int unifiedSize = 0;
+    int factorySize = 0;
+    int functionSize = 0;
+    int tadSize = 0;
+
+    unsigned short xSpace = 0;
+    unsigned short ySpace = 0;
+    unsigned short zSpace = 0;
+    unsigned short tadSpace = 0;
+    unsigned short rankSpace = 0;
+
+    public:
+    __device__ UnifiedSharedMemory() {
+        extern __shared__ int shMem[];
+        sharedMemory = shMem;
+    }
+
+    __device__ __host__ void init (int unifiedSize, int factorySize, int functionSize, int tadSize) {
+        this->unifiedSize = unifiedSize < 8 ? 8 : unifiedSize;
+        this->factorySize = factorySize < 8 ? 8: factorySize;
+        this->functionSize = functionSize < 8 ? 8 : functionSize;
+        this->tadSize = tadSize < 196 ? 196 : tadSize;
+
+        this->allocationOffset = (this->unifiedSize + this->factorySize + this->functionSize + this->tadSize);
+        //printf("Creating USM<T> -> seflSize: [%i], factorySize: [%i], functionSize: [%i], tadSize: [%i], totalOffset: [%i]\n", this->unifiedSize, this->factorySize, this->functionSize, this->tadSize, this->allocationOffset);
+    }
+
+    __device__ void setShapeBoundaries(short xRank, short yRank, short zRank, short tadRank ) {
+        this->setXSpace(xRank);
+        this->setYSpace(yRank);
+        this->setZSpace(zRank);
+        this->setTADSpace(tadRank);
+    }
+
+    __device__ void setXSpace(short xRank) {
+        this->xSpace = xRank * 2 + 4;
+        this->tadSpace = xRank;
+    }
+
+    __device__ void setYSpace(short yRank) {
+        this->ySpace = yRank * 2 + 4;
+    }
+
+    __device__ void setZSpace(short zRank) {
+        this->zSpace = zRank * 2 + 4;
+    }
+
+    __device__ void setTADSpace(short tadRank) {
+        //this->tadSpace = tadRank;
+    }
+
+    __device__ __host__ ~UnifiedSharedMemory() { }
+
+    __device__ __host__ unsigned char * getUnifiedSpace() {
+       return (unsigned char * ) ((int *)sharedMemory);
+    }
+
+    __device__ __host__ unsigned char * getFactorySpace() {
+       return (unsigned char * ) ((int *) getUnifiedSpace() + (unifiedSize / 2));
+    }
+
+    __device__ __host__ unsigned char * getFunctionSpace() {
+       return (unsigned char * ) ((int *)getFactorySpace()  + (factorySize  / 2 ));
+    }
+
+    __device__ __host__ unsigned char * getTADSpace() {
+       return (unsigned char * ) ((int *)getFunctionSpace() + (functionSize / 2));
+    }
+
+    __device__ __host__ int * getXShapeBuffer() {
+        // TODO: provide base offset here, to make use of shmem for initial allocation
+        return sharedMemory + (allocationOffset / 2);
+    }
+
+    __device__ __host__ int * getYShapeBuffer() {
+        return getXShapeBuffer() + zSpace;
+    }
+
+    __device__ __host__ int * getZShapeBuffer() {
+        return getYShapeBuffer() + ySpace;
+    }
+
+    __device__ __host__ int * getT1ShapeBuffer() {
+        return getZShapeBuffer() + zSpace;
+    }
+
+    __device__ __host__ int * getT2ShapeBuffer() {
+        return getT1ShapeBuffer() + xSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer1() {
+        return getT2ShapeBuffer() + xSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer2() {
+        return getTempRankBuffer1() + tadSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer3() {
+        return getTempRankBuffer2() + tadSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer4() {
+        return getTempRankBuffer3() + tadSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer5() {
+        return getTempRankBuffer4() + tadSpace;
+    }
+
+    __device__ __host__ int * getTempRankBuffer6() {
+    	return getTempRankBuffer5() + tadSpace;
+    }
+
+    __device__ __host__ int * getSharedCoordBuffer() {
+        return getTempRankBuffer6() + tadSpace;
+    }
+
+    __device__ __host__ T * getSharedReductionBuffer() {
+        return (T *) ((int *)getSharedCoordBuffer() + MAX_RANK);
+    }
+};
 // This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
 template<typename T>
