@@ -1612,7 +1612,7 @@ namespace functions {
 
 #endif
                 T op(T d1, T d2, T *params) {
-                    return d2 - d2;
+                    return d2 - d1;
                 }
 
                 virtual

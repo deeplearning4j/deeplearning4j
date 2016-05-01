@@ -690,7 +690,7 @@ struct SharedIndexValue<double> {
                                  * we can use arr.stride(1) as a representation
                                  * along long which to iterate.
                                  */
-				
+
 					int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 					int *xShape = shape::shapeOf(tadShapeShapeInfo);
 					int *xStride = shape::stride(tadShapeShapeInfo);
