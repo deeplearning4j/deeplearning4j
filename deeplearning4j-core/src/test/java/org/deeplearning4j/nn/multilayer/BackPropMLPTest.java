@@ -291,9 +291,6 @@ public class BackPropMLPTest {
                 .learningRate(0.1).updater(Updater.SGD)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
-                .l1(0.0)
-                .l2(0.0)
-                .momentum(0.0)
                 .seed(12345L)
                 .list();
 
