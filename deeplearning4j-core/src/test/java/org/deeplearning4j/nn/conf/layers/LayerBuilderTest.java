@@ -49,7 +49,7 @@ public class LayerBuilderTest {
 
     @Test
     public void testLayer() throws Exception {
-        RecursiveAutoEncoder layer = new RecursiveAutoEncoder.Builder()
+        DenseLayer layer = new DenseLayer.Builder()
             .activation(act).weightInit(weight).dist(dist).dropOut(dropOut).updater(updater)
             .gradientNormalization(gradNorm).gradientNormalizationThreshold(gradNormThreshold)
             .build();
@@ -67,7 +67,7 @@ public class LayerBuilderTest {
 
     @Test
     public void testFeedForwardLayer() throws Exception {
-        RecursiveAutoEncoder ff = new RecursiveAutoEncoder.Builder().nIn(numIn).nOut(numOut).build();
+        DenseLayer ff = new DenseLayer.Builder().nIn(numIn).nOut(numOut).build();
 
         checkSerialization(ff);
 

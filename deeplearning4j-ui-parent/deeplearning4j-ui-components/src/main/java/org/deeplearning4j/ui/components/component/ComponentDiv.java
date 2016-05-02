@@ -20,6 +20,7 @@ package org.deeplearning4j.ui.components.component;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.Style;
 
@@ -28,7 +29,7 @@ import org.deeplearning4j.ui.api.Style;
  *
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ComponentDiv extends Component {
     public static final String COMPONENT_TYPE = "ComponentDiv";

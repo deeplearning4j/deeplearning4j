@@ -250,6 +250,7 @@ public class NeuralNetConfigurationTest {
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.3)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr).biasLearningRate(biasLr).build())
                 .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).learningRate(0.7).build())
@@ -265,7 +266,9 @@ public class NeuralNetConfigurationTest {
         assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
         assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
         assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.1, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);
+        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);        //If not explicitly set, bias learning rate should be same as weights LR
+        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4);        //From global LR
+        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4);        //From global LR
     }
 
     @Test

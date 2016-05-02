@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.components.component.style;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 
@@ -26,7 +27,7 @@ import org.deeplearning4j.ui.api.Style;
  *
  * @author Alex Black
  */
-@NoArgsConstructor @Data
+@NoArgsConstructor @Data @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleDiv extends Style {
 
