@@ -20,6 +20,7 @@ package org.deeplearning4j.ui.components.chart.style;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 import org.deeplearning4j.ui.api.Utils;
@@ -33,7 +34,7 @@ import java.time.format.TextStyle;
  *
  * @author Alex Black
  */
-@AllArgsConstructor @Data @NoArgsConstructor
+@AllArgsConstructor @Data @NoArgsConstructor @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleChart extends Style {
 
