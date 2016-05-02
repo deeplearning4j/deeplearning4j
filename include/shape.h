@@ -1177,6 +1177,11 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
+    void printShapeInfoLinear(int *shapeInfo);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     void printIntArray(int *arr,int length);
 
     /**
@@ -4247,6 +4252,18 @@ __device__ int tadOffset(int *xInfo, int offset) {
         printf("\n");
 
         printf("Order %c\n",shape::order(shapeInfo));
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printShapeInfoLinear(int *shapeInfo) {
+        int rank = shape::rank(shapeInfo);
+        printf("ShapeInfo: [");
+        for (int i = 0; i < rank * 2 + 4; i++) {
+            printf("%i, ", shapeInfo[i]);
+        }
+        printf("]\n");
     }
 /**
  * Given an linear index, element wise stride
