@@ -54,15 +54,15 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 		if(shape[0]==1) return in.tensorAlongDimension(0,1,2).permutei(1,0);	//Edge case: miniBatchSize==1
 		if(shape[2]==1) return in.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
 		INDArray permuted = in.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
-		return permuted.reshape(shape[0] * shape[2], shape[1]);
+        return permuted.reshape('f',shape[0] * shape[2], shape[1]);
 	}
 	
 	private INDArray reshape2dTo3d(INDArray in, int miniBatchSize){
 		if( in.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
 		//Based on: RnnToFeedForwardPreProcessor
 		int[] shape = in.shape();
-        if(in.ordering() == 'f') in = Shape.toOffsetZeroCopy(in, 'c');
-		INDArray reshaped = in.reshape(miniBatchSize, shape[0] / miniBatchSize, shape[1]);
+        if(in.ordering() != 'f') in = Shape.toOffsetZeroCopy(in, 'f');
+		INDArray reshaped = in.reshape('f',miniBatchSize, shape[0] / miniBatchSize, shape[1]);
 		return reshaped.permute(0, 2, 1);
 	}
 
