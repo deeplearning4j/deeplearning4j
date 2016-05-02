@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -143,8 +144,7 @@ public class TestDropout {
                 .list()
                 .layer(0, new DenseLayer.Builder().activation("sigmoid").nIn(nIn).nOut(layerSize).build())
                 .layer(1, new DenseLayer.Builder().activation("sigmoid").nIn(layerSize).nOut(layerSize).build())
-                .layer(2, new DenseLayer.Builder().activation("sigmoid").nIn(layerSize).nOut(layerSize).build())
-                .layer(3, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                .layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                         .nIn(layerSize).nOut(nOut).weightInit(WeightInit.XAVIER).build())
                 .backprop(true).pretrain(false)
                 .build();
@@ -160,9 +160,9 @@ public class TestDropout {
         Nd4j.getRandom().setSeed(12345);
         int noDropoutCount = 0;
         for( int i=0; i<nTests; i++ ){
-            INDArray in = Nd4j.rand(1,nIn);
-            INDArray out = Nd4j.rand(1,nOut);
-            INDArray inCopy = in.dup();
+            INDArray in = Nd4j.rand(1,nIn).dup('c');
+            INDArray out = Nd4j.rand(1,nOut).dup('c');
+            INDArray inCopy = in.dup('c');
 
             net.fit(new DataSet(in,out));
 
@@ -170,10 +170,11 @@ public class TestDropout {
             assertEquals(inCopy,in);
 
             //Check that dropout was actually applied (and applied exactly once)
-            INDArray dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(0));
+            INDArray dropoutMask = ((INDArray)dropoutMaskField.get(net.getLayer(0)));
             assertNotNull(dropoutMask);
+            dropoutMask = dropoutMask.dup('c');
 
-            INDArray l0Input = net.getLayer(0).input();
+            INDArray l0Input = net.getLayer(0).input().dup('c');
             if(inCopy.equals(l0Input)){ //l0Input should differ from original input (probably)
                 int countNonZero = 0;
                 for( int j=0; j<dropoutMask.length(); j++ ){
@@ -187,11 +188,14 @@ public class TestDropout {
                     noDropoutCount++;
                 }
             } else {
+                System.out.println(i);
                 //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
-                for( int j=0; j<inCopy.length(); j++ ){
-                    double origValue = inCopy.getDouble(j);
-                    double doValue = l0Input.getDouble(j);
-                    double maskValue = dropoutMask.getDouble(j);
+                NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
+                while(iter.hasNext()){
+                    int[] idx = iter.next();
+                    double origValue = inCopy.getDouble(idx);
+                    double doValue = l0Input.getDouble(idx);
+                    double maskValue = dropoutMask.getDouble(idx);
                     assertTrue(maskValue == 0.0 || maskValue == 2.0);
                     if(maskValue == 0.0){
                         //Input was dropped out
@@ -205,7 +209,7 @@ public class TestDropout {
 
             //Check other layers. Don't know pre-dropout values in general, but using saturated sigmoids -> inputs should
             //all be ~1.0 before dropout -> either 0 or ~2.0 after dropout
-            for( int j=1; j<4; j++ ){
+            for( int j=1; j<3; j++ ){
                 dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(j));
                 assertNotNull(dropoutMask);
 
