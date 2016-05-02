@@ -52,8 +52,6 @@ public class LayerFactories {
             return new GravesBidirectionalLSTMLayerFactory(GravesBidirectionalLSTM.class);
         else if(clazz.equals(GRU.class))
         	return new GRULayerFactory(GRU.class);
-        else if(RecursiveAutoEncoder.class.isAssignableFrom(clazz))
-            return new RecursiveAutoEncoderLayerFactory(RecursiveAutoEncoder.class);
         else if(BasePretrainNetwork.class.isAssignableFrom(clazz))
             return new PretrainLayerFactory(clazz);
         else if(ConvolutionLayer.class.isAssignableFrom(clazz))

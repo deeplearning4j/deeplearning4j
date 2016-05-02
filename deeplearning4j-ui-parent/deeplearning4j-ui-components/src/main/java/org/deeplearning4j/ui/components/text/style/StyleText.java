@@ -20,6 +20,7 @@ package org.deeplearning4j.ui.components.text.style;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 import org.deeplearning4j.ui.api.Utils;
@@ -29,7 +30,7 @@ import java.awt.*;
 /**
  * Style for text
  */
-@Data @NoArgsConstructor
+@Data @NoArgsConstructor @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleText extends Style {
 
