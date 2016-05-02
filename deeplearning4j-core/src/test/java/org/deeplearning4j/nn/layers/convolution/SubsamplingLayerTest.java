@@ -135,6 +135,7 @@ public class SubsamplingLayerTest {
 
         INDArray input2 = getData();
         layer.activate(input2);
+        int depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
 

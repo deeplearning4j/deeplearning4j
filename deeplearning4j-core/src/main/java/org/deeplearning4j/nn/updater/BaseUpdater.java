@@ -100,7 +100,7 @@ public abstract class BaseUpdater implements Updater {
                 conf.setLearningRateByParam(variable, lr * Math.pow(decayRate, Math.floor(iteration/conf.getLrPolicySteps())));
                 break;
             case Poly:
-                conf.setLearningRateByParam(variable, lr * Math.pow((1 - (iteration * 1.0)/conf.getNumIterations()), conf.getLrPolicyPower()));
+                conf.setLearningRateByParam(variable, lr * Math.pow((1 - ((double)iteration)/conf.getNumIterations()), conf.getLrPolicyPower()));
                 break;
             case Sigmoid:
                 conf.setLearningRateByParam(variable, lr / (1 + Math.exp(-decayRate * (iteration - conf.getLrPolicySteps()))));
