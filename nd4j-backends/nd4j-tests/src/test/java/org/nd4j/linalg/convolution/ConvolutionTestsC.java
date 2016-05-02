@@ -206,9 +206,27 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
         assertEquals(assertion,newTest);
     }
 
+    @Test
+    public void testimcolim() {
+        int nEx = 2;
+        int depth = 3;
+        int width = 7;
+        int height = 7;
+        int [] kernel = {3,2} ;
+        int [] stride = {2,3} ;
+        int [] padding = {1,2} ;
+        int prod = nEx*depth*width*height;
 
+        INDArray in = Nd4j.linspace(1,prod,prod).reshape(nEx,depth,width,height);
 
+        INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
+        INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
+        assertEquals(assertim2col,im2col);
 
+        INDArray assertcol2im = OldConvolution.col2im(im2col,stride,padding,height,width);
+        INDArray col2im = Convolution.col2im(im2col,stride,padding,height,width);
+        assertEquals(assertcol2im,col2im);
+    }
 
     @Override
     public char ordering() {
