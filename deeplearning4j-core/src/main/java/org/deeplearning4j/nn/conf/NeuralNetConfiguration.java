@@ -793,8 +793,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
                 throw new IllegalStateException(layerName +" dropConnect is set to true but dropout rate has not been added to configuration.");
             if(useDropConnect && dropOut == 0.0) throw new IllegalStateException(layerName + " dropConnect is set to true but dropout rate is set to 0.0");
-            if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2) && Double.isNaN(layer.getL2())))
-                log.warn(layerName +" regularization is set to true but l1 or l2 has not been added to configuration.");
+            if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1())
+                    && Double.isNaN(l2) && Double.isNaN(layer.getL2())
+                    && (Double.isNaN(dropOut) || dropOut==0.0) && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
+                log.warn(layerName +" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
             if (layer != null) {
                 if (useRegularization) {
