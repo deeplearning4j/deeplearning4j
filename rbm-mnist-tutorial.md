@@ -45,4 +45,4 @@ Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST d
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNSmallMnistExample.java?slice=33:69"></script>
 
-Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../mnist-tutorial.html).
+Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../deepbeliefnetwork.html).
