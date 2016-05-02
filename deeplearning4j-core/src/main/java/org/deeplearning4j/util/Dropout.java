@@ -32,9 +32,7 @@ public class Dropout {
     public static INDArray applyDropout(INDArray input,double dropout,INDArray dropoutMask) {
         if(dropoutMask == null || !Shape.shapeEquals(input.shape(), dropoutMask.shape())) {
             dropoutMask = Nd4j.getDistributions().createBinomial(1,dropout).sample(input.shape()).divi(dropout);
-
         }
-
 
         input.muli(dropoutMask);
         return dropoutMask;
