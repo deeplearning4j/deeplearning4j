@@ -18,7 +18,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
 	
 	@NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
-        
+        protected LossFunction lossFunction = LossFunction.MCXENT;
+
     	public Builder(LossFunction lossFunction) {
             this.lossFunction = lossFunction;
         }
