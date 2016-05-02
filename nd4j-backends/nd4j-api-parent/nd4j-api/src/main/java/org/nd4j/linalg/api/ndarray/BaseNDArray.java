@@ -1094,8 +1094,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
-        long offset = Shape.getOffset(0,shape(),stride(),indexes);
-        data.put(offset, value);
+        if(indexes.length == 1){
+            return putScalar(indexes[0], value);
+        }else if(indexes.length == 2){
+            return putScalar(indexes[0], indexes[1], value);
+        }else if(indexes.length == 3){
+            return putScalar(indexes[0], indexes[1], indexes[2], value);
+        }else if(indexes.length == 4){
+            return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
+        }else {
+            long offset = Shape.getOffset(shapeInfo(), indexes);
+            data.put(offset, value);
+        }
         return this;
     }
 
