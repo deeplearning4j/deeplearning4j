@@ -51,7 +51,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
-        @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
         @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
