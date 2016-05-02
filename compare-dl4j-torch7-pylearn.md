@@ -156,7 +156,7 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Convolutional Networks Tutorial](../convolutionalnets.html)
 * [LSTM and Recurrent Network Tutorial](../lstm.html)
 * [Using Recurrent Nets With DL4J](../usingrnns.html)
-* [Deep-Belief Networks With MNIST](../mnist-tutorial.html)
+* [Deep-Belief Networks With MNIST](../deepbeliefnetwork.html)
 * [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
 * [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
