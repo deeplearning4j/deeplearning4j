@@ -50,6 +50,7 @@ public class ImageLSTMTest {
     // TODO finish building out this test for image LSTM ...
     private static final Logger log = LoggerFactory.getLogger(ImageLSTMTest.class);
 
+    @Ignore
     @Test
     public void testTraffic() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -109,6 +110,7 @@ public class ImageLSTMTest {
 
     //////////////////////////////////////////////////////////////////////////////////
 
+    @Ignore
     @Test
     public void testBackpropResultsContained()  {
         INDArray input = getContainedData();

@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -49,8 +50,8 @@ public class ConvolutionLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .l2(2e-4)
                 .regularization(true)
-                .momentum(0.9)
-                .useDropConnect(true)
+                .momentum(0.9).updater(Updater.NESTEROVS)
+                .useDropConnect(true).dropOut(0.5)
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
                         .stride(4, 4)

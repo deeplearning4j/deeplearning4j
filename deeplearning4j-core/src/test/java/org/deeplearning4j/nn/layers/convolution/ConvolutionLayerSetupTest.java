@@ -59,7 +59,7 @@ public class ConvolutionLayerSetupTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations).regularization(true)
-                .l1(1e-1).l2(2e-4).useDropConnect(true)
+                .l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5)
                 .miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .list()
