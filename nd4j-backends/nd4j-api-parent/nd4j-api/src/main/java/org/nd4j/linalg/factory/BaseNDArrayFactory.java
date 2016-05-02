@@ -556,7 +556,18 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int rows, int columns) {
-        return randn(new int[]{rows, columns}, System.currentTimeMillis());
+        return rand(new int[]{rows, columns}, System.currentTimeMillis());
+    }
+
+    /**
+     * Create a random (uniform 0-1) NDArray with the specified shape and order
+     * @param order      Order ('c' or 'f') of the output array
+     * @param rows       Number of rows of the output array
+     * @param columns    Number of columns of the output array
+     */
+    @Override
+    public INDArray rand(char order, int rows, int columns){
+        return Nd4j.getRandom().nextDouble(order, new int[]{rows,columns});
     }
 
     /**
@@ -583,6 +594,18 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray randn(int rows, int columns) {
         return randn(new int[]{rows, columns}, System.currentTimeMillis());
+    }
+
+    /**
+     * Generate a random normal N(0,1) with the specified order and shape
+     * @param order   Order of the output array
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return
+     */
+    @Override
+    public INDArray randn(char order, int rows, int columns){
+        return Nd4j.getRandom().nextGaussian(order, new int[]{rows,columns});
     }
 
     /**
@@ -650,6 +673,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
+     * Create a random ndarray with the given shape and order
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    @Override
+    public INDArray rand(char order, int[] shape) {
+        return Nd4j.getRandom().nextDouble(order,shape);
+    }
+
+    /**
      * Random normal using the given rng
      *
      * @param shape the shape of the ndarray
@@ -664,6 +698,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     /**
      * Random normal using the current time stamp
      * as the seed
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    @Override
+    public INDArray randn(char order, int[] shape) {
+        return Nd4j.getRandom().nextGaussian(order, shape);
+    }
+
+    /**
+     * Random normal N(0,1) with the specified shape and
      *
      * @param shape the shape of the ndarray
      * @return
