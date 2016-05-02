@@ -720,6 +720,23 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.ones(3,5).addiRowVector(Nd4j.ones(1,3));
     }
 
+
+    @Test
+    public void testEps3(){
+
+        INDArray first = Nd4j.linspace(1,10,10);
+        INDArray second = Nd4j.linspace(20,30,10);
+
+        INDArray expAllZeros = Nd4j.getExecutioner().execAndReturn(new Eps(first,second,Nd4j.create(10), 10));
+        INDArray expAllOnes = Nd4j.getExecutioner().execAndReturn(new Eps(first,first,Nd4j.create(10), 10));
+
+        System.out.println(expAllZeros);
+        System.out.println(expAllOnes);
+
+        assertEquals(0, expAllZeros.sumNumber().doubleValue(), 0.0);
+        assertEquals(10, expAllOnes.sumNumber().doubleValue(), 0.0);
+    }
+
     @Test
     @Ignore
     public void testSumAlongDim1sEdgeCases() {

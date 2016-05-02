@@ -990,16 +990,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
         allC &= (ret.ordering() == 'c');
-        if(ret.isVector()) {
-            int offset = 0;
-            for(INDArray arr : toConcat) {
-                for(int i = 0; i < arr.size(dimension); i++) {
-                    ret.putScalar(offset++,arr.getDouble(i));
-                }
-            }
-
-            return ret;
-        }
 
         if(toConcat[0].isScalar()) {
             INDArray retLinear = ret.linearView();
