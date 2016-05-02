@@ -427,7 +427,7 @@ Word2vecアプリケーションをシャットダウンすると、削除でき
 
 Google Scholarを使うと、Deeplearning4jにWord2vecを実装した調査に関して言及した論文を[こちらに](https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=)割り出しています。
 
-ベルギーのデータ科学者Kenny Helsens氏は、[Deeplearning4jにWord2vecを実装したもの](thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/)をNCBIのOMIM(Online Mendelian Inheritance In Man) データベースに適用し、非小細胞性肺癌で知られる腫瘍遺伝子「alk」に最も近い語を探しました。すると、Word2vecは、"nonsmall, carcinomas, carcinoma, mapdkd."と出力しました。この結果を使って、Helsens氏は、他の種類の癌の表現型と遺伝子型の類推を作り上げることができたのです。これは、Word2vecが大規模なコーパスで学習できる関連性のほんの一例です。重要な病気の新側面の発見のための探索は今始まったばかりです。また、医学にとどまらずその他の分野にも幅広く適用できる可能性を秘めています。
+ベルギーのデータ科学者Kenny Helsens氏は、[Deeplearning4jにWord2vecを実装したもの](http://thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/)をNCBIのOMIM(Online Mendelian Inheritance In Man) データベースに適用し、非小細胞性肺癌で知られる腫瘍遺伝子「alk」に最も近い語を探しました。すると、Word2vecは、"nonsmall, carcinomas, carcinoma, mapdkd."と出力しました。この結果を使って、Helsens氏は、他の種類の癌の表現型と遺伝子型の類推を作り上げることができたのです。これは、Word2vecが大規模なコーパスで学習できる関連性のほんの一例です。重要な病気の新側面の発見のための探索は今始まったばかりです。また、医学にとどまらずその他の分野にも幅広く適用できる可能性を秘めています。
 
 Andreas Klintberg氏は、Deeplearning4jにWord2vecを実装したものをスウェーデン語に適用し、[Mediumに徹底ガイド](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb)を執筆しました。 
 
