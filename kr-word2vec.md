@@ -425,7 +425,7 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 구글 학술 검색에서 [Deeplearning4j이 구현한 Word2vec](https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=)을 인용한 결과를 볼 수 있습니다.
 
-벨기에의 데이터 사이언티스트 Kenny Helsens는 [Deeplearning4j의 Word2vec 구현](thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/)을 NCBI'의 Online Mendelian Inheritance In Man (OMIM) 데이터베이스에 적용했습니다. 그리고 나서 그는 non-small cell lung carcinoma의 알려진 종양 유전자인 alk와 가장 유사한 단어가 무엇인지 검색했는데 그 결과는다음과 같습니다: "nonsmall, carcinomas, carcinoma, mapdkd." 이를 이용해 Kenny는 다른 암 표현형들과 그들의 유전자형들 간의 유사성을 설립했습니다. 이는 데이터를 적절히 활용한 아주 좋은 예제 입니다. 질병 뿐만 아니라 온갖 분야에서 Word2vec을 적용할 수 있습니다.
+벨기에의 데이터 사이언티스트 Kenny Helsens는 [Deeplearning4j의 Word2vec 구현](http://thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/)을 NCBI'의 Online Mendelian Inheritance In Man (OMIM) 데이터베이스에 적용했습니다. 그리고 나서 그는 non-small cell lung carcinoma의 알려진 종양 유전자인 alk와 가장 유사한 단어가 무엇인지 검색했는데 그 결과는다음과 같습니다: "nonsmall, carcinomas, carcinoma, mapdkd." 이를 이용해 Kenny는 다른 암 표현형들과 그들의 유전자형들 간의 유사성을 설립했습니다. 이는 데이터를 적절히 활용한 아주 좋은 예제 입니다. 질병 뿐만 아니라 온갖 분야에서 Word2vec을 적용할 수 있습니다.
 
 스웨덴의 Andreas Klintberg는 DL4J의 Word2vec 구현 방법을 [Medium에 자세히 정리](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb)해 놓았습니다.
 
