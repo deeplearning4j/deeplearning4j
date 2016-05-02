@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.components.chart;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
@@ -28,7 +29,7 @@ import org.deeplearning4j.ui.components.chart.style.StyleChart;
  *
  * @author Alex BLack
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Chart extends Component {
 
@@ -65,7 +66,7 @@ public abstract class Chart extends Component {
     }
 
 
-    @Getter
+    @Getter @SuppressWarnings("unchecked")
     public static abstract class Builder<T extends Builder<T>> {
 
         private String title;
