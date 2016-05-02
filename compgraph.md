@@ -90,7 +90,7 @@ Suppose we wish to build the following recurrent neural network architecture:
 
 For the sake of this example, lets assume our input data is of size 5. Our configuration would be as follows:
 
-```
+```java
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
         .learningRate(0.01)
         .graphBuilder()
@@ -117,7 +117,7 @@ Here, the merge vertex takes the activations out of layers L1 and L2, and merges
 
 To build the above network, we use the following configuration:
 
-```
+```java
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
         .learningRate(0.01)
         .graphBuilder()
@@ -139,7 +139,7 @@ Consider for example a simple network used for both classification and regressio
 
 In this case, the network configuration is:
 
-```
+```java
 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
         .learningRate(0.01)
         .graphBuilder()
@@ -202,7 +202,7 @@ Some basic examples on how to use the RecordReaderMultiDataSetIterator follow. Y
 
 Suppose we have a CSV file with 5 columns, and we want to use the first 3 as our input, and the last 2 columns as our output (for regression). We can build a MultiDataSetIterator to do this as follows:
 
-```
+```java
 int numLinesToSkip = 0;
 String fileDelimiter = ",";
 RecordReader rr = new CSVRecordReader(numLinesToSkip,fileDelimiter);
@@ -230,7 +230,7 @@ For this example, let's assume the data is as follows:
 
 In this case, we can build our iterator as follows:
 
-```
+```java
 int numLinesToSkip = 0;
 String fileDelimiter = ",";
 
