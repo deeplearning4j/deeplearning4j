@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.components.chart;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartLine extends Chart {
     public static final String COMPONENT_TYPE = "ChartLine";

@@ -19,11 +19,12 @@ package org.deeplearning4j.ui.components.decorator.style;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 
 
-@NoArgsConstructor @Data
+@NoArgsConstructor @Data @EqualsAndHashCode(callSuper=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StyleAccordion extends Style {
 
