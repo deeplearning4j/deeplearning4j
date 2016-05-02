@@ -39,6 +39,7 @@ public class SeedTest {
         Layer layer = LayerFactories.getFactory(conf).create(conf);
         layer.fit(data.getFeatureMatrix());
 
+        layer.computeGradientAndScore();
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
@@ -48,35 +49,4 @@ public class SeedTest {
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-4);
     }
-
-
-    @Test
-    public void testRecursiveAutoEncoderSeed() {
-        RecursiveAutoEncoder layerType = new RecursiveAutoEncoder.Builder()
-                .nIn(4)
-                .nOut(3)
-                .activation("sigmoid")
-                .build();
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .layer(layerType)
-                .seed(123)
-                .build();
-
-        Layer layer = LayerFactories.getFactory(conf).create(conf);
-        layer.fit(data.getFeatureMatrix());
-
-        double score = layer.score();
-        INDArray parameters = layer.params();
-        layer.setParams(parameters);
-        layer.computeGradientAndScore();
-
-        double score2 = layer.score();
-        assertEquals(parameters, layer.params());
-        assertEquals(score, score2, 1e-1);
-    }
-
-
 }

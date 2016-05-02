@@ -208,6 +208,7 @@ public class RBMTests {
         RBM rbm = LayerFactories.getFactory(conf).create(conf);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
+        rbm.setInput(Nd4j.zeros(6));
         rbm.computeGradientAndScore();
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
