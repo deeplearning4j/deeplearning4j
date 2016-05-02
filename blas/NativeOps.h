@@ -854,6 +854,27 @@ public:
             Nd4jPointer input,
             Nd4jPointer inputShapeInfo);
 
+   /**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+    void concatFloat(
+            int dimension,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo);
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+    void concatDouble(
+            int dimension,
+            Nd4jPointer *data,
+            Nd4jPointer inputShapeInfo,
+            Nd4jPointer result,
+            Nd4jPointer resultShapeInfo);
+
     /**
      * This method implementation exists only for cuda.
      * The other backends should have dummy method for JNI compatibility reasons.

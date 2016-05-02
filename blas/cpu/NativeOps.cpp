@@ -1405,7 +1405,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
     int rank = shape::rank(inputShapeInfoPointer);
     int *xStride = shape::stride(inputShapeInfoPointer);
     int *xShape = shape::shapeOf(inputShapeInfoPointer);
-    
+
     dimensionLength = 1;
     if(order == 'f') {
         dimension = 0;
@@ -1471,50 +1471,165 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         int tadShape = xShape[dimension];
         shape::TAD tad(inputShapeInfoPointer,&dimension,dimensionLength);
         tad.createTadOnlyShapeInfo();
- #pragma omp  parallel  for
-         for(int i = 0; i < numTads; i++) {
- 
-             int resultOffset;
- 
-             if (order == 'f') {
-                 // 1. get c ordering coordinates
-                 int *cIndexCoordinates = new int[rank - 1];
-                 int divisor = 1;
-                 for (int dim = rank - 1; dim > 0; dim--) {
-                     cIndexCoordinates[dim - 1] = (i / divisor) % xShape[dim];
-                     divisor *= xShape[dim];
-                 }
- 
+#pragma omp  parallel  for
+        for(int i = 0; i < numTads; i++) {
 
-                 // 2. convert to f ordering index
-                 int fIndex = 0;
-                 int multiplier = 1;
-                 for (int dim = 1; dim <= rank - 1; dim++) {
-                     fIndex += cIndexCoordinates[dim - 1] * multiplier;
-                     multiplier *= xShape[dim];
-                 }
+            int resultOffset;
 
-                 resultOffset = fIndex * tadShape;
-                 delete[] cIndexCoordinates;
- 
-             }
-             else {
-                 resultOffset = i *  tadShape;
-             }
- 
-             int tadOffset = tad.tadOffset(i);
-             for( int j = 0; j < tadShape; j++) {
- 
-                 // TAD are returned in C ordering always
-                 resultPointer[resultOffset + j] = inputPointer[tadOffset + j * stride];
+            if (order == 'f') {
+                // 1. get c ordering coordinates
+                int *cIndexCoordinates = new int[rank - 1];
+                int divisor = 1;
+                for (int dim = rank - 1; dim > 0; dim--) {
+                    cIndexCoordinates[dim - 1] = (i / divisor) % xShape[dim];
+                    divisor *= xShape[dim];
+                }
 
-             }
-         }
+
+                // 2. convert to f ordering index
+                int fIndex = 0;
+                int multiplier = 1;
+                for (int dim = 1; dim <= rank - 1; dim++) {
+                    fIndex += cIndexCoordinates[dim - 1] * multiplier;
+                    multiplier *= xShape[dim];
+                }
+
+                resultOffset = fIndex * tadShape;
+                delete[] cIndexCoordinates;
+
+            }
+            else {
+                resultOffset = i *  tadShape;
+            }
+
+            int tadOffset = tad.tadOffset(i);
+            for( int j = 0; j < tadShape; j++) {
+
+                // TAD are returned in C ordering always
+                resultPointer[resultOffset + j] = inputPointer[tadOffset + j * stride];
+
+            }
+        }
 
 
     }
 }
 
+
+/**
+  * Concatneate multi array of the same shape together
+  * along a particular dimension
+  */
+template <typename T>
+void concatGeneric(
+        int dimension,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+    int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
+    int *resultShape = shape::shapeOf(resultShapeInfoPointer);
+    //number of total arrays, every other dimension should be the same
+    int numArrays = resultShape[dimension];
+    T **dataBuffers = reinterpret_cast<T **>(data);
+    int **inputShapeInfoPointers = reinterpret_cast<int **>(inputShapeInfo);
+    T *resultPointer = reinterpret_cast<T *>(result);
+
+    bool allC = true;
+
+    //nothing to concat
+    if(numArrays == 1)
+        return;
+    //we are merging all scalars
+    if(shape::isScalar(inputShapeInfoPointers[0])) {
+        for(int i = 0; i < numArrays; i++) {
+            resultPointer[i] = dataBuffers[0];
+        }
+    }
+
+
+    //detect whether all arrays are c ordered or not
+    for(int i = 0; i < numArrays; i++) {
+        allC &= (shape::order(inputShapeInfoPointers[i]) == 'c');
+    }
+
+    int length = shape::length(resultShapeInfoPointer);
+    //tad shape information for result
+    shape::TAD resultTad(resultShapeInfoPointer,&dimension,1);
+    resultTad.createTadOnlyShapeInfo();
+    resultTad.createOffsets();
+    int resultTadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
+
+    int arrOffset = 0;
+    int tadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
+    for(int i = 0; i < numArrays; i++) {
+        //tad info for the current array
+        shape::TAD arrTad(inputShapeInfoPointers[i],&dimension,1);
+        arrTad.createTadOnlyShapeInfo();
+        arrTad.createOffsets();
+
+        //element wise stride and length for tad of current array
+        int arrTadEleStride = shape::elementWiseStride(arrTad.tadOnlyShapeInfo);
+        int arrTadLength = shape::length(arrTad.tadOnlyShapeInfo);
+        for(int j = 0; j < arrTad.numTads; j++) {
+           T *arrTad = dataBuffers[j] + arrTad.tadOffsets[i];
+            //result tad offset + the current offset for each tad + array offset (matches current array)
+            T *currResultTadWithOffset = result + resultTad.tadOffsets[j] + arrOffset;
+            if(arrTadEleStride > 0) {
+                if(arrTadEleStride == 1 && resultTadEleStride == 1) {
+                    //iterate over the specified chunk of the tad
+                    for(int k = 0; k < arrTadLength; k++) {
+                        memcpy(currResultTadWithOffset,arrTad,sizeof(T) * arrTadLength);
+                    }
+                }
+                else if(tadEleStride > 0) {
+                    for(int k = 0; k < arrTadLength; k++) {
+                        currResultTadWithOffset[k * tadEleStride] = arrTad[k * arrTadEleStride];
+                    }
+                }
+            }
+        }
+
+        arrOffset += shape::length(arrTad.tadOnlyShapeInfo);
+    }
+
+}
+/**
+  * Concatneate multi array of the same shape together
+  * along a particular dimension
+  */
+void concatFloat(
+        int dimension,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+    concatGeneric<float>(
+            dimension,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+void concatDouble(
+        int dimension,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+    concatGeneric<double>(
+            dimension,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
 
 /**
 * Append an input array
