@@ -155,7 +155,7 @@ Deeplearning4j also works with a command-line interface. A net can be trained wi
 
       ./bin/deeplearning4j train -input input/file/path/tmp/iris_svmlight.txt -output output/file/path/output.txt -runtime hadoop -model modelConfig.java
       
-The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/mnist-tutorial.html). 
+The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/deepbeliefnetwork.html). 
 -->
 
 ## <a name="record">Reading Records, Iterating Over Data</a>
