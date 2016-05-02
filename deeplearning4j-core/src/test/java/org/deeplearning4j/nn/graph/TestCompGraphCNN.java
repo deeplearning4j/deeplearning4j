@@ -203,7 +203,6 @@ public class TestCompGraphCNN {
     }
 
     @Test
-    @Ignore
     public void testCNNComputationGraphSingleOutFeatureMap() {
         int imageWidth = 23;
         int imageHeight = 23;
@@ -234,7 +233,7 @@ public class TestCompGraphCNN {
                         .build(), "input")
                 .addLayer("pool1", new SubsamplingLayer.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
-                        .kernelSize(imageHeight - kernelHeight + 1, 1)
+                        .kernelSize(imageHeight - kernelHeight, 1)
                         .stride(1, 1)
                         .build(), "conv1")
                 .addLayer("output", new OutputLayer.Builder()

@@ -139,7 +139,7 @@ public class MultiLayerTest {
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build())
                 .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation("tanh").build())
-                .layer(2, new BatchNormalization.Builder().build())
+                .layer(2, new BatchNormalization.Builder().nOut(2).build())
                 .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
@@ -650,7 +650,7 @@ public class MultiLayerTest {
                 .learningRate(1.0)
                 .seed(12345L)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(2,2).nOut(3).build())
+                .layer(0, new ConvolutionLayer.Builder(2,2).nOut(1).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(2).build())
                 .cnnInputSize(3,3,2)
                 .pretrain(false).backprop(true).build();
