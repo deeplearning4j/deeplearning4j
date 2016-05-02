@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -116,7 +117,8 @@ public class MultiLayerTestRNN {
             assertTrue(nParams == layer.numParams());
         }
     }
-    
+
+	@Ignore
     @Test
     public void testGRUInit(){
         int nIn = 8;
@@ -150,6 +152,7 @@ public class MultiLayerTestRNN {
         assertTrue(nParams == layer.numParams());
     }
 
+	@Ignore
     @Test
     public void testGRUInitStacked() {
         int nIn = 8;

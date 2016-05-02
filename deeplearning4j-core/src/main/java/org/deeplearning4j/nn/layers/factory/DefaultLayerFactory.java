@@ -85,8 +85,6 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.OutputLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RnnOutputLayer)
         	return new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder)
-            return new org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.RecursiveAutoEncoder(conf);   
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
             return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
