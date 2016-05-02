@@ -403,7 +403,7 @@ public class TestComputationGraphNetwork {
             //Check nIns:
         assertEquals(7 * 7 * 3, ((FeedForwardLayer) lv3.getLayerConf().getLayer()).getNIn());
         assertEquals(5, ((FeedForwardLayer)lv4.getLayerConf().getLayer()).getNIn());
-        assertEquals(10, ((FeedForwardLayer)lv5.getLayerConf().getLayer()).getNIn());
+        assertEquals(20, ((FeedForwardLayer)lv5.getLayerConf().getLayer()).getNIn());   //10+10 out of the merge vertex -> 20 in to output layer vertex
 
 
 
