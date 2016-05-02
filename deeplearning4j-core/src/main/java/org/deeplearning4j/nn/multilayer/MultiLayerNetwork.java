@@ -1341,8 +1341,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(INDArray data, INDArray labels) {
-        setInput(data.dup());
-        setLabels(labels.dup());
+        setInput(data);
+        setLabels(labels);
         update(TaskUtils.buildTask(data, labels));
 
         if (layerWiseConfigurations.isPretrain()) {
@@ -1375,7 +1375,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
-        setInput(data.dup());
+        setInput(data);
         update(TaskUtils.buildTask(data));
         pretrain(data);
     }
