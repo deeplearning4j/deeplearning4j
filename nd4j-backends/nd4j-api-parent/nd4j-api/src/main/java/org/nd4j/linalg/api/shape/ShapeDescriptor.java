@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.shape;
 
+import java.util.Arrays;
+
 /**
  * @author raver119@gmail.com
  */
@@ -11,7 +13,11 @@ public class ShapeDescriptor {
     private long hashShape = 0;
     private long hashStride = 0;
 
+    private int[] shape;
+    private int[] stride;
+
     public ShapeDescriptor(int[] shape, int[] stride, int offset, int ews, char order) {
+        /*
         if (shape != null) {
             hashShape = shape[0];
             for (int i = 1; i < shape.length; i++)
@@ -23,6 +29,9 @@ public class ShapeDescriptor {
             for (int i = 1; i < stride.length; i++)
                 hashStride = 31 * hashStride + stride[i];
         }
+*/
+        this.shape = shape;
+        this.stride = stride;
 
         this.offset = offset;
         this.ews = ews;
@@ -39,8 +48,8 @@ public class ShapeDescriptor {
         if (order != that.order) return false;
         if (offset != that.offset) return false;
         if (ews != that.ews) return false;
-        if (hashShape != that.hashShape) return false;
-        return hashStride == that.hashStride;
+        if (!Arrays.equals(shape, that.shape)) return false;
+        return Arrays.equals(stride, that.stride);
 
     }
 
@@ -49,8 +58,8 @@ public class ShapeDescriptor {
         int result = (int) order;
         result = 31 * result + offset;
         result = 31 * result + ews;
-        result = 31 * result + (int) (hashShape ^ (hashShape >>> 32));
-        result = 31 * result + (int) (hashStride ^ (hashStride >>> 32));
+        result = 31 * result + Arrays.hashCode(shape);
+        result = 31 * result + Arrays.hashCode(stride);
         return result;
     }
 }

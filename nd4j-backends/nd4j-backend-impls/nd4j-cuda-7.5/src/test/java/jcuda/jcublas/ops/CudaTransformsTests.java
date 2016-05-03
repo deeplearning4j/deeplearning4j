@@ -27,9 +27,9 @@ public class CudaTransformsTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
-                .setFirstMemory(AllocationStatus.HOST)
-                .setMaximumBlockSize(1024)
+                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setMaximumBlockSize(256)
                 .enableDebug(true);
 
         System.out.println("Init called");

@@ -233,7 +233,7 @@ public class BasicContextPool implements ContextPool {
 
         context.syncOldStream();
 
-        long  allocationPointer = nativeOps.mallocHost(32 * 1024 * 1024, 0);
+        long  allocationPointer = nativeOps.mallocHost(1024 * 1024, 0);
         if (allocationPointer == 0)
             throw new IllegalStateException("Can't allocate [HOST] allocation buffer memory!");
 

@@ -22,8 +22,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 
     private AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-    private AtomicLong cacheHit = new AtomicLong(0);
-    private AtomicLong cacheMiss = new AtomicLong(0);
+    private AtomicLong cacheHit = new AtomicLong(1);
+    private AtomicLong cacheMiss = new AtomicLong(1);
 
     private Semaphore lock = new Semaphore(1);
 
@@ -31,7 +31,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
-        logger.info("CachedShapeInfo request");
+    //    logger.info("CachedShapeInfo request");
+
         Integer deviceId = allocator.getDeviceId();
         if (!deviceCache.containsKey(deviceId)) {
             try {
@@ -46,7 +47,12 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
             }
         }
 
+        if (cacheMiss.get() % 100 == 0) {
+            printCacheStats();
+        }
+
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
+
         if (!deviceCache.get(deviceId).containsKey(descriptor)) {
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             deviceCache.get(deviceId).put(descriptor, buffer);
@@ -55,5 +61,16 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
         } else cacheHit.incrementAndGet();
 
         return deviceCache.get(deviceId).get(descriptor);
+    }
+
+    private float getDeviceCacheHitRatio() {
+        long totalHits = cacheHit.get() + cacheMiss.get();
+        float cacheRatio = cacheHit.get() * 100 / (float) totalHits;
+        return cacheRatio;
+    }
+
+    public void printCacheStats() {
+        logger.debug("Total shapeInfo buffers in cache: " + deviceCache.get(0).size());
+        logger.debug("Current shapeInfo hit ratio: " + getDeviceCacheHitRatio());
     }
 }
