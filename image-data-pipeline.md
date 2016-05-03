@@ -61,12 +61,12 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:98"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
-* *optimizationAlgo* relies on conjugate gradient, rather than LBFGS. 
+* *optimizationAlgo* relies on LINE_GRADIENT_DESCENT, rather than LBFGS. 
 * *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.
 * *list* operator is set to 4, which means three RBM hidden layers and one output layer. More than one RBM becomes a DBN.
-* *lossFunction* is set to Monte Carlo Cross Entropy. This loss function will be used to train the classification layer. 
+* *lossFunction* is set to RMSE, or root-mean-square-error. This loss function will be used to train the net to reconstruct the input properly. 
 
 ## Building and Training the Model
 
