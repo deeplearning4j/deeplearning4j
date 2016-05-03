@@ -25,13 +25,13 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     private AtomicLong cacheHit = new AtomicLong(0);
     private AtomicLong cacheMiss = new AtomicLong(0);
 
-    private Semaphore lock = new Semaphore(0);
+    private Semaphore lock = new Semaphore(1);
 
     private Map<Integer, Map<ShapeDescriptor, DataBuffer>> deviceCache = new HashMap<>();
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
-        logger.info("CachedShapeInfo hit");
+        logger.info("CachedShapeInfo request");
         Integer deviceId = allocator.getDeviceId();
         if (!deviceCache.containsKey(deviceId)) {
             try {
@@ -50,8 +50,9 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
         if (!deviceCache.get(deviceId).containsKey(descriptor)) {
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             deviceCache.get(deviceId).put(descriptor, buffer);
+            cacheMiss.incrementAndGet();
             return buffer;
-        }
+        } else cacheHit.incrementAndGet();
 
         return deviceCache.get(deviceId).get(descriptor);
     }
