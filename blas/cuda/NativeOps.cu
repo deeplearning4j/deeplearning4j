@@ -433,6 +433,10 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D1 opNum:[%i]\n", opNum);
 
@@ -442,12 +446,12 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(double), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(double), 2);
 
 	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -490,10 +494,14 @@ void   NativeOps::execIndexReduceDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D2 opNum:[%i]\n", opNum);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(double), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(double), 2);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
@@ -501,10 +509,10 @@ void   NativeOps::execIndexReduceDouble(
 	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
@@ -544,21 +552,25 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D3 opNum:[%i]\n", opNum);
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[26], deviceProperties[(int) extraPointers[2]]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer, yShapeInfoPointer,  dimensionLength, sizeof(double), 0);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, hostYShapeInfo,  dimensionLength, sizeof(double), 0);
 
 	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			yPointer,
-			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
+			yShapeInfoPointer, shape::rank(hostYShapeInfo),
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength);
 
@@ -597,6 +609,10 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D4 opNum:[%i]\n", opNum);
 
@@ -604,7 +620,7 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> (
 			opNum,
@@ -662,12 +678,16 @@ void NativeOps::execPairwiseTransformDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D5 opNum:[%i]\n", opNum);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[24], deviceProperties[(int) extraPointers[2]]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -677,9 +697,9 @@ void NativeOps::execPairwiseTransformDouble(
 			yPointer,
 			extraParamsPointer,
 			resultPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
-			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
+			yShapeInfoPointer, shape::rank(hostYShapeInfo),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			xIndexesPointer,
 			yIndexesPointer,
 			resultIndexesPointer, allocationPointer);
@@ -722,11 +742,15 @@ void NativeOps::execPairwiseTransformDouble(
 	if (debug && verbose)
 		printf("D6 opNum:[%i]\n", opNum);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[23], deviceProperties[(int) extraPointers[2]]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -734,9 +758,9 @@ void NativeOps::execPairwiseTransformDouble(
 			yPointer,
 			extraParamsPointer,
 			resultPointer,
-			xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
-			yShapeInfoPointer,  shape::rank(yShapeInfoPointer),
-			resultShapeInfoPointer,  shape::rank(resultShapeInfoPointer), allocationPointer);
+			xShapeInfoPointer,  shape::rank(hostXShapeInfo),
+			yShapeInfoPointer,  shape::rank(hostYShapeInfo),
+			resultShapeInfoPointer,  shape::rank(hostZShapeInfo), allocationPointer);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -772,18 +796,22 @@ void   NativeOps::execReduceDouble(
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[(int) extraPointers[2]]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, 1, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(double), 1);
 
 	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			nullptr,
 			1,
 			1,
@@ -821,6 +849,10 @@ void   NativeOps::execReduceDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D8 opNum:[%i]\n", opNum);
 
@@ -829,15 +861,15 @@ void   NativeOps::execReduceDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(double), 1);
 
 	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1,
@@ -867,6 +899,10 @@ double NativeOps::execReduceScalarDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D9 opNum:[%i]\n", opNum);
 
@@ -877,12 +913,12 @@ double NativeOps::execReduceScalarDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(double), 1);
 
 	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -928,6 +964,10 @@ void   NativeOps::execReduce3Double(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D10 opNum:[%i]\n", opNum);
 
@@ -937,7 +977,7 @@ void   NativeOps::execReduce3Double(
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(double), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -986,12 +1026,16 @@ double   NativeOps::execReduce3ScalarDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(double), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1052,11 +1096,15 @@ void   NativeOps::execReduce3Double(
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[21], deviceProperties[(int) extraPointers[2]]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(double), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1107,9 +1155,13 @@ void   NativeOps::execScalarDouble(
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[20], deviceProperties[(int) extraPointers[2]]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1152,21 +1204,25 @@ void NativeOps::execScalarDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D14 opNum:[%i]\n", opNum);
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[19], deviceProperties[(int) extraPointers[2]]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			scalar,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocPointer);
+			resultPointer,resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocPointer);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1205,13 +1261,17 @@ void NativeOps::execScalarDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D15 opNum:[%i]\n", opNum);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[18], deviceProperties[(int) extraPointers[2]]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], (int *) resultShapeInfo);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	scalarDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1244,6 +1304,10 @@ double   NativeOps::execSummaryStatsScalarDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D16 opNum:[%i]\n", opNum);
 
@@ -1254,12 +1318,12 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -1303,18 +1367,22 @@ void   NativeOps::execSummaryStatsDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, 1, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
@@ -1351,6 +1419,10 @@ void   NativeOps::execSummaryStatsDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D18 opNum:[%i]\n", opNum);
 
@@ -1359,15 +1431,15 @@ void   NativeOps::execSummaryStatsDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1,biasCorrected, allocationPointer, reductionPointer);
@@ -1400,6 +1472,10 @@ void   NativeOps::execTransformDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D19 opNum:[%i]\n", opNum);
 
@@ -1408,7 +1484,7 @@ void   NativeOps::execTransformDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1446,10 +1522,13 @@ void   NativeOps::execTransformDouble(
 	double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
 	int *resultShapeInfoPointer =  reinterpret_cast<int *>(resultShapeInfo);
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	if (debug && verbose)
 		printf("D20 opNum:[%i]\n", opNum);
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[(int) extraPointers[2]]);
 
@@ -1461,7 +1540,7 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
 
-	int *dimension = (int *) allocPointer;
+	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	double * special = (double *) maxShapeBuffer + 8;
@@ -1474,7 +1553,7 @@ void   NativeOps::execTransformDouble(
 			transformDouble<<< 1, nd4j::math::nd4j_min<int>(512, length), launchDims.z, *stream >>> (
 					opNum,
 							xPointer,
-							xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
+							xShapeInfoPointer,  shape::rank(hostXShapeInfo),
 							extraParamsPointer,
 							resultPointer, resultShapeInfoPointer,  shape::rank(resultShapeInfoPointer), allocPointer, reductionPointer);
 		} else {
@@ -1546,9 +1625,9 @@ void   NativeOps::execTransformDouble(
 		transformDouble<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 						xPointer,
-						xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
+						xShapeInfoPointer,  shape::rank(hostXShapeInfo),
 						extraParamsPointer,
-						resultPointer, resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocPointer, reductionPointer);
+						resultPointer, resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
 	}
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1582,6 +1661,10 @@ void   NativeOps::execTransformDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D21 opNum:[%i]\n", opNum);
 
@@ -1590,12 +1673,12 @@ void   NativeOps::execTransformDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], (int *) resultShapeInfo);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	transformDoubleIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			resultIndexesPointer, allocPointer, reductionPointer);
@@ -1629,11 +1712,15 @@ float   NativeOps::execIndexReduceScalarFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(float), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(float), 2);
 
 	if (debug && verbose && launchDims.x == 1)
 		printf("AF1 opNum:[%i]\n", opNum);
@@ -1641,7 +1728,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 	indexReduceFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -1685,6 +1772,10 @@ void   NativeOps::execIndexReduceFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F2 opNum:[%i]\n", opNum);
 
@@ -1692,7 +1783,7 @@ void   NativeOps::execIndexReduceFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 2);
 
 	if (launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
@@ -1700,10 +1791,10 @@ void   NativeOps::execIndexReduceFloat(
 	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1, allocationPointer, reductionPointer);
@@ -1744,40 +1835,26 @@ void   NativeOps::execBroadcastFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostYShapeInfo = reinterpret_cast<int *>(&extraPointers[6]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(&extraPointers[7]);
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("F3 opNum:[%i]\n", opNum);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[(int) extraPointers[2]]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer, yShapeInfoPointer, 1, sizeof(float), 0);
 
-	if (launchDims.x == 1) {
-		printf("AF3 opNum:[%i]\n", opNum);
-
-		if (launchDims.x == 1) {
-			printf("AF3 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
-			printf("X: [%i]\n", shape::length((int *) extraPointers[0]));
-			//shape::printShapeInfo((int *) extraPointers[0]);
-			shape::printShapeInfoLinear((int *) extraPointers[0]);
-			shape::printShapeInfoLinear(hostZShapeInfo);
-			shape::printShapeInfoLinear(hostYShapeInfo);
-			//if (hostYShapeInfo != nullptr) printf("y: [%i]\n", shape::length(hostYShapeInfo));
-			//if (hostYShapeInfo != nullptr) shape::printShapeInfo(hostYShapeInfo);
-			//printf("z: [%i]\n", shape::length(resultShapeInfoPointer));
-		}
-	}
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, hostYShapeInfo, 1, sizeof(float), 0);
 
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			yPointer,
-			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
+			yShapeInfoPointer, shape::rank(hostYShapeInfo),
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength);
 
@@ -1816,6 +1893,10 @@ void   NativeOps::execPairwiseTransformFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F4 opNum:[%i]\n", opNum);
 
@@ -1824,7 +1905,7 @@ void   NativeOps::execPairwiseTransformFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, (int *) extraPointers[7], 1, sizeof(float), 0);
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
 		printf("AF4 opNum:[%i]\n", opNum);
@@ -1885,6 +1966,10 @@ void NativeOps::execPairwiseTransformFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F5 opNum:[%i]\n", opNum);
 
@@ -1892,7 +1977,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 0);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostYShapeInfo, hostZShapeInfo, 1, sizeof(float), 0);
 
 	if (launchDims.x == 1)
 		printf("AF5 opNum:[%i]\n", opNum);
@@ -1903,9 +1988,9 @@ void NativeOps::execPairwiseTransformFloat(
 			yPointer,
 			extraParamsPointer,
 			resultPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
-			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
+			yShapeInfoPointer, shape::rank(hostYShapeInfo),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			xIndexesPointer,
 			yIndexesPointer,
 			resultIndexesPointer, allocationPointer);
@@ -1946,6 +2031,10 @@ void NativeOps::execPairwiseTransformFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F6 opNum:[%i]\n", opNum);
 
@@ -1954,7 +2043,7 @@ void NativeOps::execPairwiseTransformFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(float), 0);
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1) {
 		printf("AF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
@@ -1967,9 +2056,9 @@ void NativeOps::execPairwiseTransformFloat(
 			yPointer,
 			extraParamsPointer,
 			resultPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
-			yShapeInfoPointer, shape::rank(yShapeInfoPointer),
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocationPointer);
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
+			yShapeInfoPointer, shape::rank(hostYShapeInfo),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocationPointer);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2000,6 +2089,10 @@ void   NativeOps::execReduceFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F7 opNum:[%i]\n", opNum);
 
@@ -2008,7 +2101,7 @@ void   NativeOps::execReduceFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, 1, sizeof(float), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(float), 1);
 
 	if (launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
@@ -2016,10 +2109,10 @@ void   NativeOps::execReduceFloat(
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			nullptr,
 			1,
 			1,
@@ -2056,6 +2149,10 @@ void   NativeOps::execReduceFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F8 opNum:[%i]\n", opNum);
 
@@ -2077,7 +2174,7 @@ void   NativeOps::execReduceFloat(
 
 // dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction)
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], xShapeInfoPointer, nullptr, resultShapeInfoPointer, dimensionLength, sizeof(float), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 1);
 
 	if (launchDims.x == 1)
 		printf("AF8 opNum:[%i]\n", opNum);
@@ -2085,10 +2182,10 @@ void   NativeOps::execReduceFloat(
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1,
@@ -2120,6 +2217,10 @@ float NativeOps::execReduceScalarFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F9 opNum:[%i]\n", opNum);
 
@@ -2129,7 +2230,7 @@ float NativeOps::execReduceScalarFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(float), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(float), 1);
 
 	if (launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
@@ -2137,7 +2238,7 @@ float NativeOps::execReduceScalarFloat(
 	reduceFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -2186,6 +2287,10 @@ void   NativeOps::execReduce3Float(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F10 opNum:[%i]\n", opNum);
 
@@ -2195,7 +2300,7 @@ void   NativeOps::execReduce3Float(
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	if (launchDims.x == 1)
 		printf("AF10 opNum:[%i]\n", opNum);
@@ -2242,6 +2347,10 @@ float   NativeOps::execReduce3ScalarFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F11 opNum:[%i]\n", opNum);
 
@@ -2252,7 +2361,7 @@ float   NativeOps::execReduce3ScalarFloat(
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	if (launchDims.x == 1)
 		printf("AF11 opNum:[%i]\n", opNum);
@@ -2312,6 +2421,10 @@ void   NativeOps::execReduce3Float(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[(int) extraPointers[2]]);
 
 	if (debug && verbose)
@@ -2321,7 +2434,7 @@ void   NativeOps::execReduce3Float(
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, resultShapeInfoPointer, dimensionLength, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length((int *) extraPointers[0]), 16);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
 	if (launchDims.x == 1)
 		printf("AF12 opNum:[%i]\n", opNum);
@@ -2369,12 +2482,16 @@ void   NativeOps::execScalarFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	if (debug && verbose)
 		printf("F13 opNum:[%i]\n", opNum);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
 		printf("AF13 opNum:[%i]\n", opNum);
@@ -2421,6 +2538,9 @@ void NativeOps::execScalarFloat(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	Nd4jIndex n = shape::length(hostXShapeInfo);
 
 	if (debug && verbose)
@@ -2429,7 +2549,7 @@ void NativeOps::execScalarFloat(
 	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 temp = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 temp = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	if (launchDims.x == 1)
 		printf("AF14 opNum:[%i]\n", opNum);
@@ -2438,9 +2558,9 @@ void NativeOps::execScalarFloat(
 			opNum,
 			scalar,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
-			resultPointer,resultShapeInfoPointer, shape::rank(resultShapeInfoPointer), allocPointer );
+			resultPointer,resultShapeInfoPointer, shape::rank(hostZShapeInfo), allocPointer );
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2476,8 +2596,11 @@ void NativeOps::execScalarFloat(
 	int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	Nd4jIndex n = shape::length(hostShapeInfo);
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	Nd4jIndex n = shape::length(hostXShapeInfo);
 
 	if (debug && verbose)
 		printf("F15 opNum:[%i]\n", opNum);
@@ -2485,7 +2608,7 @@ void NativeOps::execScalarFloat(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[4], deviceProperties[(int) extraPointers[2]]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], (int *) resultShapeInfo);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
 		printf("AF15 opNum:[%i]\n", opNum);
@@ -2522,6 +2645,10 @@ float   NativeOps::execSummaryStatsScalarFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F16 opNum:[%i]\n", opNum);
 
@@ -2531,7 +2658,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, nullptr, 1, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(float), 8);
 
 	if (launchDims.x == 1)
 		printf("AF16 opNum:[%i]\n", opNum);
@@ -2539,7 +2666,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			nullptr, 0,
@@ -2577,6 +2704,10 @@ void   NativeOps::execSummaryStatsFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F17 opNum:[%i]\n", opNum);
 
@@ -2585,7 +2716,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, 1, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(float), 8);
 
 	if (launchDims.x == 1)
 		printf("AF17 opNum:[%i]\n", opNum);
@@ -2593,10 +2724,10 @@ void   NativeOps::execSummaryStatsFloat(
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			nullptr,
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer);
@@ -2633,6 +2764,10 @@ void   NativeOps::execSummaryStatsFloat(
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F18 opNum:[%i]\n", opNum);
 
@@ -2641,7 +2776,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, resultShapeInfoPointer, dimensionLength, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 8);
 
 	if (launchDims.x == 1)
 		printf("AF18 opNum:[%i]\n", opNum);
@@ -2649,10 +2784,10 @@ void   NativeOps::execSummaryStatsFloat(
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer, shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer, shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
-			resultShapeInfoPointer, shape::rank(resultShapeInfoPointer),
+			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
 			1,biasCorrected, allocationPointer, reductionPointer);
@@ -2686,6 +2821,10 @@ void   NativeOps::execTransformFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F19 opNum:[%i]\n", opNum);
 
@@ -2694,7 +2833,7 @@ void   NativeOps::execTransformFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
 		printf("AF19 opNum:[%i]\n", opNum);
@@ -2735,6 +2874,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	if (debug && verbose)
 		printf("F20 opNum:[%i]\n", opNum);
@@ -2747,7 +2888,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	// special pointer for special buffer for special ops
 	float *specialPointer = reinterpret_cast<float *>(extraPointers[6]);
 
-	int *dimension = (int *) allocPointer;
+	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	float * special = (float *) maxShapeBuffer + 8;
@@ -2766,9 +2907,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 			transformFloat <<< 1, block, launchDims.z + (block * sizeof(float) * 4), *stream >> > (
 					opNum,
 					xPointer,
-					xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
+					xShapeInfoPointer,  shape::rank(hostXShapeInfo),
 					extraParamsPointer,
-					resultPointer, resultShapeInfoPointer,  shape::rank(resultShapeInfoPointer),  allocPointer, reductionPointer);
+					resultPointer, resultShapeInfoPointer,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
@@ -2839,9 +2980,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 		transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				xPointer,
-				xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
+				xShapeInfoPointer,  shape::rank(hostXShapeInfo),
 				extraParamsPointer,
-				resultPointer, resultShapeInfoPointer,  shape::rank(resultShapeInfoPointer), allocPointer, reductionPointer);
+				resultPointer, resultShapeInfoPointer,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);
 	}
 
 	if (debug)
@@ -2877,6 +3018,10 @@ void   NativeOps::execTransformFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("F21 opNum:[%i]\n", opNum);
 
@@ -2885,7 +3030,7 @@ void   NativeOps::execTransformFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
 		printf("AF21 opNum:[%i]\n", opNum);
@@ -2893,7 +3038,7 @@ void   NativeOps::execTransformFloat(
 	transformFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
-			xShapeInfoPointer,  shape::rank(xShapeInfoPointer),
+			xShapeInfoPointer,  shape::rank(hostXShapeInfo),
 			extraParamsPointer,
 			resultPointer,
 			resultIndexesPointer, allocPointer, reductionPointer);
@@ -3045,6 +3190,10 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
 	if (debug && verbose)
@@ -3052,7 +3201,7 @@ void NativeOps::flattenFloat(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(yShapeInfoPointer), 2);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostYShapeInfo), 2);
 
 	if (launchDims.x == 1)
 		printf("AF222 opNum:[7]\n");
@@ -3088,6 +3237,10 @@ void NativeOps::flattenDouble(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
 	if (debug && verbose)
 		printf("D30 opNum:[7]\n");
 
@@ -3095,7 +3248,7 @@ void NativeOps::flattenDouble(
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(yShapeInfoPointer), 2);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostYShapeInfo), 2);
 
 	flattenKernelDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
 
