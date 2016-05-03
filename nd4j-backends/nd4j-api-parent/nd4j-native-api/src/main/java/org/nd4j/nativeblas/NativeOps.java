@@ -916,5 +916,7 @@ public class NativeOps extends Pointer {
 
     public native void enableDebugMode(boolean reallyEnable);
 
+    public native void enableVerboseMode(boolean reallyEnable);
+
     public native void setGridLimit(int gridSize);
 }
