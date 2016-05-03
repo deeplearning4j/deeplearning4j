@@ -40,6 +40,8 @@ public class Configuration implements Serializable {
 
     @Getter private boolean debug = true;
 
+    @Getter private boolean verbose = true;
+
     /**
      * Keep this value between 0.01 and 0.95 please
      */
@@ -290,6 +292,14 @@ public class Configuration implements Serializable {
         this.debug = debug;
 
         nativeOps.enableDebugMode(debug);
+
+        return this;
+    }
+
+    public Configuration setVerbose(boolean verbose) {
+        this.verbose = verbose;
+
+        nativeOps.enableVerboseMode(verbose);
 
         return this;
     }

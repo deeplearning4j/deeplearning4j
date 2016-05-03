@@ -15,6 +15,7 @@ public class CudaEnvironment {
     private CudaEnvironment() {
         configuration = new Configuration();
         configuration.enableDebug(configuration.isDebug());
+        configuration.setVerbose(configuration.isVerbose());
     }
 
     public static CudaEnvironment getInstance() {
