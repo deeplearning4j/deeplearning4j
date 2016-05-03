@@ -184,6 +184,7 @@ public  class ConvolutionTests extends BaseNd4jTest {
                                         for (int kw : sizeW) {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
+						    System.out.println("Before assertion");
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
                                                         continue;   //(w-kp+2*pw)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
 
@@ -194,6 +195,9 @@ public  class ConvolutionTests extends BaseNd4jTest {
 
                                                     INDArray imgOutOld = OldConvolution.col2im(im2col, sh, sw, ph, pw, h, w);
                                                     INDArray imgOutNew = Convolution.col2im(im2col, sh, sw, ph, pw, h, w);
+						    System.out.println("F order test");
+						    System.out.println(imgOutOld);
+						    System.out.println(imgOutNew);
                                                     assertEquals(imgOutOld, imgOutNew);
                                                 }
                                             }
@@ -221,9 +225,34 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray newTest = Convolution.col2im(linspaced,sy,sx,ph,pw,2,2);
         INDArray assertion = OldConvolution.col2im(linspaced,sy,sx,ph,pw,2,2);
 
+	System.out.println("Ordering of the result, new test: " + newTest.ordering());
+
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
         assertEquals(assertion,newTest);
     }
+
+
+	@Test
+    public void testimcolim() {
+		int nEx = 2;
+		int depth = 3;
+		int width = 7;
+		int height = 7;
+		int [] kernel = {3,2} ;
+		int [] stride = {2,3} ;
+		int [] padding = {1,2} ;
+		int prod = nEx*depth*width*height;
+
+		INDArray in = Nd4j.linspace(1,prod,prod).reshape(nEx,depth,width,height);
+
+		INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
+		INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
+		assertEquals(assertim2col,im2col);
+
+		INDArray assertcol2im = OldConvolution.col2im(im2col,stride,padding,height,width);
+		INDArray col2im = Convolution.col2im(im2col,stride,padding,height,width);
+		assertEquals(assertcol2im,col2im);
+	}
 
 
     @Override

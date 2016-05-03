@@ -159,7 +159,7 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr, int... indices) {
-        long offset = getOffset(0, arr.shape(), arr.stride(), indices);
+        long offset = getOffset(arr.shapeInfo(), indices);
         return arr.data().getDouble(offset);
     }
 

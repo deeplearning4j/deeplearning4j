@@ -422,6 +422,14 @@ public interface NDArrayFactory {
     INDArray rand(int rows, int columns);
 
     /**
+     * Create a random (uniform 0-1) NDArray with the specified shape and order
+     * @param order      Order ('c' or 'f') of the output array
+     * @param rows       Number of rows of the output array
+     * @param columns    Number of columns of the output array
+     */
+    INDArray rand(char order, int rows, int columns);
+
+    /**
      * Random normal using the given rng
      *
      * @param rows    the number of rows in the matrix
@@ -432,7 +440,7 @@ public interface NDArrayFactory {
     INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r);
 
     /**
-     * Random normal using the current time stamp
+     * Random normal (N(0,1)) using the current time stamp
      * as the seed
      *
      * @param rows    the number of rows in the matrix
@@ -440,6 +448,14 @@ public interface NDArrayFactory {
      * @return
      */
     INDArray randn(int rows, int columns);
+
+    /**
+     * Random normal N(0,1), with specified output order
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     */
+    INDArray randn(char order, int rows, int columns);
 
     /**
      * Random normal using the specified seed
@@ -488,22 +504,36 @@ public interface NDArrayFactory {
     INDArray rand(int[] shape);
 
     /**
+     * Create a random ndarray with the given shape, and specified output order
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    INDArray rand(char order, int[] shape);
+
+    /**
      * Random normal using the given rng
      *
      * @param shape the shape of the ndarray
      * @param r     the random generator to use
-     * @return
      */
     INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r);
 
     /**
-     * Random normal using the current time stamp
+     * Random normal N(0,1) using the current time stamp
      * as the seed
      *
      * @param shape the shape of the ndarray
-     * @return
      */
     INDArray randn(int[] shape);
+
+    /**
+     * Random normal N(0,1) with the specified shape and order
+     *
+     * @param order the order ('c' or 'f') of the output array
+     * @param shape the shape of the ndarray
+     */
+    INDArray randn(char order, int[] shape);
 
     /**
      * Random normal using the specified seed

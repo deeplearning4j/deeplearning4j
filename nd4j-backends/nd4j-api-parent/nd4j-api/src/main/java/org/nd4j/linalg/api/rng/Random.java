@@ -172,12 +172,32 @@ public interface Random {
 
     /**
      * Generate a gaussian number ndarray
+     * of the specified shape and order
+     *
+     * @param order the order of the output array
+     * @param shape the shape to generate
+     * @return the generated gaussian numbers
+     */
+    INDArray nextGaussian(char order, int[] shape);
+
+    /**
+     * Generate a uniform number ndarray
      * of the specified shape
      *
      * @param shape the shape to generate
      * @return the generated gaussian numbers
      */
     INDArray nextDouble(int[] shape);
+
+    /**
+     * Generate a uniform number ndarray
+     * of the specified shape and order
+     *
+     * @param order order of the output array
+     * @param shape the shape to generate
+     * @return the generated gaussian numbers
+     */
+    INDArray nextDouble(char order, int[] shape);
 
     /**
      * Generate a gaussian number ndarray

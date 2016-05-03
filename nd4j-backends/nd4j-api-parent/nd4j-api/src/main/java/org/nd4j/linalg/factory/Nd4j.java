@@ -2300,6 +2300,19 @@ public class Nd4j {
     }
 
     /**
+     * Create a random ndarray with the given shape and array order
+     *
+     * @param order the order of the ndarray to return
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(char order, int[] shape) {
+        INDArray ret = INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Create a random ndarray with the given shape using
      * the current time as the seed
      *
@@ -2328,6 +2341,20 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
+    /**
+     * Create a random ndarray with the given shape and output order
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(char order, int rows, int columns) {
+        INDArray ret = INSTANCE.rand(order, rows, columns);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
     /**
      * Create a random ndarray with the given shape using given seed
@@ -2456,6 +2483,18 @@ public class Nd4j {
     }
 
     /**
+     * Random normal N(0,1) with the specified shape and array order
+     *
+     * @param order order of the output ndarray
+     * @param shape the shape of the ndarray
+     */
+    public static INDArray randn(char order, int[] shape) {
+        INDArray ret = INSTANCE.randn(order,shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Random normal using the specified seed
      *
      * @param shape the shape of the ndarray
@@ -2476,6 +2515,19 @@ public class Nd4j {
      */
     public static INDArray randn(int rows, int columns) {
         INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal N(0,1) with the specified shape and array order
+     *
+     * @param order   the order of the output array
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     */
+    public static INDArray randn(char order, int rows, int columns) {
+        INDArray ret = INSTANCE.randn(order, rows, columns);
         logCreationIfNecessary(ret);
         return ret;
     }
