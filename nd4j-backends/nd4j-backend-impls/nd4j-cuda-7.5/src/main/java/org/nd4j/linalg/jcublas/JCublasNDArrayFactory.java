@@ -478,6 +478,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                         context.getBufferAllocation(),
                         context.getBufferReduction(),
                         context.getBufferScalar(),
+                        context.getBufferSpecial(),
                         hostYShapeInfo,
                         0
                 };

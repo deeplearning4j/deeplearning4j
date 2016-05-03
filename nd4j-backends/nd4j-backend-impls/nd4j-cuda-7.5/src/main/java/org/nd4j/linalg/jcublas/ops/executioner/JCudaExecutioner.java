@@ -98,6 +98,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo,
         };
@@ -185,6 +186,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo
         };
@@ -437,6 +439,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo
         };
@@ -549,6 +552,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo,
         };
@@ -614,6 +618,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo
         };
@@ -706,6 +711,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo
         };
@@ -929,6 +935,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
+                context.getBufferSpecial(),
                 hostYShapeInfo,
                 hostZShapeInfo
         };
