@@ -25,18 +25,18 @@ public class Configuration implements Serializable {
         ASYNCHRONOUS,
         OPTIMIZED,
     }
-
+// xLength: [409600], numTads: [1], tadLength: [409600], launchDims.x: [1], launchDims.y: [256]
     public enum AllocationModel {
         DIRECT,
         CACHE_HOST,
         CACHE_ALL,
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
+    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
 
     @Getter private AllocationModel allocationModel = AllocationModel.DIRECT;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.HOST;
+    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
     @Getter private boolean debug = true;
 

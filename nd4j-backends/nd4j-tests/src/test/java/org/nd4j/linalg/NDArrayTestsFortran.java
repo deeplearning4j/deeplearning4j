@@ -961,10 +961,15 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         array3d.sum(2); //java.lang.IllegalArgumentException: Illegal index 100 derived from 9 with offset of 10 and stride of 10
 
         INDArray array4d = Nd4j.ones(1, 10, 10, 10);
-        array4d.sum(0); //OK
-        array4d.sum(1); //OK
-        array4d.sum(2); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 910 and stride of 10
-        array4d.sum(3); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 100 and stride of 100
+        INDArray sum40 = array4d.sum(0); //OK
+        INDArray sum41 = array4d.sum(1); //OK
+        INDArray sum42 = array4d.sum(2); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 910 and stride of 10
+        INDArray sum43 = array4d.sum(3); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 100 and stride of 100
+
+        System.out.println("40: " + sum40.length());
+        System.out.println("41: " + sum41.length());
+        System.out.println("42: " + sum42.length());
+        System.out.println("43: " + sum43.length());
 
         INDArray array5d = Nd4j.ones(1, 10, 10, 10, 10);
         array5d.sum(0); //OK
