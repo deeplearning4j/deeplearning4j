@@ -472,7 +472,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 long hostYShapeInfo = AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer());
 
                 long[] extras = new long[]{
-                        AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer()),
+                        AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
                         context.getOldStream().getNativePointer(),
                         allocator.getDeviceId(),
                         context.getBufferAllocation(),
@@ -480,7 +480,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                         context.getBufferScalar(),
                         context.getBufferSpecial(),
                         hostYShapeInfo,
-                        0
+                        AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer())
                 };
 
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
