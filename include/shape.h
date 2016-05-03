@@ -2456,7 +2456,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
     inline int * calcStrides(int *shape, int rank, int startNum) {
 
-        traceNew(7);
+        //traceNew(7);
 
         int *stride = new int[rank];
 
@@ -2689,7 +2689,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
     inline int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
 
-        traceNew(11);
+        //traceNew(11);
 
         shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
@@ -4196,7 +4196,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     inline int *toShapeBuffer( ShapeInformation *info) {
 
-        traceNew(29);
+        //traceNew(29);
 
         int *ret = new int[shapeInfoLength(info->rank)];
         int count = 1;

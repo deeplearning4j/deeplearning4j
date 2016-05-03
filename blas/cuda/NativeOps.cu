@@ -1785,7 +1785,7 @@ void   NativeOps::execIndexReduceFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 2);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
 
 	indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -1907,7 +1907,7 @@ void   NativeOps::execPairwiseTransformFloat(
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], nullptr, (int *) extraPointers[7], 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF4 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
@@ -1979,7 +1979,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostYShapeInfo, hostZShapeInfo, 1, sizeof(float), 0);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF5 opNum:[%i]\n", opNum);
 
 	pairWiseTransformFloatIndex<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
@@ -2045,7 +2045,7 @@ void NativeOps::execPairwiseTransformFloat(
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer,  yShapeInfoPointer, 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1) {
+	if (verbose && launchDims.x == 1) {
 		printf("AF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
 		shape::printShapeInfoLinear(hostXShapeInfo);
 	}
@@ -2103,7 +2103,7 @@ void   NativeOps::execReduceFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(float), 1);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
 
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2176,7 +2176,7 @@ void   NativeOps::execReduceFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 1);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF8 opNum:[%i]\n", opNum);
 
 	reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2232,7 +2232,7 @@ float NativeOps::execReduceScalarFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(float), 1);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
 
 	reduceFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
@@ -2302,7 +2302,7 @@ void   NativeOps::execReduce3Float(
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
 	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF10 opNum:[%i]\n", opNum);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
@@ -2363,7 +2363,7 @@ float   NativeOps::execReduce3ScalarFloat(
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
 	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF11 opNum:[%i]\n", opNum);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
@@ -2436,7 +2436,7 @@ void   NativeOps::execReduce3Float(
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
 	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF12 opNum:[%i]\n", opNum);
 
 	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
@@ -2493,7 +2493,7 @@ void   NativeOps::execScalarFloat(
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF13 opNum:[%i]\n", opNum);
 
 	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2551,7 +2551,7 @@ void NativeOps::execScalarFloat(
 
 	dim3 temp = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	scalarFloat<<<temp.x, temp.y,temp.z, *stream>>>(
@@ -2610,7 +2610,7 @@ void NativeOps::execScalarFloat(
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF15 opNum:[%i]\n", opNum);
 
 	scalarFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2660,7 +2660,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, nullptr, 1, sizeof(float), 8);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF16 opNum:[%i]\n", opNum);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2718,7 +2718,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, 1, sizeof(float), 8);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF17 opNum:[%i]\n", opNum);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2778,7 +2778,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, hostZShapeInfo, dimensionLength, sizeof(float), 8);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF18 opNum:[%i]\n", opNum);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2835,7 +2835,7 @@ void   NativeOps::execTransformFloat(
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -2895,7 +2895,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF20 opNum:[%i]\n", opNum);
 
 	// simple trick to get workaround over reductions into scalar
@@ -3059,7 +3059,7 @@ void   NativeOps::execTransformFloat(
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF21 opNum:[%i]\n", opNum);
 
 	transformFloatIndexes<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3230,7 +3230,7 @@ void NativeOps::flattenFloat(
 
 	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostYShapeInfo), 2);
 
-	if (launchDims.x == 1)
+	if (verbose && launchDims.x == 1)
 		printf("AF222 opNum:[7]\n");
 
 	flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, xPointer, xShapeInfoPointer, yPointer, yShapeInfoPointer, allocPointer);
