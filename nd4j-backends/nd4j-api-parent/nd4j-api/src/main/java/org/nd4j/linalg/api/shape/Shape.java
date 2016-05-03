@@ -1473,6 +1473,26 @@ public class Shape {
      * @return the shape information buffer given the parameters
      */
     public static DataBuffer createShapeInformation(int[] shape,int[] stride,int offset,int elementWiseStride,char order) {
+        if(shape.length != stride.length)
+            throw new IllegalStateException("Shape and stride must be the same length");
+
+        int rank = shape.length;
+        int shapeBuffer[] = new int[rank * 2 + 4];
+        shapeBuffer[0] = rank;
+        int count = 1;
+        for (int e = 0; e < shape.length; e++)
+            shapeBuffer[count++] = shape[e];
+
+        for (int e = 0; e < stride.length; e++)
+            shapeBuffer[count++] = stride[e];
+
+        shapeBuffer[count++] = offset;
+        shapeBuffer[count++] = elementWiseStride;
+        shapeBuffer[count] = (int) order;
+
+        DataBuffer ret = Nd4j.createBuffer(shapeBuffer);
+        ret.setConstant(true);
+/*
         DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);
         ret.setConstant(true);
         int count = 1;
@@ -1490,7 +1510,7 @@ public class Shape {
         ret.put(count++,elementWiseStride);
         ret.put(count++,order);
 
-
+*/
         return ret;
     }
 
