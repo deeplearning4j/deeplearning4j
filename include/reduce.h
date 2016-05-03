@@ -547,7 +547,7 @@ namespace functions {
                     else {
                         T finalVal = startingVal;
                         BlockInformation info(length);
-                        T blocks[info.chunks];
+                        T *blocks = new T[info.chunks];
 #pragma omp parallel
                         {
                             T local = this->startingValue(x);
@@ -581,6 +581,7 @@ namespace functions {
 
 
                         finalVal = postProcess(finalVal, length, extraParams);
+						delete[] blocks;
                         return finalVal;
 
                     }
@@ -604,7 +605,7 @@ namespace functions {
 
                     T finalVal = startingVal;
                     BlockInformation info(length);
-                    T blocks[info.chunks];
+                    T *blocks = new T[info.chunks];
 
 
 #pragma omp parallel
@@ -635,6 +636,7 @@ namespace functions {
                     }
 
                     finalVal = postProcess(finalVal, length, extraParams);
+					delete[] blocks;
                     return finalVal;
 
                 }
