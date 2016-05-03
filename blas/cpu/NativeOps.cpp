@@ -1705,6 +1705,10 @@ void NativeOps::enableDebugMode(bool reallyEnable) {
     // no-op?
 }
 
+void NativeOps::enableVerboseMode(bool reallyEnable) {
+    // no-op?
+}
+
 void NativeOps::setGridLimit(int gridSize) {
     // no-op
 }

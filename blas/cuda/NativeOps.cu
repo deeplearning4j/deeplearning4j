@@ -1908,7 +1908,7 @@ void   NativeOps::execPairwiseTransformFloat(
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
-		printf("AF4 opNum:[%i]\n", opNum);
+		printf("AF4 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	pairWiseTransformStridedFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
 			opNum,
@@ -2047,7 +2047,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	if (launchDims.x == 1) {
 		printf("AF6 opNum:[%i], launchDims.x: [%i], launchDims.y: [%i]\n", opNum, launchDims.x, launchDims.y);
-		shape::printShapeInfo((int *) extraPointers[0]);
+		shape::printShapeInfoLinear(hostXShapeInfo);
 	}
 
 	pairWiseTransformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(
@@ -2552,7 +2552,7 @@ void NativeOps::execScalarFloat(
 	dim3 temp = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	if (launchDims.x == 1)
-		printf("AF14 opNum:[%i]\n", opNum);
+		printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	scalarFloat<<<temp.x, temp.y,temp.z, *stream>>>(
 			opNum,
@@ -2836,7 +2836,7 @@ void   NativeOps::execTransformFloat(
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr);
 
 	if (launchDims.x == 1)
-		printf("AF19 opNum:[%i]\n", opNum);
+		printf("AF19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
 	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2919,7 +2919,24 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
 				case 38: {// softmax
-					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
+					Nd4jPointer tempPointers[9];
+					tempPointers[0] = extraPointers[0];
+					tempPointers[1] = extraPointers[1];
+					tempPointers[2] = extraPointers[2];
+					tempPointers[3] = extraPointers[3];
+					tempPointers[4] = extraPointers[4];
+					tempPointers[5] = extraPointers[5];
+					tempPointers[6] = extraPointers[6];
+					tempPointers[7] = extraPointers[7];
+					tempPointers[8] = extraPointers[8];
+
+					int maxShape[2] = {shape::shapeOf(hostXShapeInfo)[0], 1};
+					int *hostMaxShapeBuffer = shape::shapeBuffer(2, maxShape);
+
+					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
+					tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
+
+					prepareShapeBuffer <<< 1, 1, 128, *stream >>> (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2927,22 +2944,30 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					//shape::printShapeInfo(maxShapeBuffer);
 
 					// max 3
-					execReduceFloat(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+					execReduceFloat(tempPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
+
+					tempPointers[8] = extraPointers[8];
+
 					// sub 1
-					execBroadcastFloat(extraPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
+					execBroadcastFloat(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
 					// exp 3
 					execTransformFloat(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
+
+					tempPointers[8] = tempPointers[7];
+
 					//sum 1
-					execReduceFloat(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+					execReduceFloat(tempPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
+					tempPointers[8] = extraPointers[8];
+
 					// divide 3
-					execBroadcastFloat(extraPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
+					execBroadcastFloat(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
 					// log 3
@@ -2950,6 +2975,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						execTransformFloat(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 					else if (opNum == 39)
 						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+
+					delete hostMaxShapeBuffer;
 
 					break;
 				}
@@ -3588,4 +3615,8 @@ void NativeOps::setOmpNumThreads(int threads) {
 	if (threads < 32)
 		threads = 32;
 	maxThreads = threads;
+}
+
+void NativeOps::enableVerboseMode(bool reallyEnable) {
+	verbose = reallyEnable;
 }

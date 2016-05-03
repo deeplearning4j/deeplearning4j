@@ -935,6 +935,8 @@ public:
 
     void enableDebugMode(bool reallyEnable);
 
+    void enableVerboseMode(bool reallyEnable);
+
     void setGridLimit(int gridSize);
 };
 
