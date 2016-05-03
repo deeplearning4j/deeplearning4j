@@ -33,7 +33,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
+import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -53,16 +55,13 @@ import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.io.Resource;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.*;
 
 /**
@@ -123,6 +122,7 @@ public class Nd4j {
     protected static Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz;
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
+    protected static Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -135,6 +135,7 @@ public class Nd4j {
     protected static TaskFactory TASK_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
+    protected static ShapeInfoProvider shapeInfoProvider;
 
 
     protected static Properties props = new Properties();
@@ -4690,6 +4691,7 @@ public class Nd4j {
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
+            shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class.forName(System.getProperty("shapeinfoprovider", BaseShapeInfoProvider.class.getName()));
 
             allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
@@ -4718,6 +4720,7 @@ public class Nd4j {
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
+            shapeInfoProvider = shapeInfoProviderClazz.newInstance();
 
             random = randomClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
@@ -4732,4 +4735,7 @@ public class Nd4j {
 
     }
 
+    public static ShapeInfoProvider getShapeInfoProvider() {
+        return shapeInfoProvider;
+    }
 }

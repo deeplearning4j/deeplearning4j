@@ -127,7 +127,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
         int[] shape = {1,(int)buffer.length()};
         int[] stride = Nd4j.getStrides(shape);
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,0,1,Nd4j.order());
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,0,1,Nd4j.order());
         init(shape,stride);
     }
 
@@ -141,7 +141,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -270,7 +270,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = Nd4j.createBuffer((long)newRows * newColumns);
         int[] shape = new int[]{newRows, newColumns};
         int[] stride = Nd4j.getStrides(shape,ordering);
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -305,7 +305,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Nd4j.createBuffer(new float[ArrayUtil.prod(shape)]) :
                 Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,0,stride[stride.length - 1],ordering);
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -342,7 +342,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset,stride[stride.length - 1],ordering);
         if (data != null && data.length > 0) {
             this.data = Nd4j.createBuffer(data,offset);
             if (offset >= data.length)
@@ -363,7 +363,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         this.data = Nd4j.createBuffer(data,offset,ArrayUtil.prodLong(shape));
-        this.shapeInformation = Shape.createShapeInformation(shape,stride,offset,stride[stride.length - 1],Nd4j.order());
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset,stride[stride.length - 1],Nd4j.order());
         init(shape,stride);
         Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
 
@@ -4476,13 +4476,4 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         data = Nd4j.createBuffer(length);
         data().read(s);
     }
-
-
-
-
-
-
-
-
-
 }
