@@ -703,8 +703,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int elementWiseStride() {
         if(Shape.elementWiseStride(shapeInfo()) < 0 && !attemptedToFindElementWiseStride) {
             INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
-            if(reshapeAttempt != null)
-                Shape.setElementWiseStride(shapeInfo(),reshapeAttempt.stride(-1));
+            if(reshapeAttempt != null && reshapeAttempt.elementWiseStride() > 0) {
+               Shape.setElementWiseStride(shapeInfo(), reshapeAttempt.stride(-1));
+                //this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), offset(),reshapeAttempt.stride(-1), ordering());
+            }
             attemptedToFindElementWiseStride = true;
 
         }

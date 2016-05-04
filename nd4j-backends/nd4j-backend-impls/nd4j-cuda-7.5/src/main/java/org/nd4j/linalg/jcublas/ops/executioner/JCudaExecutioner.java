@@ -1011,6 +1011,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+
                     nativeOps.execPairwiseTransformDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),

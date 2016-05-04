@@ -34,8 +34,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
         logger.info("CachedShapeInfo request: [{}, {}, {}, {}, {}, {}]", shape.length, shape, stride, offset, elementWiseStride, (int) order );
 
-        if (1>0) return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
-
+       // if (1>0) return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+/*
         if (stride[0] == 16777216) {
             throw new RuntimeException("16777216");
         }
@@ -43,8 +43,9 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
         if (elementWiseStride < 0) {
             int potentialEWS = Shape.elementWiseStride(shape, stride, order == 'f');
             logger.info("Potential stride: {} ", potentialEWS);
-            if (potentialEWS >= 0) throw new RuntimeException("-1");
+            throw new RuntimeException("-1");
         }
+*/
 
         Integer deviceId = allocator.getDeviceId();
         if (!deviceCache.containsKey(deviceId)) {
