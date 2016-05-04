@@ -32,6 +32,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -46,7 +48,7 @@ import java.util.*;
  */
 public class Shape {
 
-
+    private static Logger logger = LoggerFactory.getLogger(Shape.class);
 
     /**
      * Create a copy of the matrix
@@ -144,7 +146,9 @@ public class Shape {
             char outOrder = (anyOrder ? arr.ordering() : order);
             if(outOrder == 'a')
                 outOrder = Nd4j.order();
+            System.out.println("ShapeInfo on original: " + arr.shapeInfoDataBuffer() + " isView: " + arr.isView());
             INDArray z = Nd4j.create(arr.shape(),outOrder);
+            System.out.println("ShapeInfo on dup(): " + z.shapeInfoDataBuffer());
             z.assign(arr);
             return z;
         }
@@ -885,7 +889,7 @@ public class Shape {
             return Nd4j.createComplex(arr.data(),newShape,newStrides,arr.offset());
 
 
-        INDArray ret =  Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
+        INDArray ret =  Nd4j.create(arr.data(),newShape,newStrides,arr.offset(), isFOrder ? 'f' : 'c');
 
 
         return ret;
@@ -1427,7 +1431,22 @@ public class Shape {
      */
     public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
+        int oldStride = buffer.get(length2 - 2);
+        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], oldStride: ["+ oldStride+"], buffer: " + bufferToString(buffer));
         buffer.put(length2 - 2, elementWiseStride);
+    }
+
+    public static String bufferToString(IntBuffer buffer) {
+        StringBuilder builder = new StringBuilder();
+        int rank = buffer.get(0);
+        builder.append("[ ").append(rank).append(", ");
+        for (int p = 1; p < rank * 2 + 4; p++) {
+            builder.append(buffer.get(p));
+            if (p < rank * 2 + 4 - 1)
+                builder.append(", ");
+        }
+        builder.append("]");
+        return builder.toString();
     }
 
 
@@ -1460,6 +1479,7 @@ public class Shape {
     public static void setOrder(IntBuffer buffer,char order) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         buffer.put(length - 1,(int) order);
+    //    throw new RuntimeException("setOrder called");
     }
 
     /**

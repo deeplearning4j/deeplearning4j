@@ -143,7 +143,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-      //  Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -3292,7 +3292,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
         if(reshapeAttempt != null) {
-            reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
+          //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
         }
 

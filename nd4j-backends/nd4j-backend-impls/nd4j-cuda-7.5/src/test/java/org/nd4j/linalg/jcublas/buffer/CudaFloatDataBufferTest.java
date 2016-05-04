@@ -674,7 +674,48 @@ public class CudaFloatDataBufferTest {
     }
 
     @Test
-    public void testDup4() throws Exception {
+    public void testReshape1() throws Exception {
+        INDArray arrayC = Nd4j.zeros(1000);
+        INDArray arrayF = arrayC.reshape('f', 10, 100);
 
+        assertEquals(102, arrayF.shapeInfoDataBuffer().getInt(7));
+        assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(6));
+
+        System.out.println(arrayC.shapeInfoDataBuffer());
+        System.out.println(arrayF.shapeInfoDataBuffer());
+
+        System.out.println("Stride: " + arrayF.elementWiseStride());
+
+        System.out.println(arrayF.shapeInfoDataBuffer());
+
+        assertEquals('f', Shape.getOrder(arrayF));
+        assertEquals(102, arrayF.shapeInfoDataBuffer().getInt(7));
+        assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(6));
+
+        INDArray arrayZ = Nd4j.create(10, 100, 'f');
+    }
+
+    @Test
+    public void testReshapeDup1() throws Exception {
+        INDArray arrayC = Nd4j.create(10, 100);
+        INDArray arrayF = arrayC.dup('f');
+
+        System.out.println(arrayC.shapeInfoDataBuffer());
+        System.out.println(arrayF.shapeInfoDataBuffer());
+
+        assertEquals(102, arrayF.shapeInfoDataBuffer().getInt(7));
+        assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(6));
+    }
+
+    @Test
+    public void testReshapeDup2() throws Exception {
+        INDArray arrayC = Nd4j.create(5, 10, 100);
+        INDArray arrayF = arrayC.dup('f');
+
+        System.out.println(arrayC.shapeInfoDataBuffer());
+        System.out.println(arrayF.shapeInfoDataBuffer());
+
+        assertEquals(102, arrayF.shapeInfoDataBuffer().getInt(9));
+        assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(8));
     }
 }

@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.slf4j.Logger;
@@ -31,7 +32,19 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
-    //    logger.info("CachedShapeInfo request");
+        logger.info("CachedShapeInfo request: [{}, {}, {}, {}, {}, {}]", shape.length, shape, stride, offset, elementWiseStride, (int) order );
+
+        if (1>0) return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+
+        if (stride[0] == 16777216) {
+            throw new RuntimeException("16777216");
+        }
+
+        if (elementWiseStride < 0) {
+            int potentialEWS = Shape.elementWiseStride(shape, stride, order == 'f');
+            logger.info("Potential stride: {} ", potentialEWS);
+            if (potentialEWS >= 0) throw new RuntimeException("-1");
+        }
 
         Integer deviceId = allocator.getDeviceId();
         if (!deviceCache.containsKey(deviceId)) {
@@ -47,18 +60,22 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
             }
         }
 
-        if (cacheMiss.get() % 100 == 0) {
+        if (cacheHit.get() % 1000 == 0) {
             printCacheStats();
         }
 
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!deviceCache.get(deviceId).containsKey(descriptor)) {
+       //     logger.info("Cache miss");
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             deviceCache.get(deviceId).put(descriptor, buffer);
             cacheMiss.incrementAndGet();
             return buffer;
-        } else cacheHit.incrementAndGet();
+        } else {
+            //logger.info("Cache hit");
+            cacheHit.incrementAndGet();
+        }
 
         return deviceCache.get(deviceId).get(descriptor);
     }
