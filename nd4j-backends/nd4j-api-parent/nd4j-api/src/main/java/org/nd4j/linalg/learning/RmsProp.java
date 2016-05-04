@@ -39,11 +39,15 @@ public class RmsProp implements GradientUpdater {
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(lastGradient == null)
-            lastGradient = Nd4j.zeros(gradient.shape());
+            lastGradient = Nd4j.zeros(gradient.shape()).add(epsilon);
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / sqrt(cache + 1e-8)
-        INDArray ret = gradient.mul(learningRate).divi(Transforms.sqrt(lastGradient.add(epsilon)));
-        
+        INDArray ret;
+        try {
+            ret = gradient.mul(learningRate).divi(Transforms.sqrt(lastGradient));
+        } catch (ArithmeticException ae) {
+            ret = gradient.mul(learningRate).divi(Transforms.sqrt(lastGradient.add(epsilon)));
+        }
         return ret;
     }
 
