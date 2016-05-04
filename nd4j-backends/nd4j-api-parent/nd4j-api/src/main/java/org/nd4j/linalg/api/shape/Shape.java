@@ -1431,8 +1431,7 @@ public class Shape {
      */
     public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
-        int oldStride = buffer.get(length2 - 2);
-        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], oldStride: ["+ oldStride+"], buffer: " + bufferToString(buffer));
+        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
         buffer.put(length2 - 2, elementWiseStride);
     }
 
@@ -1479,7 +1478,7 @@ public class Shape {
     public static void setOrder(IntBuffer buffer,char order) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         buffer.put(length - 1,(int) order);
-    //    throw new RuntimeException("setOrder called");
+        throw new RuntimeException("setOrder called");
     }
 
     /**
