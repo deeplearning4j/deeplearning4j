@@ -1831,8 +1831,6 @@ namespace shape {
 
                 if(originalDimensionLength == 1) {
                     if((numOnes < 1 && !shape::isMatrix(shapeInfo)) || this->rank == 2) {
-                        int *permuteShape = shape::shapeOf(toPermute);
-                        int *permuteStride = shape::stride(toPermute);
                         if(originalDimension[0] == 0) {
                             int newStride[2] = {1,theStride[originalDimension[0]]};
                             int newShape[2] = {1,theShape[originalDimension[0]]};
