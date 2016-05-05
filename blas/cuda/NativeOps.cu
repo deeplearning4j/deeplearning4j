@@ -2984,7 +2984,18 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
+					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
+						scalarCheat = true;
+					} else {
+						//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
+						//if (shape::isVector(hostXShapeInfo) && extraParamsPointer[1] == 1) {
+						//	scalarCheat = true;
+						//}
+					}
+
+					if (scalarCheat) {
+						printf("Going for scalar IsMax\n");
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -2993,18 +3004,12 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						else
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxFloat<<< 4, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+						fillIsMaxFloat<<< 1, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-
-						// first we need to create shapeInfoBuffer for result, as well as Z itself
-						//
-						//printf("Extra args[0]: [%i]\n", (int) extraParamsPointer[0]);
-						//printf("Extra args[1]: [%i]\n", (int) extraParamsPointer[1]);
+						printf("Going for dimension-based IsMax\n");
 
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[9]);
-
-						//prepareDimensionalShapeBuffer<<<1,1,128, *stream>>>(xShapeInfoPointer, extraParamsPointer, maxShapeBuffer);
 
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
@@ -3012,7 +3017,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<4, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+						fillDimensionalIsMaxFloat<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 

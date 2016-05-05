@@ -6006,13 +6006,16 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         //tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
         tad->init(zShapeInfo,dimension,dimensionLength);
         tad->createTadOnlyShapeInfo();
+
+        if (blockIdx.x == 0)
+            shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     }
     __syncthreads();
 
     int tadLength = shape::length(tad->tadOnlyShapeInfo);
     int numTads = tad->numTads;
 
-    for (int r = blockIdx.x; r < numTads; r++) {
+    for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
         // for each TAD we have index of highest element stored in dX
         if (threadIdx.x == 0)
             tad->createOffsetForBlock(r);
@@ -6022,6 +6025,10 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
 
         int highestElement = (int) dX[r];
+        if (threadIdx.x == 0) {
+            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
+        }
+
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
 
             // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
