@@ -32,7 +32,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
-        logger.info("CachedShapeInfo request: [{}, {}, {}, {}, {}, {}]", shape.length, shape, stride, offset, elementWiseStride, (int) order );
+        offset = 0;
+     //   logger.info("CachedShapeInfo request: [{}, {}, {}, {}, {}, {}]", shape.length, shape, stride, offset, elementWiseStride, (int) order );
 
        // if (1>0) return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
 /*
@@ -61,7 +62,7 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
             }
         }
 
-        if (cacheHit.get() % 1000 == 0) {
+        if (cacheHit.get() % 10000 == 0) {
             printCacheStats();
         }
 

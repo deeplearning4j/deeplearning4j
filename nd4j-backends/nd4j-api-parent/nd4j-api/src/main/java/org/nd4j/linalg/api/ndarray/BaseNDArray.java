@@ -701,16 +701,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
+        /*
         if(Shape.elementWiseStride(shapeInfo()) < 0 && !attemptedToFindElementWiseStride) {
             INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
             if(reshapeAttempt != null && reshapeAttempt.elementWiseStride() > 0) {
                Shape.setElementWiseStride(shapeInfo(), reshapeAttempt.stride(-1));
-                //this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), offset(),reshapeAttempt.stride(-1), ordering());
+               this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), offset(),reshapeAttempt.stride(-1), ordering());
             }
             attemptedToFindElementWiseStride = true;
 
         }
-
+        */
         return Shape.elementWiseStride(shapeInfo());
     }
 
@@ -4172,11 +4173,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //Set the shape information of this array: shape, stride, order.
         //Shape info buffer: [rank, [shape], [stride], offset, elementwiseStride, order]
-        for( int i=0; i<rank; i++ ){
+        /*for( int i=0; i<rank; i++ ){
             shapeInfo.put(1+i,newShape[i]);
             shapeInfo.put(1+i+rank,newStride[i]);
         }
         shapeInfo.put(3+2*rank,newOrder);
+        */
+        int ews = shapeInfo.get(2*rank + 2);
+        shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, offset(), ews,  newOrder);
 
         return this;
     }
