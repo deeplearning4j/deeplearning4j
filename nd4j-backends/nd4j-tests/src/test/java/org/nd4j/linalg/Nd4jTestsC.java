@@ -628,12 +628,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expAlong1, alongDim1);
 
         //1d: col vector
+        System.out.println("----------------------------------");
         INDArray col = Nd4j.create(new double[]{1,2,3,1},new int[]{4,1});
         INDArray alongDim0col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(),0));
         INDArray alongDim1col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(),1));
 
         INDArray expAlong0col = Nd4j.create(new double[]{0,0,1,0}, new int[]{4,1});
         INDArray expAlong1col = Nd4j.ones(new int[]{4,1});
+
 
         assertEquals(expAlong0col, alongDim0col);
         assertEquals(expAlong1col, alongDim1col);

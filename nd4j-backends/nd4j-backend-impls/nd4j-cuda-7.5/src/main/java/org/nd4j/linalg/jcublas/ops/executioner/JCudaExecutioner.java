@@ -984,6 +984,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
+        long dimensionPointer = 0;
+
         if (op.opNum() == 41 && op.extraArgs() != null) {
             // for IsMax along dimension we need special temporary buffer
             int dimension[] = new int[] {(int) op.extraArgs()[1] };
@@ -1015,6 +1017,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             // FIXME: this maybe misleading use of this particular pointer
             hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context).address();
+
+            dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
         }
 
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
@@ -1028,7 +1032,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferScalar(),
                 context.getBufferSpecial(),
                 hostYShapeInfo,
-                hostZShapeInfo};
+                hostZShapeInfo,
+                dimensionPointer // special pointer for IsMax
+        };
 /*
         log.info("------------------------------------");
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
