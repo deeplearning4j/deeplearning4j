@@ -412,7 +412,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         INDArray ret = null;
         if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
-            ret= Nd4j.zeros(retShape);
+            ret = Nd4j.zeros(retShape);
         } else {
             ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
         }
@@ -973,6 +973,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
+        // special temp array for IsMax along dimension
+        INDArray ret = null;
+
         long x = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
         long extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
@@ -981,6 +984,38 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
+        if (op.opNum() == 41 && op.extraArgs() != null) {
+            // for IsMax along dimension we need special temporary buffer
+            int dimension[] = new int[] {(int) op.extraArgs()[1] };
+            for(int i = 0; i < dimension.length; i++) {
+                if(dimension[i] < 0)
+                    dimension[i] += op.x().rank();
+            }
+            //do op along all dimensions
+            if (dimension.length == op.x().rank())
+                dimension = new int[]{Integer.MAX_VALUE};
+
+
+
+            int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+
+            //ensure vector is proper shape
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new int[]{1, retShape[0]};
+                else
+                    retShape = new int[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new int[]{1, 1};
+            }
+
+            ret = Nd4j.zeros(retShape);
+
+            log.info("Intermediatery result buffer: {}", ret.shapeInfoDataBuffer());
+
+            // FIXME: this maybe misleading use of this particular pointer
+            hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context).address();
+        }
 
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();

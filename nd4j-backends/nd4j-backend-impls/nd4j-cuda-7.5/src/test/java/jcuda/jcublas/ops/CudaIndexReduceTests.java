@@ -121,6 +121,16 @@ public class CudaIndexReduceTests {
     }
 
     @Test
+    public void testIMaxAlongDimension() throws Exception {
+        INDArray array = Nd4j.linspace(1, 491520, 491520).reshape(10, 3, 4, 64, 64);
+
+        INDArray result = Nd4j.argMax(array, 4);
+        System.out.println("Result shapeInfo: " + result.shapeInfoDataBuffer());
+        System.out.println("Result length: " + result.length());
+        //System.out.println("Result: " + result);
+    }
+
+    @Test
     public void testIMax3() {
         INDArray array1 = Nd4j.linspace(1, 1000, 128000).reshape(128, 1000);
 
