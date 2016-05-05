@@ -3103,6 +3103,23 @@ void   NativeOps::execTransformFloat(
 
 }
 
+template <typename T>
+__device__ void concatKernelGeneric() {
+
+}
+
+extern "C" __global__ void concatKernelDouble() {
+
+}
+
+extern "C" __global__ void concatKernelFloat(int dimension,
+											 int numArrays,
+											 float *data,
+											 int *inputShapeInfo,
+											 float *result,
+											 int *resultShapeInfo) {
+
+}
 
 template <typename T>
 __device__ void flattenKernelGeneric(int dOffset,
@@ -3666,6 +3683,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
   * along a particular dimension
   */
  void NativeOps::concatFloat(
+		Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
         Nd4jPointer *data,
@@ -3673,13 +3691,28 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo) {
 
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	float *inputData = reinterpret_cast<float *>(data);
+	int *inputShapes = reinterpret_cast<int *>(inputShapeInfo);
+
+	float *resultData = reinterpret_cast<float *>(result);
+	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
+
+
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+		// numArrays will be used as number of TADs
+	concatKernelFloat<<<1, 10, 10, *stream>>>(dimension, numArrays, inputData, inputShapes, resultData, resultShape);
 }
 /**
     * Concatneate multi array of the same shape together
     * along a particular dimension
     */
 void NativeOps::concatDouble(
+		Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
         Nd4jPointer *data,

@@ -1819,6 +1819,7 @@ void concatGeneric(
   * along a particular dimension
   */
 void NativeOps::concatFloat(
+        Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
         Nd4jPointer *data,
@@ -1839,6 +1840,7 @@ void NativeOps::concatFloat(
     * along a particular dimension
     */
 void NativeOps::concatDouble(
+        Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
         Nd4jPointer *data,
