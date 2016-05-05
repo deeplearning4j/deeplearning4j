@@ -858,6 +858,38 @@ public class NativeOps extends Pointer {
                                      long inputShapeInfo);
 
     /**
+     *
+     * @param dimension
+     * @param data
+     * @param inputShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     */
+    public native void concatDouble(
+            int dimension,
+            int numArrays,
+            long []data,
+            long [] inputShapeInfo,
+            long result,
+            long resultShapeInfo);
+
+    /**
+     *
+     * @param dimension
+     * @param data
+     * @param inputShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     */
+    public native void concatFloat(
+            int dimension,
+            int numArrays,
+            long []data,
+            long [] inputShapeInfo,
+            long result,
+            long resultShapeInfo);
+
+    /**
      * Gets the number of open mp threads
      * @return
      */

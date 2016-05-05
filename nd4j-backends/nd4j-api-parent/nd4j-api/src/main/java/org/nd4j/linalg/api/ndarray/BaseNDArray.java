@@ -3829,6 +3829,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
+     * Returns the shape information debugging
+     * information
+     *
+     * @return the shape information debugging information
+     */
+    @Override
+    public String shapeInfoToString() {
+        return Shape.shapeToString(this);
+    }
+
+    /**
      * Returns the stride(indices along the linear index for which each slice is accessed) of this array
      *
      * @return the stride of this array
