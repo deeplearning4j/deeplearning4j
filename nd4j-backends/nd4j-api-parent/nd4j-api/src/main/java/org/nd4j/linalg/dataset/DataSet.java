@@ -454,6 +454,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
         Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
         Nd4j.shuffle(getLabels(),new Random(seed),nonzeroDimsLab);
+        if(getFeaturesMaskArray() != null) {
+            Nd4j.shuffle(getFeaturesMaskArray(),new Random(seed),nonzeroDimsFeat); 
+        }
+        if(getLabelsMaskArray() != null) {
+            Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
+        }
     }
 
 
