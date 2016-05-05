@@ -110,7 +110,12 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextGaussian(int[] shape) {
-        INDArray ret = Nd4j.create(shape);
+        return nextGaussian(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextGaussian(char order, int[] shape){
+        INDArray ret = Nd4j.create(shape,order);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
             linear.putScalar(i, nextGaussian());
@@ -120,7 +125,12 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextDouble(int[] shape) {
-        INDArray ret = Nd4j.create(shape);
+        return nextDouble(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextDouble(char order, int[] shape){
+        INDArray ret = Nd4j.create(shape,order);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
             linear.putScalar(i, nextDouble());

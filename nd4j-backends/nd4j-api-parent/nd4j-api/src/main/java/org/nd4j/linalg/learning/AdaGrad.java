@@ -92,12 +92,17 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(historicalGradient == null) historicalGradient = gradient.mul(gradient);
+        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).add(epsilon);
         else historicalGradient.addi(gradient.mul(gradient));
 
-        INDArray sqrtHistory = sqrt(historicalGradient.add(epsilon));
+        INDArray sqrtHistory = sqrt(historicalGradient);
         // lr * gradient / sqrt(sumSquaredGradients + 1e-8)
-        INDArray ret = sqrtHistory.rdivi(learningRate).muli(gradient);
+        INDArray ret;
+        try {
+            ret = sqrtHistory.rdivi(learningRate).muli(gradient);
+        } catch (ArithmeticException ae) {
+            ret = sqrtHistory.rdivi(learningRate).muli(gradient.add(epsilon));
+        }
         numIterations++;
         return ret;
     }
@@ -125,7 +130,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
         INDArray sqrtHistory;
 
         if (this.historicalGradient == null) {
-            this.historicalGradient = Nd4j.ones(shape);
+            this.historicalGradient = Nd4j.zeros(shape).add(epsilon);
             historicalInitialized = true;
         } else if (!this.historicalGradient.isVector() && this.historicalGradient.slice(slice).length() != gradient.length())
             throw new IllegalArgumentException("Illegal gradient");
@@ -134,7 +139,12 @@ public class AdaGrad implements Serializable,GradientUpdater {
             sqrtHistory = sqrt(historicalGradient);
         else
             sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
-        INDArray learningRates = sqrtHistory.add(epsilon).rdivi(learningRate);
+        INDArray learningRates;
+        try {
+            learningRates = sqrtHistory.rdivi(learningRate);
+        } catch (ArithmeticException ae) {
+            learningRates = sqrtHistory.rdivi(learningRate + epsilon);
+        }
         if(gradient.length() != learningRates.length())
             gradient.muli(learningRates.slice(slice));
        else

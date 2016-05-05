@@ -37,6 +37,12 @@ import java.util.List;
  */
 public interface INDArray extends Serializable  {
     /**
+     * Returns the shape information debugging
+     * information
+     * @return the shape information debugging information
+     */
+   String shapeInfoToString();
+    /**
      * Shape info
      * @return
      */

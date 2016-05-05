@@ -311,7 +311,8 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis, arr, Nd4j.valueArrayOf(paShape, val));
+        INDArray concatArray = Nd4j.valueArrayOf(paShape, val);
+        return Nd4j.concat(axis, arr,concatArray);
     }
 
     /**
@@ -332,7 +333,8 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
+        INDArray concatArr = Nd4j.valueArrayOf(paShape, val);
+        return Nd4j.concat(axis, concatArr, arr);
     }
 
 
@@ -683,8 +685,8 @@ public class Nd4j {
 
 
 
-        INDArray at = a.permute(newAxesA).reshape('c',newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape('c',newShapeB);
+        INDArray at = a.permute(newAxesA).reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
@@ -2298,6 +2300,19 @@ public class Nd4j {
     }
 
     /**
+     * Create a random ndarray with the given shape and array order
+     *
+     * @param order the order of the ndarray to return
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(char order, int[] shape) {
+        INDArray ret = INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Create a random ndarray with the given shape using
      * the current time as the seed
      *
@@ -2326,6 +2341,20 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
+    /**
+     * Create a random ndarray with the given shape and output order
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(char order, int rows, int columns) {
+        INDArray ret = INSTANCE.rand(order, rows, columns);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
     /**
      * Create a random ndarray with the given shape using given seed
@@ -2454,6 +2483,18 @@ public class Nd4j {
     }
 
     /**
+     * Random normal N(0,1) with the specified shape and array order
+     *
+     * @param order order of the output ndarray
+     * @param shape the shape of the ndarray
+     */
+    public static INDArray randn(char order, int[] shape) {
+        INDArray ret = INSTANCE.randn(order,shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Random normal using the specified seed
      *
      * @param shape the shape of the ndarray
@@ -2474,6 +2515,19 @@ public class Nd4j {
      */
     public static INDArray randn(int rows, int columns) {
         INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal N(0,1) with the specified shape and array order
+     *
+     * @param order   the order of the output array
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     */
+    public static INDArray randn(char order, int rows, int columns) {
+        INDArray ret = INSTANCE.randn(order, rows, columns);
         logCreationIfNecessary(ret);
         return ret;
     }

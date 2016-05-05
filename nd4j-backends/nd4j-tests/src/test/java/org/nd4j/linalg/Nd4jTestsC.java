@@ -1778,7 +1778,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
         double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sumNumber().doubleValue();
-        assertEquals(0, sum, 1e-1);
+        assertEquals(5, sum, 1e-1);
     }
 
 
