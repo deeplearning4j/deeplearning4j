@@ -997,7 +997,7 @@ namespace functions {
 #endif
                 T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
-                    T absDiff = abs(diff);
+                    T absDiff = nd4j::math::nd4j_abs(diff);
                     if (absDiff < MIN)
                         return 1;
                     return 0;
