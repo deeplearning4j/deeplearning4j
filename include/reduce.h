@@ -268,8 +268,7 @@ namespace functions {
                 __shared__ int resultScalar;
                 __shared__ int resultLength;
 
-                int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+\
                 //shared memory space for storing intermediate results
                 volatile T *sPartials = manager->getSharedReductionBuffer();
 
@@ -547,7 +546,7 @@ namespace functions {
                     else {
                         T finalVal = startingVal;
                         BlockInformation info(length);
-                        T blocks[info.chunks];
+                        T *blocks = new T[info.chunks];
 #pragma omp parallel
                         {
                             T local = this->startingValue(x);
@@ -581,6 +580,7 @@ namespace functions {
 
 
                         finalVal = postProcess(finalVal, length, extraParams);
+						delete[] blocks;
                         return finalVal;
 
                     }
@@ -604,7 +604,7 @@ namespace functions {
 
                     T finalVal = startingVal;
                     BlockInformation info(length);
-                    T blocks[info.chunks];
+                    T *blocks = new T[info.chunks];
 
 
 #pragma omp parallel
@@ -635,6 +635,7 @@ namespace functions {
                     }
 
                     finalVal = postProcess(finalVal, length, extraParams);
+					delete[] blocks;
                     return finalVal;
 
                 }

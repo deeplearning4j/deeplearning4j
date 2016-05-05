@@ -3360,3 +3360,33 @@ void NativeOps::setOmpNumThreads(int threads) {
 		threads = 32;
 	maxThreads = threads;
 }
+
+
+/**
+  * Concatneate multi array of the same shape together
+  * along a particular dimension
+  */
+ void NativeOps::concatFloat(
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+
+
+}
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::concatDouble(
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+
+
+}
