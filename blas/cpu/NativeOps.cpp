@@ -1529,7 +1529,6 @@ void concatGeneric(
         Nd4jPointer *inputShapeInfo,
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo) {
-    printf("Concat beginning\n");
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     int *resultShape = shape::shapeOf(resultShapeInfoPointer);
     //number of total arrays, every other dimension should be the same
@@ -1679,7 +1678,6 @@ void concatGeneric(
         return;
     }
 
-    printf("TAD result\n");
 
     //tad shape information for result
     shape::TAD resultTad(resultShapeInfoPointer,&dimension,1);
@@ -1732,7 +1730,6 @@ void concatGeneric(
                         }
                     }
                     else {
-                        printf("IN SHAPE ITER\n");
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -1768,7 +1765,6 @@ void concatGeneric(
                 }
                     //don't use element wise stride for either
                 else {
-                    printf("IN SHAPE ITER 2\n");
 
                     int shapeIter[MAX_RANK];
                     int coord[MAX_RANK];
