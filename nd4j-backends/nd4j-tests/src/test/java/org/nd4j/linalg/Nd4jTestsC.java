@@ -1781,6 +1781,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(5, sum, 1e-1);
     }
 
+    @Test
+    public void testEps2(){
+
+        INDArray first = Nd4j.valueArrayOf(10,1e-2);    //0.01
+        INDArray second = Nd4j.zeros(10);            //0.0
+
+        INDArray expAllZeros1 = Nd4j.getExecutioner().execAndReturn(new Eps(first,second,Nd4j.create(new int[]{1,10},'f'), 10));
+        INDArray expAllZeros2 = Nd4j.getExecutioner().execAndReturn(new Eps(second,first,Nd4j.create(new int[]{1,10},'f'), 10));
+
+        System.out.println(expAllZeros1);
+        System.out.println(expAllZeros2);
+
+        assertEquals(0, expAllZeros1.sumNumber().doubleValue(), 0.0);
+        assertEquals(0, expAllZeros2.sumNumber().doubleValue(), 0.0);
+    }
 
     @Test
     public void testLogDouble() {

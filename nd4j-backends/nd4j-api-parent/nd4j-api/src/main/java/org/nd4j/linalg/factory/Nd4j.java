@@ -693,13 +693,13 @@ public class Nd4j {
         return ret.reshape(aPlusB);
     }
 
-    /** Matrix multiply: Implements op(a)*op(b) where op(X) means transpose X (or not) depending on
-     * setting of arguments transposeA and transposeB.<br>
-     * So gemm(a,b,false,false) == a.mmul(b), gemm(a,b,true,false) == a.transpose().mmul(b) etc.
-     * @param a First matrix
-     * @param b Second matrix
-     * @param transposeA if true: transpose matrix a before mmul
-     * @param transposeB if true: transpose matrix b before mmul
+    /** matrix multiply: implements op(a)*op(b) where op(x) means transpose x (or not) depending on
+     * setting of arguments transposea and transposeb.<br>
+     * so gemm(a,b,false,false) == a.mmul(b), gemm(a,b,true,false) == a.transpose().mmul(b) etc.
+     * @param a first matrix
+     * @param b second matrix
+     * @param transposea if true: transpose matrix a before mmul
+     * @param transposeb if true: transpose matrix b before mmul
      * @return result
      */
     public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
