@@ -23,6 +23,8 @@
 #include <pointercast.h>
 #include <stdio.h>
 
+
+
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[28];
 int blockLimit = 128;
@@ -275,8 +277,6 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *
 		tadLength = 2048;
 		numTads = shape::length(xShapeInfo) / tadLength;
 	}
-
-
 
 	int xRank = shape::rank(xShapeInfo);
 	int yRank = yShapeInfo == nullptr ? 0 : shape::rank(yShapeInfo);
@@ -3180,7 +3180,13 @@ extern "C" __global__ void flattenKernelDouble(int offset,
 											  int *resultShapeInfo,
 											  double *input,
 											  int *inputShapeInfo, int *allocationPointer) {
-	flattenKernelGeneric<double>(offset, order, result, resultShapeInfo, input, inputShapeInfo, allocationPointer);
+	flattenKernelGeneric<double>(
+			offset,
+			order, result,
+			resultShapeInfo,
+			input,
+			inputShapeInfo,
+			allocationPointer);
 }
 
 extern "C" __global__ void flattenKernelFloat(int offset,
@@ -3190,7 +3196,14 @@ extern "C" __global__ void flattenKernelFloat(int offset,
 											  float *input,
 											  int *inputShapeInfo, int *allocationPointer) {
 
-	flattenKernelGeneric<float>(offset, order, result, resultShapeInfo, input, inputShapeInfo, allocationPointer);
+	flattenKernelGeneric<float>(
+			offset,
+			order,
+			result,
+			resultShapeInfo,
+			input,
+			inputShapeInfo,
+			allocationPointer);
 }
 
 /**
@@ -3621,4 +3634,33 @@ void NativeOps::setOmpNumThreads(int threads) {
 
 void NativeOps::enableVerboseMode(bool reallyEnable) {
 	verbose = reallyEnable;
+}
+
+/**
+  * Concatneate multi array of the same shape together
+  * along a particular dimension
+  */
+ void NativeOps::concatFloat(
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+
+
+}
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::concatDouble(
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jPointer result,
+        Nd4jPointer resultShapeInfo) {
+
+
 }

@@ -268,8 +268,7 @@ namespace functions {
                 __shared__ int resultScalar;
                 __shared__ int resultLength;
 
-                int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
+\
                 //shared memory space for storing intermediate results
                 volatile T *sPartials = manager->getSharedReductionBuffer();
 

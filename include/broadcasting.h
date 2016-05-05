@@ -75,26 +75,27 @@ namespace functions {
 			int *dimension,
 			int dimensionLength, UnifiedSharedMemory<T> *manager) {
 
-		int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
 	  __shared__ shape::TAD *tad;
 	  __shared__ int rank;
+      __shared__ int tadEWS;
+  	  __shared__ int yStride;
         if (threadIdx.x == 0) {
             tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
             tad->setExternalBuffers((void *) manager);
             tad->init(xShapeInfo,dimension,dimensionLength);
             tad->createTadOnlyShapeInfo();
 			rank = shape::rank(tad->tadOnlyShapeInfo);
+			tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+		    yStride = shape::elementWiseStride(yShapeInfo);
         }
        __syncthreads();
 
 
         //int *xCoord = shape::cuMalloc(manager->getSharedCoordBuffer(), rank);
-        int xCoord[MAX_RANK];
-
 
 		for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
 			if (threadIdx.x == 0)
@@ -102,16 +103,21 @@ namespace functions {
             __syncthreads();
 
 			int tadOffsetForBlock = tad->tadOffsetForBlock;
-
-            for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
-				// now we need coords for both X, Y. Z is uses the same coord as X in this case
-				// Y is always vector, however it might be stided
-				shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
-
-				int yStride = shape::elementWiseStride(yShapeInfo);
-
-				result[xOffset] = this->op(x[xOffset], y[i * yStride]);
+           
+            if(tadEWS > 0) {
+                for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
+                    // now we need coords for both X, Y. Z is uses the same coord as X in this case
+                    // Y is always vector, however it might be stided
+                    result[tadOffsetForBlock + i * tadEWS] = this->op(x[tadOffsetForBlock + i * tadEWS], y[i * yStride]);
+                }
+            }
+            else {
+                int xCoord[MAX_RANK];
+                for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
+                    shape::ind2subC(rank,tad->tadShape, i, xCoord);
+                    Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                    result[xOffset] = this->op(x[xOffset], y[i * yStride]);
+                }
             }
 		}
 	}
