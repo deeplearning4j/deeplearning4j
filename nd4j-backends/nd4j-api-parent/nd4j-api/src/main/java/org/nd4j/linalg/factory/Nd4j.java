@@ -311,7 +311,8 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis, arr, Nd4j.valueArrayOf(paShape, val));
+        INDArray concatArray = Nd4j.valueArrayOf(paShape, val);
+        return Nd4j.concat(axis, arr,concatArray);
     }
 
     /**
@@ -332,7 +333,8 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
+        INDArray concatArr = Nd4j.valueArrayOf(paShape, val);
+        return Nd4j.concat(axis, concatArr, arr);
     }
 
 
