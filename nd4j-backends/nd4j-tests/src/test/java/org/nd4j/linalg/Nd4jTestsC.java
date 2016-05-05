@@ -650,6 +650,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         //Along dim 1:
         //[0 0 1]
         //[0 1 0]
+        System.out.println("---------------------");
         INDArray orig2d = Nd4j.create(new double[][]{{1,0,2},{2,3,1}});
         INDArray alongDim0c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'),0));
         INDArray alongDim0f_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('f'),0));
@@ -663,6 +664,28 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expAlong1_2d, alongDim1c_2d);
         assertEquals(expAlong1_2d, alongDim1f_2d);
 
+    }
+
+    @Test
+    public void testIMaxSingleDim1() {
+        INDArray orig2d = Nd4j.create(new double[][]{{1,0,2},{2,3,1}});
+
+        INDArray result = Nd4j.argMax(orig2d.dup('c'),0);
+
+        System.out.println("IMAx result: " + result);
+    }
+
+    @Test
+    public void testIsMaxSingleDim1() {
+        INDArray orig2d = Nd4j.create(new double[][]{{1,0,2},{2,3,1}});
+        INDArray alongDim0c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'),0));
+        INDArray expAlong0_2d = Nd4j.create(new double[][]{{0,0,1},{1,1,0}});
+
+        System.out.println("Original shapeInfo: " + orig2d.dup('c').shapeInfoDataBuffer());
+
+        System.out.println("Expected: " + Arrays.toString(expAlong0_2d.data().asFloat()));
+        System.out.println("Actual: " + Arrays.toString(alongDim0c_2d.data().asFloat()));
+        assertEquals(expAlong0_2d, alongDim0c_2d);
     }
 
     @Test
