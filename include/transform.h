@@ -6007,13 +6007,20 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         tad->init(zShapeInfo,dimension,dimensionLength);
         tad->createTadOnlyShapeInfo();
 
-        if (blockIdx.x == 0)
+        if (blockIdx.x == 0) {
+            printf("original Z shape: \n");
+            shape::printShapeInfoLinear(zShapeInfo);
+
+            printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
+
+            printf("TAD shape: \n");
             shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
+        }
     }
     __syncthreads();
 
-    int tadLength = shape::length(tad->tadOnlyShapeInfo);
     int numTads = tad->numTads;
+    int tadLength = shape::length(zShapeInfo) / numTads;
 
     for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
         // for each TAD we have index of highest element stored in dX
