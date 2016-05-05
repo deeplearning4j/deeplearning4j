@@ -522,4 +522,53 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         }
         return ret;
     }
+
+    @Override
+    public INDArray concat(int dimension, INDArray... toConcat) {
+        if (toConcat.length == 1)
+            return toConcat[0];
+        long[] shapeInfoPointers = new long[toConcat.length];
+        long[] dataPointers = new long[toConcat.length];
+        for(int i = 0; i < toConcat.length; i++) {
+            shapeInfoPointers[i] = toConcat[i].shapeInfoDataBuffer().address();
+            dataPointers[i] = toConcat[i].data().address();
+        }
+
+        int sumAlongDim = 0;
+        for (int i = 0; i < toConcat.length; i++) {
+            sumAlongDim += toConcat[i].size(dimension);
+        }
+
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+
+        outputShape[dimension] = sumAlongDim;
+        int[] sortedStrides = Nd4j.getStrides(outputShape);
+
+        long extraPointers[] = new long[1];
+
+        INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.concatDouble(
+                    extraPointers,
+                    dimension,
+                    toConcat.length,
+                    dataPointers,
+                    shapeInfoPointers,
+                    ret.data().address(),
+                    ret.shapeInfoDataBuffer().address());
+        }
+        else {
+            nativeOps.concatFloat(
+                    extraPointers,
+                    dimension,
+                    toConcat.length,
+                    dataPointers,
+                    shapeInfoPointers,
+                    ret.data().address(),
+                    ret.shapeInfoDataBuffer().address());
+
+        }
+        return ret;
+        //return super.concat(dimension, toConcat);
+    }
 }

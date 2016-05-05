@@ -574,9 +574,12 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         outputShape[dimension] = sumAlongDim;
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
+        long dummy[] = new long[1];
+
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(
+                    dummy,
                     dimension,
                     toConcat.length,
                     dataPointers,
@@ -586,6 +589,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
         else {
             nativeOps.concatFloat(
+                    dummy,
                     dimension,
                     toConcat.length,
                     dataPointers,
