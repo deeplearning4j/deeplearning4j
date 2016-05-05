@@ -555,6 +555,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray concat(int dimension, INDArray... toConcat) {
+        if (toConcat.length == 1)
+            return toConcat[0];
         long[] shapeInfoPointers = new long[toConcat.length];
         long[] dataPointers = new long[toConcat.length];
         for(int i = 0; i < toConcat.length; i++) {
