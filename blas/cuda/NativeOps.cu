@@ -2999,16 +2999,22 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 						// first we need to create shapeInfoBuffer for result, as well as Z itself
 						//
-						printf("Extra args[0]: [%i]\n", (int) extraParamsPointer[0]);
-						printf("Extra args[1]: [%i]\n", (int) extraParamsPointer[1]);
+						//printf("Extra args[0]: [%i]\n", (int) extraParamsPointer[0]);
+						//printf("Extra args[1]: [%i]\n", (int) extraParamsPointer[1]);
+
+						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[9]);
 
 						//prepareDimensionalShapeBuffer<<<1,1,128, *stream>>>(xShapeInfoPointer, extraParamsPointer, maxShapeBuffer);
 
 						// we call for IMax on specified dimension
-						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
+						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
+
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<4, 128, 0, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer);
+						fillDimensionalIsMaxFloat<<<4, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
