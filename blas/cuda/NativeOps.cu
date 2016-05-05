@@ -2902,6 +2902,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
+			shape::printShapeInfoLinear(hostXShapeInfo);
+			shape::printShapeInfoLinear(hostZShapeInfo);
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(length, 256);
 			transformFloat <<< 1, block, launchDims.z + (block * sizeof(float) * 4), *stream >> > (
@@ -3291,8 +3293,8 @@ void NativeOps::initializeDevicesAndFunctions() {
 		cudaSetDevice(i);
 		cudaGetDeviceProperties(&deviceProperties[i], i);
 
-		//cudaDeviceSetLimit(cudaLimitStackSize, 10000);
-		//cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
+		cudaDeviceSetLimit(cudaLimitStackSize, 10000);
+		cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
 	}
 
 	cudaSetDevice(0);
