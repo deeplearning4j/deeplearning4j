@@ -2891,7 +2891,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
 	int *maxShapeBuffer = (int *) maxDimension + 1;
-	float * special = (float *) maxShapeBuffer + 8;
+	float * special = (float *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
 	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
 
@@ -2993,9 +2993,23 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						else
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxFloat<<< 256, 256, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+						fillIsMaxFloat<<< 4, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
+
+						// first we need to create shapeInfoBuffer for result, as well as Z itself
+						//
+						printf("Extra args[0]: [%i]\n", (int) extraParamsPointer[0]);
+						printf("Extra args[1]: [%i]\n", (int) extraParamsPointer[1]);
+
+						//prepareDimensionalShapeBuffer<<<1,1,128, *stream>>>(xShapeInfoPointer, extraParamsPointer, maxShapeBuffer);
+
+						// we call for IMax on specified dimension
+						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
+
+						// at this point, all IMax indexes are gathered, and we execute
+						fillDimensionalIsMaxFloat<<<4, 128, 0, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer);
+
 					}
 					break;
 				}

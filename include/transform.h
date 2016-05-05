@@ -5951,6 +5951,21 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
     specialPointer[6] = 1;
     specialPointer[7] = 99;
 }
+
+extern "C" __global__ void prepareDimensionalShapeBuffer(int *xShapeInfoBuffer, float *extraParams, int *zShapeInfo) {
+    // extraParams[0] - number of dimensions
+    // extraParams[1] - dimension
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid > 0)
+        return;
+
+    int targetDimension = (int) extraParams[1];
+    printf("Target dimension: [%i]\n", targetDimension);
+
+    int targetWidth = shape::shapeOf(xShapeInfoBuffer)[targetDimension];
+    printf("Target rank: [%i]\n", targetWidth);
+}
+
 template <typename T>
 __device__ void fillIsMaxGeneric(T *dx, long length, long idx) {
 
