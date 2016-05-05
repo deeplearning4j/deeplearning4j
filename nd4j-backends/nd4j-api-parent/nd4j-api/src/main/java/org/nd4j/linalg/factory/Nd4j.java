@@ -685,8 +685,8 @@ public class Nd4j {
 
 
 
-        INDArray at = a.permute(newAxesA).reshape('c',newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape('c',newShapeB);
+        INDArray at = a.permute(newAxesA).reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
