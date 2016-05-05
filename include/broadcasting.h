@@ -75,7 +75,6 @@ namespace functions {
 			int *dimension,
 			int dimensionLength, UnifiedSharedMemory<T> *manager) {
 
-		int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
 		//to the back.

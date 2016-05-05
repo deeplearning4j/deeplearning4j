@@ -998,7 +998,7 @@ namespace functions {
                 T op(T d1, T d2, T *params) {
                     T diff = d1 - d2;
                     T absDiff = abs(diff);
-                    if (absDiff > MIN)
+                    if (absDiff < MIN)
                         return 1;
                     return 0;
                 }
