@@ -60,9 +60,6 @@ public class TestDropout {
 
             net.fit(new DataSet(in,out));
 
-            //Check that original input was not modified (important for multiple iterations, or reuse of input)
-            assertEquals(inCopy,in);
-
             //Check that dropout was actually applied (and applied exactly once)
             INDArray dropoutMask = (INDArray)dropoutMaskField.get(net.getLayer(0));
             assertNotNull(dropoutMask);
@@ -165,9 +162,6 @@ public class TestDropout {
             INDArray inCopy = in.dup('c');
 
             net.fit(new DataSet(in,out));
-
-            //Check that original input was not modified (important for multiple iterations, or reuse of input)
-            assertEquals(inCopy,in);
 
             //Check that dropout was actually applied (and applied exactly once)
             INDArray dropoutMask = ((INDArray)dropoutMaskField.get(net.getLayer(0)));
