@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.jcublas;
 
+import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -527,12 +529,6 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-        long[] shapeInfoPointers = new long[toConcat.length];
-        long[] dataPointers = new long[toConcat.length];
-        for(int i = 0; i < toConcat.length; i++) {
-            shapeInfoPointers[i] = toConcat[i].shapeInfoDataBuffer().address();
-            dataPointers[i] = toConcat[i].data().address();
-        }
 
         int sumAlongDim = 0;
         for (int i = 0; i < toConcat.length; i++) {
@@ -544,30 +540,71 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         outputShape[dimension] = sumAlongDim;
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
-        long extraPointers[] = new long[1];
-
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+        CudaContext context =  allocator.getFlowController().prepareAction(ret, toConcat);
+
+        long[] shapeInfoPointers = new long[toConcat.length];
+        long[] dataPointers = new long[toConcat.length];
+        for(int i = 0; i < toConcat.length; i++) {
+            shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
+            dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
+        }
+
+        System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
+
+        long dZ = AtomicAllocator.getInstance().getPointer(ret, context).address();
+        long dZShapeInfo = AddressRetriever.retrieveDeviceAddress(ret.shapeInfoDataBuffer(), context);
+
+        long[] extras = new long[]{
+                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
+                context.getOldStream().getNativePointer(),
+                allocator.getDeviceId(),
+                context.getBufferAllocation(),
+                context.getBufferReduction(),
+                context.getBufferScalar(),
+                context.getBufferSpecial(),
+                AddressRetriever.retrieveHostAddress(toConcat[0].shapeInfoDataBuffer()),
+                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer())
+        };
+
+        CudaDoubleDataBuffer tempData = new CudaDoubleDataBuffer(toConcat.length);
+        CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(toConcat.length);
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
+
+        long dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context).address();
+        long shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context).address();
+
+        System.out.println("ShapesPointer after conversion: " + shapesPointer);
+
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(
-                    extraPointers,
+                    extras,
                     dimension,
                     toConcat.length,
-                    dataPointers,
-                    shapeInfoPointers,
-                    ret.data().address(),
-                    ret.shapeInfoDataBuffer().address());
+                    new long[] {dataPointer},
+                    new long[] {shapesPointer},
+                    dZ,
+                    dZShapeInfo);
         }
         else {
             nativeOps.concatFloat(
-                    extraPointers,
+                    extras,
                     dimension,
                     toConcat.length,
-                    dataPointers,
-                    shapeInfoPointers,
-                    ret.data().address(),
-                    ret.shapeInfoDataBuffer().address());
+                    new long[] {dataPointer},
+                    new long[] {shapesPointer},
+                    dZ,
+                    dZShapeInfo);
 
         }
+
+        allocator.registerAction(context, ret, toConcat);
+
         return ret;
         //return super.concat(dimension, toConcat);
     }
