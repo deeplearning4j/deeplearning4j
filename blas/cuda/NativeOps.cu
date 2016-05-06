@@ -3104,7 +3104,31 @@ void   NativeOps::execTransformFloat(
 }
 
 template <typename T>
-__device__ void concatKernelGeneric() {
+__device__ void concatKernelGeneric(int dimension,
+									int numArrays,
+									Nd4jPointer *data,
+									Nd4jPointer *inputShapeInfos,
+									T *result,
+									int *resultShapeInfo) {
+	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (tid == 0) {
+		printf("Concat started. numArrays: [%i]\n", numArrays);
+		printf("Initial pointer in kernel: [%lu]\n", inputShapeInfos[0]);
+	}
+
+	T **dataT = (T **) data;
+	int **shapeInfoPointers = (int **) inputShapeInfos;
+
+	if (shape::isScalar(shapeInfoPointers[0])) {
+		for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) {
+			result[i] = dataT[i][0];
+		}
+	} else {
+		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+
+		}
+	}
 
 }
 
@@ -3114,11 +3138,11 @@ extern "C" __global__ void concatKernelDouble() {
 
 extern "C" __global__ void concatKernelFloat(int dimension,
 											 int numArrays,
-											 float *data,
-											 int *inputShapeInfo,
+											 Nd4jPointer *data,
+											 Nd4jPointer *inputShapeInfo,
 											 float *result,
 											 int *resultShapeInfo) {
-
+	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo);
 }
 
 template <typename T>
@@ -3693,8 +3717,8 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	float *inputData = reinterpret_cast<float *>(data);
-	int *inputShapes = reinterpret_cast<int *>(inputShapeInfo);
+	//float *inputData = reinterpret_cast<float *>(data);
+	//int *inputShapes = reinterpret_cast<int *>(inputShapeInfo);
 
 	float *resultData = reinterpret_cast<float *>(result);
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
@@ -3704,8 +3728,13 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-		// numArrays will be used as number of TADs
-	concatKernelFloat<<<1, 10, 10, *stream>>>(dimension, numArrays, inputData, inputShapes, resultData, resultShape);
+	printf("Initial pointer before launch: [%lu]\n", inputShapeInfo[0]);
+
+	// numArrays will be used as number of TADs, so each block process 1 input
+	concatKernelFloat<<<1, 64, 512, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 /**
     * Concatneate multi array of the same shape together
