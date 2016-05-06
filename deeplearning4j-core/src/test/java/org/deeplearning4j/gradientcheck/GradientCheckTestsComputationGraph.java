@@ -290,9 +290,9 @@ public class GradientCheckTestsComputationGraph {
 
     @Test
     public void testLSTMWithSubset(){
-        Nd4j.getRandom().setSeed(12345);
+        Nd4j.getRandom().setSeed(1234);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
+                .seed(1234)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)

@@ -97,7 +97,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
             otherOutputs = new int[2];
         }
         System.arraycopy(input.shape(), 1, otherOutputs, 0, otherOutputs.length);
-        int[] shape = new int[] {input.shape()[0], ArrayUtil.prod(otherOutputs)};
+        int[] shape = new int[] {input.size(0), ArrayUtil.prod(otherOutputs)};
         if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
         return input.reshape(shape);
     }
