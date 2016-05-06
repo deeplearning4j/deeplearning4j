@@ -3127,6 +3127,9 @@ __device__ void concatKernelGeneric(int dimension,
 	} else {
 		__shared__ shape::TAD *tad;
 		__shared__ shape::TAD *inputTAD;
+		__shared__ int yLength;
+		__shared__ char yOrder;
+		__shared__ int yEWS;
 		if (threadIdx.x == 0) {
 			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
 //			tad->setExternalBuffers((void *) manager);
@@ -3139,6 +3142,10 @@ __device__ void concatKernelGeneric(int dimension,
 			//    inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
 			inputTAD->init(shapeInfoPointers[0], &dimension, 1);
 			inputTAD->createTadOnlyShapeInfo();
+
+			yLength = shape::length(inputTAD->tadOnlyShapeInfo);
+			yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
+			yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
 		}
 		__syncthreads();
 
@@ -3149,11 +3156,7 @@ __device__ void concatKernelGeneric(int dimension,
 
 		int zEWS = shape::elementWiseStride(resultShapeInfo);
 		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-		int yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
 		int zLength = shape::length(resultShapeInfo);
-		int yLength = shape::length(inputTAD->tadOnlyShapeInfo);
-		char yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
-		int idx = 0;
 
 		// TODO: to be cut into separate kernel. vector concatenation
 		if (shape::isVector(resultShapeInfo)) {
@@ -3162,17 +3165,27 @@ __device__ void concatKernelGeneric(int dimension,
 			if (zEWS == 1) {
 				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 
-
 					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
 						yLength = shape::length(shapeInfoPointers[r]);
 						yEWS = shape::elementWiseStride(shapeInfoPointers[r]);
 
-						for (int i = threadIdx.x; i < yLength && idx < zLength; i += blockDim.x) {
-							result[idx] = dataT[r][i * yEWS];
-							idx++;
+						// FIXME: this is bad
+						__shared__ int baseIdx;
+						if (threadIdx.x == 0) {
+							baseIdx = 0;
+							for (int f = 0; f < r; f++) {
+								baseIdx += shape::length(shapeInfoPointers[f]);
+							}
 						}
-					} else {
+						__syncthreads();
 
+						for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
+							result[baseIdx + i] = dataT[r][i * yEWS];
+						}
+						__syncthreads();
+					} else {
+						if (tid == 0)
+							printf("Non-matched order for vector\n");
 					}
 				}
 			} else {
@@ -3188,6 +3201,20 @@ __device__ void concatKernelGeneric(int dimension,
 		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 			if (threadIdx.x == 0)
 				tad->createOffsetForBlock(r);
+			__syncthreads();
+
+			if (threadIdx.x == 0) {
+				if (inputTAD != nullptr) delete inputTAD;
+				inputTAD = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+				// inputTAD->setExternalBuffers((void *) manager);
+				// inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
+				inputTAD->init(shapeInfoPointers[r], &dimension, 1);
+				inputTAD->createTadOnlyShapeInfo();
+
+				yLength = shape::length(inputTAD->tadOnlyShapeInfo);
+				yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
+				yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
+			}
 			__syncthreads();
 
 			int tadOffsetForBlock = tad->tadOffsetForBlock;
@@ -3213,14 +3240,100 @@ __device__ void concatKernelGeneric(int dimension,
 				if (tid == 0)
 					printf("inputOffset: [%i], resultOffset: [%i], baseOffst: [%i]\n", inputOffset, resultOffset, baseOffset);
 
-				if (zOrder == yOrder && yEWS > 0 && tadEWS > 0) {
+				if (zOrder == yOrder && yEWS > 0 ) {
 					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
 						T value = dataTAD[i * yEWS];
 						printf("Tid: [%i], Index: [%i], Value: [%f]\n", tid, i, value);
 						resultTAD[i * tadEWS] = value;
 					}
 				} else {
-					printf("Non-matching order, yEWS: [%i]\n", yEWS);
+					//printf("Non-matching order, yEWS: [%i]\n", yEWS);
+					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(inputTAD->tadOnlyShapeInfo)) {
+						// FIXME: this is really bad
+						int idx = 0;
+
+						if (tid == 0)
+							printf("IN SHAPE ITER 1\n");
+
+						if (inputTAD->wholeThing) {
+							for(int k = 0; k < shape::length(inputTAD->tadOnlyShapeInfo); k++) {
+								resultTAD[idx * tadEWS] = dataTAD[k];
+								idx++;
+							}
+						} else {
+
+
+							int shapeIter[MAX_RANK];
+							int coord[MAX_RANK];
+							int dim;
+							int rankIter = shape::rank(inputTAD->tadOnlyShapeInfo);
+							int xStridesIter[MAX_RANK];
+							if (PrepareOneRawArrayIter<T>(rankIter,
+														  shape::shapeOf(inputTAD->tadOnlyShapeInfo),
+														  dataTAD,
+														  shape::stride(inputTAD->tadOnlyShapeInfo),
+														  &rankIter,
+														  shapeIter,
+														  &dataTAD,
+														  xStridesIter) >= 0) {
+								ND4J_RAW_ITER_START(dim, shape::rank(inputTAD->tadOnlyShapeInfo), coord, shapeIter);
+								{
+									/* Process the innermost dimension */
+									resultTAD[idx * tadEWS] = dataTAD[0];
+									idx++;
+								}
+								ND4J_RAW_ITER_ONE_NEXT(dim,
+													   rankIter,
+													   coord,
+													   shapeIter,
+													   dataTAD,
+													   xStridesIter);
+
+							}
+							else {
+								printf("Unable to prepare array\n");
+							}
+						}
+					} else {
+						if (tid == 0)
+							printf("IN SHAPE ITER 2\n");
+
+						int shapeIter[MAX_RANK];
+						int coord[MAX_RANK];
+						int dim;
+						int xStridesIter[MAX_RANK];
+						int resultStridesIter[MAX_RANK];
+						int *xShape = shape::shapeOf(inputTAD->tadOnlyShapeInfo);
+						int *xStride = shape::stride(inputTAD->tadOnlyShapeInfo);
+						int *resultStride = shape::stride(tad->tadOnlyShapeInfo);
+						int rank = shape::rank(inputTAD->tadOnlyShapeInfo);
+						if (PrepareTwoRawArrayIter<T>(rank,
+													  xShape,
+													  dataTAD,
+													  xStride,
+													  resultTAD,
+													  resultStride,
+													  &rank,
+													  shapeIter,
+													  &dataTAD,
+													  xStridesIter,
+													  &resultTAD,
+													  resultStridesIter) >= 0) {
+							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+								resultTAD[0] = dataTAD[0];
+							} ND4J_RAW_ITER_TWO_NEXT(
+									dim,
+									rank,
+									coord,
+									shapeIter,
+									dataTAD,
+									xStridesIter,
+									resultTAD,
+									resultStridesIter);
+
+
+						}
+					}
 				}
 				__syncthreads();
 			}
