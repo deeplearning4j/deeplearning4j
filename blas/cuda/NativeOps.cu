@@ -3125,11 +3125,109 @@ __device__ void concatKernelGeneric(int dimension,
 			result[i] = dataT[i][0];
 		}
 	} else {
-		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+		__shared__ shape::TAD *tad;
+		__shared__ shape::TAD *inputTAD;
+		if (threadIdx.x == 0) {
+			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+//			tad->setExternalBuffers((void *) manager);
+			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
+			tad->init(resultShapeInfo, &dimension, 1);
+			tad->createTadOnlyShapeInfo();
 
+			inputTAD = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+//			inputTAD->setExternalBuffers((void *) manager);
+			//    inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
+			inputTAD->init(shapeInfoPointers[0], &dimension, 1);
+			inputTAD->createTadOnlyShapeInfo();
+		}
+		__syncthreads();
+
+		char zOrder = shape::order(resultShapeInfo);
+		int sub[MAX_RANK];
+		int arrOffset = 0;
+
+
+		int zEWS = shape::elementWiseStride(resultShapeInfo);
+		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+		int yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
+		int zLength = shape::length(resultShapeInfo);
+		int yLength = shape::length(inputTAD->tadOnlyShapeInfo);
+		char yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
+		int idx = 0;
+
+		// TODO: to be cut into separate kernel. vector concatenation
+		if (shape::isVector(resultShapeInfo)) {
+			if (tid == 0)
+				printf("Vector here\n");
+			if (zEWS == 1) {
+				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+
+
+					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
+						yLength = shape::length(shapeInfoPointers[r]);
+						yEWS = shape::elementWiseStride(shapeInfoPointers[r]);
+
+						for (int i = threadIdx.x; i < yLength && idx < zLength; i += blockDim.x) {
+							result[idx] = dataT[r][i * yEWS];
+							idx++;
+						}
+					} else {
+
+					}
+				}
+			} else {
+				if (tid == 0)
+					printf("Vector Non-1 zEWS\n");
+			}
+
+			return;
+		}
+
+
+		// TODO: to be pulled into separate kernel. matrix concatenation
+		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+			if (threadIdx.x == 0)
+				tad->createOffsetForBlock(r);
+			__syncthreads();
+
+			int tadOffsetForBlock = tad->tadOffsetForBlock;
+			int *currentShape = shapeInfoPointers[r];
+			T *currentData = dataT[r];
+
+			if (tid == 0)
+				printf("tadLength: [%i], tadOffset: [%i], tadEWS: [%i], yEWS: [%i], dimension: [%i]\n", yLength, tadOffsetForBlock, tadEWS, yEWS, dimension);
+
+			for (int j = 0; j < inputTAD->numTads;j ++) {
+
+				int inputOffset = inputTAD->tadOffset(j);
+				int resultOffset = tad->tadOffset(j);
+
+				T *dataTAD = currentData + inputOffset;
+				T *resultTAD = result + resultOffset;
+
+				shape::ind2subC(shape::rank(tad->tadOnlyShapeInfo),shape::shapeOf(tad->tadOnlyShapeInfo),arrOffset, sub);
+				Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(tad->tadOnlyShapeInfo),shape::stride(tad->tadOnlyShapeInfo),sub,shape::rank(tad->tadOnlyShapeInfo));
+
+				resultTAD += baseOffset;
+
+				if (tid == 0)
+					printf("inputOffset: [%i], resultOffset: [%i], baseOffst: [%i]\n", inputOffset, resultOffset, baseOffset);
+
+				if (zOrder == yOrder && yEWS > 0 && tadEWS > 0) {
+					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
+						T value = dataTAD[i * yEWS];
+						printf("Tid: [%i], Index: [%i], Value: [%f]\n", tid, i, value);
+						resultTAD[i * tadEWS] = value;
+					}
+				} else {
+					printf("Non-matching order, yEWS: [%i]\n", yEWS);
+				}
+				__syncthreads();
+			}
+			__syncthreads();
+			arrOffset += yLength;
 		}
 	}
-
 }
 
 extern "C" __global__ void concatKernelDouble() {
@@ -3731,7 +3829,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	printf("Initial pointer before launch: [%lu]\n", inputShapeInfo[0]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<1, 64, 512, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+	concatKernelFloat<<<1, 1, 2048, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
