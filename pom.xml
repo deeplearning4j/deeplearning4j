@@ -79,7 +79,7 @@
                 <os><arch>i386</arch></os>
             </activation>
             <properties>
-                <os.arch>x86</os.arch>
+                <os.arch>x86_64</os.arch>
             </properties>
         </profile>
         <profile>
@@ -88,7 +88,7 @@
                 <os><arch>i486</arch></os>
             </activation>
             <properties>
-                <os.arch>x86</os.arch>
+                <os.arch>x86_64</os.arch>
             </properties>
         </profile>
         <profile>
@@ -97,7 +97,7 @@
                 <os><arch>i586</arch></os>
             </activation>
             <properties>
-                <os.arch>x86</os.arch>
+                <os.arch>x86_64</os.arch>
             </properties>
         </profile>
         <profile>
@@ -106,7 +106,16 @@
                 <os><arch>i686</arch></os>
             </activation>
             <properties>
-                <os.arch>x86</os.arch>
+                <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>x86</id>
+            <activation>
+                <os><arch>x86</arch></os>
+            </activation>
+            <properties>
+                <os.arch>x86_64</os.arch>
             </properties>
         </profile>
         <profile>
