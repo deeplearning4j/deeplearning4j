@@ -278,6 +278,7 @@
                 <configuration>
                     <includes>
                         <include>**/*.so</include>
+                        <include>**/*.so.*</include>
                         <include>META-INF/*</include>
                         <include>META-INF/services/**</include>
                         <include>org.*</include>

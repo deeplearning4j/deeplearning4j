@@ -10,15 +10,14 @@ import org.bytedeco.javacpp.annotation.Platform;
  *
  * Original credit:
  * https://github.com/uncomplicate/neanderthal-atlas
- *
- * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
- * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
- * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include="NativeBlas.h",preload = "libnd4j", link = "nd4j")
+@Platform(include = "NativeBlas.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class Nd4jBlas extends Pointer {
     static {
-        Loader.load();
+        // using our custom platform properties from resources, load
+        // in priority libraries found in library path over bundled ones
+        String platform = Loader.getPlatform();
+        Loader.load(Nd4jBlas.class, Loader.loadProperties(platform + "-nd4j", platform), true);
     }
 
     public Nd4jBlas() {

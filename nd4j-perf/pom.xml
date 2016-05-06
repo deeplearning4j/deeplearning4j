@@ -38,11 +38,5 @@
             <artifactId>nd4j-api</artifactId>
             <version>${version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-x86</artifactId>
-            <version>${version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>

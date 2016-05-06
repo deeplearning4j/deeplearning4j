@@ -16,6 +16,21 @@
         <module>nd4j-native</module>
         <module>nd4j-cuda-7.5</module>
     </modules>
+
+    <properties>
+        <javacpp.platform.dependency>${javacpp.platform}</javacpp.platform.dependency>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${project.artifactId}</artifactId>
+            <version>${project.version}</version>
+            <type>${project.packaging}</type>
+            <classifier>${javacpp.platform.dependency}</classifier>
+        </dependency>
+    </dependencies>
+
     <build>
         <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
         <pluginManagement>
@@ -46,9 +61,56 @@
                         <createChecksum>true</createChecksum>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <executions>
+                      <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                          <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                          <excludes>
+                            <exclude>org/nd4j/nativeblas/${javacpp.platform}/*</exclude>
+                          </excludes>
+                        </configuration>
+                      </execution>
+                      <execution>
+                        <id>${javacpp.platform}</id>
+                        <phase>package</phase>
+                        <goals>
+                          <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                          <classifier>${javacpp.platform}</classifier>
+                          <skipIfEmpty>true</skipIfEmpty>
+                          <includes>
+                            <include>org/nd4j/nativeblas/${javacpp.platform}/*</include>
+                          </includes>
+                        </configuration>
+                      </execution>
+                    </executions>
+                </plugin>
             </plugins>
 
 
         </pluginManagement>
     </build>
+
+    <!-- Disable platform dependency when building the artifact for the dependency itself -->
+    <profiles>
+        <profile>
+            <id>platform-dependency</id>
+            <activation>
+                <file>
+                    <exists>${basedir}</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.dependency></javacpp.platform.dependency>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>

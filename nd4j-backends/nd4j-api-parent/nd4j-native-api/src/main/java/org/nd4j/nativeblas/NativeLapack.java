@@ -1,18 +1,22 @@
 package org.nd4j.nativeblas;
 
 
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 
 /**
  * Created by agibsonccc on 2/20/16.
- *
- * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
- * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
- * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include="NativeLapack.h",preload = "libnd4j", link = "nd4j")
+@Platform(include = "NativeLapack.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class NativeLapack extends Pointer {
+    static {
+        // using our custom platform properties from resources, load
+        // in priority libraries found in library path over bundled ones
+        String platform = Loader.getPlatform();
+        Loader.load(NativeLapack.class, Loader.loadProperties(platform + "-nd4j", platform), true);
+    }
+
     public NativeLapack() {
     }
 // LU decomoposition of a general matrix
