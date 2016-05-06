@@ -30,7 +30,7 @@
 //IT DEFINES THE EXPORT MACRO FOR THE EDITOR AND THEN
 //RE ADDS THE DEFINITION VIA dll.h
 #ifdef  _WIN32
-#define ND4J_EXPORT ND4J_EXPORT
+#define ND4J_EXPORT __declspec(dllexport)
 #else
 #define ND4J_EXPORT
 #endif
