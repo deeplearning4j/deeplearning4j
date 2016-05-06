@@ -19,11 +19,12 @@
 package org.deeplearning4j.datasets.iterator;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
+
 
 /**
  * A dataset iterator for doing multiple passes over a dataset
@@ -33,6 +34,8 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected int numPasses;
     protected int batch = 0;
     protected DataSetIterator iter;
+    protected DataSet ds;
+    protected List<DataSet> batchedDS = Lists.newArrayList();
     protected int passes = 0;
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     protected DataSetPreProcessor preProcessor;
@@ -40,6 +43,12 @@ public class MultipleEpochsIterator implements DataSetIterator {
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
         this.numPasses = numPasses;
         this.iter = iter;
+    }
+
+
+    public MultipleEpochsIterator(int numPasses,DataSet ds) {
+        this.numPasses = numPasses;
+        this.ds = ds;
     }
 
     /**
@@ -51,24 +60,46 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
-        if(!iter.hasNext()) {
-            passes++;
-            log.info("Epoch " + passes + ", number of batches completed " + batch);
-            if(passes < numPasses) {
-                batch = 0;
-                iter.reset();
-            } else {
-                return null;
+        DataSet next;
+        if(iter == null){
+            // return full DataSet
+            if(num == -1) {
+                if (passes < numPasses)
+                    trackEpoch();
+                next = ds;
             }
+            // return DataSet broken into batches
+            else {
+                if(batchedDS.isEmpty() && num > 0)
+                    batchedDS = ds.batchBy(num);
+                next = batchedDS.get(batch);
+                if(batch+1 == batchedDS.size()) {
+                    trackEpoch();
+                    if (passes < numPasses)
+                        batch = -1;
+                }
+            }
+        } else {
+            if(!iter.hasNext()) {
+                trackEpoch();
+                if (passes < numPasses) {
+                    iter.reset();
+                    batch = 0;
+                }
+            }
+            next = num == -1? iter.next(): iter.next(num);
+            if(preProcessor != null)
+                preProcessor.preProcess(next);
         }
         batch++;
-
-        DataSet next = num == -1? iter.next(): iter.next(num);
-        if(preProcessor != null)
-            preProcessor.preProcess(next);
         return next;
     }
 
+    private void trackEpoch(){
+        passes++;
+        log.info("Epoch " + passes + ", number of batches completed " + batch);
+
+    }
 
     @Override
     public DataSet next() {
@@ -165,8 +196,11 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        // either there are still epochs to complete or its the first epoch
-        return (passes+1 < numPasses) || (iter.hasNext() && passes == 0);
+        if (iter == null)
+            return (passes < numPasses) && ((batchedDS.size() != 0 && batchedDS.size() > batch) || batchedDS.size() == 0);
+        else
+            // either there are still epochs to complete or its the first epoch
+            return (passes+1 < numPasses) || (iter.hasNext() && passes == 0);
     }
 
     /**
