@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * A preprocessor to allow RNN and CNN layers to be used together<br>
@@ -46,6 +47,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
+        if(input.ordering() == 'c') input = input.dup('f');
         //Input: 3d activations (RNN)
         //Output: 4d activations (CNN)
         int[] shape = input.shape();
@@ -58,19 +60,22 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             in2d = input.tensorAlongDimension(0, 1, 0);
         } else {
             INDArray permuted = input.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
-            in2d = permuted.reshape(shape[0] * shape[2], shape[1]);
+            in2d = permuted.reshape('f',shape[0] * shape[2], shape[1]);
         }
 
-        return in2d.reshape(shape[0] * shape[2], numChannels, inputHeight, inputWidth);
+        return in2d.dup('c').reshape('c',shape[0] * shape[2], numChannels, inputHeight, inputWidth);
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
         //Input: 4d epsilons (CNN)
         //Output: 3d epsilons (RNN)
-        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
+        if(output.ordering() == 'f') output = output.dup('c');
         int[] shape = output.shape();
-        INDArray reshaped = output.reshape(miniBatchSize,shape[0]/miniBatchSize,product);
+        //First: reshape 4d to 2d
+        INDArray twod = output.reshape('c',output.size(0), ArrayUtil.prod(output.shape())/output.size(0));
+        //Second: reshape 2d to 4d
+        INDArray reshaped = twod.dup('f').reshape('f',miniBatchSize,shape[0]/miniBatchSize,product);
         return reshaped.permute(0,2,1);
     }
 
