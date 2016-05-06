@@ -132,7 +132,23 @@ public class NeuralNetConfigurationTest {
         Layer model = LayerFactories.getFactory(conf).create(conf);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
-        Layer model2 = LayerFactories.getFactory(conf).create(conf);
+
+        RBM layer2 = new RBM.Builder()
+                .nIn(trainingSet.numInputs())
+                .nOut(trainingSet.numOutcomes())
+                .weightInit(WeightInit.UNIFORM)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .activation("tanh")
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .build();
+        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(3)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .layer(layer2)
+                .build();
+        Layer model2 = LayerFactories.getFactory(conf2).create(conf2);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);

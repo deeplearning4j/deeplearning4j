@@ -42,7 +42,7 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected =  Nd4j.rand(shape, Nd4j.getRandom());
+        INDArray weightsExpected =  Nd4j.rand('f',shape);
         weightsExpected.subi(0.5).divi(shape[0]);
 
         assertEquals(weightsExpected, weightsActual);
@@ -54,7 +54,7 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = Nd4j.randn(shape).muli(FastMath.sqrt(2.0 / shape[0]));
+        INDArray weightsExpected = Nd4j.randn('f',shape).muli(FastMath.sqrt(2.0 / shape[0]));
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -79,7 +79,7 @@ public class WeightInitUtilTest {
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         double a = 1/(double) shape[0];
-        INDArray weightsExpected = Nd4j.rand(shape, -a, a, Nd4j.getRandom());
+        INDArray weightsExpected = Nd4j.rand('f',shape).muli(2*a).subi(a);
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -90,7 +90,7 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = Nd4j.rand(shape, Nd4j.getRandom());
+        INDArray weightsExpected = Nd4j.rand('f',shape);
         int numValues = shape[0] + shape[1];
         double r = Math.sqrt(6) / Math.sqrt(numValues + 1);
         weightsExpected.muli(2).muli(r).subi(r);
@@ -104,7 +104,7 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = Nd4j.randn(shape, Nd4j.getRandom());
+        INDArray weightsExpected = Nd4j.randn('f',shape);
         weightsExpected.divi(FastMath.sqrt(shape[0] + shape[1]));
 
         assertEquals(weightsExpected, weightsActual);
