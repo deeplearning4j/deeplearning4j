@@ -99,6 +99,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <propertyFile>${project.basedir}/src/main/resources/org/bytedeco/javacpp/properties/${javacpp.platform}-nd4j.properties</propertyFile>
                             <outputDirectory>${project.build.outputDirectory}/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>
@@ -146,17 +147,5 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>mingw</id>
-            <activation><os><family>windows</family></os></activation>
-            <build><plugins><plugin>
-                <groupId>org.bytedeco</groupId>
-                <artifactId>javacpp</artifactId>
-                <configuration><properties>${javacpp.platform}-mingw</properties></configuration>
-            </plugin></plugins></build>
-        </profile>
-    </profiles>
 
 </project>

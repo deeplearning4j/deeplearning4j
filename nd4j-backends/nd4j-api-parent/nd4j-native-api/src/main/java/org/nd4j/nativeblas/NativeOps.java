@@ -15,16 +15,15 @@ import org.slf4j.LoggerFactory;
  * Native interface for
  * op execution on cpu
  * @author Adam Gibson
- *
- * the preload="libnd4j" is there because MinGW puts a "lib" in front of the filename for the DLL, but at load time,
- * we are using the default Windows platform naming scheme, which doesn't put "lib" in front, so that's a bit of a hack,
- * but easier than forcing MinGW into not renaming the library name -- @saudet on 3/21/16
  */
-@Platform(include={"NativeOps.h"}, preload="libnd4j", link = "nd4j")
+@Platform(include = "NativeOps.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class NativeOps extends Pointer {
     private static Logger log = LoggerFactory.getLogger(NativeOps.class);
     static {
-        Loader.load();
+        // using our custom platform properties from resources, load
+        // in priority libraries found in library path over bundled ones
+        String platform = Loader.getPlatform();
+        Loader.load(NativeOps.class, Loader.loadProperties(platform + "-nd4j", platform), true);
     }
 
     public NativeOps() {
