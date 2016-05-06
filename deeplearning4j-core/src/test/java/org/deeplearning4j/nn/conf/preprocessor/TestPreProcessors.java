@@ -1,7 +1,5 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import static org.junit.Assert.*;
-
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -11,7 +9,6 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
@@ -22,7 +19,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
-import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TestPreProcessors {
 
@@ -68,29 +66,33 @@ public class TestPreProcessors {
             //Expect each row in activations2d to have order:
             //(example=0,t=0), (example=0,t=1), (example=0,t=2), ..., (example=1,t=0), (example=1,t=1), ...
             int nRows = activations2dc.rows();
-            for( int i=0; i<nRows; i++ ){
+            for (int i = 0; i < nRows; i++) {
                 INDArray rowc = activations2dc.getRow(i);
                 INDArray rowf = activations2df.getRow(i);
-                assertArrayEquals(rowc.shape(),new int[]{1,layerSize});
-                assertEquals(rowc,rowf);
+                assertArrayEquals(rowc.shape(), new int[]{1, layerSize});
+                assertEquals(rowc, rowf);
 
-                int origExampleNum = i / timeSeriesLength;
-                int time = i % timeSeriesLength;
-                INDArray expectedRow = activations3dc.tensorAlongDimension(time,1,0).getRow(origExampleNum);
-                assertTrue(rowc.equals(expectedRow));
-                assertTrue(rowf.equals(expectedRow));
+                //c order reshaping
+//                int origExampleNum = i / timeSeriesLength;
+//                int time = i % timeSeriesLength;
+                //f order reshaping
+                int time = i / miniBatchSize;
+                int origExampleNum = i % miniBatchSize;
+                INDArray expectedRow = activations3dc.tensorAlongDimension(time, 1, 0).getRow(origExampleNum);
+                assertEquals(expectedRow, rowc);
+                assertEquals(expectedRow, rowf);
             }
 
             //Given that epsilons and activations have same shape, we can do this (even though it's not the intended use)
             //Basically backprop should be exact opposite of preProcess
             INDArray outc = proc.backprop(activations2dc, miniBatchSize);
             INDArray outf = proc.backprop(activations2df, miniBatchSize);
-            assertTrue(outc.equals(activations3dc));
-            assertTrue(outf.equals(activations3df));
+            assertEquals(activations3dc, outc);
+            assertEquals(activations3df, outf);
 
             //Also check case when epsilons are different orders:
-            INDArray eps2d_c = Nd4j.create(activations2dc.shape(),'c');
-            INDArray eps2d_f = Nd4j.create(activations2dc.shape(),'f');
+            INDArray eps2d_c = Nd4j.create(activations2dc.shape(), 'c');
+            INDArray eps2d_f = Nd4j.create(activations2dc.shape(), 'f');
             eps2d_c.assign(activations2dc);
             eps2d_f.assign(activations2df);
             INDArray eps3d_c = proc.backprop(eps2d_c, miniBatchSize);
@@ -139,12 +141,16 @@ public class TestPreProcessors {
 
             int nRows2D = miniBatchSize * timeSeriesLength;
             for (int i = 0; i < nRows2D; i++) {
-                int time = i % timeSeriesLength;
-                int example = i / timeSeriesLength;
+                //c order reshaping:
+//                int time = i % timeSeriesLength;
+//                int example = i / timeSeriesLength;
+                //f order reshaping
+                int time = i / miniBatchSize;
+                int example = i % miniBatchSize;
 
                 INDArray row2d = activations2dc.getRow(i);
-                INDArray row3dc = activations3dc.tensorAlongDimension(time, 1, 0).getRow(example);
-                INDArray row3df = activations3df.tensorAlongDimension(time, 1, 0).getRow(example);
+                INDArray row3dc = activations3dc.tensorAlongDimension(time, 0, 1).getRow(example);
+                INDArray row3df = activations3df.tensorAlongDimension(time, 0, 1).getRow(example);
 
                 assertEquals(row2d, row3dc);
                 assertEquals(row2d, row3df);
@@ -188,6 +194,9 @@ public class TestPreProcessors {
                 for (int inputHeight : inputHeights) {
                     for (int inputWidth : inputWidths) {
                         for (int nChannels : numChannels) {
+
+                            String msg = "miniBatch=" + miniBatchSize + ", tsLength=" + timeSeriesLength + ", h=" + inputHeight + ", w=" + inputWidth + ", ch=" + nChannels;
+
                             InputPreProcessor proc = new CnnToRnnPreProcessor(inputHeight, inputWidth, nChannels);
 
                             NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
@@ -203,14 +212,14 @@ public class TestPreProcessors {
                             //Check shape of outputs:
                             int prod = nChannels * inputHeight * inputWidth;
                             INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize);
-                            assertArrayEquals(new int[]{miniBatchSize, prod, timeSeriesLength},
+                            assertArrayEquals(msg, new int[]{miniBatchSize, prod, timeSeriesLength},
                                     activationsRnn.shape());
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
                             //be opposite operations - i.e., get the same thing back out
                             INDArray twiceProcessed = proc.backprop(activationsRnn, miniBatchSize);
-                            assertArrayEquals(activationsCnn.shape(), twiceProcessed.shape());
-                            assertEquals(activationsCnn, twiceProcessed);
+                            assertArrayEquals(msg, activationsCnn.shape(), twiceProcessed.shape());
+                            assertEquals(msg, activationsCnn, twiceProcessed);
 
                             //Second way to check: compare to ComposableInputPreProcessor(CNNtoFF, FFtoRNN)
                             InputPreProcessor compProc = new ComposableInputPreProcessor(
@@ -218,7 +227,7 @@ public class TestPreProcessors {
                                     new FeedForwardToRnnPreProcessor());
 
                             INDArray activationsRnnComp = compProc.preProcess(activationsCnn, miniBatchSize);
-                            assertEquals(activationsRnnComp, activationsRnn);
+                            assertEquals(msg, activationsRnnComp, activationsRnn);
 
                             INDArray epsilonsRnn = Nd4j.rand(
                                     new int[]{miniBatchSize, nChannels * inputHeight * inputWidth, timeSeriesLength});
@@ -234,7 +243,7 @@ public class TestPreProcessors {
                                 System.out.println(Arrays.toString(epsilonsCnn.shape()));
                                 System.out.println(epsilonsCnn);
                             }
-                            assertEquals(epsilonsCnnComp, epsilonsCnn);
+                            assertEquals(msg, epsilonsCnnComp, epsilonsCnn);
                         }
                     }
                 }
@@ -279,7 +288,7 @@ public class TestPreProcessors {
                             INDArray activationsRnn_f = Nd4j.create(shape_rnn, 'f');
                             activationsRnn_c.assign(rand);
                             activationsRnn_f.assign(rand);
-                            assertEquals(activationsRnn_c,activationsRnn_f);
+                            assertEquals(activationsRnn_c, activationsRnn_f);
 
                             //Check shape of outputs:
                             INDArray activationsCnn_c = proc.preProcess(activationsRnn_c, miniBatchSize);
@@ -287,7 +296,7 @@ public class TestPreProcessors {
                             int[] shape_cnn = new int[]{miniBatchSize * timeSeriesLength, nChannels, inputHeight, inputWidth};
                             assertArrayEquals(shape_cnn, activationsCnn_c.shape());
                             assertArrayEquals(shape_cnn, activationsCnn_f.shape());
-                            assertEquals(activationsCnn_c,activationsCnn_f);
+                            assertEquals(activationsCnn_c, activationsCnn_f);
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
                             //be opposite operations - i.e., get the same thing back out
@@ -310,17 +319,17 @@ public class TestPreProcessors {
 
                             int[] epsilonShape = new int[]{miniBatchSize * timeSeriesLength, nChannels, inputHeight, inputWidth};
                             rand = Nd4j.rand(epsilonShape);
-                            INDArray epsilonsCnn_c = Nd4j.create(epsilonShape,'c');
-                            INDArray epsilonsCnn_f = Nd4j.create(epsilonShape,'f');
+                            INDArray epsilonsCnn_c = Nd4j.create(epsilonShape, 'c');
+                            INDArray epsilonsCnn_f = Nd4j.create(epsilonShape, 'f');
                             epsilonsCnn_c.assign(rand);
                             epsilonsCnn_f.assign(rand);
 
                             INDArray epsilonsRnnComp_c = compProc.backprop(epsilonsCnn_c, miniBatchSize);
                             INDArray epsilonsRnnComp_f = compProc.backprop(epsilonsCnn_f, miniBatchSize);
-                            assertEquals(epsilonsRnnComp_c,epsilonsRnnComp_f);
+                            assertEquals(epsilonsRnnComp_c, epsilonsRnnComp_f);
                             INDArray epsilonsRnn_c = proc.backprop(epsilonsCnn_c, miniBatchSize);
                             INDArray epsilonsRnn_f = proc.backprop(epsilonsCnn_f, miniBatchSize);
-                            assertEquals(epsilonsRnn_c,epsilonsRnn_f);
+                            assertEquals(epsilonsRnn_c, epsilonsRnn_f);
 
                             if (!epsilonsRnn_c.equals(epsilonsRnnComp_c)) {
                                 System.out.println(miniBatchSize + "\t" + timeSeriesLength + "\t" + inputHeight + "\t" +
@@ -343,7 +352,7 @@ public class TestPreProcessors {
 
 
     @Test
-    public void testAutoAdditionOfPreprocessors(){
+    public void testAutoAdditionOfPreprocessors() {
         //FF->RNN and RNN->FF
         MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                 .list()
@@ -392,12 +401,12 @@ public class TestPreProcessors {
     }
 
     @Test
-    public void testCnnToDense(){
+    public void testCnnToDense() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        //.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                //.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(0.01) // default
-                        //.momentum(0.9)
+                //.momentum(0.9)
                 .regularization(true)
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(4, 4) // 28*28*1 => 15*15*10
@@ -417,7 +426,7 @@ public class TestPreProcessors {
                         .activation("softmax")
                         .updater(Updater.SGD)
                         .build())
-                .cnnInputSize(28,28,1)
+                .cnnInputSize(28, 28, 1)
                 .backprop(true).pretrain(false).build();
 
         assertNotNull(conf.getInputPreProcess(0));
@@ -426,17 +435,17 @@ public class TestPreProcessors {
         assertTrue(conf.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
         assertTrue(conf.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
 
-        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor)conf.getInputPreProcess(0);
-        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor)conf.getInputPreProcess(1);
+        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) conf.getInputPreProcess(0);
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(1);
 
-        assertEquals(28,ffcnn.getInputHeight());
-        assertEquals(28,ffcnn.getInputWidth());
-        assertEquals(1,ffcnn.getNumChannels());
+        assertEquals(28, ffcnn.getInputHeight());
+        assertEquals(28, ffcnn.getInputWidth());
+        assertEquals(1, ffcnn.getNumChannels());
 
-        assertEquals(15,cnnff.getInputHeight());
-        assertEquals(15,cnnff.getInputWidth());
-        assertEquals(10,cnnff.getNumChannels());
+        assertEquals(15, cnnff.getInputHeight());
+        assertEquals(15, cnnff.getInputWidth());
+        assertEquals(10, cnnff.getNumChannels());
 
-        assertEquals(15*15*10,((FeedForwardLayer)conf.getConf(1).getLayer()).getNIn());
+        assertEquals(15 * 15 * 10, ((FeedForwardLayer) conf.getConf(1).getLayer()).getNIn());
     }
 }

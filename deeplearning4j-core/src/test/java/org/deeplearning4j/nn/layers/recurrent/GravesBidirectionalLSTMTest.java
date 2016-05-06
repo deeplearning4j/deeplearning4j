@@ -456,22 +456,17 @@ public class GravesBidirectionalLSTMTest {
 		final MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         final IterationListener scoreSaver = new IterationListener() {
-
             @Override
             public boolean invoked() {
                 return false;
             }
-
             @Override
-            public void invoke() {
-
-            }
+            public void invoke() {}
 
             @Override
             public void iterationDone(Model model, int iteration) {
                 score = model.score();
             }
-
         };
 
         net.setListeners(scoreSaver,new ScoreIterationListener(1));
@@ -482,9 +477,9 @@ public class GravesBidirectionalLSTMTest {
 
             System.out.print(String.format("score is %f\n",score));
 
-            TestCase.assertTrue(!Double.isNaN(score));
+            assertTrue(!Double.isNaN(score));
 
-            TestCase.assertTrue(oldScore*1.5 > score);
+            assertTrue(oldScore*1.5 > score);
             oldScore = score;
 
             final INDArray output = net.output(ds.getFeatureMatrix());
@@ -492,12 +487,6 @@ public class GravesBidirectionalLSTMTest {
             evaluation.evalTimeSeries(ds.getLabels(),output);
             System.out.print(evaluation.stats() + "\n");
         }
-
-
-        int foo = 3;
-        foo++;
-
-
 	}
 
 	@Test
