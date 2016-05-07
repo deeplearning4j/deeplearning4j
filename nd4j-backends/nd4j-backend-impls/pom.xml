@@ -103,7 +103,7 @@
     </build>
 
     <!-- Disable platform dependency when building the artifact for the dependency itself -->
-    <profiles>
+ <!--   <profiles>
         <profile>
             <id>no-platform-dependency</id>
             <activation>
@@ -120,5 +120,5 @@
             </properties>
         </profile>
     </profiles>
-
+-->
 </project>
