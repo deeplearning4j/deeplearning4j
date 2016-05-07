@@ -3127,18 +3127,18 @@ __device__ void concatKernelGeneric(int dimension,
 		manager = new(shmem) UnifiedSharedMemory<T>();
 		manager->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD));
 
-		manager->setXSpace(zRank);
-		manager->setYSpace(zRank);
-		manager->setZSpace(zRank);
-		manager->setTADSpace(zRank);
+		manager->setXSpace(zRank+3);
+		manager->setYSpace(0);
+		manager->setZSpace(zRank+3);
+		manager->setTADSpace(zRank+3);
 
-		managerInput = new(manager->getSharedReductionBuffer()) UnifiedSharedMemory<T>();
+		managerInput = new((unsigned char *) manager->getSharedReductionBuffer()) UnifiedSharedMemory<T>((int *) manager->getSharedReductionBuffer());
 		managerInput->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD));
 
-		managerInput->setXSpace(zRank);
-		managerInput->setYSpace(zRank);
-		managerInput->setZSpace(zRank);
-		managerInput->setTADSpace(zRank);
+		managerInput->setXSpace(zRank+3);
+		managerInput->setYSpace(0);
+		managerInput->setZSpace(zRank+3);
+		managerInput->setTADSpace(zRank+3);
 	}
 	__syncthreads();
 
@@ -3146,6 +3146,10 @@ __device__ void concatKernelGeneric(int dimension,
 	int **shapeInfoPointers = (int **) inputShapeInfos;
 
 	if (shape::isScalar(shapeInfoPointers[0])) {
+
+		if (tid)
+			printf("Scalar concat\n");
+
 		for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) {
 			result[i] = dataT[i][0];
 		}
@@ -3156,6 +3160,9 @@ __device__ void concatKernelGeneric(int dimension,
 		__shared__ char yOrder;
 		__shared__ int yEWS;
 		if (threadIdx.x == 0) {
+
+			printf("Creating TAD\n");
+
 			tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
 			tad->setExternalBuffers((void *) manager);
 			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
@@ -3179,7 +3186,6 @@ __device__ void concatKernelGeneric(int dimension,
 		char zOrder = shape::order(resultShapeInfo);
 		int sub[MAX_RANK];
 		int arrOffset = 0;
-
 
 		int zEWS = shape::elementWiseStride(resultShapeInfo);
 		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
@@ -3231,10 +3237,13 @@ __device__ void concatKernelGeneric(int dimension,
 			__syncthreads();
 
 			if (threadIdx.x == 0) {
-				if (inputTAD != NULL) delete inputTAD;
+
+				printf("Blockwise TAD\n");
+
+			//	if (inputTAD != NULL) delete inputTAD;
 				// (managerInput->getTADSpace())
-				inputTAD = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-			//	inputTAD->setExternalBuffers((void *) managerInput);
+				inputTAD = new((unsigned char *)managerInput->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+				inputTAD->setExternalBuffers((void *) managerInput);
 				// inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
 				inputTAD->init(shapeInfoPointers[r], &dimension, 1);
 				inputTAD->createTadOnlyShapeInfo();
@@ -3932,7 +3941,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	printf("Initial pointer before launch: [%lu]\n", inputShapeInfo[0]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<1, 10, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+	concatKernelFloat<<<1, 1, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
