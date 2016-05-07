@@ -513,9 +513,10 @@ public class ComputationGraph implements Serializable, Model {
     /** Fit the ComputationGraph using a MultiDataSet */
     public void fit(MultiDataSet multiDataSet){
         if(multiDataSet.hasMaskArrays()){
-            throw new UnsupportedOperationException("Training with masking arrays: not yet implemented");
+            setLayerMaskArrays(multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
         }
         fit(multiDataSet.getFeatures(),multiDataSet.getLabels());
+        if(multiDataSet.hasMaskArrays()) clearLayerMaskArrays();
     }
 
     /** Fit the ComputationGraph using a MultiDataSetIterator */
