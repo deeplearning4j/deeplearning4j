@@ -19,16 +19,20 @@
 <!--
 
     <properties>
-        <javacpp.platform.dependency>${javacpp.platform}</javacpp.platform.dependency>
+        <dependency.groupId>${project.groupId}</dependency.groupId>
+        <dependency.artifactId>${project.artifactId}</dependency.artifactId>
+        <dependency.version>${project.version}</dependency.version>
+        <dependency.packaging>${project.packaging}</dependency.packaging>
+        <dependency.classifier>${javacpp.platform}</dependency.classifier>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${project.artifactId}</artifactId>
-            <version>${project.version}</version>
-            <type>${project.packaging}</type>
-            <classifier>${javacpp.platform.dependency}</classifier>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
         </dependency>
     </dependencies>
 -->
@@ -103,14 +107,18 @@
     <!-- Disable platform dependency when building the artifact for the dependency itself -->
     <profiles>
         <profile>
-            <id>platform-dependency</id>
+            <id>no-platform-dependency</id>
             <activation>
                 <file>
                     <exists>${basedir}</exists>
                 </file>
             </activation>
             <properties>
-                <javacpp.platform.dependency></javacpp.platform.dependency>
+                <dependency.groupId>${project.parent.groupId}</dependency.groupId>
+                <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
+                <dependency.version>${project.parent.version}</dependency.version>
+                <dependency.packaging>pom</dependency.packaging>
+                <dependency.classifier></dependency.classifier>
             </properties>
         </profile>
     </profiles>
