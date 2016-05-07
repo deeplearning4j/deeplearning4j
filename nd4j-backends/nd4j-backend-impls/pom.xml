@@ -113,7 +113,7 @@
             </activation>
             <properties>
                 <dependency.groupId>${project.parent.groupId}</dependency.groupId>
-                <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
+                <dependency.artifactId>${project.artifactId}</dependency.artifactId>
                 <dependency.version>${project.parent.version}</dependency.version>
                 <dependency.packaging>pom</dependency.packaging>
                 <dependency.classifier></dependency.classifier>
