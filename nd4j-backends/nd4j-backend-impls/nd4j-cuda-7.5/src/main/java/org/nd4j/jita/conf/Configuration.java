@@ -36,11 +36,11 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
+    @Getter private AllocationStatus firstMemory = AllocationStatus.HOST;
 
-    @Getter private boolean debug = false;
+    @Getter private boolean debug = true;
 
-    @Getter private boolean verbose = false;
+    @Getter private boolean verbose = true;
 
     /**
      * Keep this value between 0.01 and 0.95 please
