@@ -240,7 +240,7 @@ struct SharedIndexValue<double> {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ volatile int resultScalar;
 
-		__shared__ int xElementWiseStride;
+	//	__shared__ int xElementWiseStride;
 
 		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
@@ -284,7 +284,7 @@ struct SharedIndexValue<double> {
 			if (resultLength == 1)
 				resultScalar = 1;
 
-			xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+		//	xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			xLength = shape::length(xShapeInfo);
 		}
@@ -337,6 +337,8 @@ struct SharedIndexValue<double> {
                 */
 			} else {
 
+            	int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+
 #pragma unroll
 				for(int i = blockIdx.x; i < tad->numTads; i+= gridDim.x) {
 					if (threadIdx.x == 0)
@@ -346,7 +348,7 @@ struct SharedIndexValue<double> {
 					sPartials[threadIdx.x] = {dx[tad->tadOffsetForBlock], 0};
 #pragma unroll
 					for (int x = threadIdx.x; x < shape::length(tad->tadOnlyShapeInfo); x+= blockDim.x) {
-						int indexX = tad->tadOffsetForBlock + x * xElementWiseStride;
+						int indexX = tad->tadOffsetForBlock + x * tadEWS;
 						IndexValue<T> comp {dx[indexX], x};
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
 					}
@@ -366,6 +368,7 @@ struct SharedIndexValue<double> {
 		//reduce to 1 result
 		else if (resultScalar) {
 			int n = shape::length(xShapeInfo);
+			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
 				if(xElementWiseStride == 1) {

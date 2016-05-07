@@ -95,6 +95,9 @@ namespace functions {
 		int xOffset = shape::offset(shapeInfo);
 		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
         int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+        int *zShape = shape::shapeOf(resultShapeInfo);
+        int *zStride = shape::stride(resultShapeInfo);
+        int zRank = shape::rank(resultShapeInfo);
 
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -126,7 +129,7 @@ namespace functions {
 			for (int i = tid; i < length; i+= totalThreads) {
 				shape::ind2sub(xRank, xShape, i,xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-				int resultOffset = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xIdx,xRank);
+				int resultOffset = shape::getOffset(0, zShape, zStride, xIdx, zRank);
 				result[resultOffset] = op(dy[xOffset2],scalar, params);
 			}
 		}
