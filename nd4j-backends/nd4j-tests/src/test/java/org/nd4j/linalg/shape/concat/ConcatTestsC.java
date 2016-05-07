@@ -85,10 +85,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
         System.out.println(result);
 
-        assertEquals(1.0f, result.getRow(0).getFloat(3), 0.01f);
-        assertEquals(1.0f, result.getRow(1).getFloat(2), 0.01f);
-        assertEquals(1.0f, result.getRow(2).getFloat(5), 0.01f);
-        assertEquals(1.0f, result.getRow(0).getFloat(6), 0.01f);
+        for (int x = 0; x < 30; x++) {
+            assertEquals(1f, result.getFloat(x), 0.001f);
+        }
     }
 
     @Test
