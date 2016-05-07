@@ -3117,6 +3117,31 @@ __device__ void concatKernelGeneric(int dimension,
 		printf("Initial pointer in kernel: [%lu]\n", inputShapeInfos[0]);
 	}
 
+	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory<T> *managerInput;
+
+	int zRank = shape::rank(resultShapeInfo);
+
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+		manager = new(shmem) UnifiedSharedMemory<T>();
+		manager->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD));
+
+		manager->setXSpace(zRank);
+		manager->setYSpace(zRank);
+		manager->setZSpace(zRank);
+		manager->setTADSpace(zRank);
+
+		managerInput = new(manager->getSharedReductionBuffer()) UnifiedSharedMemory<T>();
+		managerInput->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD));
+
+		managerInput->setXSpace(zRank);
+		managerInput->setYSpace(zRank);
+		managerInput->setZSpace(zRank);
+		managerInput->setTADSpace(zRank);
+	}
+	__syncthreads();
+
 	T **dataT = (T **) data;
 	int **shapeInfoPointers = (int **) inputShapeInfos;
 
@@ -3131,12 +3156,13 @@ __device__ void concatKernelGeneric(int dimension,
 		__shared__ char yOrder;
 		__shared__ int yEWS;
 		if (threadIdx.x == 0) {
-			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-//			tad->setExternalBuffers((void *) manager);
+			tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+			tad->setExternalBuffers((void *) manager);
 			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
 			tad->init(resultShapeInfo, &dimension, 1);
 			tad->createTadOnlyShapeInfo();
 
+			/*
 			inputTAD = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
 //			inputTAD->setExternalBuffers((void *) manager);
 			//    inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
@@ -3146,6 +3172,7 @@ __device__ void concatKernelGeneric(int dimension,
 			yLength = shape::length(inputTAD->tadOnlyShapeInfo);
 			yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
 			yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
+			 */
 		}
 		__syncthreads();
 
@@ -3162,7 +3189,7 @@ __device__ void concatKernelGeneric(int dimension,
 		if (shape::isVector(resultShapeInfo)) {
 			if (tid == 0)
 				printf("Vector here\n");
-			if (zEWS == 1) {
+			if (zEWS >= 1) {
 				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 
 					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
@@ -3180,7 +3207,7 @@ __device__ void concatKernelGeneric(int dimension,
 						__syncthreads();
 
 						for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
-							result[baseIdx + i] = dataT[r][i * yEWS];
+							result[baseIdx + i * zEWS] = dataT[r][i * yEWS];
 						}
 						__syncthreads();
 					} else {
@@ -3204,9 +3231,10 @@ __device__ void concatKernelGeneric(int dimension,
 			__syncthreads();
 
 			if (threadIdx.x == 0) {
-				if (inputTAD != nullptr) delete inputTAD;
+				if (inputTAD != NULL) delete inputTAD;
+				// (managerInput->getTADSpace())
 				inputTAD = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-				// inputTAD->setExternalBuffers((void *) manager);
+			//	inputTAD->setExternalBuffers((void *) managerInput);
 				// inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
 				inputTAD->init(shapeInfoPointers[r], &dimension, 1);
 				inputTAD->createTadOnlyShapeInfo();
@@ -3220,10 +3248,10 @@ __device__ void concatKernelGeneric(int dimension,
 			int tadOffsetForBlock = tad->tadOffsetForBlock;
 			int *currentShape = shapeInfoPointers[r];
 			T *currentData = dataT[r];
-
+/*
 			if (tid == 0)
 				printf("tadLength: [%i], tadOffset: [%i], tadEWS: [%i], yEWS: [%i], dimension: [%i]\n", yLength, tadOffsetForBlock, tadEWS, yEWS, dimension);
-
+*/
 			for (int j = 0; j < inputTAD->numTads;j ++) {
 
 				int inputOffset = inputTAD->tadOffset(j);
@@ -3242,96 +3270,58 @@ __device__ void concatKernelGeneric(int dimension,
 
 				if (zOrder == yOrder && yEWS > 0 ) {
 					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
-						T value = dataTAD[i * yEWS];
-						printf("Tid: [%i], Index: [%i], Value: [%f]\n", tid, i, value);
-						resultTAD[i * tadEWS] = value;
+						//T value = dataTAD[i * yEWS];
+						//printf("Tid: [%i], Index: [%i], Value: [%f]\n", tid, i, value);
+						resultTAD[i * tadEWS] = dataTAD[i * yEWS];
 					}
 				} else {
 					//printf("Non-matching order, yEWS: [%i]\n", yEWS);
 					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(inputTAD->tadOnlyShapeInfo)) {
-						// FIXME: this is really bad
-						int idx = 0;
-
 						if (tid == 0)
 							printf("IN SHAPE ITER 1\n");
 
+						// FIXME: this is bad
+						__shared__ int baseIdx;
+						if (threadIdx.x == 0) {
+							baseIdx = 0;
+							for (int f = 0; f < r; f++) {
+								baseIdx += shape::length(shapeInfoPointers[f]);
+							}
+						}
+						__syncthreads();
+
 						if (inputTAD->wholeThing) {
-							for(int k = 0; k < shape::length(inputTAD->tadOnlyShapeInfo); k++) {
-								resultTAD[idx * tadEWS] = dataTAD[k];
-								idx++;
+							for(int k = threadIdx.x; k < yLength; k+= blockDim.x) {
+								resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
 							}
 						} else {
 
+							int yIdx[MAX_RANK];
 
-							int shapeIter[MAX_RANK];
-							int coord[MAX_RANK];
-							int dim;
-							int rankIter = shape::rank(inputTAD->tadOnlyShapeInfo);
-							int xStridesIter[MAX_RANK];
-							if (PrepareOneRawArrayIter<T>(rankIter,
-														  shape::shapeOf(inputTAD->tadOnlyShapeInfo),
-														  dataTAD,
-														  shape::stride(inputTAD->tadOnlyShapeInfo),
-														  &rankIter,
-														  shapeIter,
-														  &dataTAD,
-														  xStridesIter) >= 0) {
-								ND4J_RAW_ITER_START(dim, shape::rank(inputTAD->tadOnlyShapeInfo), coord, shapeIter);
-								{
-									/* Process the innermost dimension */
-									resultTAD[idx * tadEWS] = dataTAD[0];
-									idx++;
-								}
-								ND4J_RAW_ITER_ONE_NEXT(dim,
-													   rankIter,
-													   coord,
-													   shapeIter,
-													   dataTAD,
-													   xStridesIter);
+							int yRank = shape::rank(inputTAD->tadOnlyShapeInfo);
 
-							}
-							else {
-								printf("Unable to prepare array\n");
+							for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
+								shape::ind2sub(yRank, shape::shapeOf(inputTAD->tadOnlyShapeInfo), i,yIdx);
+								int yOffset = shape::getOffset(0, shape::shapeOf(inputTAD->tadOnlyShapeInfo), shape::stride(inputTAD->tadOnlyShapeInfo), yIdx, yRank);
+
+								resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
 							}
 						}
 					} else {
 						if (tid == 0)
 							printf("IN SHAPE ITER 2\n");
 
-						int shapeIter[MAX_RANK];
-						int coord[MAX_RANK];
-						int dim;
-						int xStridesIter[MAX_RANK];
-						int resultStridesIter[MAX_RANK];
-						int *xShape = shape::shapeOf(inputTAD->tadOnlyShapeInfo);
-						int *xStride = shape::stride(inputTAD->tadOnlyShapeInfo);
-						int *resultStride = shape::stride(tad->tadOnlyShapeInfo);
-						int rank = shape::rank(inputTAD->tadOnlyShapeInfo);
-						if (PrepareTwoRawArrayIter<T>(rank,
-													  xShape,
-													  dataTAD,
-													  xStride,
-													  resultTAD,
-													  resultStride,
-													  &rank,
-													  shapeIter,
-													  &dataTAD,
-													  xStridesIter,
-													  &resultTAD,
-													  resultStridesIter) >= 0) {
-							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-								resultTAD[0] = dataTAD[0];
-							} ND4J_RAW_ITER_TWO_NEXT(
-									dim,
-									rank,
-									coord,
-									shapeIter,
-									dataTAD,
-									xStridesIter,
-									resultTAD,
-									resultStridesIter);
+						int yIdx[MAX_RANK];
 
+						int yRank = shape::rank(inputTAD->tadOnlyShapeInfo);
 
+						for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
+							shape::ind2sub(yRank, shape::shapeOf(inputTAD->tadOnlyShapeInfo), i,yIdx);
+
+							int yOffset = shape::getOffset(0, shape::shapeOf(inputTAD->tadOnlyShapeInfo), shape::stride(inputTAD->tadOnlyShapeInfo), yIdx, yRank);
+							int resultOffset = shape::getOffset(0,shape::shapeOf(inputTAD->tadOnlyShapeInfo),shape::stride(tad->tadOnlyShapeInfo),yIdx,yRank);
+
+							resultTAD[resultOffset] =  dataTAD[yOffset]; //op(dy[xOffset2],scalar, params);
 						}
 					}
 				}
@@ -3942,7 +3932,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	printf("Initial pointer before launch: [%lu]\n", inputShapeInfo[0]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<1, 1, 2048, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+	concatKernelFloat<<<1, 10, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
