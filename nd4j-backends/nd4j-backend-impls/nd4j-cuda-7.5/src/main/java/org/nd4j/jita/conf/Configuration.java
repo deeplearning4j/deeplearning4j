@@ -32,7 +32,7 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
+    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
@@ -40,7 +40,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean debug = false;
 
-    @Getter private boolean verbose = true;
+    @Getter private boolean verbose = false;
 
     /**
      * Keep this value between 0.01 and 0.95 please

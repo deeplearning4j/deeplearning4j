@@ -337,7 +337,8 @@ public class AsynchronousFlowController implements FlowController{
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
             int lastLane = -1;
-            int pendingLanes[] = new int[]{-1, -1};
+            // FIXME: this array must be dynamic, bound to configuration
+            int pendingLanes[] = new int[]{-1, -1, -1, -1};
             for (INDArray operand: operands) {
                 if (operand == null) continue;
 
