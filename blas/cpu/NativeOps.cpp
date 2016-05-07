@@ -1530,7 +1530,6 @@ void concatGeneric(
         Nd4jPointer result,
         Nd4jPointer resultShapeInfo) {
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
-    int *resultShape = shape::shapeOf(resultShapeInfoPointer);
     //number of total arrays, every other dimension should be the same
     T **dataBuffers = reinterpret_cast<T **>(data);
     int **inputShapeInfoPointers = reinterpret_cast<int **>(inputShapeInfo);
@@ -1577,7 +1576,6 @@ void concatGeneric(
     //vector case
     if(shape::isVector(resultShapeInfoPointer)) {
         int idx = 0;
-        Nd4jIndex  length = shape::length(resultShapeInfoPointer);
         if(resultStride == 1) {
             for(int i = 0; i < numArrays; i++) {
                 if(shape::isVector(inputShapeInfoPointers[i]) || shape::order(inputShapeInfoPointers[i]) == shape::order(resultShapeInfoPointer)) {
