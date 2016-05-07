@@ -140,6 +140,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
