@@ -153,7 +153,6 @@ public class ConcatTests extends BaseNd4jTest {
         INDArray concat2 = Nd4j.concat(2, first, second, third);
 
         assertEquals(exp, concat2);
-
     }
 
 
