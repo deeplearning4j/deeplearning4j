@@ -25,15 +25,6 @@
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
-    </dependencies>
 
     <build>
         <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
@@ -113,12 +104,11 @@
             </activation>
             <properties>
                 <dependency.groupId>${project.parent.groupId}</dependency.groupId>
-                <dependency.artifactId>${project.parent.artifactId}</dependency.artifactId>
+                <dependency.artifactId>${project.artifactId}</dependency.artifactId>
                 <dependency.version>${project.parent.version}</dependency.version>
                 <dependency.packaging>pom</dependency.packaging>
                 <dependency.classifier></dependency.classifier>
             </properties>
         </profile>
     </profiles>
-
 </project>
