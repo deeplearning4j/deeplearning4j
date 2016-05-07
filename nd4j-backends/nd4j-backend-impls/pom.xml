@@ -25,15 +25,6 @@
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
-    </dependencies>
 
     <build>
         <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
@@ -103,7 +94,7 @@
     </build>
 
     <!-- Disable platform dependency when building the artifact for the dependency itself -->
-    <profiles>
+ <!--   <profiles>
         <profile>
             <id>no-platform-dependency</id>
             <activation>
@@ -120,5 +111,5 @@
             </properties>
         </profile>
     </profiles>
-
+-->
 </project>
