@@ -86,14 +86,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray coefficients =  Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(gamma, std, gamma, -1));
 
         INDArray tmp = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gGamma, xHat.dup(), -1));
-        tmp.addiColumnVector(gBeta).divi(batchSize);
-        INDArray gXHat =  Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(tmp, coefficients, tmp, -1));
+        tmp.addiRowVector(gBeta).divi(batchSize);
+        INDArray gXHat =  tmp.sub(coefficients);
         INDArray nextEpsilon = reshapeEp.mul(gXHat).reshape(epsilon.shape());
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, gGamma);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, gBeta);
         return new Pair<>(retGradient,nextEpsilon);
     }
+
+    // TODO kill shapes and take in shape - use that to determine if cnn or regular to apply batch
+    // or move this into the layer
 
     @Override
     public void merge(Layer layer, int batchSize) {
@@ -167,8 +170,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(),-1));
 
         // BN(xk) = γkxˆk + βk (applying gamma and beta for each activation/feature)
-        INDArray activations =  Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), -1));
-        activations.addiColumnVector(beta);
+        // TODO confirm if this is matrix multiply?
+        INDArray activations =  xHat.dup().mmul(gamma).addRowVector(beta);
 
         // update mean and var if using batch mean while training
         double decay;
