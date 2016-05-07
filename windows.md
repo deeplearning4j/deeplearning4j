@@ -213,3 +213,9 @@ If you want to set your PATH temporarily, you can do so with:
 ```
     export PATH=... # Replace ... with what ever you want to have there
 ```
+
+
+#BLAS Impls
+
+MKL: Have it on your path
+Openblas: Ensure that you set up $MSYSROOT/opt/OpenBLAS/lib
