@@ -2,27 +2,29 @@
 
 Native operations for nd4j. Build using cmake
 
-Pre requisites:
+**Prerequisites:**
 
-Gcc 4+ or clang
-Cuda (if needed)
+* Gcc 4+ or clang
+* Cuda (if needed)
+* CMake
+* A blas implementation or openblas is required
 
-A blas implementation or openblas is required
+----
 
-OS specific:
+**OS Specific Requirements:**
 
 
-OSX:
+*OSX:*
 
 Run ./setuposx.sh (ensure you have brew installed)
 
 
-Linux:
+*Linux:*
 
 Depends on the distro - ask in the earlyadopters channel for specifics
 on distro
 
-Ubuntu Linux 15.10
+*Ubuntu Linux 15.10*
 > wget http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda-repo-ubuntu1504-7-5-local_7.5-18_amd64.deb
 
 > sudo dpkg -i cuda-repo-ubuntu1504-7-5-local_7.5-18_amd64.deb
@@ -59,33 +61,35 @@ Ubuntu Linux 15.10
 
 > ./buildnativeoperations.sh blas cuda Debug
 
-Ubuntu Linux 16.04
+*Ubuntu Linux 16.04* 
 * sudo apt install libopenblas-dev
 * sudo apt install cmake
 * Installation of CUDA currently not supported by NVIDIA, working on a fix... 
 
 The standard development headers are needed.
 
-Windows:
-see windows.md
+*Windows:*
+See windows.md
 
+------
+
+**Setup for All OS:**
 
 1. Set a LIBND4J_HOME as an environment variable to the libnd4j folder you've obtained from GIT
+     *  Note: this is required for building nd4j as well.
 
-This is required for building nd4j as well.
+2. Setup cpu followed by gpu, run the following on the command line:
+     * For standard builds:
 
-2. For cpu followed by gpu run:
-     
-       ./buildnativeoperations.sh blas cpu
-       ./buildnativeoperations.sh blas cuda
-       
-For Debug builds:
+               ./buildnativeoperations.sh blas cpu
+               ./buildnativeoperations.sh blas cuda
 
-    ./buildnativeoperations.sh blas cpu Debug
-    ./buildnativeoperations.sh blas cuda Debug
+     * For Debug builds:
 
+               ./buildnativeoperations.sh blas cpu Debug
+               ./buildnativeoperations.sh blas cuda Debug
 
-For release builds (default):
+     * For release builds (default):
 
-    ./buildnativeoperations.sh blas cpu Release
-    ./buildnativeoperations.sh blas cuda Release
+               ./buildnativeoperations.sh blas cpu Release
+               ./buildnativeoperations.sh blas cuda Release
