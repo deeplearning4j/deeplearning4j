@@ -14,6 +14,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
+        </dependency>
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
             <version>${project.version}</version>
