@@ -16,6 +16,7 @@
         <module>nd4j-native</module>
         <module>nd4j-cuda-7.5</module>
     </modules>
+<!--
 
     <properties>
         <javacpp.platform.dependency>${javacpp.platform}</javacpp.platform.dependency>
@@ -30,6 +31,7 @@
             <classifier>${javacpp.platform.dependency}</classifier>
         </dependency>
     </dependencies>
+-->
 
     <build>
         <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
