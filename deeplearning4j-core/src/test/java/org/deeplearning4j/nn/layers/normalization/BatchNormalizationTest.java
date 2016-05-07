@@ -78,6 +78,8 @@ public class BatchNormalizationTest {
         assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
     }
 
+    // TODO test calcs for xhat, activations, gamma, epsilon work with numbers that are not 0 or 1
+
     @Test
     public void testDnnShapeBatchNormBack(){
         Layer layer = setupActivations(2, 16);
@@ -102,6 +104,18 @@ public class BatchNormalizationTest {
         assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
     }
 
+
+    @Test
+    public void testStuff(){
+        INDArray a = Nd4j.rand(2,2);
+        INDArray d = Nd4j.rand(2,1);
+        INDArray b = a.mul(2);
+        INDArray c = a.mul(4);
+
+        a.addiColumnVector(d);
+        a.add(b);
+
+    }
 
     @Test
     public void testCnnShapeBatchNormForward() {
