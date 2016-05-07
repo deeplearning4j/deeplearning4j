@@ -5093,8 +5093,6 @@ namespace functions {
                             dimension[i] = (int) extraParams[i + 1];
                         }
 
-                        int *shape = shape::shapeOf(xShapeBuffer);
-                        int wholeRank = shape::rank(xShapeBuffer);
 
 
                         shape::TAD tad(xShapeBuffer,dimension,dimensionLength);

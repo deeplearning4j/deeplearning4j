@@ -1799,7 +1799,6 @@ namespace shape {
             ret = new int[shape::shapeInfoLength(rank)];
 #endif
 
-            int shapeInfoLen = shape::shapeInfoLength(shape::rank(shapeInfo));
 
             //set the rank
             ret[0] = rank;
@@ -2380,8 +2379,6 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     inline int *shapeInfoOnlyShapeAndStride(int *shapeInfo, int *dimension, int dimensionLength,bool reverseCopyStride) {
-        int *theShape = shape::shapeOf(shapeInfo);
-        int *theStride = shape::stride(shapeInfo);
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
 
         traceNew(4);
