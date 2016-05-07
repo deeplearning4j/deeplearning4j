@@ -32,13 +32,15 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
+    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
 
-    @Getter private AllocationModel allocationModel = AllocationModel.DIRECT;
+    @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.HOST;
+    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private boolean debug = true;
+    @Getter private boolean debug = false;
+
+    @Getter private boolean verbose = false;
 
     /**
      * Keep this value between 0.01 and 0.95 please
@@ -76,7 +78,7 @@ public class Configuration implements Serializable {
     /**
      * Maximum allocated per-device memory, in bytes
      */
-    @Getter private long maximumDeviceAllocation = 1 * 1024 * 1024 * 1024L;
+    @Getter private long maximumDeviceAllocation = 4 * 1024 * 1024 * 1024L;
 
 
     /**
@@ -290,6 +292,14 @@ public class Configuration implements Serializable {
         this.debug = debug;
 
         nativeOps.enableDebugMode(debug);
+
+        return this;
+    }
+
+    public Configuration setVerbose(boolean verbose) {
+        this.verbose = verbose;
+
+        nativeOps.enableVerboseMode(verbose);
 
         return this;
     }

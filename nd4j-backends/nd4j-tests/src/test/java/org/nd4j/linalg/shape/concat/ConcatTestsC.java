@@ -62,8 +62,37 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertTrue(firstRet.isColumnVector());
         INDArray secondRet = Nd4j.concat(1, first, second);
         assertTrue(secondRet.isRowVector());
+    }
 
+    @Test
+    public void testConcatScalars1() {
+        INDArray first = Nd4j.scalar(1);
+        INDArray second = Nd4j.scalar(2);
+        INDArray third = Nd4j.scalar(3);
 
+        INDArray result = Nd4j.concat(0, first, second, third);
+
+        assertEquals(1f, result.getFloat(0), 0.01f);
+        assertEquals(2f, result.getFloat(1), 0.01f);
+        assertEquals(3f, result.getFloat(2), 0.01f);
+    }
+
+    @Test
+    public void testConcatVectors1() {
+        INDArray first = Nd4j.ones(10);
+        INDArray second = Nd4j.ones(10);
+        INDArray third = Nd4j.ones(10);
+
+        INDArray result = Nd4j.concat(0, first, second, third);
+
+        assertEquals(3, result.rows());
+        assertEquals(10, result.columns());
+
+        System.out.println(result);
+
+        for (int x = 0; x < 30; x++) {
+            assertEquals(1f, result.getFloat(x), 0.001f);
+        }
     }
 
     @Test
@@ -74,6 +103,10 @@ public class ConcatTestsC extends BaseNd4jTest {
 
         INDArray concat1 = Nd4j.concat(1, a, b);
         INDArray oneAssertion = Nd4j.create(new double[][]{{1, 2, 1, 2}, {3, 4, 3, 4}});
+
+        System.out.println("Assertion: " + Arrays.toString(oneAssertion.data().asFloat()));
+        System.out.println("Result: " + Arrays.toString(concat1.data().asFloat()));
+
         assertEquals(oneAssertion,concat1);
 
         INDArray concat = Nd4j.concat(0, a, b);

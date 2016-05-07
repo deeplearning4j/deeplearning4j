@@ -865,6 +865,7 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void concatDouble(
+            long[] extraPointers,
             int dimension,
             int numArrays,
             long []data,
@@ -881,6 +882,7 @@ public class NativeOps extends Pointer {
      * @param resultShapeInfo
      */
     public native void concatFloat(
+            long[] extraPointers,
             int dimension,
             int numArrays,
             long []data,
@@ -946,6 +948,8 @@ public class NativeOps extends Pointer {
     public native long getAvailableDevices();
 
     public native void enableDebugMode(boolean reallyEnable);
+
+    public native void enableVerboseMode(boolean reallyEnable);
 
     public native void setGridLimit(int gridSize);
 }
