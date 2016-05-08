@@ -81,15 +81,17 @@ See windows.md
 2. Setup cpu followed by gpu, run the following on the command line:
      * For standard builds:
 
-               ./buildnativeoperations.sh blas cpu
-               ./buildnativeoperations.sh blas cuda
+               ./buildnativeoperations.sh
+               ./buildnativeoperations.sh -c cuda
 
      * For Debug builds:
 
-               ./buildnativeoperations.sh blas cpu Debug
-               ./buildnativeoperations.sh blas cuda Debug
+               ./buildnativeoperations.sh blas -b debug
+               ./buildnativeoperations.sh blas -c cuda -b debug
 
      * For release builds (default):
 
-               ./buildnativeoperations.sh blas cpu Release
-               ./buildnativeoperations.sh blas cuda Release
+               ./buildnativeoperations.sh
+               ./buildnativeoperations.sh -c cuda
+
+

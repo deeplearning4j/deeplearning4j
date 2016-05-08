@@ -214,6 +214,14 @@ If you want to set your PATH temporarily, you can do so with:
     export PATH=... # Replace ... with what ever you want to have there
 ```
 
+#MSI Installer
+
+To build an MSI Installer run:
+./buildnativeoperations.sh -p msi
+
+For gpu run:
+./buildnativeoperations.sh -p msi -c cuda
+
 
 #BLAS Impls
 
