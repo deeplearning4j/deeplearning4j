@@ -1566,13 +1566,31 @@ void   NativeOps::execTransformDouble(
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
 				case 38: {// softmax
+					Nd4jPointer tempPointers[9];
+					tempPointers[0] = extraPointers[0];
+					tempPointers[1] = extraPointers[1];
+					tempPointers[2] = extraPointers[2];
+					tempPointers[3] = extraPointers[3];
+					tempPointers[4] = extraPointers[4];
+					tempPointers[5] = extraPointers[5];
+					tempPointers[6] = extraPointers[6];
+					tempPointers[7] = extraPointers[7];
+					tempPointers[8] = extraPointers[8];
+					int maxShape[2] = {shape::shapeOf(hostXShapeInfo)[0], 1};
+					int *hostMaxShapeBuffer = shape::shapeBuffer(2, maxShape);
+					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
+					tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
+
 					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
-					//checkCudaErrors(cudaStreamSynchronize(*stream));
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
 					execReduceDouble(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+
+					tempPointers[8] = extraPointers[8];
 
 					// sub 1
 					execBroadcastDouble(extraPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
@@ -1581,9 +1599,13 @@ void   NativeOps::execTransformDouble(
 					// exp 3
 					execTransformDouble(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
+					tempPointers[8] = tempPointers[7];
+
 					//sum 1
 					execReduceDouble(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
+
+					tempPointers[8] = extraPointers[8];
 
 					// divide 3
 					execBroadcastDouble(extraPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
@@ -1595,11 +1617,24 @@ void   NativeOps::execTransformDouble(
 					else if (opNum == 39)
 						execTransformDouble(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
+					delete hostMaxShapeBuffer;
+
 					break;
 				}
 				case 41: {
 					// IsMax along all dimensions
+					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
+						scalarCheat = true;
+					} else {
+						//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
+						//if (shape::isVector(hostXShapeInfo) && extraParamsPointer[1] == 1) {
+						//	scalarCheat = true;
+						//}
+					}
+
+					if (scalarCheat) {
+						//printf("Going for scalar IsMax\n");
 						int maxIdx = (int) execIndexReduceScalarDouble(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -1608,10 +1643,25 @@ void   NativeOps::execTransformDouble(
 						else
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxDouble<<< 8, 96, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+						fillIsMaxDouble<<< 1, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-						execIndexReduceDouble(extraPointers,0, dx, xShapeInfo, extraParams, result, resultShapeInfo, (Nd4jPointer) dimension, 1);
+						//printf("Going for dimension-based IsMax\n");
+
+						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[9]);
+
+						// we call for IMax on specified dimension
+						execIndexReduceDouble(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
+
+						if (debug)
+							checkCudaErrors(cudaStreamSynchronize(*stream));
+
+						// at this point, all IMax indexes are gathered, and we execute
+						fillDimensionalIsMaxDouble<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+
+						if (debug)
+							checkCudaErrors(cudaStreamSynchronize(*stream));
+
 					}
 					break;
 				}
@@ -2995,7 +3045,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					}
 
 					if (scalarCheat) {
-						printf("Going for scalar IsMax\n");
+						//printf("Going for scalar IsMax\n");
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -3007,7 +3057,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						fillIsMaxFloat<<< 1, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-						printf("Going for dimension-based IsMax\n");
+						//printf("Going for dimension-based IsMax\n");
 
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[9]);
 
