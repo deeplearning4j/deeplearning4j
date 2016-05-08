@@ -205,7 +205,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             log.warn("No available [HOST] memory, sleeping...");
                             log.warn("Currently used: ["+zeroUseCounter.get()+"], allocated objects: ["+ zeroAllocations.get(0)+"]");
                             System.gc();
-                            Thread.sleep(10000);
+                            Thread.sleep(1000);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -529,6 +529,8 @@ public class CudaZeroHandler implements MemoryHandler {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
             Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
+            if (tContext == null)
+                tContext  = flowController.prepareAction(point);
             //log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 /*
             JCuda.cudaMemcpyAsync(
@@ -538,7 +540,12 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, tContext.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(
+                        rDP.address(),
+                        dP.address(),
+                        length,
+                        CudaConstants.cudaMemcpyHostToDevice,
+                        tContext.getOldStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
             flowController.registerAction(tContext, point);

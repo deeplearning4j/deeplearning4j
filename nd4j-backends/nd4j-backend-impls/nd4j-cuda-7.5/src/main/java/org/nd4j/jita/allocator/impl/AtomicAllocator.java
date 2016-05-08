@@ -326,11 +326,11 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = null;
 
         // TODO: size limitation should be rised in final release to something more sensible
-        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
-            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
-        } else {
+//        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
+//            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
+//        } else {
             point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
-        }
+//        }
 
         return point;
     }
@@ -353,10 +353,10 @@ public class AtomicAllocator implements Allocator {
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
 
-        if (buffer instanceof CudaIntDataBuffer) {
-            buffer.setConstant(true);
-            point.setConstant(true);
-        }
+//        if (buffer instanceof CudaIntDataBuffer) {
+//            buffer.setConstant(true);
+//            point.setConstant(true);
+//        }
 
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
