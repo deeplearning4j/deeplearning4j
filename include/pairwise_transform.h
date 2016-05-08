@@ -142,44 +142,21 @@ namespace functions {
 		Nd4jIndex i = tid;
 
 
-		int *xShape = shape::shapeOf(xShapeBuffer);
-		int *yShape = shape::shapeOf(yShapeBuffer);
-		int *resultShape = shape::shapeOf(resultShapeBuffer);
-
-		int *xStride = shape::stride(xShapeBuffer);
-		int *yStride = shape::stride(yShapeBuffer);
-		int *resultStride = shape::stride(resultShapeBuffer);
-
 		int xRank = shape::rank(xShapeBuffer);
 		int yRank = shape::rank(yShapeBuffer);
 		int resultRank = shape::rank(resultShapeBuffer);
 
-		int xOffset = shape::offset(xShapeBuffer);
-		int yOffset = shape::offset(yShapeBuffer);
-		int resultOffset = shape::offset(resultShapeBuffer);
-
-
-		char xOrder = shape::order(xShapeBuffer);
-		char yOrder = shape::order(yShapeBuffer);
-		char resultOrder = shape::order(resultShapeBuffer);
-
-		int xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
-		int yElementWiseStride = shape::elementWiseStride(yShapeBuffer);
-		int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
-
-
-
 		Nd4jIndex n = shape::length(xShapeBuffer);
-		if(xElementWiseStride >= 1 && yElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == yOrder && resultOrder == xOrder && xElementWiseStride == yElementWiseStride) {
+		if(shape::elementWiseStride(xShapeBuffer) >= 1 && shape::elementWiseStride(yShapeBuffer) >= 1 && shape::elementWiseStride(resultShapeBuffer) >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
 			transformCuda(
 					n,
 					dx,
 					y,
-					xElementWiseStride,
-					yElementWiseStride,
+					shape::elementWiseStride(xShapeBuffer),
+					shape::elementWiseStride(yShapeBuffer),
 					extraParams,
 					result,
-					resultElementWiseStride, allocationPointer, manager);
+					shape::elementWiseStride(resultShapeBuffer), allocationPointer, manager);
 		}
 
 		else {
@@ -194,35 +171,31 @@ namespace functions {
 
 			int xCoord[MAX_RANK];
 			int yCoord[MAX_RANK];
-			int resultCoord[MAX_RANK];
-
 
 			if (dx == result) {
 				for (i = tid; i < n; i += totalThreads) {
-					shape::ind2subC(xRank,xShape, i, xCoord);
-					shape::ind2subC(yRank,yShape, i, yCoord);
+					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
+					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 
-					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+					Nd4jIndex xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
 					result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
 				}
 			} else {
-				for (; i < n; i += totalThreads) {
-					shape::ind2subC(xRank,xShape, i, xCoord);
-					shape::ind2subC(yRank,yShape, i, yCoord);
-					shape::ind2subC(resultRank,resultShape, i, resultCoord);
+    			int resultCoord[MAX_RANK];
 
-					Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-					Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-					Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+				for (; i < n; i += totalThreads) {
+					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
+					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
+					shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
+
+					Nd4jIndex xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
+					Nd4jIndex yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
+					Nd4jIndex resultOffset = shape::getOffset(0, shape::shapeOf(resultShapeBuffer), shape::stride(resultShapeBuffer), resultCoord, resultRank);
 					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
 				}
 			}
 		}
-
-
-
-
 	}
 
 	/**
