@@ -277,6 +277,7 @@ public  class DefaultOpExecutioner implements OpExecutioner {
                 ret.putScalar(i, result);
             }
 
+            // FIXME: this is wrong, it breaks shapeInfo immutability
             if (ret.ordering() == 'c')
                 ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
 

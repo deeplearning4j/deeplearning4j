@@ -129,6 +129,8 @@ public class NDArrayIndex implements INDArrayIndex {
 
             int[] newShapeArr = Ints.toArray(newShape);
             int[] newStrideArr = Ints.toArray(newStrides);
+
+            // FIXME: this is wrong, it breaks shapeInfo immutability
             arr.setShape(newShapeArr);
             arr.setStride(newStrideArr);
 
