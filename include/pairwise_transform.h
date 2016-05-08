@@ -137,9 +137,7 @@ namespace functions {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, UnifiedSharedMemory<T> *manager) {
-		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = tid;
 
 
 		int xRank = shape::rank(xShapeBuffer);
@@ -173,7 +171,7 @@ namespace functions {
 			int yCoord[MAX_RANK];
 
 			if (dx == result) {
-				for (i = tid; i < n; i += totalThreads) {
+				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 
@@ -184,7 +182,7 @@ namespace functions {
 			} else {
     			int resultCoord[MAX_RANK];
 
-				for (; i < n; i += totalThreads) {
+				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(xRank,shape::shapeOf(xShapeBuffer), i, xCoord);
 					shape::ind2subC(yRank,shape::shapeOf(yShapeBuffer), i, yCoord);
 					shape::ind2subC(resultRank,shape::shapeOf(resultShapeBuffer), i, resultCoord);
@@ -222,13 +220,11 @@ namespace functions {
 			T *params,
 			T *result,
 			int incz,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
-		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = tid;
 
 		if (incy == 0) {
 #pragma unroll
-				for (; i < n; i++) {
+				for (int i = tid; i < n; i+= gridDim.x * blockDim.x) {
 					result[i * incz] = op(dx[i * incx], params);
 				}
 		} else if ((incx == incy) && (incx > 0)) {
@@ -236,14 +232,14 @@ namespace functions {
 			if (incx == 1) {
 				/* both increments equal to 1 */
 #pragma unroll
-				for (; i < n; i += totalThreads) {
+				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 					result[i * incz] = op(dx[i * incx], dy[i * incy],
 							params);
 				}
 			} else {
 				/* equal, positive, non-unit increments. */
 #pragma unroll
-				for (; i < n; i += totalThreads) {
+				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 					result[i * incz] = op(dx[i * incx], dy[i * incy],
 							params);
 				}
@@ -251,7 +247,7 @@ namespace functions {
 		} else {
 			/* unequal or nonpositive increments */
 #pragma unroll
-			for (; i < n; i += totalThreads) {
+			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 				result[i * incz] = op(dx[i * incx], dy[i * incy],
 						params);
 			}
