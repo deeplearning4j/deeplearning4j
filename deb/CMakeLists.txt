@@ -1,0 +1,4 @@
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Skymind - http://skymind.io/") #required
+
+INCLUDE(CPack)

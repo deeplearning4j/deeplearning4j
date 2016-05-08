@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 install() {
+    echo "RUNNING INSTALL"
     if hash nvcc 2>/dev/null; then
     echo "BUILDING CUDA"
         ./buildnativeoperations.sh blas cuda release
