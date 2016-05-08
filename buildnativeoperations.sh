@@ -121,9 +121,11 @@ fi
 
 if [ "$PACKAGING" == "deb" ]; then
     PACKAGING_ARG="-DPACKAGING=deb"
- fi
+fi
 
-
+if [ "$PACKAGING" == "msi" ]; then
+    PACKAGING_ARG="-DPACKAGING=msi"
+fi
 
 
 mkbuilddir() {
