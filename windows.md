@@ -23,7 +23,7 @@ libnd4j and nd4j go hand in hand, and libnd4j is required for two out of the thr
 
 Now clone this repository, and in that directory run the following to build the dll for the cpu backend:
 
-    bash ./buildnativeoperations.sh blas cpu
+    ./buildnativeoperations.sh
 
 ### Building the CUDA Backend
 
@@ -38,7 +38,7 @@ But first, set the system environment variable `SET_FULL_PATH` to `true`, so all
 1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
 2. Run `c:\msys64\mingw64_shell.bat` inside that
 3. Change to your libnd4j folder
-4. `bash buildnativeoperations.sh blas cuda` (note the `bash` at the beginning, for some reason it doesn't work to directly start the script)
+4. `./buildnativeoperations.sh -c cuda`
 
 This builds the CUDA nd4j.dll.
 
@@ -61,7 +61,7 @@ If you don't want the cuda backend, e.g. because you didn't or can't build it, y
 
     mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5'
 
-Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell.
+Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell. If this doesn't work, make sure you have a current version of maven installed.
 
 
 ## Using the Native Backend
