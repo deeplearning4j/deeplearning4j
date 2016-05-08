@@ -859,6 +859,7 @@ public:
     * along a particular dimension
     */
     void concatFloat(
+            Nd4jPointer *extraPointers,
             int dimension,
             int numArrays,
             Nd4jPointer *data,
@@ -870,6 +871,7 @@ public:
     * along a particular dimension
     */
     void concatDouble(
+            Nd4jPointer *extraPointers,
             int dimension,
             int numArrays,
             Nd4jPointer *data,
@@ -957,6 +959,8 @@ public:
     Nd4jPointer getAvailableDevices();
 
     void enableDebugMode(bool reallyEnable);
+
+    void enableVerboseMode(bool reallyEnable);
 
     void setGridLimit(int gridSize);
 };

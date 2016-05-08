@@ -76,6 +76,10 @@ class UnifiedSharedMemory{
         sharedMemory = shMem;
     }
 
+    __device__ UnifiedSharedMemory(int *shMem) {
+        sharedMemory = shMem;
+    }
+
     __device__ __host__ void init (int unifiedSize, int factorySize, int functionSize, int tadSize) {
         this->unifiedSize = unifiedSize < 16 ? 16 : unifiedSize;
         this->factorySize = factorySize < 16 ? 16: factorySize;

@@ -662,6 +662,10 @@ namespace shape {
 #endif
     inline int* createScalarShapeInfo();
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int* createScalarShapeInfo(int *ret);
 
 /**
  * Generate an int buffer
@@ -1173,6 +1177,11 @@ namespace shape {
     __host__ __device__
 #endif
     void printShapeInfo(int *shapeInfo);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printShapeInfoLinear(int *shapeInfo);
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -1778,7 +1787,16 @@ namespace shape {
 #endif
         inline int *shapeInfoOnlyShapeAndStride() {
             if(wholeThing) {
+#ifdef __CUDACC__
+                if (ptrManager != nullptr) {
+                    UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                    int *ret = manager->getT1ShapeBuffer();
+
+                    return shape::createScalarShapeInfo(ret);
+                } else return shape::createScalarShapeInfo();
+#else
                 return shape::createScalarShapeInfo();
+#endif
             }
             //ensure tad shapes get setup right for vectors
             if(dimensionLength < 1 && !shape::isVector(shapeInfo))
@@ -2469,7 +2487,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
     inline int * calcStrides(int *shape, int rank, int startNum) {
 
-        traceNew(7);
+        //traceNew(7);
 
         int *stride = new int[rank];
 
@@ -2702,7 +2720,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
     inline int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
 
-        traceNew(11);
+        //traceNew(11);
 
         shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
@@ -2714,6 +2732,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
         shapeInfo->order = 'c';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
+        delete stride;
         delete shapeInfo;
         return shapeInfoBuffer;
     }
@@ -4208,7 +4227,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     inline int *toShapeBuffer( ShapeInformation *info) {
 
-        traceNew(29);
+        //traceNew(29);
 
         int *ret = new int[shapeInfoLength(info->rank)];
         int count = 1;
@@ -4265,6 +4284,18 @@ __device__ int tadOffset(int *xInfo, int offset) {
         printf("\n");
 
         printf("Order %c\n",shape::order(shapeInfo));
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printShapeInfoLinear(int *shapeInfo) {
+        int rank = shape::rank(shapeInfo);
+        printf("ShapeInfo: [");
+        for (int i = 0; i < rank * 2 + 4; i++) {
+            printf("%i, ", shapeInfo[i]);
+        }
+        printf("]\n");
     }
 /**
  * Given an linear index, element wise stride
@@ -4367,6 +4398,22 @@ __device__ int tadOffset(int *xInfo, int offset) {
         shapeInformation2->elementWiseStride = 1;
         int *ret = shape::toShapeBuffer(shapeInformation2);
         delete shapeInformation2;
+        return ret;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int* createScalarShapeInfo(int *ret) {
+        ret[0] = 2;
+        ret[1] = 1;
+        ret[2] = 1;
+        ret[3] = 1;
+        ret[4] = 1;
+        ret[5] = 0;
+        ret[6] = 1;
+        ret[7] = 99;
+
         return ret;
     }
 
