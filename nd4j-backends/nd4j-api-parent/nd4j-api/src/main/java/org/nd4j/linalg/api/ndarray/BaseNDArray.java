@@ -173,7 +173,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < columns; c++) {
-                putScalar(new int[]{r, c}, data[r][c]);
+                putScalar(r, c, data[r][c]);
             }
         }
     }
@@ -621,7 +621,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < columns; c++) {
-                putScalar(new int[]{r, c}, data[r][c]);
+                putScalar(r, c, data[r][c]);
             }
         }
     }
