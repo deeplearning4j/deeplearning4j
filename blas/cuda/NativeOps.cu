@@ -1538,7 +1538,7 @@ void   NativeOps::execTransformDouble(
 	// special pointer for special buffer for special ops
 	double *specialPointer = reinterpret_cast<double *>(extraPointers[6]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], hostZShapeInfo);
 
 	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
@@ -2943,7 +2943,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	float * special = (float *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], resultShapeInfoPointer);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], hostZShapeInfo);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF20 opNum:[%i]\n", opNum);
