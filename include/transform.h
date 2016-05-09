@@ -4134,6 +4134,7 @@ namespace functions {
 		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
 		__shared__ T maxResult;
 		__shared__ int isVector;
+		__shared__ int *maxResultShapeBuffer;
 		if(threadIdx.x == 0) {
 			isVector = shape::isVector(xShapeBuffer);
 			/*
@@ -4150,66 +4151,77 @@ namespace functions {
 			sum = new functions::reduce::ops::Sum<T>();
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
 			*/
+			maxResult = (T) 0.0;
 		}
 		__syncthreads();
 		//compute the row wise maxes
 
-		if (threadIdx.x < shape[0])
-			maxResult[threadIdx.x] = 0.0;
-		__syncthreads();
-
 		int maxShape[2] = {shape[0], 1};
-		int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+		__shared__ int tempBuffer[8];
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
+		if (threadIdx.x == 0)
+			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
+
+		if (threadIdx.x == 0)
+            max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
+        __syncthreads();
+
+		max->transformCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//subtract max of each row
 		if (isVector) {
-			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			if (threadIdx.x == 0)
+                scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+            __syncthreads();
+
+			scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			if (threadIdx.x == 0)
+                sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
+            __syncthreads();
+
+			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
+
+        if (threadIdx.x == 0)
+            exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+        __syncthreads();
 
 		//after subtracting the row wise maxes take the exp
 		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
+        if (threadIdx.x == 0)
+            sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+        __syncthreads();
+
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//divide by the sum
 		if (isVector) {
-			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
+			if (threadIdx.x == 0)
+                scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+            __syncthreads();
+
+			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
 		} else {
-			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			if (threadIdx.x == 0)
+                div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
+            __syncthreads();
+
+			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
+        if (threadIdx.x == 0)
+            log = new functions::transform::ops::Log<T>();
+        __syncthreads();
 
 		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-
-		__syncthreads();
-		if(threadIdx.x == 0) {
-			delete exp;
-			delete sum;
-			delete max;
-			delete log;
-			if (isVector) {
-				delete scalarDiv;
-				delete scalarSub;
-			} else {
-				delete div;
-				delete sub;
-			}
-
-			delete[] maxResult;
-			delete[] maxResultShapeBuffer;
-		}
-
-
 	}
 #endif
 
@@ -4412,7 +4424,7 @@ namespace functions {
 
 
 		int *shape = shape::shapeOf(xShapeBuffer);
-		__shared__ T *maxResult;
+		__shared__ T maxResult;
 		__shared__ int *maxResultShapeBuffer;
 		__shared__ int resultEWS;
 		__shared__ functions::reduce::ops::Max<T> *max;
@@ -4429,6 +4441,7 @@ namespace functions {
 		if(threadIdx.x == 0) {
 			isVector = shape::isVector(xShapeBuffer);
 			resultEWS = shape::elementWiseStride(resultShapeBuffer);
+			/*
 			max = new functions::reduce::ops::Max<T>();
 			sum = new functions::reduce::ops::Sum<T>();
 			exp = new functions::transform::ops::Exp<T>();
@@ -4440,6 +4453,8 @@ namespace functions {
 				div = new functions::broadcast::ops::Divide<T>();
 			}
 			maxResult = (T *) malloc(sizeof(T) * shape[0]);
+			*/
+			maxResult = (T) 0.0;
 		}
 		__syncthreads();
 
@@ -4451,14 +4466,17 @@ namespace functions {
 
 		int maxShape[2] = {shape[0], 1};
 
+		__shared__ int tempBuffer[8];
+
 		if (threadIdx.x == 0)
-			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
+			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-		if (threadIdx.x < shape[0])
-			maxResult[threadIdx.x] = (T) 0.0;
-		__syncthreads();
+        if (threadIdx.x == 0)
+            max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
+        __syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
+
+		max->transformCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4466,26 +4484,49 @@ namespace functions {
 
 		//subtract max of each row
 		if (isVector) {
-			scalarSub->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			if (threadIdx.x == 0)
+                scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+            __syncthreads();
+
+			scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			sub->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			 if (threadIdx.x == 0)
+                sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
+            __syncthreads();
+
+			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
+
+        if (threadIdx.x == 0)
+            exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+        __syncthreads();
 
 		//after subtracting the row wise maxes take the exp
 		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
+        if (threadIdx.x == 0)
+            sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+        __syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
+		sum->transformCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager);
 		__syncthreads();
 
 		//divide by the sum
 		if (isVector) {
-			scalarDiv->transformCuda(maxResult[0], result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			if (threadIdx.x == 0)
+                scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+            __syncthreads();
+
+			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		} else {
-			div->transformCuda(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			if (threadIdx.x == 0)
+                div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
+            __syncthreads();
+
+			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
 		}
 		__syncthreads();
 
@@ -4495,22 +4536,6 @@ namespace functions {
 			}
 		} else {
 			printf("Non element wise stride not supported right now\n");
-		}
-
-		__syncthreads();
-		if(threadIdx.x == 0) {
-			delete sum;
-			delete exp;
-			if (isVector) {
-				delete scalarDiv;
-				delete scalarSub;
-			} else {
-				delete div;
-				delete sub;
-			}
-
-			delete[] maxResult;
-			delete[] maxResultShapeBuffer;
 		}
 	}
 #endif
