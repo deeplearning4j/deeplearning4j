@@ -5,7 +5,7 @@ layout: default
 
 # Canova: A Vectorization Lib for ML
 
-Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. Please read this entire page, particularly the section [Reading Records](#record) below, before working with Canova.
+Canova solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. Please **read this entire page**, particularly the section [Reading Records](#record) below, before working with Canova.
 
 ## Introductory Video
 
@@ -45,13 +45,15 @@ Below is an example of the CSV transform language in action from the command lin
 
 ### UCI Iris Schema Transform
 
-    @RELATION UCIIrisDataset
-    @DELIMITER ,
-       @ATTRIBUTE sepallength  NUMERIC   !NORMALIZE
-       @ATTRIBUTE sepalwidth   NUMERIC   !NORMALIZE
-       @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
-       @ATTRIBUTE petalwidth   NUMERIC   !NORMALIZE
-       @ATTRIBUTE class        STRING   !LABEL
+```
+@RELATION UCIIrisDataset
+@DELIMITER ,
+   @ATTRIBUTE sepallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE sepalwidth   NUMERIC   !NORMALIZE
+   @ATTRIBUTE petallength  NUMERIC   !NORMALIZE
+   @ATTRIBUTE petalwidth   NUMERIC   !NORMALIZE
+   @ATTRIBUTE class        STRING   !LABEL
+```
 
 ## <a name="tutorial">Setting Up Canova</a>
 
@@ -65,20 +67,22 @@ Add the dependency information into your pom.xml.
 
 On Centos/Redhat, you can do: 
 
-      # install
-      sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.rpm
-      # run
-      canova
+```
+# install
+sudo yum install https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.rpm
+# run
+canova
+```
 
 On non-RPM systems, do:
-
-      # download
-      curl -O https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.tar.gz
-      # untar
-      tar -zxvf canova-cli.tar.gz
-      # run
-      cd canova-cli-0.0.0.15-SNAPSHOT; ./bin/canova
-
+```
+# download
+curl -O https://s3-us-west-2.amazonaws.com/skymind/bin/canova-cli.tar.gz
+# untar
+tar -zxvf canova-cli.tar.gz
+# run
+cd canova-cli-0.0.0.15-SNAPSHOT; ./bin/canova
+```
 
 <!-- You'll need to do a *git clone* from [Canova's Github repo](https://github.com/deeplearning4j/Canova), and then build the dependencies with [Maven](http://nd4j.org/getstarted.html#maven). 
 
@@ -162,11 +166,13 @@ The configuration of the net itself may need to be adjusted within the file that
 
 The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
 
-        // Instantiating RecordReader. Specify height and width of images.
-        RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
+``` java
+// Instantiating RecordReader. Specify height and width of images.
+RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
 
-        // Point to data path. 
-        recordReader.initialize(new FileSplit(new File(labeledPath)));
+// Point to data path. 
+recordReader.initialize(new FileSplit(new File(labeledPath)));
+```
 
 The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
 
@@ -178,8 +184,10 @@ Other parameters shown above include `true`, which instructs the reader to appen
 
 The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
 
-        // Canova to DL4J
-        DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
+``` java
+// Canova to DL4J
+DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
+```
 
 The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
 
