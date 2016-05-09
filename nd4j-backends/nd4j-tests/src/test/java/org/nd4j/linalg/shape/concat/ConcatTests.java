@@ -1,6 +1,7 @@
 package org.nd4j.linalg.shape.concat;
 
 import org.apache.commons.math3.util.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -163,6 +164,7 @@ public class ConcatTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testConcat3dv2(){
 
         INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);
