@@ -23,11 +23,11 @@ public class CudaBroadcastTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(128)
                 .setMaximumGridSize(128)
-                .enableDebug(true);
+                .enableDebug(false);
 
         System.out.println("Init called");
     }
