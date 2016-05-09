@@ -395,6 +395,45 @@ public class CudaTransformsTests {
 
         assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
         assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
+
+    }
+
+    @Test
+    public void testLogSoftmaxFC()  throws Exception {
+        INDArray array1 = Nd4j.ones(2048).dup('f');
+        INDArray array2 = Nd4j.zeros(2048);
+
+        Nd4j.getExecutioner().exec(new LogSoftMax(array1));
+
+        Nd4j.getExecutioner().exec(new LogSoftMax(array2));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+        System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
+
+        assertEquals(array1, array2);
+
+        //assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
+        //assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
+
+    }
+
+    @Test
+    public void testSoftmaxDerivativeFC()  throws Exception {
+        INDArray array1 = Nd4j.ones(2048).dup('f');
+        INDArray array2 = Nd4j.zeros(2048);
+
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(array1));
+
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(array2));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+        System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
+
+        assertEquals(array1, array2);
+
+        assertEquals(1.0, array1.sumNumber().doubleValue(), 0.001);
+        assertEquals(1.0, array2.sumNumber().doubleValue(), 0.001);
+
     }
 
     @Test
