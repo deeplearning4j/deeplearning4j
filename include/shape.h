@@ -112,6 +112,12 @@ namespace shape {
     __host__ __device__
 #endif
     inline int *shapeBuffer(int rank, int *shape);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int *shapeBuffer(int rank, int *shape, int *buffer);
+
     /**
  * Get the shape info buffer
  * for the given rank and shape.
@@ -2487,7 +2493,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
     inline int * calcStrides(int *shape, int rank, int startNum) {
 
-        //traceNew(7);
+        traceNew(7);
 
         int *stride = new int[rank];
 
@@ -2720,7 +2726,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
     inline int *shapeBuffer(int rank, int *shape) {
         int *stride = shape::calcStrides(shape, rank);
 
-        //traceNew(11);
+        traceNew(11);
 
         shape::ShapeInformation * shapeInfo = new shape::ShapeInformation();
         shapeInfo->shape = shape;
@@ -2735,6 +2741,28 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
         delete stride;
         delete shapeInfo;
         return shapeInfoBuffer;
+    }
+
+    /**
+     * This is special method, it returns ONLY 2D shapebuffer.
+     *
+     * This method is used only for SoftMax
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline int *shapeBuffer(int rank, int *shape, int *buffer) {
+
+        buffer[0] = rank;
+        buffer[1] = shape[0];
+        buffer[2] = 1;
+        buffer[3] = 1;
+        buffer[4] = 1;
+        buffer[5] = 0;
+        buffer[6] = 1;
+        buffer[7] = 99;
+
+        return buffer;
     }
 
 /**
@@ -4227,7 +4255,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
 
     inline int *toShapeBuffer( ShapeInformation *info) {
 
-        //traceNew(29);
+        traceNew(29);
 
         int *ret = new int[shapeInfoLength(info->rank)];
         int count = 1;

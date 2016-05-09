@@ -91,11 +91,9 @@ namespace functions {
 			int *indexes,
 			int *yIndexes,
 			int *resultIndexes,int *allocationPointer, UnifiedSharedMemory<T> *manager) {
-		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		Nd4jIndex i = tid;
 		Nd4jIndex n = shape::length(xShapeBuffer);
-		for (; i < n; i += totalThreads) {
+		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
 			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 		}
 	}
@@ -138,7 +136,6 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, UnifiedSharedMemory<T> *manager) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
 
 		int xRank = shape::rank(xShapeBuffer);
 		int yRank = shape::rank(yShapeBuffer);
