@@ -25,6 +25,7 @@ import java.util.*;
  * Rerences:
  *  http://arxiv.org/pdf/1502.03167v3.pdf
  *  http://arxiv.org/pdf/1410.7455v8.pdf
+ *  https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
  *
  * ideal to apply this between linear and non-linear transformations in layers it follows
  **/
@@ -143,6 +144,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             setMeanVar = false;
         }
 
+        // xHat = x-xmean / sqrt(var + epsilon)
         INDArray mean,var;
         if(trainingMode == TrainingMode.TRAIN && layerConf.isUseBatchMean()) {
             // mean and var over samples in batch
@@ -164,12 +166,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
 
         }
-
-        // xHat = x-xmean / sqrt(var + epsilon)
         INDArray xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(reshapeX, mean, reshapeX, -1));
         xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std, xMu.dup(),-1));
 
-        // BN(xk) = γkxˆk + βk (applying gamma and beta for each activation/feature)
+        // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation/feature)
         // TODO confirm if this is matrix multiply?
         INDArray activations =  xHat.dup().mmul(gamma).addRowVector(beta);
 
