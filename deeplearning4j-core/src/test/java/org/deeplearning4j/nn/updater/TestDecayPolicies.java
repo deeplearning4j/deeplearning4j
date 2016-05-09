@@ -563,6 +563,7 @@ public class TestDecayPolicies {
             double beta1t = FastMath.pow(beta1, i);
             double beta2t = FastMath.pow(beta2, i);
             double alphat = lr * FastMath.sqrt(1-beta2t)/(1-beta1t);
+            if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
 
             gradExpected = mTmp.mul(alphat).divi(Transforms.sqrt(vTmp).addi(epsilon));
             gradientExpected.setGradientFor(key, gradExpected);
