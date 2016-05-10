@@ -78,11 +78,14 @@ public class StaticShapeTests extends BaseNd4jTest {
             for(Pair<INDArray,String> p : list){
                 INDArray arr = p.getFirst();
 
+                assertArrayEquals(shape, arr.shape());
+
                 int[] thisStride = arr.stride();
 
                 IntBuffer ib = arr.shapeInfo();
                 DataBuffer db = arr.shapeInfoDataBuffer();
 
+                //Check shape calculation
                 assertEquals(shape.length, Shape.rank(ib));
                 assertEquals(shape.length, Shape.rank(db));
 
@@ -97,6 +100,10 @@ public class StaticShapeTests extends BaseNd4jTest {
                     assertEquals(thisStride[j], Shape.stride(db, j));
                 }
 
+                //Check base offset
+                assertEquals(Shape.offset(ib), Shape.offset(db));
+
+                //Check offset calculation:
                 NdIndexIterator iter = new NdIndexIterator(shape);
                 while(iter.hasNext()){
                     int[] next = iter.next();
