@@ -3198,8 +3198,8 @@ __device__ void concatKernelGeneric(int dimension,
 
 	if (shape::isScalar(shapeInfoPointers[0])) {
 
-		if (threadIdx.x == 0)
-			printf("Scalar concat\n");
+//		if (threadIdx.x == 0)
+//			printf("Scalar concat\n");
 
 		for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) {
 			result[i] = dataT[i][0];
@@ -3271,9 +3271,6 @@ __device__ void concatKernelGeneric(int dimension,
 
 		// TODO: to be pulled into separate kernel. matrix concatenation
 		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
-			if (threadIdx.x == 0)
-				tad->createOffsetForBlock(r);
-			__syncthreads();
 
 			if (threadIdx.x == 0) {
 				inputTAD = new((unsigned char *)managerInput->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
@@ -3288,7 +3285,8 @@ __device__ void concatKernelGeneric(int dimension,
 			}
 			__syncthreads();
 
-			int tadOffsetForBlock = tad->tadOffsetForBlock;
+
+
 			int *currentShape = shapeInfoPointers[r];
 			T *currentData = dataT[r];
 /*
@@ -3304,7 +3302,7 @@ __device__ void concatKernelGeneric(int dimension,
 			__syncthreads();
 */
 
-			for (int j = 0; j < inputTAD->numTads;j ++) {
+			for (int j = 0; j < inputTAD->numTads; j++) {
 
 				int inputOffset = inputTAD->tadOffset(j);
 				int resultOffset = tad->tadOffset(j);
@@ -3317,9 +3315,9 @@ __device__ void concatKernelGeneric(int dimension,
 
 				resultTAD += baseOffset;
 
-				if (zOrder == yOrder && yEWS > 0 ) {
-					//if (threadIdx.x == 0)
-						//printf("Internal count\n");
+				if (zOrder == yOrder && yEWS > 0  && tadEWS > 0) {
+//					if (threadIdx.x == 0)
+//						printf("Internal count\n");
 
 					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
 						resultTAD[i * tadEWS] = dataTAD[i * yEWS];
@@ -3327,8 +3325,8 @@ __device__ void concatKernelGeneric(int dimension,
 				} else {
 					//printf("Non-matching order, yEWS: [%i]\n", yEWS);
 					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(inputTAD->tadOnlyShapeInfo)) {
-						//if (threadIdx.x == 0)
-							//printf("IN SHAPE ITER 1\n");
+//						if (threadIdx.x == 0)
+//							printf("IN SHAPE ITER 1\n");
 
 						// FIXME: this is bad
 						__shared__ int baseIdx;
@@ -3359,8 +3357,8 @@ __device__ void concatKernelGeneric(int dimension,
 						}
 					} else {
 
-						//if (threadIdx.x == 0)
-							//printf("IN SHAPE ITER 2\n");
+//						if (threadIdx.x == 0)
+//							printf("IN SHAPE ITER 2\n");
 
 						int yIdx[MAX_RANK];
 
@@ -3373,7 +3371,7 @@ __device__ void concatKernelGeneric(int dimension,
 							int yOffset = shape::getOffset(0, shape::shapeOf(inputTAD->tadOnlyShapeInfo), shape::stride(inputTAD->tadOnlyShapeInfo), yIdx, yRank);
 							int resultOffset = shape::getOffset(0, shape::shapeOf(tad->tadOnlyShapeInfo), shape::stride(tad->tadOnlyShapeInfo), yIdx, tadRank);
 
-							resultTAD[resultOffset] =  dataTAD[yOffset]; //op(dy[xOffset2],scalar, params);
+							resultTAD[resultOffset] =  dataTAD[yOffset];
 						}
 					}
 				}

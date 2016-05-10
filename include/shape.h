@@ -4203,9 +4203,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i] && shape[i] != 1) {
                 printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
-                int y = baseOffset - baseOffset;
-                int x = 1 / y;
-                return x;
+                return -1;
             }
 
             if(shape[i] != 1) {
