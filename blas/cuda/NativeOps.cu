@@ -158,13 +158,19 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	int memory_floor = memory_limit;
 	int effective_block_limit =  countMP * blockThreshold;
 
+	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+
+	//printf("numBlocks: [%i], countMap: [%i], shmemThreshold: [%i]\n", num_blocks, countMP, shmemThreshold);
+
+	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
+
 	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block = 0;
 	bool found = false;
 	if (reduction > 0)
 		while (!found) {
 			reduction_per_block = (num_threads * elementSize * reduction);
-			if (memory_limit + reduction_per_block < 5000) {
+			if (memory_limit + reduction_per_block < desiredShared) {
 				memory_limit += reduction_per_block;
 				found = true;
 			} else {
@@ -181,7 +187,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	int max_active_blocks = shmemThreshold / memory_limit;
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
-	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
+
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
