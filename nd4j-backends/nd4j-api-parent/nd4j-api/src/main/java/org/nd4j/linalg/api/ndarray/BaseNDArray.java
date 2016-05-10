@@ -1074,10 +1074,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(isRowVector()) {
-            return putScalar(new int[]{0, i}, value);
+            return putScalar(0, i, value);
         }
         else if(isColumnVector()) {
-            return putScalar(new int[]{i, 0}, value);
+            return putScalar(i, 0, value);
         }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         return putScalar(indexes, value);

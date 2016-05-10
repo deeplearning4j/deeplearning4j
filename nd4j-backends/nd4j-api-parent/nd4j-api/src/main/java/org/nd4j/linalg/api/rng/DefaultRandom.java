@@ -22,8 +22,10 @@ package org.nd4j.linalg.api.rng;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Apache commons based random number generation
@@ -115,11 +117,14 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextGaussian(char order, int[] shape){
+        int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape,order);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i, nextGaussian());
+
+        DataBuffer data = ret.data();
+        for( int i=0; i<length; i++ ){
+            data.put(i, nextGaussian());
         }
+
         return ret;
     }
 
@@ -130,41 +135,53 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextDouble(char order, int[] shape){
+        int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape,order);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i, nextDouble());
+
+        DataBuffer data = ret.data();
+        for( int i=0; i<length; i++ ){
+            data.put(i, nextDouble());
         }
+
         return ret;
     }
 
     @Override
     public INDArray nextFloat(int[] shape) {
+        int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i, nextFloat());
+
+        DataBuffer data = ret.data();
+        for( int i=0; i<length; i++ ){
+            data.put(i, nextFloat());
         }
+
         return ret;
     }
 
     @Override
     public INDArray nextInt(int[] shape) {
+        int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i, nextInt());
+
+        DataBuffer data = ret.data();
+        for( int i=0; i<length; i++ ){
+            data.put(i, nextInt());
         }
+
         return ret;
     }
 
     @Override
     public INDArray nextInt(int n, int[] shape) {
+        int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape);
-        INDArray linear = ret.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            linear.putScalar(i, nextInt(n));
+
+        DataBuffer data = ret.data();
+        for( int i=0; i<length; i++ ){
+            data.put(i, nextInt(n));
         }
+
         return ret;
     }
 
