@@ -160,9 +160,10 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 
 	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 
-	//printf("numBlocks: [%i], countMap: [%i], shmemThreshold: [%i]\n", num_blocks, countMP, shmemThreshold);
-
 	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
+
+	if (debug && verbose)
+		printf("numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared);
 
 	// at this moment we've stored all required information for things. time to count in reduction multipliers
 	int reduction_per_block = 0;
@@ -174,7 +175,7 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 				memory_limit += reduction_per_block;
 				found = true;
 			} else {
-				if (num_threads >= 128) {
+				if (num_threads > 128) {
 					num_threads -= 32;
 				} else {
 					memory_limit += reduction_per_block;
@@ -184,15 +185,18 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 		}
 
 	// at this moment we know total memory used per block, and we also know per-mp limit.
-	int max_active_blocks = shmemThreshold / memory_limit;
+	int max_active_blocks = shmemThreshold / nd4j::math::nd4j_max<int>(memory_limit, 1);
+
+	if (debug && verbose)
+		printf("MAB: [%i], memory_limit: [%i]\n", max_active_blocks, memory_limit);
 
 	// we don't want to spawn more blocks, that gpu can actually handle without queue
 
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 
-	if (num_blocks > countMP)
-    	num_blocks = num_blocks - (num_blocks % countMP);
+//	if (num_blocks > countMP)
+//    	num_blocks = num_blocks - (num_blocks % countMP);
 
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
 
@@ -234,34 +238,37 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo) {
 	int shmemThreshold = getDeviceSharedThreshold(deviceId);
 
 	int xLength = shape::length(xShapeInfo);
+	int effective_block_limit =  countMP * blockThreshold;
 
+	// for flat calls we just want as much concurrent blocks, as possible, and we're not tied to TAD here
+	int num_threads = xLength / effective_block_limit;
+	if (num_threads < 32)
+		num_threads = 32;
 
-	int num_threads = nd4j::math::nd4j_min<int>(maxThreads, xLength);
+	num_threads = num_threads - (num_threads % 32);
 
 	int memory_floor = memory_limit;
-	int effective_block_limit =  countMP * blockThreshold;
 
 	int num_blocks = xLength / num_threads;
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
 
-
 	int targetBlocksPerMP = num_blocks / countMP;
 
 	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
-	if (targetBlocksPerMP * num_threads > 2048) {
+	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 64) {
 		while (targetBlocksPerMP * num_threads > 2048) {
-			num_threads -= 32;
-			if (num_threads <= 96)
+			if (num_threads <= 32)
 				break;
+			num_threads -= 32;
 		}
 	}
 
 	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
 
 	if (debug && verbose)
-		printf("Preliminary scalar launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], blocksPerMP: [%i], problemLength: [%i]\n", num_blocks, num_threads, memory_limit, targetBlocksPerMP, xLength);
+		printf("Preliminary scalar launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], blocksPerMP: [%i], problemLength: [%i], effectiveBlockLimit: [%i]\n", num_blocks, num_threads, memory_limit, targetBlocksPerMP, xLength, effective_block_limit);
 
 
 	return launchDims;
@@ -280,6 +287,9 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *
 				printf("A xLength: [%i], zLength: [%i]\n", shape::length(xShapeInfo), shape::length(zShapeInfo));
 		}
 	} else{
+
+		//if (debug && verbose)
+
 		// we have special case - reduction along all dimensions
 		tadLength = nd4j::math::nd4j_min<int>(shape::length(xShapeInfo), 1024);
 		numTads = shape::length(xShapeInfo) / tadLength;
