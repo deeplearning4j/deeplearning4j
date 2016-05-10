@@ -223,8 +223,9 @@ public class ShapeTests extends BaseNd4jTest {
         INDArray columnVectorSecond = Nd4j.create(new double[][]{{5,7},{6,8}});
         assertEquals(columnVectorFirst,baseArr.tensorAlongDimension(0,0,1));
         assertEquals(columnVectorSecond,baseArr.tensorAlongDimension(1,0,1));
-
     }
+
+
 
 
     @Override

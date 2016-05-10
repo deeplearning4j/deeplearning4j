@@ -1074,10 +1074,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(isRowVector()) {
-            return putScalar(new int[]{0, i}, value);
+            return putScalar(0, i, value);
         }
         else if(isColumnVector()) {
-            return putScalar(new int[]{i, 0}, value);
+            return putScalar(i, 0, value);
         }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         return putScalar(indexes, value);
@@ -1106,7 +1106,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }else if(indexes.length == 4){
             return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
         }else {
-            long offset = Shape.getOffset(shapeInfo(), indexes);
+            long offset = Shape.getOffset(shapeInformation, indexes);
             data.put(offset, value);
         }
         return this;
@@ -1114,21 +1114,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int row, int col, double value){
-        long offset = Shape.getOffset(shapeInfo(), row, col);
+        long offset = Shape.getOffset(shapeInformation, row, col);
         data.put(offset, value);
         return this;
     }
 
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, double value){
-        long offset = Shape.getOffset(shapeInfo(), dim0, dim1, dim2);
+        long offset = Shape.getOffset(shapeInformation, dim0, dim1, dim2);
         data.put(offset, value);
         return this;
     }
 
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value){
-        long offset = Shape.getOffset(shapeInfo(), dim0, dim1, dim2, dim3);
+        long offset = Shape.getOffset(shapeInformation, dim0, dim1, dim2, dim3);
         data.put(offset, value);
         return this;
     }
@@ -1480,7 +1480,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isScalar() {
         if(isScalar != null)
             return isScalar;
-        if (Shape.rank(shapeInfo()) > 2) {
+        if (Shape.rank(shapeInformation) > 2) {
             isScalar = false;
         }
         else if (Shape.rank(shapeInformation) == 1) {
@@ -1510,7 +1510,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         if(isRowVector() && indices[0] == 0 && indices.length == 2) {
-            int ix = Shape.offset(shapeInfo());
+            int ix = Shape.offset(shapeInformation);
             for (int i = 1; i < indices.length; i++)
                 ix += indices[i] * stride(i);
             if (ix >= data.length())
@@ -1518,7 +1518,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             data.put(ix, element.getDouble(0));
         }
         else {
-            int ix = Shape.offset(shapeInfo());
+            int ix = Shape.offset(shapeInformation);
             for (int i = 0; i < indices.length; i++)
                 if(size(i) != 1)
                     ix += indices[i] * stride(i);
@@ -1644,7 +1644,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isMatrix() {
         if(isMatrix != null)
             return isMatrix;
-        isMatrix = (Shape.rank(shapeInfo()) == 2
+        isMatrix = (Shape.rank(shapeInformation) == 2
                 && (size(0) != 1 && size(1) != 1));
         return isMatrix;
     }
@@ -1665,12 +1665,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        return Shape.offset(shapeInfo()) + (row * stride(0) + column * stride(1));
+        return Shape.offset(shapeInformation) + (row * stride(0) + column * stride(1));
     }
 
     protected INDArray newShape(int[] newShape, char ordering) {
 
-        return create(data(), newShape, stride(), Shape.offset(shapeInfo()));
+        return create(data(), newShape, stride(), Shape.offset(shapeInformation));
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset, char ordering) {
@@ -1780,7 +1780,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isView() {
-        return Shape.offset(shapeInfo()) > 0 || length() < data().length() || data().originalDataBuffer() != null;
+        return Shape.offset(shapeInformation) > 0 || length() < data().length() || data().originalDataBuffer() != null;
     }
 
     @Override
@@ -2890,7 +2890,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 continue;
             idx += i * stride(j);
         }
-        return  Shape.offset(shapeInfo()) + (idx);
+        return  Shape.offset(shapeInformation) + (idx);
     }
 
     private void setLinearStride() {
@@ -2939,7 +2939,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected INDArray createScalarForIndex(int i,boolean applyOffset) {
-        return create(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? Shape.offset(shapeInfo()) + i : i);
+        return create(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? Shape.offset(shapeInformation) + i : i);
     }
 
     protected INDArray createScalar(double d) {
@@ -3352,7 +3352,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public void checkDimensions(INDArray other) {
         assert Shape.contentEquals(other.shape(), Shape.shapeOf(shapeInformation)) : " Other array should have been shape: " + Shape.toString(Shape.shapeOf(shapeInformation)) + " but was " + Arrays.toString(other.shape());
         assert Shape.contentEquals(other.stride(), Shape.stride(shapeInformation)) : " Other array should have been stride: " + Shape.toString(Shape.stride(shapeInformation)) + " but was " + Arrays.toString(other.stride());
-        assert Shape.offset(shapeInfo()) == other.offset() : "Offset of this array is " + Shape.offset(shapeInfo()) + " but other was " + other.offset();
+        assert Shape.offset(shapeInformation) == other.offset() : "Offset of this array is " + Shape.offset(shapeInformation) + " but other was " + other.offset();
 
     }
 
@@ -3821,11 +3821,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the shape of this matrix
      */
     public int[] shape() {
-        int[] ret = new int[rank()];
-        DataBuffer buffer = Shape.shapeOf(shapeInformation);
-        for(int i = 0; i < ret.length; i++)
-            ret[i] = buffer.getInt(i);
-        return ret;
+        return Shape.shape(shapeInformation);
     }
 
     /**
@@ -3864,7 +3860,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public char ordering() {
-        return Shape.order(shapeInfo());
+        return Shape.order(shapeInformation);
     }
 
     /**
@@ -3893,7 +3889,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int rank() {
-        return Shape.rank(shapeInfo());
+        return Shape.rank(shapeInformation);
     }
 
     /**
@@ -4265,11 +4261,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isRowVector() {
-        int rank = rank();
-        if (rank == 1 || rank == 2 && size(0) == 1)
-            return true;
-
-        return false;
+        return rank == 1 || rank == 2 && rows == 1;
     }
 
     /**
@@ -4277,14 +4269,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isColumnVector() {
-        if (shape().length == 1)
-            return false;
-
-        if (shape().length == 2 && shape()[1] == 1)
-            return shape()[1] == 1;
-
-        return false;
-
+        if(length == 1 || rank > 2) return false;
+        return columns == 1;
     }
 
     /**
