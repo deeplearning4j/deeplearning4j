@@ -1803,6 +1803,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(linear.getDouble(0, 1), 1, 1e-1);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testSize() {
+        INDArray arr = Nd4j.create(4,5);
+
+        for( int i = 0; i< 6; i++) {
+            //This should fail for i >= 2, but doesn't
+            System.out.println(arr.size(i));
+        }
+    }
 
 
 

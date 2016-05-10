@@ -3883,6 +3883,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return Shape.shapeOf(shapeInformation).getInt(dimension + Shape.rank(shapeInformation));
         }
 
+        if(dimension >= rank())
+            throw new IllegalArgumentException("Invalid size index " + dimension + " wher it's >= rank " + rank());
+
 
         return Shape.shapeOf(shapeInformation).getInt(dimension);
     }
