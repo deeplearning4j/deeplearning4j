@@ -184,7 +184,10 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, in
 	int num_blocks = nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
 	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-    num_blocks = num_blocks - (num_blocks % countMP);
+
+	if (num_blocks > countMP)
+    	num_blocks = num_blocks - (num_blocks % countMP);
+
 	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
 
 	int targetBlocksPerMP = num_blocks / countMP;
@@ -272,9 +275,7 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, int *
 		}
 	} else{
 		// we have special case - reduction along all dimensions
-		if (debug && verbose)
-			printf("zShapeInfo is nullPtr\n");
-		tadLength = 2048;
+		tadLength = nd4j::math::nd4j_min<int>(shape::length(xShapeInfo), 1024);
 		numTads = shape::length(xShapeInfo) / tadLength;
 	}
 
