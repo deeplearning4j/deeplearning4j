@@ -1538,12 +1538,12 @@ void   NativeOps::execTransformDouble(
 	// special pointer for special buffer for special ops
 	double *specialPointer = reinterpret_cast<double *>(extraPointers[6]);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], hostZShapeInfo);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	int *dimension = (int *) specialPointer;
 	int *maxDimension = dimension + 1;
 	int *maxShapeBuffer = (int *) maxDimension + 1;
-	double * special = (double *) maxShapeBuffer + 8;
+	double * special = (double *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
@@ -1551,7 +1551,7 @@ void   NativeOps::execTransformDouble(
 			// if that's vector, we just go directly to op in 1 block
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(256, length);
-			transformDouble<<< 1, block,launchDims.z + (block * sizeof(float) * 8), *stream >>> (
+			transformDouble<<< 1, block,launchDims.z + (block * sizeof(double) * 8), *stream >>> (
 					opNum,
 							xPointer,
 							xShapeInfoPointer,  shape::rank(hostXShapeInfo),
@@ -1588,13 +1588,13 @@ void   NativeOps::execTransformDouble(
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// max 3
-					execReduceDouble(extraPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+					execReduceDouble(tempPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					tempPointers[8] = extraPointers[8];
 
 					// sub 1
-					execBroadcastDouble(extraPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
+					execBroadcastDouble(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
 					// exp 3
@@ -1603,13 +1603,13 @@ void   NativeOps::execTransformDouble(
 					tempPointers[8] = tempPointers[7];
 
 					//sum 1
-					execReduceDouble(extraPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
+					execReduceDouble(tempPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					tempPointers[8] = extraPointers[8];
 
 					// divide 3
-					execBroadcastDouble(extraPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
+					execBroadcastDouble(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
 					// log 3
@@ -2944,7 +2944,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	float * special = (float *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
-	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], hostZShapeInfo);
+	dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF20 opNum:[%i]\n", opNum);
