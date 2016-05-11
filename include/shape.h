@@ -1276,7 +1276,7 @@ namespace shape {
         __host__ __device__
 #endif
         /**
-         * This methos is for GPU mostly, it allows to initialize TAD instance with precalculated tadOnlyShapeInfo
+         * This method is for GPU mostly, it allows to initialize TAD instance with precalculated tadOnlyShapeInfo
          */
         inline void initWithExternalTAD(int *existingTAD, int *originalShape, int *dimension, int dimensionLength) {
             this->tadOnlyShapeInfo = existingTAD;
@@ -1289,8 +1289,12 @@ namespace shape {
             this->shapeInfo = originalShape;
             this->dimension = dimension;
             this->dimensionLength = dimensionLength;
-            this->numTads = shape::length(originalShape) / shape::length(existingTAD);
-            this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo);
+
+            this->tadShape = shape::shapeOf(existingTAD);
+            this->tadStride = shape::stride(existingTAD);
+
+            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);//shape::length(originalShape) / shape::length(existingTAD);
+            this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo);
         }
 
 
@@ -2006,9 +2010,9 @@ namespace shape {
         }
 
 #ifdef __CUDACC__
-        __device__ __host__
+    __host__ __device__
     inline void createOffsetForBlock(int blockIdx) {
-        this->tadOffsetForBlock= this->tadOffset(blockIdx);
+        this->tadOffsetForBlock = this->tadOffset(blockIdx);
     }
 #endif
 

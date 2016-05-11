@@ -260,7 +260,7 @@ namespace functions {
                     int *dimension,
                     int dimensionLength,
                     int postProcessOrNot,
-                    int *allocationBuffer,T *reductionBuffer, UnifiedSharedMemory<T> *manager) {
+                    int *allocationBuffer,T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 
                 /**
                  * Gpu information for the problem
@@ -320,9 +320,9 @@ namespace functions {
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
-                    //    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
-                        tad->init(xShapeInfo,dimension,dimensionLength);
-            	        tad->createTadOnlyShapeInfo();
+                        tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+                        //tad->init(xShapeInfo,dimension,dimensionLength);
+            	        //tad->createTadOnlyShapeInfo();
                     }
                     __syncthreads();
 
@@ -1802,7 +1802,7 @@ __global__ void reduceGenericGlobal(
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
-        int *allocationBuffer, T *reductionBuffer) {
+        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
 
     __shared__ UnifiedSharedMemory<T> *manager;
 
@@ -1820,7 +1820,7 @@ __global__ void reduceGenericGlobal(
 
     __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
     __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
-
+/*
     __shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
@@ -1836,7 +1836,7 @@ __global__ void reduceGenericGlobal(
 
         if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
     if(threadIdx.x == 0) {
         newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
         reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
@@ -1844,14 +1844,14 @@ __global__ void reduceGenericGlobal(
     __syncthreads();
     reduceFunctionToInvoke->transformCuda(
             dx,
-            ptrSharedXShapeInfo,
+            xShapeInfo,
             extraParams,
             result,
-            ptrSharedZShapeInfo,
+            resultShapeInfo,
             dimension,
             dimensionLength,
             postProcessOrNot,
-            allocationBuffer, reductionBuffer, manager);
+            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
 /**
@@ -1879,7 +1879,7 @@ __device__ void reduceGeneric(
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
-        int *allocationBuffer, T *reductionBuffer) {
+        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
 
     __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
     __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
@@ -1897,7 +1897,7 @@ __device__ void reduceGeneric(
 	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
-
+/*
     __shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
@@ -1913,7 +1913,7 @@ __device__ void reduceGeneric(
 
         if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
     if(threadIdx.x == 0) {
         newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
         reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
@@ -1921,14 +1921,14 @@ __device__ void reduceGeneric(
     __syncthreads();
     reduceFunctionToInvoke->transformCuda(
             dx,
-            ptrSharedXShapeInfo
-            ,extraParams,
+            xShapeInfo,
+            extraParams,
             result,
-            ptrSharedZShapeInfo,
+            resultShapeInfo,
             dimension,
             dimensionLength,
             postProcessOrNot,
-            allocationBuffer, reductionBuffer, manager);
+            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
 /**
@@ -1955,7 +1955,7 @@ extern "C" __global__ void reduceDouble(
         int *dimension,
         int dimensionLength,
         int postProcessOrNot,
-        int *allocationBuffer, double *reductionBuffer) {
+        int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceGeneric<double>(
             op,
             dx,
@@ -1966,7 +1966,7 @@ extern "C" __global__ void reduceDouble(
             dimension,
             dimensionLength,
             postProcessOrNot,
-            allocationBuffer, reductionBuffer);
+            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
 
 }
 
@@ -1995,7 +1995,7 @@ extern "C" __global__ void reduceFloat(
         int dimensionLength,
         int postProcessOrNot,
         int *allocationBuffer,
-        float *reductionBuffer
+        float *reductionBuffer, int *tadOnlyShapeInfo
 ) {
     reduceGeneric<float>(
             op,
@@ -2007,7 +2007,7 @@ extern "C" __global__ void reduceFloat(
             dimension,
             dimensionLength,
             postProcessOrNot,
-            allocationBuffer, reductionBuffer);
+            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
 }
 
 

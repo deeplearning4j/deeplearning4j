@@ -22,6 +22,7 @@
 #include <cuda_device_runtime_api.h>
 #include <pointercast.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 
@@ -31,6 +32,8 @@ int blockLimit = 128;
 int maxThreads = 512;
 bool debug = false;
 bool verbose = true;
+
+__constant__ char deviceConstantMemory[49152];
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -817,6 +820,9 @@ void   NativeOps::execReduceDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
@@ -832,7 +838,7 @@ void   NativeOps::execReduceDouble(
 			nullptr,
 			1,
 			1,
-			allocPointer, reductionPointer);
+			allocPointer, reductionPointer, deviceTADShapeInfo);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -870,6 +876,9 @@ void   NativeOps::execReduceDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
 	if (debug && verbose)
 		printf("D8 opNum:[%i]\n", opNum);
 
@@ -890,7 +899,7 @@ void   NativeOps::execReduceDouble(
 			dimensionPointer,
 			dimensionLength,
 			1,
-			allocPointer, reductionPointer);
+			allocPointer, reductionPointer, deviceTADShapeInfo);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -920,6 +929,9 @@ double NativeOps::execReduceScalarDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
 	if (debug && verbose)
 		printf("D9 opNum:[%i]\n", opNum);
 
@@ -942,7 +954,7 @@ double NativeOps::execReduceScalarDouble(
 			nullptr,
 			1,
 			1,
-			allocPointer, reductionPointer);
+			allocPointer, reductionPointer, deviceTADShapeInfo);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -2161,6 +2173,9 @@ void   NativeOps::execReduceFloat(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
 	if (debug && verbose)
 		printf("F7 opNum:[%i]\n", opNum);
 
@@ -2184,7 +2199,7 @@ void   NativeOps::execReduceFloat(
 			nullptr,
 			1,
 			1,
-			allocPointer, reductionPointer);
+			allocPointer, reductionPointer, deviceTADShapeInfo);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2220,6 +2235,9 @@ void   NativeOps::execReduceFloat(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	if (debug && verbose)
 		printf("F8 opNum:[%i]\n", opNum);
@@ -2257,7 +2275,7 @@ void   NativeOps::execReduceFloat(
 			dimensionPointer,
 			dimensionLength,
 			1,
-			allocPointer, reductionPointer);
+			allocPointer, reductionPointer, deviceTADShapeInfo);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2289,6 +2307,9 @@ float NativeOps::execReduceScalarFloat(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+
 	if (debug && verbose)
 		printf("F9 opNum:[%i]\n", opNum);
 
@@ -2314,7 +2335,7 @@ float NativeOps::execReduceScalarFloat(
 			1,
 			1,
 			allocPointer,
-			reductionPointer
+			reductionPointer, deviceTADShapeInfo
 	);
 
 
@@ -4039,6 +4060,9 @@ void NativeOps::concatDouble(
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+/**
+ * This method saves
+ */
 void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
 	int *hostXShapeInfo = reinterpret_cast<int *>(xShapeInfo);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
@@ -4046,10 +4070,14 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 
 	shape::TAD *tad = new shape::TAD();
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
-	tad->setOutputBuffer(target);
+	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
 
-	shape::printShapeInfo(tad->tadOnlyShapeInfo);
-
+	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * 4);
+/*
+	shape::printShapeInfoLinear(hostXShapeInfo);
+	shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
+	shape::printShapeInfoLinear(target);
+*/
 	delete tad;
 }
