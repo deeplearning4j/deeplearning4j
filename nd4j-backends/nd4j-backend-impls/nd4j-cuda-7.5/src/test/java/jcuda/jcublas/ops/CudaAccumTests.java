@@ -28,11 +28,19 @@ public class CudaAccumTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(1024)
+                .setMaximumBlockSize(64)
                 .setMaximumGridSize(512)
-                .enableDebug(true);
+                .enableDebug(true)
+                .setVerbose(true);
 
         System.out.println("Init called");
+    }
+
+    @Test
+    public void testBiggerSum() throws Exception {
+        INDArray array = Nd4j.ones(128000, 512);
+
+        array.sum(0);
     }
 
     /**

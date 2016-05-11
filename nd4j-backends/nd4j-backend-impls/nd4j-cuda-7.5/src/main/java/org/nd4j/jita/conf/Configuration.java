@@ -38,7 +38,7 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private boolean debug = false;
+    @Getter private boolean debug = true;
 
     @Getter private boolean verbose = false;
 
@@ -107,9 +107,9 @@ public class Configuration implements Serializable {
 
     @Getter private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 128;
+    @Getter private int maximumGridSize = 256;
 
-    @Getter private int maximumBlockSize = 512;
+    @Getter private int maximumBlockSize = 256;
 
     @Getter private long maximumHostCache = Long.MAX_VALUE;
 
@@ -124,6 +124,8 @@ public class Configuration implements Serializable {
     @Getter private long maximumDeviceCacheableLength = 100663296;
 
     @Getter private int commandQueueLength = 3;
+
+    @Getter private int commandLanesNumber = 4;
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -469,6 +471,26 @@ public class Configuration implements Serializable {
         if (length <= 0)
             throw new IllegalStateException("Command queue length can't be <= 0");
         this.commandQueueLength = length;
+
+        return this;
+    }
+
+    /**
+     * This method allows you to specify maximum number of probable parallel cuda processes
+     *
+     * Default value: 4
+     *
+     * PLEASE NOTE: This parameter has effect only for ASYNCHRONOUS execution model
+     *
+     * @param length
+     * @return
+     */
+    public Configuration setCommandLanesNumber(int length) {
+        if (length < 1)
+            throw new IllegalStateException("Command Lanes number can't be < 1");
+        if (length > 8)
+            length = 8;
+        this.commandLanesNumber = length;
 
         return this;
     }

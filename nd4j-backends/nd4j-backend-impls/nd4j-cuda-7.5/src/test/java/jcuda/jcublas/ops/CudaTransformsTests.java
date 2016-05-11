@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
@@ -27,10 +29,12 @@ public class CudaTransformsTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(256)
-                .enableDebug(true);
+                .enableDebug(false)
+                .setVerbose(false);
+
+
 
         System.out.println("Init called");
     }
@@ -438,6 +442,7 @@ public class CudaTransformsTests {
 
     @Test
     public void testIsMaxEqualValues(){
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
 
 
@@ -534,6 +539,7 @@ public class CudaTransformsTests {
         long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
         long time2 = System.currentTimeMillis();
+        System.out.println("A3: --------------------------------");
         System.out.println("Execution time: " + (time2 - time1));
 /*
         assertEquals(0.036710344f,input.getFloat(0), 0.01f);

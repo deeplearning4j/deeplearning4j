@@ -289,7 +289,7 @@ public class AtomicAllocator implements Allocator {
         if (buffer.isConstant()) {
             //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
          //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
-           // return;
+            return;
             //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
             //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
         }
@@ -353,10 +353,10 @@ public class AtomicAllocator implements Allocator {
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
 
-//        if (buffer instanceof CudaIntDataBuffer) {
-//            buffer.setConstant(true);
-//            point.setConstant(true);
-//        }
+        if (buffer instanceof CudaIntDataBuffer) {
+            buffer.setConstant(true);
+            point.setConstant(true);
+        }
 
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);

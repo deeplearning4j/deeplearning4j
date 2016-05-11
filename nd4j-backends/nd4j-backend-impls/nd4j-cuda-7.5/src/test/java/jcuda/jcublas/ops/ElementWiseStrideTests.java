@@ -44,4 +44,20 @@ public class ElementWiseStrideTests {
             }
         }
     }
+
+    @Test
+    public void testDualVStack() throws Exception {
+        INDArray[] arrs = new INDArray[50];
+        INDArray[] arrs2 = new INDArray[50];
+
+        for( int i=0; i<arrs.length; i++ ){
+            arrs[i] = Nd4j.create(new float[]{1f, 2f}).dup('c');
+            arrs2[i] = Nd4j.create(new int[]{1,2},'c');
+        }
+
+        INDArray result = Nd4j.vstack(arrs);
+
+        System.out.println("Result: " + result);
+//        Nd4j.vstack(arrs2);
+    }
 }

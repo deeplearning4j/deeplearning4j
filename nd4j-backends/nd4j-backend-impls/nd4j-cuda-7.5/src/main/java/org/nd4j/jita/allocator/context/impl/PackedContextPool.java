@@ -4,6 +4,7 @@ import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PackedContextPool extends BasicContextPool implements ContextPool {
 
-    protected static final int LANES_PER_THREAD = 4;
+    protected static final int LANES_PER_THREAD = CudaEnvironment.getInstance().getConfiguration().getCommandLanesNumber();
 
     private volatile Map<Long, ContextPack> contextsPool = new ConcurrentHashMap<>();
 

@@ -1013,7 +1013,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             ret = Nd4j.zeros(retShape);
 
-            log.info("Intermediatery result buffer: {}", ret.shapeInfoDataBuffer());
+         //   log.info("Intermediatery result buffer: {}", ret.shapeInfoDataBuffer());
 
             // FIXME: this maybe misleading use of this particular pointer
             hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context).address();
@@ -1107,7 +1107,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().ordering() == op.x().ordering()) {
                     nativeOps.execTransformDouble(
                             xShapeInfoHostPointer,
                             op.opNum(),
