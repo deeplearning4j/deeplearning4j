@@ -948,6 +948,8 @@ public:
 
     long getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
 
+    long getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
+
     Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
 
     Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
@@ -963,6 +965,9 @@ public:
     void enableVerboseMode(bool reallyEnable);
 
     void setGridLimit(int gridSize);
+
+    void tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer);
+
 };
 
 

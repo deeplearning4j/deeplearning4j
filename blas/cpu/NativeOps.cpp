@@ -2018,6 +2018,10 @@ long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
+long NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
+    return 0L;
+}
+
 Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
@@ -2060,4 +2064,8 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 
 void NativeOps::setGridLimit(int gridSize) {
     // no-op
+}
+
+void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
+    // TODO: add impl here
 }

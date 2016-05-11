@@ -3844,6 +3844,20 @@ long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
 	return (long) memFree;
 }
 
+long NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
+	int device = (int) ptrToDeviceId;
+
+	if (device >= 0) {
+		setDevice(ptrToDeviceId);
+	}
+	size_t memFree = 0;
+	size_t memTotal = 0;
+
+	cudaMemGetInfo(&memFree, &memTotal);
+
+	return (long) memTotal;
+}
+
 Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
 
 	return memcpyAsync(dst, src, size, flags, reserved);
@@ -4023,4 +4037,19 @@ void NativeOps::concatDouble(
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
+	int *hostXShapeInfo = reinterpret_cast<int *>(xShapeInfo);
+	int *dimensionPointer = reinterpret_cast<int *>(dimension);
+	int *target = reinterpret_cast<int *>(targetBuffer);
+
+	shape::TAD *tad = new shape::TAD();
+	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
+	tad->setOutputBuffer(target);
+	tad->createTadOnlyShapeInfo();
+
+	shape::printShapeInfo(tad->tadOnlyShapeInfo);
+
+	delete tad;
 }
