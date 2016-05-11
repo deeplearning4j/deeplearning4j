@@ -13,4 +13,5 @@ public enum AllocationStatus {
     DEALLOCATED,
 //    PARTIAL,
 //    NESTED
+    CONSTANT,
 }

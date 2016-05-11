@@ -2,9 +2,11 @@ package org.nd4j.jita.allocator.tad;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import static org.junit.Assert.*;
 
@@ -37,6 +39,42 @@ public class BasicTADManagerTest {
         assertEquals(0, tad.getInt(5));
         assertEquals(100, tad.getInt(6));
         assertEquals(99, tad.getInt(7));
+    }
+
+    @Test
+    public void testTADcreation2() throws Exception {
+        INDArray array = Nd4j.create(10, 100);
+
+        TADManager tadManager  = new DeviceTADManager();
+
+        DataBuffer tad = tadManager.getTADOnlyShapeInfo(array, new int[]{0}, 1);
+        DataBuffer tad2 = tadManager.getTADOnlyShapeInfo(array, new int[]{0}, 1);
+
+        System.out.println("TAD: " + tad);
+        System.out.println("Shape: " + array.shapeInfoDataBuffer());
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        assertEquals(2, tad.getInt(0));
+        assertEquals(1, tad.getInt(1));
+        assertEquals(10, tad.getInt(2));
+        assertEquals(1, tad.getInt(3));
+        assertEquals(100, tad.getInt(4));
+        assertEquals(0, tad.getInt(5));
+        assertEquals(100, tad.getInt(6));
+        assertEquals(99, tad.getInt(7));
+
+        assertFalse(AtomicAllocator.getInstance().getAllocationPoint(tad).isActualOnDeviceSide());
+
+        long tadPointer1 = AtomicAllocator.getInstance().getPointer(tad, context).address();
+        long tadPointer2 = AtomicAllocator.getInstance().getPointer(tad2, context).address();
+
+        assertTrue(AtomicAllocator.getInstance().getAllocationPoint(tad).isActualOnDeviceSide());
+
+        System.out.println("tadPointer1: " + tadPointer1);
+        System.out.println("tadPointer2: " + tadPointer2);
+
+        assertEquals(tadPointer1, tadPointer2);
     }
 
 }
