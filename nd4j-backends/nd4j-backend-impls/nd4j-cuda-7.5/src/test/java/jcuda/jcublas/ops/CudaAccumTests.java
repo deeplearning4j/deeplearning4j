@@ -28,8 +28,8 @@ public class CudaAccumTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(64)
-                .setMaximumGridSize(512)
+                .setMaximumBlockSize(256)
+                .setMaximumGridSize(256)
                 .enableDebug(true)
                 .setVerbose(true);
 
@@ -334,6 +334,7 @@ public class CudaAccumTests {
 
         int[][] dimsToSum = new int[][]{{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
         double[][] expD = new double[][]{{64, 72}, {60, 76}, {52, 84}, {36, 100}};
+
 
         for (int i = 0; i < dimsToSum.length; i++) {
             int[] d = dimsToSum[i];

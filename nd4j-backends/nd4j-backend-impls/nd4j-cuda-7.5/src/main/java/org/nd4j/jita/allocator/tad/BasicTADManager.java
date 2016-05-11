@@ -24,22 +24,29 @@ public class BasicTADManager implements TADManager {
 
     @Override
     public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension, int dimensionLength) {
+        if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
+            return array.shapeInfoDataBuffer();
+        } else {
+            Arrays.sort(dimension);
 
-        Arrays.sort(dimension);
 
-        int targetRank = Math.max(array.rank() - dimensionLength, 2);
+            int targetRank = array.rank(); ///Math.max(array.rank() - dimensionLength, 2);
 
 
-        DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
+            DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
 
-        long xShapeInfo = AddressRetriever.retrieveHostAddress(array.shapeInfoDataBuffer());
-        long dimensionPointer = AddressRetriever.retrieveHostAddress(Nd4j.createBuffer(dimension));
-        long targetPointer = AddressRetriever.retrieveHostAddress(outputBuffer);
+            long xShapeInfo = AddressRetriever.retrieveHostAddress(array.shapeInfoDataBuffer());
+            long dimensionPointer = AddressRetriever.retrieveHostAddress(Nd4j.createBuffer(dimension));
+            long targetPointer = AddressRetriever.retrieveHostAddress(outputBuffer);
 
-        nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimensionLength, targetPointer );
+            nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimensionLength, targetPointer);
 
-        // now we need to copy this buffer to either device global memory or device cache
+            AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
 
-        return outputBuffer;
+            logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+            // now we need to copy this buffer to either device global memory or device cache
+
+            return outputBuffer;
+        }
     }
 }

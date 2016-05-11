@@ -23,11 +23,11 @@ public class CudaBroadcastTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(128)
                 .setMaximumGridSize(128)
-                .enableDebug(false);
+                .enableDebug(true);
 
         System.out.println("Init called");
     }
@@ -125,7 +125,7 @@ public class CudaBroadcastTests {
         // simple way to stop test if we're not on CUDA backend here
         assertEquals("JcublasLevel1", Nd4j.getBlasWrapper().level1().getClass().getSimpleName());
 
-        INDArray array1 = Nd4j.zeros(15,15);
+        INDArray array1 = Nd4j.create(15,15);
         INDArray array2 = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f});
 
         array1.rsubiRowVector(array2);

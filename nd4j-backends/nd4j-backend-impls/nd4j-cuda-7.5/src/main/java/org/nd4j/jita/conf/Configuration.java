@@ -254,7 +254,7 @@ public class Configuration implements Serializable {
      */
     public Configuration setMaximumGridSize(int gridDim) {
         if (gridDim <= 0 || gridDim > 512)
-            throw new IllegalStateException("Please keep gridDim in range [64...512]");
+            throw new IllegalStateException("Please keep gridDim in range [8...512]");
 
         this.maximumGridSize = gridDim;
 
@@ -272,8 +272,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setMaximumBlockSize(int blockDim) {
-        if (blockDim < 64 || blockDim > 512)
-            throw new IllegalStateException("Please keep blockDim in range [64...512]");
+        if (blockDim < 64 || blockDim > 768)
+            throw new IllegalStateException("Please keep blockDim in range [64...768]");
 
 
         this.maximumBlockSize = blockDim;
