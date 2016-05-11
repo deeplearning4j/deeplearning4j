@@ -73,7 +73,7 @@ namespace functions {
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory<T> *manager) {
+			int dimensionLength, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
@@ -86,8 +86,11 @@ namespace functions {
         if (threadIdx.x == 0) {
             tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
             tad->setExternalBuffers((void *) manager);
-            tad->init(xShapeInfo,dimension,dimensionLength);
-            tad->createTadOnlyShapeInfo();
+            tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+            //tad->init(xShapeInfo,dimension,dimensionLength);
+            //tad->createTadOnlyShapeInfo();
+
+
 			rank = shape::rank(tad->tadOnlyShapeInfo);
 			tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
 		    yStride = shape::elementWiseStride(yShapeInfo);
@@ -728,7 +731,7 @@ __device__ void broadcastGeneric(
 		int *resultShapeInfo,
 		int zRank,
 		int *dimension,
-		int dimensionLength) {
+		int dimensionLength, int *tadOnlyShapeInfo) {
 
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
@@ -745,7 +748,7 @@ __device__ void broadcastGeneric(
 	    manager->setTADSpace(dimensionLength);
     }
     __syncthreads();
-
+/*
 	__shared__ int *ptrSharedXShapeInfo;
 	__shared__ int *ptrSharedYShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
@@ -764,7 +767,7 @@ __device__ void broadcastGeneric(
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
 	if(threadIdx.x == 0) {
 		newOpFactory =  new(manager->getFactorySpace()) functions::broadcast::BroadcastOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
@@ -780,7 +783,7 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength, manager);
+			dimensionLength, manager, tadOnlyShapeInfo);
 }
 
 /**
@@ -804,7 +807,7 @@ extern "C" __global__ void broadcastDouble(
 		double *y, int *yShapeInfo, int yRank,
 		double *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength) {
+		int dimensionLength, int *tadOnlyShapeInfo) {
 	broadcastGeneric<double>(
 			opNum,
 			x,
@@ -814,7 +817,7 @@ extern "C" __global__ void broadcastDouble(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength);
+			dimensionLength, tadOnlyShapeInfo);
 
 }
 
@@ -840,7 +843,7 @@ extern "C" __global__ void broadcastFloat(
 		float *y, int *yShapeInfo, int yRank,
 		float *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength) {
+		int dimensionLength, int *tadOnlyShapeInfo) {
 	broadcastGeneric<float>(
 			opNum,
 			x,
@@ -850,7 +853,7 @@ extern "C" __global__ void broadcastFloat(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength);
+			dimensionLength, tadOnlyShapeInfo);
 
 }
 

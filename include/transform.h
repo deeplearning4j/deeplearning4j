@@ -3898,7 +3898,7 @@ namespace functions {
                 sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
             __syncthreads();
 
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 			__syncthreads();
 		}
 
@@ -3931,7 +3931,7 @@ namespace functions {
                 div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
             __syncthreads();
 
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 			__syncthreads();
 		}
 	}
@@ -4181,7 +4181,7 @@ namespace functions {
                 sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
             __syncthreads();
 
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 		}
 		__syncthreads();
 
@@ -4213,7 +4213,7 @@ namespace functions {
                 div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
             __syncthreads();
 
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 		}
 		__syncthreads();
 
@@ -4494,7 +4494,7 @@ namespace functions {
                 sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
             __syncthreads();
 
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 		}
 		__syncthreads();
 
@@ -4526,7 +4526,7 @@ namespace functions {
                 div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
             __syncthreads();
 
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager);
+			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
 		}
 		__syncthreads();
 
@@ -4775,7 +4775,7 @@ namespace functions {
 				resultShapeBuffer,
 				nullptr,
 				1,
-				1, allocationPointer, reductionPointer, manager);
+				1, allocationPointer, reductionPointer, manager, nullptr);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4988,7 +4988,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1, allocationPointer, reductionPointer, manager);
+					1, allocationPointer, reductionPointer, manager, nullptr);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {

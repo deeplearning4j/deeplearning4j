@@ -174,7 +174,7 @@ namespace functions {
 					T *extraParams,
 					T *result,
 					int *resultShapeInfo,
-					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory<T> *manager) {
+					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 				Nd4jIndex n = shape::length(xShapeInfo);
 				int rank = shape::rank(xShapeInfo);
 				//shared memory space for storing intermediate results
@@ -236,7 +236,7 @@ namespace functions {
 					int *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
+					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 
 				if (threadIdx.x == 0)
 					printf("Going for scalar reduce 3");
@@ -362,7 +362,7 @@ namespace functions {
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
-					int *allocationPointer, UnifiedSharedMemory<T> *manager) {
+					int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 				/**
                  * Gpu information for the problem
                  */
@@ -431,8 +431,9 @@ namespace functions {
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
-                        tad->init(xShapeInfo,dimension,dimensionLength);
-                        tad->createTadOnlyShapeInfo();
+                        tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+                        //tad->init(xShapeInfo,dimension,dimensionLength);
+                        //tad->createTadOnlyShapeInfo();
                     }
                     __syncthreads();
 
@@ -586,6 +587,9 @@ namespace functions {
 					}
 				}
 				else {
+
+					printf("Misplaced reduce3 execScalarCuda\n");
+
 					this->execScalarCuda(
 							dx,
 							xShapeInfo,
@@ -593,7 +597,7 @@ namespace functions {
 							yShapeInfo,
 							extraParams,
 							result,
-							resultShapeInfo, allocationPointer, manager);
+							resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
 				}
 
 			}
@@ -1522,7 +1526,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
@@ -1535,7 +1539,7 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD));
 	}
 	__syncthreads();
-
+/*
 	__shared__ int *ptrSharedXShapeInfo;
 	__shared__ int *ptrSharedYShapeInfo;
 	__shared__ int *ptrSharedZShapeInfo;
@@ -1554,14 +1558,24 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 		shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
 		if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
 	} else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
 	if(threadIdx.x == 0) {
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	op->transformNoElementWiseStride(dx,ptrSharedXShapeInfo,dy,ptrSharedYShapeInfo,extraParams,result,ptrSharedZShapeInfo,postProcessOrNot, allocationPointer, manager);
+	op->transformNoElementWiseStride(
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			postProcessOrNot,
+			allocationPointer,
+			manager, tadOnlyShapeInfo);
 }
 
 
@@ -1574,7 +1588,7 @@ __global__ void reduce3NoElementWiseStrideDouble(
 		double *extraParams,
 		double *result,
 		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 	reduce3NoElementWiseStrideGeneric<double>(
 			opNum,
 			dx,
@@ -1584,8 +1598,7 @@ __global__ void reduce3NoElementWiseStrideDouble(
 			extraParams,
 			result,
 			resultShapeInfo,
-			postProcessOrNot, allocationPointer
-	);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
 }
 
 
@@ -1598,7 +1611,7 @@ __global__ void reduce3NoElementWiseStrideFloat(
 		float *extraParams,
 		float *result,
 		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 	reduce3NoElementWiseStrideGeneric<float>(
 			opNum,
 			dx,
@@ -1608,8 +1621,7 @@ __global__ void reduce3NoElementWiseStrideFloat(
 			extraParams,
 			result,
 			resultShapeInfo,
-			postProcessOrNot, allocationPointer
-	);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
 }
 
 /**
@@ -1640,7 +1652,7 @@ __device__ void reduce3Generic(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 
 
 	__shared__ functions::reduce3::Reduce3<T> * op;
@@ -1654,7 +1666,7 @@ __device__ void reduce3Generic(
 		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD));
 	}
 	__syncthreads();
-
+/*
 	__shared__ int *ptrSharedXShapeInfo;
 	__shared__ int *ptrSharedYShapeInfo;
 	__shared__ int *ptrSharedZShapeInfo;
@@ -1673,7 +1685,7 @@ __device__ void reduce3Generic(
 		shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
 		if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
 	} else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
 	if(threadIdx.x == 0) {
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
@@ -1682,14 +1694,15 @@ __device__ void reduce3Generic(
 
 	op->transform(
 			dx,
-			ptrSharedXShapeInfo,
-			dy,ptrSharedYShapeInfo,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
 			extraParams,
 			result,
-			ptrSharedZShapeInfo,
+			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer, manager);
+			postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo);
 }
 
 /**
@@ -1719,7 +1732,7 @@ __global__ void reduce3Double(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 	reduce3Generic<double>(
 			opNum,
 			dx,
@@ -1731,7 +1744,7 @@ __global__ void reduce3Double(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
 
 }
 
@@ -1763,7 +1776,7 @@ __global__ void reduce3Float(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
 	reduce3Generic<float>(
 			opNum,
 			dx,
@@ -1775,7 +1788,7 @@ __global__ void reduce3Float(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
 
 }
 

@@ -1316,14 +1316,9 @@ __device__ void scalarGeneric(
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
 	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD));
-
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(1);
     }
     __syncthreads();
-
+/*
 	__shared__ int *ptrSharedXShapeInfo;
     __shared__ int *ptrSharedZShapeInfo;
 
@@ -1336,7 +1331,7 @@ __device__ void scalarGeneric(
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
 
 	if(threadIdx.x == 0) {
 		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
@@ -1345,7 +1340,15 @@ __device__ void scalarGeneric(
 	__syncthreads();
 
 
-	op->transformCuda(dx,dy,ptrSharedXShapeInfo,params,result,ptrSharedZShapeInfo, allocationBuffer, manager);
+	op->transformCuda(
+	    dx,
+	    dy,
+	    xShapeInfo,
+	    params,
+	    result,
+	    resultShapeInfo,
+	    allocationBuffer,
+	    manager);
 }
 
 extern "C" __global__ void scalarDouble(

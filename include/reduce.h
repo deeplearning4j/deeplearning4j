@@ -134,7 +134,10 @@ namespace functions {
                     T *extraParams,
                     T *result,
                     int *resultShapeInfo,
-                    int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager) {
+                    int *allocationBuffer,
+                    T *reductionBuffer,
+                    UnifiedSharedMemory<T> *manager,
+                    int *tadOnlyShapeInfo) {
                 int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
                 int n = shape::length(xShapeInfo);
@@ -400,6 +403,8 @@ namespace functions {
                         */
                     }
                 } else {
+                    printf("reduce->execScalarCuda misplaced call!\n");
+                    /*
                     this->execScalarCuda(
                             dx,
                             xShapeInfo,
@@ -407,6 +412,7 @@ namespace functions {
                             result,
                             resultShapeInfo,
                             allocationBuffer, reductionBuffer, manager);
+                            */
                 }
             }
 
@@ -2010,7 +2016,109 @@ extern "C" __global__ void reduceFloat(
             allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
 }
 
+template <typename T>
+__device__ void reduceScalarGeneric(
+        int op,
+        T *dx,
+        int *xShapeInfo, int xRank,
+        T *extraParams,
+        T *result,
+        int *resultShapeInfo, int zRank,
+        int *dimension,
+        int dimensionLength,
+        int postProcessOrNot,
+        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
 
+    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+    __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
+    __shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
+    }
+    __syncthreads();
+/*
+    __shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
+
+    if (xShapeInfo != nullptr) {
+        shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
+        if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
+
+    if (resultShapeInfo != nullptr) {
+        shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
+
+//        shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
+
+        if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
+    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
+*/
+    if(threadIdx.x == 0) {
+        newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+    }
+    __syncthreads();
+    reduceFunctionToInvoke->execScalarCuda(
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
+};
+
+extern "C" __global__ void reduceScalarFloat(
+        int op,
+        float *dx,
+        int *xShapeInfo, int xRank,
+        float *extraParams,
+        float *result,
+        int *resultShapeInfo, int zRank,
+        int *dimension,
+        int dimensionLength,
+        int postProcessOrNot,
+        int *allocationBuffer,
+        float *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceScalarGeneric<float>(
+            op,
+            dx,
+            xShapeInfo, xRank,
+            extraParams,
+            result,
+            resultShapeInfo, zRank,
+            dimension,
+            dimensionLength,
+            postProcessOrNot,
+            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+};
+
+extern "C" __global__ void reduceScalarDouble(
+        int op,
+        double *dx,
+        int *xShapeInfo, int xRank,
+        double *extraParams,
+        double *result,
+        int *resultShapeInfo, int zRank,
+        int *dimension,
+        int dimensionLength,
+        int postProcessOrNot,
+        int *allocationBuffer,
+        double *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceScalarGeneric<double>(
+            op,
+            dx,
+            xShapeInfo, xRank,
+            extraParams,
+            result,
+            resultShapeInfo, zRank,
+            dimension,
+            dimensionLength,
+            postProcessOrNot,
+            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+};
 #endif
 
