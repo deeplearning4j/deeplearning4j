@@ -33,7 +33,7 @@ int maxThreads = 512;
 bool debug = false;
 bool verbose = true;
 
-__constant__ char deviceConstantMemory[49152];
+__constant__ char deviceConstantMemory[65536];
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jIndex n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
