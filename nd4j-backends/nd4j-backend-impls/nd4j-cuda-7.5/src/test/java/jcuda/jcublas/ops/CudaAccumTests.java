@@ -76,6 +76,7 @@ public class CudaAccumTests {
         assertEquals(495055.44f, result.getFloat(0), 0.01f);
 */
         result = Nd4j.getExecutioner().exec(sum, 1);
+        result = Nd4j.getExecutioner().exec(sum, 1);
         assertEquals(50945.52f, result.getFloat(0), 0.01f);
 
     }

@@ -116,7 +116,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 devTadShapeInfo,
         };
 
-        long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address();
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.execBroadcastDouble(
@@ -214,9 +215,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long extraArgs = op.extraArgs() != null && op instanceof Variance ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
         //long extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
-        long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address(); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
 
-       // log.info("Extras: {}",op.extraArgsDataBuff());
+
+        // log.info("Extras: {}",op.extraArgsDataBuff());
         /*
         log.info("xShapeInfoHostPointer: " + Arrays.toString(xShapeInfoHostPointer));
         log.info("X: " + x);
@@ -472,7 +475,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 devTadShapeInfo
         };
         long extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context).address() : 0;
-        long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+        long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address();
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.execIndexReduceDouble(
@@ -597,7 +601,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();
-        long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(op.getDimension()), context).address();
+        //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(op.getDimension()), context).address();
+        long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context).address();
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.execBroadcastDouble(
@@ -698,7 +703,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
             long zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();
-            long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+            //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+            long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address();
 
 //            log.info("Z.length: " + op.z().length());
 //            log.info("Z.shapeInfo: " + op.z().shapeInfoDataBuffer());
@@ -860,7 +866,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         else {
             long result = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
             long resultShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();
-            long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+            long dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address(); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
@@ -981,6 +987,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();
+
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
                 context.getOldStream().getNativePointer(),
@@ -990,7 +997,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferScalar(),
                 context.getBufferSpecial(),
                 hostYShapeInfo,
-                hostZShapeInfo
+                hostZShapeInfo,
+                0,
+                0
         };
 
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -1072,7 +1081,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             // FIXME: this maybe misleading use of this particular pointer
             hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context).address();
 
-            dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+            //dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
+            dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address();
         }
 
         long hostTadShapeInfo = 0;

@@ -943,9 +943,13 @@ public class NativeOps extends Pointer {
 
     public native long memcpyAsync(long dst, long src, long size, int flags, long reserved);
 
+    public native long memcpyConstantAsync(long dst, long src, long size, int flags, long reserved);
+
     public native long memset(long dst, int value, long size,  int flags, long reserved);
 
     public native long memsetAsync(long dst, int value, long size, int flags, long reserved);
+
+    public native long getConstantSpace();
 
     public native long getAvailableDevices();
 
