@@ -44,7 +44,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
-    protected INDArray col; // vectorized input
+//    protected INDArray col; // vectorized input
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -55,7 +55,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
 
-    public void setCol(INDArray col) {this.col = col;}
+//    public void setCol(INDArray col) {this.col = col;}
 
     @Override
     public double calcL2() {
@@ -99,6 +99,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //gb = gy[0].sum(axis=(0, 2, 3))
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta.sum(0, 2, 3));
 
+        INDArray col = null;
+
         // gW = np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
         INDArray weightGradient = Nd4j.tensorMmul(delta, col, new int[][] {{0, 2, 3},{0, 4, 5}});
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient, 'c');
@@ -120,35 +122,25 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
         }
 
-        //TODO: proper strides and order and all that good stuff.
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
-        int outH = col.size(4);
-        int outW = col.size(5);
+
         int outDepth = weights.size(0);
-        int inDepth = input.size(1);
+        int inDepth = weights.size(1);
         int kH = weights.size(2);
         int kW = weights.size(3);
+
+        int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
-//
-//        //Current order of im2col: [miniBatch,depth,kH,kW,outH,outW]. Want: [miniBatch,outH,outW,depthIn,kH,kW] in C order
-//        //Means: permute(0,4,5,1,2,3)
-//        INDArray permutedCol = col.permute(0,4,5,1,2,3).dup('c');
-//        int length1 = col.length();
-//        int length2 = miniBatch*outH*outW*inDepth*kH*kW;
-//        INDArray reshapedCol = permutedCol.reshape('c',miniBatch*outH*outW, inDepth*kH*kW);
 
-        //im2col in the required order: want [miniBatch,outH,outW,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW]
-        //To get this: create an array of this order, permute it to the im2col order, and then do im2col
-        //to get original from required order: permute(0,3,4,5,1,2)
-//        INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
-//        INDArray col2 = col.permute(0,3,4,5,1,2);
-//        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
+        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
         //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW]
-        //To get this: create an array of this order, permute it to the im2col order, and then do im2col
+        // given the current im2col implementation
+        //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(2,3,4,5,1,2)
         INDArray col = Nd4j.create(new int[]{outW,outH,miniBatch,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(2,3,4,5,0,1);
@@ -157,31 +149,36 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedCol = Shape.newShapeNoCopy(col,new int[]{miniBatch*outH*outW, inDepth*kH*kW},false);
         if(reshapedCol == null) throw new RuntimeException("Could not reshape without copy");
 
-        //Current order of weights: [depthOut,depthIn,kH,kW]
-        //Want order: [depthIn,kH,kW,depthOut], c order
-        //need: permute(1,2,3,0)
-        INDArray permutedW = weights.permute(1,2,3,0).dup('c');
-        INDArray reshapedW = permutedW.reshape('c',inDepth*kH*kW,outDepth);
+        //Current order of weights: [depthOut,depthIn,kH,kW], c order
+        //Permute to give [kW,kH,depthIn,depthOut], f order
+        //Then zero-copy reshape to give [kW*kH*depthIn, depthOut]
 
-        //Do the MMUL, c order out. Use AB=(B^T A^T)^T
-        INDArray z = Nd4j.gemm(reshapedW,reshapedCol,true,true).transpose();
+        if(weights.ordering() != 'c') throw new RuntimeException("Weights not c order");
+        INDArray permutedW = weights.permute(3,2,1,0);
+        if(permutedW.ordering() != 'f') throw new RuntimeException("Not 'f' order after reshaping");
+        INDArray reshapedW = Shape.newShapeNoCopy(permutedW,new int[]{kW*kH*inDepth,outDepth},true);
+
+        if(reshapedW==null){
+            throw new RuntimeException("Could not reshape weights");
+        }
+        if(reshapedW.ordering() != 'f') throw new RuntimeException("Not 'f' order after reshaping");
+
+        //Do the MMUL; c and f orders in, c order out
+        INDArray z = Nd4j.gemm(reshapedCol,reshapedW,false,false);
 
         //Expected output shape: [miniBatch*outH*outW,depthOut]
-        if(z.ordering() != 'c') throw new RuntimeException();
+        if(z.ordering() != 'f') throw new RuntimeException();
         if(z.rows() != miniBatch*outH*outW) throw new RuntimeException();
         if(z.columns() != outDepth) throw new RuntimeException();
 
         //Now, reshape to [miniBatch,outH,outW,depthOut]
-        z = z.reshape('c',miniBatch,outH,outW,outDepth);
+        z = z.reshape('f',outW,outH,miniBatch,outDepth);
 
-//        INDArray z = Nd4j.tensorMmul(col, weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
         BroadcastOp op = new BroadcastAddOp(z,bias,z,3);
         Nd4j.getExecutioner().exec(op);
 
-//        return Nd4j.rollAxis(z, 3, 1);
-
         //Output activations with shape [miniBath,outDepth,outH,outW];
-        INDArray out = z.permute(0,3,1,2);
+        INDArray out = z.permute(2,3,1,0);
         return out;
     }
 
@@ -191,9 +188,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(training);
 
-        col = Convolution.im2col(input, layerConf().getKernelSize(), layerConf().getStride(), layerConf().getPadding());
         INDArray z = preOutput(training);
-        // TODO add switch here to use bn if included
+
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), z));
         return activation;
     }
@@ -221,6 +217,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public INDArray params(){
         //C order flattening, to match the gradient flattening order
         return Nd4j.toFlattened('c',params.values());
+    }
+
+    @Override
+    public void setParams(INDArray params){
+        //Override, as base layer does f order parameter flattening by default
+        setParams(params,'c');
     }
 
 }
