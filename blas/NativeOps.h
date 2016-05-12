@@ -958,6 +958,10 @@ public:
 
     Nd4jPointer memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
 
+    Nd4jPointer memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+
+    Nd4jPointer getConstantSpace();
+
     Nd4jPointer getAvailableDevices();
 
     void enableDebugMode(bool reallyEnable);

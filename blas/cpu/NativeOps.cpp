@@ -2069,3 +2069,13 @@ void NativeOps::setGridLimit(int gridSize) {
 void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
     // TODO: add impl here
 }
+
+Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+    // no-op
+    return 0L;
+}
+
+Nd4jPointer NativeOps::getConstantSpace() {
+    // no-op
+    return 0L;
+}

@@ -4201,3 +4201,46 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 */
 	delete tad;
 }
+
+Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
+
+	cudaMemcpyKind 	kind;
+
+	if (debug)
+		checkCudaErrors(cudaStreamSynchronize(*pStream));
+
+	switch (flags) {
+		case 0: {
+			kind = cudaMemcpyHostToHost;
+		}
+			break;
+		case 1: {
+			kind = cudaMemcpyHostToDevice;
+		}
+			break;
+		case 2: {
+			kind = cudaMemcpyDeviceToHost;
+		}
+		case 3: {
+			kind = cudaMemcpyDeviceToDevice;
+		}
+			break;
+	}
+	//cudaError_t result = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
+	cudaError_t result = cudaMemcpyToSymbolAsync(deviceConstantMemory, (const void *) src, size, (long) dst, kind, *pStream);
+	checkCudaErrors(result);
+	if (result != 0) {
+		printf("Symbol failed on [%lu] -> [%lu], size: [%i], direction: [%i]\n", src, dst, size, flags );
+		return 0L;
+	}
+	else return 1;
+	return 0L;
+}
+
+Nd4jPointer NativeOps::getConstantSpace() {
+	Nd4jPointer dConstAddr;
+	cudaError_t result = cudaGetSymbolAddress((void **)&dConstAddr, deviceConstantMemory);
+
+	return dConstAddr;
+}
