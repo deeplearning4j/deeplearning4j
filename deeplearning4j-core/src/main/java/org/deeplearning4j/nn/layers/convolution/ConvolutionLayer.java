@@ -87,30 +87,106 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        int inputHeight = input().size(-2);
-        int inputWidth = input().size(-1);
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
 
-        // gy, Note: epsilon should be reshaped to a tensor when passed in
-        INDArray delta = calculateDelta(epsilon);
+        int miniBatch = input.size(0);
+        int inH = input.size(2);
+        int inW = input.size(3);
+
+        int outDepth = weights.size(0);
+        int inDepth = weights.size(1);
+        int kH = weights.size(2);
+        int kW = weights.size(3);
+
+        int[] kernel = layerConf().getKernelSize();
+        int[] strides = layerConf().getStride();
+        int[] pad = layerConf().getPadding();
+
+        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
+        int[] epsShape = epsilon.shape();
+        if(!Arrays.equals(epsShape,new int[]{miniBatch,outDepth,outH,outW})){
+            throw new RuntimeException("Unexpected input shape");
+        }
+
+        INDArray sigmaPrimeZ = preOutput(true);
+        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                conf.getLayer().getActivationFunction(), sigmaPrimeZ, conf.getExtraArgs()).derivative());
+
+        INDArray delta = epsilon.mul(sigmaPrimeZ);
+        delta = delta.permute(1,0,2,3); //To shape: [outD,mB,outH,outW]
+
+        //TODO implement zero-copy version for this...
+        delta = delta.dup('c');
+
+        if(delta.ordering() != 'c') throw new RuntimeException();
+        if(!Arrays.equals(delta.shape(), new int[]{outDepth,miniBatch,outH,outW})){
+            throw new RuntimeException("Shape different than expected");
+        }
+
+        INDArray delta2d = Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);   //delta.reshape('c',outDepth,miniBatch*outH*outW);
+        if(delta2d == null) throw new RuntimeException("Could not execute reshape on delta");
+
+
+
+        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW]
+        // given the current im2col implementation
+        //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
+        //to get old order from required order: permute(0,3,4,5,1,2)
+        INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
+        INDArray col2 = col.permute(0,3,4,5,1,2);
+        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
+
+        //Shape im2col to 2d:
+        INDArray im2col2d = Shape.newShapeNoCopy(col,new int[]{miniBatch*outH*outW, inDepth*kH*kW},false);
+        if(im2col2d == null) throw new RuntimeException("Could not reshape im2col");
+
+        //cc->c mmul
+        //Using the fact that AB = (B^T A^T)^T, and output is c order...
+        INDArray weightGrads = Nd4j.gemm(im2col2d,delta2d,true,true).transpose();
+        if(weightGrads.ordering() != 'c') throw new RuntimeException("Output order is not c");
+        if(weightGrads.rows() != outDepth){
+            throw new RuntimeException();
+        }
+        if(weightGrads.columns() != inDepth*kH*kW){
+            throw new RuntimeException();
+        }
+
+        INDArray wPermuted = weights.permute(3,2,1,0);
+        if(wPermuted.ordering() != 'f') throw new RuntimeException();
+        INDArray w2d = Shape.newShapeNoCopy(wPermuted, new int[]{inDepth*kH*kW, outDepth},true);//wPermuted.reshape('f',inDepth*kH*kW, outDepth);
+
+        if(w2d == null) throw new RuntimeException("Could not reshape weights");
+        INDArray epsNext2d = w2d.mmul(delta2d);
+
+        if(epsNext2d.ordering() != 'f') throw new RuntimeException("Not f out");
+        if(!Arrays.equals(epsNext2d.shape(), new int[]{inDepth*kH*kW, miniBatch*outH*outW})){
+            throw new RuntimeException("Incorrect output shape for eps2d");
+        }
+
+        INDArray eps6d = Shape.newShapeNoCopy(epsNext2d,new int[]{kW,kH,inDepth,outW,outH,miniBatch}, true);
+        if(eps6d == null) throw new RuntimeException("Colud not reshape eps2d to eps6d");
+        if(eps6d.ordering() != 'f') throw new RuntimeException();
+
+        //Now, col2im expects input with order: [miniBatch,depth,kH,kW,outH,outW]
+        //currently have [kH,kW,inDepth,outW,outH,miniBatch]
+        // so: permute to this order first...
+        eps6d = eps6d.permute(5,2,1,0,4,3);
+
+
+        INDArray epsNext = Convolution.col2im(eps6d, layerConf().getStride(), layerConf().getPadding(), inH, inW);
+        if(epsNext.rank() != 4) throw new RuntimeException();
+        int[] epsNextShape = epsNext.shape();
+        if(!Arrays.equals(epsNextShape, new int[]{miniBatch,inDepth,inH,inW})){
+            throw new RuntimeException("Unexpected shape for epsNext: " + Arrays.toString(epsNextShape) + ", expected = " + Arrays.toString(new int[]{miniBatch,inDepth,inH,inW}));
+        }
 
         Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta2d.sum(1));
+        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGrads.dup('c'), 'c');
 
-        //gb = gy[0].sum(axis=(0, 2, 3))
-        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta.sum(0, 2, 3));
-
-        INDArray col = null;
-
-        // gW = np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
-        INDArray weightGradient = Nd4j.tensorMmul(delta, col, new int[][] {{0, 2, 3},{0, 4, 5}});
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient, 'c');
-
-        //gcol = tensorMmul(W, gy[0], (0, 1))
-        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][] {{0}, {1}});
-
-        nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3);
-        nextEpsilon = Convolution.col2im(nextEpsilon, layerConf().getStride(), layerConf().getPadding(), inputHeight, inputWidth);
-        return new Pair<>(retGradient,nextEpsilon);
+        return new Pair<>(retGradient,epsNext);
     }
 
     public INDArray preOutput(boolean training) {
