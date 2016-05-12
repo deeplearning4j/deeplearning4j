@@ -73,7 +73,7 @@ These vectors are the basis of a more comprehensive geometry of words. Not only 
 
 Let's look at some other associations Word2vec can produce. 
 
-Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means "as"; e.g. "Rome is to Italy as China is to Beijing" =  `Rome:Italy::Beijing:China`. In the last spot, rather than supplying the "answer", we'll give you the list of words that a Word2vec model proposes, when given the first three elements:
+Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means "as"; e.g. "Rome is to Italy as Beijing is to China" =  `Rome:Italy::Beijing:China`. In the last spot, rather than supplying the "answer", we'll give you the list of words that a Word2vec model proposes, when given the first three elements:
 
     king:queen::man:[woman, Attempted abduction, teenager, girl] 
     //Weird, but you can kind of see it
