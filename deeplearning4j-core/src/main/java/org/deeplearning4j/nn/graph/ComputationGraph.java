@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph;
 
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -800,7 +801,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param truncatedBPTT false: normal backprop. true: calculate gradients using truncated BPTT for RNN layers
      */
     protected void backprop(boolean truncatedBPTT){
-        LinkedList<Pair<String,INDArray>> gradients = new LinkedList<>();
+        LinkedList<Triple<String,INDArray,Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
         for( int i=topologicalOrder.length-1; i>= 0; i-- ){
@@ -835,19 +836,20 @@ public class ComputationGraph implements Serializable, Model {
             if(pair.getFirst() != null){
                 Gradient g = pair.getFirst();
                 Map<String,INDArray> map = g.gradientForVariable();
-                LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
+                LinkedList<Triple<String,INDArray,Character>> tempList = new LinkedList<>();
                 for( Map.Entry<String,INDArray> entry : map.entrySet() ){
-                    String newName = current.getVertexName() + "_" + entry.getKey();
-                    tempList.addFirst(new Pair<>(newName,entry.getValue()));
+                    String origName = entry.getKey();
+                    String newName = current.getVertexName() + "_" + origName;
+                    tempList.addFirst(new Triple<>(newName,entry.getValue(), g.flatteningOrderForVariable(origName)));
                 }
-                for(Pair<String,INDArray> p : tempList ) gradients.addFirst(p);
+                for(Triple<String,INDArray,Character> t : tempList ) gradients.addFirst(t);
             }
         }
 
         //Now, add the gradients in the order we need them in for flattening (same as params order)
         Gradient gradient = new DefaultGradient();
-        for(Pair<String,INDArray> p : gradients ){
-            gradient.setGradientFor(p.getFirst(),p.getSecond());
+        for(Triple<String,INDArray,Character> t : gradients ){
+            gradient.setGradientFor(t.getFirst(),t.getSecond(),t.getThird());
         }
 
         this.gradient = gradient;
