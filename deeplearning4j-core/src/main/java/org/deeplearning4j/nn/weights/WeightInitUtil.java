@@ -107,6 +107,14 @@ public class WeightInitUtil {
         return ret;
       case ZERO:
         return Nd4j.create(shape,'f');
+      case IDENTITY:
+        if (shape[0] != shape[1] || shape.length != 2)
+          throw new IllegalStateException("Illegal shape");
+        ret = Nd4j.create(shape,'f');
+        for (int i = 0; i < shape[0]; i++) {
+          ret.put(i, i, 1f);
+        }
+        return ret;  
     }
 
     throw new IllegalStateException("Illegal weight init value");
