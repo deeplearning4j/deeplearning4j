@@ -44,15 +44,17 @@ public class CudaConstantHandler implements ConstantHandler {
         // and release device memory :)
 
         long currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
-        if (currentOffset >= 65536) {
+        if (currentOffset >= 49152) {
             logger.info("Overflow at constant space, skipping relocation");
             return 0;
         }
 
-        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getDevicePointer().address(), requiredMemoryBytes, 3, 0L);
+        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, 0L);
         long cAddr = deviceAddresses.get(deviceId).longValue()  + currentOffset;
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);
+        point.tickDeviceWrite();
+        point.tickHostRead();
 
         return cAddr;
     }

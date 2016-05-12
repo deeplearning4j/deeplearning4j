@@ -341,13 +341,14 @@ public class CudaZeroHandler implements MemoryHandler {
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
 
+         if (point.isConstant()) {
+             //log.info("Skipping relocation for constant");
+             return;
+         }
+
             if (point.getPointers().getDevicePointer() == null) {
                  throw new IllegalStateException("devicePointer is NULL!");
             }
-
-            Pointer devicePointer = new CudaPointer(point.getPointers().getDevicePointer().address());
-
-            Pointer hostPointer = new CudaPointer(point.getPointers().getHostPointer().address());
 
          /*
             JCuda.cudaMemcpyAsync(
@@ -357,7 +358,7 @@ public class CudaZeroHandler implements MemoryHandler {
                  cudaMemcpyKind.cudaMemcpyHostToDevice,
                  context.getOldStream()
              );*/
-            if (nativeOps.memcpyAsync(devicePointer.address(), hostPointer.address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed");
 
             //context.syncOldStream();
