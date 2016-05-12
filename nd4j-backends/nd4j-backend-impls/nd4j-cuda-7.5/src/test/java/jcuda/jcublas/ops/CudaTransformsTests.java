@@ -19,6 +19,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -31,8 +32,8 @@ public class CudaTransformsTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(256)
-                .enableDebug(false)
-                .setVerbose(false);
+                .enableDebug(true)
+                .setVerbose(true);
 
 
 
@@ -550,6 +551,8 @@ public class CudaTransformsTests {
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
             System.out.println("Position [0]: " + input.getDouble(3000 * i) + ", [1]: " + input.getDouble(3000 * i + 1));
+
+            assertTrue(input.getDouble(3000 * i) > input.getDouble(3000 * i + 1));
 
             float sum = slice.sumNumber().floatValue();
             assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);

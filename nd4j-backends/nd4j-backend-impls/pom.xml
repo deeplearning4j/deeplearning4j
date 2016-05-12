@@ -16,6 +16,13 @@
         <module>nd4j-native</module>
         <module>nd4j-cuda-7.5</module>
     </modules>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <properties>
         <dependency.groupId>${project.groupId}</dependency.groupId>

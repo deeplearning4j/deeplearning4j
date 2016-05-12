@@ -21,7 +21,7 @@ public class DeviceTADManager extends BasicTADManager {
     private static Logger logger = LoggerFactory.getLogger(DeviceTADManager.class);
 
     @Override
-    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension, int dimensionLength) {
+    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         /*
             so, we check, if we have things cached. If we don't - we just create new TAD shape, and push it to constant memory
         */
@@ -30,7 +30,7 @@ public class DeviceTADManager extends BasicTADManager {
 
         logger.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
 
-        TadDescriptor descriptor = new TadDescriptor(array, dimension, dimensionLength);
+        TadDescriptor descriptor = new TadDescriptor(array, dimension);
         if (!tadCache.containsKey(deviceId)) {
             try {
                 lock.acquire();
@@ -46,7 +46,7 @@ public class DeviceTADManager extends BasicTADManager {
 
         if (!tadCache.get(deviceId).containsKey(descriptor)) {
             logger.info("Creating new TAD...");
-            DataBuffer buffer = super.getTADOnlyShapeInfo(array, dimension, dimensionLength);
+            DataBuffer buffer = super.getTADOnlyShapeInfo(array, dimension);
 
 
 

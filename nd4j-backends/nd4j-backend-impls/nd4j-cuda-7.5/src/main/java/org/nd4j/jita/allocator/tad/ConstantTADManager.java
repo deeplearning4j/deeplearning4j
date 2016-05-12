@@ -14,14 +14,14 @@ public class ConstantTADManager extends BasicTADManager {
     protected Map<TadDescriptor, DataBuffer> tadCache = new ConcurrentHashMap<>();
 
     @Override
-    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension, int dimensionLength) {
+    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         /*
             so, we check, if we have things cached. If we don't - we just create new TAD shape, and push it to constant memory
         */
 
-        TadDescriptor descriptor = new TadDescriptor(array, dimension, dimensionLength);
+        TadDescriptor descriptor = new TadDescriptor(array, dimension);
         if (!tadCache.containsKey(descriptor)) {
-            DataBuffer buffer = super.getTADOnlyShapeInfo(array, dimension, dimensionLength);
+            DataBuffer buffer = super.getTADOnlyShapeInfo(array, dimension);
 
             // so, at this point we have buffer valid on host side. And we just need to replace DevicePointer with constant pointer
             tadCache.put(descriptor, buffer);

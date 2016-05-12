@@ -23,11 +23,13 @@ public class BasicTADManager implements TADManager {
     private static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     @Override
-    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension, int dimensionLength) {
+    public DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
             return array.shapeInfoDataBuffer();
         } else {
             Arrays.sort(dimension);
+
+            int dimensionLength = dimension.length;
 
 
             int targetRank = array.rank(); ///Math.max(array.rank() - dimensionLength, 2);

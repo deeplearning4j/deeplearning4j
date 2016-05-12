@@ -16,8 +16,8 @@ public class TadDescriptor {
     private int[] dimension;
     private int[] shape;
 
-    public TadDescriptor(INDArray array, int[] dimension, int dimensionLength) {
-        this.dimensionLength = dimensionLength;
+    public TadDescriptor(INDArray array, int[] dimension) {
+        this.dimensionLength = dimension == null ? 0 : dimension.length;
         this.dimension = dimension;
 
         // TODO: change this to fill shapeInfo

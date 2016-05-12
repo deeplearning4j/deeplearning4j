@@ -7,5 +7,5 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author raver119@gmail.com
  */
 public interface TADManager {
-    DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension, int dimensionLength);
+    DataBuffer getTADOnlyShapeInfo(INDArray array, int[] dimension);
 }
