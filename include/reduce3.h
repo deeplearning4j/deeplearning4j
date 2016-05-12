@@ -415,8 +415,6 @@ namespace functions {
 					int *xStride = shape::stride(xShapeInfo);
 					char xOrder = shape::order(xShapeInfo);
 
-
-
 					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 					yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
@@ -444,27 +442,16 @@ namespace functions {
 						//to the back.
 						//permuted version of the x shape info for setting up the tad problem
 
-						__shared__ int *tadShapeShapeInfo;
-						__shared__ int *inputShapeInfo;
-
-						if(tid == 0) {
-							inputShapeInfo = xShapeInfo;
-						}
-						__syncthreads();
-
 
 						//decompose in to several sub tads after
 						//moving all dimensions (in sorted order)
 						//to the back.
 						//permuted version of the x shape info for setting up the tad problem
-						if(tid == 0)
-							tadShapeShapeInfo = tad->tadOnlyShapeInfo;//shape::shapeInfoOnlyShapeAndStride(xShapeInfo,dimension,dimensionLength,false);
-						__syncthreads();
 
-						int *xShape = shape::shapeOf(tadShapeShapeInfo);
-						int *xStride = shape::stride(tadShapeShapeInfo);
-						Nd4jIndex tadLength = shape::length(tadShapeShapeInfo);
-						int rank = shape::rank(tadShapeShapeInfo);
+						int *xShape = shape::shapeOf(tad->tadOnlyShapeInfo);
+						int *xStride = shape::stride(tad->tadOnlyShapeInfo);
+						Nd4jIndex tadLength = shape::length(tad->tadOnlyShapeInfo);
+						int rank = shape::rank(tad->tadOnlyShapeInfo);
 #pragma unroll
 						for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 							int offset = tad->tadOffset(i);
@@ -571,7 +558,7 @@ namespace functions {
 
 						for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
 							int xOffsetForTad = tad->tadOffset(i);
-							int yOffsetForTad = yOffsetForTad;//tad->tadOffset(i);
+							int yOffsetForTad = xOffsetForTad;//tad->tadOffset(i);
 							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
 

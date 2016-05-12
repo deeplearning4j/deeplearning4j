@@ -3882,7 +3882,7 @@ namespace functions {
             max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
         __syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//subtract max of each row
@@ -3915,7 +3915,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1, 1, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -4166,7 +4166,7 @@ namespace functions {
             max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
         __syncthreads();
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4198,7 +4198,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -4476,7 +4476,7 @@ namespace functions {
         __syncthreads();
 
 
-		max->transformCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension, 1,1, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4511,7 +4511,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->transformCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, maxDimension,1,1, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -5737,8 +5737,7 @@ __device__ void transformGeneric(
 
 	__shared__ UnifiedSharedMemory<T> *manager;
 
-	__shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
+
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -5753,6 +5752,9 @@ __device__ void transformGeneric(
     }
     __syncthreads();
 
+/*
+	__shared__ int *ptrSharedXShapeInfo;
+    __shared__ int *ptrSharedZShapeInfo;
 
 	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
@@ -5763,7 +5765,7 @@ __device__ void transformGeneric(
     	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-
+*/
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
@@ -5773,10 +5775,10 @@ __device__ void transformGeneric(
 
 	op->transformCuda(
 	    dy,
-	    ptrSharedXShapeInfo,
+	    xShapeInfo,
 	    params,
 	    result,
-	    ptrSharedZShapeInfo,
+	    resultShapeInfo,
 	    allocationPointer,
 	    reductionPointer,
 	    manager);
@@ -5881,14 +5883,14 @@ __device__ void transformGenericIndexes(
 	    manager->setTADSpace(0);
     }
     __syncthreads();
-
+/*
 	__shared__ int *ptrSharedXShapeInfo;
 
 	if (xShapeInfo != nullptr) {
     	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
     	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
     } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
+*/
 	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
@@ -5896,7 +5898,15 @@ __device__ void transformGenericIndexes(
 	__syncthreads();
 
 
-	op->transformCuda(dy,ptrSharedXShapeInfo,params,result,indexes,allocationPointer, reductionPointer, manager);
+	op->transformCuda(
+	        dy,
+	        xShapeInfo,
+	        params,
+	        result,
+	        indexes,
+	        allocationPointer,
+	        reductionPointer,
+	        manager);
 }
 
 

@@ -1633,7 +1633,7 @@ void   NativeOps::execTransformDouble(
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
 				case 38: {// softmax
-					Nd4jPointer tempPointers[11];
+					Nd4jPointer tempPointers[14];
 					tempPointers[0] = extraPointers[0];
 					tempPointers[1] = extraPointers[1];
 					tempPointers[2] = extraPointers[2];
@@ -1643,6 +1643,12 @@ void   NativeOps::execTransformDouble(
 					tempPointers[6] = extraPointers[6];
 					tempPointers[7] = extraPointers[7];
 					tempPointers[8] = extraPointers[8];
+					tempPointers[10] = extraPointers[10];
+					tempPointers[11] = extraPointers[11];
+					tempPointers[12] = extraPointers[12];
+					tempPointers[13] = extraPointers[13];
+
+
 					int maxShape[2] = {shape::shapeOf(hostXShapeInfo)[0], 1};
 					int *hostMaxShapeBuffer = shape::shapeBuffer(2, maxShape);
 					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
@@ -1653,11 +1659,16 @@ void   NativeOps::execTransformDouble(
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
+					tempPointers[9] = extraPointers[11];
+					tempPointers[10] = extraPointers[12];
+
 					// max 3
 					execReduceDouble(tempPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					tempPointers[8] = extraPointers[8];
+					tempPointers[9] = extraPointers[9];
+					tempPointers[10] = extraPointers[10];
 
 					// sub 1
 					execBroadcastDouble(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
@@ -1667,12 +1678,16 @@ void   NativeOps::execTransformDouble(
 					execTransformDouble(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
 					tempPointers[8] = tempPointers[7];
+					tempPointers[9] = extraPointers[11];
+					tempPointers[10] = extraPointers[12];
 
 					//sum 1
 					execReduceDouble(tempPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
 					tempPointers[8] = extraPointers[8];
+					tempPointers[9] = extraPointers[9];
+					tempPointers[10] = extraPointers[10];
 
 					// divide 3
 					execBroadcastDouble(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
@@ -3082,7 +3097,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
 				case 38: {// softmax
-					Nd4jPointer tempPointers[9];
+					Nd4jPointer tempPointers[14];
 					tempPointers[0] = extraPointers[0];
 					tempPointers[1] = extraPointers[1];
 					tempPointers[2] = extraPointers[2];
@@ -3092,6 +3107,11 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[6] = extraPointers[6];
 					tempPointers[7] = extraPointers[7];
 					tempPointers[8] = extraPointers[8];
+					tempPointers[9] = extraPointers[9];
+					tempPointers[10] = extraPointers[10];
+					tempPointers[11] = extraPointers[11];
+					tempPointers[12] = extraPointers[12];
+					tempPointers[13] = extraPointers[13];
 
 					int maxShape[2] = {shape::shapeOf(hostXShapeInfo)[0], 1};
 					int *hostMaxShapeBuffer = shape::shapeBuffer(2, maxShape);
@@ -3105,39 +3125,65 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					//shape::printShapeInfo(maxShapeBuffer);
+					tempPointers[9] = extraPointers[11];
+					tempPointers[10] = extraPointers[12];
 
 					// max 3
 					execReduceFloat(tempPointers, 3, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					tempPointers[8] = extraPointers[8];
+					tempPointers[9] = extraPointers[9];
+					tempPointers[10] = extraPointers[10];
+
 
 					// sub 1
 					execBroadcastFloat(tempPointers, 1, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
 
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
+
 					// exp 3
 					execTransformFloat(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
+
 
 					tempPointers[8] = tempPointers[7];
+					tempPointers[9] = extraPointers[11];
+					tempPointers[10] = extraPointers[12];
 
 					//sum 1
 					execReduceFloat(tempPointers, 1, dx, xShapeInfo, extraParams, (Nd4jPointer) special,
 									(Nd4jPointer) maxShapeBuffer, (Nd4jPointer) maxDimension, 1);
 
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
+
 					tempPointers[8] = extraPointers[8];
+					tempPointers[9] = extraPointers[9];
+					tempPointers[10] = extraPointers[10];
 
 					// divide 3
 					execBroadcastFloat(tempPointers, 3, dx, xShapeInfo, (Nd4jPointer) special,
 									   (Nd4jPointer) maxShapeBuffer, dx, xShapeInfo, (Nd4jPointer) dimension, 1);
+
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// log 3
 					if (opNum == 40)
 						execTransformFloat(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 					else if (opNum == 39)
 						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+
+					if (debug)
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					delete hostMaxShapeBuffer;
 
@@ -3170,7 +3216,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
 
-						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[9]);
+						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[13]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
