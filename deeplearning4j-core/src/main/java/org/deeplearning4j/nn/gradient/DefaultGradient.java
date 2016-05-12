@@ -112,6 +112,12 @@ public class DefaultGradient implements Gradient {
         return last;
     }
 
+    @Override
+    public Character flatteningOrderForVariable(String variable) {
+        if(flatteningOrders == null) return null;
+        return flatteningOrders.get(variable);
+    }
+
 
     @Override
     public String toString() {

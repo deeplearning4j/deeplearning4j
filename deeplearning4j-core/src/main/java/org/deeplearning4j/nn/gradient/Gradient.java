@@ -85,4 +85,11 @@ public interface Gradient extends Serializable {
      */
     INDArray setGradientFor(String variable, INDArray gradient, Character flatteningOrder);
 
+    /**
+     * Return the gradient flattening order for the specified variable, or null if it is not explicitly set
+     * @param variable    Variable to return the gradient flattening order for
+     * @return            Order in which the specified variable's gradient should be flattened
+     */
+    Character flatteningOrderForVariable(String variable);
+
 }
