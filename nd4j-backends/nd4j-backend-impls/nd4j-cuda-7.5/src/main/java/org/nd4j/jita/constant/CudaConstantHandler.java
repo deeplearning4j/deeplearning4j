@@ -67,7 +67,7 @@ public class CudaConstantHandler implements ConstantHandler {
                     deviceLocks.put(deviceId, new Semaphore(1));
 
                     long cAddr = nativeOps.getConstantSpace();
-                    logger.info("Got constant address: [{}]", cAddr);
+         //           logger.info("Got constant address: [{}]", cAddr);
 
                     deviceAddresses.put(deviceId, cAddr);
                 }
@@ -81,7 +81,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
-        logger.info("getConstantBuffer(int[]) called");
+      //  logger.info("getConstantBuffer(int[]) called");
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -90,7 +90,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            logger.info("Creating new constant buffer...");
+        //    logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
 
             // now we move data to constant memory, and keep happy
@@ -98,14 +98,14 @@ public class CudaConstantHandler implements ConstantHandler {
 
             buffersCache.get(deviceId).put(descriptor, buffer);
             return buffer;
-        } else logger.info("Reusing constant buffer...");
+        } //else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
     }
 
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
-        logger.info("getConstantBuffer(float[]) called");
+     //   logger.info("getConstantBuffer(float[]) called");
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -114,7 +114,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            logger.info("Creating new constant buffer...");
+       //     logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
 
             // now we move data to constant memory, and keep happy
@@ -122,14 +122,14 @@ public class CudaConstantHandler implements ConstantHandler {
 
             buffersCache.get(deviceId).put(descriptor, buffer);
             return buffer;
-        } else logger.info("Reusing constant buffer...");
+        } // else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
     }
 
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        logger.info("getConstantBuffer(double[]) called");
+//        logger.info("getConstantBuffer(double[]) called");
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -138,7 +138,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            logger.info("Creating new constant buffer...");
+            //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
 
             // now we move data to constant memory, and keep happy
@@ -146,7 +146,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
             buffersCache.get(deviceId).put(descriptor, buffer);
             return buffer;
-        } else logger.info("Reusing constant buffer...");
+        } //else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
     }

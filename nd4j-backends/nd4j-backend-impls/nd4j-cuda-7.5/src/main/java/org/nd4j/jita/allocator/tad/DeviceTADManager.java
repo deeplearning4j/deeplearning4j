@@ -28,7 +28,7 @@ public class DeviceTADManager extends BasicTADManager {
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
-        logger.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
+      //  logger.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
 
         TadDescriptor descriptor = new TadDescriptor(array, dimension);
         if (!tadCache.containsKey(deviceId)) {
@@ -45,14 +45,14 @@ public class DeviceTADManager extends BasicTADManager {
         }
 
         if (!tadCache.get(deviceId).containsKey(descriptor)) {
-            logger.info("Creating new TAD...");
+            //logger.info("Creating new TAD...");
             DataBuffer buffer = super.getTADOnlyShapeInfo(array, dimension);
 
             AtomicAllocator.getInstance().moveToConstant(buffer);
 
             // so, at this point we have buffer valid on host side. And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffer);
-        } else logger.info("Using TAD from cache...");
+        } //else logger.info("Using TAD from cache...");
 
         return tadCache.get(deviceId).get(descriptor);
     }

@@ -23,7 +23,7 @@ public class TadDescriptor {
         // TODO: change this to fill shapeInfo
         this.shape = dataBufferToArray(array.shapeInfoDataBuffer());
 
-        logger.info("Shape for descriptor: {}", Arrays.toString(this.shape));
+  //      logger.info("Shape for descriptor: {}", Arrays.toString(this.shape));
 
     }
 

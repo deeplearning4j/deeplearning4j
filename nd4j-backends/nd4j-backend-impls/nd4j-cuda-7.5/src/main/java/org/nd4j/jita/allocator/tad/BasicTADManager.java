@@ -45,7 +45,7 @@ public class BasicTADManager implements TADManager {
 
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
 
-            logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+            //logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
             // now we need to copy this buffer to either device global memory or device cache
 
             return outputBuffer;
