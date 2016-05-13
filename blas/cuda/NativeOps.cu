@@ -303,7 +303,7 @@ dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *zShapeInfo, cudaF
 
 	dim3 launchDims = getBetterDimensions(deviceId, numTads, tadLength, xRank, funcAttr, dimensionLength, elementSize, reductionSize);
 
-	if ((debug && verbose ) || launchDims.x == 1) {
+	if ((debug && verbose ) ) { //|| launchDims.x == 1
 		printf("B xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.x: [%i], launchDims.y: [%i]\n", shape::length(xShapeInfo), numTads, tadLength, launchDims.x, launchDims.y);
 		//shape::printShapeInfo(xShapeInfo);
 	}

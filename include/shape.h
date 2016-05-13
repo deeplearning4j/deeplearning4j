@@ -91,7 +91,7 @@ namespace shape {
     __host__ __device__
     inline void traceNew(int id) {
         //TODO: remove this method before going to release
-        printf("new happened: [%i]\n", id);
+      //  printf("new happened: [%i]\n", id);
     }
 #else
     inline void traceNew(int id) {
