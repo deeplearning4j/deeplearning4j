@@ -1438,29 +1438,8 @@ __device__ void summaryStatsReduceGeneric(
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD));
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD), xRank);
 
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(dimensionLength);
-    }
-    __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
-
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
 		newOpFactory = new(manager->getFactorySpace()) functions::summarystats::SummaryStatsReduceOpFactory<T>();
 		indexReduce = newOpFactory->getOp(op,biasCorrected, manager->getFunctionSpace());
 	}

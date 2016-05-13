@@ -3882,7 +3882,7 @@ namespace functions {
             max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
         __syncthreads();
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//subtract max of each row
@@ -3915,7 +3915,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -4166,7 +4166,7 @@ namespace functions {
             max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
         __syncthreads();
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//subtract max of each row
@@ -4198,7 +4198,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -4476,7 +4476,7 @@ namespace functions {
         __syncthreads();
 
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		if (threadIdx.x == 0) delete max;
@@ -4511,7 +4511,7 @@ namespace functions {
         __syncthreads();
 
 		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, allocationPointer, reductionPointer, manager, nullptr);
+		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 		__syncthreads();
 
 		//divide by the sum
@@ -5634,12 +5634,7 @@ __device__ void transformGeneric(
 	if(threadIdx.x == 0) {
 	    extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
-
-        manager->setXSpace(0);
-	    manager->setYSpace(0);
-	    manager->setZSpace(0);
-	    manager->setTADSpace(0);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), 0);
 
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
         op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
@@ -5742,31 +5737,8 @@ __device__ void transformGeneric(
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
 
-        manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(0);
-
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
-    }
-    __syncthreads();
-
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
-
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
@@ -5875,23 +5847,8 @@ __device__ void transformGenericIndexes(
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD));
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
 
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(0);
-	    manager->setTADSpace(0);
-    }
-    __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
 		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
 		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
 	}
@@ -6031,12 +5988,8 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-        manager->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD));
+        manager->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD), shape::rank(zShapeInfo));
 
-        manager->setXSpace(shape::rank(zShapeInfo));
-	    manager->setYSpace(0);
-	    manager->setZSpace(shape::rank(zShapeInfo));
-	    manager->setTADSpace(dimensionLength);
 
         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
         tad->setExternalBuffers((void *) manager);

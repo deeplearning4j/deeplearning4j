@@ -2002,11 +2002,7 @@ __device__ void pairWiseTransformGeneric(
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(yRank);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(0);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
@@ -2164,11 +2160,7 @@ __device__ void pairWiseTransformGeneric(
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(yRank);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(0);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
@@ -2335,11 +2327,8 @@ __device__ void pairWiseTransformStridedGeneric(
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD));
-	    manager->setXSpace(0);
-	    manager->setYSpace(0);
-	    manager->setZSpace(0);
-	    manager->setTADSpace(0);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
+
     	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}

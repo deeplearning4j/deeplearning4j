@@ -372,18 +372,9 @@ struct SharedIndexValue<double> {
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
-				if(xElementWiseStride == 1) {
-#pragma unroll
-					for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-						IndexValue <T> indexVal = {dx[i], i};
-						reduction = update(reduction, indexVal, extraParams);
-					}
-				} else {
-#pragma unroll
-					for(int i = xElementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * xElementWiseStride)) {
-						IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
-						reduction = update(reduction, indexVal, extraParams);
-					}
+				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+					IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
+					reduction = update(reduction, indexVal, extraParams);
 				}
 			} else {
 				int rank = shape::rank(xShapeInfo);
@@ -1184,12 +1175,7 @@ __device__ void indexReduceGeneric(
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD));
-
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(dimensionLength);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*

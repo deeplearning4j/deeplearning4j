@@ -126,6 +126,65 @@ namespace functions {
             T update(T old, T opOutput, T *extraParams) = 0;
 
 #ifdef __CUDACC__
+            __inline__ __device__ virtual void transformCuda1D(T *dx,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *result,
+                    int *resultShapeInfo,
+                    int *dimension,
+                    int dimensionLength,
+                    T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+
+                __shared__ int resultLength;
+
+                //shared memory space for storing intermediate results
+                T *sPartials = manager->getSharedReductionBuffer();
+
+                sPartials[threadIdx.x] = this->startingValue(dx);
+
+                if (threadIdx.x == 0)
+                    resultLength = shape::length(resultShapeInfo);
+
+
+                __shared__ shape::TAD *tad;
+                __shared__ int tadLength;
+                __shared__ int tadEWS;
+                __shared__ int tadRank;
+                if (threadIdx.x == 0) {
+                    tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                    tad->setExternalBuffers((void *) manager);
+                    tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+                    //tad->init(xShapeInfo,dimension,dimensionLength);
+            	    //tad->createTadOnlyShapeInfo();
+
+            	    tadLength = shape::length(tadOnlyShapeInfo);
+                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                    tadRank = shape::rank(tadOnlyShapeInfo);
+                }
+                __syncthreads();
+
+                for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+                    if (threadIdx.x == 0)
+                        tad->createOffsetForBlock(r);
+                    __syncthreads();
+
+                    sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+
+                    for(int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[tad->tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
+                    }
+                    __syncthreads();
+
+                    // aggregate. do NOT reduce for elements > tadLength
+                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+
+
+                    __syncthreads();
+                    if (threadIdx.x == 0) {
+                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+                    }
+                }
+            }
 
 
             __inline__ __device__ void execScalarCuda(
@@ -134,7 +193,6 @@ namespace functions {
                     T *extraParams,
                     T *result,
                     int *resultShapeInfo,
-                    int *allocationBuffer,
                     T *reductionBuffer,
                     UnifiedSharedMemory<T> *manager,
                     int *tadOnlyShapeInfo) {
@@ -145,54 +203,31 @@ namespace functions {
                 int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
                 //shared memory space for storing intermediate results
-                //SharedMemory <T> val;
-                volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
-                T init = this->startingValue(dx);
-                //for(int i = threadIdx.x; i < blockDim.x; i+= blockDim.x)
-                sPartials[threadIdx.x] = init;
+                T *sPartials = manager->getSharedReductionBuffer();
+
+                sPartials[threadIdx.x] = this->startingValue(dx);
                 __syncthreads();
 
                 if(elementWiseStride >= 1) {
-                    if(elementWiseStride == 1) {
-#pragma unroll
-                        for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i],extraParams),extraParams);
-                        }
-                    }
-                    else {
-#pragma unroll
-                        for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+                    for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
                         //for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
-                        }
+                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
                     }
                 }
                 else {
-                    /*
-                        int rank = shape::rank(xShapeInfo);
-                        long allocSize = sizeof(int) * rank;
-                        int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager);
-                    */
                     int rank = shape::rank(xShapeInfo);
                     int ind2sub[MAX_RANK];
-#pragma unroll
+
                     for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
                         int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
                         sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[offset],extraParams),extraParams);
                         __syncthreads();
                     }
-
-                    /*
-                        if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                            free(ind2sub);
-                        }
-                    */
                 }
 
                 __syncthreads();
-                T **sPartialsRef = (T **) &sPartials;
-                aggregatePartials(sPartialsRef, threadIdx.x, blockDim.x,extraParams);
+                aggregatePartials(sPartials, threadIdx.x, blockDim.x,extraParams);
 
 
                 __syncthreads();
@@ -225,8 +260,7 @@ namespace functions {
                         }
                         __syncthreads();
 
-                        T **sPartialsRef = (T **) &sPartials;
-                        aggregatePartials(sPartialsRef, threadIdx.x, gridDim.x, extraParams);
+                        aggregatePartials(sPartials, threadIdx.x, gridDim.x, extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -254,7 +288,7 @@ namespace functions {
              * @param dimensionLength the length of the dimension buffer
              * @param postProcessOrNot whether to reduce or not
              */
-            __inline__ __device__ virtual void transformCuda(
+             __inline__ __device__ virtual void transformCuda6D(
                     T *dx,
                     int *xShapeInfo,
                     T *extraParams,
@@ -262,157 +296,131 @@ namespace functions {
                     int *resultShapeInfo,
                     int *dimension,
                     int dimensionLength,
-                    int postProcessOrNot,
-                    int *allocationBuffer,T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+                    T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 
                 /**
                  * Gpu information for the problem
                  */
-                __shared__ int resultScalar;
                 __shared__ int resultLength;
 
-\
                 //shared memory space for storing intermediate results
-                volatile T *sPartials = manager->getSharedReductionBuffer();
+                T *sPartials = manager->getSharedReductionBuffer();
 
-                T init = this->startingValue(dx);
-                sPartials[threadIdx.x] = init;
-                __syncthreads();
+                sPartials[threadIdx.x] = this->startingValue(dx);
 
-                //length for the tad
-
+                if (threadIdx.x == 0)
+                   resultLength = shape::length(resultShapeInfo);
 
 
-                //only compute the tad indexes once
-                T reduction = this->startingValue(dx);
+                __shared__ shape::TAD *tad;
+                __shared__ int tadLength;
+                __shared__ int tadEWS;
+                __shared__ int tadRank;
                 if (threadIdx.x == 0) {
-                    if (resultShapeInfo != nullptr)
-                        resultLength = shape::length(resultShapeInfo);
-                    else resultLength = 1;
+                    tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                    tad->setExternalBuffers((void *) manager);
+                    tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+                    //tad->init(xShapeInfo,dimension,dimensionLength);
+            	    //tad->createTadOnlyShapeInfo();
 
-                    if (dimensionLength == 1) {
-                        if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
-                            resultScalar = 1;
-                        else
-                            resultScalar = 0;
-                    }
-                    else
-                        resultScalar = 0;
-
-                    if (resultLength == 1)
-                        resultScalar = 1;
-                    /**
-                     * The element wise stride belong longs to a reduction index.
-                     * When used out of order, we can get rid of the data
-                     * dependencies and rely on using the max dimension
-                     * specified for stride instead.
-                     * Say we take the sum(0,1) along long arr
-                     * we can use arr.stride(1) as a representation
-                     * along long which to iterate.
-                     */
-
-
-                    int *xStride = shape::stride(xShapeInfo);
-                    char xOrder = shape::order(xShapeInfo);
-
+            	    tadLength = shape::length(tadOnlyShapeInfo);
+                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                    tadRank = shape::rank(tadOnlyShapeInfo);
                 }
                 __syncthreads();
 
-                if (!resultScalar) {
-                    __shared__ shape::TAD *tad;
-                    if (threadIdx.x == 0) {
-                        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-                        tad->setExternalBuffers((void *) manager);
-                        tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
-                        //tad->init(xShapeInfo,dimension,dimensionLength);
-            	        //tad->createTadOnlyShapeInfo();
+                int xCoord[6];
+
+                for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+                    if (threadIdx.x == 0)
+                        tad->createOffsetForBlock(r);
+                    __syncthreads();
+
+                    sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+
+                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                        shape::ind2subC(tadRank, tad->tadShape, i, xCoord);
+                        int xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
+
+                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
                     }
                     __syncthreads();
 
-                    int tadLength = shape::length(tad->tadOnlyShapeInfo);
-                    int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-                    int tadRank = shape::rank(tad->tadOnlyShapeInfo);
+                    // aggregate. do NOT reduce for elements > tadLength
+                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
-                    if(dimensionLength == 1) {
+                    __syncthreads();
+                    if (threadIdx.x == 0)
+                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+                }
+            }
 
-                        for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
-                            if (threadIdx.x == 0)
-                                tad->createOffsetForBlock(r);
-                            __syncthreads();
+            __inline__ __device__ virtual void transformCudaXD(
+                    T *dx,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *result,
+                    int *resultShapeInfo,
+                    int *dimension,
+                    int dimensionLength,
+                    T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
 
-                            int tadOffsetForBlock = tad->tadOffsetForBlock;
-                            T *xVal = dx + tadOffsetForBlock;
+                /**
+                 * Gpu information for the problem
+                 */
+                __shared__ int resultLength;
 
-                            sPartials[threadIdx.x] = this->startingValue(xVal);
+                //shared memory space for storing intermediate results
+                T *sPartials = manager->getSharedReductionBuffer();
 
-                            for(int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
-                            }
-                            __syncthreads();
+                sPartials[threadIdx.x] = this->startingValue(dx);
 
-                            // aggregate. do NOT reduce for elements > tadLength
-                            T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                if (threadIdx.x == 0)
+                   resultLength = shape::length(resultShapeInfo);
 
 
-                            __syncthreads();
-                            if (threadIdx.x == 0) {
-                                result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
-                            }
-                        }
+                __shared__ shape::TAD *tad;
+                __shared__ int tadLength;
+                __shared__ int tadEWS;
+                __shared__ int tadRank;
+                if (threadIdx.x == 0) {
+                    tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+                    tad->setExternalBuffers((void *) manager);
+                    tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+                    //tad->init(xShapeInfo,dimension,dimensionLength);
+            	    //tad->createTadOnlyShapeInfo();
+
+            	    tadLength = shape::length(tadOnlyShapeInfo);
+                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                    tadRank = shape::rank(tadOnlyShapeInfo);
+                }
+                __syncthreads();
+
+                int xCoord[MAX_RANK];
+
+                for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
+                    if (threadIdx.x == 0)
+                        tad->createOffsetForBlock(r);
+                    __syncthreads();
+
+                    sPartials[threadIdx.x] = this->startingValue(dx + tad->tadOffsetForBlock);
+
+                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                        shape::ind2subC(tadRank, tad->tadShape, i, xCoord);
+                        int xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
+
+                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
                     }
-                    else {
-                        /*
-                        long allocSize = sizeof(int) * rank;
-                        int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
-                        */
-                        int xCoord[MAX_RANK];
+                    __syncthreads();
 
-                        for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
-                            if (threadIdx.x == 0)
-                                tad->createOffsetForBlock(r);
-                            __syncthreads();
-
-                            int tadOffsetForBlock = tad->tadOffsetForBlock;
-
-                            sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
-
-                            for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                                shape::ind2subC(tadRank, tad->tadShape, i, xCoord);
-                                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, tadRank);
-
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
-                            }
-                            __syncthreads();
-
-                            // aggregate. do NOT reduce for elements > tadLength
-                            T **sPartialsRef = (T **) &sPartials;
-                            aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                    // aggregate. do NOT reduce for elements > tadLength
+                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
-                            __syncthreads();
-                            if (threadIdx.x == 0)
-                                result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
-                        }
-
-                        /*
-                            if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                                free(xCoord);
-                            }
-                        */
-                    }
-                } else {
-                    printf("reduce->execScalarCuda misplaced call!\n");
-                    /*
-                    this->execScalarCuda(
-                            dx,
-                            xShapeInfo,
-                            extraParams,
-                            result,
-                            resultShapeInfo,
-                            allocationBuffer, reductionBuffer, manager);
-                            */
+                    __syncthreads();
+                    if (threadIdx.x == 0)
+                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
                 }
             }
 
@@ -422,12 +430,11 @@ namespace functions {
              * @param tid
              * @param extraParams
              */
-            __device__ virtual void aggregatePartials(T **sPartialsRef, int tid, int numItems,T *extraParams) {
+            __device__ virtual void aggregatePartials(T *sPartials, int tid, int numItems,T *extraParams) {
                 // start the shared memory loop on the next power of 2 less
                 // than the block size.  If block size is not a power of 2,
                 // accumulate the intermediate sums in the remainder range.
-                T *sPartials = *sPartialsRef;
-                int floorPow2 = blockDim.x;
+                int floorPow2 = numItems;
 
                 if (floorPow2 & (floorPow2 - 1)) {
                     while (floorPow2 & (floorPow2 - 1)) {
@@ -1783,82 +1790,6 @@ namespace functions {
 
 
 #ifdef __CUDACC__
-/**
- * Interface for the c and driver api
- * @param op the operation number
- * @param n the length of the problem
- * @param dx  the input information
- * @param xShapeInfo the shape information
- * @param extraParams the extra parameters
- * @param result the result data
- * @param resultShapeInfo the result shape information
- * @param gpuInformation the gpu information
- * @param dimension the dimension to do reduce along long
- * @param dimensionLength the length of the dimension buffer
- * @param postProcessOrNot whether to pre process or not
- */
-template <typename T>
-__global__ void reduceGenericGlobal(
-        int op,
-        T *dx,
-        int *xShapeInfo, int xRank,
-        T *extraParams,
-        T *result,
-        int *resultShapeInfo, int zRank,
-        int *dimension,
-        int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
-
-    __shared__ UnifiedSharedMemory<T> *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
-
-        manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(dimensionLength);
-    }
-    __syncthreads();
-
-    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
-    __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
-/*
-    __shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
-
-    if (xShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-        if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-
-    //    shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
-
-        if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-    if(threadIdx.x == 0) {
-        newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
-    }
-    __syncthreads();
-    reduceFunctionToInvoke->transformCuda(
-            dx,
-            xShapeInfo,
-            extraParams,
-            result,
-            resultShapeInfo,
-            dimension,
-            dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
-}
 
 /**
  * Interface for the c and driver api
@@ -1878,54 +1809,31 @@ template <typename T>
 __device__ void reduceGeneric(
         int op,
         T *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
+        T *reductionBuffer, int *tadOnlyShapeInfo) {
 
     __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
-    __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
 
     __shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
-
-        manager->setXSpace(xRank);
-	    manager->setYSpace(0);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(dimensionLength);
+        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }
     __syncthreads();
-/*
-    __shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-    if (xShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-        if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-
-//        shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
-
-        if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
     if(threadIdx.x == 0) {
-        newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
         reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
     }
     __syncthreads();
-    reduceFunctionToInvoke->transformCuda(
+    reduceFunctionToInvoke->transformCudaXD(
             dx,
             xShapeInfo,
             extraParams,
@@ -1933,8 +1841,79 @@ __device__ void reduceGeneric(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
+            reductionBuffer, manager, tadOnlyShapeInfo);
+}
+
+template <typename T>
+__device__ void reduceGeneric1D(
+        int op,
+        T *dx,
+        int *xShapeInfo,
+        T *extraParams,
+        T *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        T *reductionBuffer, int *tadOnlyShapeInfo) {
+
+    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+
+    __shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+
+        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+    }
+    __syncthreads();
+    reduceFunctionToInvoke->transformCuda1D(
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, manager, tadOnlyShapeInfo);
+}
+
+template <typename T>
+__device__ void reduceGeneric6D(
+        int op,
+        T *dx,
+        int *xShapeInfo,
+        T *extraParams,
+        T *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        T *reductionBuffer, int *tadOnlyShapeInfo) {
+
+    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+
+    __shared__ UnifiedSharedMemory<T> *manager;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        manager = new(shmem) UnifiedSharedMemory<T>();
+        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+
+        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+    }
+    __syncthreads();
+    reduceFunctionToInvoke->transformCuda6D(
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
 /**
@@ -1954,25 +1933,69 @@ __device__ void reduceGeneric(
 extern "C" __global__ void reduceDouble(
         int op,
         double *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         double *extraParams,
         double *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo) {
+        double *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceGeneric<double>(
             op,
             dx,
-            xShapeInfo, xRank,
+            xShapeInfo,
             extraParams,
             result,
-            resultShapeInfo, zRank,
+            resultShapeInfo,
             dimension,
             dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+            reductionBuffer, tadOnlyShapeInfo);
+
+}
+
+extern "C" __global__ void reduceDouble1D(
+        int op,
+        double *dx,
+        int *xShapeInfo,
+        double *extraParams,
+        double *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        double *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceGeneric1D<double>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, tadOnlyShapeInfo);
+
+}
+
+extern "C" __global__ void reduceDouble6D(
+        int op,
+        double *dx,
+        int *xShapeInfo,
+        double *extraParams,
+        double *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        double *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceGeneric6D<double>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, tadOnlyShapeInfo);
 
 }
 
@@ -1993,72 +2016,90 @@ extern "C" __global__ void reduceDouble(
 extern "C" __global__ void reduceFloat(
         int op,
         float *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         float *extraParams,
         float *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer,
-        float *reductionBuffer, int *tadOnlyShapeInfo
-) {
+        float *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceGeneric<float>(
             op,
             dx,
-            xShapeInfo, xRank,
+            xShapeInfo,
             extraParams,
             result,
-            resultShapeInfo, zRank,
+            resultShapeInfo,
             dimension,
             dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+            reductionBuffer, tadOnlyShapeInfo);
+}
+
+extern "C" __global__ void reduceFloat1D(
+        int op,
+        float *dx,
+        int *xShapeInfo,
+        float *extraParams,
+        float *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        float *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceGeneric1D<float>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, tadOnlyShapeInfo);
+}
+
+
+extern "C" __global__ void reduceFloat6D(
+        int op,
+        float *dx,
+        int *xShapeInfo,
+        float *extraParams,
+        float *result,
+        int *resultShapeInfo,
+        int *dimension,
+        int dimensionLength,
+        float *reductionBuffer, int *tadOnlyShapeInfo) {
+    reduceGeneric6D<float>(
+            op,
+            dx,
+            xShapeInfo,
+            extraParams,
+            result,
+            resultShapeInfo,
+            dimension,
+            dimensionLength,
+            reductionBuffer, tadOnlyShapeInfo);
 }
 
 template <typename T>
 __device__ void reduceScalarGeneric(
         int op,
         T *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
-
+        T *reductionBuffer, int *tadOnlyShapeInfo) {
     __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
-    __shared__ functions::reduce::ReduceOpFactory<T> *newOpFactory;
-
     __shared__ UnifiedSharedMemory<T> *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD));
-    }
-    __syncthreads();
-/*
-    __shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
+        manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), 0);
 
-    if (xShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-        if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-        shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-
-//        shape::sweepShapeInfoBuffer(allocationBuffer, manager->getT1ShapeBuffer());
-
-        if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-    if(threadIdx.x == 0) {
-        newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
         reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
     }
     __syncthreads();
@@ -2068,57 +2109,51 @@ __device__ void reduceScalarGeneric(
             extraParams,
             result,
             resultShapeInfo,
-            allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo);
+            reductionBuffer, manager, tadOnlyShapeInfo);
 };
 
 extern "C" __global__ void reduceScalarFloat(
         int op,
         float *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         float *extraParams,
         float *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer,
         float *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceScalarGeneric<float>(
             op,
             dx,
-            xShapeInfo, xRank,
+            xShapeInfo,
             extraParams,
             result,
-            resultShapeInfo, zRank,
+            resultShapeInfo,
             dimension,
             dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+            reductionBuffer, tadOnlyShapeInfo);
 };
 
 extern "C" __global__ void reduceScalarDouble(
         int op,
         double *dx,
-        int *xShapeInfo, int xRank,
+        int *xShapeInfo,
         double *extraParams,
         double *result,
-        int *resultShapeInfo, int zRank,
+        int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot,
-        int *allocationBuffer,
         double *reductionBuffer, int *tadOnlyShapeInfo) {
     reduceScalarGeneric<double>(
             op,
             dx,
-            xShapeInfo, xRank,
+            xShapeInfo,
             extraParams,
             result,
-            resultShapeInfo, zRank,
+            resultShapeInfo,
             dimension,
             dimensionLength,
-            postProcessOrNot,
-            allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+            reductionBuffer, tadOnlyShapeInfo);
 };
 #endif
 

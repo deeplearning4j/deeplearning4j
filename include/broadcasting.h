@@ -741,12 +741,7 @@ __device__ void broadcastGeneric(
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD));
-
-	    manager->setXSpace(xRank);
-	    manager->setYSpace(yRank);
-	    manager->setZSpace(zRank);
-	    manager->setTADSpace(dimensionLength);
+	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*

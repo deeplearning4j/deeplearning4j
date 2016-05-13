@@ -1293,7 +1293,7 @@ namespace shape {
             this->tadShape = shape::shapeOf(existingTAD);
             this->tadStride = shape::stride(existingTAD);
 
-            this->numTads = this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);//shape::length(originalShape) / shape::length(existingTAD);
+            this->numTads = shape::length(originalShape) / shape::length(existingTAD); // this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);//shape::length(originalShape) / shape::length(existingTAD);
             this->wholeThing = this->numTads == 1 || this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo);
         }
 
@@ -1407,10 +1407,13 @@ namespace shape {
         inline void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out) {
             memcpy(out,shapeBuffer,sizeof(int) * shape::shapeInfoLength(this->rank));
 #ifdef __CUDACC__
+          /*
             if (ptrManager != nullptr) {
             UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
             doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer6());
-        } else doPermuteShapeBuffer(this->rank,out,rearrange);
+        } else
+        */
+        doPermuteShapeBuffer(this->rank,out,rearrange);
 #else
             doPermuteShapeBuffer(this->rank,out,rearrange);
 #endif
@@ -1564,11 +1567,12 @@ namespace shape {
 
 #ifdef __CUDACC__
 
-            int *permuteDims;
+            int *permuteDims;/*
         if (ptrManager != nullptr) {
             UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
             permuteDims = manager->getTempRankBuffer5();
-        } else permuteDims = new int[rank];
+        } else
+        */permuteDims = new int[rank];
 #else
             int *permuteDims = new int[shape::rank(shapeInfo)];
 #endif
@@ -1651,14 +1655,11 @@ namespace shape {
             if(wholeThing)
                 return index;
 
-
             if(dimensionLength > 1) {
                 int *tad2Sub = this->tad2Sub(index,ptrManager);
 
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+                int ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
+
                 if(ret < 0) {
                     if (ptrManager == nullptr)
                         delete[] tad2Sub;
@@ -1672,10 +1673,8 @@ namespace shape {
             }
             else {
                 int *tad2Sub = this->tad2Sub(index,ptrManager);
-                int rank = shape::rank(shapeInfo);
-                int *shape = shape::shapeOf(shapeInfo);
-                int *stride = shape::stride(shapeInfo);
-                int ret = shape::getOffset(0,shape,stride,tad2Sub,rank);
+
+                int ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
 
                 if (ptrManager == nullptr)
                     delete[] tad2Sub;
@@ -1702,17 +1701,12 @@ namespace shape {
 #ifdef __CUDACC__
 
             if (ptrManager != nullptr) {
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-            ret = manager->getTempRankBuffer1();
-            tadShape = manager->getTempRankBuffer2();
-            leftOverIndexes = manager->getTempRankBuffer3();
-            sub = manager->getTempRankBuffer4();
-        } else {
-            ret = new int[rank];
-            tadShape = new int[leftOverIndexLen];
-            leftOverIndexes = new int[leftOverIndexLen];
-            sub = new int[rank];
-        }
+                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                ret = manager->getTempRankBuffer1();
+                tadShape = manager->getTempRankBuffer2();
+                leftOverIndexes = manager->getTempRankBuffer3();
+                sub = manager->getTempRankBuffer4();
+            }
 #else
             ret = new int[rank];
             //shape of the tad
@@ -1798,12 +1792,15 @@ namespace shape {
         inline int *shapeInfoOnlyShapeAndStride() {
             if(wholeThing) {
 #ifdef __CUDACC__
+                /*
                 if (ptrManager != nullptr) {
                     UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
                     int *ret = manager->getT1ShapeBuffer();
 
                     return shape::createScalarShapeInfo(ret);
-                } else return shape::createScalarShapeInfo();
+                } else
+                */
+                return shape::createScalarShapeInfo();
 #else
                 return shape::createScalarShapeInfo();
 #endif
@@ -1817,12 +1814,15 @@ namespace shape {
             int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
             int *ret;
 #ifdef __CUDACC__
+            /*
             if (ptrManager != nullptr) {
                 UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
                 ret = manager->getT1ShapeBuffer();
             }  else if (this->ptrOutput != nullptr) {
                 ret = this->ptrOutput;
-            } else ret = new int[shape::shapeInfoLength(rank)];
+            } else
+            */
+            ret = new int[shape::shapeInfoLength(rank)];
 #else
             ret = new int[shape::shapeInfoLength(rank)];
 #endif
@@ -1844,11 +1844,14 @@ namespace shape {
 
 #ifdef __CUDACC__
                 int *toPermute;
+                /*
         if (ptrManager != nullptr) {
             UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
             toPermute = manager->getSharedCoordBuffer();
         }
-        else toPermute = new int[MAX_RANK];
+        else
+        */
+        toPermute = new int[MAX_RANK];
 #else
                 int *toPermute = new int[MAX_RANK];
 #endif
@@ -1974,24 +1977,19 @@ namespace shape {
         __host__ __device__
 #endif
         inline int tadLength(int *shapeInfo, int *dimension, int dimensionLength) {
-            int *shapeTwo = shape::shapeOf(shapeInfo);
-            int rank = shape::rank(shapeInfo);
             if(dimensionLength == 1) {
-                return shapeTwo[dimension[0]];
+                return shape::shapeOf(shapeInfo)[dimension[0]];
             }
             else {
                 int ret = 1;
-                for(int i = 0; i < rank; i++) {
+                for(int i = 0; i < shape::rank(shapeInfo); i++) {
                     for(int j = 0; j < dimensionLength; j++) {
                         if(i == dimension[j])
-                            ret *= shapeTwo[dimension[j]];
+                            ret *= shape::shapeOf(shapeInfo)[dimension[j]];
                     }
                 }
                 return ret;
-
             }
-
-
         }
 
 /**
@@ -2004,9 +2002,7 @@ namespace shape {
 #endif
 
         inline int tensorsAlongDimension(int *shapeInfo, int *dimension, int dimensionLength) {
-            int theTadLength = this->tadLength(shapeInfo,dimension,dimensionLength);
-            int wholeLength = shape::length(shapeInfo);
-            return wholeLength / theTadLength;
+            return shape::length(shapeInfo) / this->tadLength(shapeInfo,dimension,dimensionLength);
         }
 
 #ifdef __CUDACC__
@@ -2029,10 +2025,14 @@ namespace shape {
             }
 
 #ifdef __CUDACC__
+            /*
             if (ptrManager != nullptr) {
             UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
             this->dimension = manager->getT2ShapeBuffer();
-        } else  this->dimension =  new int[dimensionLength];
+        } else
+        */
+
+        this->dimension =  new int[dimensionLength];
         memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
 #else
             this->dimension =  new int[dimensionLength];
@@ -2201,7 +2201,7 @@ namespace shape {
 __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
     // if we go for 3 dimensions coord space or below - just use shared memory for that
     if (size <= MAX_COORD * 4) {
-        int *ptr = manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
+        int *ptr = new int[size / 4];//manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
         return ptr;
     } else {
         // otherwise go to preallocated global memory :(
@@ -2236,24 +2236,19 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     inline int tadLength(int *shapeInfo, int *dimension, int dimensionLength) {
-        int *shapeTwo = shape::shapeOf(shapeInfo);
-        int rank = shape::rank(shapeInfo);
         if(dimensionLength == 1) {
-            return shapeTwo[dimension[0]];
+            return shape::shapeOf(shapeInfo)[dimension[0]];
         }
         else {
             int ret = 1;
-            for(int i = 0; i < rank; i++) {
+            for(int i = 0; i < shape::rank(shapeInfo); i++) {
                 for(int j = 0; j < dimensionLength; j++) {
                     if(i == dimension[j])
-                        ret *= shapeTwo[dimension[j]];
+                        ret *= shape::shapeOf(shapeInfo)[dimension[j]];
                 }
             }
             return ret;
-
         }
-
-
     }
 
 
@@ -3373,9 +3368,8 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
 
     inline int oneDimEqualToLength(int *shape, int rank) {
-        int len = shape::prod(shape,rank);
         for(int i = 0; i < rank; i++) {
-            if(shape[i] == len)
+            if(shape[i] == shape::prod(shape,rank))
                 return 1;
         }
 
@@ -3610,8 +3604,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
 
     inline int offset(int *buffer) {
-        int length = shape::shapeInfoLength(shape::rank(buffer));
-        return buffer[length - 3];
+        return buffer[shape::shapeInfoLength(shape::rank(buffer)) - 3];
     }
 
 /**
@@ -3624,8 +3617,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 
     inline char order(int *buffer) {
         //FIXME magic numbers
-        int length = buffer[0] * 2 + 4;
-        return (char) buffer[length - 1];
+        return (char) buffer[(buffer[0] * 2 + 4) - 1];
     }
 
 /**
@@ -3637,8 +3629,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 #endif
 
     inline int elementWiseStride(int *buffer) {
-        int length2 = shapeInfoLength(buffer[0]);
-        return buffer[length2 - 2];
+        return buffer[shapeInfoLength(buffer[0]) - 2];
     }
 
 /**
@@ -3651,8 +3642,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
 
     inline int reductionIndexElementWiseStride(int *buffer, int *dimension, int dimensionLength) {
         if(dimensionLength > 1) {
-            char order = shape::order(buffer);
-            if(order == 'f') {
+            if(shape::order(buffer) == 'f') {
                 /**
                         * The element wise stride belongs to a reduction index.
                         * When used out of order, we can get rid of the data
@@ -3689,8 +3679,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
             }
         }
         else {
-            char order = shape::order(buffer);
-            if(order == 'f') {
+            if(shape::order(buffer) == 'f') {
                 /**
                         * The element wise stride belongs to a reduction index.
                         * When used out of order, we can get rid of the data
@@ -4233,8 +4222,7 @@ __device__ int tadOffset(int *xInfo, int offset) {
     __device__ __host__
 #endif
     inline int tadForBlockIndex(int blockSize, int blockIdx, int i) {
-        int ret = blockIdx + i * blockSize;
-        return ret;
+        return blockIdx + i * blockSize;
     }
 
 /**

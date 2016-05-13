@@ -1523,30 +1523,8 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD));
-	}
-	__syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-	__shared__ int *ptrSharedZShapeInfo;
+		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
-	if (xShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-	if (yShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-	if (resultShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
@@ -1650,30 +1628,8 @@ __device__ void reduce3Generic(
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD));
-	}
-	__syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-	__shared__ int *ptrSharedZShapeInfo;
+		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
-	if (xShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-	if (yShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-	if (resultShapeInfo != nullptr) {
-		shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-		if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-	} else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
