@@ -378,8 +378,7 @@ struct SharedIndexValue<double> {
 				}
 			} else {
 				int rank = shape::rank(xShapeInfo);
-				long allocSize = sizeof(int) * rank;
-				int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager);
+				int ind2sub[MAX_RANK];
 #pragma unroll
 				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
@@ -388,10 +387,6 @@ struct SharedIndexValue<double> {
 					IndexValue <T> indexVal = {dx[offset], currIdx};
 					reduction = update(reduction, indexVal, extraParams);
 				}
-
-				if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                	free(ind2sub);
-            	}
 			}
 
 
