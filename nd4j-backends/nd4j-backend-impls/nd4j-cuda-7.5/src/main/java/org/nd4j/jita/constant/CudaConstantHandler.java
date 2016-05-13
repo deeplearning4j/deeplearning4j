@@ -44,9 +44,9 @@ public class CudaConstantHandler implements ConstantHandler {
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
         // and release device memory :)
 
-        long currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+        long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        if (currentOffset >= 49152) {
+        if (currentOffset >= 49152 || requiredMemoryBytes > 272)  {
             logger.info("Overflow at constant space, skipping relocation");
 
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
@@ -55,6 +55,8 @@ public class CudaConstantHandler implements ConstantHandler {
             point.tickHostRead();
             return 0;
         }
+        constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+
 
         nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
         long cAddr = deviceAddresses.get(deviceId).longValue()  + currentOffset;
