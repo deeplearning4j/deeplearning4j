@@ -222,20 +222,20 @@ public class BasicContextPool implements ContextPool {
     protected void getDeviceBuffers(CudaContext context, int deviceId) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps(); //((JCudaExecutioner) Nd4j.getExecutioner()).getNativeOps();
 
-        int sizeOf = (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : 4);
+        // we hardcode sizeOf to sizeOf(double)
+        int sizeOf = 8;
 
         long  reductionPointer = nativeOps.mallocDevice(2049 * sizeOf * 2, deviceId, 0);
         if (reductionPointer == 0)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        //JCuda.cudaMemsetAsync(new CudaPointer(reductionPointer), 0, 2049 * sizeOf * 2, context.getOldStream());
         nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream().address());
 
         context.syncOldStream();
 
-        long  allocationPointer = nativeOps.mallocHost(1024 * 1024, 0);
+        long  allocationPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
         if (allocationPointer == 0)
-            throw new IllegalStateException("Can't allocate [HOST] allocation buffer memory!");
+            throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
         long  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
         if (scalarPointer == 0)

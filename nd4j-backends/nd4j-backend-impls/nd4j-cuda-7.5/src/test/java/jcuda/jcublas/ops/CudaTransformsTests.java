@@ -7,6 +7,8 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.convolution.Convolution;
@@ -17,6 +19,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -27,10 +30,12 @@ public class CudaTransformsTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(256)
-                .enableDebug(true);
+                .enableDebug(true)
+                .setVerbose(true);
+
+
 
         System.out.println("Init called");
     }
@@ -395,10 +400,50 @@ public class CudaTransformsTests {
 
         assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
         assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
+
+    }
+
+    @Test
+    public void testLogSoftmaxFC()  throws Exception {
+        INDArray array1 = Nd4j.ones(2048).dup('f');
+        INDArray array2 = Nd4j.zeros(2048);
+
+        Nd4j.getExecutioner().exec(new LogSoftMax(array1));
+
+        Nd4j.getExecutioner().exec(new LogSoftMax(array2));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+        System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
+
+        assertEquals(array1, array2);
+
+        //assertEquals(1.0, array1.sumNumber().doubleValue(), 0.0001);
+        //assertEquals(1.0, array2.sumNumber().doubleValue(), 0.0001);
+
+    }
+
+    @Test
+    public void testSoftmaxDerivativeFC()  throws Exception {
+        INDArray array1 = Nd4j.ones(2048).dup('f');
+        INDArray array2 = Nd4j.zeros(2048);
+
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(array1));
+
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(array2));
+
+        System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
+        System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
+
+        assertEquals(array1, array2);
+
+        assertEquals(1.0, array1.sumNumber().doubleValue(), 0.001);
+        assertEquals(1.0, array2.sumNumber().doubleValue(), 0.001);
+
     }
 
     @Test
     public void testIsMaxEqualValues(){
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
 
 
@@ -495,6 +540,7 @@ public class CudaTransformsTests {
         long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
         long time2 = System.currentTimeMillis();
+        System.out.println("A3: --------------------------------");
         System.out.println("Execution time: " + (time2 - time1));
 /*
         assertEquals(0.036710344f,input.getFloat(0), 0.01f);
@@ -505,6 +551,8 @@ public class CudaTransformsTests {
         for (int i = 0; i < 256; i++) {
             INDArray slice = input.slice(i);
             System.out.println("Position [0]: " + input.getDouble(3000 * i) + ", [1]: " + input.getDouble(3000 * i + 1));
+
+            assertTrue(input.getDouble(3000 * i) > input.getDouble(3000 * i + 1));
 
             float sum = slice.sumNumber().floatValue();
             assertEquals("Failed on iteration ["+i+"]", 1.0f, sum, 0.01f);

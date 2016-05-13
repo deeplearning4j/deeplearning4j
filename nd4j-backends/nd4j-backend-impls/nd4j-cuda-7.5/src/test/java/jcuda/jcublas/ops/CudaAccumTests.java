@@ -28,11 +28,19 @@ public class CudaAccumTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(1024)
-                .setMaximumGridSize(512)
-                .enableDebug(true);
+                .setMaximumBlockSize(64)
+                .setMaximumGridSize(256)
+                .enableDebug(true)
+                .setVerbose(true);
 
         System.out.println("Init called");
+    }
+
+    @Test
+    public void testBiggerSum() throws Exception {
+        INDArray array = Nd4j.ones(128000, 512);
+
+        array.sum(0);
     }
 
     /**
@@ -67,6 +75,7 @@ public class CudaAccumTests {
 
         assertEquals(495055.44f, result.getFloat(0), 0.01f);
 */
+        result = Nd4j.getExecutioner().exec(sum, 1);
         result = Nd4j.getExecutioner().exec(sum, 1);
         assertEquals(50945.52f, result.getFloat(0), 0.01f);
 
@@ -326,6 +335,7 @@ public class CudaAccumTests {
 
         int[][] dimsToSum = new int[][]{{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
         double[][] expD = new double[][]{{64, 72}, {60, 76}, {52, 84}, {36, 100}};
+
 
         for (int i = 0; i < dimsToSum.length; i++) {
             int[] d = dimsToSum[i];

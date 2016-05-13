@@ -16,6 +16,8 @@ import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.constant.ConstantHandler;
+import org.nd4j.jita.constant.CudaConstantHandler;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
@@ -104,6 +106,8 @@ public class AtomicAllocator implements Allocator {
     private final Ring zeroShort = new LockedRing(30);
 
     private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
+
+    private ConstantHandler constantHandler = new CudaConstantHandler();
 
     public static AtomicAllocator getInstance() {
         return INSTANCE;
@@ -289,7 +293,7 @@ public class AtomicAllocator implements Allocator {
         if (buffer.isConstant()) {
             //log.info("Skipping synchronization due to constant. " + AllocationUtils.buildAllocationShape(buffer));
          //   log.info("Constant buffer: " + Arrays.toString(buffer.asFloat()));
-           // return;
+            return;
             //AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
             //log.info("Constant Buffer readiness: {}",point.isActualOnHostSide());
         }
@@ -326,11 +330,11 @@ public class AtomicAllocator implements Allocator {
         AllocationPoint point = null;
 
         // TODO: size limitation should be rised in final release to something more sensible
-        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
-            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
-        } else {
+//        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
+//            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
+//        } else {
             point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
-        }
+//        }
 
         return point;
     }
@@ -856,5 +860,26 @@ public class AtomicAllocator implements Allocator {
     @Override
     public ContextPool getContextPool() {
         return memoryHandler.getContextPool();
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(int[] array) {
+        return constantHandler.getConstantBuffer(array);
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(float[] array) {
+        return constantHandler.getConstantBuffer(array);
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(double[] array) {
+        return constantHandler.getConstantBuffer(array);
+    }
+
+    @Override
+    public DataBuffer moveToConstant(DataBuffer dataBuffer) {
+        constantHandler.moveToConstantSpace(dataBuffer);
+        return dataBuffer;
     }
 }

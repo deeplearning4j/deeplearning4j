@@ -21,10 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -281,7 +278,12 @@ public class AsynchronousFlowController implements FlowController{
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
             int lastLane = -1;
-            int pendingLanes[] = new int[]{-1, -1};
+            //int pendingLanes[] = new int[]{-1, -1};
+
+            // FIXME: this is wrong.
+            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            Arrays.fill(pendingLanes, -1);
+
             for (INDArray operand: operands) {
                 if (operand == null) continue;
 
@@ -337,8 +339,12 @@ public class AsynchronousFlowController implements FlowController{
             AtomicInteger cnt = new AtomicInteger(0);
             AtomicInteger holdersCount = new AtomicInteger(0);
             int lastLane = -1;
-            // FIXME: this array must be dynamic, bound to configuration
-            int pendingLanes[] = new int[]{-1, -1, -1, -1};
+
+            // FIXME: this is wrong.
+            //int pendingLanes[] = new int[]{-1, -1, -1, -1};
+            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            Arrays.fill(pendingLanes, -1);
+
             for (INDArray operand: operands) {
                 if (operand == null) continue;
 

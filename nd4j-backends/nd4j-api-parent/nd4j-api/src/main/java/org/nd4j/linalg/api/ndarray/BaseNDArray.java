@@ -887,11 +887,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
+        if (1 > 0)
+            throw new RuntimeException("setOrder() called");
+
         Shape.setOrder(shapeInfo(),order);
     }
 
     @Override
     public void setShape(int... shape) {
+        if (1 > 0)
+            throw new RuntimeException("setShape() called");
+
         DataBuffer shapeView = Shape.shapeOf(shapeInformation);
         for(int i = 0; i < shape.length; i++) {
             shapeView.put(i,shape[i]);
@@ -1898,6 +1904,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setStride(int[] stride) {
+        if (1 > 0)
+            throw new RuntimeException("setStride() called");
+
         DataBuffer strideView = Shape.stride(shapeInformation);
         for(int i = 0; i < stride.length; i++)
             strideView.put(i,stride[i]);
@@ -1926,6 +1935,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         this.length = ArrayUtil.prodLong(shape);
         rank = shape.length;
+
+        // TODO: this, probably, may be reconsidered and removed
+        if (this.elementWiseStride() == -1 && !attemptedToFindElementWiseStride) {
+            //log.info("Calling to computeEWS");
+
+            INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,this.length()}, Nd4j.order() == 'f');
+            if (reshapeAttempt != null) {
+                //log.info("Got new EWS: " + reshapeAttempt.elementWiseStride());
+                this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(this.shape(), this.stride(), this.offset(), reshapeAttempt.elementWiseStride(), ordering());
+            }
+            attemptedToFindElementWiseStride = true;
+        }
     }
 
 
@@ -3295,6 +3316,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
         if(reshapeAttempt != null) {
+            // kinda strange get/set usage
           //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
         }
@@ -4190,7 +4212,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         shapeInfo.put(3+2*rank,newOrder);
         */
         int ews = shapeInfo.get(2*rank + 2);
-        shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, offset(), ews,  newOrder);
+        /*
+        if (ews < 1 && !attemptedToFindElementWiseStride)
+            throw new RuntimeException("EWS is -1");
+            */
+
+        shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, offset(), ews, newOrder);
+        if (ews < 0) {
+
+            INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,this.length()}, newOrder == 'f');
+            if (reshapeAttempt != null) {
+                this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), reshapeAttempt.elementWiseStride(), newOrder);
+            }
+            this.attemptedToFindElementWiseStride = true;
+        }
 
         return this;
     }

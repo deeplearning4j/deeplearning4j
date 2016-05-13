@@ -205,7 +205,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             log.warn("No available [HOST] memory, sleeping...");
                             log.warn("Currently used: ["+zeroUseCounter.get()+"], allocated objects: ["+ zeroAllocations.get(0)+"]");
                             System.gc();
-                            Thread.sleep(10000);
+                            Thread.sleep(1000);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -341,13 +341,14 @@ public class CudaZeroHandler implements MemoryHandler {
         } else if (currentStatus == AllocationStatus.HOST && targetStatus == AllocationStatus.DEVICE) {
             // HOST -> DEVICE
 
+         if (point.isConstant()) {
+             //log.info("Skipping relocation for constant");
+             return;
+         }
+
             if (point.getPointers().getDevicePointer() == null) {
                  throw new IllegalStateException("devicePointer is NULL!");
             }
-
-            Pointer devicePointer = new CudaPointer(point.getPointers().getDevicePointer().address());
-
-            Pointer hostPointer = new CudaPointer(point.getPointers().getHostPointer().address());
 
          /*
             JCuda.cudaMemcpyAsync(
@@ -357,7 +358,7 @@ public class CudaZeroHandler implements MemoryHandler {
                  cudaMemcpyKind.cudaMemcpyHostToDevice,
                  context.getOldStream()
              );*/
-            if (nativeOps.memcpyAsync(devicePointer.address(), hostPointer.address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed");
 
             //context.syncOldStream();
@@ -506,8 +507,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
             CudaContext context = flowController.prepareAction(point);
             tContext = context;
-            if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed");
+
+            if (configuration.getExecutionModel() == Configuration.ExecutionModel.SEQUENTIAL)
+                tContext.syncSpecialStream();
 
             if (point.getAllocationStatus() == AllocationStatus.HOST)
                 flowController.registerAction(context, point);
@@ -529,6 +533,8 @@ public class CudaZeroHandler implements MemoryHandler {
             // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
             Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
+            if (tContext == null)
+                tContext  = flowController.prepareAction(point);
             //log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 /*
             JCuda.cudaMemcpyAsync(
@@ -538,10 +544,20 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            if (nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, tContext.getOldStream().address()) == 0)
+            if (nativeOps.memcpyAsync(
+                        rDP.address(),
+                        dP.address(),
+                        length,
+                        CudaConstants.cudaMemcpyHostToDevice,
+                        tContext.getSpecialStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
+            if (configuration.getExecutionModel() == Configuration.ExecutionModel.SEQUENTIAL)
+                tContext.syncSpecialStream();
+
             flowController.registerAction(tContext, point);
+
+
         }
         point.tickDeviceWrite();
   }

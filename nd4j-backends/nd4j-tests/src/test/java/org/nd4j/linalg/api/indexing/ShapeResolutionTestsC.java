@@ -180,7 +180,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
                 " [0.00,0.00,0.00]\n" +
                 " [0.00,0.00,0.00]]]";
 
-        if (!zeros.toString().equals(f2) && zeros.toString().equals(f1))
+        if (!zeros.toString().equals(f2) && !zeros.toString().equals(f1))
         assertEquals(f2, zeros.toString());
 
     }

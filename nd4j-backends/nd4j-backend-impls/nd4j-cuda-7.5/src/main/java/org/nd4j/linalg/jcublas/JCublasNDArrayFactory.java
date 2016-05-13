@@ -553,7 +553,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
         }
 
-        System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
+        //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
 
         long dZ = AtomicAllocator.getInstance().getPointer(ret, context).address();
         long dZShapeInfo = AddressRetriever.retrieveDeviceAddress(ret.shapeInfoDataBuffer(), context);
@@ -579,7 +579,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context).address();
         long shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context).address();
 
-        System.out.println("ShapesPointer after conversion: " + shapesPointer);
+       // System.out.println("ShapesPointer after conversion: " + shapesPointer);
 
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(

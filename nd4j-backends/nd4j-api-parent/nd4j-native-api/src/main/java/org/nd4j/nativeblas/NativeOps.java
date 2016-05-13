@@ -937,13 +937,19 @@ public class NativeOps extends Pointer {
 
     public native long getDeviceFreeMemory(long ptrToDeviceId);
 
+    public native long getDeviceTotalMemory(long ptrToDeviceId);
+
     public native long memcpy(long dst, long src, long size, int flags, long reserved);
 
     public native long memcpyAsync(long dst, long src, long size, int flags, long reserved);
 
+    public native long memcpyConstantAsync(long dst, long src, long size, int flags, long reserved);
+
     public native long memset(long dst, int value, long size,  int flags, long reserved);
 
     public native long memsetAsync(long dst, int value, long size, int flags, long reserved);
+
+    public native long getConstantSpace();
 
     public native long getAvailableDevices();
 
@@ -952,4 +958,6 @@ public class NativeOps extends Pointer {
     public native void enableVerboseMode(boolean reallyEnable);
 
     public native void setGridLimit(int gridSize);
+
+    public native void tadOnlyShapeInfo(long shapeInfo, long dimension, int dimensionLength, long targetBuffer);
 }
