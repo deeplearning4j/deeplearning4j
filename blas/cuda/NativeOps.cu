@@ -846,7 +846,7 @@ void   NativeOps::execReduceDouble(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[22], 1, sizeof(double), 1);
 
-	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -906,16 +906,40 @@ void   NativeOps::execReduceDouble(
 
 	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
 
-	reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			xPointer,
-			xShapeInfoPointer,
-			extraParamsPointer,
-			resultPointer,
-			resultShapeInfoPointer,
-			dimensionPointer,
-			dimensionLength,
-			reductionPointer, deviceTADShapeInfo);
+	if (dimensionLength == 1) {
+		reduceDouble1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+				opNum,
+						xPointer,
+						xShapeInfoPointer,
+						extraParamsPointer,
+						resultPointer,
+						resultShapeInfoPointer,
+						dimensionPointer,
+						dimensionLength,
+						reductionPointer, deviceTADShapeInfo);
+	} else if (shape::rank(hostTADShapeInfo) <= 3) {
+		reduceDouble6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+				opNum,
+						xPointer,
+						xShapeInfoPointer,
+						extraParamsPointer,
+						resultPointer,
+						resultShapeInfoPointer,
+						dimensionPointer,
+						dimensionLength,
+						reductionPointer, deviceTADShapeInfo);
+	} else {
+		reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+				opNum,
+						xPointer,
+						xShapeInfoPointer,
+						extraParamsPointer,
+						resultPointer,
+						resultShapeInfoPointer,
+						dimensionPointer,
+						dimensionLength,
+						reductionPointer, deviceTADShapeInfo);
+	}
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2256,7 +2280,7 @@ void   NativeOps::execReduceFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
 
-	reduceFloat1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+	reduceScalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2342,7 +2366,7 @@ void   NativeOps::execReduceFloat(
 						dimensionPointer,
 						dimensionLength,
 						reductionPointer, deviceTADShapeInfo);
-	} else if (shape::rank(hostTADShapeInfo) <= 6) {
+	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 		reduceFloat6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 						opNum,
 						xPointer,
