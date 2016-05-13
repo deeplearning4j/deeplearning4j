@@ -382,7 +382,7 @@ struct SharedIndexValue<double> {
 #pragma unroll
 				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-					int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
+					int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
 					int currIdx = i;
 					IndexValue <T> indexVal = {dx[offset], currIdx};
 					reduction = update(reduction, indexVal, extraParams);
