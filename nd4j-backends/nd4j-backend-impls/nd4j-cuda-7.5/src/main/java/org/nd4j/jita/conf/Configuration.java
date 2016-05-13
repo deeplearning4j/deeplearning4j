@@ -38,7 +38,7 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private boolean debug = true;
+    @Getter private boolean debug = false;
 
     @Getter private boolean verbose = false;
 
@@ -107,9 +107,9 @@ public class Configuration implements Serializable {
 
     @Getter private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 256;
+    @Getter private int maximumGridSize = 64;
 
-    @Getter private int maximumBlockSize = 256;
+    @Getter private int maximumBlockSize = 128;
 
     @Getter private long maximumHostCache = Long.MAX_VALUE;
 
