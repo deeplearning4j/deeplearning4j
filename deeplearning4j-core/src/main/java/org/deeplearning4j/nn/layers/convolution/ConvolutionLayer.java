@@ -126,7 +126,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             throw new RuntimeException("Shape different than expected");
         }
 
-        delta = delta.permute(0,3,2,1).dup('c');
+//        delta = delta.permute(0,3,2,1).dup('c');
 
 //        delta = delta.permute(0,3,1,2).dup('c');
 //        delta = delta.permute(0,2,3,1).dup('c');
@@ -285,24 +285,26 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(z.columns() != outDepth) throw new RuntimeException();
 
         //Add biases, before reshaing. Note that biases are [1,depthOut] and currently z is [...,depthOut] -> addiRowVector
-//        z.addiRowVector(bias);
+        z.addiRowVector(bias);
 
         //Now, reshape to [miniBatch,outH,outW,depthOut]
 //        z = z.reshape('f',outW,outH,miniBatch,outDepth);
         z = Shape.newShapeNoCopy(z,new int[]{outW,outH,miniBatch,outDepth},true);
         if(z == null) throw new RuntimeException();
 
-        INDArray temp = z.dup('f');
-        INDArray temp2 = temp.permute(2,3,1,0);
-        for(int i=0; i<temp2.size(0); i++ ){
-            for( int j=0; j<temp2.size(1); j++ ){
-                System.out.println("mb=" + i + ", depth=" + j);
-                System.out.println(temp2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()));
-            }
-        }
+//        INDArray temp = z.dup('f');
+//        INDArray temp2 = temp.permute(2,3,1,0);
+//        for(int i=0; i<temp2.size(0); i++ ){
+//            for( int j=0; j<temp2.size(1); j++ ){
+//                System.out.println("mb=" + i + ", depth=" + j);
+//                INDArray temp3 = temp2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+//                System.out.println(temp3);
+//                System.out.println(Arrays.toString(temp3.dup('c').data().asFloat()));
+//            }
+//        }
 
-        BroadcastOp op = new BroadcastAddOp(z,bias,z,3);
-        Nd4j.getExecutioner().exec(op);
+//        BroadcastOp op = new BroadcastAddOp(z,bias,z,3);
+//        Nd4j.getExecutioner().exec(op);
 
         //Output activations with shape [miniBath,outDepth,outH,outW];
         INDArray out = z.permute(2,3,1,0);
