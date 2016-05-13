@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -44,12 +45,18 @@ public class CudaConstantHandler implements ConstantHandler {
         // and release device memory :)
 
         long currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         if (currentOffset >= 49152) {
             logger.info("Overflow at constant space, skipping relocation");
+
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
+            point.setConstant(true);
+            point.tickDeviceWrite();
+            point.tickHostRead();
             return 0;
         }
 
-        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, 0L);
+        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
         long cAddr = deviceAddresses.get(deviceId).longValue()  + currentOffset;
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);

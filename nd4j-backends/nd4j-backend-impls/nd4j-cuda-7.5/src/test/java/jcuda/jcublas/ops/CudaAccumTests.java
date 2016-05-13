@@ -28,7 +28,7 @@ public class CudaAccumTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(256)
+                .setMaximumBlockSize(64)
                 .setMaximumGridSize(256)
                 .enableDebug(true)
                 .setVerbose(true);
