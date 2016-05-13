@@ -126,14 +126,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             throw new RuntimeException("Shape different than expected");
         }
 
-//        delta = delta.permute(0,3,2,1).dup('c');
-
-//        delta = delta.permute(0,3,1,2).dup('c');
-//        delta = delta.permute(0,2,3,1).dup('c');
-//        delta = delta.permute(0,2,1,3).dup('c');
-//        delta = delta.permute(0,1,2,3).dup('c');
-//        delta = delta.permute(0,1,3,2).dup('c');
-
         INDArray delta2d = Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);   //delta.reshape('c',outDepth,miniBatch*outH*outW);
         if(delta2d == null) throw new RuntimeException("Could not execute reshape on delta");
 
@@ -145,24 +137,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
-//        INDArray col2 = col.permute(0,4,3,5,1,2);
-//        INDArray col2 = col.permute(3,0,4,5,1,2);
-//        INDArray col2 = col.permute(3,4,0,5,1,2);
-//        INDArray col2 = col.permute(4,0,3,5,1,2);
-//        INDArray col2 = col.permute(4,3,0,5,1,2);
-
-//        INDArray col2 = col.permute(0,3,4,5,2,1);
-//        INDArray col2 = col.permute(0,4,3,5,2,1);
-//        INDArray col2 = col.permute(3,0,4,5,2,1);
-//        INDArray col2 = col.permute(3,4,0,5,2,1);
-//        INDArray col2 = col.permute(4,0,3,5,2,1);
-//        INDArray col2 = col.permute(4,3,0,5,2,1);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
-
-
-//        col2 = Nd4j.create(new int[]{miniBatch,inDepth,kH,kW,outH,outW},'c');
-//        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
-//        col = col2.permute(0,4,5,1,2,3).dup('c');
 
         //Shape im2col to 2d:
         INDArray im2col2d = Shape.newShapeNoCopy(col,new int[]{miniBatch*outH*outW, inDepth*kH*kW},false);
@@ -249,12 +224,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         // given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(2,3,4,5,1,2)
-        //Old method: outW varies slowest, minibatch varies fastest
-//        INDArray col = Nd4j.create(new int[]{outW,outH,miniBatch,inDepth,kH,kW},'c');
-//        INDArray col2 = col.permute(2,3,4,5,1,0);
-
-        //Want: miniBatch, outH
-        //minibatch varies slowest, outW fastest
+        //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows
         INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
@@ -265,7 +235,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current order of weights: [depthOut,depthIn,kH,kW], c order
         //Permute to give [kW,kH,depthIn,depthOut], f order
         //Then zero-copy reshape to give [kW*kH*depthIn, depthOut]
-
         if(weights.ordering() != 'c') throw new RuntimeException("Weights not c order");
         INDArray permutedW = weights.permute(3,2,1,0);
         if(permutedW.ordering() != 'f') throw new RuntimeException("Not 'f' order after reshaping");
@@ -288,27 +257,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z.addiRowVector(bias);
 
         //Now, reshape to [miniBatch,outH,outW,depthOut]
-//        z = z.reshape('f',outW,outH,miniBatch,outDepth);
         z = Shape.newShapeNoCopy(z,new int[]{outW,outH,miniBatch,outDepth},true);
         if(z == null) throw new RuntimeException();
 
-//        INDArray temp = z.dup('f');
-//        INDArray temp2 = temp.permute(2,3,1,0);
-//        for(int i=0; i<temp2.size(0); i++ ){
-//            for( int j=0; j<temp2.size(1); j++ ){
-//                System.out.println("mb=" + i + ", depth=" + j);
-//                INDArray temp3 = temp2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
-//                System.out.println(temp3);
-//                System.out.println(Arrays.toString(temp3.dup('c').data().asFloat()));
-//            }
-//        }
-
-//        BroadcastOp op = new BroadcastAddOp(z,bias,z,3);
-//        Nd4j.getExecutioner().exec(op);
-
         //Output activations with shape [miniBath,outDepth,outH,outW];
         INDArray out = z.permute(2,3,1,0);
-        out = out.dup('c');
         return out;
     }
 
