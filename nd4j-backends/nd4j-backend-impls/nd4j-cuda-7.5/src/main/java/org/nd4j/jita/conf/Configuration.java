@@ -107,9 +107,9 @@ public class Configuration implements Serializable {
 
     @Getter private List<Integer> bannedDevices = new ArrayList<>();
 
-    @Getter private int maximumGridSize = 64;
+    @Getter private int maximumGridSize = 128;
 
-    @Getter private int maximumBlockSize = 128;
+    @Getter private int maximumBlockSize = 64;
 
     @Getter private long maximumHostCache = Long.MAX_VALUE;
 
