@@ -1,6 +1,7 @@
 package org.nd4j.nativeblas;
 
 
+import java.util.Properties;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
@@ -17,7 +18,9 @@ public class Nd4jBlas extends Pointer {
         // using our custom platform properties from resources, load
         // in priority libraries found in library path over bundled ones
         String platform = Loader.getPlatform();
-        Loader.load(Nd4jBlas.class, Loader.loadProperties(platform + "-nd4j", platform), true);
+        Properties properties = Loader.loadProperties(platform + "-nd4j", platform);
+        properties.remove("platform.preloadpath");
+        Loader.load(Nd4jBlas.class, properties, true);
     }
 
     public Nd4jBlas() {
