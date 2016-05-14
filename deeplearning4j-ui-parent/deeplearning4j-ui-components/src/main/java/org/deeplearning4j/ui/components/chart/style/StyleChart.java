@@ -27,7 +27,6 @@ import org.deeplearning4j.ui.api.Utils;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 
 import java.awt.*;
-import java.time.format.TextStyle;
 
 /**
  * Style for charts
