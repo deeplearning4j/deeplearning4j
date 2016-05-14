@@ -3562,6 +3562,9 @@ __device__ void concatKernelGeneric(int dimension,
 			}
 			__syncthreads();
 			arrOffset += yLength;
+
+			if (threadIdx.x == 0)
+				delete inputTAD;
 		}
 	}
 }
