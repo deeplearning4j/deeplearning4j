@@ -18,7 +18,9 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 6c. make sure there are no exports for variables like LIBRARY_PATH, or LD_LIBRARY_PATH or DYLD_LIBRARY_PATH, but if they are, and are pointing to anything inside clang-omp remove the clang-omp bits (or if you have trouble, remove the paths entirely)
 
 7. `cd $LIBND4j_HOME` 
-8. `./buildnativeoperations.sh blas cpu` (This will give a LOT of warnings, dont fret, if the last line is something like `[100%] Built target nd4j`)
+8. `./buildnativeoperations.sh` (This will give a LOT of warnings, dont fret, if the last line is something like `[100%] Built target nd4j`)
+
+9. Now download the latest JavaCPP (https://github.com/bytedeco/javacpp) and build it using `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true`
 
 9. Now download the latest nd4j files from the repo
 
