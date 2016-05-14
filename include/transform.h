@@ -3886,21 +3886,12 @@ namespace functions {
 		__syncthreads();
 
 		//subtract max of each row
-		if (isVector) {
-            if (threadIdx.x == 0)
-                scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-            __syncthreads();
+        if (threadIdx.x == 0)
+            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+        __syncthreads();
 
-			scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-		} else {
-		    if (threadIdx.x == 0)
-                sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
-            __syncthreads();
-
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-			__syncthreads();
-		}
+    	scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+		__syncthreads();
 
         if (threadIdx.x == 0)
             exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
@@ -3919,21 +3910,11 @@ namespace functions {
 		__syncthreads();
 
 		//divide by the sum
-		if (isVector) {
-			if (threadIdx.x == 0)
-                scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-            __syncthreads();
+		if (threadIdx.x == 0)
+           scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+        __syncthreads();
 
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-		} else {
-            if (threadIdx.x == 0)
-                div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
-            __syncthreads();
-
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-			__syncthreads();
-		}
+		scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 	}
 #endif
 
@@ -4126,8 +4107,6 @@ namespace functions {
 		int maxDimension[1] = {1};
 		__shared__ functions::reduce::ops::Max<T> *max;
 		__shared__ functions::transform::ops::Exp<T> *exp;
-		__shared__ functions::broadcast::ops::Subtract<T> *sub;
-		__shared__ functions::broadcast::ops::Divide<T> *div;
 		__shared__ functions::transform::ops::Log<T> *log;
 		__shared__ functions::reduce::ops::Sum<T> *sum;
 		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
@@ -4137,20 +4116,7 @@ namespace functions {
 		__shared__ int *maxResultShapeBuffer;
 		if(threadIdx.x == 0) {
 			isVector = shape::isVector(xShapeBuffer);
-			/*
-			max = new functions::reduce::ops::Max<T>();
-			exp = new functions::transform::ops::Exp<T>();
-			if (isVector) {
-				scalarSub = new functions::scalar::ops::Subtract<T>();
-				scalarDiv = new functions::scalar::ops::Divide<T>();
-			} else {
-				sub = new functions::broadcast::ops::Subtract<T>();
-				div = new functions::broadcast::ops::Divide<T>();
-			}
-			log = new functions::transform::ops::Log<T>();
-			sum = new functions::reduce::ops::Sum<T>();
-			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			*/
+
 			maxResult = (T) 0.0;
 		}
 		__syncthreads();
@@ -4170,19 +4136,11 @@ namespace functions {
 		__syncthreads();
 
 		//subtract max of each row
-		if (isVector) {
-			if (threadIdx.x == 0)
-                scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-            __syncthreads();
+		if (threadIdx.x == 0)
+            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+        __syncthreads();
 
-			scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		} else {
-			if (threadIdx.x == 0)
-                sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
-            __syncthreads();
-
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-		}
+		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
 
         if (threadIdx.x == 0)
@@ -4202,19 +4160,11 @@ namespace functions {
 		__syncthreads();
 
 		//divide by the sum
-		if (isVector) {
-			if (threadIdx.x == 0)
-                scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-            __syncthreads();
+		if (threadIdx.x == 0)
+            scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+        __syncthreads();
 
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
-		} else {
-			if (threadIdx.x == 0)
-                div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
-            __syncthreads();
-
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-		}
+    	scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
 		__syncthreads();
 
         if (threadIdx.x == 0)
@@ -4429,10 +4379,8 @@ namespace functions {
 		__shared__ int resultEWS;
 		__shared__ functions::reduce::ops::Max<T> *max;
 		__shared__ functions::transform::ops::Exp<T> *exp;
-		__shared__ functions::broadcast::ops::Subtract<T> *sub;
 		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
 		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-		__shared__ functions::broadcast::ops::Divide<T> *div;
 		__shared__ functions::reduce::ops::Sum<T> *sum;
 		__shared__ int isVector;
 
@@ -4441,19 +4389,7 @@ namespace functions {
 		if(threadIdx.x == 0) {
 			isVector = shape::isVector(xShapeBuffer);
 			resultEWS = shape::elementWiseStride(resultShapeBuffer);
-			/*
-			max = new functions::reduce::ops::Max<T>();
-			sum = new functions::reduce::ops::Sum<T>();
-			exp = new functions::transform::ops::Exp<T>();
-			if (isVector) {
-				scalarSub = new functions::scalar::ops::Subtract<T>();
-				scalarDiv = new functions::scalar::ops::Divide<T>();
-			} else {
-				sub = new functions::broadcast::ops::Subtract<T>();
-				div = new functions::broadcast::ops::Divide<T>();
-			}
-			maxResult = (T *) malloc(sizeof(T) * shape[0]);
-			*/
+
 			maxResult = (T) 0.0;
 		}
 		__syncthreads();
@@ -4483,19 +4419,11 @@ namespace functions {
 		__syncthreads();
 
 		//subtract max of each row
-		if (isVector) {
-			if (threadIdx.x == 0)
-                scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-            __syncthreads();
+    	if (threadIdx.x == 0)
+            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+        __syncthreads();
 
-			scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		} else {
-			 if (threadIdx.x == 0)
-                sub = new(manager->getFactorySpace()) functions::broadcast::ops::Subtract<T>();
-            __syncthreads();
-
-			sub->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-		}
+		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
 
         if (threadIdx.x == 0)
@@ -4515,19 +4443,11 @@ namespace functions {
 		__syncthreads();
 
 		//divide by the sum
-		if (isVector) {
-			if (threadIdx.x == 0)
-                scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-            __syncthreads();
+    	if (threadIdx.x == 0)
+            scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+        __syncthreads();
 
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		} else {
-			if (threadIdx.x == 0)
-                div = new(manager->getFactorySpace())functions::broadcast::ops::Divide<T>();
-            __syncthreads();
-
-			div->transformCuda(result, resultShapeBuffer, &maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, manager, nullptr);
-		}
+		scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
 
 		if (resultEWS >= 1) {
@@ -4775,7 +4695,7 @@ namespace functions {
 				resultShapeBuffer,
 				nullptr,
 				1,
-				1, allocationPointer, reductionPointer, manager, nullptr);
+				1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
 
 		__syncthreads();
 		if(threadIdx.x == 0)
@@ -4988,7 +4908,7 @@ namespace functions {
 					resultShapeBuffer,
 					dimension,
 					dimensionLength,
-					1, allocationPointer, reductionPointer, manager, nullptr);
+					1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
 
 			__syncthreads();
 			if(threadIdx.x == 0) {

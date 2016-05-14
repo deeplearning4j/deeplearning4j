@@ -459,6 +459,8 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
 	if (debug && verbose)
 		printf("D1 opNum:[%i]\n", opNum);
 
@@ -479,7 +481,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 			nullptr, 0,
 			nullptr,
 			1,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -523,6 +525,8 @@ void   NativeOps::execIndexReduceDouble(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
 	if (debug && verbose)
 		printf("D2 opNum:[%i]\n", opNum);
 
@@ -540,7 +544,7 @@ void   NativeOps::execIndexReduceDouble(
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -584,6 +588,8 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
 
 	if (debug && verbose)
 		printf("D3 opNum:[%i]\n", opNum);
@@ -601,7 +607,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 			resultPointer,
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
-			dimensionLength, deviceTADShapeInfo);
+			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1878,6 +1884,8 @@ float   NativeOps::execIndexReduceScalarFloat(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -1896,7 +1904,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 			nullptr, 0,
 			nullptr,
 			1,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1941,6 +1949,8 @@ void   NativeOps::execIndexReduceFloat(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
 	if (debug && verbose)
 		printf("F2 opNum:[%i]\n", opNum);
 
@@ -1962,7 +1972,7 @@ void   NativeOps::execIndexReduceFloat(
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
 			dimensionLength,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2006,6 +2016,7 @@ void   NativeOps::execBroadcastFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
 
 	if (debug && verbose)
@@ -2025,7 +2036,7 @@ void   NativeOps::execBroadcastFloat(
 			resultPointer,
 			resultShapeInfoPointer, shape::rank(hostZShapeInfo),
 			dimensionPointer,
-			dimensionLength, deviceTADShapeInfo);
+			dimensionLength, deviceTADShapeInfo, deviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3931,7 +3942,8 @@ void NativeOps::initializeDevicesAndFunctions() {
  */
 Nd4jPointer NativeOps::mallocHost(long memorySize, int flags) {
 	Nd4jPointer pointer;
-	cudaError_t res = cudaHostAlloc((void **)&pointer, memorySize, cudaHostAllocMapped |cudaHostAllocPortable );
+	// cudaHostAllocMapped |cudaHostAllocPortable
+	cudaError_t res = cudaHostAlloc((void **)&pointer, memorySize, cudaHostAllocDefault);
 	if (res != 0)
 		pointer = 0L;
 	return pointer;
