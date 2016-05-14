@@ -128,6 +128,7 @@ class UnifiedSharedMemory{
 };
 // This is the un-specialized struct.  Note that we prevent instantiation of this
 // struct by putting an undefined symbol in the function body so it won't compile.
+/*
 template<typename T>
 struct SharedMemory {
 	// Ensure that we won't compile any un-specialized types
@@ -150,11 +151,11 @@ struct SharedMemory {
 		return nullptr;
 	}
 };
-
+*/
 // Following are the specializations for the following types.
 // int, uint, char, uchar, short, ushort, long, ulong, bool, float, and double
 // One could also specialize it for user-defined types.
-
+/*
 template<>
 struct SharedMemory<int> {
 	__device__ int *getPointer() {
@@ -257,6 +258,6 @@ struct SharedMemory<double> {
 		return s_double55;
 	}
 };
-
+*/
 #endif //_SHAREDMEM_H_
 #endif

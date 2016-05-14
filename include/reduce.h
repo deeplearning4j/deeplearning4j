@@ -1868,20 +1868,21 @@ __device__ void reduceGeneric6D(
 
     __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
 
-    __shared__ UnifiedSharedMemory *manager;
+
     extern __shared__ unsigned char shmem[];
+    __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
-        manager = new UnifiedSharedMemory((int *) shmem);
-//        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), 16, shape::rank(xShapeInfo));
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), 16, shape::rank(xShapeInfo));
 
-        //manager->getFactorySpace()
-//        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new functions::reduce::ReduceOpFactory<T>();
-    //    reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+        //
+        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
+        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
     }
     __syncthreads();
 
-    /*
+
     reduceFunctionToInvoke->transformCuda6D(
             dx,
             xShapeInfo,
@@ -1891,7 +1892,7 @@ __device__ void reduceGeneric6D(
             dimension,
             dimensionLength,
             reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
-            */
+
 }
 
 /**

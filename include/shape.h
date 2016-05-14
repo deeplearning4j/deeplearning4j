@@ -1790,7 +1790,7 @@ namespace shape {
 #ifdef __CUDACC__
             int *ret;
             if (ptrManager != nullptr) {
-                ret = (int *) ((UnifiedSharedMemory<float> *) ptrManager)->getSharedReductionBuffer();
+                ret = (int *) ((UnifiedSharedMemory *) ptrManager)->getSharedReductionBuffer();
             }
             ret = new int[shape::shapeInfoLength(rank)];
 
