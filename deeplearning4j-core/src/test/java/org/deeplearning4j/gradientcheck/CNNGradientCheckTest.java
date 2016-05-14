@@ -286,7 +286,6 @@ public class CNNGradientCheckTest {
         int[] minibatchSizes = {1,2,5};
         int width = 5;
         int height = 5;
-//        int inputDepth = 2;
         int[] inputDepths = {1,2,4};
 
         String[] activations = {"sigmoid","tanh"};
@@ -305,6 +304,7 @@ public class CNNGradientCheckTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .seed(12345)
                                 .regularization(false)
                                 .learningRate(1.0)
                                 .updater(Updater.SGD)
