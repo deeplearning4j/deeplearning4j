@@ -60,7 +60,7 @@ namespace functions {
 			T *dy,
 			T *params,
 			T *result,
-			int *indexes, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
+			int *indexes, int *allocationBuffer, UnifiedSharedMemory *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -87,7 +87,7 @@ namespace functions {
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result, int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
+			T *result, int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager) {
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -157,7 +157,7 @@ namespace functions {
 			T *dy,
 			int incy,
 			T *params,
-			T *result,int resultStride, int *allocationBuffer, UnifiedSharedMemory<T> *manager) {
+			T *result,int resultStride, int *allocationBuffer, UnifiedSharedMemory *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex i = tid;
@@ -1177,12 +1177,12 @@ __device__ void scalarGeneric(
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
 
 		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
 		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
@@ -1235,12 +1235,12 @@ __device__ void scalarGenericIndexes(
     __shared__ functions::scalar::ScalarTransform<T> *op;
     __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
-    __shared__ UnifiedSharedMemory<T> *manager;
+    __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
 
         scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
         op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
@@ -1303,12 +1303,12 @@ __device__ void scalarGeneric(
 	__shared__ functions::scalar::ScalarTransform<T> *op;
 	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
 
 		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
 		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());

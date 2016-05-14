@@ -174,12 +174,12 @@ namespace functions {
 					T *extraParams,
 					T *result,
 					int *resultShapeInfo,
-					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 				Nd4jIndex n = shape::length(xShapeInfo);
 				int rank = shape::rank(xShapeInfo);
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
-				volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
+				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T startingVal = this->startingValue(dx);
 
 
@@ -236,13 +236,13 @@ namespace functions {
 					int *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 
 				if (threadIdx.x == 0)
 					printf("Going for scalar reduce 3");
 
 //		SharedMemory <T> val;
-				volatile T *sPartials = manager->getSharedReductionBuffer(); // val.getPointer();
+				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				T startingVal = this->startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
@@ -290,7 +290,7 @@ namespace functions {
 					int n = shape::length(xShapeInfo);
 
 					//SharedMemory <T> val;
-					volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
+					volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 
 
 					Nd4jIndex length = shape::length(xShapeInfo);
@@ -362,7 +362,7 @@ namespace functions {
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
-					int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+					int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 				/**
                  * Gpu information for the problem
                  */
@@ -374,7 +374,7 @@ namespace functions {
 				__shared__ int yElementWiseStride;
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
-				volatile T *sPartials = manager->getSharedReductionBuffer(); //val.getPointer();
+				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T init = this->startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
@@ -1518,12 +1518,12 @@ __inline__ __device__ void reduce3NoElementWiseStrideGeneric(
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
@@ -1623,12 +1623,12 @@ __device__ void reduce3Generic(
 	__shared__ functions::reduce3::Reduce3<T> * op;
 	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
 		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
 		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());

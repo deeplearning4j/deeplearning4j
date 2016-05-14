@@ -590,7 +590,7 @@ struct SharedSummaryStatsData<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 
 
 		/**
@@ -1433,12 +1433,12 @@ __device__ void summaryStatsReduceGeneric(
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD), xRank);
 
 		newOpFactory = new(manager->getFactorySpace()) functions::summarystats::SummaryStatsReduceOpFactory<T>();
 		indexReduce = newOpFactory->getOp(op,biasCorrected, manager->getFunctionSpace());

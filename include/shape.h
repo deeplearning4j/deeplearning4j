@@ -139,7 +139,7 @@ namespace shape {
 
 #ifdef __CUDACC__
     template <typename T>
-    __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager);
+    __device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory *manager);
 
 
     __device__ inline int *cuMalloc(int *buffer, long size);
@@ -1457,7 +1457,7 @@ namespace shape {
         int *leftOverIndexes;
         int *sub;
         if (ptrManager != nullptr) {
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+            UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
             ret = manager->getTempRankBuffer1();
             tadShape = manager->getTempRankBuffer2();
             leftOverIndexes = manager->getTempRankBuffer3();
@@ -1701,11 +1701,17 @@ namespace shape {
 #ifdef __CUDACC__
 
             if (ptrManager != nullptr) {
-                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
+                UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
                 ret = manager->getTempRankBuffer1();
                 tadShape = manager->getTempRankBuffer2();
                 leftOverIndexes = manager->getTempRankBuffer3();
                 sub = manager->getTempRankBuffer4();
+            } else {
+                ret = new int[rank];
+                //shape of the tad
+                leftOverIndexes = new int[leftOverIndexLen];
+                sub = new int[rank];
+                tadShape = new int[leftOverIndexLen];
             }
 #else
             ret = new int[rank];
@@ -2198,7 +2204,7 @@ namespace shape {
 
 #ifdef __CUDACC__
     template <typename T>
-__device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory<T> *manager) {
+__device__ inline int *cuMalloc(int *buffer, long size, UnifiedSharedMemory *manager) {
     // if we go for 3 dimensions coord space or below - just use shared memory for that
     if (size <= MAX_COORD * 4) {
         int *ptr = new int[size / 4];//manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);

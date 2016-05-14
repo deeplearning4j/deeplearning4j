@@ -50,7 +50,7 @@
 //      ...
 //   }
 //****************************************************************************
-template<typename T>
+
 class UnifiedSharedMemory{
     // we accept whole buffer at once
     protected:
@@ -60,7 +60,7 @@ class UnifiedSharedMemory{
     int *tBuffer2;
     int *tBuffer3;
     int *tBuffer4;
-    T   *tShared;
+    int *tShared;
 
     short unifiedSize;
     short factorySize;
@@ -69,11 +69,6 @@ class UnifiedSharedMemory{
 
 
     public:
-    __device__ UnifiedSharedMemory() {
-        extern __shared__ int shMem[];
-        sharedMemory = shMem;
-    }
-
     __device__ UnifiedSharedMemory(int *shMem) {
         sharedMemory = shMem;
     }
@@ -88,7 +83,7 @@ class UnifiedSharedMemory{
         this->tBuffer2 = this->tBuffer1 + xRank;
         this->tBuffer3 = this->tBuffer2 + xRank;
         this->tBuffer4 = this->tBuffer3 + xRank;
-        this->tShared = (T *) (this->tBuffer4 + xRank);
+        this->tShared =  (this->tBuffer4 + xRank);
 
         //printf("Creating USM<T> -> seflSize: [%i], factorySize: [%i], functionSize: [%i], tadSize: [%i], totalOffset: [%i]\n", this->unifiedSize, this->factorySize, this->functionSize, this->tadSize, this->allocationOffset);
     }
@@ -127,7 +122,7 @@ class UnifiedSharedMemory{
         return this->tBuffer4;
     }
 
-    __device__ __host__ inline T * getSharedReductionBuffer() {
+    __device__ __host__ inline int * getSharedReductionBuffer() {
         return this->tShared;
     }
 };

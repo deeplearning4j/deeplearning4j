@@ -233,7 +233,7 @@ struct SharedIndexValue<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -1170,12 +1170,12 @@ __device__ void indexReduceGeneric(
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*

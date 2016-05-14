@@ -895,6 +895,7 @@ void   NativeOps::execReduceDouble(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D8 opNum:[%i]\n", opNum);
@@ -916,7 +917,7 @@ void   NativeOps::execReduceDouble(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 		reduceDouble6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
@@ -927,7 +928,7 @@ void   NativeOps::execReduceDouble(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 				opNum,
@@ -938,7 +939,7 @@ void   NativeOps::execReduceDouble(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	}
 
 	if (debug)
@@ -2328,6 +2329,7 @@ void   NativeOps::execReduceFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
+	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("F8 opNum:[%i]\n", opNum);
@@ -2365,7 +2367,7 @@ void   NativeOps::execReduceFloat(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 		reduceFloat6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 						opNum,
@@ -2376,7 +2378,7 @@ void   NativeOps::execReduceFloat(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	} else {
 		reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 						opNum,
@@ -2387,7 +2389,7 @@ void   NativeOps::execReduceFloat(
 						resultShapeInfoPointer,
 						dimensionPointer,
 						dimensionLength,
-						reductionPointer, deviceTADShapeInfo);
+						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 	}
 
 
@@ -3361,18 +3363,18 @@ __device__ void concatKernelGeneric(int dimension,
 									int *resultShapeInfo) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
-	__shared__ UnifiedSharedMemory<T> *managerInput;
+	__shared__ UnifiedSharedMemory *manager;
+	__shared__ UnifiedSharedMemory *managerInput;
 
 	int zRank = shape::rank(resultShapeInfo);
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD), zRank + 3);
+		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+		manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), zRank + 3);
 
-		managerInput = new((unsigned char *) manager->getSharedReductionBuffer()) UnifiedSharedMemory<T>((int *) manager->getSharedReductionBuffer());
-		managerInput->init(sizeof(UnifiedSharedMemory<T>), 8, 8, sizeof(shape::TAD), zRank + 3);
+		managerInput = new((unsigned char *) manager->getSharedReductionBuffer()) UnifiedSharedMemory((int *) manager->getSharedReductionBuffer());
+		managerInput->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), zRank + 3);
 	}
 	__syncthreads();
 
@@ -3592,12 +3594,12 @@ __device__ void flattenKernelGeneric(int dOffset,
 					T *input,
 					int *inputShapeInfo, int *allocationPointer) {
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory<T>();
-		manager->init(sizeof(UnifiedSharedMemory<T>), 4, 4, sizeof(shape::TAD), 2);
+		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+		manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
 	}
 	__syncthreads();
 
@@ -4244,10 +4246,10 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
-	//tad->createOffsets();
+	tad->createOffsets();
 
 	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
-	//std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
+	std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
 /*
 	shape::printShapeInfoLinear(hostXShapeInfo);
 	shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);

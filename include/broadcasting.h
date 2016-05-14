@@ -73,7 +73,7 @@ namespace functions {
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
@@ -736,12 +736,12 @@ __device__ void broadcastGeneric(
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
