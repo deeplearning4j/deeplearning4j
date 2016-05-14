@@ -25,16 +25,11 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.Dropout;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -100,82 +95,79 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Epsilons in shape: [miniBatch, depth, outH, outW]
         //Epsilons out shape: [miniBatch, depth, inH, inW]
 
+        //Two possibilities here for the epsilons:
+        //(a) Epsilons come from a dense/output layer above, with c order and strides [depth*H*W, H*W, W, 1]
+        //(b) Epsilons come from CNN layer above, with c order and strides [H*W, depth*H*W, W, 1] (i.e., due to permute)
+
+        //We want to reshape epsilons to 1d here, but to do this without a copy: we end up with different orders of
+        // element in the buffer, for the "dense above" and "cnn above" cases.
+        //Fortunately, we can just permute things when we do the im2col reshaping; then, the order of the rows in
+        // col2d will match the order of the 1d epsilons...
+        //With the 1d epsilons order matching the rows order for the 2d im2col: we can just do a muliColumnVector op,
+        // instead of a slower broadcast muli op
+
+        boolean cOrderStrides = false;
+        if(epsilon.ordering() != 'c'){
+            epsilon = epsilon.dup('c');
+            cOrderStrides = true;
+        }
+        if(!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)){
+            cOrderStrides = true;
+        } else if(!Arrays.equals(new int[]{outH*outW, depth*outH*outW, outW, 1}, epsilon.stride())){
+            //Unexpected/unusual strides, not either (a) or (b) cases above
+            epsilon = epsilon.dup('c');
+            cOrderStrides = true;
+        }
+
+        INDArray col6d;
+        INDArray col6dPermuted;
+        INDArray epsilon1d;
+        if(cOrderStrides){
+            //"Dense/Output layer above strides... i.e., standard c-order strides
+            col6d = Nd4j.create(new int[]{miniBatch,depth,outH,outW,kernel[0],kernel[1]},'c');
+            col6dPermuted = col6d.permute(0,1,4,5,2,3);
+            epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1);  //zero copy reshape
+        } else {
+            //"CNN layer above" strides...
+            col6d = Nd4j.create(new int[]{depth,miniBatch,outH,outW,kernel[0],kernel[1]},'c');
+            col6dPermuted = col6d.permute(1,0,4,5,2,3);
+
+            INDArray epsilonTemp = epsilon.permute(1,0,2,3);
+            epsilon1d = epsilonTemp.reshape('c', new int[]{ArrayUtil.prod(epsilon.length()),1} );   //Should be a zero-copy reshape always
+        }
+
+        INDArray col2d = col6d.reshape('c',miniBatch*depth*outH*outW,kernel[0]*kernel[1]);
+
+
         switch(layerConf().getPoolingType()) {
             case MAX:
-                //Two possibilities here for the epsilons:
-                //(a) Epsilons come from a dense/output layer above, with c order and strides [depth*H*W, H*W, W, 1]
-                //(b) Epsilons come from CNN layer above, with c order and strides [H*W, depth*H*W, W, 1] (i.e., due to permute)
-
-                //We want to reshape epsilons to 1d here, but to do this without a copy: we end up with different orders of
-                // element in the buffer, for the "dense above" and "cnn above" cases.
-                //Fortunately, we can just permute things when we do the im2col reshaping; then, the order of the rows in
-                // col2d will match the order of the 1d epsilons...
-                //With the 1d epsilons order matching the rows order for the 2d im2col: we can just do a muliColumnVector op,
-                // instead of a slower broadcast muli op
-
-                boolean cOrderStrides = false;
-                if(epsilon.ordering() != 'c'){
-                    epsilon = epsilon.dup('c');
-                    cOrderStrides = true;
-                }
-                if(!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)){
-                    cOrderStrides = true;
-                } else if(!Arrays.equals(new int[]{outH*outW, depth*outH*outW, outW, 1}, epsilon.stride())){
-                    //Unexpected/unusual strides, not either (a) or (b) cases above
-                    epsilon = epsilon.dup('c');
-                    cOrderStrides = true;
-                }
-
-                INDArray col;
-                INDArray col2;
-                INDArray epsilon1d;
-                if(cOrderStrides){
-                    //"Dense/Output layer above strides... i.e., standard c-order strides
-                    col = Nd4j.create(new int[]{miniBatch,depth,outH,outW,kernel[0],kernel[1]},'c');
-                    col2 = col.permute(0,1,4,5,2,3);
-                    epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1);  //zero copy reshape
-                } else {
-                    //"CNN layer above" strides...
-                    col = Nd4j.create(new int[]{depth,miniBatch,outH,outW,kernel[0],kernel[1]},'c');
-                    col2 = col.permute(1,0,4,5,2,3);
-
-                    INDArray epsilonTemp = epsilon.permute(1,0,2,3);
-                    epsilon1d = epsilonTemp.reshape('c', new int[]{ArrayUtil.prod(epsilon.length()),1} );   //Should be a zero-copy reshape always
-                }
-
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col2);
-                INDArray col2d = col.reshape('c',miniBatch*depth*outH*outW,kernel[0]*kernel[1]);
-
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
                 isMax.muliColumnVector(epsilon1d);
-
-                //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
-                //Assuming the layer below is a CNN layer (very likely) we want [H*W, depth*H*W, W, 1] instead of the standard
-                // c-order [depth*H*W, H*W, W, 1] strides
-                //To achieve this: [depth, miniBatch, H, W] in c order, then permute to [miniBatch, depth, H, W]
-                //This gives us proper strides of 1 on the muli...
-                INDArray tempEpsilon = Nd4j.create(new int[]{depth,miniBatch,inH, inW},'c');
-                INDArray outEpsilon = tempEpsilon.permute(1,0,2,3);
-                Convolution.col2im(col2, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth);
-                return new Pair<>(retGradient,outEpsilon);
-
+                break;
             case AVG:
-                //compute reverse average error
-                retE = epsilon.get(
-                        NDArrayIndex.all()
-                        , NDArrayIndex.all()
-                        , NDArrayIndex.newAxis()
-                        , NDArrayIndex.newAxis());
-                reshapeEpsilon = Nd4j.tile(retE,1,1,layerConf().getKernelSize()[0],layerConf().getKernelSize()[1],1,1);
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon, layerConf().getStride(), layerConf().getPadding(), inputHeight, inputWidth);
-                reshapeEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-
-                return new Pair<>(retGradient, reshapeEpsilon);
+                //TODO: We could further optimize this by creating an uninitialized array, and doing a 'putiRowVector' operation
+                // instead of a zero initialization + an addiRowVector op
+                col2d.addiRowVector(epsilon1d);
+                break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Unsupported pooling type");
         }
+
+        //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
+        //Assuming the layer below is a CNN layer (very likely) we want [H*W, depth*H*W, W, 1] instead of the standard
+        // c-order [depth*H*W, H*W, W, 1] strides
+        //To achieve this: [depth, miniBatch, H, W] in c order, then permute to [miniBatch, depth, H, W]
+        //This gives us proper strides of 1 on the muli...
+        INDArray tempEpsilon = Nd4j.create(new int[]{depth,miniBatch,inH, inW},'c');
+        INDArray outEpsilon = tempEpsilon.permute(1,0,2,3);
+        Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth);
+
+        if(layerConf().getPoolingType() == org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType.AVG)
+            outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
+        return new Pair<>(retGradient,outEpsilon);
     }
 
 
