@@ -53,21 +53,23 @@ public abstract class BaseOp implements Op {
         if(extraArgs != null) {
             DataBuffer retBuff;
             if(x.data().dataType() == DataBuffer.Type.FLOAT) {
-                retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
+                float extraz[] = new float[extraArgs.length];
                 for(int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
                     float val = arg.floatValue();
-                    retBuff.put(i,val);
+                    extraz[i] = val;
                 }
+                retBuff = Nd4j.createBuffer(extraz);
                 return retBuff;
             }
             else {
-                retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
+                double extraz[] = new double[extraArgs.length];
                 for(int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
                     double val = arg.doubleValue();
-                    retBuff.put(i, val);
+                    extraz[i] = val;
                 }
+                retBuff = Nd4j.createBuffer(extraz);
                 return retBuff;
             }
         }
