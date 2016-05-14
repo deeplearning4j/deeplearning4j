@@ -329,7 +329,7 @@ namespace functions {
                 }
                 __syncthreads();
 
-                int xCoord[6];
+                int xCoord[3];
 
                 for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
                     if (threadIdx.x == 0)

@@ -4234,17 +4234,20 @@ void NativeOps::concatDouble(
 /**
  * This method saves
  */
-void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
+void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer, Nd4jPointer offsetsBuffer) {
 	int *hostXShapeInfo = reinterpret_cast<int *>(xShapeInfo);
 	int *dimensionPointer = reinterpret_cast<int *>(dimension);
 	int *target = reinterpret_cast<int *>(targetBuffer);
+	int *offsets = reinterpret_cast<int *>(offsetsBuffer);
 
 	shape::TAD *tad = new shape::TAD();
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
+	tad->createOffsets();
 
-	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * 4);
+	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
+	std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
 /*
 	shape::printShapeInfoLinear(hostXShapeInfo);
 	shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);

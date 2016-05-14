@@ -2066,7 +2066,7 @@ void NativeOps::setGridLimit(int gridSize) {
     // no-op
 }
 
-void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer) {
+void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer, Nd4jPointer offsetsBuffer) {
     // TODO: add impl here
 }
 
