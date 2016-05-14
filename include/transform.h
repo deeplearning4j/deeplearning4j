@@ -3233,21 +3233,16 @@ namespace functions {
 				for (int j = 0; j < kernelWidth; ++j) {
 					int h_im = h_offset + i;
 					int w_im = w_offset + j;
-                        if (resultOrder == 'c') {
-                    		*data_col_ptr = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
-                        }
-                        else {
-                        	int i_f = 0;
-							int i_c_temp = i_c;
-                        	for (int dim=5;dim >= 0;dim--)
-                                {
-                                        i_f += ( i_c_temp % outShape[dim] )  * outStride[dim];
-                                        i_c_temp = i_c_temp / outShape[dim];
-                                }
-							result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
-                        }
-						data_col_ptr += height_col * width_col;
-						i_c += height_col * width_col;
+                    int i_f = 0;
+					int i_c_temp = i_c;
+                    for (int dim=5;dim >= 0;dim--)
+                       {
+                               i_f += ( i_c_temp % outShape[dim] )  * outStride[dim];
+                               i_c_temp = i_c_temp / outShape[dim];
+                       }
+					result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+					data_col_ptr += height_col * width_col;
+					i_c += height_col * width_col;
 				}
 			}
 		}
@@ -3577,19 +3572,14 @@ namespace functions {
 			        val += dx[data_col_index];
       			}
 		    }
-			if (resultOrder == 'c') {
-			result[i] += val;
-			}
-			else {
-        		int i_f = 0;
-        		int i_c = i;
-        		for (int dim=3;dim >= 0;dim--)
-            			{
-                			i_f += ( i_c % outShape[dim] )  * outStride[dim];
-                			i_c = i_c / outShape[dim];
-            			}
+        int i_f = 0;
+        int i_c = i;
+        for (int dim=3;dim >= 0;dim--)
+        		{
+        			i_f += ( i_c % outShape[dim] )  * outStride[dim];
+        			i_c = i_c / outShape[dim];
+        		}
 			result[i_f] += val;
-			}
 		}
 	}
 #endif
