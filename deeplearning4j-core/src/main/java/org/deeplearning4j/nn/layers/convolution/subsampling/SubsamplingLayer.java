@@ -195,18 +195,22 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray col2 = col.permute(0,1,4,5,2,3);
         Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col2);
 
-        //Reshape to 5d; should be zero-copy reshape due to permute above
-        INDArray col5d = col.reshape('c',miniBatch,inDepth,outH,outW,kernel[0]*kernel[1]);
+        //Reshape to 2d; should be zero-copy reshape due to permute above
+        INDArray col2d = col.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
 
+        INDArray reduced;
         switch(layerConf().getPoolingType()) {
             case AVG:
-                return col5d.mean(4);
+                reduced = col2d.mean(1);
+                break;
             case MAX:
-                return col5d.max(4);
+                reduced = col2d.max(1);
+                break;
             case NONE:
                 return input;
             default: throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType());
         }
+        return reduced.reshape('c',miniBatch,inDepth,outH,outW);
     }
 
     @Override
