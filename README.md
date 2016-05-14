@@ -95,3 +95,30 @@ See windows.md
                ./buildnativeoperations.sh -c cuda
 
 
+### Linking with MKL
+
+We can link with MKL either at build time, or at runtime with binaries initially linked with another BLAS implementation such as OpenBLAS. To build against MKL, simply add the path containing `libmkl_rt.so` (or `mkl_rt.dll` on Windows), say `/path/to/intel64/lib/`, to the `LD_LIBRARY_PATH` environment variable on Linux (or `PATH` on Windows) and build like before. On Linux though, to make sure it uses the correct version of OpenMP, we also might need to set these environment variables:
+
+```bash
+export MKL_THREADING_LAYER=GNU
+export LD_PRELOAD=/lib64/libgomp.so.1
+```
+
+When libnd4j cannot be rebuilt, we can use the MKL libraries after the facts and get them loaded instead of OpenBLAS at runtime, but things are a bit trickier. Please additionally follow the instructions below.
+
+1. Make sure that files such as `/lib64/libopenblas.so.0` and `/lib64/libblas.so.3` are not available (or appear after in the `PATH` on Windows), or they will get loaded by libnd4j by their absolute paths, before anything else.
+
+2. Inside `/path/to/intel64/lib/`, create a symbolic link or copy of `libmkl_rt.so` (or `mkl_rt.dll` on Windows) to the name that libnd4j expect to load, for example:
+
+    ```bash
+    ln -s libmkl_rt.so libopenblas.so.0
+    ln -s libmkl_rt.so libblas.so.3
+    ```
+
+    ```cmd
+    copy mkl_rt.dll libopenblas.dll
+    copy mkl_rt.dll libblas3.dll
+    ```
+
+3. Finally, add `/path/to/intel64/lib/` to the `LD_LIBRARY_PATH` environment variable (or early in the `PATH` on Windows) and run your Java application as usual.
+
