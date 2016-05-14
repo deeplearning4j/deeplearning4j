@@ -1781,7 +1781,16 @@ namespace shape {
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
             int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
+#ifdef __CUDACC__
+            int *ret;
+            if (ptrManager != nullptr) {
+                ret = (int *) ((UnifiedSharedMemory<float> *) ptrManager)->getSharedReductionBuffer();
+            }
+            ret = new int[shape::shapeInfoLength(rank)];
+
+#else
             int *ret = new int[shape::shapeInfoLength(rank)];
+#endif
 
 
             //set the rank
@@ -2030,7 +2039,7 @@ namespace shape {
                 //captures intermediary result from the for loop
                 traceNew(3);
 
-                int *intermediaryResult = new int[MAX_RANK];
+                int intermediaryResult[MAX_RANK];
                 for(int i = 0; i < dimensionLength; i++) {
                     intermediaryResult[i] = (dimension)[i];
                 }
@@ -2107,7 +2116,7 @@ namespace shape {
 
                 //converge when there are no singular dimensions specified in the reduce
                 done = (!oneEncountered && nonOneEncountered) || hitBeginning;
-                delete[] intermediaryResult;
+                //delete[] intermediaryResult;
             }
 
             //nothing changed but need to collapse dimension
@@ -2346,15 +2355,8 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
         traceNew(5);
 
         int *ret = new int[shape::shapeInfoLength(rank)];
-        ret[0] = rank;
-        int *retShape = shape::shapeOf(ret);
-        int *retStride = shape::stride(ret);
-        for(int i = 0;i < rank; i++) {
-            retShape[i] = shape[i];
-            retStride[i] = stride[i];
-        }
 
-        return ret;
+        return createShapeInfo(shape, stride, rank, ret);
     }
 
 #ifdef __CUDACC__
