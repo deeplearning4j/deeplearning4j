@@ -197,7 +197,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
         long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
-        long devTadOffsets = AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context).address();
+        DataBuffer offsets = tadBuffers.getSecond();
+        long devTadOffsets = offsets == null ? 0 :AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
         long x = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
@@ -765,7 +766,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
         long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
-        long devTadOffsets = AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context).address();
+        DataBuffer offsets = tadBuffers.getSecond();
+        long devTadOffsets = offsets == null ? 0 :AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
