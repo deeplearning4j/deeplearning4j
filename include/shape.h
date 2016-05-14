@@ -1781,7 +1781,7 @@ namespace shape {
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
             int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
-            int ret = new int[shape::shapeInfoLength(rank)];
+            int *ret = new int[shape::shapeInfoLength(rank)];
 
 
             //set the rank
