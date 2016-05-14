@@ -20,6 +20,10 @@ public class Im2col extends BaseTransformOp {
     }
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll) {
+        this(x,kh,kw,sy,sx,ph,pw,coverAll,getNewOutputArray(x,kh,kw,sy,sx,ph,pw,coverAll));
+    }
+
+    public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll, INDArray z) {
         super(x);
         this.kh = kh;
         this.kw = kw;
@@ -28,9 +32,8 @@ public class Im2col extends BaseTransformOp {
         this.ph = ph;
         this.pw = pw;
         this.coverAll = coverAll;
-        this.z = getNewOutputArray(x,kh,kw,sy,sx,ph,pw,coverAll);
+        this.z = z;
         extraArgs = this.extraArgs();
-
     }
 
     @Override
@@ -53,7 +56,7 @@ public class Im2col extends BaseTransformOp {
         return new Object[] {kw,kh,sx,sy,pw,ph,coverAll ? 1.0 : 0.0};
     }
 
-    private  INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
+    private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
                                         int padHeight, int padWidth, boolean coverAll) {
         //number of images
         int n = img.size(0);

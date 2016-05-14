@@ -80,10 +80,17 @@ public class Convolution {
      * @return
      */
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
-        if(col.rank() < 6)
-            throw new IllegalArgumentException("Col 2 im input array must be at least rank 6");
+        if(col.rank() != 6) throw new IllegalArgumentException("col2im input array must be rank 6");
         Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w);
         return Nd4j.getExecutioner().exec(col2Im).z();
+    }
+
+    public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w) {
+        if(col.rank() != 6) throw new IllegalArgumentException("col2im input array must be rank 6");
+        if(z.rank() != 4) throw new IllegalArgumentException("col2im output array must be rank 4");
+        Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w,z);
+        Nd4j.getExecutioner().exec(col2Im);
+        return z;
     }
 
     /**
@@ -113,6 +120,11 @@ public class Convolution {
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll) {
         Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,coverAll);
+        return Nd4j.getExecutioner().exec(im2col).z();
+    }
+
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll, INDArray out) {
+        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,coverAll,out);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
