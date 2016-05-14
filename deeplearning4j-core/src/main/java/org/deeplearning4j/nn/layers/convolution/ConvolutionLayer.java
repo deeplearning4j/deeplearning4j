@@ -42,11 +42,9 @@ import java.util.Arrays;
 /**
  * Convolution layer
  *
- * @author Adam Gibson
+ * @author Adam Gibson (original impl), Alex Black (current version)
  */
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
-//    protected INDArray col; // vectorized input
-
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -54,9 +52,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
-
-
-//    public void setCol(INDArray col) {this.col = col;}
 
     @Override
     public double calcL2() {
@@ -75,15 +70,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
-    }
-
-    public INDArray calculateDelta(INDArray epsilon) {
-        INDArray z = preOutput(true);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        if(!Arrays.equals(z.shape(),activationDerivative.shape()))
-            throw new IllegalStateException("Shapes must be same");
-        return epsilon.muli(activationDerivative);
-
     }
 
     @Override
@@ -106,91 +92,60 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
-        int[] epsShape = epsilon.shape();
-        if(!Arrays.equals(epsShape,new int[]{miniBatch,outDepth,outH,outW})){
-            throw new RuntimeException("Unexpected input shape");
+        INDArray delta;
+        String afn = conf.getLayer().getActivationFunction();
+
+        if("identity".equals(afn)){
+            delta = epsilon;    //avoid doing .muli with 1s
+        } else {
+            INDArray sigmaPrimeZ = preOutput(true);
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
+            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
         }
 
-        INDArray sigmaPrimeZ = preOutput(true);
-        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                conf.getLayer().getActivationFunction(), sigmaPrimeZ, conf.getExtraArgs()).derivative());
-
-        INDArray delta = epsilon.mul(sigmaPrimeZ);  //Current shape: [miniBatch,outD,outH,outW]
         delta = delta.permute(1,0,2,3); //To shape: [outDepth,miniBatch,outH,outW]
 
-        //TODO implement zero-copy version for this...
-        delta = delta.dup('c');
+        //Note: due to the permute in preOut, and the fact that we essentially do a preOut.muli(epsilon), this reshape
+        // should be zero-copy; only possible exception being sometimes with the "identity" activation case
+        INDArray delta2d = delta.reshape('c',new int[]{outDepth,miniBatch*outH*outW});    //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
 
-        if(delta.ordering() != 'c') throw new RuntimeException();
-        if(!Arrays.equals(delta.shape(), new int[]{outDepth,miniBatch,outH,outW})){
-            throw new RuntimeException("Shape different than expected");
-        }
-
-        INDArray delta2d = Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);   //delta.reshape('c',outDepth,miniBatch*outH*outW);
-        if(delta2d == null) throw new RuntimeException("Could not execute reshape on delta");
-
-
-
-        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW]
-        // given the current im2col implementation
+        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
         INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
 
-        //Shape im2col to 2d:
-        INDArray im2col2d = Shape.newShapeNoCopy(col,new int[]{miniBatch*outH*outW, inDepth*kH*kW},false);
-        if(im2col2d == null) throw new RuntimeException("Could not reshape im2col");
+        //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
+        INDArray im2col2d = col.reshape('c', miniBatch*outH*outW, inDepth*kH*kW);
 
-        //cc->c mmul
-        //Using the fact that AB = (B^T A^T)^T, and output is c order...
-        INDArray weightGrads = Nd4j.gemm(im2col2d,delta2d,true,true).transpose();
-        if(weightGrads.ordering() != 'c') throw new RuntimeException("Output order is not c");
-        if(weightGrads.rows() != outDepth){
-            throw new RuntimeException();
-        }
-        if(weightGrads.columns() != inDepth*kH*kW){
-            throw new RuntimeException();
-        }
+        //Calculate weight gradients, using cc->c mmul
+        //Using the fact that AB = (B^T A^T)^T; output here (post transpose) is in c order, not usual f order
+        INDArray weightGrads2d = Nd4j.gemm(im2col2d,delta2d,true,true).transpose();
+        INDArray weightGrads = Shape.newShapeNoCopy(weightGrads2d,new int[]{outDepth,inDepth,kH,kW},false);
 
-        INDArray wGrads4d = Shape.newShapeNoCopy(weightGrads,new int[]{outDepth,inDepth,kH,kW},false);
-        if(wGrads4d == null) throw new RuntimeException();
+        //Flatten 4d weights to 2d... this again is a zero-copy op (unless weights are not originally in c order for some reason)
+        INDArray wPermuted = weights.permute(3,2,1,0);  //Start with c order weights, switch order to f order
+        INDArray w2d = wPermuted.reshape('f',inDepth*kH*kW, outDepth);
 
-        INDArray wPermuted = weights.permute(3,2,1,0);  //proper
-        if(wPermuted.ordering() != 'f') throw new RuntimeException();
-        INDArray w2d = Shape.newShapeNoCopy(wPermuted, new int[]{inDepth*kH*kW, outDepth},true);//wPermuted.reshape('f',inDepth*kH*kW, outDepth);
-
-//        INDArray wPermuted = weights.permute(1,2,3,0).dup('f'); //wrong
-
-        if(w2d == null) throw new RuntimeException("Could not reshape weights");
+        //Calculate epsilons for layer below, in 2d format (note: this is in 'image patch' format before col2im reduction)
+        //Note: cc -> f mmul here, then reshape to 6d in f order
         INDArray epsNext2d = w2d.mmul(delta2d);
-
-        if(epsNext2d.ordering() != 'f') throw new RuntimeException("Not f out");
-        if(!Arrays.equals(epsNext2d.shape(), new int[]{inDepth*kH*kW, miniBatch*outH*outW})){
-            throw new RuntimeException("Incorrect output shape for eps2d");
-        }
-
         INDArray eps6d = Shape.newShapeNoCopy(epsNext2d,new int[]{kW,kH,inDepth,outW,outH,miniBatch}, true);
-        if(eps6d == null) throw new RuntimeException("Colud not reshape eps2d to eps6d");
-        if(eps6d.ordering() != 'f') throw new RuntimeException();
 
-        //Now, col2im expects input with order: [miniBatch,depth,kH,kW,outH,outW]
-        //currently have [kH,kW,inDepth,outW,outH,miniBatch]
-        // so: permute to this order first...
+        //Calculate epsilonNext by doing im2col reduction.
+        //Current col2im implementation expects input with order: [miniBatch,depth,kH,kW,outH,outW]
+        //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5,2,1,0,4,3);
-
-
-        INDArray epsNext = Convolution.col2im(eps6d, layerConf().getStride(), layerConf().getPadding(), inH, inW);
-        if(epsNext.rank() != 4) throw new RuntimeException();
-        int[] epsNextShape = epsNext.shape();
-        if(!Arrays.equals(epsNextShape, new int[]{miniBatch,inDepth,inH,inW})){
-            throw new RuntimeException("Unexpected shape for epsNext: " + Arrays.toString(epsNextShape) + ", expected = " + Arrays.toString(new int[]{miniBatch,inDepth,inH,inW}));
-        }
+        INDArray epsNextOrig = Nd4j.create(new int[]{inDepth,miniBatch,inH,inW},'c');
+        //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
+        INDArray epsNext = epsNextOrig.permute(1,0,2,3);
+        Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta2d.sum(1));
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, wGrads4d.dup('c'), 'c');
+        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGrads, 'c');
 
         return new Pair<>(retGradient,epsNext);
     }
@@ -220,49 +175,31 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
-        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW]
-        // given the current im2col implementation
+        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(2,3,4,5,1,2)
-        //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows
+        //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
 
         INDArray reshapedCol = Shape.newShapeNoCopy(col,new int[]{miniBatch*outH*outW, inDepth*kH*kW},false);
-        if(reshapedCol == null) throw new RuntimeException("Could not reshape without copy");
 
         //Current order of weights: [depthOut,depthIn,kH,kW], c order
         //Permute to give [kW,kH,depthIn,depthOut], f order
-        //Then zero-copy reshape to give [kW*kH*depthIn, depthOut]
-        if(weights.ordering() != 'c') throw new RuntimeException("Weights not c order");
+        //Reshape to give [kW*kH*depthIn, depthOut]. This should always be zero-copy reshape, unless weights aren't in c order for some reason
         INDArray permutedW = weights.permute(3,2,1,0);
-        if(permutedW.ordering() != 'f') throw new RuntimeException("Not 'f' order after reshaping");
-        INDArray reshapedW = Shape.newShapeNoCopy(permutedW,new int[]{kW*kH*inDepth,outDepth},true);
+        INDArray reshapedW = permutedW.reshape('f',kW*kH*inDepth,outDepth);
 
-        if(reshapedW==null){
-            throw new RuntimeException("Could not reshape weights");
-        }
-        if(reshapedW.ordering() != 'f') throw new RuntimeException("Not 'f' order after reshaping");
+        //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
+        INDArray z = reshapedCol.mmul(reshapedW);
 
-        //Do the MMUL; c and f orders in, f order out
-        INDArray z = Nd4j.gemm(reshapedCol,reshapedW,false,false);
-
-        //Expected output shape: [miniBatch*outH*outW,depthOut]
-        if(z.ordering() != 'f') throw new RuntimeException();
-        if(z.rows() != miniBatch*outH*outW) throw new RuntimeException();
-        if(z.columns() != outDepth) throw new RuntimeException();
-
-        //Add biases, before reshaing. Note that biases are [1,depthOut] and currently z is [...,depthOut] -> addiRowVector
+        //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
         z.addiRowVector(bias);
 
-        //Now, reshape to [miniBatch,outH,outW,depthOut]
+        //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z,new int[]{outW,outH,miniBatch,outDepth},true);
-        if(z == null) throw new RuntimeException();
-
-        //Output activations with shape [miniBath,outDepth,outH,outW];
-        INDArray out = z.permute(2,3,1,0);
-        return out;
+        return z.permute(2,3,1,0);
     }
 
     @Override
