@@ -115,7 +115,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     @Override
     public List<String> getLabels() {
-        return null;
+        return baseIterator.getLabels();
     }
 
     @Override
