@@ -116,18 +116,6 @@ public class CNNProcessorTest {
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
-
-        INDArray check3to2 = convProcessor.backprop(in3D,-1);
-        int val3to2 = check3to2.shape().length;
-        assertTrue(val3to2 == 2);
-        assertEquals(Nd4j.create(20, 5488), check3to2);
-
-
-        INDArray check4to2 = convProcessor.backprop(in4D,-1);
-        int val4to2 = check4to2.shape().length;
-        assertTrue(val4to2 == 2);
-        assertEquals(Nd4j.create(20, 784), check4to2);
-
     }
 
     @Test
@@ -154,11 +142,6 @@ public class CNNProcessorTest {
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
-
-        INDArray check3to2 = convProcessor.preProcess(in3D, -1);
-        int val3to2 = check3to2.shape().length;
-        assertTrue(val3to2 == 2);
-        assertEquals(Nd4j.create(20, 5488), check3to2);
 
         INDArray check4to2 = convProcessor.preProcess(in4D, -1);
         int val4to2 = check4to2.shape().length;

@@ -78,39 +78,30 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     @Override
     // return 2 dimensions
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        int[] otherOutputs = null;
+        if(input.rank() == 2) return input; //Should never happen
 
-        //this.inputHeight = input.size(-2);
-        //this.inputWidth = input.size(-1);
+        //Assume input is standard rank 4 activations out of CNN layer
+        //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
+        if(input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
 
-        if(input.shape().length == 2) {
-            return input;
-        }
-        else if(input.shape().length == 4) {
-            if(input.size(-2) == 1 && input.size(-1) == 1) {
-                return input.reshape(input.size(0), input.size(1));
-            }
-            //this.numChannels = input.size(-3);
-            otherOutputs = new int[3];
-        }
-        else if(input.shape().length == 3) {
-            otherOutputs = new int[2];
-        }
-        System.arraycopy(input.shape(), 1, otherOutputs, 0, otherOutputs.length);
-        int[] shape = new int[] {input.size(0), ArrayUtil.prod(otherOutputs)};
-        if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
-        return input.reshape(shape);
+        int[] inShape = input.shape();  //[miniBatch,depthOut,outH,outW]
+        int[] outShape = new int[]{inShape[0], inShape[1]*inShape[2]*inShape[3]};
+
+        return input.reshape('c',outShape);
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize){
-        if (output.shape().length == 4)
-            return output;
-        if (output.columns() != inputWidth * inputHeight * numChannels)
+    public INDArray backprop(INDArray epsilons, int miniBatchSize){
+        //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
+        if(epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
+
+        if(epsilons.rank() == 4) return epsilons;   //Should never happen
+
+        if(epsilons.columns() != inputWidth * inputHeight * numChannels )
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
-                    + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(output.shape()));
-        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
-        return output.reshape(output.size(0), numChannels, inputHeight, inputWidth);
+                    + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(epsilons.shape()));
+
+        return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
     }
 
     @Override

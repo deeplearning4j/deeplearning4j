@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.params;
 
 
-import com.google.common.primitives.Ints;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,6 +32,7 @@ import java.util.Map;
 
 /**
  * Initialize convolution params.
+ *
  * @author Adam Gibson
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
@@ -42,11 +42,11 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
+        if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
-        params.put(BIAS_KEY,createBias(conf));
-        params.put(WEIGHT_KEY,createWeightMatrix(conf));
+        params.put(BIAS_KEY, createBias(conf));
+        params.put(WEIGHT_KEY, createWeightMatrix(conf));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
@@ -54,7 +54,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-        init(params,conf);
+        init(params, conf);
     }
 
     //1 bias per feature map
@@ -67,23 +67,20 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-        /**
-         * Create a 4d weight matrix of:
-         *   (number of kernels, num input channels,
-         kernel height, kernel width)
+        /*
+         Create a 4d weight matrix of:
+           (number of kernels, num input channels, kernel height, kernel width)
+         Note c order is used specifically for the CNN weights, as opposed to f order elsewhere
          Inputs to the convolution layer are:
-         (batch size, num input feature maps,
-         image height, image width)
-
+         (batch size, num input feature maps, image height, image width)
          */
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
         Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
-        return WeightInitUtil.initWeights(
-                Ints.concat(new int[] {layerConf.getNOut(), layerConf.getNIn()}, layerConf.getKernelSize()),
-                layerConf.getWeightInit(),
-                dist);
+        int[] kernel = layerConf.getKernelSize();
+        return WeightInitUtil.initWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]},
+                layerConf.getWeightInit(), dist, 'c');
     }
 
 }
