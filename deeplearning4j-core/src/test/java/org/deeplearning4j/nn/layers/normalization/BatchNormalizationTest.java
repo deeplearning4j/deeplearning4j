@@ -33,31 +33,11 @@ import static org.junit.Assert.*;
 /**
  */
 public class BatchNormalizationTest {
-    protected INDArray dnnInput = Nd4j.create(new double[] {
-            4.,4.,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8.,
-            2.,2.,2.,2.,4.,4.,4.,4.,2.,2.,2.,2.,4.,4.,4.,4.
-    },new int[]{2, 16});
+    protected INDArray dnnInput = Nd4j.linspace(0,31,32).reshape(2,16);
+    protected INDArray dnnEpsilon = Nd4j.linspace(0,31,32).reshape(2,16);
 
-
-    protected INDArray dnnEpsilon = Nd4j.create(new double[] {
-            1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,
-            -1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,
-    },new int[]{2, 16});
-
-    protected INDArray cnnInput = Nd4j.create(new double[] {
-            4.,4.,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8.,4.,4.
-            ,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8,
-            2.,2.,2.,2.,4.,4.,4.,4.,2.,2.,2.,2.,4.,4.,4.,4.,
-            2.,2.,2.,2.,4.,4.,4.,4.,2.,2.,2.,2.,4.,4.,4.,4.
-    },new int[]{2, 2, 4, 4});
-
-
-    protected INDArray cnnEpsilon = Nd4j.create(new double[] {
-            1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,
-            1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,
-            -1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,
-            -1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,
-    },new int[]{2, 2, 4, 4});
+    protected INDArray cnnInput = Nd4j.linspace(0,63,64).reshape(2, 2, 4, 4);
+    protected INDArray cnnEpsilon = Nd4j.linspace(0,63,64).reshape(2, 2, 4, 4);
 
     @Before
     public void doBefore() {
@@ -67,91 +47,171 @@ public class BatchNormalizationTest {
         BatchNormalization bN = new BatchNormalization.Builder().nIn(nIn).nOut(nOut).build();
         NeuralNetConfiguration layerConf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
-        return LayerFactories.getFactory(layerConf).create(layerConf);
+        Layer layer =  LayerFactories.getFactory(layerConf).create(layerConf);
+        return layer;
     }
+
     @Test
     public void testDnnShapeBatchNormForward() {
         Layer layer = setupActivations(2, 16);
+        // Confirm param initial shape before override
+        assertArrayEquals(new int[]{1,16}, layer.getParam("gamma").shape());
+        assertArrayEquals(new int[]{1,16}, layer.getParam("beta").shape());
+        layer.setParam("gamma", Nd4j.linspace(0,15,16));
+        layer.setParam("beta", Nd4j.linspace(0,15,16));
+
+
         INDArray activationsActual = layer.preOutput(dnnInput);
-        INDArray activationsExpected = dnnEpsilon;
+        INDArray activationsExpected = Nd4j.create(new double[] {
+                0.00000000e+00,   7.81248399e-11,   1.56249680e-10,
+                2.34374298e-10,   3.12499360e-10,   3.90624422e-10,
+                4.68748595e-10,   5.46873657e-10,   6.24998719e-10,
+                7.03122893e-10,   7.81248843e-10,   8.59373017e-10,
+                9.37497191e-10,   1.01562314e-09,   1.09374731e-09,
+                1.17187327e-09,   0.00000000e+00,   2.00000000e+00,
+                4.00000000e+00,   6.00000000e+00,   8.00000000e+00,
+                1.00000000e+01,   1.20000000e+01,   1.40000000e+01,
+                1.60000000e+01,   1.80000000e+01,   2.00000000e+01,
+                2.20000000e+01,   2.40000000e+01,   2.60000000e+01,
+                2.80000000e+01,   3.00000000e+01
+        },new int[]{2, 16});
+
         assertEquals(activationsExpected, activationsActual);
         assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
     }
 
-    // TODO test calcs for xhat, activations, gamma, epsilon work with numbers that are not 0 or 1
 
     @Test
     public void testDnnShapeBatchNormBack(){
         Layer layer = setupActivations(2, 16);
+        layer.setParam("gamma", Nd4j.linspace(0,15,16));
+        layer.setParam("beta", Nd4j.linspace(0,15,16));
+
         layer.preOutput(dnnInput);
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
 
         INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[] {
-                -0.00,-0.00,-0.00,-0.00,0.50,0.50,0.50,0.50,-0.00,-0.00,-0.00,-0.00,0.50,0.50,0.50,0.50,
-                2.00,2.00,2.00,2.00,1.50,1.50,1.50,1.50,2.00,2.00,2.00,2.00,1.50,1.50,1.50,1.50
+                0.00000000e+00,  -1.56249680e-10,  -3.12499360e-10,
+                -4.68748595e-10,  -6.24998719e-10,  -7.81248843e-10,
+                -9.37497191e-10,  -1.09374731e-09,  -1.24999744e-09,
+                -1.40624934e-09,  -1.56249413e-09,  -1.71874603e-09,
+                -1.87499438e-09,  -2.03124273e-09,  -2.18749818e-09,
+                -2.34373942e-09,   0.00000000e+00,   1.56249680e-10,
+                3.12499804e-10,   4.68748595e-10,   6.24997831e-10,
+                7.81248843e-10,   9.37497191e-10,   1.09374731e-09,
+                1.24999744e-09,   1.40624579e-09,   1.56249769e-09,
+                1.71874603e-09,   1.87499438e-09,   2.03124983e-09,
+                2.18749818e-09,   2.34374653e-09
+        },new int[]{2, 16});
+
+
+        // short calculation expected output
+        INDArray dnnExpectedEpsilonOutOther = Nd4j.create(new double[] {
+                16.,  15.,  14.,  13.,  12.,  11.,  10.,   9.,   8.,   7.,   6.,
+                5.,   4.,   3.,   2.,   1., -16., -15., -14., -13., -12., -11.,
+                -10.,  -9.,  -8.,  -7.,  -6.,  -5.,  -4.,  -3.,  -2.,  -1.
         },new int[]{2, 16});
 
         INDArray expectedGGamma = Nd4j.create(new double[]
-                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,
+                {
+                    16.,  16.,  16.,  16.,  16.,  16.,  16.,  16.,  16.,  16.,  16.,
+                    16.,  16.,  16.,  16.,  16.
                 }, new int[] {1, 16});
 
         INDArray expectedBeta = Nd4j.create(new double[]
-                { 0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
+                {
+                    16.,  18.,  20.,  22.,  24.,  26.,  28.,  30.,  32.,  34.,  36.,
+                    38.,  40.,  42.,  44.,  46.
                 }, new int[] {1, 16});
+
         // arrays are the same but assert does not see that
         assertEquals(dnnExpectedEpsilonOut, actualOut.getSecond());
         assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
         assertEquals(expectedBeta, actualOut.getFirst().getGradientFor("beta"));
     }
 
-
-    @Test
-    public void testStuff(){
-        INDArray a = Nd4j.rand(2,2);
-        INDArray d = Nd4j.rand(2,1);
-        INDArray b = a.mul(2);
-        INDArray c = a.mul(4);
-
-        a.addiColumnVector(d);
-        a.add(b);
-
-    }
-
     @Test
     public void testCnnShapeBatchNormForward() {
-        Layer layer = setupActivations(2, 2*4*4);
+        Layer layer = setupActivations(2, 2);
+        // Confirm param initial shape before override
+        assertArrayEquals(new int[]{1,2}, layer.getParam("gamma").shape());
+        assertArrayEquals(new int[]{1,2}, layer.getParam("beta").shape());
+
+        layer.setParam("gamma", Nd4j.linspace(2,3,2));
+        layer.setParam("beta", Nd4j.linspace(2,3,2));
         INDArray activationsActual = layer.preOutput(cnnInput);
-        INDArray activationsExpected = cnnEpsilon;
+        INDArray activationsExpected = Nd4j.create(new double[] {
+                3.90625310e-11,   3.90625310e-11,   3.90625310e-11,
+                3.90625310e-11,   3.90625310e-11,   3.90625310e-11,
+                3.90625310e-11,   3.90625310e-11,   3.90625310e-11,
+                3.90625310e-11,   3.90625310e-11,   3.90625310e-11,
+                3.90625310e-11,   3.90625310e-11,   3.90625310e-11,
+                3.90625310e-11,   5.85940185e-11,   5.85940185e-11,
+                5.85940185e-11,   5.85940185e-11,   5.85940185e-11,
+                5.85940185e-11,   5.85940185e-11,   5.85940185e-11,
+                5.85940185e-11,   5.85940185e-11,   5.85940185e-11,
+                5.85940185e-11,   5.85940185e-11,   5.85940185e-11,
+                5.85940185e-11,   5.85940185e-11,   4.00000000e+00,
+                4.00000000e+00,   4.00000000e+00,   4.00000000e+00,
+                4.00000000e+00,   4.00000000e+00,   4.00000000e+00,
+                4.00000000e+00,   4.00000000e+00,   4.00000000e+00,
+                4.00000000e+00,   4.00000000e+00,   4.00000000e+00,
+                4.00000000e+00,   4.00000000e+00,   4.00000000e+00,
+                6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
+                6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
+                6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
+                6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
+                6.00000000e+00,   6.00000000e+00,   6.00000000e+00,
+                6.00000000e+00
+        },new int[]{2,2,4,4});
+
         assertEquals(activationsExpected, activationsActual);
         assertArrayEquals(activationsExpected.shape(), activationsActual.shape());
     }
 
     @Test
     public void testCnnShapeBatchNormBack(){
-        Layer layer = setupActivations(2, 2*4*4);
+        Layer layer = setupActivations(2, 2);
+        layer.setParam("gamma", Nd4j.linspace(2,3,2));
+        layer.setParam("beta", Nd4j.linspace(2,3,2));
         layer.preOutput(cnnInput);
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(cnnEpsilon);
 
         INDArray expectedEpsilonOut = Nd4j.create(new double[] {
-                -0. ,  -0. ,  -0. ,  -0. , 0.5, 0.5, 0.5, 0.5,
-                -0. ,  -0. ,  -0. ,  -0. , 0.5, 0.5, 0.5, 0.5,
-                -0. ,  -0. ,  -0. ,  -0. , 0.5, 0.5, 0.5, 0.5,
-                -0. ,  -0. ,  -0. ,  -0. , 0.5, 0.5, 0.5, 0.5,
-                2. , 2. , 2. , 2. , 1.5, 1.5, 1.5, 1.5,
-                2. , 2. , 2. , 2. , 1.5, 1.5, 1.5, 1.5,
-                2. , 2. , 2. , 2. , 1.5, 1.5, 1.5, 1.5,
-                2. , 2. , 2. , 2. , 1.5, 1.5, 1.5, 1.5
+                -7.81250620e-11,  -7.81250620e-11,  -7.81250620e-11,
+                -7.81250620e-11,  -7.81250620e-11,  -7.81250620e-11,
+                -7.81250620e-11,  -7.81250620e-11,  -7.81250620e-11,
+                -7.81250620e-11,  -7.81250620e-11,  -7.81250620e-11,
+                -7.81250620e-11,  -7.81250620e-11,  -7.81250620e-11,
+                -7.81250620e-11,  -1.17187149e-10,  -1.17187149e-10,
+                -1.17187149e-10,  -1.17187149e-10,  -1.17188037e-10,
+                -1.17187149e-10,  -1.17187149e-10,  -1.17187149e-10,
+                -1.17187149e-10,  -1.17187149e-10,  -1.17187149e-10,
+                -1.17188037e-10,  -1.17186261e-10,  -1.17186261e-10,
+                -1.17188037e-10,  -1.17188037e-10,   7.81250620e-11,
+                7.81250620e-11,   7.81246179e-11,   7.81255061e-11,
+                7.81250620e-11,   7.81250620e-11,   7.81246179e-11,
+                7.81255061e-11,   7.81255061e-11,   7.81250620e-11,
+                7.81246179e-11,   7.81246179e-11,   7.81255061e-11,
+                7.81255061e-11,   7.81250620e-11,   7.81246179e-11,
+                1.17187149e-10,   1.17187149e-10,   1.17188037e-10,
+                1.17187149e-10,   1.17188037e-10,   1.17187149e-10,
+                1.17187149e-10,   1.17188037e-10,   1.17187149e-10,
+                1.17188037e-10,   1.17187149e-10,   1.17186261e-10,
+                1.17188037e-10,   1.17188037e-10,   1.17188037e-10,
+                1.17186261e-10
         },new int[]{2, 2, 4, 4});
 
         INDArray expectedGGamma = Nd4j.create(new double[]
-                { 2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,
-                  2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.,2.
-                }, new int[] {1, 32});
+                {
+                        512, 512
+                }, new int[] {1, 2});
 
         INDArray expectedBeta = Nd4j.create(new double[]
-                { 0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
-                  0.,0.,0.,0.,0.,0.,0.,0., 0.,0.,0.,0.,0.,0.,0.,0.,
-                }, new int[] {1, 32});
+                {
+                        752, 1264
+                }, new int[] {1, 2});
+
         // arrays are the same but assert does not see that
         assertEquals(expectedEpsilonOut, actualOut.getSecond());
         assertEquals(expectedGGamma, actualOut.getFirst().getGradientFor("gamma"));
@@ -445,9 +505,9 @@ public class BatchNormalizationTest {
                 .layer(5, new GravesLSTM.Builder().nIn(4).nOut(3)
                         .activation("identity").updater(Updater.NONE).weightInit(WeightInit.XAVIER)
                         .build())
-//                .layer(6, new BatchNormalization.Builder().build())
-                .layer(6, new ActivationLayer.Builder().activation("tanh").build())
-                .layer(7, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
+                .layer(6, new BatchNormalization.Builder().build())
+                .layer(7, new ActivationLayer.Builder().activation("tanh").build())
+                .layer(8, new RnnOutputLayer.Builder().nIn(3).nOut(nClasses)
                         .activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT)
                         .updater(Updater.NONE).build())
                 .cnnInputSize(10, 10, 3)
