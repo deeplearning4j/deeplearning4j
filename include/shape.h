@@ -1406,17 +1406,7 @@ namespace shape {
 
         inline void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out) {
             memcpy(out,shapeBuffer,sizeof(int) * shape::shapeInfoLength(this->rank));
-#ifdef __CUDACC__
-          /*
-            if (ptrManager != nullptr) {
-            UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
-            doPermuteShapeBuffer(this->rank,out,rearrange, manager->getTempRankBuffer6());
-        } else
-        */
-        doPermuteShapeBuffer(this->rank,out,rearrange);
-#else
             doPermuteShapeBuffer(this->rank,out,rearrange);
-#endif
         }
 
 #ifdef __CUDACC__
@@ -1565,17 +1555,8 @@ namespace shape {
             int dimIdx = 0;
             //loop backwards assuming dimension is sorted
 
-#ifdef __CUDACC__
-
-            int *permuteDims;/*
-        if (ptrManager != nullptr) {
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-            permuteDims = manager->getTempRankBuffer5();
-        } else
-        */permuteDims = new int[rank];
-#else
             int *permuteDims = new int[shape::rank(shapeInfo)];
-#endif
+
             for(int i = 0; i < shape::rank(shapeInfo); i++) {
                 bool found = false;
                 for(int j = 0; j < originalDimensionLength; j++) {
@@ -1797,19 +1778,7 @@ namespace shape {
 #endif
         inline int *shapeInfoOnlyShapeAndStride() {
             if(wholeThing) {
-#ifdef __CUDACC__
-                /*
-                if (ptrManager != nullptr) {
-                    UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                    int *ret = manager->getT1ShapeBuffer();
-
-                    return shape::createScalarShapeInfo(ret);
-                } else
-                */
                 return shape::createScalarShapeInfo();
-#else
-                return shape::createScalarShapeInfo();
-#endif
             }
             //ensure tad shapes get setup right for vectors
             if(dimensionLength < 1 && !shape::isVector(shapeInfo))
@@ -1818,19 +1787,15 @@ namespace shape {
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
             int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
-            int *ret;
 #ifdef __CUDACC__
-            /*
+            int *ret;
             if (ptrManager != nullptr) {
-                UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-                ret = manager->getT1ShapeBuffer();
-            }  else if (this->ptrOutput != nullptr) {
-                ret = this->ptrOutput;
-            } else
-            */
+                ret = (int *) ((UnifiedSharedMemory<float> *) ptrManager)->getSharedReductionBuffer();
+            }
             ret = new int[shape::shapeInfoLength(rank)];
+
 #else
-            ret = new int[shape::shapeInfoLength(rank)];
+            int *ret = new int[shape::shapeInfoLength(rank)];
 #endif
 
 
@@ -1848,19 +1813,7 @@ namespace shape {
             else {
                 int *permuteIndexes = this->permuteDims();
 
-#ifdef __CUDACC__
-                int *toPermute;
-                /*
-        if (ptrManager != nullptr) {
-            UnifiedSharedMemory<float> *manager = (UnifiedSharedMemory<float> *) ptrManager;
-            toPermute = manager->getSharedCoordBuffer();
-        }
-        else
-        */
-        toPermute = new int[MAX_RANK];
-#else
                 int *toPermute = new int[MAX_RANK];
-#endif
 
                 this->permuteShapeBufferInPlace(shapeInfo,permuteIndexes,toPermute);
 
@@ -1952,11 +1905,8 @@ namespace shape {
                     shape::copyTo(originalDimensionLength, permutedShape, retShape);
                 }
 
-                if (this->ptrManager == nullptr) {
                     delete[] permuteIndexes;
                     delete[] toPermute;
-                }
-
             }
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
             if(wholeThing)
@@ -1967,7 +1917,6 @@ namespace shape {
 
             // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
             ret[shape::shapeInfoLength(rank) - 3] = 0;
-
 
             return ret;
         }
@@ -2030,20 +1979,8 @@ namespace shape {
                     (dimension)[i] += shape::rank(this->shapeInfo);
             }
 
-#ifdef __CUDACC__
-            /*
-            if (ptrManager != nullptr) {
-            UnifiedSharedMemory<int> *manager = (UnifiedSharedMemory<int> *) ptrManager;
-            this->dimension = manager->getT2ShapeBuffer();
-        } else
-        */
-
-        this->dimension =  new int[dimensionLength];
-        memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
-#else
             this->dimension =  new int[dimensionLength];
             memcpy(this->dimension,this->originalDimension,sizeof(int) * dimensionLength);
-#endif
 
             //we can drop trailing dimensions where it's all singular for example:
             // shape: 4,3,1,2
@@ -2108,7 +2045,7 @@ namespace shape {
                 //captures intermediary result from the for loop
                 traceNew(3);
 
-                int *intermediaryResult = new int[MAX_RANK];
+                int intermediaryResult[MAX_RANK];
                 for(int i = 0; i < dimensionLength; i++) {
                     intermediaryResult[i] = (dimension)[i];
                 }
@@ -2185,7 +2122,7 @@ namespace shape {
 
                 //converge when there are no singular dimensions specified in the reduce
                 done = (!oneEncountered && nonOneEncountered) || hitBeginning;
-                delete[] intermediaryResult;
+                //delete[] intermediaryResult;
             }
 
             //nothing changed but need to collapse dimension
@@ -2424,15 +2361,8 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
         traceNew(5);
 
         int *ret = new int[shape::shapeInfoLength(rank)];
-        ret[0] = rank;
-        int *retShape = shape::shapeOf(ret);
-        int *retStride = shape::stride(ret);
-        for(int i = 0;i < rank; i++) {
-            retShape[i] = shape[i];
-            retStride[i] = stride[i];
-        }
 
-        return ret;
+        return createShapeInfo(shape, stride, rank, ret);
     }
 
 #ifdef __CUDACC__
