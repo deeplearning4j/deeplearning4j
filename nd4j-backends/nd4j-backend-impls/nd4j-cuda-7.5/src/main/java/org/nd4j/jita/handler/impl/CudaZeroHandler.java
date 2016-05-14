@@ -1010,9 +1010,12 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     // sequental device selection for better balance
                     List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
-                    Integer device = devices.get(devPtr.getAndIncrement());
-                    if (devPtr.get() >= devices.size())
-                        devPtr.set(0);
+                    Integer device = null;
+                    if (!configuration.isForcedSingleGPU()) {
+                        device = devices.get(devPtr.getAndIncrement());
+                        if (devPtr.get() >= devices.size())
+                            devPtr.set(0);
+                    } else device = new Integer(0);
 
 
                     devicesAffinity.put(threadId, device);
