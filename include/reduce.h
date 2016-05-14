@@ -135,16 +135,10 @@ namespace functions {
                     int dimensionLength,
                     T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-                __shared__ int resultLength;
-
                 //shared memory space for storing intermediate results
                 T *sPartials = (T *) manager->getSharedReductionBuffer();
 
                 sPartials[threadIdx.x] = this->startingValue(dx);
-
-                if (threadIdx.x == 0)
-                    resultLength = shape::length(resultShapeInfo);
-
 
                 __shared__ int tadLength;
                 __shared__ int tadEWS;
@@ -294,8 +288,6 @@ namespace functions {
                 //shared memory space for storing intermediate results
                 T *sPartials = (T *) manager->getSharedReductionBuffer();
 
-//                __shared__ shape::TAD *tad;
-                __shared__ int resultLength;
                 __shared__ int tadLength;
                 __shared__ int tadEWS;
                 __shared__ int tadRank;
@@ -303,7 +295,6 @@ namespace functions {
                 __shared__ int *tadShape;
                 __shared__ int *tadStride;
                 if (threadIdx.x == 0) {
-                    resultLength = shape::length(resultShapeInfo);
             	    tadLength = shape::length(tadOnlyShapeInfo);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     tadRank = shape::rank(tadOnlyShapeInfo);
@@ -353,7 +344,6 @@ namespace functions {
                 T *sPartials = (T *) manager->getSharedReductionBuffer();
 
 //                __shared__ shape::TAD *tad;
-                __shared__ int resultLength;
                 __shared__ int tadLength;
                 __shared__ int tadEWS;
                 __shared__ int tadRank;
@@ -361,7 +351,6 @@ namespace functions {
                 __shared__ int *tadShape;
                 __shared__ int *tadStride;
                 if (threadIdx.x == 0) {
-                    resultLength = shape::length(resultShapeInfo);
             	    tadLength = shape::length(tadOnlyShapeInfo);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     tadRank = shape::rank(tadOnlyShapeInfo);
