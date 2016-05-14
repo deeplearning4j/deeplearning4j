@@ -177,7 +177,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
-        //to get old order from required order: permute(2,3,4,5,1,2)
+        //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
