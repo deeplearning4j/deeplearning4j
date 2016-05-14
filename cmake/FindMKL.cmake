@@ -1,113 +1,75 @@
-# - Find Intel MKL
-# Find the MKL libraries
-#
-# Options:
-#
-#   MKL_STATAIC       :   use static linking
-#   MKL_MULTI_THREADED:   use multi-threading
-#   MKL_SDL           :   Single Dynamic Library interface
-#
-# This module defines the following variables:
-#
-#   MKL_FOUND            : True if MKL_INCLUDE_DIR are found
-#   MKL_INCLUDE_DIR      : where to find mkl.h, etc.
-#   MKL_INCLUDE_DIRS     : set when MKL_INCLUDE_DIR found
-#   MKL_LIBRARIES        : the library to link against.
+# a simple cmake script to locate Intel Math Kernel Library
 
+# This script looks for two places:
+#	- the environment variable MKLROOT
+#	- the directory /opt/intel/mkl
+
+
+# Stage 1: find the root directory
+
+set(MKLROOT_PATH $ENV{MKLROOT})
+
+if (NOT MKLROOT_PATH)
+    # try to find at /opt/intel/mkl
+
+    if (EXISTS "/opt/intel/mkl")
+        set(MKLROOT_PATH "/opt/intel/mkl")
+    endif (EXISTS "/opt/intel/mkl")
+endif (NOT MKLROOT_PATH)
+
+
+# Stage 2: find include path and libraries
+
+if (MKLROOT_PATH)
+    # root-path found
+
+    set(EXPECT_MKL_INCPATH "${MKLROOT_PATH}/include")
+
+    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+        set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}/lib")
+    endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+
+    set(EXPECT_ICC_LIBPATH "$ENV{ICC_LIBPATH}")
+
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        if (CMAKE_SIZEOF_VOID_P MATCHES 8)
+            set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}/lib/intel64")
+        else (CMAKE_SIZEOF_VOID_P MATCHES 8)
+            set(EXPECT_MKL_LIBPATH "${MKLROOT_PATH}/lib/ia32")
+        endif (CMAKE_SIZEOF_VOID_P MATCHES 8)
+    endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+
+    # set include
+
+    if (IS_DIRECTORY ${EXPECT_MKL_INCPATH})
+        set(MKL_INCLUDE_DIR ${EXPECT_MKL_INCPATH})
+    endif (IS_DIRECTORY ${EXPECT_MKL_INCPATH})
+
+    if (IS_DIRECTORY ${EXPECT_MKL_LIBPATH})
+        set(MKL_LIBRARY_DIR ${EXPECT_MKL_LIBPATH})
+    endif (IS_DIRECTORY ${EXPECT_MKL_LIBPATH})
+
+    # find specific library files
+
+    find_library(LIB_MKL_RT NAMES mkl_rt HINTS ${MKL_LIBRARY_DIR})
+    find_library(LIB_PTHREAD NAMES pthread)
+    #find_library(LIB_IMF NAMES imf HINTS ${MKL_LIBRARY_DIR} ${EXPECT_ICC_LIBPATH})
+
+endif (MKLROOT_PATH)
+
+set(MKL_LIBRARY
+        ${LIB_MKL_RT}
+        ${LIB_PTHREAD})
+
+# deal with QUIET and REQUIRED argument
 
 include(FindPackageHandleStandardArgs)
 
-set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
-set(MKL_ROOT $ENV{MKLROOT} CACHE PATH "Folder contains MKL")
-
-# Find include dir
-find_path(MKL_INCLUDE_DIR mkl.h
-        PATHS ${MKL_ROOT}/include)
-
-# Find include directory
-#  There is no include folder under linux
-if(WIN32)
-    find_path(INTEL_INCLUDE_DIR omp.h
-            PATHS ${INTEL_ROOT}/include)
-    set(MKL_INCLUDE_DIR ${MKL_INCLUDE_DIR} ${INTEL_INCLUDE_DIR})
-endif()
-
-# Find libraries
-
-# Handle suffix
-set(_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
-if(WIN32)
-    if(MKL_STATAIC)
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
-    else()
-        set(CMAKE_FIND_LIBRARY_SUFFIXES _dll.lib)
-    endif()
-else()
-    if(MKL_STATAIC)
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-    else()
-        set(CMAKE_FIND_LIBRARY_SUFFIXES .so)
-    endif()
-endif()
-
-
-# MKL is composed by four layers: Interface, Threading, Computational and RTL
-
-if(MKL_SDL)
-    find_library(MKL_LIBRARY mkl_rt
-            PATHS ${MKL_ROOT}/lib/ia32/)
-
-    set(MKL_MINIMAL_LIBRARY ${MKL_LIBRARY})
-else()
-    ######################### Interface layer #######################
-    if(WIN32)
-        set(MKL_INTERFACE_LIBNAME mkl_intel_c)
-    else()
-        set(MKL_INTERFACE_LIBNAME mkl_intel)
-    endif()
-
-    find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
-            PATHS ${MKL_ROOT}/lib/ia32/)
-
-    ######################## Threading layer ########################
-    if(MKL_MULTI_THREADED)
-        set(MKL_THREADING_LIBNAME mkl_intel_thread)
-    else()
-        set(MKL_THREADING_LIBNAME mkl_sequential)
-    endif()
-
-    find_library(MKL_THREADING_LIBRARY ${MKL_THREADING_LIBNAME}
-            PATHS ${MKL_ROOT}/lib/ia32/)
-
-    ####################### Computational layer #####################
-    find_library(MKL_CORE_LIBRARY mkl_core
-            PATHS ${MKL_ROOT}/lib/ia32/)
-    find_library(MKL_FFT_LIBRARY mkl_cdft_core
-            PATHS ${MKL_ROOT}/lib/ia32/)
-    find_library(MKL_SCALAPACK_LIBRARY mkl_scalapack_core
-            PATHS ${MKL_ROOT}/lib/ia32/)
-
-    ############################ RTL layer ##########################
-    if(WIN32)
-        set(MKL_RTL_LIBNAME libiomp5md)
-    else()
-        set(MKL_RTL_LIBNAME libiomp5)
-    endif()
-    find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
-            PATHS ${INTEL_RTL_ROOT}/lib)
-
-    set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY})
-    set(MKL_MINIMAL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
-endif()
-
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
-
 find_package_handle_standard_args(MKL DEFAULT_MSG
-        MKL_INCLUDE_DIR MKL_LIBRARY MKL_MINIMAL_LIBRARY)
+        MKL_LIBRARY_DIR
+        LIB_MKL_RT
+        LIB_PTHREAD
+        MKL_INCLUDE_DIR)
 
-if(MKL_FOUND)
-    set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
-    set(MKL_LIBRARIES ${MKL_LIBRARY})
-    set(MKL_MINIMAL_LIBRARIES ${MKL_LIBRARY})
-endif()
+mark_as_advanced(LIB_MKL_RT LIB_PTHREAD  MKL_INCLUDE_DIR)
+
