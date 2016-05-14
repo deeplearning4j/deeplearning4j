@@ -33,7 +33,7 @@ public class BasicTADManager implements TADManager {
 
 
             int targetRank = array.rank(); ///Math.max(array.rank() - dimensionLength, 2);
-            int offsetLength = 10;
+            int offsetLength = 1000000;
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
             DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);
@@ -41,8 +41,9 @@ public class BasicTADManager implements TADManager {
             long xShapeInfo = AddressRetriever.retrieveHostAddress(array.shapeInfoDataBuffer());
             long dimensionPointer = AddressRetriever.retrieveHostAddress(Nd4j.createBuffer(dimension));
             long targetPointer = AddressRetriever.retrieveHostAddress(outputBuffer);
+            long offsetsPointer = AddressRetriever.retrieveHostAddress(offsetsBuffer);
 
-            nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimensionLength, targetPointer, offsetLength);
+            nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimensionLength, targetPointer, offsetsPointer);
 
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
 
