@@ -1,6 +1,6 @@
 ---
-title:深度神经网络简介
-layout: default
+title: "深度神经网络简介"
+layout: zh-default
 ---
 
 # Introduction to Deep Neural Networks
@@ -185,14 +185,14 @@ layout: default
 
 以下教程和视频对前馈网络的基本概念进行了简明易懂的介绍，供刚开始了解深度学习的读者参考：
 
-* [受限玻尔兹曼机](../restrictedboltzmannmachine.html)
-* [本征向量、PCA、协方差和熵](../eigenvector.html)
+* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
+* [本征向量、PCA、协方差和熵](../zh-eigenvector)
 * [深度学习和神经网络词汇表](../glossary.html)
-* [卷积网络教程](../convolutionalnets.html)
-* [递归网络和LSTM](../lstm.html)
-* [Word2vec和自然语言处理](../lstm.html)
+* [卷积网络教程](../zh-convolutionalnets)
+* [递归网络和LSTM](../zh-lstm)
+* [Word2vec和自然语言处理](../word2vec)
 * [鸢尾花数据集教程](../iris-flower-dataset-tutorial.html)
-* [Deeplearning4j快速入门](../quickstart.html)
+* [Deeplearning4j快速入门](../zh-quickstart)
 * [神经网络解密](https://www.youtube.com/watch?v=bxe2T-V8XRs)（全系列共七个视频）
 * [11行Python代码实现的神经网络](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [反向传播分步示例](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
