@@ -12,16 +12,16 @@ import java.util.Map;
 
 /**
  * Batch normalization variable init
- *
- * @author Adam Gibson
  */
 
 public class BatchNormalizationParamInitializer implements ParamInitializer {
-    public final static String GAMMA = "gamma"; // equivalent to weights
-    public final static String BETA = DefaultParamInitializer.BIAS_KEY; // equivalent to bias
+    public final static String GAMMA = "gamma";
+    public final static String BETA = "beta";
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
+        // gamma & beta per activation for DNN and per per feature matrix for CNN layers
+        // TODO setup for CNN & RNN
         params.put(GAMMA,createGamma(conf));
         conf.addVariable(GAMMA);
         params.put(BETA, createBeta(conf));
@@ -35,14 +35,14 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     protected INDArray createBeta(NeuralNetConfiguration conf) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getBeta());
+        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), layer.getBeta());
         ret.data().persist();
         return ret;
     }
 
     protected INDArray createGamma(NeuralNetConfiguration conf) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(1, layer.getNOut(), layer.getGamma());
+        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), layer.getGamma());
         ret.data().persist();
         return ret;
     }
