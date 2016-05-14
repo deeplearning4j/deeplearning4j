@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -97,10 +98,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -191,10 +192,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
+
+        long devTadOffsets = AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context).address();
 
         long x = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
@@ -209,7 +212,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 hostYShapeInfo,
                 hostZShapeInfo,
                 hostTadShapeInfo,
-                devTadShapeInfo
+                devTadShapeInfo,
+                devTadOffsets
         };
 
 
@@ -456,10 +460,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long z = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context).address();
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -577,10 +581,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), op.getDimension());
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), op.getDimension());
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -655,10 +659,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if (fdimension == null)
             fdimension = new int[] {0};
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), fdimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), fdimension);
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -756,10 +760,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
-        DataBuffer tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
-        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+        long hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+        long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
+
+        long devTadOffsets = AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -772,7 +778,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 hostYShapeInfo,
                 hostZShapeInfo,
                 hostTadShapeInfo,
-                devTadShapeInfo
+                devTadShapeInfo,
+                devTadOffsets
         };
         long x = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
         long xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context).address();
@@ -1091,25 +1098,25 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostMaxTadShapeInfo = 0;
         long devMaxTadShapeInfo = 0;
 
-        DataBuffer tadBuffer;
-        DataBuffer tadMaxBuffer;
+        Pair<DataBuffer, DataBuffer> tadBuffers;
+        Pair<DataBuffer, DataBuffer> tadMaxBuffers;
 
         if (op.opNum() >= 38 && op.opNum() <= 41) {
 
             if (op.opNum() != 41) {
-                tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), new int[]{0});
-                tadMaxBuffer = tadManager.getTADOnlyShapeInfo(op.x(), new int[]{1});
+                tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[]{0});
+                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[]{1});
 
-                hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+                hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
-                hostMaxTadShapeInfo = AddressRetriever.retrieveHostAddress(tadMaxBuffer);
-                devMaxTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadMaxBuffer, context).address();
+                hostMaxTadShapeInfo = AddressRetriever.retrieveHostAddress(tadMaxBuffers.getFirst());
+                devMaxTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadMaxBuffers.getFirst(), context).address();
             } else {
-                tadBuffer = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+                tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
-                hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffer);
-                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffer, context).address();
+                hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
+                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
             }
         }
 
