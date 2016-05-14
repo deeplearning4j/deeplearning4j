@@ -4244,10 +4244,10 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
-	tad->createOffsets();
+	//tad->createOffsets();
 
 	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
-	std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
+	//std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
 /*
 	shape::printShapeInfoLinear(hostXShapeInfo);
 	shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);

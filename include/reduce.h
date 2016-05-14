@@ -255,8 +255,8 @@ namespace functions {
 
                         sPartials[threadIdx.x] = 0;
 
-                        if (threadIdx.x < gridDim.x) {
-                            sPartials[threadIdx.x] = reductionBuffer[threadIdx.x];
+                        for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(reductionBuffer[i],extraParams),extraParams);
                         }
                         __syncthreads();
 

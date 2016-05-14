@@ -419,8 +419,13 @@ struct SharedIndexValue<double> {
 					tc[4096] = 0;
 					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 
-					if (threadIdx.x < gridDim.x)
-						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
+
+					sPartials[threadIdx.x] = {0, 0};
+
+					for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+                        sPartials[threadIdx.x] = update(sPartials[threadIdx.x], pBuffer[i], extraParams);
+                    }
+
 
 
 					__syncthreads();
