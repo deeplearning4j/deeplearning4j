@@ -75,34 +75,30 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
+        if(input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input)) input = input.dup('c');
+
         this.shape = input.shape();
         if(input.shape().length == 4)
             return input;
         if(input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
                     + " x columns " + inputWidth  + " but was instead " + Arrays.toString(input.shape()));
-        if(input.ordering() == 'f') input = Shape.toOffsetZeroCopy(input,'c');
-        return input.reshape(input.size(0),numChannels,inputHeight,inputWidth);
+
+        return input.reshape('c',input.size(0),numChannels,inputHeight,inputWidth);
     }
 
     @Override
     // return 4 dimensions
-    public INDArray backprop(INDArray output, int miniBatchSize){
-        if(shape == null || ArrayUtil.prod(shape) != output.length()) {
-            int[] otherOutputs = null;
-            if(output.shape().length == 2) {
-                return output;
-            } else if(output.shape().length == 4) {
-                otherOutputs = new int[3];
-            }
-            else if(output.shape().length == 3) {
-                otherOutputs = new int[2];
-            }
-            System.arraycopy(output.shape(), 1, otherOutputs, 0, otherOutputs.length);
-            shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+    public INDArray backprop(INDArray epsilons, int miniBatchSize){
+        if(epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons)) epsilons = epsilons.dup('c');
+
+        if(shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
+            if(epsilons.rank() == 2) return epsilons;   //should never happen
+
+            return epsilons.reshape('c',epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
-        if(output.ordering() == 'f') output = Shape.toOffsetZeroCopy(output,'c');
-        return output.reshape(shape);
+
+        return epsilons.reshape('c',shape);
     }
 
 
