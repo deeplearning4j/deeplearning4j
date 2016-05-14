@@ -46,10 +46,11 @@ public class DeviceTADManager extends BasicTADManager {
         }
 
         if (!tadCache.get(deviceId).containsKey(descriptor)) {
-            //logger.info("Creating new TAD...");
+            logger.info("Creating new TAD...");
             Pair<DataBuffer, DataBuffer>buffers = super.getTADOnlyShapeInfo(array, dimension);
 
-            AtomicAllocator.getInstance().moveToConstant(buffers.getFirst());
+            if (buffers.getFirst() != array.shapeInfoDataBuffer())
+                AtomicAllocator.getInstance().moveToConstant(buffers.getFirst());
 
             if (buffers.getSecond() != null)
                 AtomicAllocator.getInstance().moveToConstant(buffers.getSecond());

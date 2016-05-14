@@ -22,7 +22,7 @@ import java.util.Arrays;
 public class BasicTADManager implements TADManager {
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected AtomicAllocator allocator = AtomicAllocator.getInstance();
-    private static Logger logger = LoggerFactory.getLogger(Configuration.class);
+    private static Logger logger = LoggerFactory.getLogger(BasicTADManager.class);
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
@@ -58,7 +58,7 @@ public class BasicTADManager implements TADManager {
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
             AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
 
-            logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+            //logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
             // now we need to copy this buffer to either device global memory or device cache
 
             return new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);

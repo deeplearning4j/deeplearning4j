@@ -25,6 +25,7 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.allocator.tad.BasicTADManager;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.tad.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -67,7 +68,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private static final Allocator allocator = AtomicAllocator.getInstance();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
 
-    private static TADManager tadManager = new DeviceTADManager();
+    private static TADManager tadManager = new BasicTADManager();
 
     public JCudaExecutioner() {
 
