@@ -16,6 +16,10 @@ public class Col2Im extends BaseTransformOp {
     }
 
     public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w) {
+        this(x,sy,sx,ph,pw,h,w, getNewOutputArray(x,h,w));
+    }
+
+    public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w, INDArray z) {
         super(x);
         this.sy = sy;
         this.sx = sx;
@@ -23,7 +27,7 @@ public class Col2Im extends BaseTransformOp {
         this.pw = pw;
         this.h = h;
         this.w = w;
-        this.z = getNewOutputArray(h,w);
+        this.z = z;
         extraArgs = this.extraArgs();
     }
 
@@ -47,11 +51,11 @@ public class Col2Im extends BaseTransformOp {
         return "col2im";
     }
 
-    private  INDArray getNewOutputArray(int imgHeight, int imgWidth) {
+    private static INDArray getNewOutputArray(INDArray x, int imgHeight, int imgWidth) {
         //number of images
-        int n = x().size(0);
+        int n = x.size(0);
         //number of columns
-        int c = x().size(1);
+        int c = x.size(1);
 
         return Nd4j.create(n, c, imgHeight, imgWidth);
     }
