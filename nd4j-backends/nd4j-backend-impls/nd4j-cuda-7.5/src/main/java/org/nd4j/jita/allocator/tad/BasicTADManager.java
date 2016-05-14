@@ -43,7 +43,7 @@ public class BasicTADManager implements TADManager {
 
             offsetLength = array.length() / tadLength;
 
-            logger.info("tadLength: {}, offsetLength for TAD: {}", tadLength, offsetLength);
+            //logger.info("tadLength: {}, offsetLength for TAD: {}", tadLength, offsetLength);
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
             DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);

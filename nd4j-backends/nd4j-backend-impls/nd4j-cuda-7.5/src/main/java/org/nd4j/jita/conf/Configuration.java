@@ -113,9 +113,9 @@ public class Configuration implements Serializable {
 
     @Getter private int maximumBlockSize = 64;
 
-    @Getter private long maximumHostCache = Long.MAX_VALUE;
+    @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
-    @Getter private long maximumDeviceCache = Long.MAX_VALUE;
+    @Getter private long maximumDeviceCache = 1024 * 1024 * 1024L;
 
     @Getter private boolean usePreallocation = true;
 

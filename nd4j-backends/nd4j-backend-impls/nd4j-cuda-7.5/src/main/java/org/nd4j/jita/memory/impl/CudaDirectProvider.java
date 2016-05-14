@@ -45,6 +45,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
+
+           //     log.info("Allocating {} bytes on [HOST]", reqMem);
+
+
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
@@ -76,7 +80,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
-        //        log.info("Allocating {} bytes on [DEVICE]", reqMem);
+  //              log.info("Allocating {} bytes on [DEVICE]", reqMem);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
@@ -125,7 +129,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 // FIXME: it would be nice to get rid of typecasting here
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-                log.info("Deallocating {} bytes on [HOST]", reqMem);
+              //  log.info("Deallocating {} bytes on [HOST]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -141,7 +145,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-                log.info("Deallocating {} bytes on [DEVICE]", reqMem);
+         //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 

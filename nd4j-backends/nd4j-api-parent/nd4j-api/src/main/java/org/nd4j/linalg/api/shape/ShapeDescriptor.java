@@ -30,8 +30,8 @@ public class ShapeDescriptor {
                 hashStride = 31 * hashStride + stride[i];
         }
 */
-        this.shape = shape;
-        this.stride = stride;
+        this.shape = Arrays.copyOf(shape, shape.length);
+        this.stride = Arrays.copyOf(stride, stride.length);
 
         this.offset = offset;
         this.ews = ews;

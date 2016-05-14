@@ -144,16 +144,16 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-        //    super.free(point);
+            super.free(point);
         } else {
             AllocationShape shape = point.getShape();
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
             // we don't cache too big objects
-         //   if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
-          //      super.free(point);
-          //      return;
-         //   }
+            if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
+                super.free(point);
+                return;
+            }
 
             ensureCacheHolder(shape);
 

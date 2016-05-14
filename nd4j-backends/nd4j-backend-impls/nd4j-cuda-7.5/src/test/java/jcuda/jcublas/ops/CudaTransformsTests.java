@@ -31,7 +31,8 @@ public class CudaTransformsTests {
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(256)
+                .setAllocationModel(Configuration.AllocationModel.DIRECT)
+                .setMaximumBlockSize(64)
                 .enableDebug(true)
                 .setVerbose(true);
 
@@ -244,6 +245,7 @@ public class CudaTransformsTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(0.85f, array2.getFloat(0), 0.01);
+
     }
 
     @Test
@@ -634,9 +636,11 @@ public class CudaTransformsTests {
 
         System.out.println("Execution time: ["+ (time2 - time1)+"]");
 
+
         for (int x = 0; x < 1500 * 150; x++) {
             assertEquals("Failed on iteration ["+ x+"]",1f, array1.getFloat(x), 0.0001f);
         }
 
+        //Thread.sleep(100000000000L);
     }
 }

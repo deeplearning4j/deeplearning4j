@@ -27,7 +27,7 @@ public class CudaScalarsTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(1024)
+                .setMaximumBlockSize(64)
                 .setMaximumGridSize(256)
                 .enableDebug(true);
 
@@ -49,6 +49,8 @@ public class CudaScalarsTests {
 
         System.out.println("Divi result: " + array2.getFloat(0));
         assertEquals(4.0f, array2.getFloat(0), 0.01f);
+
+        Thread.sleep(100000000000L);
     }
 
     @Test

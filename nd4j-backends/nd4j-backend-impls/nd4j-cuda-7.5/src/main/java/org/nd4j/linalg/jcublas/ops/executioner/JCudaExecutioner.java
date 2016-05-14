@@ -68,7 +68,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private static final Allocator allocator = AtomicAllocator.getInstance();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
 
-    private static TADManager tadManager = new BasicTADManager();
+    private static TADManager tadManager = new DeviceTADManager();
 
     public JCudaExecutioner() {
 
@@ -105,7 +105,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         DataBuffer offsets = tadBuffers.getSecond();
-        long devTadOffsets = offsets == null ? 0 :AtomicAllocator.getInstance().getPointer(offsets, context).address();
+        long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),
@@ -597,7 +597,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
         DataBuffer offsets = tadBuffers.getSecond();
-        long devTadOffsets = offsets == null ? 0 :AtomicAllocator.getInstance().getPointer(offsets, context).address();
+        long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
         long[] xShapeInfoHostPointer = new long[]{
                 AddressRetriever.retrieveHostAddress(op.x().shapeInfoDataBuffer()),

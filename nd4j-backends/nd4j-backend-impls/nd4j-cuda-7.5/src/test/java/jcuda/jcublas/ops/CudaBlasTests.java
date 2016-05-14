@@ -36,6 +36,8 @@ public class CudaBlasTests {
         array1.mmul(array2, result);
 
         System.out.println("Result: " + result);
+
+        Thread.sleep(100000000000L);
     }
 
     @Test
