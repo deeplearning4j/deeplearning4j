@@ -145,7 +145,7 @@ namespace functions {
                 __shared__ int tadRank;
                 __shared__ int numTads;
                 if (threadIdx.x == 0) {
-            	    tadLength = shape::length(tadOnlyShapeInfo);
+            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     tadRank = shape::rank(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
@@ -295,7 +295,7 @@ namespace functions {
                 __shared__ int *tadShape;
                 __shared__ int *tadStride;
                 if (threadIdx.x == 0) {
-            	    tadLength = shape::length(tadOnlyShapeInfo);
+            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     tadRank = shape::rank(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
@@ -351,7 +351,7 @@ namespace functions {
                 __shared__ int *tadShape;
                 __shared__ int *tadStride;
                 if (threadIdx.x == 0) {
-            	    tadLength = shape::length(tadOnlyShapeInfo);
+            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     tadRank = shape::rank(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;

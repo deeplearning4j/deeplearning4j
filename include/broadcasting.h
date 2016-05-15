@@ -88,7 +88,7 @@ namespace functions {
       __shared__ int *tadStride;
       __shared__ int yStride;
       if (threadIdx.x == 0) {
-   	    tadLength = shape::length(tadOnlyShapeInfo);
+   	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
         tadRank = shape::rank(tadOnlyShapeInfo);
         numTads = shape::length(xShapeInfo) / tadLength;

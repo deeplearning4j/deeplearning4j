@@ -5889,70 +5889,61 @@ extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
 
 
 template <typename T>
-__device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength) {
-    // tad processing should be used here, but tad should be built over dZ instead of usual dX
+__device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
 
     __shared__ shape::TAD *tad;
-    __shared__ UnifiedSharedMemory *manager;
+    __shared__ int tadLength;
+    __shared__ int tadEWS;
+    __shared__ int numTads;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), shape::rank(zShapeInfo));
 
-
-        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-        tad->setExternalBuffers((void *) manager);
-        //tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
-        tad->init(zShapeInfo,dimension,dimensionLength);
-        tad->createTadOnlyShapeInfo();
+        tadLength = shape::tadLength(zShapeInfo, dimension, dimensionLength);
+        tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+        numTads = shape::length(zShapeInfo) / tadLength;
 /*
         if (blockIdx.x == 0) {
+            printf("original X shape: \n");
+            shape::printShapeInfoLinear(xShapeInfo);
+
             printf("original Z shape: \n");
             shape::printShapeInfoLinear(zShapeInfo);
 
-            printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
+            printf("Target dimension: [%i], dimensionLength: [%i], numTads: [%i], rnumTads: [%i]\n", dimension[0], dimensionLength, numTads, tad->numTads);
 
             printf("TAD shape: \n");
+            shape::printShapeInfoLinear(tadOnlyShapeInfo);
+
+            printf("TAD shape2: \n");
             shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
         }
         */
     }
     __syncthreads();
 
-    int numTads = tad->numTads;
-    int tadLength = shape::length(zShapeInfo) / numTads;
 
     for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
-        // for each TAD we have index of highest element stored in dX
-        if (threadIdx.x == 0)
-            tad->createOffsetForBlock(r);
-        __syncthreads();
-
-        int tadOffsetForBlock = tad->tadOffsetForBlock;
-        int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+        int tadOffsetForBlock = tadOffsets[r];
 
         int highestElement = (int) dX[r];
-//        if (threadIdx.x == 0)
-//            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
-
+/*
+        if (threadIdx.x == 0)
+            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
+*/
 
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-
             // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
             dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
         }
     }
-
-//    delete tad;
 }
 
-extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo, float *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength) {
-    fillDimensionalIsMaxGeneric<float>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength);
+extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo, float *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
+    fillDimensionalIsMaxGeneric<float>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
-extern "C" __global__ void fillDimensionalIsMaxDouble(double *dx, int *xShapeInfo, double *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength) {
-    fillDimensionalIsMaxGeneric<double>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength);
+extern "C" __global__ void fillDimensionalIsMaxDouble(double *dx, int *xShapeInfo, double *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
+    fillDimensionalIsMaxGeneric<double>(dx, xShapeInfo, dz, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
 

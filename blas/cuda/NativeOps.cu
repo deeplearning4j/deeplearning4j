@@ -1763,6 +1763,8 @@ void   NativeOps::execTransformDouble(
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
 
+						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[15]);
 
 						// we call for IMax on specified dimension
@@ -1772,10 +1774,9 @@ void   NativeOps::execTransformDouble(
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxDouble<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+						fillDimensionalIsMaxDouble<<<768, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						if (debug)
-							checkCudaErrors(cudaStreamSynchronize(*stream));
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
@@ -3272,14 +3273,17 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
+
+					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
+
 					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
 						scalarCheat = true;
 					} else {
-						//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
-						//if (shape::isVector(hostXShapeInfo) && extraParamsPointer[1] == 1) {
-						//	scalarCheat = true;
-						//}
+					/*	//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
+						if (shape::isVector(hostXShapeInfo) && dimensionHostPointer[0] == 1) {
+							scalarCheat = true;
+						}*/
 					}
 
 					if (scalarCheat) {
@@ -3292,20 +3296,23 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						else
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxFloat<<< 1, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+						fillIsMaxFloat<<< 1, 128, 1536, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
 
+						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[15]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+						if (debug)
+							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+						fillDimensionalIsMaxFloat<<<768, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3853,8 +3860,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 		cudaSetDevice(i);
 		cudaGetDeviceProperties(&deviceProperties[i], i);
 
-		//cudaDeviceSetLimit(cudaLimitStackSize, 4096);
-		//cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
+		cudaDeviceSetLimit(cudaLimitStackSize, 4096);
 	}
 
 	cudaSetDevice(0);
@@ -3944,6 +3950,12 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaFuncGetAttributes(&funcAttributes[34], flattenKernelDouble);
 
 	cudaFuncGetAttributes(&funcAttributes[35], concatKernelDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[36], fillDimensionalIsMaxFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
+
+
 }
 
 
@@ -4283,11 +4295,13 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 	int *target = reinterpret_cast<int *>(targetBuffer);
 	int *offsets = reinterpret_cast<int *>(offsetsBuffer);
 
+
 	shape::TAD *tad = new shape::TAD();
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
 	tad->createOffsets();
+
 
 	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
 	std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
