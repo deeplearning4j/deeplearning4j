@@ -5898,30 +5898,18 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), shape::rank(zShapeInfo));
-
+        manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), shape::rank(zShapeInfo) + 2);
 
         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
         tad->setExternalBuffers((void *) manager);
-        //tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
+    //    tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
         tad->init(zShapeInfo,dimension,dimensionLength);
         tad->createTadOnlyShapeInfo();
-/*
-        if (blockIdx.x == 0) {
-            printf("original Z shape: \n");
-            shape::printShapeInfoLinear(zShapeInfo);
-
-            printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
-
-            printf("TAD shape: \n");
-            shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
-        }
-        */
     }
     __syncthreads();
 
     int numTads = tad->numTads;
-    int tadLength = shape::length(zShapeInfo) / numTads;
+    int tadLength = shape::length(tad->tadOnlyShapeInfo);
 
     for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
         // for each TAD we have index of highest element stored in dX
@@ -5941,7 +5929,8 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         }
     }
 
-//    delete tad;
+    if (threadIdx.x == 0)
+        delete tad;
 }
 
 extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo, float *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {

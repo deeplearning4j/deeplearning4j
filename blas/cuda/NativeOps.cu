@@ -3309,7 +3309,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<64, 64, 2048, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
