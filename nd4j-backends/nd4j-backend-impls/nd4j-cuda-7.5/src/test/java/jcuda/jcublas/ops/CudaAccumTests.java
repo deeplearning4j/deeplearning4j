@@ -254,8 +254,6 @@ public class CudaAccumTests {
         assertEquals(8128256.0f, sum.getFloat(1), 0.01f);
         assertEquals(8128512.0f, sum.getFloat(3), 0.01f);
         assertEquals(8128640.0f, sum.getFloat(4), 0.01f);
-
-        Thread.sleep(100000000000L);
     }
 
     @Test

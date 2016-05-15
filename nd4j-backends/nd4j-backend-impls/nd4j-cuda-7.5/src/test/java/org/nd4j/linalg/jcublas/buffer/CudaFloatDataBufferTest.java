@@ -718,4 +718,11 @@ public class CudaFloatDataBufferTest {
         assertEquals(102, arrayF.shapeInfoDataBuffer().getInt(9));
         assertEquals(1, arrayF.shapeInfoDataBuffer().getInt(8));
     }
+
+    @Test public void testPermuteAssingn(){
+        INDArray arr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        INDArray arr2 = arr.permute(1,0,2);
+        INDArray arr3 = arr2.dup('c');
+        assertEquals(arr2,arr3);
+    }
 }

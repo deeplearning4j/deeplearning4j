@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -347,12 +348,11 @@ public class JCublasNDArray extends BaseNDArray {
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
-        if (!isView() && ordering() == Nd4j.order()) {
+        if (!isView() && ordering() == Nd4j.order() && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.create(shape(), ordering());
+            INDArray array = Nd4j.create(shape(), stride(), ordering());
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
-
 
             allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context ), this.data.length() * this.data().getElementSize(), 0, context);
 
@@ -364,9 +364,9 @@ public class JCublasNDArray extends BaseNDArray {
     @Override
     public INDArray dup(char order) {
 
-        if (!isView() && ordering() == order) {
+        if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.create(shape(), order);
+            INDArray array = Nd4j.create(shape(), stride(), order);
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
 
