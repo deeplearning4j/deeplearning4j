@@ -1072,7 +1072,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         long hostYShapeInfo = op.y() == null ? 0 : AddressRetriever.retrieveHostAddress(op.y().shapeInfoDataBuffer());
         long hostZShapeInfo = op.z() == null ? 0 : AddressRetriever.retrieveHostAddress(op.z().shapeInfoDataBuffer());
 
-        long dimensionPointer = 0;
+        long dimensionDevPointer = 0;
+        long dimensionHostPointer = 0;
         int dimension[] = null;
 
         if (op.opNum() == 41 && op.extraArgs() != null) {
@@ -1085,8 +1086,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             //do op along all dimensions
             if (dimension.length == op.x().rank())
                 dimension = new int[]{Integer.MAX_VALUE};
-
-
 
             int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
@@ -1108,7 +1107,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context).address();
 
             //dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context).address();
-            dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context).address();
+            DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
+            dimensionDevPointer = AtomicAllocator.getInstance().getPointer(dimensionBuffer, context).address();
+            dimensionHostPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer).address();
         }
 
         long hostTadShapeInfo = 0;
@@ -1141,13 +1142,17 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 DataBuffer maxOffsets = tadMaxBuffers.getSecond();
                 devMaxTadOffsets = maxOffsets == null ? 0 : AtomicAllocator.getInstance().getPointer(maxOffsets, context).address();
             } else {
-                tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+                tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
                 hostTadShapeInfo = AddressRetriever.retrieveHostAddress(tadBuffers.getFirst());
                 devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
                 DataBuffer offsets = tadBuffers.getSecond();
                 devTadOffsets = offsets == null ? 0 : AtomicAllocator.getInstance().getPointer(offsets, context).address();
+
+             //   log.info("offsets length: {}", offsets.length());
+           //     log.info("TAD shapeInfo on Java size: {}", tadBuffers.getFirst());
+                //throw new RuntimeException();
             }
         }
 
@@ -1169,7 +1174,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 hostMaxTadShapeInfo,        // 12
                 devMaxTadShapeInfo,     // 13
                 devMaxTadOffsets, // 14
-                dimensionPointer // special pointer for IsMax  // 15
+                dimensionDevPointer, // special pointer for IsMax  // 15
+                dimensionHostPointer // special pointer for IsMax  // 16
         };
 /*
         log.info("------------------------------------");

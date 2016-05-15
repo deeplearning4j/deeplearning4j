@@ -637,9 +637,24 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray expAlong1col = Nd4j.ones(new int[]{4,1});
 
 
-        assertEquals(expAlong0col, alongDim0col);
-        assertEquals(expAlong1col, alongDim1col);
 
+        assertEquals(expAlong1col, alongDim1col);
+        assertEquals(expAlong0col, alongDim0col);
+
+
+
+
+        /*
+        if (blockIdx.x == 0) {
+            printf("original Z shape: \n");
+            shape::printShapeInfoLinear(zShapeInfo);
+
+            printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
+
+            printf("TAD shape: \n");
+            shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
+        }
+        */
 
         //2d:
         //[1 0 2]

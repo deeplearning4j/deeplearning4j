@@ -43,13 +43,16 @@ public class BasicTADManager implements TADManager {
 
             offsetLength = array.length() / tadLength;
 
-            //logger.info("tadLength: {}, offsetLength for TAD: {}", tadLength, offsetLength);
+       //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
+        //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
             DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);
 
+            DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
+            long dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer).address();
+
             long xShapeInfo = AddressRetriever.retrieveHostAddress(array.shapeInfoDataBuffer());
-            long dimensionPointer = AddressRetriever.retrieveHostAddress(Nd4j.createBuffer(dimension));
             long targetPointer = AddressRetriever.retrieveHostAddress(outputBuffer);
             long offsetsPointer = AddressRetriever.retrieveHostAddress(offsetsBuffer);
 
@@ -58,7 +61,7 @@ public class BasicTADManager implements TADManager {
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
             AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
 
-            //logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+        //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
             // now we need to copy this buffer to either device global memory or device cache
 
             return new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);

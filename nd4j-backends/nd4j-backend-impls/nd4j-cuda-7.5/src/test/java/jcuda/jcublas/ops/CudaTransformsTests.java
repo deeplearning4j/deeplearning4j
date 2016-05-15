@@ -445,7 +445,7 @@ public class CudaTransformsTests {
 
     @Test
     public void testIsMaxEqualValues(){
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        //Nd4j.dtype = DataBuffer.Type.DOUBLE;
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
 
 
@@ -642,5 +642,42 @@ public class CudaTransformsTests {
         }
 
         //Thread.sleep(100000000000L);
+    }
+
+    @Test
+    public void testIsMaxDimensional() throws Exception {
+
+        INDArray arr = Nd4j.create(new int[]{51200,4},'c');
+        INDArray epsilon = Nd4j.create(new int[]{51200,1},'c');
+/*
+        int[] kernel = {2,2};
+        int[] strides = {2,2};
+        int[] pad = {0,0};
+        INDArray col6d = Nd4j.create(new int[]{64,50,4,4,2,2},'c');
+        INDArray col6dPermuted = col6d.permute(0,1,4,5,2,3);
+
+
+        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
+
+        int miniBatch = 64;
+        int depth = 50;
+        int outH = 4;
+        int outW = 4;
+        INDArray col2d = col6d.reshape('c',miniBatch*depth*outH*outW,kernel[0]*kernel[1]);
+
+        for( int i=0; i<1000;i ++ ){
+            System.out.println(i);
+            Convolution.im2col(col2d, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
+            INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
+            isMax.muliColumnVector(epsilon);
+        }
+*/
+
+        INDArray input = Nd4j.create(new int[]{64,50,8,8},'c');
+        for( int i=0; i<10;i ++ ){
+            INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(arr,1));
+
+
+        }
     }
 }
