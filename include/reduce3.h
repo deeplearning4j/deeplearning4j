@@ -132,12 +132,12 @@ namespace functions {
      * @param tid
      * @param extraParams
      */
-			virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, T **extraParamsRef) {
+			virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T **extraParamsRef) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
 				T *sPartials = *sPartialsRef;
-				int floorPow2 = blockDim.x;
+				int floorPow2 = numItems;
 
 				if (floorPow2 & (floorPow2 - 1)) {
 					while (floorPow2 & (floorPow2 - 1)) {
@@ -179,27 +179,24 @@ namespace functions {
 				int rank = shape::rank(xShapeInfo);
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
-				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T startingVal = this->startingValue(dx);
 
 
-				int numElements = gridDim.x;
-				for (int i = threadIdx.x; i < numElements; i += blockDim.x)
-					sPartials[i] = startingVal;
-				__syncthreads();
+				sPartials[threadIdx.x] = startingVal;
 
-
+                int idx[MAX_RANK];
 #pragma unroll
 				for(Nd4jIndex i = blockIdx.x * gridDim.x + threadIdx.x;i < n; i += gridDim.x * blockDim.x) {
-					int *idx = shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i);
+					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
-					delete[] idx;
+
 				}
 
 				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, threadIdx.x, &extraParams);
+				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), &extraParams);
 				/**
                  * Look at something that uses the extra params
                  * and aggregates the extra values propelry.
@@ -238,11 +235,9 @@ namespace functions {
 					T *result,
 					int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 
-				if (threadIdx.x == 0)
-					printf("Going for scalar reduce 3");
 
 //		SharedMemory <T> val;
-				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				T startingVal = this->startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
@@ -268,7 +263,7 @@ namespace functions {
 
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials(sPartialsRef, tid, &extraParams);
+					aggregatePartials(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
 
 					/**
                      * Look at something that uses the extra params
@@ -290,7 +285,7 @@ namespace functions {
 					int n = shape::length(xShapeInfo);
 
 					//SharedMemory <T> val;
-					volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
+					T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 
 
 					Nd4jIndex length = shape::length(xShapeInfo);
@@ -327,7 +322,7 @@ namespace functions {
 */
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials(sPartialsRef, threadIdx.x, &extraParams);
+					aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
 					/**
                      * Look at something that uses the extra params
                      * and aggregates the extra values propelry.
@@ -368,13 +363,13 @@ namespace functions {
                  */
 				int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-				__shared__ volatile int resultScalar;
+				__shared__ int resultScalar;
 
 				__shared__ int xElementWiseStride;
 				__shared__ int yElementWiseStride;
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
-				volatile T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T init = this->startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
@@ -503,12 +498,6 @@ namespace functions {
 						}
 
 						__syncthreads();
-
-						if (tid == 0) {
-						//	delete[] tadShapeShapeInfo;
-						}
-
-
 					}
 					else {
 
@@ -567,7 +556,7 @@ namespace functions {
 								sPartials[i] =  update(sPartials[i],op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
 							}
 
-							printf("Updating result: [%i] -> [%f]\n", i, sPartials[i]);
+//							printf("Updating result: [%i] -> [%f]\n", i, sPartials[i]);
 							result[i] = postProcess(sPartials[i],tadLength,&extraParams);
 						}
 
@@ -575,8 +564,8 @@ namespace functions {
 				}
 				else {
 
-					printf("Misplaced reduce3 execScalarCuda\n");
-
+					printf("shifting to execScalarCuda\n");
+/*
 					this->execScalarCuda(
 							dx,
 							xShapeInfo,
@@ -585,6 +574,7 @@ namespace functions {
 							extraParams,
 							result,
 							resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
+							*/
 				}
 
 			}
@@ -1648,6 +1638,45 @@ __device__ void reduce3Generic(
 			postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo);
 }
 
+template <typename T>
+__device__ void reduce3ScalarGeneric(
+		int opNum,
+		T *dx,
+		int *xShapeInfo,
+		T *dy,
+		int *yShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
+		 int *allocationPointer, int *tadOnlyShapeInfo) {
+
+
+	__shared__ functions::reduce3::Reduce3<T> * op;
+	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
+
+	__shared__ UnifiedSharedMemory *manager;
+
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+
+		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
+		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
+	}
+	__syncthreads();
+
+	op->execScalarCuda(
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			allocationPointer, manager, tadOnlyShapeInfo);
+}
+
 /**
  * The driver api
  * @param opNum the number
@@ -1732,6 +1761,58 @@ __global__ void reduce3Float(
 			dimension,
 			dimensionLength,
 			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
+
+}
+
+extern "C"
+__global__ void reduce3ScalarFloat(
+		int opNum,
+		float *dx,
+		int *xShapeInfo,
+		float *dy,
+		int *yShapeInfo,
+		float *extraParams,
+		float *result,
+		int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+	reduce3ScalarGeneric<float>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			allocationPointer, tadOnlyShapeInfo);
+
+}
+
+extern "C"
+__global__ void reduce3ScalarDouble(
+		int opNum,
+		double *dx,
+		int *xShapeInfo,
+		double *dy,
+		int *yShapeInfo,
+		double *extraParams,
+		double *result,
+		int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+	reduce3ScalarGeneric<double>(
+			opNum,
+			dx,
+			xShapeInfo,
+			dy,
+			yShapeInfo,
+			extraParams,
+			result,
+			resultShapeInfo,
+			allocationPointer, tadOnlyShapeInfo);
 
 }
 

@@ -2528,7 +2528,7 @@ void   NativeOps::execReduce3Float(
 	if (verbose && launchDims.x == 1)
 		printf("AF10 opNum:[%i]\n", opNum);
 
-	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2587,12 +2587,12 @@ float   NativeOps::execReduce3ScalarFloat(
 
 	//dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer, nullptr, 1, sizeof(float), 2);
 	//dim3 launchDims = getFlatLaunchParams((int) extraPointers[2], (int *) extraPointers[0], yShapeInfoPointer);
-	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 16, funcAttributes[7]);
+	dim3 launchDims = getBasicLaunchParams((int) extraPointers[2], shape::length(hostXShapeInfo), 32, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF11 opNum:[%i]\n", opNum);
 
-	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
+	reduce3ScalarFloat<<<1,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
 			xPointer,
 			xShapeInfoPointer,
@@ -2667,19 +2667,33 @@ void   NativeOps::execReduce3Float(
 
 	if (verbose && launchDims.x == 1)
 		printf("AF12 opNum:[%i]\n", opNum);
-
-	reduce3Float<<<1,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			xPointer,
-			xShapeInfoPointer,
-			yPointer,
-			yShapeInfoPointer,
-			extraParamsPointer,
-			resultPointer,
-			resultShapeInfoPointer,
-			dimensionPointer,
-			dimensionLength,
-			1, allocationPointer, deviceTADShapeInfo);
+	if (shape::isScalar(hostZShapeInfo) || dimensionPointer == nullptr) {
+		reduce3ScalarFloat << < 1, launchDims.y, launchDims.z, *stream >> > (
+				opNum,
+						xPointer,
+						xShapeInfoPointer,
+						yPointer,
+						yShapeInfoPointer,
+						extraParamsPointer,
+						resultPointer,
+						resultShapeInfoPointer,
+						dimensionPointer,
+						dimensionLength,
+						1, allocationPointer, deviceTADShapeInfo);
+	} else {
+		reduce3Float << < 1, launchDims.y, launchDims.z, *stream >> > (
+				opNum,
+						xPointer,
+						xShapeInfoPointer,
+						yPointer,
+						yShapeInfoPointer,
+						extraParamsPointer,
+						resultPointer,
+						resultShapeInfoPointer,
+						dimensionPointer,
+						dimensionLength,
+						1, allocationPointer, deviceTADShapeInfo);
+	}
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3839,7 +3853,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 		cudaSetDevice(i);
 		cudaGetDeviceProperties(&deviceProperties[i], i);
 
-		cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+		//cudaDeviceSetLimit(cudaLimitStackSize, 4096);
 		//cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
 	}
 

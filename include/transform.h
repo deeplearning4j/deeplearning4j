@@ -5916,7 +5916,7 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         //tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
         tad->init(zShapeInfo,dimension,dimensionLength);
         tad->createTadOnlyShapeInfo();
-
+/*
         if (blockIdx.x == 0) {
             printf("original Z shape: \n");
             shape::printShapeInfoLinear(zShapeInfo);
@@ -5926,6 +5926,7 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
             printf("TAD shape: \n");
             shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
         }
+        */
     }
     __syncthreads();
 
@@ -5942,9 +5943,9 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
         int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
 
         int highestElement = (int) dX[r];
-        if (threadIdx.x == 0) {
-            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
-        }
+//        if (threadIdx.x == 0)
+//            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i]\n", r, highestElement, numTads, tadLength);
+
 
         for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
 
@@ -5952,6 +5953,8 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
             dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
         }
     }
+
+//    delete tad;
 }
 
 extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo, float *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength) {
