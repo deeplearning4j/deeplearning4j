@@ -4227,6 +4227,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             this.attemptedToFindElementWiseStride = true;
         }
 
+        this.rows = size(0);
+        this.columns = size(1);
+        this.numLeadingOnes = -1;
+        this.numTrailingOnes = -1;
+
         return this;
     }
 
