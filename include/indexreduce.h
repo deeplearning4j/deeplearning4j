@@ -293,12 +293,15 @@ struct SharedIndexValue<double> {
 		if (!resultScalar) {
 
 			__shared__ shape::TAD *tad;
+			__shared__ int tadLength;
             if (threadIdx.x == 0) {
                 tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                 tad->setExternalBuffers((void *) manager);
                 tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
                 //tad->init(xShapeInfo,dimension,dimensionLength);
             	//tad->createTadOnlyShapeInfo();
+
+            	tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
             }
             __syncthreads();
 
@@ -315,7 +318,7 @@ struct SharedIndexValue<double> {
                     	tad->createOffsetForBlock(r);
                     __syncthreads();
 
-                    for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
+                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
                         shape::ind2subC(rank,tad->tadShape, i, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
 						IndexValue<T> comp {dx[xOffset], i};
@@ -324,7 +327,7 @@ struct SharedIndexValue<double> {
                     }
 
                     __syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)),extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -348,14 +351,14 @@ struct SharedIndexValue<double> {
 
 					sPartials[threadIdx.x] = {dx[tad->tadOffsetForBlock], 0};
 #pragma unroll
-					for (int x = threadIdx.x; x < shape::length(tad->tadOnlyShapeInfo); x+= blockDim.x) {
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
 						int indexX = tad->tadOffsetForBlock + x * tadEWS;
 						IndexValue<T> comp {dx[indexX], x};
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)),extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
