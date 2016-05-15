@@ -76,7 +76,7 @@ shift # past argument or value
 done
 
 if [ -z "$BUILD" ]; then
- BUILD="release"
+ BUILD="debug"
 
 fi
 
