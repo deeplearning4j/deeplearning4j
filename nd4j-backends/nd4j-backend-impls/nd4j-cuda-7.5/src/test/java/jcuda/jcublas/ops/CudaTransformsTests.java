@@ -644,6 +644,7 @@ public class CudaTransformsTests {
         //Thread.sleep(100000000000L);
     }
 
+    @Test
     public void testIsMaxDimensional() throws Exception {
 
         INDArray arr = Nd4j.create(new int[]{51200,4},'c');
@@ -673,8 +674,10 @@ public class CudaTransformsTests {
 */
 
         INDArray input = Nd4j.create(new int[]{64,50,8,8},'c');
-        for( int i=0; i<1000;i ++ ){
+        for( int i=0; i<10;i ++ ){
             INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(arr,1));
+
+
         }
     }
 }
