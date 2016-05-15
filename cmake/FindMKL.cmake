@@ -57,7 +57,7 @@ if (MKLROOT_PATH)
 
 endif (MKLROOT_PATH)
 
-set(MKL_LIBRARY
+set(MKL_LIBRARIES
         ${LIB_MKL_RT}
         ${LIB_PTHREAD})
 
