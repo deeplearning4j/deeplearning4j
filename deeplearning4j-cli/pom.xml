@@ -30,6 +30,7 @@
     <name>deeplearning4j-cli</name>
     <modules>
         <module>deeplearning4j-cli-api</module>
+        <module>deeplearning4j-cli-spark</module>
     </modules>
 
 </project>
