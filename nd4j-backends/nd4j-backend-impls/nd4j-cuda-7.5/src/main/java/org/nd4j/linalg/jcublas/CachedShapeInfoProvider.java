@@ -69,7 +69,7 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!deviceCache.get(deviceId).containsKey(descriptor)) {
-            logger.info("Cache miss");
+//            logger.info("Cache miss");
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
 
             deviceCache.get(deviceId).put(descriptor, buffer);

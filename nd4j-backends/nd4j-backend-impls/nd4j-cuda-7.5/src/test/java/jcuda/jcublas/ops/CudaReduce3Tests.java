@@ -1,7 +1,11 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -15,6 +19,20 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CudaReduce3Tests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setAllocationModel(Configuration.AllocationModel.DIRECT)
+                .setMaximumBlockSize(64)
+                .enableDebug(true)
+                .setVerbose(true);
+
+
+
+        System.out.println("Init called");
+    }
 
 
     /**
