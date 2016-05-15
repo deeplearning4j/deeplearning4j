@@ -233,7 +233,7 @@ struct SharedIndexValue<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -419,8 +419,13 @@ struct SharedIndexValue<double> {
 					tc[4096] = 0;
 					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 
-					if (threadIdx.x < gridDim.x)
-						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
+
+					sPartials[threadIdx.x] = {0, 0};
+
+					for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+                        sPartials[threadIdx.x] = update(sPartials[threadIdx.x], pBuffer[i], extraParams);
+                    }
+
 
 
 					__syncthreads();
@@ -1160,33 +1165,20 @@ __device__ void indexReduceGeneric(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
 	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
 	if(threadIdx.x == 0) {
 		newOpFactory = new(manager->getFactorySpace()) functions::indexreduce::IndexReduceOpFactory<T>();
 		indexReduce = newOpFactory->getOp(op, manager->getFunctionSpace());
@@ -1204,7 +1196,7 @@ __device__ void indexReduceGeneric(
 			postProcessOrNot,
 			allocationBuffer,
 			reductionBuffer,
-			manager, tadOnlyShapeInfo);
+			manager, tadOnlyShapeInfo, tadOffsets);
 }
 
 /**
@@ -1231,7 +1223,7 @@ __global__ void indexReduceDouble(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
@@ -1241,7 +1233,7 @@ __global__ void indexReduceDouble(
 			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+			postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -1269,7 +1261,7 @@ __global__ void indexReduceFloat(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
@@ -1279,7 +1271,7 @@ __global__ void indexReduceFloat(
 			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+			postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
 }
 

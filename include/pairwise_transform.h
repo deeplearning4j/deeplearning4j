@@ -64,7 +64,7 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			Nd4jIndex n,
-			int *indexes,int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int *indexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -90,7 +90,7 @@ namespace functions {
 			T *extraParams,
 			int *indexes,
 			int *yIndexes,
-			int *resultIndexes,int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int *resultIndexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex n = shape::length(xShapeBuffer);
 		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
@@ -111,7 +111,7 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *indexes,
-			int *yIndexes,int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int *yIndexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -134,7 +134,7 @@ namespace functions {
 			int *yShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		int xRank = shape::rank(xShapeBuffer);
@@ -218,7 +218,7 @@ namespace functions {
 			int incy,
 			T *params,
 			T *result,
-			int incz,int *allocationPointer, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int incz,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if (incy == 0) {
@@ -1997,12 +1997,12 @@ __device__ void pairWiseTransformGeneric(
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
@@ -2155,12 +2155,12 @@ __device__ void pairWiseTransformGeneric(
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
@@ -2322,12 +2322,12 @@ __device__ void pairWiseTransformStridedGeneric(
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
 	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
 
     	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());

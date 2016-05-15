@@ -73,14 +73,33 @@ namespace functions {
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory<T> *manager, int *tadOnlyShapeInfo) {
+			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
 	  __shared__ shape::TAD *tad;
-	  __shared__ int rank;
+	  __shared__ int tadLength;
+      __shared__ int tadEWS;
+      __shared__ int tadRank;
+      __shared__ int numTads;
+      __shared__ int *tadShape;
+      __shared__ int *tadStride;
+      __shared__ int yStride;
+      if (threadIdx.x == 0) {
+   	    tadLength = shape::length(tadOnlyShapeInfo);
+        tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+        tadRank = shape::rank(tadOnlyShapeInfo);
+        numTads = shape::length(xShapeInfo) / tadLength;
+
+        tadShape = shape::shapeOf(tadOnlyShapeInfo);
+      	tadStride = shape::stride(tadOnlyShapeInfo);
+      	yStride = shape::elementWiseStride(yShapeInfo);
+      }
+      __syncthreads();
+
+/*	  __shared__ int rank;
       __shared__ int tadEWS;
   	  __shared__ int yStride;
         if (threadIdx.x == 0) {
@@ -96,19 +115,16 @@ namespace functions {
 		    yStride = shape::elementWiseStride(yShapeInfo);
         }
        __syncthreads();
-
+*/
 
         //int *xCoord = shape::cuMalloc(manager->getSharedCoordBuffer(), rank);
 
-		for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
-			if (threadIdx.x == 0)
-            	tad->createOffsetForBlock(r);
-            __syncthreads();
+		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
-			int tadOffsetForBlock = tad->tadOffsetForBlock;
+			int tadOffsetForBlock = tadOffsets[r];
            
             if(tadEWS > 0) {
-                for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
+                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     // now we need coords for both X, Y. Z is uses the same coord as X in this case
                     // Y is always vector, however it might be stided
                     result[tadOffsetForBlock + i * tadEWS] = this->op(x[tadOffsetForBlock + i * tadEWS], y[i * yStride]);
@@ -116,12 +132,13 @@ namespace functions {
             }
             else {
                 int xCoord[MAX_RANK];
-                for (int i = threadIdx.x; i < shape::length(tad->tadOnlyShapeInfo); i+= blockDim.x) {
-                    shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                    Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                    shape::ind2subC(tadRank,tadShape, i, xCoord);
+                    Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     result[xOffset] = this->op(x[xOffset], y[i * yStride]);
                 }
             }
+            __syncthreads();
 		}
 	}
 #endif
@@ -731,17 +748,17 @@ __device__ void broadcastGeneric(
 		int *resultShapeInfo,
 		int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 	__shared__ functions::broadcast::Broadcast<T> *op;
 	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
 
-	__shared__ UnifiedSharedMemory<T> *manager;
+	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory<T>();
-	    manager->init(sizeof(UnifiedSharedMemory<T>), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
+        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 /*
@@ -779,7 +796,7 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength, manager, tadOnlyShapeInfo);
+			dimensionLength, manager, tadOnlyShapeInfo, tadOffsets);
 }
 
 /**
@@ -803,7 +820,7 @@ extern "C" __global__ void broadcastDouble(
 		double *y, int *yShapeInfo, int yRank,
 		double *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 	broadcastGeneric<double>(
 			opNum,
 			x,
@@ -813,7 +830,7 @@ extern "C" __global__ void broadcastDouble(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength, tadOnlyShapeInfo);
+			dimensionLength, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -839,7 +856,7 @@ extern "C" __global__ void broadcastFloat(
 		float *y, int *yShapeInfo, int yRank,
 		float *result, int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo) {
+		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 	broadcastGeneric<float>(
 			opNum,
 			x,
@@ -849,7 +866,7 @@ extern "C" __global__ void broadcastFloat(
 			result,
 			resultShapeInfo, zRank,
 			dimension,
-			dimensionLength, tadOnlyShapeInfo);
+			dimensionLength, tadOnlyShapeInfo, tadOffsets);
 
 }
 

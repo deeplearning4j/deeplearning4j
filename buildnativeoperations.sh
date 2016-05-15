@@ -12,7 +12,7 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     # Do something under Windows NT platform
     if [ "$2" == "cuda" ]; then
-        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release"
+        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
         export MAKE_COMMAND="nmake"
     else
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
@@ -105,7 +105,7 @@ if [ "$LIBTYPE" == "dynamic" ]; then
 fi
 
 if [ "$BUILD" == "release" ]; then
-    BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
+        BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
     else
         BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
 
