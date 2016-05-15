@@ -1773,8 +1773,6 @@ void   NativeOps::execTransformDouble(
 						if (debug)
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
-
-
 						// at this point, all IMax indexes are gathered, and we execute
 						fillDimensionalIsMaxDouble<<<768, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
