@@ -47,15 +47,21 @@ public class CudaConstantHandler implements ConstantHandler {
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         if (currentOffset >= 49152 || requiredMemoryBytes > 272)  {
-            logger.info("Overflow at constant space, skipping relocation");
-
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
             point.setConstant(true);
             point.tickDeviceWrite();
             point.tickHostRead();
             return 0;
         }
-        constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+
+        currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
+        if (currentOffset >= 49152)  {
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
+            point.setConstant(true);
+            point.tickDeviceWrite();
+            point.tickHostRead();
+            return 0;
+        }
 
 
         nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
