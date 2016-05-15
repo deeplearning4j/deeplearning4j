@@ -2175,6 +2175,35 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(exp01, p1);
             assertEquals(exp10, p2);
+
+            assertEquals(3, p1.rows());
+            assertEquals(4, p1.columns());
+
+            assertEquals(4, p2.rows());
+            assertEquals(3, p2.columns());
+        }
+
+        //2d, v2
+        orig = Nd4j.linspace(1,4,4).reshape('c',1,4);
+        exp01 = orig.permute(0,1);
+        exp10 = orig.permute(1,0);
+        list1 = NDArrayCreationUtil.getAllTestMatricesWithShape(1,4,12345);
+        list2 = NDArrayCreationUtil.getAllTestMatricesWithShape(1,4,12345);
+        for( int i=0; i<list1.size(); i++ ){
+            INDArray p1 = list1.get(i).getFirst().assign(orig).permutei(0,1);
+            INDArray p2 = list2.get(i).getFirst().assign(orig).permutei(1,0);
+
+            assertEquals(exp01, p1);
+            assertEquals(exp10, p2);
+
+            assertEquals(1, p1.rows());
+            assertEquals(4, p1.columns());
+            assertEquals(4, p2.rows());
+            assertEquals(1, p2.columns());
+            assertTrue(p1.isRowVector());
+            assertFalse(p1.isColumnVector());
+            assertFalse(p2.isRowVector());
+            assertTrue(p2.isColumnVector());
         }
 
         //3d:
