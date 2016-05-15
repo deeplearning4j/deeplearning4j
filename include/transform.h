@@ -5890,36 +5890,20 @@ extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
 
 template <typename T>
 __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
-    // tad processing should be used here, but tad should be built over dZ instead of usual dX
 
-    __shared__ shape::TAD *tad;
-    __shared__ UnifiedSharedMemory *manager;
-
+    __shared__ int tadLength;
+    __shared__ int tadEWS;
+    __shared__ int numTads;
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), shape::rank(zShapeInfo) + 2);
-
-        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-        tad->setExternalBuffers((void *) manager);
-    //    tad->initWithExternalTAD(tadOnlyShapeInfo, zShapeInfo, dimension, dimensionLength);
-        tad->init(zShapeInfo,dimension,dimensionLength);
-        tad->createTadOnlyShapeInfo();
+        tadLength = shape::length(tadOnlyShapeInfo);
+        tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+        numTads = shape::length(zShapeInfo) / tadLength;
     }
     __syncthreads();
 
-    int numTads = tad->numTads;
-    int tadLength = shape::length(tad->tadOnlyShapeInfo);
 
     for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
-        // for each TAD we have index of highest element stored in dX
-        if (threadIdx.x == 0)
-            tad->createOffsetForBlock(r);
-        __syncthreads();
-
-        //int tadOffsetForBlock = tadOffsets[r];
-        int tadOffsetForBlock = tad->tadOffsetForBlock;
-        int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+        int tadOffsetForBlock = tadOffsets[r];
 
         int highestElement = (int) dX[r];
 
@@ -5928,9 +5912,6 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
             dZ[tadOffsetForBlock + e * tadEWS] = (e == highestElement? 1.0 : 0.0);
         }
     }
-
-    if (threadIdx.x == 0)
-        delete tad;
 }
 
 extern "C" __global__ void fillDimensionalIsMaxFloat(float *dx, int *xShapeInfo, float *dz, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
