@@ -205,7 +205,7 @@ public class SparkComputationGraph implements Serializable {
     /**DataSet version of {@link #fitMultiDataSet(JavaRDD, int, int, int)}.
      * Handles conversion from DataSet to MultiDataSet internally.
      */
-    public ComputationGraph fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions ){
+    public ComputationGraph fitDataSet(JavaRDD<DataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions) {
         if(network.getNumInputArrays() != 1 || network.getNumOutputArrays() != 1){
             throw new UnsupportedOperationException("Cannot train ComputationGraph with multiple inputs/outputs from DataSet");
         }
