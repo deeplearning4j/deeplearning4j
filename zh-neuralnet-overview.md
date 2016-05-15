@@ -3,7 +3,7 @@ title: "深度神经网络简介"
 layout: zh-default
 ---
 
-# Introduction to Deep Neural Networks
+# 深度神经网络简介
 
 目录
 
