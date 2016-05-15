@@ -62,16 +62,18 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
             }
         }
 
-        if (cacheHit.get() % 10000 == 0) {
+        if (cacheHit.get() % 100000 == 0) {
             printCacheStats();
         }
 
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!deviceCache.get(deviceId).containsKey(descriptor)) {
-       //     logger.info("Cache miss");
+//            logger.info("Cache miss");
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+
             deviceCache.get(deviceId).put(descriptor, buffer);
+
             cacheMiss.incrementAndGet();
             return buffer;
         } else {

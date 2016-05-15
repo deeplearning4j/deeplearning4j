@@ -27,7 +27,7 @@ public class BasicTADManagerTest {
     public void testTADcreation1() throws Exception {
         INDArray array = Nd4j.create(10, 100);
 
-        DataBuffer tad = tadManager.getTADOnlyShapeInfo(array, new int[]{0});
+        DataBuffer tad = tadManager.getTADOnlyShapeInfo(array, new int[]{0}).getFirst();
 
         System.out.println("TAD: " + tad);
         System.out.println("Shape: " + array.shapeInfoDataBuffer());
@@ -48,8 +48,8 @@ public class BasicTADManagerTest {
 
         TADManager tadManager  = new DeviceTADManager();
 
-        DataBuffer tad = tadManager.getTADOnlyShapeInfo(array, new int[]{0});
-        DataBuffer tad2 = tadManager.getTADOnlyShapeInfo(array, new int[]{0});
+        DataBuffer tad = tadManager.getTADOnlyShapeInfo(array, new int[]{0}).getFirst();
+        DataBuffer tad2 = tadManager.getTADOnlyShapeInfo(array, new int[]{0}).getFirst();
 
         System.out.println("TAD: " + tad);
         System.out.println("Shape: " + array.shapeInfoDataBuffer());

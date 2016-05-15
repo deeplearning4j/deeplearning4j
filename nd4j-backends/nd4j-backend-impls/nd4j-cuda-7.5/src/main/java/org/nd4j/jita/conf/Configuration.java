@@ -42,6 +42,8 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
+    private boolean forceSingleGPU = true;
+
     /**
      * Keep this value between 0.01 and 0.95 please
      */
@@ -111,9 +113,9 @@ public class Configuration implements Serializable {
 
     @Getter private int maximumBlockSize = 64;
 
-    @Getter private long maximumHostCache = Long.MAX_VALUE;
+    @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
-    @Getter private long maximumDeviceCache = Long.MAX_VALUE;
+    @Getter private long maximumDeviceCache = 1024 * 1024 * 1024L;
 
     @Getter private boolean usePreallocation = true;
 
@@ -492,6 +494,23 @@ public class Configuration implements Serializable {
             length = 8;
         this.commandLanesNumber = length;
 
+        return this;
+    }
+
+    public boolean isForcedSingleGPU() {
+        return forceSingleGPU;
+    }
+
+    /**
+     * This method allows you to enable or disable multi-GPU mode.
+     *
+     * PLEASE NOTE: This is NOT magic method, that will automatically scale your application performance.
+     *
+     * @param reallyAllow
+     * @return
+     */
+    public Configuration allowMultiGPU(boolean reallyAllow) {
+        forceSingleGPU = reallyAllow;
         return this;
     }
 }

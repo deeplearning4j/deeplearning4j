@@ -962,5 +962,5 @@ public class NativeOps extends Pointer {
 
     public native void setGridLimit(int gridSize);
 
-    public native void tadOnlyShapeInfo(long shapeInfo, long dimension, int dimensionLength, long targetBuffer);
+    public native void tadOnlyShapeInfo(long shapeInfo, long dimension, int dimensionLength, long targetBuffer, long offsetsBuffer);
 }

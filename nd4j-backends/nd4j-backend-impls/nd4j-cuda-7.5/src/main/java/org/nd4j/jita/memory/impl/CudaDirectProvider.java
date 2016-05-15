@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -26,6 +27,8 @@ public class CudaDirectProvider implements MemoryProvider {
     protected static final long DEVICE_RESERVED_SPACE = 1024 * 1024 * 50L;
     private static Logger log = LoggerFactory.getLogger(CudaDirectProvider.class);
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+    private AtomicLong emergencyCounter = new AtomicLong(0);
 
     /**
      * This method provides PointersPair to memory chunk specified by AllocationShape
@@ -41,6 +44,10 @@ public class CudaDirectProvider implements MemoryProvider {
             case HOST: {
                 Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
+
+
+           //     log.info("Allocating {} bytes on [HOST]", reqMem);
+
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
@@ -69,12 +76,22 @@ public class CudaDirectProvider implements MemoryProvider {
             case DEVICE: {
                 // cudaMalloc call
 
+
+
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
+
+  //              log.info("Allocating {} bytes on [DEVICE]", reqMem);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
+/*
+                if (reqMem == 65536 || reqMem == 1048576 || reqMem == 262144)
+                    emergencyCounter.incrementAndGet();
 
+                if (emergencyCounter.get() > 2000)
+                    throw new RuntimeException("PEW");
+*/
                 // FIXME: it would be nice to get rid of typecasting here
 
 
@@ -110,6 +127,10 @@ public class CudaDirectProvider implements MemoryProvider {
             case HOST: {
                 // cudaFreeHost call here
                 // FIXME: it would be nice to get rid of typecasting here
+                long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
+
+              //  log.info("Deallocating {} bytes on [HOST]", reqMem);
+
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
@@ -121,6 +142,10 @@ public class CudaDirectProvider implements MemoryProvider {
             case DEVICE: {
                 // cudaFree call
                 //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
+
+                long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
+
+         //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 

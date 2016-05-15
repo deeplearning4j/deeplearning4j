@@ -46,6 +46,7 @@ public class CudaPairwiseTrainformsTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(3.5f, array1.getRow(0).getFloat(0), 0.01);
+
     }
 
     @Test
