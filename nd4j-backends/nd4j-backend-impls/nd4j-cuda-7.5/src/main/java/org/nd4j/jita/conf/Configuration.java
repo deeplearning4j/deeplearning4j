@@ -62,7 +62,7 @@ public class Configuration implements Serializable {
     /**
      * Number of buckets/garbage collectors for host memory
      */
-    @Getter private int numberOfGcThreads= 4;
+    @Getter private int numberOfGcThreads= 6;
 
     /**
      * Deallocation aggressiveness
@@ -103,7 +103,7 @@ public class Configuration implements Serializable {
      */
     @Getter private long maximumSingleHostAllocation = Long.MAX_VALUE;
 
-    @Getter private long maximumSingleDeviceAllocation = Long.MAX_VALUE;
+    @Getter private long maximumSingleDeviceAllocation = 1024 * 1024 * 1024L;
 
     @Getter private List<Integer> availableDevices = new ArrayList<>();
 
@@ -111,7 +111,7 @@ public class Configuration implements Serializable {
 
     @Getter private int maximumGridSize = 128;
 
-    @Getter private int maximumBlockSize = 64;
+    @Getter private int maximumBlockSize = 128;
 
     @Getter private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
 
@@ -329,13 +329,14 @@ public class Configuration implements Serializable {
      * ASYNCHRONOUS: Issue commands asynchronously, if that's possible.
      * OPTIMIZED: Not implemented yet. Equals to asynchronous for now.
      *
-     * Default value: ASYNCHRONOUS
+     * Default value: SEQUENTIAL
      *
      * @param executionModel
      * @return
      */
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        this.executionModel = executionModel;
+        // FIXME: rc3.9: temporary hardcoded SEQUENTIAL execution model.
+        this.executionModel = ExecutionModel.SEQUENTIAL;
 
         return this;
     }

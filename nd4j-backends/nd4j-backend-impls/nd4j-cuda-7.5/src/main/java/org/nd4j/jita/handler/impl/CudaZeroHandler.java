@@ -196,14 +196,14 @@ public class CudaZeroHandler implements MemoryHandler {
             case HOST: {
                 if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
                     if (reqMemory > configuration.getMaximumZeroAllocation()) {
-                        throw new IllegalStateException("You can't allocate more memory, then allowed with -Xmx value");
+                        throw new IllegalStateException("You can't allocate more memory, then allowed with configured value: ["+configuration.getMaximumZeroAllocation()+"]");
                     }
 
 
                     while (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
                         try {
-                            log.warn("No available [HOST] memory, sleeping...");
-                            log.warn("Currently used: ["+zeroUseCounter.get()+"], allocated objects: ["+ zeroAllocations.get(0)+"]");
+                            log.warn("No available [HOST] memory, sleeping for a while...");
+                            log.debug("Currently used: ["+zeroUseCounter.get()+"], allocated objects: ["+ zeroAllocations.get(0)+"]");
                             System.gc();
                             Thread.sleep(1000);
                         } catch (Exception e) {
@@ -268,7 +268,7 @@ public class CudaZeroHandler implements MemoryHandler {
                           //  point.tickDeviceWrite();
                             point.tickHostWrite();
                         } else {
-                            log.info("Skipping allocation C on [DEVICE]");
+                            log.debug("Skipping allocation C on [DEVICE]");
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
                             returnPair.setDevicePointer(tmpPair.getHostPointer());
@@ -277,18 +277,30 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             System.gc();
                             try {
-                                Thread.sleep(1000);
+                                Thread.sleep(500);
                             } catch (Exception e ) {
 
                             }
                         }
                     } else {
-                        log.info("Skipping allocation B on [DEVICE]");
+                        //log.info("Skipping allocation B on [DEVICE]");
+                        System.gc();
+                        try {
+                            Thread.sleep(500);
+                        } catch (Exception e ) {
+
+                        }
                     }
                 } else {
-                    log.info("Skipping allocation A on [DEVICE] [{}]", deviceId);
+                    log.debug("Skipping allocation A on [DEVICE] [{}]", deviceId);
                //     log.info("ReqMem: [{}], current state: [{}], maxTotalAllocation: [{}] ", reqMemory, deviceMemoryTracker.getAllocatedSize(deviceId), configuration.getMaximumDeviceAllocation());
 //                    throw new RuntimeException("PEW");
+                    System.gc();
+                    try {
+                        Thread.sleep(500);
+                    } catch (Exception e ) {
+
+                    }
                 }
 
                 return returnPair;
