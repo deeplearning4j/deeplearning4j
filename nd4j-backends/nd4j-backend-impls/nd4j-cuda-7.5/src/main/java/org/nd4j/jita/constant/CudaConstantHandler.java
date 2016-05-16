@@ -4,6 +4,8 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -28,10 +30,14 @@ public class CudaConstantHandler implements ConstantHandler {
 
     protected Map<Integer, Map<ArrayDescriptor, DataBuffer>> buffersCache = new HashMap<>();
     protected Map<Integer, Long> deviceAddresses = new HashMap<>();
-
+    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     protected Semaphore lock = new Semaphore(1);
+
+    public CudaConstantHandler() {
+
+    }
 
     @Override
     public long moveToConstantSpace(DataBuffer dataBuffer) {

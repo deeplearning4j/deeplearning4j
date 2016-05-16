@@ -335,8 +335,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        // FIXME: rc3.9: temporary hardcoded SEQUENTIAL execution model.
-        this.executionModel = ExecutionModel.SEQUENTIAL;
+        this.executionModel = executionModel;
 
         return this;
     }

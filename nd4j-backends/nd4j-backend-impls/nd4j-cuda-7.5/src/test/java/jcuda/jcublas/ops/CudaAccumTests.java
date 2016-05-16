@@ -26,12 +26,12 @@ public class CudaAccumTests {
     @Before
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(64)
+                .setMaximumBlockSize(128)
                 .setMaximumGridSize(256)
-                .enableDebug(true)
-                .setVerbose(true);
+                .enableDebug(false)
+                .setVerbose(false);
 
         System.out.println("Init called");
     }

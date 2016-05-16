@@ -31,10 +31,13 @@ public class CudaTransformsTests {
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setAllocationModel(Configuration.AllocationModel.DIRECT)
-                .setMaximumBlockSize(64)
-                .enableDebug(true)
-                .setVerbose(true);
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
+                .setMaximumSingleDeviceAllocation(1024 * 1024 * 1024L)
+                .setMaximumBlockSize(128)
+                .setMaximumGridSize(256)
+                .enableDebug(false)
+                .setVerbose(false);
 
 
 

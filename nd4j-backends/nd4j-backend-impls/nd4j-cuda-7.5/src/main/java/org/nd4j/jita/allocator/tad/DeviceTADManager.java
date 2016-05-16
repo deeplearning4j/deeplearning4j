@@ -2,13 +2,17 @@ package org.nd4j.jita.allocator.tad;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.CachedShapeInfoProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -17,9 +21,18 @@ import java.util.concurrent.Semaphore;
  * @author raver119@gmail.com
  */
 public class DeviceTADManager extends BasicTADManager {
-    protected Map<Integer, Map<TadDescriptor, Pair<DataBuffer, DataBuffer>>> tadCache = new ConcurrentHashMap<>();
+    protected List<Map<TadDescriptor, Pair<DataBuffer, DataBuffer>>> tadCache = new ArrayList<>();
     private Semaphore lock = new Semaphore(1);
     private static Logger logger = LoggerFactory.getLogger(DeviceTADManager.class);
+    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
+    public DeviceTADManager() {
+        int numDevices =  configuration.getAvailableDevices().size();
+
+        for (int i = 0; i < numDevices; i++ ) {
+            tadCache.add(i, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
+        }
+    }
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
@@ -32,18 +45,7 @@ public class DeviceTADManager extends BasicTADManager {
       //  logger.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
 
         TadDescriptor descriptor = new TadDescriptor(array, dimension);
-        if (!tadCache.containsKey(deviceId)) {
-            try {
-                lock.acquire();
 
-                if (!tadCache.containsKey(deviceId))
-                    tadCache.put(deviceId, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            } finally {
-                lock.release();
-            }
-        }
 
         if (!tadCache.get(deviceId).containsKey(descriptor)) {
        //     logger.info("Creating new TAD...");
