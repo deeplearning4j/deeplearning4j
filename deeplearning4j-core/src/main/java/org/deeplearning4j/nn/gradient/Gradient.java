@@ -33,17 +33,21 @@ public interface Gradient extends Serializable {
 
     /**
      * Gradient look up table
+     *
      * @return the gradient look up table
      */
-    Map<String,INDArray> gradientForVariable();
+    Map<String, INDArray> gradientForVariable();
+
     /**
      * The full gradient as one flat vector
+     *
      * @return
      */
     INDArray gradient(List<String> order);
 
     /**
      * The full gradient as one flat vector
+     *
      * @return
      */
     INDArray gradient();
@@ -55,6 +59,7 @@ public interface Gradient extends Serializable {
 
     /**
      * The gradient for the given variable
+     *
      * @param variable the variable to get the gradient for
      * @return the gradient for the given variable or null
      */
@@ -62,11 +67,29 @@ public interface Gradient extends Serializable {
 
     /**
      * Update gradient for the given variable
+     *
      * @param variable the variable to get the gradient for
      * @param gradient the gradient values
      * @return the gradient for the given variable or null
      */
     INDArray setGradientFor(String variable, INDArray gradient);
 
+    /**
+     * Update gradient for the given variable; also (optionally) specify the order in which the array should be flattened
+     * to a row vector
+     *
+     * @param variable        the variable to get the gradient for
+     * @param gradient        the gradient values
+     * @param flatteningOrder the order in which gradients should be flattened (null ok - default)
+     * @return the gradient for the given variable or null
+     */
+    INDArray setGradientFor(String variable, INDArray gradient, Character flatteningOrder);
+
+    /**
+     * Return the gradient flattening order for the specified variable, or null if it is not explicitly set
+     * @param variable    Variable to return the gradient flattening order for
+     * @return            Order in which the specified variable's gradient should be flattened
+     */
+    Character flatteningOrderForVariable(String variable);
 
 }

@@ -25,16 +25,11 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.Dropout;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -78,82 +73,144 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        int miniBatch = input.size(0);
+        int depth = input.size(1);
+        int inH = input.size(2);
+        int inW = input.size(3);
+
+        int[] kernel = layerConf().getKernelSize();
+        int[] strides = layerConf().getStride();
+        int[] pad = layerConf().getPadding();
+
+        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray reshapeEpsilon, retE, reshaped;
+        INDArray reshapeEpsilon, retE;
         Gradient retGradient = new DefaultGradient();
+
+        //Epsilons in shape: [miniBatch, depth, outH, outW]
+        //Epsilons out shape: [miniBatch, depth, inH, inW]
+
+        //Two possibilities here for the epsilons:
+        //(a) Epsilons come from a dense/output layer above, with c order and strides [depth*H*W, H*W, W, 1]
+        //(b) Epsilons come from CNN layer above, with c order and strides [H*W, depth*H*W, W, 1] (i.e., due to permute)
+
+        //We want to reshape epsilons to 1d here, but to do this without a copy: we end up with different orders of
+        // element in the buffer, for the "dense above" and "cnn above" cases.
+        //Fortunately, we can just permute things when we do the im2col reshaping; then, the order of the rows in
+        // col2d will match the order of the 1d epsilons...
+        //With the 1d epsilons order matching the rows order for the 2d im2col: we can just do a muliColumnVector op,
+        // instead of a slower broadcast muli op
+
+        boolean cOrderStrides = false;
+        if(epsilon.ordering() != 'c'){
+            epsilon = epsilon.dup('c');
+            cOrderStrides = true;
+        }
+        if(!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)){
+            cOrderStrides = true;
+        } else if(!Arrays.equals(new int[]{outH*outW, depth*outH*outW, outW, 1}, epsilon.stride())){
+            //Unexpected/unusual strides, not either (a) or (b) cases above
+            epsilon = epsilon.dup('c');
+            cOrderStrides = true;
+        }
+
+        INDArray col6d;
+        INDArray col6dPermuted;
+        INDArray epsilon1d;
+        if(cOrderStrides){
+            //"Dense/Output layer above strides... i.e., standard c-order strides
+            col6d = Nd4j.create(new int[]{miniBatch,depth,outH,outW,kernel[0],kernel[1]},'c');
+            col6dPermuted = col6d.permute(0,1,4,5,2,3);
+            epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1);  //zero copy reshape
+        } else {
+            //"CNN layer above" strides...
+            col6d = Nd4j.create(new int[]{depth,miniBatch,outH,outW,kernel[0],kernel[1]},'c');
+            col6dPermuted = col6d.permute(1,0,4,5,2,3);
+
+            INDArray epsilonTemp = epsilon.permute(1,0,2,3);
+            epsilon1d = epsilonTemp.reshape('c', new int[]{ArrayUtil.prod(epsilon.length()),1} );   //Should be a zero-copy reshape always
+        }
+
+        INDArray col2d = col6d.reshape('c',miniBatch*depth*outH*outW,kernel[0]*kernel[1]);
+
 
         switch(layerConf().getPoolingType()) {
             case MAX:
-
-
-                //Approach here: do im2col, then IsMax, then broadcast muli
-
-                //Shape: [numExamples,depth,kernelHeight,kernelWidth,outHeight,outWidth]
-                INDArray im2col = Convolution.im2col(input,layerConf().getKernelSize(),layerConf().getStride(),layerConf().getPadding());
-                int[] s6d = im2col.shape();
-
-                    //Assuming c order and sensible strides, we can treat the 6d matrix as 5d, and do IsMax along 1d, instead of on 2d...
-                INDArray im2col5d = im2col.reshape(im2col.ordering(), s6d[0], s6d[1], s6d[2]*s6d[3], s6d[4], s6d[5]);
-                //Appling the IsMax operation gives us a 1.0 at the maximum value along that dimension, 0.0 at other values on that dimension
-                Nd4j.getExecutioner().exec(new IsMax(im2col5d,2));
-
-                    //Broadcast muli of epsilons after the ismax. This is how we assign responsibility for the output (i.e., undo the max op)
-                    //Shape of eps: [numExamples, depth, outH, outW]
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(im2col5d,epsilon,im2col5d,0,1,3,4));
-
-                //Do col2im to reduce
-                INDArray outEpsilon = Convolution.col2im(im2col,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
-                return new Pair<>(retGradient,outEpsilon);
+                //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
+                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
+                isMax.muliColumnVector(epsilon1d);
+                break;
             case AVG:
-                //compute reverse average error
-                retE = epsilon.get(
-                        NDArrayIndex.all()
-                        , NDArrayIndex.all()
-                        , NDArrayIndex.newAxis()
-                        , NDArrayIndex.newAxis());
-                reshapeEpsilon = Nd4j.tile(retE,1,1,layerConf().getKernelSize()[0],layerConf().getKernelSize()[1],1,1);
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon, layerConf().getStride(), layerConf().getPadding(), inputHeight, inputWidth);
-                reshapeEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-
-                return new Pair<>(retGradient, reshapeEpsilon);
+                //TODO: We could further optimize this by creating an uninitialized array, and doing a 'putiRowVector' operation
+                // instead of a zero initialization + an addiRowVector op
+                col2d.addiRowVector(epsilon1d);
+                break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Unsupported pooling type");
         }
+
+        //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
+        //Assuming the layer below is a CNN layer (very likely) we want [H*W, depth*H*W, W, 1] instead of the standard
+        // c-order [depth*H*W, H*W, W, 1] strides
+        //To achieve this: [depth, miniBatch, H, W] in c order, then permute to [miniBatch, depth, H, W]
+        //This gives us proper strides of 1 on the muli...
+        INDArray tempEpsilon = Nd4j.create(new int[]{depth,miniBatch,inH, inW},'c');
+        INDArray outEpsilon = tempEpsilon.permute(1,0,2,3);
+        Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth);
+
+        if(layerConf().getPoolingType() == org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType.AVG)
+            outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
+        return new Pair<>(retGradient,outEpsilon);
     }
 
 
     @Override
     public INDArray activate(boolean training) {
-        INDArray pooled, ret;
-        // n = num examples, c = num channels or depth
-        int n, c, kh, kw, outWidth, outHeight;
         if(training && conf.getLayer().getDropOut() > 0) {
             this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
 
-        pooled = Convolution.im2col(input,layerConf().getKernelSize(),layerConf().getStride(),layerConf().getPadding());
+        int miniBatch = input.size(0);
+        int inDepth = input.size(1);
+        int inH = input.size(2);
+        int inW = input.size(3);
+
+        int[] kernel = layerConf().getKernelSize();
+        int[] strides = layerConf().getStride();
+        int[] pad = layerConf().getPadding();
+
+        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
+        //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
+        //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
+        INDArray col = Nd4j.create(new int[]{miniBatch,inDepth,outH,outW,kernel[0],kernel[1]},'c');
+        INDArray col2 = col.permute(0,1,4,5,2,3);
+        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col2);
+
+        //Reshape to 2d; should be zero-copy reshape due to permute above
+        INDArray col2d = col.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
+
+        INDArray reduced;
         switch(layerConf().getPoolingType()) {
             case AVG:
-                return pooled.mean(2,3);
+                reduced = col2d.mean(1);
+                break;
             case MAX:
-                n = pooled.size(0);
-                c = pooled.size(1);
-                kh = pooled.size(2);
-                kw = pooled.size(3);
-                outHeight = pooled.size(4);
-                outWidth = pooled.size(5);
-                ret = pooled.reshape(n, c, kh * kw, outHeight, outWidth);
-                maxIndexes = Nd4j.argMax(ret, 2);
-                return ret.max(2);
+                reduced = col2d.max(1);
+                break;
             case NONE:
                 return input;
-            default: throw new IllegalStateException("Pooling type not supported!");
-
+            default: throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType());
         }
+        return reduced.reshape('c',miniBatch,inDepth,outH,outW);
     }
 
     @Override

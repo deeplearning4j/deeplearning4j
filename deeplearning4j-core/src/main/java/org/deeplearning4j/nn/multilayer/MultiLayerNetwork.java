@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -1058,7 +1059,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          */
         int numLayers = getnLayers();
         //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
-        LinkedList<Pair<String,INDArray>> gradientList = new LinkedList<>();
+        LinkedList<Triple<String,INDArray,Character>> gradientList = new LinkedList<>();
 
         int layerFrom;
         Pair<Gradient,INDArray> currPair;
@@ -1075,8 +1076,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             currPair = outputLayer.backpropGradient(null);
 
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-                multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
-                gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
+                String origName = entry.getKey();
+                multiGradientKey = String.valueOf(numLayers - 1) + "_" + origName;
+                gradientList.addLast(new Triple<>(multiGradientKey,entry.getValue(),currPair.getFirst().flatteningOrderForVariable(origName)));
             }
             if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
                 currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
@@ -1092,12 +1094,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             currLayer = getLayer(j);
             currPair = currLayer.backpropGradient(currPair.getSecond());
 
-            LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
+            LinkedList<Triple<String,INDArray,Character>> tempList = new LinkedList<>();
             for(Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-                multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
-                tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
+                String origName = entry.getKey();
+                multiGradientKey = String.valueOf(j) + "_" + origName;
+                tempList.addFirst(new Triple<>(multiGradientKey,entry.getValue(), currPair.getFirst().flatteningOrderForVariable(origName)));
             }
-            for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
+            for(Triple<String,INDArray,Character> triple : tempList) gradientList.addFirst(triple);
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
@@ -1105,8 +1108,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         //Add gradients to Gradients (map), in correct order
-        for( Pair<String,INDArray> pair : gradientList)
-            gradient.setGradientFor(pair.getFirst(), pair.getSecond());
+        for( Triple<String,INDArray,Character> triple : gradientList) {
+            gradient.setGradientFor(triple.getFirst(), triple.getSecond(), triple.getThird());
+        }
 
         return new Pair<>(gradient,currPair.getSecond());
     }
