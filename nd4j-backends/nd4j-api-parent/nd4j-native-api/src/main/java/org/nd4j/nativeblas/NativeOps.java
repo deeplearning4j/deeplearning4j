@@ -874,7 +874,9 @@ public class NativeOps extends Pointer {
             long []data,
             long [] inputShapeInfo,
             long result,
-            long resultShapeInfo);
+            long resultShapeInfo,
+            long []tadPointers,
+            long []tadOffsets);
 
     /**
      *
@@ -891,7 +893,9 @@ public class NativeOps extends Pointer {
             long []data,
             long [] inputShapeInfo,
             long result,
-            long resultShapeInfo);
+            long resultShapeInfo,
+            long []tadPointers,
+            long []tadOffsets);
 
     /**
      * Gets the number of open mp threads
