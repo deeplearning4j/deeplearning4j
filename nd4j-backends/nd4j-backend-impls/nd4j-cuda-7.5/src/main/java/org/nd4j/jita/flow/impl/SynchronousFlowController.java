@@ -114,4 +114,5 @@ public class SynchronousFlowController implements FlowController {
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
         return context;
     }
+
 }
