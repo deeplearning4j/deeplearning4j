@@ -272,6 +272,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setParams(INDArray params) {
+        setParams(params,'f');
+    }
+
+    protected void setParams(INDArray params, char order){
         List<String> parameterList = conf.variables();
         int length = 0;
         for(String s : parameterList)
@@ -285,10 +289,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            setParam(s,get.reshape('f',param.shape()));
+            setParam(s,get.reshape(order,param.shape()));
             idx += param.length();
         }
-
     }
 
     @Override
