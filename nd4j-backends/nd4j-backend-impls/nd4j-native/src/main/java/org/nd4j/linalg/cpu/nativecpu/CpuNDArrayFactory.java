@@ -585,7 +585,10 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     dataPointers,
                     shapeInfoPointers,
                     ret.data().address(),
-                    ret.shapeInfoDataBuffer().address());
+                    ret.shapeInfoDataBuffer().address(),
+                    new long[] {0},
+                    new long[] {0}
+            );
         }
         else {
             nativeOps.concatFloat(
@@ -595,7 +598,10 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     dataPointers,
                     shapeInfoPointers,
                     ret.data().address(),
-                    ret.shapeInfoDataBuffer().address());
+                    ret.shapeInfoDataBuffer().address(),
+                    new long[] {0},
+                    new long[] {0}
+            );
 
         }
         return ret;
