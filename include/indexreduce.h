@@ -292,35 +292,36 @@ struct SharedIndexValue<double> {
 
 		if (!resultScalar) {
 
-			__shared__ shape::TAD *tad;
 			__shared__ int tadLength;
+            __shared__ int tadEWS;
+            __shared__ int tadRank;
+            __shared__ int numTads;
+            __shared__ int *tadShape;
+            __shared__ int *tadStride;
             if (threadIdx.x == 0) {
-                tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-                tad->setExternalBuffers((void *) manager);
-                tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
-                //tad->init(xShapeInfo,dimension,dimensionLength);
-            	//tad->createTadOnlyShapeInfo();
+          	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                tadRank = shape::rank(tadOnlyShapeInfo);
+                numTads = shape::length(xShapeInfo) / tadLength;
 
-            	tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                tadShape = shape::shapeOf(tadOnlyShapeInfo);
+                tadStride = shape::stride(tadOnlyShapeInfo);
             }
             __syncthreads();
 
 			if (dimensionLength > 1) {
-				int rank = shape::rank(tad->tadOnlyShapeInfo);
 				/*
                 long allocSize = sizeof(int) * rank;
                 int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
                 */
                 int xCoord[MAX_RANK];
 
-				for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
-					if (threadIdx.x == 0)
-                    	tad->createOffsetForBlock(r);
-                    __syncthreads();
+				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+					int tadOffsetForBlock = tadOffsets[r];
 
                     for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                        shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                        Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                        shape::ind2subC(tadRank,tadShape, i, xCoord);
+                        Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 						IndexValue<T> comp {dx[xOffset], i};
 
                     	sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(sPartials[threadIdx.x], comp,extraParams),extraParams);
@@ -341,19 +342,14 @@ struct SharedIndexValue<double> {
                 */
 			} else {
 
-            	int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-
 #pragma unroll
-				for(int i = blockIdx.x; i < tad->numTads; i+= gridDim.x) {
-					if (threadIdx.x == 0)
-                    	tad->createOffsetForBlock(i);
-                    __syncthreads();
+				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
+					int tadOffsetForBlock = tadOffsets[i];
 
-					sPartials[threadIdx.x] = {dx[tad->tadOffsetForBlock], 0};
+					sPartials[threadIdx.x] = {dx[tadOffsetForBlock], 0};
 #pragma unroll
 					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
-						int indexX = tad->tadOffsetForBlock + x * tadEWS;
-						IndexValue<T> comp {dx[indexX], x};
+						IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
 					}
 
