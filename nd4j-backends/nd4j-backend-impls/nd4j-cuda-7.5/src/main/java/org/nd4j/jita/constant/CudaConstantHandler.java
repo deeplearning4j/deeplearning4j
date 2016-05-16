@@ -53,7 +53,8 @@ public class CudaConstantHandler implements ConstantHandler {
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         if (currentOffset >= 49152 || requiredMemoryBytes > 272)  {
-            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+            context.syncSpecialStream();
             point.setConstant(true);
             point.tickDeviceWrite();
             point.tickHostRead();
@@ -62,7 +63,9 @@ public class CudaConstantHandler implements ConstantHandler {
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
         if (currentOffset >= 49152)  {
-            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+            context.syncSpecialStream();
+            context.syncSpecialStream();
             point.setConstant(true);
             point.tickDeviceWrite();
             point.tickHostRead();
@@ -70,7 +73,9 @@ public class CudaConstantHandler implements ConstantHandler {
         }
 
 
-        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getOldStream().getNativePointer());
+        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+        context.syncSpecialStream();
+
         long cAddr = deviceAddresses.get(deviceId).longValue()  + currentOffset;
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);
