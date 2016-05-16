@@ -1,0 +1,109 @@
+	/*
+  	Flaticon icon font: Flaticon
+  	Creation date: 19/02/2016 14:46
+  	*/
+
+@font-face {
+  font-family: "Flaticon";
+  src: url("./Flaticon.eot");
+  src: url("./Flaticon.eot?#iefix") format("embedded-opentype"),
+       url("./Flaticon.woff") format("woff"),
+       url("./Flaticon.ttf") format("truetype"),
+       url("./Flaticon.svg#Flaticon") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: "Flaticon";
+    src: url("./Flaticon.svg#Flaticon") format("svg");
+  }
+}
+
+[class^="flaticon-"]:before, [class*=" flaticon-"]:before,
+[class^="flaticon-"]:after, [class*=" flaticon-"]:after {   
+  font-family: Flaticon;
+        font-size: 20px;
+font-style: normal;
+margin-left: 20px;
+}
+
+.flaticon-adjusting-wrench-tool:before { content: "\f100"; }
+.flaticon-architecture-crane-tool:before { content: "\f101"; }
+.flaticon-architecture-draw-of-a-house-on-a-paper:before { content: "\f102"; }
+.flaticon-attention-signal-and-construction-worker:before { content: "\f103"; }
+.flaticon-ax:before { content: "\f104"; }
+.flaticon-barrow-with-construction-materials:before { content: "\f105"; }
+.flaticon-brick:before { content: "\f106"; }
+.flaticon-bricks:before { content: "\f107"; }
+.flaticon-bricks-wall-and-demolition-ball:before { content: "\f108"; }
+.flaticon-brush-with-fresh-painting:before { content: "\f109"; }
+.flaticon-construction-machine-equipment:before { content: "\f10a"; }
+.flaticon-construction-tool-of-vehicle-with-big-shovel:before { content: "\f10b"; }
+.flaticon-construction-tool-vehicle-with-crane-lifting-materials:before { content: "\f10c"; }
+.flaticon-construction-vehicle:before { content: "\f10d"; }
+.flaticon-construction-vehicle-for-concrete-transportation:before { content: "\f10e"; }
+.flaticon-constructor:before { content: "\f10f"; }
+.flaticon-constructor-with-hard-hat-and-stop-hexagonal-signal:before { content: "\f110"; }
+.flaticon-constructor-with-hard-hat-protection-on-his-head:before { content: "\f111"; }
+.flaticon-constructor-with-hat-and-a-gear:before { content: "\f112"; }
+.flaticon-crane-transporting-construction-material-for-a-building:before { content: "\f113"; }
+.flaticon-crane-transporting-container:before { content: "\f114"; }
+.flaticon-demolition-tool-transport-with-weight-ball:before { content: "\f115"; }
+.flaticon-drawing-architecture-project-of-a-house:before { content: "\f116"; }
+.flaticon-drawing-compass:before { content: "\f117"; }
+.flaticon-drill:before { content: "\f118"; }
+.flaticon-drill-tool-to-make-holes:before { content: "\f119"; }
+.flaticon-electrical-saw-wheel-cutting-tool:before { content: "\f11a"; }
+.flaticon-exclamation-sign-in-triangular-signal:before { content: "\f11b"; }
+.flaticon-factory-building:before { content: "\f11c"; }
+.flaticon-folded-paper:before { content: "\f11d"; }
+.flaticon-gear-shape:before { content: "\f11e"; }
+.flaticon-hammer:before { content: "\f11f"; }
+.flaticon-hammer-nailing-a-nail-in-a-wall:before { content: "\f120"; }
+.flaticon-hammer-tool-with-point:before { content: "\f121"; }
+.flaticon-hand-holding-a-hammer:before { content: "\f122"; }
+.flaticon-hand-holding-a-screwdriver-tool:before { content: "\f123"; }
+.flaticon-hand-holding-a-wrench:before { content: "\f124"; }
+.flaticon-hand-holding-an-ax-cutting-tool:before { content: "\f125"; }
+.flaticon-hand-of-a-painter-holding-paint-roller:before { content: "\f126"; }
+.flaticon-hexagonal-nut-tool:before { content: "\f127"; }
+.flaticon-hook-of-a-crane:before { content: "\f128"; }
+.flaticon-machine:before { content: "\f129"; }
+.flaticon-nut-and-bolt-tools-couple:before { content: "\f12a"; }
+.flaticon-pail-cylindrical-shape-tool-for-construction-materials:before { content: "\f12b"; }
+.flaticon-paint-brush:before { content: "\f12c"; }
+.flaticon-paint-roll:before { content: "\f12d"; }
+.flaticon-painting-in-a-pail:before { content: "\f12e"; }
+.flaticon-painting-roller-tool-on-a-wall:before { content: "\f12f"; }
+.flaticon-pipes-tubes-angle:before { content: "\f130"; }
+.flaticon-roof-holding-of-a-crane-on-prefabricated-house:before { content: "\f131"; }
+.flaticon-rounded-building-shape:before { content: "\f132"; }
+.flaticon-saw-tool-in-vertical-position:before { content: "\f133"; }
+.flaticon-sawing-cutting-tool:before { content: "\f134"; }
+.flaticon-screw-side-view:before { content: "\f135"; }
+.flaticon-screwdriver-tool:before { content: "\f136"; }
+.flaticon-shovel-agriculture-equipment-tool-in-vertical-position:before { content: "\f137"; }
+.flaticon-shovel-tool:before { content: "\f138"; }
+.flaticon-smog-factory-building-contamination:before { content: "\f139"; }
+.flaticon-stair:before { content: "\f13a"; }
+.flaticon-street-barriers:before { content: "\f13b"; }
+.flaticon-street-signal-barrier-with-stripes:before { content: "\f13c"; }
+.flaticon-traffic-cone-signal-tool-for-traffic:before { content: "\f13d"; }
+.flaticon-transport-with-arm-and-scoop:before { content: "\f13e"; }
+.flaticon-triangular-shovel-with-liquid-concrete:before { content: "\f13f"; }
+.flaticon-triangular-small-shovel-tool-for-construction:before { content: "\f140"; }
+.flaticon-truck-for-construction-materials-transport:before { content: "\f141"; }
+.flaticon-truck-transport-with-construction-materials:before { content: "\f142"; }
+.flaticon-truck-transporting-packages-on-frontal-blade:before { content: "\f143"; }
+.flaticon-two-gears:before { content: "\f144"; }
+.flaticon-two-screwing-tools:before { content: "\f145"; }
+.flaticon-wall-of-bricks:before { content: "\f146"; }
+.flaticon-wheelbarrow-side-view:before { content: "\f147"; }
+.flaticon-wheelbarrow-tool-for-transport-construction-materials-with-wheels:before { content: "\f148"; }
+.flaticon-worker-of-construction-working-with-a-shovel-beside-material-pile:before { content: "\f149"; }
+.flaticon-wrench-and-hammer-cross:before { content: "\f14a"; }
+.flaticon-wrench-for-nuts:before { content: "\f14b"; }
+.flaticon-wrench-in-a-hand:before { content: "\f14c"; }
+.flaticon-wrench-with-adjusting-system-for-different-nuts-sizes:before { content: "\f14d"; }

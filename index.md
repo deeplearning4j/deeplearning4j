@@ -3,9 +3,71 @@ layout: default
 title: Home
 ---
 
-# What is Deeplearning4j?
+<section class="section-lg home-alt bg-img" id="home">
+    <div class="bg-overlay-gradient bg-overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="home-wrapper text-center">
+                    <p class="text-muted">Deeplearning4j</p>
+                    <h1>Open-source, distributed deep-learning library for the JVM</h1>
+                    <a href="/quickstart" class="btn btn-custom">Quickstart</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../spark.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
+<section class="section bg-white" id="what">
+  <div class="container">
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <h2 class="title">What is Deeplearning4j?</h2>
+            <p class="title-alt">Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../spark.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.</p>
+        </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4">
+        <div class="features-box text-center">
+          <div class="feature-icon">
+            <i class="pe-7s-science"></i>
+          </div>
+          <h3>Distributed</h3>
+          <p class="text-muted">DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to improve training.</p>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="features-box text-center">
+          <div class="feature-icon">
+            <i class="pe-7s-light"></i>
+          </div>
+          <h3>Open-source</h3>
+          <p class="text-muted">Completely open-source and is maintained by the community and its commercial arm, [Skymind](http://skymind.io).</p>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="features-box text-center">
+          <div class="feature-icon">
+            <i class="pe-7s-display1"></i>
+          </div>
+          <h3>Java/Scala/JVM</h3>
+          <p class="text-muted">Deeplearning4j is written in Java and is compatible with any JVM language. Import into Clojure, Scala, &amp; Kotlin projects.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section bg-white" id="details">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12 text-center">
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.
 
@@ -79,3 +141,8 @@ Developers who would like to contribute to Deeplearning4j can get started by rea
 * University of Massachusets "[RandomOut: Using a convolutional gradient norm to win The Filter Lottery](http://arxiv.org/abs/1602.05931)"
 * Stanford NLP: "[Large-Scale Language Classification](http://nlp.stanford.edu/courses/cs224n/2015/reports/24.pdf)"
 * [Like2Vec: A New Technique for Recommender Algorithms](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit?pref=2&pli=1#slide=id.g11a4ba0c5c_0_6)
+
+      </div>
+    </div>
+  </div>
+</section>
