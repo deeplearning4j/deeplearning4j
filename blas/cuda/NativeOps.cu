@@ -3615,9 +3615,12 @@ __device__ void concatKernelGeneric(int dimension,
 			__syncthreads();
 		//	arrOffset += yLength;
 
-		//	if (threadIdx.x == 0)
-			//	delete inputTAD;
+			if (threadIdx.x == 0)
+				delete inputTAD;
 		}
+
+		if (threadIdx.x == 0)
+			delete tad;
 	}
 }
 
@@ -4260,7 +4263,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<64, 64, 2048, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	concatKernelFloat<<<128, 128, funcAttributes[31].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4290,7 +4293,7 @@ void NativeOps::concatDouble(
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelDouble<<<64, 64, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	concatKernelDouble<<<128, 128, funcAttributes[35].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
