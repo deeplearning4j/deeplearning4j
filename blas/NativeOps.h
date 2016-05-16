@@ -865,7 +865,7 @@ public:
             Nd4jPointer *data,
             Nd4jPointer *inputShapeInfo,
             Nd4jPointer result,
-            Nd4jPointer resultShapeInfo);
+            Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
 /**
     * Concatneate multi array of the same shape together
     * along a particular dimension
@@ -877,7 +877,7 @@ public:
             Nd4jPointer *data,
             Nd4jPointer *inputShapeInfo,
             Nd4jPointer result,
-            Nd4jPointer resultShapeInfo);
+            Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
 
     /**
      * This method implementation exists only for cuda.
