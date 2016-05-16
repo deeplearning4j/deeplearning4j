@@ -327,8 +327,8 @@ public class TestDecayPolicies {
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAGRAD))
                     lr = testAdaGradComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
-//                else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAM))
-//                    lr = testAdamComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
+                else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAM))
+                    lr = testAdamComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.RMSPROP))
                     lr = testRMSPropComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
 
