@@ -60,4 +60,30 @@ public class ElementWiseStrideTests {
         System.out.println("Result: " + result);
 //        Nd4j.vstack(arrs2);
     }
+
+    @Test
+    public void testBVStack() throws Exception {
+        INDArray[] arr = new INDArray[5];
+        for( int i=0; i<arr.length; i++ ){
+            arr[i] = Nd4j.create(new int[]{1,5749},'c');
+        }
+
+        Nd4j.vstack(arr);
+        Nd4j.create(1);
+    }
+
+    @Test
+    public void test2(){
+        INDArray[] first = new INDArray[10];
+        INDArray[] second = new INDArray[10];
+        for( int i=0; i<10; i++ ){
+            first[i] = Nd4j.create(new int[]{1,784},'c');
+            second[i] = Nd4j.create(new int[]{1,5749},'c');
+        }
+
+        Nd4j.vstack(first);
+        Nd4j.vstack(second);
+
+        Nd4j.create(1);
+    }
 }

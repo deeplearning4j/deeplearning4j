@@ -19,9 +19,11 @@
 
 package org.nd4j.linalg.jcublas;
 
+import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.tad.TADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -548,9 +550,23 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         long[] shapeInfoPointers = new long[toConcat.length];
         long[] dataPointers = new long[toConcat.length];
+        long[] tadPointers = new long[toConcat.length];
+        long[] offsetsPointers = new long[toConcat.length];
+
+        TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
         for(int i = 0; i < toConcat.length; i++) {
             shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
+
+            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[]{dimension});
+
+            long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
+
+            DataBuffer offsets = tadBuffers.getSecond();
+            long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
+
+            tadPointers[i] = devTadShapeInfo;
+            offsetsPointers[i] = devTadOffsets;
         }
 
         //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
@@ -572,12 +588,18 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         CudaDoubleDataBuffer tempData = new CudaDoubleDataBuffer(toConcat.length);
         CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(toConcat.length);
+        CudaDoubleDataBuffer tempTAD = new CudaDoubleDataBuffer(toConcat.length);
+        CudaDoubleDataBuffer tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
 
         AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8, 0);
         AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
 
         long dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context).address();
         long shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context).address();
+        long tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context).address();
+        long offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context).address();
 
        // System.out.println("ShapesPointer after conversion: " + shapesPointer);
 
@@ -589,7 +611,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new long[] {dataPointer},
                     new long[] {shapesPointer},
                     dZ,
-                    dZShapeInfo);
+                    dZShapeInfo,
+                    new long[] {tadPointer},
+                    new long[] {offsetPointer});
         }
         else {
             nativeOps.concatFloat(
@@ -599,7 +623,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new long[] {dataPointer},
                     new long[] {shapesPointer},
                     dZ,
-                    dZShapeInfo);
+                    dZShapeInfo,
+                    new long[] {tadPointer},
+                    new long[] {offsetPointer});
 
         }
 

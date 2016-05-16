@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 
 
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -68,7 +69,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private static final Allocator allocator = AtomicAllocator.getInstance();
     private static Logger log = LoggerFactory.getLogger(JCudaExecutioner.class);
 
-    private static TADManager tadManager = new DeviceTADManager();
+    @Getter private static TADManager tadManager = new DeviceTADManager();
 
     public JCudaExecutioner() {
 
