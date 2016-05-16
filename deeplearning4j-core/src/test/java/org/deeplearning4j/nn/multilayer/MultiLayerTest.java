@@ -145,8 +145,6 @@ public class MultiLayerTest {
                         .activation("softmax")
                         .nIn(2).nOut(3).build())
                 .backprop(true).pretrain(false)
-                .inputPreProcessor(2,new FeedForwardToCnnPreProcessor(1,2,1))
-                .inputPreProcessor(3,new CnnToFeedForwardPreProcessor(1,2,1))
                 .build();
 
 
