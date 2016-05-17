@@ -24,10 +24,10 @@ We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning
 
 * [Java (developer version)](#Java) 1.7 or later
 * [Apache Maven](#Maven)
-* [IntelliJ IDEA](#IntelliJ) 
+* [IntelliJ IDEA](#IntelliJ) or Eclipse
 * [Git](#Git)
 
-You *must* have all of these installed to use this Quick Start guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience with these.
+You should have all of these installed to use this QuickStart guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience with these.
 
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, **skip to <a href="#examples">DL4J Examples</a>**.
 
@@ -97,9 +97,7 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
 - `nd4j-x86`, the CPU version of the ND4J library that powers DL4J
 - `canova-api` - Canova is our library vectorizing and loading data
 
-Every Maven project has a POM file. Here is how the POM file should appear when you run your examples, and here is [a link to it on Github](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
-
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml?slice=1:175"></script>
+Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml) when you run your examples.
 
 Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPLinearClassifier`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java). 
 
