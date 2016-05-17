@@ -676,9 +676,10 @@ iframe {
 	margin: 0px 0px 30px 0px;
 	font-family: 'Josefin Sans', sans-serif;
 	font-weight: 700;
+  font-size: 22px;
 }
 
-.subscribe-form .hs-form-field {
+.subscribe-form .hs-form {
   position: relative;
   max-width: 600px;
   margin: 0px auto;
@@ -698,16 +699,12 @@ iframe {
 }
 
 .subscribe-form .actions input {
-  position: absolute;
-  top: 4px;
-  right: 4px;
   outline: none !important;
   border-radius: 30px;
   border: none;
   color: #fff;
   font-size: 17px;
   background: #43cea2;
-  padding: 11px 30px;
 }
 
 
