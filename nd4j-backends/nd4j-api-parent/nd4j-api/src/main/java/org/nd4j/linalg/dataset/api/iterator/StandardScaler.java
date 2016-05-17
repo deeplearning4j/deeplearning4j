@@ -3,6 +3,7 @@ package org.nd4j.linalg.dataset.api.iterator;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.BufferedOutputStream;
@@ -32,25 +33,38 @@ public class StandardScaler {
     public void fit(DataSetIterator iterator) {
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
+            runningTotal += next.numExamples();
             if(mean == null) {
                 //start with the mean and std of zero
                 //column wise
                 mean = next.getFeatureMatrix().mean(0);
-                std = Nd4j.zeros(mean.shape());
+                std = (iterator.batch() == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatureMatrix().std(0),2);
+                std.muli(iterator.batch());
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
-                // m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
+                // This only works if batch size is 1, m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
                 INDArray xMinusMean = next.getFeatureMatrix().subRowVector(mean);
                 INDArray newMean = mean.add(xMinusMean.sum(0).divi(runningTotal));
-                std.addi(xMinusMean.muli(next.getFeatureMatrix().subRowVector(newMean)).sum(0).divi(runningTotal));
+                // Using http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
+                // for a version of calc variance when dataset is partitioned into two sample sets
+                // Also described in https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+                // delta = mean_B - mean_A; A is data seen so far, B is the current batch
+                // M2 is the var*n
+                // M2 = M2_A + M2_B + delta^2 * nA * nB/(nA+nB)
+                INDArray meanB = next.getFeatureMatrix().mean(0);
+                INDArray deltaSq = Transforms.pow(meanB.subRowVector(mean),2);
+                INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-iterator.batch())*iterator.batch()/iterator.totalExamples());
+                INDArray mtwoB = Transforms.pow(next.getFeatureMatrix().std(0),2);
+                mtwoB.muli(iterator.batch());
+                std = std.add(mtwoB);
+                std = std.add(deltaSqScaled);
                 mean = newMean;
             }
 
-            runningTotal += next.numExamples();
-
         }
-
+        std.divi(runningTotal);
+        std = Transforms.sqrt(std);
         iterator.reset();
     }
 
