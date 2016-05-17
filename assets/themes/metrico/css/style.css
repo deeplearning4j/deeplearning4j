@@ -686,7 +686,6 @@ iframe {
 }
 
 .subscribe-form .hs-form-field input {
-  margin-top: 20px;
   padding: 15px 20px;
   width: 100%;
   font-size: 17px;
@@ -700,6 +699,7 @@ iframe {
 }
 
 .subscribe-form .actions input {
+  margin-top: 20px;
   padding: 15px 20px;
   outline: none !important;
   border-radius: 30px;
