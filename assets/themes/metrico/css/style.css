@@ -181,6 +181,11 @@ a{
   padding-bottom: 150px;
 }
 
+.section-lg-small {
+  padding-top: 100px;
+  padding-bottom: 30px;
+}
+
 .padding-b-0 {
   padding-bottom: 0px !important;
 }
