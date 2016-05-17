@@ -8,10 +8,13 @@ import java.text.DecimalFormat;
 
 /**
  * @author Adam Gibson
+ * @author Susan Eraly
  */
 public class NDArrayStrings {
     private DecimalFormat decimalFormat = new DecimalFormat("#,###,##0.00");
+    //String format = "%10.2f\n";
     private String sep = ",";
+    private int padding = 0;
 
 
     public NDArrayStrings(String sep) {
@@ -19,7 +22,7 @@ public class NDArrayStrings {
     }
 
     public NDArrayStrings() {
-        this(",");
+        this(", ");
     }
 
 
@@ -29,12 +32,16 @@ public class NDArrayStrings {
      * @return the formatted array
      */
     public String format(INDArray arr) {
+        String padding = decimalFormat.format(arr.maxNumber());
+        this.padding = padding.length();
         return format(arr,arr.rank());
     }
-
     private String format(INDArray arr,int rank) {
-        StringBuffer sb = new StringBuffer();
+        return format(arr,arr.rank(),0);
+    }
 
+    private String format(INDArray arr,int rank, int offset) {
+        StringBuffer sb = new StringBuffer();
         if(arr.isScalar()) {
             if(arr instanceof IComplexNDArray)
                 return ((IComplexNDArray) arr).getComplex(0).toString();
@@ -46,36 +53,31 @@ public class NDArrayStrings {
         else if(arr.isVector()) {
             sb.append("[");
             for(int i = 0; i < arr.length(); i++) {
-                sb.append(StringUtils.repeat(" ",rank - 1));
-
                 if(arr instanceof IComplexNDArray)
                     sb.append(((IComplexNDArray) arr).getComplex(i).toString());
                 else
-                    sb.append(decimalFormat.format(arr.getDouble(i)));
+                    sb.append(String.format("%1$"+padding+"s",decimalFormat.format(arr.getDouble(i))));
                 if(i < arr.length() - 1)
                     sb.append(sep);
             }
-
             sb.append("]");
             return sb.toString();
         }
 
         else {
+            offset++;
             sb.append("[");
             for(int i = 0; i < arr.slices(); i++) {
-                sb.append(format(arr.slice(i),rank - 1));
-                if(i < arr.slices() - 1) {
-                    sb.append("\n");
-                    sb.append(StringUtils.repeat(" ",rank - 1));
+                sb.append(format(arr.slice(i),rank - 1,offset));
+                if (i != arr.slices() - 1) {
+                    sb.append(",\n");
+                    sb.append(StringUtils.repeat("\n",rank-2));
+                    sb.append(StringUtils.repeat(" ",offset));
                 }
             }
-
             sb.append("]");
-
-
             return sb.toString();
         }
     }
-
 
 }
