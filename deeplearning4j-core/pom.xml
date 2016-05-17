@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.4-rc3.9</version>
     </parent>
     <build>
         <pluginManagement>
@@ -51,12 +51,12 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-api</artifactId>
-                <version>${nd4j.version}</version>
+                <version>0.4-rc3.9</version>
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-native</artifactId>
-                <version>${nd4j.version}</version>
+                <version>0.4-rc3.9</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -68,12 +68,12 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-nd4j-image</artifactId>
-                <version>${canova.version}</version>
+                <version>0.0.0.15</version>
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
+                <version>0.0.0.15</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
