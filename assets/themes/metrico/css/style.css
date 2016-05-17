@@ -11,6 +11,7 @@ body {
 	background-color: #f9f9f9;
 	color: #505458;
 	font-family: 'Roboto', sans-serif;
+  font-weight: 300;
 }
 
 .logo {
@@ -23,6 +24,11 @@ a{
 	   -moz-transition: all 400ms ease-in-out;
        -o-transition: all 400ms ease-in-out;
           transition: all 400ms ease-in-out;
+}
+
+p {
+  line-height: 1.75em;
+  font-size: 15px;
 }
     
 /* BUTTONS */
@@ -167,8 +173,8 @@ a{
 
 /* HELPER CLASSES */
 .section {
-  padding-top: 100px;
-  padding-bottom: 100px;
+  padding-top: 80px;
+  padding-bottom: 80px;
 }
 
 .section-md {
@@ -665,20 +671,20 @@ iframe {
 
 /* Subscribe Form */
 
-.subscribe-form  h3 {
+.subscribe-form h5 {
 	color: #fff;
 	margin: 0px 0px 30px 0px;
 	font-family: 'Josefin Sans', sans-serif;
 	font-weight: 700;
 }
 
-.subscribe-form form{
+.subscribe-form .hs-form-field {
   position: relative;
   max-width: 600px;
   margin: 0px auto;
 }
 
-.subscribe-form input {
+.subscribe-form .hs-form-field input {
   padding: 15px 20px;
   width: 100%;
   font-size: 17px;
@@ -691,7 +697,7 @@ iframe {
   border-radius: 30px;
 }
 
-.subscribe-form button {
+.subscribe-form .actions input {
   position: absolute;
   top: 4px;
   right: 4px;
