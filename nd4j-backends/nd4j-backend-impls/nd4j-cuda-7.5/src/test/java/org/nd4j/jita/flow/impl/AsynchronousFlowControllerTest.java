@@ -117,6 +117,7 @@ public class AsynchronousFlowControllerTest {
         AllocationPoint pointWrite = allocator.getAllocationPoint(arrayWrite);
 
         assertPointHasNoDependencies(point);
+        controller.cutTail();
 
         CudaContext context = controller.prepareAction(arrayWrite, array);
         controller.registerAction(context, arrayWrite, array);
@@ -126,6 +127,12 @@ public class AsynchronousFlowControllerTest {
         assertNotEquals(-1, controller.hasActiveWrite(pointWrite));
 
         Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
+        controller.sweepTail();
+
+        assertTrue(controller.hasActiveReads(point));
+        assertFalse(controller.hasActiveReads(pointWrite));
+        assertNotEquals(-1, controller.hasActiveWrite(pointWrite));
 
         controller.sweepTail();
 

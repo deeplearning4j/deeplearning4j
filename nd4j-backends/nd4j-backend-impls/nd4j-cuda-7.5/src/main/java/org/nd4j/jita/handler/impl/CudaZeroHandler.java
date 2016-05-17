@@ -519,7 +519,7 @@ public class CudaZeroHandler implements MemoryHandler {
             if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed");
 
-                tContext.syncSpecialStream();
+                flowController.commitTransfer(tContext.getSpecialStream());
 
             if (point.getAllocationStatus() == AllocationStatus.HOST)
                 flowController.registerAction(context, point);
@@ -542,7 +542,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         tContext.getSpecialStream().address()) == 0)
                 throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
-                tContext.syncSpecialStream();
+            flowController.commitTransfer(tContext.getSpecialStream());
 
             flowController.registerAction(tContext, point);
 

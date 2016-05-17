@@ -4,6 +4,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.time.TimeProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.jita.conf.Configuration;
@@ -471,7 +472,7 @@ public class AsynchronousFlowController implements FlowController{
         for (int l = 0; l < configuration.getCommandLanesNumber(); l++) {
             Queue<cudaEvent_t> queue = eventsBarrier.get(deviceId).get(l);
 
-            if (queue.size() >= MAX_EXECUTION_QUEUE || laneClocks.get(deviceId).get(l).get() > lastCommandId - MAX_EXECUTION_QUEUE) {
+            if (queue.size() >= MAX_EXECUTION_QUEUE || laneClocks.get(deviceId).get(l).get() < lastCommandId - MAX_EXECUTION_QUEUE) {
                 cudaEvent_t event = queue.poll();
                 if (event != null && !event.isDestroyed()) {
                     event.synchronize();
@@ -484,6 +485,26 @@ public class AsynchronousFlowController implements FlowController{
 
         deviceClocks.get(deviceId).incrementAndGet();
 
-        log.info("Events sweeped: [{}]", cnt);
+      //  log.info("Events sweeped: [{}]", cnt);
+    }
+
+
+    protected void cutTail() {
+        Integer deviceId = allocator.getDeviceId();
+
+        for (int l = 0; l < configuration.getCommandLanesNumber(); l++) {
+            Queue<cudaEvent_t> queue = eventsBarrier.get(deviceId).get(l);
+            cudaEvent_t event;
+            while ((event = queue.poll()) != null) {
+                event.synchronize();
+                event.destroy();
+            }
+        }
+    }
+
+    @Override
+    public void commitTransfer(cudaStream_t streamUsed) {
+        sweepTail();
+        streamUsed.synchronize();
     }
 }

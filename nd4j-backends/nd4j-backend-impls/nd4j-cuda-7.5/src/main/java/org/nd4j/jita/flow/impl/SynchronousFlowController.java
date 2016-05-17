@@ -115,4 +115,8 @@ public class SynchronousFlowController implements FlowController {
         return context;
     }
 
+    @Override
+    public void commitTransfer(cudaStream_t streamUsed) {
+        streamUsed.synchronize();
+    }
 }

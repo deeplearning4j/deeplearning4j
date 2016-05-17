@@ -127,7 +127,7 @@ public class Configuration implements Serializable {
 
     @Getter private int commandQueueLength = 3;
 
-    @Getter private int commandLanesNumber = 4;
+    @Getter private int commandLanesNumber = 2;
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
