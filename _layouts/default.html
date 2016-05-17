@@ -2,13 +2,25 @@
 layout: all
 ---
 
+<section class="section-lg home-alt bg-img" id="home">
+  <div class="bg-overlay-gradient bg-overlay"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <div class="home-wrapper text-center">
+          <h2 class="title">{{ page.title }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section bg-white" id="what">
   <div class="container">
     <div class="row">
-        <div class="col-sm-12">
-            <h2 class="title">{{ page.title }}</h2>
-            {{ content }}
-        </div>
+      <div class="col-sm-12">
+        {{ content }}
+      </div>
     </div>
   </div>
 </section>
