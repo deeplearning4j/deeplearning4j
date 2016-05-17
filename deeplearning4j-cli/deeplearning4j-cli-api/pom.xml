@@ -20,7 +20,7 @@
   <parent>
     <artifactId>deeplearning4j-cli</artifactId>
     <groupId>org.deeplearning4j</groupId>
-    <version>0.4-rc3.9-SNAPSHOT</version>
+    <version>0.4-rc3.9</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>deeplearning4j-cli-api</artifactId>
@@ -42,7 +42,7 @@
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
-      <version>${nd4j.version}</version>
+      <version>0.4-rc3.9</version>
       <!--<scope>test</scope>-->
     </dependency>
     <dependency>
@@ -158,8 +158,8 @@
                 <mapping>
                   <directory>/usr/local/lib/deeplearning4j/</directory>
                   <filemode>755</filemode>
-                  <dependency/>
-                  <artifact/>
+                  <dependency />
+                  <artifact />
                 </mapping>
                 <mapping>
                   <directory>/usr/local/bin/</directory>
