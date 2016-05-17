@@ -2,7 +2,7 @@
     <parent>
         <artifactId>arbiter</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.0.0.6-SNAPSHOT</version>
+        <version>0.0.0.6</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,13 +18,13 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
+            <version>0.4-rc3.9</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc3.9</version>
             <scope>test</scope>
         </dependency>
 
