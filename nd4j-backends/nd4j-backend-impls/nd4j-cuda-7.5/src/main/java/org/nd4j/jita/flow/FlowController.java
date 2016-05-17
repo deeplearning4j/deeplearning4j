@@ -54,5 +54,5 @@ public interface FlowController {
     /**
      * This method should be called after memcpy operations, to control their flow.
      */
-    void commitTransfer(cudaStream_t streamUsed);
+    //void commitTransfer(cudaStream_t streamUsed);
 }

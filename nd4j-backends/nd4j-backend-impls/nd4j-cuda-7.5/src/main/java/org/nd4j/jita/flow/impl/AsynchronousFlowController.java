@@ -168,6 +168,14 @@ public class AsynchronousFlowController implements FlowController{
         return event.getLaneId();
     }
 
+    protected int hasActiveWrite(AllocationPoint point) {
+
+        cudaEvent_t event = point.getWriteLane();
+        if (event == null || event.isDestroyed()) return -1;
+
+        return event.getLaneId();
+    }
+
     protected boolean hasActiveReads(AllocationPoint point) {
         Queue<cudaEvent_t> events = point.getReadLane();
 
