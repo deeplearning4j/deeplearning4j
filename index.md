@@ -4,6 +4,7 @@ title: Home
 ---
 
 
+## Welcome to Deeplearning4j
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.
 
