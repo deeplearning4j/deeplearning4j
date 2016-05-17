@@ -5,11 +5,11 @@ title: Home
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../spark.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
+Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala that runs on distributed CPUs or GPUs. Integrated with Hadoop and [Spark](../spark.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.
 
-By following the [instructions on our Quick Start page](../quickstart.html), you can run your first examples of trained neural nets in minutes.
+By following the [instructions on our Quick Start page](../quickstart), you can run your first examples of trained neural nets in minutes.
 
 ### [Deep Learning Use Cases](../use_cases)
 
@@ -19,7 +19,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 * Spam filtering (anomaly detection)
 * [Fraud detection](http://www.skymind.io/finance/) 
 * [Recommender Systems (CRM, adtech, churn prevention)](http://www.skymind.io/commerce/)
-* [Regression](../linear-regression.html)
+* [Regression](../linear-regression)
 
 ### Why Deeplearning4j? 
 
@@ -28,12 +28,12 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 * [Canova](../canova.html): A General vectorization tool for Machine-Learning libs
 * [ND4J: A linear algebra library 2x as fast as Numpy](http://nd4j.org/benchmarking)
 
-Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via [iterative reduce](../iterativereduce.html), and they are equally compatible with **Java**, **[Scala](http://nd4j.org/scala.html)** and **[Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)**. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a [micro-service architecture](http://microservices.io/patterns/microservices.html).
+Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via [iterative reduce](../iterativereduce), and they are equally compatible with **Java**, **[Scala](http://nd4j.org/scala.html)** and **[Clojure](https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj)**. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a [micro-service architecture](http://microservices.io/patterns/microservices.html).
 
 ### DL4J's Neural Networks
 
-* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-* [Convolutional Nets](../convolutionalnets.html) (images)
+* [Restricted Boltzmann machines](../restrictedboltzmannmachine)
+* [Convolutional Nets](../convolutionalnets) (images)
 * [Recurrent Nets](../usingrnns.html)/[LSTMs](../lstm.html) (time series and sensor data)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
