@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<!--
+  Flaticon icon font: Flaticon
+  Creation date: 19/02/2016 14:46
+-->
+<html>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flaticon WebFont</title>
+    <link href="http://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="flaticon.css">
+    <meta charset="UTF-8">
+    <style>
+    html, body, div, span, applet, object, iframe,
+    h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+    a, abbr, acronym, address, big, cite, code,
+    del, dfn, em, img, ins, kbd, q, s, samp,
+    small, strike, strong, sub, sup, tt, var,
+    b, u, i, center,
+    dl, dt, dd, ol, ul, li,
+    fieldset, form, label, legend,
+    table, caption, tbody, tfoot, thead, tr, th, td,
+    article, aside, canvas, details, embed, 
+    figure, figcaption, footer, header, hgroup, 
+    menu, nav, output, ruby, section, summary,
+    time, mark, audio, video {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font: inherit;
+        vertical-align: baseline;
+    }
+    /* HTML5 display-role reset for older browsers */
+    article, aside, details, figcaption, figure, 
+    footer, header, hgroup, menu, nav, section {
+        display: block;
+    }
+    body {
+        line-height: 1;
+    }
+    ol, ul {
+        list-style: none;
+    }
+    blockquote, q {
+        quotes: none;
+    }
+    blockquote:before, blockquote:after,
+    q:before, q:after {
+        content: '';
+        content: none;
+    }
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+    body {
+        font-family: 'Varela Round', Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        color: #222;
+    }
+    a {
+        color: #333;
+        border-bottom: 1px solid #a9fd00;
+        font-weight: bold;
+        text-decoration: none;
+    }
+    * {
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    [class^="flaticon-"]:before, [class*=" flaticon-"]:before, [class^="flaticon-"]:after, [class*=" flaticon-"]:after {
+        font-family: Flaticon;
+        font-size: 30px;
+        font-style: normal;
+        margin-left: 20px;
+        color: #333;
+    }
+    .wrapper {
+        max-width: 600px;
+        margin: auto;
+        padding: 0 1em;
+    }
+    .title {
+        font-size: 1.25em;
+        text-align: center;
+        margin-bottom: 1em;
+        text-transform: uppercase;
+    }
+    header {
+        text-align: center;
+        background-color: #222;
+        color: #fff;
+        padding: 1em;
+    }
+    header .logo {
+        width: 210px;
+        height: 38px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 1em;
+        border: none;
+    }
+    header strong {
+        font-size: 1.95em;
+        font-weight: bold;
+        vertical-align: middle;
+        margin-top: 5px;
+        display: inline-block;
+    }
+    .demo {
+        margin: 2em auto;
+        line-height: 1.25em;
+    }
+    .demo ul li {
+        margin-bottom: 1em;
+    }
+    .demo ul li .num {
+        color: #222;
+        border-radius: 20px;
+        display: inline-block;
+        width: 26px;
+        padding: 3px;
+        height: 26px;
+        text-align: center;
+        margin-right: 0.5em;
+        border: 1px solid #222;
+    }
+    .demo ul li code {
+        background-color: #222;
+        border-radius: 4px;
+        padding: 0.25em 0.5em;
+        display: inline-block;
+        color: #fff;
+        font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+        font-weight: lighter;
+        margin-top: 1em;
+        font-size: 0.8em;
+        word-break: break-all;
+    }
+    .demo ul li code.big {
+        padding: 1em;
+        font-size: 0.9em;
+    }
+    .demo ul li code .red {
+        color: #EF3159;
+    }
+    .demo ul li code .green {
+        color: #ACFF65;
+    }
+    .demo ul li code .yellow {
+        color: #FFFF99;
+    }
+    .demo ul li code .blue {
+        color: #99D3FF;
+    }
+    .demo ul li code .purple {
+        color: #A295FF;
+    }
+    .demo ul li code .dots {
+        margin-top: 0.5em;
+        display: block;
+    }
+    #glyphs {
+        border-bottom: 1px solid #ccc;
+        padding: 2em 0;
+        text-align: center;
+    }
+    .glyph {
+        display: inline-block;
+        width: 9em;
+        margin: 1em;
+        text-align: center;
+        vertical-align: top;
+        background: #FFF;
+    }
+    .glyph .glyph-icon {
+        padding: 10px;
+        display: block;
+        font-family:"Flaticon";
+        font-size: 64px;
+        line-height: 1;
+    }
+    .glyph .glyph-icon:before {
+        font-size: 64px;
+        color: #222;
+        margin-left: 0;
+    }
+    .class-name {
+        font-size: 0.65em;
+        background-color: #222;
+        color: #fff;
+        border-radius: 4px 4px 0 0;
+        padding: 0.5em;
+        color: #FFFF99;
+        font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+    }
+    .author-name {
+        font-size: 0.6em;
+        background-color: #fcfcfd;
+        border: 1px solid #DEDEE4;
+        border-top: 0;
+        border-radius: 0 0 4px 4px;
+        padding: 0.5em;
+    }
+    .class-name:last-child {
+        font-size: 10px;
+        color:#888;
+    }
+    .class-name:last-child a {
+        font-size: 10px;
+        color:#555;
+    }
+    .class-name:last-child a:hover {
+        color:#a9fd00;
+    }
+    .glyph > input {
+        display: block;
+        width: 100px;
+        margin: 5px auto;
+        text-align: center;
+        font-size: 12px;
+        cursor: text;
+    }
+    .glyph > input.icon-input {
+        font-family:"Flaticon";
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+    .attribution .title {
+        margin-top: 2em;
+    }
+    .attribution textarea {
+        background-color: #fcfcfd;
+        padding: 1em;
+        border: none;
+        box-shadow: none;
+        border: 1px solid #DEDEE4;
+        border-radius: 4px;
+        resize: none;
+        width: 100%;
+        height: 150px;
+        font-size: 0.8em;
+        font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+        -webkit-appearance: none;
+    }
+    .iconsuse {
+        margin: 2em auto;
+        text-align: center;
+        max-width: 1200px;
+    }
+    .iconsuse:after {
+        content: '';
+        display: table;
+        clear: both;
+    }
+    .iconsuse .image {
+        float: left;
+        width: 25%;
+        padding: 0 1em;
+    }
+    .iconsuse .image p {
+        margin-bottom: 1em;
+    }
+    .iconsuse .image span {
+        display: block;
+        font-size: 0.65em;
+        background-color: #222;
+        color: #fff;
+        border-radius: 4px;
+        padding: 0.5em;
+        color: #FFFF99;
+        margin-top: 1em;
+        font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+    }
+    #footer {
+        text-align: center;
+        background-color: #4C5B5C;
+        color: #7c9192;
+        padding: 1em;
+    }
+    #footer a {
+        border: none;
+        color: #a9fd00;
+        font-weight: normal;
+    }
+    @media (max-width: 960px) {
+        .iconsuse .image {
+            width: 50%;
+        }
+    }
+    @media (max-width: 560px) {
+        .iconsuse .image {
+            width: 100%;
+        }
+    }
+    </style>
+</head>
+
+<body class="characters-off">
+
+    <header>
+        <a href="http://www.flaticon.com" target="_blank" class="logo">
+            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/" viewBox="0 0 560.875 102.036" enable-background="new 0 0 560.875 102.036" xml:space="preserve">
+                <defs>
+                </defs>
+                <g>
+                    <g class="letters">
+                        <path fill="#ffffff" d="M141.596,29.675c0-3.777,2.985-6.767,6.764-6.767h34.438c3.426,0,6.15,2.728,6.15,6.15
+                        c0,3.43-2.724,6.149-6.15,6.149h-27.674v13.091h23.719c3.429,0,6.151,2.724,6.151,6.15c0,3.43-2.723,6.149-6.151,6.149h-23.719
+                        v17.574c0,3.773-2.986,6.761-6.764,6.761c-3.779,0-6.764-2.989-6.764-6.761V29.675z"></path>
+                        <path fill="#ffffff" d="M193.844,29.149c0-3.781,2.985-6.767,6.764-6.767c3.776,0,6.763,2.985,6.763,6.767v42.957h25.039
+                        c3.426,0,6.149,2.726,6.149,6.153c0,3.425-2.723,6.15-6.149,6.15h-31.802c-3.779,0-6.764-2.986-6.764-6.768V29.149z"></path>
+                        <path fill="#ffffff" d="M241.891,75.71l21.438-48.407c1.492-3.341,4.215-5.357,7.906-5.357h0.792
+                        c3.686,0,6.323,2.017,7.815,5.357l21.439,48.407c0.436,0.967,0.701,1.845,0.701,2.723c0,3.602-2.809,6.501-6.414,6.501
+                        c-3.161,0-5.269-1.845-6.499-4.655l-4.132-9.661h-27.059l-4.301,10.102c-1.144,2.631-3.426,4.214-6.237,4.214
+                        c-3.517,0-6.24-2.81-6.24-6.325C241.1,77.64,241.451,76.677,241.891,75.71z M279.932,58.666l-8.521-20.297l-8.526,20.297H279.932
+                        z"></path>
+                        <path fill="#ffffff" d="M314.864,35.387H301.86c-3.429,0-6.239-2.813-6.239-6.238c0-3.429,2.811-6.24,6.239-6.24h39.533
+                        c3.426,0,6.237,2.811,6.237,6.24c0,3.425-2.811,6.238-6.237,6.238h-13.001v42.785c0,3.773-2.99,6.761-6.764,6.761
+                        c-3.779,0-6.764-2.989-6.764-6.761V35.387z"></path>
+                        <path fill="#A9FD00" d="M352.615,29.149c0-3.781,2.985-6.767,6.767-6.767c3.774,0,6.761,2.985,6.761,6.767v49.024
+                        c0,3.773-2.987,6.761-6.761,6.761c-3.781,0-6.767-2.989-6.767-6.761V29.149z"></path>
+                        <path fill="#A9FD00" d="M374.132,53.836v-0.179c0-17.481,13.178-31.801,32.065-31.801c9.22,0,15.459,2.458,20.557,6.238
+                        c1.402,1.054,2.637,2.985,2.637,5.357c0,3.692-2.985,6.59-6.681,6.59c-1.845,0-3.071-0.702-4.044-1.319
+                        c-3.776-2.813-7.729-4.393-12.562-4.393c-10.364,0-17.831,8.611-17.831,19.154v0.173c0,10.542,7.291,19.329,17.831,19.329
+                        c5.715,0,9.492-1.756,13.359-4.834c1.049-0.874,2.458-1.491,4.039-1.491c3.429,0,6.325,2.813,6.325,6.236
+                        c0,2.106-1.056,3.78-2.282,4.834c-5.539,4.834-12.036,7.733-21.878,7.733C387.572,85.464,374.132,71.493,374.132,53.836z"></path>
+                        <path fill="#A9FD00" d="M433.009,53.836v-0.179c0-17.481,13.79-31.801,32.766-31.801c18.981,0,32.592,14.143,32.592,31.628v0.173
+                        c0,17.483-13.785,31.807-32.769,31.807C446.625,85.464,433.009,71.32,433.009,53.836z M484.224,53.836v-0.179
+                        c0-10.539-7.725-19.326-18.626-19.326c-10.893,0-18.449,8.611-18.449,19.154v0.173c0,10.542,7.73,19.329,18.626,19.329
+                        C476.676,72.986,484.224,64.378,484.224,53.836z"></path>
+                        <path fill="#A9FD00" d="M506.233,29.321c0-3.774,2.99-6.763,6.767-6.763h1.401c3.252,0,5.183,1.583,7.029,3.953l26.093,34.265
+                        V29.059c0-3.692,2.99-6.677,6.681-6.677c3.683,0,6.671,2.985,6.671,6.677v48.934c0,3.78-2.987,6.765-6.764,6.765h-0.436
+                        c-3.257,0-5.188-1.581-7.034-3.953l-27.056-35.492v32.944c0,3.687-2.985,6.676-6.678,6.676c-3.683,0-6.673-2.989-6.673-6.676
+                        V29.321z"></path>
+                    </g>
+                    <g class="insignia">
+                        <path fill="#ffffff" d="M48.372,56.137h12.517l11.156-18.537H37.186L25.688,18.539h57.825L94.668,0H9.271
+                        C5.925,0,2.842,1.801,1.198,4.716c-1.644,2.907-1.593,6.482,0.134,9.343l50.38,83.501c1.678,2.781,4.689,4.476,7.938,4.476
+                        c3.246,0,6.257-1.695,7.935-4.476l2.898-4.804L48.372,56.137z"></path>
+                        <g class="i">
+                            <path fill="#A9FD00" d="M93.575,18.539h0.031v0.004l21.652,0.004l2.705-4.488c1.727-2.861,1.778-6.436,0.133-9.343
+                            C116.454,1.801,113.371,0,110.026,0h-5.294L93.575,18.539z"></path>
+                            <polygon fill="#A9FD00" points="88.291,27.356 64.725,66.486 75.519,84.404 109.942,27.356"></polygon>
+                        </g>
+                    </g>
+                </g>
+            </svg>
+        </a>
+        <strong>Font Demo</strong>
+    </header>
+
+
+    <section class="demo wrapper">
+
+        <p class="title">Instructions</p>
+
+        <ul>
+            <li>
+                <span class="num">1</span>Copy the "Fonts" files and CSS files to your website CSS folder.
+            </li>
+            <li>
+                <span class="num">2</span>Add the CSS link to your website source code on header.
+                <code class="big">
+                    &lt;<span class="red">head</span>&gt;
+                    <br/><span class="dots">...</span>
+                    <br/>&lt;<span class="red">link</span> <span class="green">rel</span>=<span class="yellow">"stylesheet"</span> <span class="green">type</span>=<span class="yellow">"text/css"</span> <span class="green">href</span>=<span class="yellow">"your_website_domain/css_root/flaticon.css"</span>&gt;
+                    <br/><span class="dots">...</span>
+                    <br/>&lt;/<span class="red">head</span>&gt;
+                </code>
+            </li>
+
+            <li>
+                <p>
+                    <span class="num">3</span>Use the icon class on <code>"<span class="blue">display</span>:<span class="purple"> inline</span>"</code> elements:
+                    <br />
+                    Use example: <code>&lt;<span class="red">i</span> <span class="green">class</span>=<span class="yellow">&quot;flaticon-airplane49&quot;</span>&gt;&lt;/<span class="red">i</span>&gt;</code> or <code>&lt;<span class="red">span</span> <span class="green">class</span>=<span class="yellow">&quot;flaticon-airplane49&quot;</span>&gt;&lt;/<span class="red">span</span>&gt;</code>
+            </li>
+        </ul>
+
+    </section>
+
+
+
+
+   <section id="glyphs">          
+    
+      
+        <div class="glyph"><div class="glyph-icon flaticon-adjusting-wrench-tool"></div>
+            <div class="class-name">.flaticon-adjusting-wrench-tool</div>
+            <div class="author-name">Author: <a data-file="adjusting-wrench-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-architecture-crane-tool"></div>
+            <div class="class-name">.flaticon-architecture-crane-tool</div>
+            <div class="author-name">Author: <a data-file="architecture-crane-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-architecture-draw-of-a-house-on-a-paper"></div>
+            <div class="class-name">.flaticon-architecture-draw-of-a-house-on-a-paper</div>
+            <div class="author-name">Author: <a data-file="architecture-draw-of-a-house-on-a-paper" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-attention-signal-and-construction-worker"></div>
+            <div class="class-name">.flaticon-attention-signal-and-construction-worker</div>
+            <div class="author-name">Author: <a data-file="attention-signal-and-construction-worker" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-ax"></div>
+            <div class="class-name">.flaticon-ax</div>
+            <div class="author-name">Author: <a data-file="ax" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-barrow-with-construction-materials"></div>
+            <div class="class-name">.flaticon-barrow-with-construction-materials</div>
+            <div class="author-name">Author: <a data-file="barrow-with-construction-materials" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-brick"></div>
+            <div class="class-name">.flaticon-brick</div>
+            <div class="author-name">Author: <a data-file="brick" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-bricks"></div>
+            <div class="class-name">.flaticon-bricks</div>
+            <div class="author-name">Author: <a data-file="bricks" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-bricks-wall-and-demolition-ball"></div>
+            <div class="class-name">.flaticon-bricks-wall-and-demolition-ball</div>
+            <div class="author-name">Author: <a data-file="bricks-wall-and-demolition-ball" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-brush-with-fresh-painting"></div>
+            <div class="class-name">.flaticon-brush-with-fresh-painting</div>
+            <div class="author-name">Author: <a data-file="brush-with-fresh-painting" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-construction-machine-equipment"></div>
+            <div class="class-name">.flaticon-construction-machine-equipment</div>
+            <div class="author-name">Author: <a data-file="construction-machine-equipment" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-construction-tool-of-vehicle-with-big-shovel"></div>
+            <div class="class-name">.flaticon-construction-tool-of-vehicle-with-big-shovel</div>
+            <div class="author-name">Author: <a data-file="construction-tool-of-vehicle-with-big-shovel" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-construction-tool-vehicle-with-crane-lifting-materials"></div>
+            <div class="class-name">.flaticon-construction-tool-vehicle-with-crane-lifting-materials</div>
+            <div class="author-name">Author: <a data-file="construction-tool-vehicle-with-crane-lifting-materials" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-construction-vehicle"></div>
+            <div class="class-name">.flaticon-construction-vehicle</div>
+            <div class="author-name">Author: <a data-file="construction-vehicle" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-construction-vehicle-for-concrete-transportation"></div>
+            <div class="class-name">.flaticon-construction-vehicle-for-concrete-transportation</div>
+            <div class="author-name">Author: <a data-file="construction-vehicle-for-concrete-transportation" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-constructor"></div>
+            <div class="class-name">.flaticon-constructor</div>
+            <div class="author-name">Author: <a data-file="constructor" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-constructor-with-hard-hat-and-stop-hexagonal-signal"></div>
+            <div class="class-name">.flaticon-constructor-with-hard-hat-and-stop-hexagonal-signal</div>
+            <div class="author-name">Author: <a data-file="constructor-with-hard-hat-and-stop-hexagonal-signal" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-constructor-with-hard-hat-protection-on-his-head"></div>
+            <div class="class-name">.flaticon-constructor-with-hard-hat-protection-on-his-head</div>
+            <div class="author-name">Author: <a data-file="constructor-with-hard-hat-protection-on-his-head" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-constructor-with-hat-and-a-gear"></div>
+            <div class="class-name">.flaticon-constructor-with-hat-and-a-gear</div>
+            <div class="author-name">Author: <a data-file="constructor-with-hat-and-a-gear" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-crane-transporting-construction-material-for-a-building"></div>
+            <div class="class-name">.flaticon-crane-transporting-construction-material-for-a-building</div>
+            <div class="author-name">Author: <a data-file="crane-transporting-construction-material-for-a-building" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-crane-transporting-container"></div>
+            <div class="class-name">.flaticon-crane-transporting-container</div>
+            <div class="author-name">Author: <a data-file="crane-transporting-container" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-demolition-tool-transport-with-weight-ball"></div>
+            <div class="class-name">.flaticon-demolition-tool-transport-with-weight-ball</div>
+            <div class="author-name">Author: <a data-file="demolition-tool-transport-with-weight-ball" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-drawing-architecture-project-of-a-house"></div>
+            <div class="class-name">.flaticon-drawing-architecture-project-of-a-house</div>
+            <div class="author-name">Author: <a data-file="drawing-architecture-project-of-a-house" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-drawing-compass"></div>
+            <div class="class-name">.flaticon-drawing-compass</div>
+            <div class="author-name">Author: <a data-file="drawing-compass" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-drill"></div>
+            <div class="class-name">.flaticon-drill</div>
+            <div class="author-name">Author: <a data-file="drill" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-drill-tool-to-make-holes"></div>
+            <div class="class-name">.flaticon-drill-tool-to-make-holes</div>
+            <div class="author-name">Author: <a data-file="drill-tool-to-make-holes" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-electrical-saw-wheel-cutting-tool"></div>
+            <div class="class-name">.flaticon-electrical-saw-wheel-cutting-tool</div>
+            <div class="author-name">Author: <a data-file="electrical-saw-wheel-cutting-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-exclamation-sign-in-triangular-signal"></div>
+            <div class="class-name">.flaticon-exclamation-sign-in-triangular-signal</div>
+            <div class="author-name">Author: <a data-file="exclamation-sign-in-triangular-signal" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-factory-building"></div>
+            <div class="class-name">.flaticon-factory-building</div>
+            <div class="author-name">Author: <a data-file="factory-building" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-folded-paper"></div>
+            <div class="class-name">.flaticon-folded-paper</div>
+            <div class="author-name">Author: <a data-file="folded-paper" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-gear-shape"></div>
+            <div class="class-name">.flaticon-gear-shape</div>
+            <div class="author-name">Author: <a data-file="gear-shape" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hammer"></div>
+            <div class="class-name">.flaticon-hammer</div>
+            <div class="author-name">Author: <a data-file="hammer" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hammer-nailing-a-nail-in-a-wall"></div>
+            <div class="class-name">.flaticon-hammer-nailing-a-nail-in-a-wall</div>
+            <div class="author-name">Author: <a data-file="hammer-nailing-a-nail-in-a-wall" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hammer-tool-with-point"></div>
+            <div class="class-name">.flaticon-hammer-tool-with-point</div>
+            <div class="author-name">Author: <a data-file="hammer-tool-with-point" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hand-holding-a-hammer"></div>
+            <div class="class-name">.flaticon-hand-holding-a-hammer</div>
+            <div class="author-name">Author: <a data-file="hand-holding-a-hammer" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hand-holding-a-screwdriver-tool"></div>
+            <div class="class-name">.flaticon-hand-holding-a-screwdriver-tool</div>
+            <div class="author-name">Author: <a data-file="hand-holding-a-screwdriver-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hand-holding-a-wrench"></div>
+            <div class="class-name">.flaticon-hand-holding-a-wrench</div>
+            <div class="author-name">Author: <a data-file="hand-holding-a-wrench" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hand-holding-an-ax-cutting-tool"></div>
+            <div class="class-name">.flaticon-hand-holding-an-ax-cutting-tool</div>
+            <div class="author-name">Author: <a data-file="hand-holding-an-ax-cutting-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hand-of-a-painter-holding-paint-roller"></div>
+            <div class="class-name">.flaticon-hand-of-a-painter-holding-paint-roller</div>
+            <div class="author-name">Author: <a data-file="hand-of-a-painter-holding-paint-roller" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hexagonal-nut-tool"></div>
+            <div class="class-name">.flaticon-hexagonal-nut-tool</div>
+            <div class="author-name">Author: <a data-file="hexagonal-nut-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-hook-of-a-crane"></div>
+            <div class="class-name">.flaticon-hook-of-a-crane</div>
+            <div class="author-name">Author: <a data-file="hook-of-a-crane" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-machine"></div>
+            <div class="class-name">.flaticon-machine</div>
+            <div class="author-name">Author: <a data-file="machine" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-nut-and-bolt-tools-couple"></div>
+            <div class="class-name">.flaticon-nut-and-bolt-tools-couple</div>
+            <div class="author-name">Author: <a data-file="nut-and-bolt-tools-couple" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-pail-cylindrical-shape-tool-for-construction-materials"></div>
+            <div class="class-name">.flaticon-pail-cylindrical-shape-tool-for-construction-materials</div>
+            <div class="author-name">Author: <a data-file="pail-cylindrical-shape-tool-for-construction-materials" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-paint-brush"></div>
+            <div class="class-name">.flaticon-paint-brush</div>
+            <div class="author-name">Author: <a data-file="paint-brush" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-paint-roll"></div>
+            <div class="class-name">.flaticon-paint-roll</div>
+            <div class="author-name">Author: <a data-file="paint-roll" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-painting-in-a-pail"></div>
+            <div class="class-name">.flaticon-painting-in-a-pail</div>
+            <div class="author-name">Author: <a data-file="painting-in-a-pail" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-painting-roller-tool-on-a-wall"></div>
+            <div class="class-name">.flaticon-painting-roller-tool-on-a-wall</div>
+            <div class="author-name">Author: <a data-file="painting-roller-tool-on-a-wall" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-pipes-tubes-angle"></div>
+            <div class="class-name">.flaticon-pipes-tubes-angle</div>
+            <div class="author-name">Author: <a data-file="pipes-tubes-angle" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-roof-holding-of-a-crane-on-prefabricated-house"></div>
+            <div class="class-name">.flaticon-roof-holding-of-a-crane-on-prefabricated-house</div>
+            <div class="author-name">Author: <a data-file="roof-holding-of-a-crane-on-prefabricated-house" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-rounded-building-shape"></div>
+            <div class="class-name">.flaticon-rounded-building-shape</div>
+            <div class="author-name">Author: <a data-file="rounded-building-shape" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-saw-tool-in-vertical-position"></div>
+            <div class="class-name">.flaticon-saw-tool-in-vertical-position</div>
+            <div class="author-name">Author: <a data-file="saw-tool-in-vertical-position" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-sawing-cutting-tool"></div>
+            <div class="class-name">.flaticon-sawing-cutting-tool</div>
+            <div class="author-name">Author: <a data-file="sawing-cutting-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-screw-side-view"></div>
+            <div class="class-name">.flaticon-screw-side-view</div>
+            <div class="author-name">Author: <a data-file="screw-side-view" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-screwdriver-tool"></div>
+            <div class="class-name">.flaticon-screwdriver-tool</div>
+            <div class="author-name">Author: <a data-file="screwdriver-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-shovel-agriculture-equipment-tool-in-vertical-position"></div>
+            <div class="class-name">.flaticon-shovel-agriculture-equipment-tool-in-vertical-position</div>
+            <div class="author-name">Author: <a data-file="shovel-agriculture-equipment-tool-in-vertical-position" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-shovel-tool"></div>
+            <div class="class-name">.flaticon-shovel-tool</div>
+            <div class="author-name">Author: <a data-file="shovel-tool" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-smog-factory-building-contamination"></div>
+            <div class="class-name">.flaticon-smog-factory-building-contamination</div>
+            <div class="author-name">Author: <a data-file="smog-factory-building-contamination" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-stair"></div>
+            <div class="class-name">.flaticon-stair</div>
+            <div class="author-name">Author: <a data-file="stair" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-street-barriers"></div>
+            <div class="class-name">.flaticon-street-barriers</div>
+            <div class="author-name">Author: <a data-file="street-barriers" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-street-signal-barrier-with-stripes"></div>
+            <div class="class-name">.flaticon-street-signal-barrier-with-stripes</div>
+            <div class="author-name">Author: <a data-file="street-signal-barrier-with-stripes" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-traffic-cone-signal-tool-for-traffic"></div>
+            <div class="class-name">.flaticon-traffic-cone-signal-tool-for-traffic</div>
+            <div class="author-name">Author: <a data-file="traffic-cone-signal-tool-for-traffic" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-transport-with-arm-and-scoop"></div>
+            <div class="class-name">.flaticon-transport-with-arm-and-scoop</div>
+            <div class="author-name">Author: <a data-file="transport-with-arm-and-scoop" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-triangular-shovel-with-liquid-concrete"></div>
+            <div class="class-name">.flaticon-triangular-shovel-with-liquid-concrete</div>
+            <div class="author-name">Author: <a data-file="triangular-shovel-with-liquid-concrete" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-triangular-small-shovel-tool-for-construction"></div>
+            <div class="class-name">.flaticon-triangular-small-shovel-tool-for-construction</div>
+            <div class="author-name">Author: <a data-file="triangular-small-shovel-tool-for-construction" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-truck-for-construction-materials-transport"></div>
+            <div class="class-name">.flaticon-truck-for-construction-materials-transport</div>
+            <div class="author-name">Author: <a data-file="truck-for-construction-materials-transport" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-truck-transport-with-construction-materials"></div>
+            <div class="class-name">.flaticon-truck-transport-with-construction-materials</div>
+            <div class="author-name">Author: <a data-file="truck-transport-with-construction-materials" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-truck-transporting-packages-on-frontal-blade"></div>
+            <div class="class-name">.flaticon-truck-transporting-packages-on-frontal-blade</div>
+            <div class="author-name">Author: <a data-file="truck-transporting-packages-on-frontal-blade" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-two-gears"></div>
+            <div class="class-name">.flaticon-two-gears</div>
+            <div class="author-name">Author: <a data-file="two-gears" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-two-screwing-tools"></div>
+            <div class="class-name">.flaticon-two-screwing-tools</div>
+            <div class="author-name">Author: <a data-file="two-screwing-tools" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wall-of-bricks"></div>
+            <div class="class-name">.flaticon-wall-of-bricks</div>
+            <div class="author-name">Author: <a data-file="wall-of-bricks" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wheelbarrow-side-view"></div>
+            <div class="class-name">.flaticon-wheelbarrow-side-view</div>
+            <div class="author-name">Author: <a data-file="wheelbarrow-side-view" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wheelbarrow-tool-for-transport-construction-materials-with-wheels"></div>
+            <div class="class-name">.flaticon-wheelbarrow-tool-for-transport-construction-materials-with-wheels</div>
+            <div class="author-name">Author: <a data-file="wheelbarrow-tool-for-transport-construction-materials-with-wheels" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-worker-of-construction-working-with-a-shovel-beside-material-pile"></div>
+            <div class="class-name">.flaticon-worker-of-construction-working-with-a-shovel-beside-material-pile</div>
+            <div class="author-name">Author: <a data-file="worker-of-construction-working-with-a-shovel-beside-material-pile" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wrench-and-hammer-cross"></div>
+            <div class="class-name">.flaticon-wrench-and-hammer-cross</div>
+            <div class="author-name">Author: <a data-file="wrench-and-hammer-cross" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wrench-for-nuts"></div>
+            <div class="class-name">.flaticon-wrench-for-nuts</div>
+            <div class="author-name">Author: <a data-file="wrench-for-nuts" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wrench-in-a-hand"></div>
+            <div class="class-name">.flaticon-wrench-in-a-hand</div>
+            <div class="author-name">Author: <a data-file="wrench-in-a-hand" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+        <div class="glyph"><div class="glyph-icon flaticon-wrench-with-adjusting-system-for-different-nuts-sizes"></div>
+            <div class="class-name">.flaticon-wrench-with-adjusting-system-for-different-nuts-sizes</div>
+            <div class="author-name">Author: <a data-file="wrench-with-adjusting-system-for-different-nuts-sizes" href="http://www.freepik.com">Freepik</a> </div> 
+        </div>        
+        
+
+    </section>
+
+
+
+    <section class="attribution wrapper"   style="text-align:center;">
+
+      <div class="title">License and attribution:</div><div class="attrDiv">Font generated by <a href="http://www.flaticon.com">flaticon.com</a>. <div><p>Under <a href="http://creativecommons.org/licenses/by/3.0/">CC</a>: <a data-file="brush-with-fresh-painting" href="http://www.freepik.com">Freepik</a></p>  </div>
+      </div>
+      <div class="title">Copy the Attribution License:</div>
+
+    <textarea onclick="this.focus();this.select();">Font generated by &lt;a href=&quot;http://www.flaticon.com&quot;&gt;flaticon.com&lt;/a&gt;. <p>Under <a href="http://creativecommons.org/licenses/by/3.0/">CC</a>: <a data-file="brush-with-fresh-painting" href="http://www.freepik.com">Freepik</a></p>  
+     </textarea>
+
+    </section>
+
+    <section class="iconsuse">
+
+          <div class="title">Examples:</div>            
+             
+            <div class="image">
+                <p>
+                    <i class="glyph-icon flaticon-adjusting-wrench-tool"></i> 
+                    <span>&lt;i class=&quot;flaticon-adjusting-wrench-tool&quot;&gt;&lt;/i&gt;</span>
+                </p>
+            </div>
+            
+            <div class="image">
+                <p>
+                    <i class="glyph-icon flaticon-architecture-crane-tool"></i> 
+                    <span>&lt;i class=&quot;flaticon-architecture-crane-tool&quot;&gt;&lt;/i&gt;</span>
+                </p>
+            </div>
+            
+            <div class="image">
+                <p>
+                    <i class="glyph-icon flaticon-architecture-draw-of-a-house-on-a-paper"></i> 
+                    <span>&lt;i class=&quot;flaticon-architecture-draw-of-a-house-on-a-paper&quot;&gt;&lt;/i&gt;</span>
+                </p>
+            </div>
+            
+            <div class="image">
+                <p>
+                    <i class="glyph-icon flaticon-attention-signal-and-construction-worker"></i> 
+                    <span>&lt;i class=&quot;flaticon-attention-signal-and-construction-worker&quot;&gt;&lt;/i&gt;</span>
+                </p>
+            </div>
+                       
+        </div>
+                            
+    </section>
+
+<div id="footer">
+    <div>Generated by <a href="http://www.flaticon.com">flaticon.com</a>
+    </div>
+</div>
+
+
+
+</body>
+</html>
