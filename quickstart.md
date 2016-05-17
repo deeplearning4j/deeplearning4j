@@ -78,6 +78,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
         $ mvn clean install
 
 2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
+
 ![select directory](../img/Install_IntJ_1.png)
 
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
