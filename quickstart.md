@@ -22,7 +22,7 @@ We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning
 
 #### A Taste of Code
 
-Deeplearning4j is a DSL to configure neural networks. This is what one configuration, with an input layer, two dense hidden layers and an output layer would look like. 
+Deeplearning4j is a domain-specific language to configure neural networks. This is what one configuration would look like, with an input layer, two dense hidden layers and an output layer. 
 
 ``` java
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
