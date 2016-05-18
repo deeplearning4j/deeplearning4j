@@ -57,12 +57,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) = 0;
+            virtual __device__ void execSpecialCuda(
+                    T *dx,
+                    int *xShapeBuffer,
+                    T *result,
+                    int *resultShapeBuffer,
+                    T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) = 0;
 #endif
             /**
              * The op for transforms
@@ -90,128 +90,128 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(
-			T *dy,
-			int *shapeInfo,
-			T *params,
-			T *result,
-			int *indexes) {
-		Nd4jIndex n = shape::length(shapeInfo);
-		int totalThreads = gridDim.x * blockDim.x;
-		int tid = threadIdx.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
+            virtual __inline__ __device__ void transform(
+                    T *dy,
+                    int *shapeInfo,
+                    T *params,
+                    T *result,
+                    int *indexes) {
+                Nd4jIndex n = shape::length(shapeInfo);
+                int totalThreads = gridDim.x * blockDim.x;
+                int tid = threadIdx.x;
+                Nd4jIndex i = blockIdx.x * blockDim.x + tid;
 
-		/* equal, positive, non-unit increments. */
+                /* equal, positive, non-unit increments. */
 #pragma unroll
-		for (; i < n; i+= totalThreads) {
-			result[indexes[i]] = op(dy[indexes[i]], params);
-		}
+                for (; i < n; i+= totalThreads) {
+                    result[indexes[i]] = op(dy[indexes[i]], params);
+                }
 
-	}
-
-
-	/**
-	 * Cuda implementation of transform
-	 * @param dx
-	 * @param xShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 * @param extraParams
-	 * @param n
-	 */
-	virtual __inline__ __device__ void transformCuda(
-			T *dy,
-			int *shapeInfo,
-			T *params,
-			T *result,
-			int *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-
-		if(this->requiresSpecial) {
-			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
-			return;
-		}
-
-		int *xShape = shape::shapeOf(shapeInfo);
-		int *xStride = shape::stride(shapeInfo);
-		char xOrder = shape::order(shapeInfo);
-		char resultOrder = shape::order(resultShapeInfo);
-		int xRank = shape::rank(shapeInfo);
-		int xOffset = shape::offset(shapeInfo);
-
-		int xElementWiseStride = shape::elementWiseStride(shapeInfo);
-		int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+            }
 
 
-		__shared__ int length;
-		if(threadIdx.x == 0)
-			length = shape::length(shapeInfo);
-		__syncthreads();
+            /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+            virtual __inline__ __device__ void transformCuda(
+                    T *dy,
+                    int *shapeInfo,
+                    T *params,
+                    T *result,
+                    int *resultShapeInfo,
+                    int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
-		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
-			transformCuda(
-					length,
-					dy,
-					xElementWiseStride,
-					params,
-					result,
-					resultElementWiseStride, allocationPointer, reductionPointer, manager);
-		}
-		else {
-			/* equal, positive, non-unit increments. */
-			//long allocSize = sizeof(int) * xRank;
-			//int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
-			int xCoord[MAX_RANK];
+                if(this->requiresSpecial) {
+                    this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
+                    return;
+                }
+
+                int *xShape = shape::shapeOf(shapeInfo);
+                int *xStride = shape::stride(shapeInfo);
+                char xOrder = shape::order(shapeInfo);
+                char resultOrder = shape::order(resultShapeInfo);
+                int xRank = shape::rank(shapeInfo);
+                int xOffset = shape::offset(shapeInfo);
+
+                int xElementWiseStride = shape::elementWiseStride(shapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+
+                __shared__ int length;
+                if(threadIdx.x == 0)
+                    length = shape::length(shapeInfo);
+                __syncthreads();
+
+                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
+                    transformCuda(
+                            length,
+                            dy,
+                            xElementWiseStride,
+                            params,
+                            result,
+                            resultElementWiseStride, allocationPointer, reductionPointer, manager);
+                }
+                else {
+                    /* equal, positive, non-unit increments. */
+                    //long allocSize = sizeof(int) * xRank;
+                    //int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
+                    int xCoord[MAX_RANK];
 
 #pragma unroll
-			for (int i = tid; i < length; i+= gridDim.x * blockDim.x) {
-				//int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
-				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
-				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
-				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
-				result[resultOffset2] = op(dy[xOffset2], params);
-			}
-		}
-	}
+                    for (int i = tid; i < length; i+= gridDim.x * blockDim.x) {
+                        //int *xIdx = shape::ind2sub(xRank, xShape, i, xIdx);
+                        shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
+                        Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
+                        result[resultOffset2] = op(dy[xOffset2], params);
+                    }
+                }
+            }
 
-	/**
-	 * Cuda implementation of transform
-	 * @param dx
-	 * @param xShapeInfo
-	 * @param result
-	 * @param resultShapeInfo
-	 * @param extraParams
-	 * @param n
-	 */
-	virtual  __inline__ __device__ void transformCuda(
-			Nd4jIndex n,
-			T *dy,
-			int incy,
-			T *params,
-			T *result,
-			int resultStride,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		int totalThreads = gridDim.x * blockDim.x;
-		Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
+            /**
+             * Cuda implementation of transform
+             * @param dx
+             * @param xShapeInfo
+             * @param result
+             * @param resultShapeInfo
+             * @param extraParams
+             * @param n
+             */
+            virtual  __inline__ __device__ void transformCuda(
+                    Nd4jIndex n,
+                    T *dy,
+                    int incy,
+                    T *params,
+                    T *result,
+                    int resultStride,
+                    int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                int totalThreads = gridDim.x * blockDim.x;
+                Nd4jIndex i = blockIdx.x * blockDim.x + threadIdx.x;
 
-		if(incy == 1 && resultStride == 1) {
-			/* equal, positive, non-unit increments. */
+                if(incy == 1 && resultStride == 1) {
+                    /* equal, positive, non-unit increments. */
 #pragma unroll
-			for (; i < n; i += totalThreads) {
-				result[i] = op(dy[i], params);
-			}
-		}
-		else {
-			/* equal, positive, non-unit increments. */
+                    for (; i < n; i += totalThreads) {
+                        result[i] = op(dy[i], params);
+                    }
+                }
+                else {
+                    /* equal, positive, non-unit increments. */
 #pragma unroll
-			for (; i < n; i += totalThreads) {
-				result[i * resultStride] = op(dy[i * incy], params);
-			}
-		}
+                    for (; i < n; i += totalThreads) {
+                        result[i * resultStride] = op(dy[i * incy], params);
+                    }
+                }
 
 
-	}
+            }
 #endif
 
             /**
@@ -254,7 +254,7 @@ namespace functions {
                     T *result,
                     int *resultShapeInfo,
                     T *extraParams,
-                     Nd4jIndex *indexes,
+                    Nd4jIndex *indexes,
                     Nd4jIndex *resultIndexes) {
                 int n = shape::length(xShapeInfo);
 #pragma omp parallel for
@@ -315,12 +315,12 @@ namespace functions {
                                                  &result,
                                                  resultStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-                        {
-                            /* Process the innermost dimension */
-                            T *xIter = dx;
-                            T *resultIter = result;
-                            resultIter[0] = op(xIter[0], extraParams);
-                        }
+                            {
+                                /* Process the innermost dimension */
+                                T *xIter = dx;
+                                T *resultIter = result;
+                                resultIter[0] = op(xIter[0], extraParams);
+                            }
                         ND4J_RAW_ITER_TWO_NEXT(dim,
                                                rank,
                                                coord,
@@ -450,12 +450,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -522,12 +522,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -594,12 +594,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -667,12 +667,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -741,12 +741,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -813,12 +813,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -887,12 +887,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -958,12 +958,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1027,12 +1027,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1099,12 +1099,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1171,12 +1171,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1252,12 +1252,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1324,12 +1324,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1397,12 +1397,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1471,12 +1471,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1553,12 +1553,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -1626,12 +1626,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1698,12 +1698,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1771,12 +1771,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1843,12 +1843,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1915,12 +1915,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -1987,12 +1987,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2060,12 +2060,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2133,12 +2133,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2207,12 +2207,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2282,12 +2282,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2356,12 +2356,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2430,12 +2430,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2503,12 +2503,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2577,12 +2577,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2651,12 +2651,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2724,12 +2724,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2797,12 +2797,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -2870,12 +2870,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -2945,12 +2945,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -3025,12 +3025,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
 
@@ -3099,12 +3099,12 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #endif
 
                 /**
@@ -3161,92 +3161,92 @@ namespace functions {
 	 * Based on:  https://github.com/pjreddie/darknet/blob/master/src/im2col_kernels.cu
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
-		int kernelWidth = (int) extraParams[0];
-		int kernelHeight = (int) extraParams[1];
-		int strideX = (int) extraParams[2];
-		int strideY = (int) extraParams[3];
-		int padWidth = (int) extraParams[4];
-		int padHeight = (int) extraParams[5];
-		int kSize = kernelWidth * kernelHeight;
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                    /*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
+                    int kernelWidth = (int) extraParams[0];
+                    int kernelHeight = (int) extraParams[1];
+                    int strideX = (int) extraParams[2];
+                    int strideY = (int) extraParams[3];
+                    int padWidth = (int) extraParams[4];
+                    int padHeight = (int) extraParams[5];
+                    int kSize = kernelWidth * kernelHeight;
 
-		int *outShape = shape::shapeOf(resultShapeBuffer);
-		char resultOrder = shape::order(resultShapeBuffer);
-		int *outStride = shape::stride(resultShapeBuffer);
+                    int *outShape = shape::shapeOf(resultShapeBuffer);
+                    char resultOrder = shape::order(resultShapeBuffer);
+                    int *outStride = shape::stride(resultShapeBuffer);
 
-		int *inShape = shape::shapeOf(xShapeBuffer);
-		int *inStride = shape::stride(xShapeBuffer);
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
 
-		int samples = inShape[0];
-		int depth = inShape[1];
-		int height = inShape[2];
-		int width = inShape[3];
+                    int samples = inShape[0];
+                    int depth = inShape[1];
+                    int height = inShape[2];
+                    int width = inShape[3];
 
 
-        int strideex = inStride[0];
-        int stridech = inStride[1];
-        int strideh = inStride[2];
-        int stridew = inStride[3];
+                    int strideex = inStride[0];
+                    int stridech = inStride[1];
+                    int strideh = inStride[2];
+                    int stridew = inStride[3];
 
-		// (height + 2 * padHeight - kernelHeight) / strideX + 1; //
-		// (width + 2 * padWidth - kernelWidth) / strideY + 1; //
-		int height_col = outShape[4];
-		int width_col =  outShape[5];
+                    // (height + 2 * padHeight - kernelHeight) / strideX + 1; //
+                    // (width + 2 * padWidth - kernelWidth) / strideY + 1; //
+                    int height_col = outShape[4];
+                    int width_col =  outShape[5];
 
-		int n = samples * depth * height_col * width_col;
+                    int n = samples * depth * height_col * width_col;
 /*
 		if (threadIdx.x == 0)
 			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
 			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, height, width, depth, n, samples);
 */
 
-		int index = blockIdx.x * blockDim.x + threadIdx.x;
-		for(; index < n; index += blockDim.x*gridDim.x) {
-			int h_index = index / width_col;
-			int h_col = h_index % height_col;
-			int w_col = index % width_col;
+                    int index = blockIdx.x * blockDim.x + threadIdx.x;
+                    for(; index < n; index += blockDim.x*gridDim.x) {
+                        int h_index = index / width_col;
+                        int h_col = h_index % height_col;
+                        int w_col = index % width_col;
 
-			int c_im = h_index / height_col;
-			int c_col = c_im * kSize;
+                        int c_im = h_index / height_col;
+                        int c_col = c_im * kSize;
 
-            int depth_im = c_im % depth;
-            int num_im = c_im / depth;
-			int h_offset = h_col * strideY - padHeight;
-			int w_offset = w_col * strideX - padWidth;
+                        int depth_im = c_im % depth;
+                        int num_im = c_im / depth;
+                        int h_offset = h_col * strideY - padHeight;
+                        int w_offset = w_col * strideX - padWidth;
 
-			T* data_col_ptr = result;
+                        T* data_col_ptr = result;
 
-			int i_c = (c_col * height_col + h_col) * width_col + w_col;
-			data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
+                        int i_c = (c_col * height_col + h_col) * width_col + w_col;
+                        data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
 
-			 T* data_im_ptr = dx;
+                        T* data_im_ptr = dx;
 
-            data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
+                        data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
 
-			for (int i = 0; i < kernelHeight; ++i) {
-				for (int j = 0; j < kernelWidth; ++j) {
-					int h_im = h_offset + i;
-					int w_im = w_offset + j;
-                    int i_f = 0;
-					int i_c_temp = i_c;
-                    for (int dim=5;dim >= 0;dim--)
-                       {
-                               i_f += ( i_c_temp % outShape[dim] )  * outStride[dim];
-                               i_c_temp = i_c_temp / outShape[dim];
-                       }
-					result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
-					data_col_ptr += height_col * width_col;
-					i_c += height_col * width_col;
-				}
-			}
-		}
-	}
+                        for (int i = 0; i < kernelHeight; ++i) {
+                            for (int j = 0; j < kernelWidth; ++j) {
+                                int h_im = h_offset + i;
+                                int w_im = w_offset + j;
+                                int i_f = 0;
+                                int i_c_temp = i_c;
+                                for (int dim=5;dim >= 0;dim--)
+                                {
+                                    i_f += ( i_c_temp % outShape[dim] )  * outStride[dim];
+                                    i_c_temp = i_c_temp / outShape[dim];
+                                }
+                                result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+                                data_col_ptr += height_col * width_col;
+                                i_c += height_col * width_col;
+                            }
+                        }
+                    }
+                }
 #endif
 
                 /**
@@ -3307,7 +3307,7 @@ namespace functions {
                     int inShape2 = inShape[2];
                     int inShape3 = inShape[3];
 
-                     bool padding = padHeight > 0 || padWidth > 0;
+                    bool padding = padHeight > 0 || padWidth > 0;
 
                     T *dIn = dx;
                     T *dOut = result;
@@ -3497,91 +3497,91 @@ namespace functions {
 	 * https://github.com/pjreddie/darknet/blob/master/src/col2im_kernels.cu
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		int *inShape = shape::shapeOf(xShapeBuffer);
-		int *inStride = shape::stride(xShapeBuffer);
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                    int *inShape = shape::shapeOf(xShapeBuffer);
+                    int *inStride = shape::stride(xShapeBuffer);
 
-        int strideex = inStride[0];
-        int stridech= inStride[1];
-        int stridekrow = inStride[2];
-        int stridekcol = inStride[3];
-        int striderow = inStride[4];
-        int stridecol = inStride[5];
+                    int strideex = inStride[0];
+                    int stridech= inStride[1];
+                    int stridekrow = inStride[2];
+                    int stridekcol = inStride[3];
+                    int striderow = inStride[4];
+                    int stridecol = inStride[5];
 
-		int kernelHeight = inShape[2];
-		int kernelWidth = inShape[3];
+                    int kernelHeight = inShape[2];
+                    int kernelWidth = inShape[3];
 
-        // C
+                    // C
 
-		int strideX = (int) extraParams[0];
-		int strideY = (int) extraParams[1];
-		int padWidth= (int) extraParams[2];
-		int padHeight = (int) extraParams[3];
-		int imgHeight = (int) extraParams[4];
-		int imgWidth = (int) extraParams[5];
+                    int strideX = (int) extraParams[0];
+                    int strideY = (int) extraParams[1];
+                    int padWidth= (int) extraParams[2];
+                    int padHeight = (int) extraParams[3];
+                    int imgHeight = (int) extraParams[4];
+                    int imgWidth = (int) extraParams[5];
 
-		int *outShape = shape::shapeOf(resultShapeBuffer);
-        char resultOrder = shape::order(resultShapeBuffer);
-		int *outStride = shape::stride(resultShapeBuffer);
+                    int *outShape = shape::shapeOf(resultShapeBuffer);
+                    char resultOrder = shape::order(resultShapeBuffer);
+                    int *outStride = shape::stride(resultShapeBuffer);
 
-		int samples = outShape[0];
-		int depth = outShape[1];
-		//int height = outShape[2];
-		//int width = outShape[3];
+                    int samples = outShape[0];
+                    int depth = outShape[1];
+                    //int height = outShape[2];
+                    //int width = outShape[3];
 
-        int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
-    	int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+                    int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+                    int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
-    	int n = samples * depth * imgHeight * imgWidth;
+                    int n = samples * depth * imgHeight * imgWidth;
 
-        /*if (threadIdx.x == 0)
-			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
-			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
-
-
-
-		for(int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-			T val = 0;
-			int w_im = i % imgWidth + padWidth;
-			int h_im = (i / imgWidth) % imgHeight + padHeight;
-			int c_im = i / (imgWidth * imgWidth);
-
-            int num_im = c_im / depth; 
-            int depth_im = c_im % depth;
-
-			// compute the start and end of the output
-			int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
-			int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
-
-			int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
-			int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
+                    /*if (threadIdx.x == 0)
+                        printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
+                        kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
 
 
-			for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
-      			for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
-        			int h_k = (h_im - h_col * strideY);
-        			int w_k = (w_im - w_col * strideX);
 
-	       			int data_col_index =    num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+                    for(int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+                        T val = 0;
+                        int w_im = i % imgWidth + padWidth;
+                        int h_im = (i / imgWidth) % imgHeight + padHeight;
+                        int c_im = i / (imgWidth * imgWidth);
 
-			        val += dx[data_col_index];
-      			}
-		    }
-        int i_f = 0;
-        int i_c = i;
-        for (int dim=3;dim >= 0;dim--)
-        		{
-        			i_f += ( i_c % outShape[dim] )  * outStride[dim];
-        			i_c = i_c / outShape[dim];
-        		}
-			result[i_f] += val;
-		}
-	}
+                        int num_im = c_im / depth;
+                        int depth_im = c_im % depth;
+
+                        // compute the start and end of the output
+                        int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
+                        int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
+
+                        int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
+                        int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
+
+
+                        for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
+                            for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
+                                int h_k = (h_im - h_col * strideY);
+                                int w_k = (w_im - w_col * strideX);
+
+                                int data_col_index =    num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+
+                                val += dx[data_col_index];
+                            }
+                        }
+                        int i_f = 0;
+                        int i_c = i;
+                        for (int dim=3;dim >= 0;dim--)
+                        {
+                            i_f += ( i_c % outShape[dim] )  * outStride[dim];
+                            i_c = i_c / outShape[dim];
+                        }
+                        result[i_f] += val;
+                    }
+                }
 #endif
 
                 /**
@@ -3641,7 +3641,7 @@ namespace functions {
                     int xOutTo = inShape[5];
 
 
-                     bool padding = padHeight > 0 || padWidth > 0;
+                    bool padding = padHeight > 0 || padWidth > 0;
 
                     T *fIn = dx;
                     T *fOut = result;
@@ -3823,89 +3823,87 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams,
+                        int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
-		int *shape = shape::shapeOf(xShapeBuffer);
-		__shared__ T maxResult;
-		__shared__ int *maxResultShapeBuffer;
-		__shared__ functions::reduce::ops::Max<T> *max;
-		__shared__ functions::transform::ops::Exp<T> *exp;
-		__shared__ functions::broadcast::ops::Subtract<T> *sub;
-		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-		__shared__ functions::broadcast::ops::Divide<T> *div;
-		__shared__ functions::reduce::ops::Sum<T> *sum;
-		__shared__ int isVector;
+                    int *shape = shape::shapeOf(xShapeBuffer);
+                    __shared__ T maxResult;
+                    __shared__ int *maxResultShapeBuffer;
+                    __shared__ functions::reduce::ops::Max<T> *max;
+                    __shared__ functions::transform::ops::Exp<T> *exp;
+                    __shared__ functions::broadcast::ops::Subtract<T> *sub;
+                    __shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+                    __shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+                    __shared__ functions::broadcast::ops::Divide<T> *div;
+                    __shared__ functions::reduce::ops::Sum<T> *sum;
+                    __shared__ int isVector;
 
-		int length = shape::length(xShapeBuffer);
+                    int length = shape::length(xShapeBuffer);
 
-		if(threadIdx.x == 0) {
-			isVector = shape::isVector(xShapeBuffer);
-			//maxResult = (T *) allocationPointer + 8; // new T[shape[0]];
-			//printf("Launching special SoftMax, shape[0]: [%i]\n", shape[0]);
-			maxResult = (T) 0.0;
-		}
-		__syncthreads();
+                    if(threadIdx.x == 0) {
+                        isVector = shape::isVector(xShapeBuffer);
+                        //maxResult = (T *) allocationPointer + 8; // new T[shape[0]];
+                        //printf("Launching special SoftMax, shape[0]: [%i]\n", shape[0]);
+                        maxResult = (T) 0.0;
+                    }
+                    __syncthreads();
 
-        int tid = blockIdx.x * blockDim.x + threadIdx.x;
-		int *stride = shape::stride(xShapeBuffer);
-		//iterate along rows
-		int dimension[1] = {0};
-		int maxDimension[1] = {1};
-		//compute the row wise maxes
+                    int *stride = shape::stride(xShapeBuffer);
+                    //iterate along rows
+                    int maxDimension[1] = {1};
+                    //compute the row wise maxes
 
-		int maxShape[2] = {shape[0], 1};
+                    int maxShape[2] = {shape[0], 1};
 
-		// it's always 2d here
-		__shared__ int tempBuffer[8];
+                    // it's always 2d here
+                    __shared__ int tempBuffer[8];
 
-		if (threadIdx.x == 0)
-			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
+                    if (threadIdx.x == 0)
+                        maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-        if (threadIdx.x == 0)
-            max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-        __syncthreads();
+                    if (threadIdx.x == 0)
+                        max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
+                    __syncthreads();
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
+                    max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
 
-		//subtract max of each row
-        if (threadIdx.x == 0)
-            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-        __syncthreads();
+                    //subtract max of each row
+                    if (threadIdx.x == 0)
+                        scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+                    __syncthreads();
 
-    	scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		__syncthreads();
+                    scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+                    __syncthreads();
 
-        if (threadIdx.x == 0)
-            exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
-        __syncthreads();
+                    if (threadIdx.x == 0)
+                        exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+                    __syncthreads();
 
-		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-		__syncthreads();
+                    //after subtracting the row wise maxes take the exp
+                    exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+                    __syncthreads();
 
-        if (threadIdx.x == 0)
-            sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
-        __syncthreads();
+                    if (threadIdx.x == 0)
+                        sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+                    __syncthreads();
 
-		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
+                    //take the sum for the exponential
+                    sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
 
-		//divide by the sum
-		if (threadIdx.x == 0)
-           scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-        __syncthreads();
+                    //divide by the sum
+                    if (threadIdx.x == 0)
+                        scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+                    __syncthreads();
 
-		scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-	}
+                    scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+                }
 #endif
 
                 /**
@@ -4083,86 +4081,81 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		int *shape = shape::shapeOf(xShapeBuffer);
-		int *stride = shape::stride(xShapeBuffer);
-		//iterate along rows
-		int dimension[1] = {0};
-		int maxDimension[1] = {1};
-		__shared__ functions::reduce::ops::Max<T> *max;
-		__shared__ functions::transform::ops::Exp<T> *exp;
-		__shared__ functions::transform::ops::Log<T> *log;
-		__shared__ functions::reduce::ops::Sum<T> *sum;
-		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-		__shared__ T maxResult;
-		__shared__ int isVector;
-		__shared__ int *maxResultShapeBuffer;
-		if(threadIdx.x == 0) {
-			isVector = shape::isVector(xShapeBuffer);
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams,
+                        int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                    int *shape = shape::shapeOf(xShapeBuffer);
+                    int *stride = shape::stride(xShapeBuffer);
+                    //iterate along rows
+                    __shared__ functions::reduce::ops::Max<T> *max;
+                    __shared__ functions::transform::ops::Exp<T> *exp;
+                    __shared__ functions::transform::ops::Log<T> *log;
+                    __shared__ functions::reduce::ops::Sum<T> *sum;
+                    __shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+                    __shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+                    __shared__ T maxResult;
+                    __shared__ int *maxResultShapeBuffer;
+                    if(threadIdx.x == 0) {
+                        maxResult = (T) 0.0;
+                    }
+                    __syncthreads();
+                    //compute the row wise maxes
 
-			maxResult = (T) 0.0;
-		}
-		__syncthreads();
-		//compute the row wise maxes
+                    int maxShape[2] = {shape[0], 1};
+                    __shared__ int tempBuffer[8];
 
-		int maxShape[2] = {shape[0], 1};
-		__shared__ int tempBuffer[8];
+                    if (threadIdx.x == 0)
+                        maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-		if (threadIdx.x == 0)
-			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
+                    if (threadIdx.x == 0)
+                        max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
+                    __syncthreads();
 
-		if (threadIdx.x == 0)
-            max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-        __syncthreads();
+                    max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
+                    //subtract max of each row
+                    if (threadIdx.x == 0)
+                        scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+                    __syncthreads();
 
-		//subtract max of each row
-		if (threadIdx.x == 0)
-            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-        __syncthreads();
+                    scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+                    __syncthreads();
 
-		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		__syncthreads();
+                    if (threadIdx.x == 0)
+                        exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+                    __syncthreads();
 
-        if (threadIdx.x == 0)
-            exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
-        __syncthreads();
+                    //after subtracting the row wise maxes take the exp
+                    exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+                    __syncthreads();
 
-		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-		__syncthreads();
+                    if (threadIdx.x == 0)
+                        sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+                    __syncthreads();
 
-        if (threadIdx.x == 0)
-            sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
-        __syncthreads();
+                    //take the sum for the exponential
+                    sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
 
-		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
+                    //divide by the sum
+                    if (threadIdx.x == 0)
+                        scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+                    __syncthreads();
 
-		//divide by the sum
-		if (threadIdx.x == 0)
-            scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-        __syncthreads();
+                    scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
+                    __syncthreads();
 
-    	scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer , allocationPointer, manager);
-		__syncthreads();
+                    if (threadIdx.x == 0)
+                        log = new functions::transform::ops::Log<T>();
+                    __syncthreads();
 
-        if (threadIdx.x == 0)
-            log = new functions::transform::ops::Log<T>();
-        __syncthreads();
-
-		log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-	}
+                    log->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+                }
 #endif
 
                 /**
@@ -4354,100 +4347,95 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams,
+                        int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
 
-		int *shape = shape::shapeOf(xShapeBuffer);
-		__shared__ T maxResult;
-		__shared__ int *maxResultShapeBuffer;
-		__shared__ int resultEWS;
-		__shared__ functions::reduce::ops::Max<T> *max;
-		__shared__ functions::transform::ops::Exp<T> *exp;
-		__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-		__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-		__shared__ functions::reduce::ops::Sum<T> *sum;
-		__shared__ int isVector;
-
-		int length = shape::length(xShapeBuffer);
-
-		if(threadIdx.x == 0) {
-			isVector = shape::isVector(xShapeBuffer);
-			resultEWS = shape::elementWiseStride(resultShapeBuffer);
-
-			maxResult = (T) 0.0;
-		}
-		__syncthreads();
-
-		int *stride = shape::stride(xShapeBuffer);
-		//iterate along rows
-		int dimension[1] = {0};
-		int maxDimension[1] = {1};
-		//compute the row wise maxes
-
-		int maxShape[2] = {shape[0], 1};
-
-		__shared__ int tempBuffer[8];
-
-		if (threadIdx.x == 0)
-			maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
-
-        if (threadIdx.x == 0)
-            max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-        __syncthreads();
+                    int *shape = shape::shapeOf(xShapeBuffer);
+                    __shared__ T maxResult;
+                    __shared__ int *maxResultShapeBuffer;
+                    __shared__ int resultEWS;
+                    __shared__ functions::reduce::ops::Max<T> *max;
+                    __shared__ functions::transform::ops::Exp<T> *exp;
+                    __shared__ functions::scalar::ops::Subtract<T> *scalarSub;
+                    __shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+                    __shared__ functions::reduce::ops::Sum<T> *sum;
 
 
-		max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
+                    if(threadIdx.x == 0) {
+                        resultEWS = shape::elementWiseStride(resultShapeBuffer);
 
-		if (threadIdx.x == 0) delete max;
-		__syncthreads();
+                        maxResult = (T) 0.0;
+                    }
+                    __syncthreads();
 
-		//subtract max of each row
-    	if (threadIdx.x == 0)
-            scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-        __syncthreads();
+                    int *stride = shape::stride(xShapeBuffer);
+                    //compute the row wise maxes
 
-		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		__syncthreads();
+                    int maxShape[2] = {shape[0], 1};
 
-        if (threadIdx.x == 0)
-            exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
-        __syncthreads();
+                    __shared__ int tempBuffer[8];
 
-		//after subtracting the row wise maxes take the exp
-		exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-		__syncthreads();
+                    if (threadIdx.x == 0)
+                        maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-        if (threadIdx.x == 0)
-            sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
-        __syncthreads();
+                    if (threadIdx.x == 0)
+                        max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
+                    __syncthreads();
 
-		//take the sum for the exponential
-		sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-		__syncthreads();
 
-		//divide by the sum
-    	if (threadIdx.x == 0)
-            scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-        __syncthreads();
+                    max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
 
-		scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-		__syncthreads();
+                    if (threadIdx.x == 0) delete max;
+                    __syncthreads();
 
-		if (resultEWS >= 1) {
-			for (int i = threadIdx.x; i < length; i += blockDim.x) {
-				result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
-			}
-		} else {
-			printf("Non element wise stride not supported right now\n");
-		}
-	}
+                    //subtract max of each row
+                    if (threadIdx.x == 0)
+                        scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
+                    __syncthreads();
+
+                    scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+                    __syncthreads();
+
+                    if (threadIdx.x == 0)
+                        exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+                    __syncthreads();
+
+                    //after subtracting the row wise maxes take the exp
+                    exp->transformCuda(result, resultShapeBuffer, extraParams,result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+                    __syncthreads();
+
+                    if (threadIdx.x == 0)
+                        sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+                    __syncthreads();
+
+                    //take the sum for the exponential
+                    sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+                    __syncthreads();
+
+                    //divide by the sum
+                    if (threadIdx.x == 0)
+                        scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+                    __syncthreads();
+
+                    scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+                    __syncthreads();
+
+                    if (resultEWS >= 1) {
+                        Nd4jIndex length = shape::length(xShapeBuffer);
+                        for (int i = threadIdx.x; i < length; i += blockDim.x) {
+                            result[i * resultEWS] = result[i * resultEWS] * (1 - result[i * resultEWS]);
+                        }
+                    } else {
+                        printf("Non element wise stride not supported right now\n");
+                    }
+                }
 #endif
 
 
@@ -4661,48 +4649,48 @@ namespace functions {
 #ifdef __CUDACC__
 
                 inline  __device__ void doAllCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams,
+                        int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
-		__shared__ functions::indexreduce::ops::IMax<T> *max;
-		__shared__ int maxIdx;
-		__shared__ int length;
-		if(threadIdx.x == 0) {
-			max = new functions::indexreduce::ops::IMax<T>();
-			length = shape::length(resultShapeBuffer);
-		}
-		__syncthreads();
+                    __shared__ functions::indexreduce::ops::IMax<T> *max;
+                    __shared__ int maxIdx;
+                    __shared__ int length;
+                    if(threadIdx.x == 0) {
+                        max = new functions::indexreduce::ops::IMax<T>();
+                        length = shape::length(resultShapeBuffer);
+                    }
+                    __syncthreads();
 
-		max->transform(
-				dx,
-				xShapeBuffer,
-				extraParams,
-				result,
-				resultShapeBuffer,
-				nullptr,
-				1,
-				1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
+                    max->transform(
+                            dx,
+                            xShapeBuffer,
+                            extraParams,
+                            result,
+                            resultShapeBuffer,
+                            nullptr,
+                            1,
+                            1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
 
-		__syncthreads();
-		if(threadIdx.x == 0)
-			maxIdx = (int) result[0];
-		__syncthreads();
+                    __syncthreads();
+                    if(threadIdx.x == 0)
+                        maxIdx = (int) result[0];
+                    __syncthreads();
 
-		for (int i = threadIdx.x; i < length ; i+= blockDim.x)
-			result[i] = 0;
-		__syncthreads();
+                    for (int i = threadIdx.x; i < length ; i+= blockDim.x)
+                        result[i] = 0;
+                    __syncthreads();
 
-		if (threadIdx.x == 0) {
-			result[maxIdx] = 1.0;
+                    if (threadIdx.x == 0) {
+                        result[maxIdx] = 1.0;
 
-			delete max;
-		}
+                        delete max;
+                    }
 
-	}
+                }
 #endif
 
 #ifdef __CUDACC__
@@ -4821,15 +4809,15 @@ namespace functions {
                             int idx = 0;
                             int maxIdx = 0;
                             ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                if(dx[0] > value) {
-                                    value = dx[0];
-                                    maxIdx = idx;
+                                    if(dx[0] > value) {
+                                        value = dx[0];
+                                        maxIdx = idx;
+                                    }
+
+                                    idx++;
+                                    result[0] = 0.0;
+
                                 }
-
-                                idx++;
-                                result[0] = 0.0;
-
-                            }
                             ND4J_RAW_ITER_TWO_NEXT(
                                     dim,
                                     rank,
@@ -4842,8 +4830,8 @@ namespace functions {
 
                             //pointer to where max value would be
                             if(shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
-                                                                         maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-                                                                         shape::length(resultShapeBuffer)))
+                                                                          maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
+                                                                          shape::length(resultShapeBuffer)))
                                 originalResult[maxIdx] = 1.0;
                             else
                                 originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
@@ -4860,64 +4848,64 @@ namespace functions {
 	 *
 	 */
 
-	virtual __device__ void execSpecialCuda(
-			T *dx,
-			int *xShapeBuffer,
-			T *result,
-			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		if(extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
-			this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer, reductionPointer, manager);
-		} else {
-			__shared__ functions::indexreduce::ops::IMax<T> *max;
-			__shared__ int maxIdx;
-			__shared__ int length;
-			if(threadIdx.x == 0) {
-				max = new functions::indexreduce::ops::IMax<T>();
-				length = shape::length(resultShapeBuffer);
-			}
+                virtual __device__ void execSpecialCuda(
+                        T *dx,
+                        int *xShapeBuffer,
+                        T *result,
+                        int *resultShapeBuffer,
+                        T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+                    if(extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
+                        this->doAllCuda(dx,xShapeBuffer,result,resultShapeBuffer,extraParams, allocationPointer, reductionPointer, manager);
+                    } else {
+                        __shared__ functions::indexreduce::ops::IMax<T> *max;
+                        __shared__ int maxIdx;
+                        __shared__ int length;
+                        if(threadIdx.x == 0) {
+                            max = new functions::indexreduce::ops::IMax<T>();
+                            length = shape::length(resultShapeBuffer);
+                        }
 
-			__syncthreads();
+                        __syncthreads();
 
-			int dimensionLength = (int) extraParams[0];
-			__shared__ int *dimension;
-			if(threadIdx.x == 0) {
-				dimension = (int *) malloc(sizeof(int) * dimensionLength);
-				for(int i = 0; i < dimensionLength; i++) {
-					dimension[i] = (int) extraParams[i + 1];
-				}
-			}
+                        int dimensionLength = (int) extraParams[0];
+                        __shared__ int *dimension;
+                        if(threadIdx.x == 0) {
+                            dimension = (int *) malloc(sizeof(int) * dimensionLength);
+                            for(int i = 0; i < dimensionLength; i++) {
+                                dimension[i] = (int) extraParams[i + 1];
+                            }
+                        }
 
-			__syncthreads();
+                        __syncthreads();
 
-			max->transform(
-					dx,
-					xShapeBuffer,
-					extraParams,
-					result,
-					resultShapeBuffer,
-					dimension,
-					dimensionLength,
-					1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
+                        max->transform(
+                                dx,
+                                xShapeBuffer,
+                                extraParams,
+                                result,
+                                resultShapeBuffer,
+                                dimension,
+                                dimensionLength,
+                                1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
 
-			__syncthreads();
-			if(threadIdx.x == 0) {
-				maxIdx = (int) result[0];
-			}
-			__syncthreads();
+                        __syncthreads();
+                        if(threadIdx.x == 0) {
+                            maxIdx = (int) result[0];
+                        }
+                        __syncthreads();
 
-			for (int i = threadIdx.x; i < length; i+= blockDim.x)
-				result[i] = 0;
-			__syncthreads();
+                        for (int i = threadIdx.x; i < length; i+= blockDim.x)
+                            result[i] = 0;
+                        __syncthreads();
 
-			if (threadIdx.x == 0) {
-				result[maxIdx] = 1.0;
+                        if (threadIdx.x == 0) {
+                            result[maxIdx] = 1.0;
 
-				delete[] dimension;
-				delete max;
-			}
-		}
-	}
+                            delete[] dimension;
+                            delete max;
+                        }
+                    }
+                }
 #endif
                 /**
                  * CPU operation execution
@@ -5075,14 +5063,14 @@ namespace functions {
                                                           &resultPointer,
                                                           resultStridesIter) >= 0) {
                                 ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                    if (maxValue < xPointer[0]) {
-                                        maxCursor = resultPointer;
-                                        maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
-                                        maxValue = xPointer[0];
-                                    }
+                                        if (maxValue < xPointer[0]) {
+                                            maxCursor = resultPointer;
+                                            maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
+                                            maxValue = xPointer[0];
+                                        }
 
-                                    resultPointer[0] = 0.0;
-                                }
+                                        resultPointer[0] = 0.0;
+                                    }
                                 ND4J_RAW_ITER_TWO_NEXT(dim,
                                                        rank,
                                                        coord,
@@ -5184,7 +5172,7 @@ namespace functions {
             __inline__ __device__
             Transform<T> * getOp(int op, unsigned char *buffer) {
 #else
-            Transform<T> * getOp(int op) {
+                Transform<T> * getOp(int op) {
 #endif
                 /**
                  * We are likely going to need constant symbols for device memory for different operations
@@ -5528,30 +5516,30 @@ namespace functions {
  */
 template <typename T>
 __device__ void transformGeneric(
-		int opNum,
-		Nd4jIndex n,
-		T *dy,
-		int incy,
-		T *params,
-		T *result,
-		int resultStride, int *allocationPointer, T *reductionPointer) {
+        int opNum,
+        Nd4jIndex n,
+        T *dy,
+        int incy,
+        T *params,
+        T *result,
+        int resultStride, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
-	__shared__ UnifiedSharedMemory *manager;
+    __shared__ UnifiedSharedMemory *manager;
 
-	if(threadIdx.x == 0) {
-	    extern __shared__ unsigned char shmem[];
+    if(threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), 0);
+        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), 0);
 
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+        doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
         op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
+    }
+    __syncthreads();
 
-	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer, manager);
+    op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer, manager);
 }
 
 /**
@@ -5568,21 +5556,21 @@ __device__ void transformGeneric(
  * @param blockernelHeight the block size for the problem
  */
 __global__ void transformDouble(
-		int opNum,
-		Nd4jIndex n,
-		double *dy,
-		int incy,
-		double *params,
-		double *result,int resultStride, int *allocationPointer, double *reductionPointer) {
+        int opNum,
+        Nd4jIndex n,
+        double *dy,
+        int incy,
+        double *params,
+        double *result,int resultStride, int *allocationPointer, double *reductionPointer) {
 
-	transformGeneric<double>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result,
-			resultStride, allocationPointer, reductionPointer);
+    transformGeneric<double>(
+            opNum,
+            n,
+            dy,
+            incy,
+            params,
+            result,
+            resultStride, allocationPointer, reductionPointer);
 }
 
 /**
@@ -5599,20 +5587,20 @@ __global__ void transformDouble(
  * @param blockernelHeight the block size for the problem
  */
 __global__ void transformFloat(
-		int opNum,
-		Nd4jIndex n,
-		float *dy,
-		int incy,
-		float *params,
-		float *result,int resultStride, int *allocationPointer, float *reductionPointer) {
+        int opNum,
+        Nd4jIndex n,
+        float *dy,
+        int incy,
+        float *params,
+        float *result,int resultStride, int *allocationPointer, float *reductionPointer) {
 
-	transformGeneric<float>(
-			opNum,
-			n,
-			dy,
-			incy,
-			params,
-			result,resultStride, allocationPointer, reductionPointer);
+    transformGeneric<float>(
+            opNum,
+            n,
+            dy,
+            incy,
+            params,
+            result,resultStride, allocationPointer, reductionPointer);
 
 }
 
@@ -5631,39 +5619,39 @@ __global__ void transformFloat(
  */
 template <typename T>
 __device__ void transformGeneric(
-		int opNum,
-		T *dy,
-		int *xShapeInfo, int xRank,
-		T *params,
-		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
+        int opNum,
+        T *dy,
+        int *xShapeInfo, int xRank,
+        T *params,
+        T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
-	__shared__ UnifiedSharedMemory *manager;
+    __shared__ UnifiedSharedMemory *manager;
 
 
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
+        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
 
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
+        doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+        op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
+    }
+    __syncthreads();
 
 
-	op->transformCuda(
-	    dy,
-	    xShapeInfo,
-	    params,
-	    result,
-	    resultShapeInfo,
-	    allocationPointer,
-	    reductionPointer,
-	    manager);
+    op->transformCuda(
+            dy,
+            xShapeInfo,
+            params,
+            result,
+            resultShapeInfo,
+            allocationPointer,
+            reductionPointer,
+            manager);
 }
 
 
@@ -5682,18 +5670,18 @@ __device__ void transformGeneric(
  * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformDouble(
-		int opNum,
-		double *dy,
-		int *shapeInfo, int xRank,
-		double *params,
-		double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) {
+        int opNum,
+        double *dy,
+        int *shapeInfo, int xRank,
+        double *params,
+        double *result,int *resultShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) {
 
-	transformGeneric<double>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,resultShapeInfo, zRank, allocationPointer, reductionPointer);
+    transformGeneric<double>(
+            opNum,
+            dy,
+            shapeInfo, xRank,
+            params,
+            result,resultShapeInfo, zRank, allocationPointer, reductionPointer);
 }
 
 /**
@@ -5710,19 +5698,19 @@ extern "C" __global__ void transformDouble(
  * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformFloat(
-		int opNum,
-		float *dy,
-		int *shapeInfo, int xRank,
-		float *params,
-		float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) {
+        int opNum,
+        float *dy,
+        int *shapeInfo, int xRank,
+        float *params,
+        float *result,int *resultShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) {
 
-	transformGeneric<float>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,
-			resultShapeInfo, zRank, allocationPointer, reductionPointer);
+    transformGeneric<float>(
+            opNum,
+            dy,
+            shapeInfo, xRank,
+            params,
+            result,
+            resultShapeInfo, zRank, allocationPointer, reductionPointer);
 
 }
 
@@ -5743,37 +5731,37 @@ extern "C" __global__ void transformFloat(
  */
 template <typename T>
 __device__ void transformGenericIndexes(
-		int opNum,
-		T *dy,
-		int *xShapeInfo, int xRank,
-		T *params,
-		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
+        int opNum,
+        T *dy,
+        int *xShapeInfo, int xRank,
+        T *params,
+        T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
+    __shared__ functions::transform::Transform<T> *op;
+    __shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
 
-	__shared__ UnifiedSharedMemory *manager;
+    __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
+        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
 
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
+        doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
+        op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
+    }
+    __syncthreads();
 
 
-	op->transformCuda(
-	        dy,
-	        xShapeInfo,
-	        params,
-	        result,
-	        indexes,
-	        allocationPointer,
-	        reductionPointer,
-	        manager);
+    op->transformCuda(
+            dy,
+            xShapeInfo,
+            params,
+            result,
+            indexes,
+            allocationPointer,
+            reductionPointer,
+            manager);
 }
 
 
@@ -5792,18 +5780,18 @@ __device__ void transformGenericIndexes(
  * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformDoubleIndexes(
-		int opNum,
-		double *dy,
-		int *shapeInfo, int xRank,
-		double *params,
-		double *result,int *indexes, int *allocationPointer, double *reductionPointer) {
+        int opNum,
+        double *dy,
+        int *shapeInfo, int xRank,
+        double *params,
+        double *result,int *indexes, int *allocationPointer, double *reductionPointer) {
 
-	transformGenericIndexes<double>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,indexes, allocationPointer, reductionPointer);
+    transformGenericIndexes<double>(
+            opNum,
+            dy,
+            shapeInfo, xRank,
+            params,
+            result,indexes, allocationPointer, reductionPointer);
 }
 
 /**
@@ -5820,18 +5808,18 @@ extern "C" __global__ void transformDoubleIndexes(
  * @param blockernelHeight the block size for the problem
  */
 extern "C" __global__ void transformFloatIndexes(
-		int opNum,
-		float *dy,
-		int *shapeInfo, int xRank,
-		float *params,
-		float *result,int *indexes, int *allocationPointer, float *reductionPointer) {
+        int opNum,
+        float *dy,
+        int *shapeInfo, int xRank,
+        float *params,
+        float *result,int *indexes, int *allocationPointer, float *reductionPointer) {
 
-	transformGenericIndexes<float>(
-			opNum,
-			dy,
-			shapeInfo, xRank,
-			params,
-			result,indexes, allocationPointer, reductionPointer);
+    transformGenericIndexes<float>(
+            opNum,
+            dy,
+            shapeInfo, xRank,
+            params,
+            result,indexes, allocationPointer, reductionPointer);
 
 }
 
@@ -5873,10 +5861,10 @@ extern "C" __global__ void prepareDimensionalShapeBuffer(int *xShapeInfoBuffer, 
 template <typename T>
 __device__ void fillIsMaxGeneric(T *dx, long length, long idx) {
 
-   int tid = blockIdx.x * blockDim.x + threadIdx.x;
-   for (long i = tid; i < length; i+= blockDim.x * gridDim.x) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    for (long i = tid; i < length; i+= blockDim.x * gridDim.x) {
         dx[i] = (i == idx? 1.0 : 0.0);
-   }
+    }
 }
 
 extern "C" __global__ void fillIsMaxFloat(float *dx, long length, long idx) {

@@ -453,10 +453,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -3509,7 +3506,6 @@ __device__ void concatKernelGeneric(int dimension,
 
 
 
-			int *currentShape = shapeInfoPointers[r];
 			T *currentData = dataT[r];
 /*
 			__shared__ int arrOffset;
@@ -3779,9 +3775,7 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
@@ -4263,9 +4257,6 @@ void NativeOps::concatDouble(
 	double *resultData = reinterpret_cast<double *>(result);
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
-	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
-	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
 	concatKernelDouble<<<1, 64, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
@@ -4332,7 +4323,6 @@ Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, lon
 		return 0L;
 	}
 	else return 1;
-	return 0L;
 }
 
 Nd4jPointer NativeOps::getConstantSpace() {
