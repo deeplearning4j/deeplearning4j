@@ -26,19 +26,19 @@ You can use Deeplearning4j with Maven by adding the following to your POM.xml:
 
 You can use lombok with ivy by adding the following to your ivy.xml:
 
-    <dependency org="org.deeplearning4j" name="deeplearning4j-core" rev="0.4-rc3.8" conf="build" />
+    <dependency org="org.deeplearning4j" name="deeplearning4j-core" rev="0.4-rc3.9" conf="build" />
 
 ## SBT
 
 You can use Deeplearning4j with SBT by adding the following to your build.sbt:
 
-    libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "0.4-rc3.8"
+    libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "0.4-rc3.9"
 
 ## Gradle
 
 You can use Deeplearning4j with Gradle by adding the following to your build.gradle in the dependencies block:
 
-    provided "org.deeplearning4j:deeplearning4j-core:0.4-rc3.8"
+    provided "org.deeplearning4j:deeplearning4j-core:0.4-rc3.9"
 
 ## Leiningen
 
