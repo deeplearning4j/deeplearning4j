@@ -72,7 +72,7 @@ int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
 	int memory_limit = funcAttr.sharedSizeBytes;
 
 	// TODO: remove this later
-	memory_limit += xRank * 4 * 2;
+	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4);
 /*
 	if (xRank == 0) xRank = 2;
 
@@ -4263,7 +4263,13 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<128, 128, funcAttributes[31].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+
+	int smem = funcAttributes[31].sharedSizeBytes + 1536;
+
+	concatKernelFloat<<<128, 128,  smem, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+
+	if (debug && verbose)
+		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4292,8 +4298,10 @@ void NativeOps::concatDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int smem = funcAttributes[35].sharedSizeBytes + 1536;
+
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelDouble<<<128, 128, funcAttributes[35].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	concatKernelDouble<<<128, 128, smem, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
