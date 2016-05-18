@@ -4024,34 +4024,51 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	// numArrays will be used as number of TADs, so each block process 1 input
 
 	int smem = funcAttributes[31].sharedSizeBytes;
-	bool isVstack = true;
+	bool isVstack = false;
 	bool isScalar = true;
-	bool isHstack = true;
+	bool isHstack = false;
 
 	for (int i = 0; i < numArrays; i++) {
-		if (!shape::isScalar(hostShapePointers[i]))
+		if (!shape::isScalar(hostShapePointers[i])) {
 			isScalar = false;
+			break;
+		}
 	}
 
-	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2)
-		for (int i = 0; i < numArrays; i ++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0)
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2) {
+		isVstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
 				isVstack = false;
+				break;
+			}
 		}
+	}
 
-	if (!isScalar && !isVstack && dimension == 1 && shape::rank(hostXShapeInfo) == 2)
-		for (int i = 0; i < numArrays; i ++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0)
+	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+		isHstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
 				isHstack = false;
+				break;
+			}
 		}
+	}
 
 	if (isScalar) {
+		printf("Going scalar concat\n");
 		concatKernelScalarFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} if (isVstack) {
+		printf("Going VStack concat\n");
+
 		concatKernelVStackFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else if (isHstack) {
+		printf("Going HStack concat\n");
 
+		concatKernelHStackFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else {
+		smem += sizeof(shape::TAD) * 2 + sizeof(UnifiedSharedMemory) * 2;
+
 		concatKernelFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	}
 	if (debug && verbose)
