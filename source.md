@@ -30,7 +30,7 @@ If you have an existing project, you can build Deeplearning4j's source files you
 
 To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
-To learn more about contributing to Deeplearning4j, please read our [Dev Guide](../devguide.html).
+To learn more about contributing to Deeplearning4j, please read our [Dev Guide](./devguide.html).
 
 <!-- #### <a name="one">Magical One-Line Install</a>
 

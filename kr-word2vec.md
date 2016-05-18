@@ -21,21 +21,21 @@ layout: kr-default
 
 ## <a name="intro">Word2Vec 소개</a>
 
-Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [심층 신경망](../kr-0neuralnet-overview.html)은 아니지만 심층 신경망은 전처리 단계로 많이 쓰입니다.
+Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으로 구성되어 있습니다. Word2vec은 말뭉치(corpus)를 입력으로 받아서 말뭉치의 단어를 벡터로 표현 하는 방법을 찾는데, 이 벡터의 값은 말뭉치에서 단어가 가지는 의미나 역할을 잘 표현해주는 값이어야 합니다. 이렇게 단어의 의미와 맥락을 고려하여 단어를 벡터로 표현한 것을 word embeddings라고 합니다. Word2vec은 [심층 신경망](./kr-0neuralnet-overview.html)은 아니지만 심층 신경망은 전처리 단계로 많이 쓰입니다.
 
 Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](http://deeplearning4j.org/kr-quickstart.html)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
 
 Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습은 사람이 간여하지 않으며 말뭉치 데이터만을 사용합니다.
 
-데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니다. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 알아냅니다. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](../sentiment_analysis_word2vec.html), 추천 시스템을 만들 수 있습니다.
+데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니다. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 알아냅니다. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](./sentiment_analysis_word2vec.html), 추천 시스템을 만들 수 있습니다.
 
 정리하면, Word2vec은 각 단어마다 단어에 해당하는 벡터를 구해줍니다. 이 벡터를 다시 심층 신경망에 집어넣어서 추가적인 일을 할 수도 있고 단어의 유사성 등 관계를 파악할 수 있습니다.
 
-유사성을 구하는 방법은 여러 가지가 있습니다. 흔히 쓰이는 방법은 [코사인 유사도](../glossary.html#cosine)입니다. 코사인 유사도는 두 벡터의 각도를 측정하는 것으로 각도가 같은 경우, 즉 두 벡터가 이루는 각이 0도인 경우엔 유사도의 최대값인 1.0이 나옵니다. 그리고 가장 유사도가 낮은 경우는 두 벡터의 각도가 90도가 되는 경우입니다 (실제로 90도가 나오는 경우는 잘 없습니다). 예를 들어 '스웨덴'과 '노르웨이'의 유사성을 구하면 0.760124 라는 제법 높은 유사도가 나올 것 입니다.
+유사성을 구하는 방법은 여러 가지가 있습니다. 흔히 쓰이는 방법은 [코사인 유사도](./glossary.html#cosine)입니다. 코사인 유사도는 두 벡터의 각도를 측정하는 것으로 각도가 같은 경우, 즉 두 벡터가 이루는 각이 0도인 경우엔 유사도의 최대값인 1.0이 나옵니다. 그리고 가장 유사도가 낮은 경우는 두 벡터의 각도가 90도가 되는 경우입니다 (실제로 90도가 나오는 경우는 잘 없습니다). 예를 들어 '스웨덴'과 '노르웨이'의 유사성을 구하면 0.760124 라는 제법 높은 유사도가 나올 것 입니다.
 
 아래에 Word2vec을 이용해 구한 단어의 embeddings 중에서 '스웨덴'과 가장 거리가 가까운, 즉 가장 유사한 단어를 모아놓았습니다.
 
-![Alt text](../img/sweden_cosine_distance.png) 
+![Alt text](./img/sweden_cosine_distance.png) 
 
 스칸디나비아 반도의 여러 국가와 기타 북유럽, 독일계 나라가 가장 가까운 단어 9개를 차지했습니다.
 
@@ -45,11 +45,11 @@ Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 
 
 즉, word embeddings은 사람의 언어를 컴퓨터의 언어로 번역하는 것 입니다.
 
-단어를 같은 의미지만 다른 표현인 벡터로 바꿔준다는 점에서 Word2vec은 오토인코더와 비슷한 면이 있습니다. 하지만 [RBM(restricted Boltzmann machines)](../kr-restrictedboltzmannmachine.html)의 [재구성(reconstruction)](../kr-restrictedboltzmannmachine.html#reconstruct) 과정과 Word2vec의 학습 과정은 좀 다릅니다. Word2vec은 입력한 말뭉치의 문장에 있는 단어와 인접 단어의 관계를 이용해 단어의 의미를 학습합니다.
+단어를 같은 의미지만 다른 표현인 벡터로 바꿔준다는 점에서 Word2vec은 오토인코더와 비슷한 면이 있습니다. 하지만 [RBM(restricted Boltzmann machines)](./kr-restrictedboltzmannmachine.html)의 [재구성(reconstruction)](./kr-restrictedboltzmannmachine.html#reconstruct) 과정과 Word2vec의 학습 과정은 좀 다릅니다. Word2vec은 입력한 말뭉치의 문장에 있는 단어와 인접 단어의 관계를 이용해 단어의 의미를 학습합니다.
 
 Word2vec의 학습 방법은 두 종류가 있습니다. CBOW(Continous Bag Of Words) 방식은 주변 단어가 만드는 맥락을 이용해 타겟 단어를 예측하는 것이고 skip-gram은 한 단어를 기준으로 주변에 올 수 있는 단어를 예측하는 것 입니다. 대규모 데이터셋에서는 skip-gram이 더 정확한 것으로 알려져있으며 저희도 이 방식을 이용합니다.
 
-![Alt text](../img/word2vec_diagrams.png) 
+![Alt text](./img/word2vec_diagrams.png) 
 
 Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학습과 비슷합니다. 한 단어에 이미 할당된 벡터, 즉 word embedding이 있다고 가정하면 이 값을 이용해 주변 문맥을 얼마나 정확하게 예측하는지 계산합니다. 그리고 정확도가 좋지 못한 경우, 즉 추가적인 조정이 필요한 경우에 오차에 따라 벡터의 값을 업데이트합니다. 즉, 학습 과정에서 한 단어를 기준으로 단어 주변의 문맥을 참고하여 현재 embedding 벡터가 얼마나 정확한지, 오차의 값은 어느 정도인지를 알아냅니다. 만일 어떤 두 단어가 비슷한 문맥에서 꾸준하게 사용될 경우 두 단어의 벡터 값은 비슷하게 됩니다.
 
@@ -59,11 +59,11 @@ Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학�
 
 비슷한 물체나 개념은 가까이에 위치합니다. 그리고 단어의 상대적인 의미와 관계 또한 이 공간의 관계에 잘 변환됩니다. 이 관계를 이용하면 유사성을 넘어서 더 복잡한 일을 할 수 있습니다. 이를 테면 아래 예제와 같은 일 입니다.
 
-![Alt text](../img/word2vec_translation.png) 
+![Alt text](./img/word2vec_translation.png) 
 
 이 예제에서 두 가지를 이해하시면 됩니다. 로마, 파리, 베를린, 베이징은 전부 나라의 수도이며 비슷한 의미와 맥락에서 쓰이기 때문에 가까이 위치합니다. 뿐만 아니라, 벡터의 합과 차를 이용하면 재미있는 결과를 얻을 수 있습니다. 각 수도를 뜻하는 단어는 각 나라와 같은 관계에 있습니다. 즉 로마와 이탈리아, 베이징과 중국은 모두 수도와 국가의 관계이므로 각각에 로마-이탈리아와 베이징-중국의 벡터 공간에서의 관계도 유사하게 학습이 되어야 합니다. 실제로 Word2vec을 이용해 로마(의 embedding 벡터) - 이탈리아(의 embedding 벡터) + 중국(의 embedding 벡터)를 수행하면 베이징이 나옵니다. 왜냐하면 `로마-이탈리아`와 `중국-베이징`은 상대적으로 비슷한 벡터이기 때문입니다. 
 
-![Alt text](../img/countries_capitals.png) 
+![Alt text](./img/countries_capitals.png) 
 
 ## <a name="crazy">재미있는 Word2Vec 사용 예</a>
 
@@ -118,14 +118,14 @@ Deeplearning4je는 자연어 처리 도구는 아래와 같습니다.
 
 * **SentenceIterator/DocumentIterator**: 데이터 셋의 데이터로 쉽게 반복 작업을 할 수 있습니다.  `SentenceIterator`는 문자열(string)을 반환하고 `DocumentIterator`는 문서의 `java.io.InputStream`를 반환합니다. 가급적 `SentenceIterator`을 사용하기를 권장합니다.
 * **Tokenizer/TokenizerFactory**: 텍스트를 토큰화 하는데 사용됩니다. 자연어 처리에서 보통 한 문장은 여러 토큰의 배열로 변환됩니다. `TokenizerFactory`는 문장 하나를 위한 tokenizer의 인스턴스를 생성합니다.
-* **VocabCache**: 단어의 개수, 단어를 포함하고 있는 문서의 개수, 토큰의 개수와 종류, [Bog-of-Words](../bagofwords-tf-idf.html), 단어 벡터 룩업테이블(Look Up Table, 순람표)) 등 메타 데이터를 저장하는데 쓰입니다.
+* **VocabCache**: 단어의 개수, 단어를 포함하고 있는 문서의 개수, 토큰의 개수와 종류, [Bog-of-Words](./bagofwords-tf-idf.html), 단어 벡터 룩업테이블(Look Up Table, 순람표)) 등 메타 데이터를 저장하는데 쓰입니다.
 * **Inverted Index**: 단어가 발견된 위치를 메타 데이터에 저장합니다. 이 값은 데이터 셋을 이해하는데 사용할 수 있습니다. Lucene implementation[1]에 기반한 Lucene 색인이 자동으로 생성됩니다.
 
 Word2vec은 위에서 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2vec은 <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling을 사용해 구현했습니다.
 
 ## <a name="setup">Word2Vec 설정</a> 
 
-Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](../kr-quickstart.html)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
+Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](./kr-quickstart.html)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
 
 ``` java
                 <properties>
@@ -352,7 +352,7 @@ Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man -
 
 `import java.io.File;`을 import한 패키지에 추가하는 것을 잊지 마십시오.
 
-대형 모델들과 작업 시 힙 메모리를 조절해야 합니다. 구글 모델은 대략 10G의 메모리가 필요한데 JVM은 가본적으로 256 MB의 공간을 할당하기 때문입니다. `bash_profile`에서 설정을 하거나 (저희의 [Troubleshooting 섹션](../kr-gettingstarted.html#trouble)을 참고하세요) IntelliJ 설정을 바꿔주면 됩니다.
+대형 모델들과 작업 시 힙 메모리를 조절해야 합니다. 구글 모델은 대략 10G의 메모리가 필요한데 JVM은 가본적으로 256 MB의 공간을 할당하기 때문입니다. `bash_profile`에서 설정을 하거나 (저희의 [Troubleshooting 섹션](./kr-gettingstarted.html#trouble)을 참고하세요) IntelliJ 설정을 바꿔주면 됩니다.
 
 ``` java
     //아래 메뉴를 실행한 뒤,
@@ -377,7 +377,7 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-[퀵 스타트 가이드](../kr-quickstart.html)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다. 
+[퀵 스타트 가이드](./kr-quickstart.html)의 설명을 참고해 IDE를 설정하셨다면, 이제 IntelliJ에서 이 예제를 열고 실행해보십시오. 만약 학습에 사용한 말뭉치에 없는 단어를 입력에 넣으면 모델은 `null`값을 반환할 것 입니다. 
 
 ### <a name="trouble">문제 해결 및 Word2Vec 튜닝하기</a>
 
@@ -429,7 +429,7 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 스웨덴의 Andreas Klintberg는 DL4J의 Word2vec 구현 방법을 [Medium에 자세히 정리](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb)해 놓았습니다.
 
-Word2Vec는 DL4J가 [딥 오토인코더](../deepautoencoder.html)를 사용해 질의응답 시스템을 구현하는 과정에서 아주 중요한 전처리기로 사용됩니다.
+Word2Vec는 DL4J가 [딥 오토인코더](./deepautoencoder.html)를 사용해 질의응답 시스템을 구현하는 과정에서 아주 중요한 전처리기로 사용됩니다.
 
 마케터들은 추천 엔진을 구축할 때 제품간의 관계를 Word2vec 벡터를 이용해 계산할 수 있습니다. 투자자들은 각종 그룹과 사람들의 관계를 Word2vec으로 구할 있습니다.
 
@@ -466,24 +466,24 @@ Deeplearning4j는 [SequenceVectors](https://github.com/deeplearning4j/deeplearni
 ### 학습 자료
 
 * [DL4J 단락 벡터로 텍스트를 분류](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java)
-* [DL4J의 Doc2vec(문서 벡터), 또는 단락 벡터](../doc2vec.html)
-* [사고 벡터, 자연어 처리 & AI의 미래](../thoughtvectors.html)
+* [DL4J의 Doc2vec(문서 벡터), 또는 단락 벡터](./doc2vec.html)
+* [사고 벡터, 자연어 처리 & AI의 미래](./thoughtvectors.html)
 * [Quora: Word2vec의 작동 원리](http://www.quora.com/How-does-word2vec-work)
 * [Quora: Word2Vec을 이용한 재미있는 결과물](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec 소개](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov'의 Word2vec 코드 원문 @구글](https://code.google.com/p/word2vec/)
 * [word2vec 설명: Mikolov et al.’의 Negative-Sampling Word-Embedding 방식 도출하기](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg와 Omer Levy
-* [Bag of Words & 용어 빈도-역 문서 빈도 (TF-IDF)](../bagofwords-tf-idf)
+* [Bag of Words & 용어 빈도-역 문서 빈도 (TF-IDF)](./bagofwords-tf-idf)
 
 ### 다른 초보자 가이드
 
-* [심층 신경망 소개](../kr-neuralnet-overview)
-* [초보자를 위한 RNNs과 LSTM 가이드](../kr-lstm)
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](../kr-eigenvector)
-* [컨볼루션 네트워크](../kr-convolutionalnets)
-* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](../kr-restrictedboltzmannmachine)
-* [Neural Networks & Regression](../linear-regression)
-* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
+* [심층 신경망 소개](./kr-neuralnet-overview)
+* [초보자를 위한 RNNs과 LSTM 가이드](./kr-lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](./kr-eigenvector)
+* [컨볼루션 네트워크](./kr-convolutionalnets)
+* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](./kr-restrictedboltzmannmachine)
+* [Neural Networks & Regression](./linear-regression)
+* [심층학습(딥러닝) 활용 사례](./kr-use_cases)
 
 ### <a name="doctorow">문학 속의 Word2Vec</a>
 

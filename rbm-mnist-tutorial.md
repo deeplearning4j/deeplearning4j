@@ -11,11 +11,11 @@ MNIST derives from NIST, and stands for “Mixed National Institute of Standards
 
 Each image in the MNIST database is a 28x28 pixel cell, and each cell is contained within a bounding box, the four lines of pixels that frame it. The image is centered according to the center of mass of its pixels. Reconstructed with our restricted Boltzmann machines, the numbers look like this: 
 
-![Alt text](../img/mnist_render.png)
+![Alt text](./img/mnist_render.png)
 
 Here's an example of how neural nets can cluster random samplings of Mnist images:
 
-![Alt text](../img/mnist_large.jpg)
+![Alt text](./img/mnist_large.jpg)
 
 MNIST is a good place to begin exploring image recognition. Here’s an easy way to load the data and get started. 
 
@@ -23,7 +23,7 @@ MNIST is a good place to begin exploring image recognition. Here’s an easy way
 
 To begin with, you’ll take an image from your data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
 
-The [MnistDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
+The [MnistDataSetIterator](./doc/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
 A DataSetIterator can be used like this:
 
@@ -45,4 +45,4 @@ Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST d
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNSmallMnistExample.java?slice=33:69"></script>
 
-Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../deepbeliefnetwork.html).
+Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](./deepbeliefnetwork.html).

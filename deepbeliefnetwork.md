@@ -5,9 +5,9 @@ layout: default
 
 # Tutorial: Deep-Belief Networks & MNIST
 
-A deep-belief network can be defined as a stack of [restricted Boltzmann machines, explained here](../restrictedboltzmannmachine.html), in which each RBM layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
+A deep-belief network can be defined as a stack of [restricted Boltzmann machines, explained here](./restrictedboltzmannmachine.html), in which each RBM layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
-This stack of RBMs might end with a a [Softmax](../glossary.html#softmax) layer to create a classifier, or it may simply help cluster unlabeled data in an unsupervised learning scenario. 
+This stack of RBMs might end with a a [Softmax](./glossary.html#softmax) layer to create a classifier, or it may simply help cluster unlabeled data in an unsupervised learning scenario. 
 
 With the exception of the first and final layers, each layer in a deep-belief network has a double role: it serves as the hidden layer to the nodes that come before it, and as the input (or "visible") layer to the nodes that come after. It is a network built of single-layer networks. 
 
@@ -19,9 +19,9 @@ MNIST is a good place to begin exploring image recognition and DBNs. The first s
 
 ### Hyperparameters
 
-See the [parameters common to all multilayer networks in our Iris DBN tutorial](../iris-flower-dataset-tutorial).
+See the [parameters common to all multilayer networks in our Iris DBN tutorial](./iris-flower-dataset-tutorial).
 
-The variable k represents the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is `1`.
+The variable k represents the number of times you run [contrastive divergence](./glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is `1`.
 
 ### Initiating a Deep-Belief Network
 
@@ -48,17 +48,17 @@ Then evaluate the performance of the net:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DBNMnistFullExample.java?slice=82:91"></script>
 
-Note that the *eval* class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data. This is useful for tracking how well your network trains over time. 
+Note that the *eval* class combines [confusion matrices](./glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data. This is useful for tracking how well your network trains over time. 
 
 F1 scores are expressed as percentages. They are basically the probability that your net's guesses are correct. To improve a neural net's performance, you can tune it by modifying the number and size of the hidden layers, and tweaking other parameters such as learning rate, momentum, weight distribution and various types of regularization.
 
-Next, we'll show you how to use [distributed and multithreaded computing](../iterativereduce) to train your networks more quickly. To read about another type of deep network, the deep autoencoder, [click here](../deepautoencoder). 
+Next, we'll show you how to use [distributed and multithreaded computing](./iterativereduce) to train your networks more quickly. To read about another type of deep network, the deep autoencoder, [click here](./deepautoencoder). 
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Introduction to Neural Networks](../neuralnet-overview)
-* [LSTMs and Recurrent Networks](../lstm)
-* [Word2vec](../word2vec)
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [Neural Networks and Regression](../linear-regression)
-* [Convolutional Networks](../convolutionalnets)
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Word2vec](./word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)

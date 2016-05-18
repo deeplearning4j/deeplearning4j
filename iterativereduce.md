@@ -29,7 +29,7 @@ Let's say you have a deep-belief net that you want to train on a very large data
 
 The image, [created by Josh Patterson](http://www.slideshare.net/cloudera/strata-hadoop-world-2012-knitting-boar), below compares the two processes. On the left, you have a close-up of MapReduce; on the right, of Iterative. Each "Processor" is a deep-belief network at work, learning on batches of a larger dataset; each "Superstep" is an instance of parameter averaging, before the central model is redistributed to the rest of the cluster. 
 
-![Alt text](../img/mapreduce_v_iterative.png)
+![Alt text](./img/mapreduce_v_iterative.png)
 
 ## Hadoop & Spark
 
@@ -39,7 +39,7 @@ In Hadoop, Iterative Reduce workers sit on the their splits, or blocks of HDFS, 
 
 To provide a little context about the state-of-the-art, both Google and Yahoo operate parameter servers that store billions of parameters which are then distributed to the cluster for processing. Google's is called the Google Brain, which was created by Andrew Ng and is now led by his student Quoc Le. Here's a rough picture of the Google production stack circa 2015 to show you how MapReduce fits in.
 
-![Alt text](../img/google_production_stack.png)
+![Alt text](./img/google_production_stack.png)
 
 Deeplearning4j considers distributed run-times to be interchangeable (but not necessarily equal); they are all simply a directory in a larger modular architecture that can be swapped in or out. This allows the overall project to evolve at different speeds, and separate run-times from other modules devoted to neural net algorithms on the one hand, and hardware on the other. Deeplearning4j users are also able to build a standalone distributed architecture via Akka, spinning out nodes on AWS.
 

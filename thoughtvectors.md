@@ -57,10 +57,10 @@ Here are a few of the approaches that are being made to thought vectorization:
 * [Seq2seq bilingual translation](http://arxiv.org/pdf/1409.3215) and [skip-thought vectors](http://arxiv.org/abs/1506.06726).
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [LSTMs and Recurrent Networks](../lstm)
-* [Neural Networks](../neuralnet-overview)
-* [Neural Networks and Regression](../linear-regression)
-* [Convolutional Networks](../convolutionalnets)
-* [Word2vec](../word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks](./neuralnet-overview)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
+* [Word2vec](./word2vec)

@@ -20,7 +20,7 @@ layout: kr-default
 
 인공 신경망은 인간의 뇌가 패턴을 인식하는 방식을 모사한 알고리즘입니다. 인공 신경망은 시각, 청각 입력 데이터를 퍼셉트론이나 분류, 군집을 이용하여 해석하는데, 이렇게 해석한 결과 이용하면 이미지, 소리, 문자, 시계열 데이터에서 특정 패턴을 인식할 수 있습니다.
 
-인공 신경망을 이용하면 각종 분류(classification) 및 군집화(clustering)가 가능합니다. 지금부터 자세히 살펴보겠지만, 단순하게 표현하면 분류나 군집화를 원하는 데이터 위에 여러 가지 층(layer)을 얹어서 원하는 작업을 하게 됩니다. 각 층에서는 라벨링이 되어있지 않은 데이터를 서로 비교하여 유사도를 구해주거나, 라벨링이 되어있는 데이터를 기반으로 분류기를 학습하여 자동으로 데이터를 분류하도록 할 수 있습니다. (구체적으로 이야기하면, 인공 신경망으로 특징을 추출하고 그 특징을 다시 다른 기계학습 알고리즘의 입력으로 사용하여 분류나 군집화를 할 수 있습니다. 즉, 심층 신경망을 전체 기계학습 시스템의 구성 요소로 생각하면 됩니다. 여기서 전체 시스템이란 [강화학습(Reinforced learning)](../reinforcementlearning.html), 분류 및 [회귀](../linear-regression.html)를 말합니다.)
+인공 신경망을 이용하면 각종 분류(classification) 및 군집화(clustering)가 가능합니다. 지금부터 자세히 살펴보겠지만, 단순하게 표현하면 분류나 군집화를 원하는 데이터 위에 여러 가지 층(layer)을 얹어서 원하는 작업을 하게 됩니다. 각 층에서는 라벨링이 되어있지 않은 데이터를 서로 비교하여 유사도를 구해주거나, 라벨링이 되어있는 데이터를 기반으로 분류기를 학습하여 자동으로 데이터를 분류하도록 할 수 있습니다. (구체적으로 이야기하면, 인공 신경망으로 특징을 추출하고 그 특징을 다시 다른 기계학습 알고리즘의 입력으로 사용하여 분류나 군집화를 할 수 있습니다. 즉, 심층 신경망을 전체 기계학습 시스템의 구성 요소로 생각하면 됩니다. 여기서 전체 시스템이란 [강화학습(Reinforced learning)](./reinforcementlearning.html), 분류 및 [회귀](./linear-regression.html)를 말합니다.)
 
 심층 신경망을 이용해보고 싶다면 우선 어떤 문제를 해결하고 싶은지 생각해 보십시오. 즉 어떤 분류를 하고 싶은지, 그리고 내가 어떤 정보를 취할 수 있는지를 정해야합니다. 예를 들면 이메일 데이타를 `스팸`과 `스팸 아님`으로 분류한다든지, 고객을 `친절한 고객`과 `악덕 고객`, `불만이 많은 고객`과 `만족하는 고객`으로 분류할 수 있습니다. 이렇게 어떤 분류를 원하는지 정한 뒤엔 분류에 필요한 데이터를 가지고 있는지 생각 해 보아야 합니다. 예를 들어 이미 `스팸`과 `스팸 아님`으로 라벨링이 된 이메일 데이터가 있는지, 없다면 내가 직접 데이터셋을 만들 수 있는지를 고민해야 합니다. 또, 이 데이터로 원하는 라벨링이 과연 가능한 것인지도 생각해봐야 합니다.
 
@@ -36,11 +36,11 @@ layout: kr-default
 
 노드에서 일어나는 계산 과정이 아래 다이어그램에 정리되어 있습니다.
 
-![Alt text](../img/perceptron_node.png)
+![Alt text](./img/perceptron_node.png)
 
 층은 여러 개의 노드로 이루어져 있으며 입력값에 따라 각 노드의 활성화/비활성화 여부가 결정됩니다. 입력 데이터는 첫 번째 층의 입력이 되며 그 이후엔 각 층의 출력이 다시 다음 층의 입력이 됩니다.
 
-![Alt text](../img/mlp.png)
+![Alt text](./img/mlp.png)
 
 모든 계수는 학습 과정에서 계속 조금씩 변하는데, 결과적으로 각 노드가 어떤 입력을 중요하게 여기는지를 반영합니다. 그리고 신경망의 '학습(training)'은 이 계수를 업데이트하는 과정입니다.
 
@@ -52,9 +52,9 @@ layout: kr-default
 
 심층 신경망에서 각 노드는 각자 다른 특징을 추출하며 잘 설계/학습된 인공 신경망은 여러 가지 복잡한 특징을 추출할 수 있습니다. 
 
-![Alt text](../img/feature_hierarchy.png)
+![Alt text](./img/feature_hierarchy.png)
 
-이렇게 심층 신경망에서는 층마다 *다른 층위의 특징*이 학습이 됩니다. 낮은 층위의 특징은 단순하고 구체적이며 (예:이미지를 이루는 수평선, 수직선, 대각선) 높은 층위의 특징은 더욱 복잡하고 추상적입니다 (예:사람 모양, 자동차 모양, 고양이 모양, 얼굴 모양..). 이런 추상화 과정을 통해 심층 신경망이 아주 큰, 고차원의 데이터를 이해하며 이 과정은 수 억, 수 십억 개의 계수가 관여합니다. (이 과정에서 [비선형함수](../glossary.html#nonlineartransformfunction)를 사용합니다.)
+이렇게 심층 신경망에서는 층마다 *다른 층위의 특징*이 학습이 됩니다. 낮은 층위의 특징은 단순하고 구체적이며 (예:이미지를 이루는 수평선, 수직선, 대각선) 높은 층위의 특징은 더욱 복잡하고 추상적입니다 (예:사람 모양, 자동차 모양, 고양이 모양, 얼굴 모양..). 이런 추상화 과정을 통해 심층 신경망이 아주 큰, 고차원의 데이터를 이해하며 이 과정은 수 억, 수 십억 개의 계수가 관여합니다. (이 과정에서 [비선형함수](./glossary.html#nonlineartransformfunction)를 사용합니다.)
 
 또한 심층 신경망은 데이터를 이용해 데이터의 잠재적인 구조(latent structures)를 파악할 수 있습니다. 즉, 사진, 글, 비디오, 음성, 음악의 잠재적인 구조(어떤 물체가 사진에 있는지, 글의 내용과 감정이 무엇인지, 음성의 내용과 감정이 무엇인지 등)를 파악할 수 있습니다. 이를 통해 데이터가 라벨링되어있지 않아도 데이터간의 유사성을 효과적으로 파악할 수 있으며, 결과적으로 심층 신경망은 데이터 군집화에 아주 좋은 성능을 발휘합니다. 
 
@@ -139,11 +139,11 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 
 연쇄 법칙은 아래와 같이 설명할 수 있습니다.
 
-![Alt text](../img/chain_rule.png)
+![Alt text](./img/chain_rule.png)
 
 인공 신경망의 오차와 각 계수와의 관계는 아래와 같습니다.
 
-![Alt text](../img/backprop_chain_rule.png)
+![Alt text](./img/backprop_chain_rule.png)
 
 즉 *오차*와 *계수*가 *활성 함수*를 통해 정해지는 경우 최종적으로 계수 값의 변화가 오차를 증가할지, 혹은 감소할지를 구할 수 있습니다. 반대로 활성 함수를 바꾸는 것이 어떤 영향을 끼칠지도 구할 수 있습니다. 
 
@@ -163,7 +163,7 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 
 이렇게 넓은 범위의 값을 0 또는 1의 값으로 결정해주는 과정을 로지스틱 회귀라고 합니다. 이 이름이 굉장히 헷갈리기 쉬운데, 회귀(연속된 값을 예측하는 작업)라는 이름이 붙여져 있지만 실제로는 분류 작업을 한다는 것을 유의하시기 바랍니다. 
 
-![Alt text](../img/logistic_regression.png)
+![Alt text](./img/logistic_regression.png)
 
 로지스틱 회귀의 공식을 조금 들여다 보겠습니다.
 
@@ -185,14 +185,14 @@ Gradient는 경사 혹은 기울기를 의미합니다. x-y 평면에서 기울�
 
 인공 신경망 초보자들을 위한 강좌를 모아놓았으니 참고하시기 바랍니다.
 
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)](../kr-eigenvector.html)
-* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
-* [컨볼루션 네트워크](../kr-convolutionalnets.html)
-* [RNNs과 LSTMs](../kr-lstm.html)
-* [Word2vec과 자연어 처리](../kr-word2vec.html)
-* [Deeplearing4j 퀵 스타트 가이드 (Quick Start Guide)](../kr-quickstart.html)
-* [심층 신경망/인공 신경망 용어 사전](../glossary.html)
-* [Iris Flower 데이터셋 튜토리알](../iris-flower-dataset-tutorial.html)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)](./kr-eigenvector.html)
+* [RBMs: Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine.html)
+* [컨볼루션 네트워크](./kr-convolutionalnets.html)
+* [RNNs과 LSTMs](./kr-lstm.html)
+* [Word2vec과 자연어 처리](./kr-word2vec.html)
+* [Deeplearing4j 퀵 스타트 가이드 (Quick Start Guide)](./kr-quickstart.html)
+* [심층 신경망/인공 신경망 용어 사전](./glossary.html)
+* [Iris Flower 데이터셋 튜토리알](./iris-flower-dataset-tutorial.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)

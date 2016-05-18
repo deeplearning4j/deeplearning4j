@@ -26,11 +26,11 @@ Since recurrent networks possess a certain type of memory, and memory is also pa
 
 ## <a name="feedforward">Review of Feedforward Networks</a>
 
-To understand recurrent nets, first you have to understand the basics of [feedforward nets](../restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through (never touching a given node twice), the other cycles it through a loop.
+To understand recurrent nets, first you have to understand the basics of [feedforward nets](./restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through (never touching a given node twice), the other cycles it through a loop.
 
 In the case of feedforward networks, input examples are fed to the network and transformed into an output; with supervised learning, the output would be a label. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
 
-![Alt text](../img/feedforward_rumelhart.png)
+![Alt text](./img/feedforward_rumelhart.png)
 
 A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, or weights, the network sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. Seeing photograph of a cat will not lead the net to perceive an elephant next. 
 
@@ -40,7 +40,7 @@ That is, it has no notion of order in time, and the only input it considers is t
 
 Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where the *BTSXPE* at the bottom of the drawing represents the input example in the current moment, and *CONTEXT UNIT* represents the output of the previous moment. 
 
-![Alt text](../img/srn_elman.png)
+![Alt text](./img/srn_elman.png)
 
 The decision a recurrent net reached at time step `t-1` affects the decision it will reach one moment later at time step `t`. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as we do in life. 
 
@@ -52,11 +52,11 @@ Just as human memory circulates invisibly within a body, affecting our behavior 
 
 We'll describe the process of carrying memory forward mathematically:
 
-![Alt text](../img/recurrent_equation.png)
+![Alt text](./img/recurrent_equation.png)
 
 The hidden state at time step t is `h_t`. It is a function of the input at the same time step `x_t`, modified by a weight matrix `W` (like the one we used for feedforward nets) added to the hidden state of the previous time step `h_t-1` multiplied by its own hidden-state-to-hidden-state matrix `U`, otherwise known as a transition matrix and similar to a Markov chain. The weight matrices are filters that determine how much importance to accord to both the present input and the past hidden state. The error they generate will return via backpropagation and be used to adjust their weights until error can't go any lower.
 
-The sum of the weight input and hidden state is squashed by the function `φ` -- either a logistic sigmoid function or tanh, depending -- which is a standard tool for condensing very large or very small values into a logistic space, as well as making [gradients](../glossary.html#gradient) workable for backpropagation. 
+The sum of the weight input and hidden state is squashed by the function `φ` -- either a logistic sigmoid function or tanh, depending -- which is a standard tool for condensing very large or very small values into a logistic space, as well as making [gradients](./glossary.html#gradient) workable for backpropagation. 
 
 Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded `h_t-1` for as long as memory can persist.
 
@@ -102,7 +102,7 @@ Exploding gradients treat every weight as though it were the proverbial butterfl
 
 Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing as it passes through many layers. 
 
-![Alt text](../img/sigmoid_vanishing_gradient.png)
+![Alt text](./img/sigmoid_vanishing_gradient.png)
 
 ## <a name="long">Long Short-Term Memory Units (LSTMs)</a>
 
@@ -116,7 +116,7 @@ Those gates act on the signals they receive, and similar to the neural network's
 
 The diagram below illustrates how data flows through a memory cell and is controlled by its gates.
 
-![Alt text](../img/gers_lstm.png)
+![Alt text](./img/gers_lstm.png)
 
 There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram -- contemplate it. After a few minutes, it will begin to reveal its secrets. 
 
@@ -128,7 +128,7 @@ The large bold letters give us the result of each operation.
 
 Here's another diagram for good measure, comparing a simple recurrent network (left) to an LSTM cell (right). The blue lines can be ignored; the legend is helpful. 
 
-![Alt text](../img/greff_lstm_diagram.png)
+![Alt text](./img/greff_lstm_diagram.png)
 
 It's important to note that LSTMs' memory cells give different roles to addition and multiplication in the transformation of input. The central **plus sign** in both diagrams is essentially the secret of LSTMs. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. Instead of determining the subsequent cell state by multiplying its current state with new input, they add the two, and that quite literally makes the difference. (The forget gate still relies on multiplication, of course.)
 
@@ -140,7 +140,7 @@ You may wonder why LSTMs have a forget gate when their purpose is to link distan
 
 In the diagram below, you can see the gates at work, with straight lines representing closed gates, and blank circles representing open ones. The lines and circles running horizontal down the hidden layer are the forget gates.
 
-![Alt text](../img/gates_lstm.png)
+![Alt text](./img/gates_lstm.png)
 
 It should be noted that while feedforward networks map one input to one output, recurrent nets can map one to many, as above (one image to many words in a caption), many to many (translation), or many to one (classifying a voice).
 
@@ -160,7 +160,7 @@ Other data is like that. Music is polyrhythmic. Text contains recurrent themes a
 
 A gated recurrent unit (GRU) is basically an LSTM without an output gate, which therefore fully writes the contents from its memory cell to the larger net at each time step. 
 
-![Alt text](../img/lstm_gru.png)
+![Alt text](./img/lstm_gru.png)
 
 ## <a name="code">Code Sample</a>
 
@@ -181,7 +181,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * In general, stacking layers can help.
 * For LSTMs, use the softsign (not softmax) activation function over tanh (it's faster and less prone to saturation (~0 gradients)).
 * Updaters: RMSProp, AdaGrad or momentum (Nesterovs) are usually good choices. AdaGrad also decays the learning rate, which can help sometimes.
-* Finally, remember data normalization, MSE loss function + identity activation function for regression, [Xavier weight initialization](../glossary.html#xavier)
+* Finally, remember data normalization, MSE loss function + identity activation function for regression, [Xavier weight initialization](./glossary.html#xavier)
 
 ## <a name="resources">Resources</a>
 * [DRAW: A Recurrent Neural Network For Image Generation](http://arxiv.org/pdf/1502.04623v2.pdf); (attention models)
@@ -198,12 +198,12 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [Word2vec](../word2vec)
-* [Neural Networks](../neuralnet-overview)
-* [Neural Networks and Regression](../linear-regression)
-* [Convolutional Networks](../convolutionalnets)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Word2vec](./word2vec)
+* [Neural Networks](./neuralnet-overview)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
 
 ### Footnotes
 

@@ -27,7 +27,7 @@ layout: kr-default
 RNNs은 좀 다릅니다. 기본적으로 시계열 데이터를 다루기 때문에 입력 데이터의 전체 크기는 3차원(데이터 개수 x 입력 벡터의 길이 x 전체 시간)이 되고 출력은 (데이터 개수 x 출력 벡터의 길이 x 전체 시간)이 됩니다. DL4J 문법으로 설명을 하면 `INDArray`의 `(i,j,k)` 위치의 값은 미니 배치에 있는 `i`번째 데이터에서 `k`번째 시간 단계에 있는 벡터의 `j`번째 성분입니다. 아래 그림을 참고하시기 바랍니다.
 
 
-![Data: Feed Forward vs. RNN](../img/rnn_data.png)
+![Data: Feed Forward vs. RNN](./img/rnn_data.png)
 
 #### RnnOutputLayer
 `RnnOutputLayer`는 DL4J의 RNNs에서 출력층으로 사용하는 유형입니다. `RnnOutputLayer`는 분류/회귀 작업에 모두 사용 가능하며 현재 모델의 점수를 평가하고 오차를 계산하는 기능을 가지고 있습니다. 이런 기능은 FFNets에서 사용하는 `OutputLayer`와 비슷하지만 데이터의 모양(shape)이 3차원이라는 차이가 있습니다.
@@ -48,13 +48,13 @@ RNNs은 좀 다릅니다. 기본적으로 시계열 데이터를 다루기 때�
 
 길이가 12인 시계열 데이터로 RNNs을 학습하는 과정을 상상해보십시오. 데이터 하나로 학습을 하는데 입력->출력으로 12단계의 연산을 거치고, 출력->입력으로 다시 12단계의 backprop 연산을 합니다. (그림 참조)
 
-![Standard Backprop Training](../img/rnn_tbptt_1.png)
+![Standard Backprop Training](./img/rnn_tbptt_1.png)
 
 12단계는 큰 문제가 아닙니다. 그러나 입력으로 들어온 시계열 데이터가 10,000개의 샘플을 가지고 있다면 어마어마한 연산량이 필요합니다. 단 한번의 계수 업데이트에 10,000단계의 입력->출력과(출력 계산) 출력->입력 과정(backprop)을 거쳐야합니다. 
 
 이 문제를 해결하기 위해 단기 BPTT는 전체 시계열 데이터를 작게 나눠서 학습을 합니다. 예를 들어 아래 그림은 길이가 12인 시계열 데이터를 길이가 4인 작은 데이터로 나누어 학습하는 과정을 표현한 것입니다. 이 길이는 사용자가 연산량과 데이터의 크기에 따라 설정합니다.
 
-![Truncated BPTT](../img/rnn_tbptt_2.png)
+![Truncated BPTT](./img/rnn_tbptt_2.png)
 
 단기 BPTT와 일반적인 BPTT의 전체 연산량은 대략 비슷합니다. 그림을 보면 단기 BPTT도 결국 12번의 출력 계산과 12번의 backprop을 수행합니다. 그러나 이렇게 하면 같은 양의 데이터로 3번의 계수 업데이트가 가능합니다.
 
@@ -80,7 +80,7 @@ DL4J는 RNNs 학습과 관련한 패딩(padding) 및 마스킹(masking)을 지�
 
 예를 들어 RNNs으로 학습하려는 데이터가 매 시간 단계마다 발생하지 않는 상황을 가정해봅시다. 아래 그림이 그런 상황입니다. DL4J를 이용하면 아래 그림의 모든 상황에 대처할 수 있습니다.
 
-![RNN Training Types](../img/rnn_masking_1.png)
+![RNN Training Types](./img/rnn_masking_1.png)
 
 마스킹과 패딩을 쓰지 않으면 RNNS은 다대다 학습만 가능합니다. 즉, 입력 데이터의 길이가 다 같고, 출력 데이터도 입력 데이터의 길이와 같은 아주 제한된 형태만 가능합니다.
 
@@ -92,7 +92,7 @@ DL4J의 미니 배치에 있는 데이터는 [배치 크기, 입력 벡터 크�
 
 아래 그림을 보고 마스킹이 어떻게 적용하는지 이해하시기 바랍니다.
 
-![RNN Training Types](../img/rnn_masking_2.png)
+![RNN Training Types](./img/rnn_masking_2.png)
 
 마스킹이 필요하지 않은 경우엔 마스킹 층의 값을 전부 1로 설정하면 됩니다(물론 마스킹이 전혀 필요하지 않는다면 마스킹 층을 굳이 추가하지 않아도 됩니다). 또 경우에 따라 입력층이나 출력층 중 한군데에만 마스킹을 해도 됩니다. 예를 들어 다대일 학습의 경우엔 출력층에만 마스킹을 할 수도 있습니다.
 
@@ -142,11 +142,11 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 
 
-![RNN Time Step](../img/rnn_timestep_1.png)
+![RNN Time Step](./img/rnn_timestep_1.png)
 
 최초에 `rnnTimeStep`이 호출되면 학습이 끝난 뒤에 은닉층의 값이 저장됩니다. 아래 그림의 우측 도식을 보면 이렇게 저장된 값을 오렌지색으로 표시했습니다. 이제 다음 입력이 들어오면 이 값을 사용할 수 있습니다. 반면 좌측은 `output()`을 사용한 경우인데, 이 경우엔 학습이 끝난 뒤에 이 값을 저장하지 않습니다.
 
-![RNN Time Step](../img/rnn_timestep_2.png)
+![RNN Time Step](./img/rnn_timestep_2.png)
 
 그 차이는 데이터가 하나 더 추가되었을 때 현격하게 벌어집니다.
 
@@ -274,13 +274,13 @@ DL4J에서 RNNs 출력은 다른 인공 신경망과 마찬가지로 `MultiLayer
 
 정렬 모드는 간단합니다. 다른 길이의 시계열을 어딜 기준으로 정렬할지를 지정합니다. 아래 그림의 좌/우를 비교하면 이해가 쉽습니다.
 
-![Sequence Alignment](../img/rnn_seq_alignment.png)
+![Sequence Alignment](./img/rnn_seq_alignment.png)
 
 일대다의 경우는 위의 그림에서 네 번째 경우와 비슷합니다. `AlignmentMode.ALIGN_START`를 사용하면 됩니다.
 
 여러 학습 시계열 데이터를 불러올 경우에 각 파일 내부적으로 정렬이 이루어집니다.
 
-![Sequence Alignment](../img/rnn_seq_alignment_2.png)
+![Sequence Alignment](./img/rnn_seq_alignment_2.png)
 
 #### 다른 방법: 사용자 정의 DataSetIterator 구현하기
 지금까지는 미리 구현된 클래스를 이용하는 방법을 알아봤습니다. 더 복잡한 기능이 필요한 경우엔 직접 [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)를 구현하는 방법이 있습니다. 간단히 말하면 `DataSetIterator`는 `DataSet` 객체를 반복 처리하는 인터페이스일 뿐 입니다.

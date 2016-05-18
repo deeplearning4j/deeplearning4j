@@ -18,17 +18,17 @@ Contents
 
 ## <a name="define">Definition & Structure</a>
 
-Invented by Geoff Hinton, a Restricted Boltzmann machine is an algorithm useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. (For more concrete examples of how [neural networks](../neuralnet-overview.html) like RBMs can be employed, please see our page on [use cases](../use_cases.html)).
+Invented by Geoff Hinton, a Restricted Boltzmann machine is an algorithm useful for dimensionality reduction, classification, [regression](./linear-regression.html), collaborative filtering, feature learning and topic modeling. (For more concrete examples of how [neural networks](./neuralnet-overview.html) like RBMs can be employed, please see our page on [use cases](./use_cases.html)).
 
 Given their relative simplicity and historical importance, restricted Boltzmann machines are the first neural network we'll tackle. In the paragraphs below, we describe in diagrams and plain language how they work. 
 
 RBMs are shallow, two-layer neural nets that constitute the building blocks of *deep-belief networks*. The first layer of the RBM is called the visible, or input, layer, and the second is the hidden layer. 
 
-![Alt text](../img/two_layer_RBM.png)
+![Alt text](./img/two_layer_RBM.png)
 
 Each circle in the graph above represents a neuron-like unit called a *node*, and nodes are simply where calculations take place. The nodes are connected to each other across layers, but no two nodes of the same layer are linked.
 
-That is, there is no intra-layer communication – this is the *restriction* in a restricted Boltzmann machine. Each node is a locus of computation that processes input, and begins by making [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to transmit that input or not. (*Stochastic* means “randomly determined”, and in this case, the coefficients that modify inputs are randomly initialized.)
+That is, there is no intra-layer communication – this is the *restriction* in a restricted Boltzmann machine. Each node is a locus of computation that processes input, and begins by making [stochastic](./glossary.html#stochasticgradientdescent) decisions about whether to transmit that input or not. (*Stochastic* means “randomly determined”, and in this case, the coefficients that modify inputs are randomly initialized.)
 
 Each visible node takes a low-level feature from an item in the dataset to be learned. For example, from a dataset of grayscale images, each visible node would receive one pixel-value for each pixel in one image. (MNIST images have 784 pixels, so neural nets processing them must have 784 input nodes on the visible layer.)
 
@@ -36,11 +36,11 @@ Now let's follow that single pixel value, *x*, through the two-layer net. At nod
 
 		activation f((weight w * input x) + bias b ) = output a
 
-![Alt text](../img/input_path_RBM.png)
+![Alt text](./img/input_path_RBM.png)
 
 Next, let's look at how several inputs would combine at one hidden node. Each x is multiplied by a separate weight, the products are summed, added to a bias, and again the result is passed through an activation function to produce the node's output. 
 
-![Alt text](../img/weighted_input_RBM.png)
+![Alt text](./img/weighted_input_RBM.png)
 
 Because inputs from all visible nodes are being passed to all hidden nodes, an RBM can be defined as a *symmetrical bipartite graph*.
 
@@ -50,11 +50,11 @@ At each hidden node, each input x is multiplied by its respective weight w. That
 
 Each hidden node receives the four inputs multiplied by their respective weights. The sum of those products is again added to a bias (which forces at least some activations to happen), and the result is passed through the activation algorithm producing one output for each hidden node. 
 
-![Alt text](../img/multiple_inputs_RBM.png)
+![Alt text](./img/multiple_inputs_RBM.png)
 
 If these two layers were part of a deeper neural network, the outputs of hidden layer no. 1 would be passed as inputs to hidden layer no. 2, and from there through as many hidden layers as you like until they reach a final classifying layer. (For simple feed-forward movements, the RBM nodes function as an *autoencoder* and nothing more.)
 
-![Alt text](../img/multiple_hidden_layers_RBM.png)
+![Alt text](./img/multiple_hidden_layers_RBM.png)
 
 ## <a name="reconstructions">Reconstructions</a>
 
@@ -62,11 +62,11 @@ But in this introduction to restricted Boltzmann machines, we'll focus on how th
 
 In the reconstruction phase, the activations of hidden layer no. 1 become the input in a backward pass. They are multiplied by the same weights, one per internode edge, just as x was weight-adjusted on the forward pass. The sum of those products is added to a visible-layer bias at each visible node, and the output of those operations is a reconstruction; i.e. an approximation of the original input. This can be represented by the following diagram:
 
-![Alt text](../img/reconstruction_RBM.png)
+![Alt text](./img/reconstruction_RBM.png)
 
 Because the weights of the RBM are randomly initialized, the difference between the reconstructions and the original input is often large. You can think of reconstruction error as the difference between the values of `r` and the input values, and that error is then backpropagated against the RBM's weights, again and again, in an iterative learning process until an error minimum is reached. 
 
-A more thorough explanation of backpropagation is [here](../neuralnet-overview.html#forward). 
+A more thorough explanation of backpropagation is [here](./neuralnet-overview.html#forward). 
 
 As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the [probability of output given a weighted x](https://en.wikipedia.org/wiki/Bayes%27_theorem): `p(a|x; w)`. 
 
@@ -84,11 +84,11 @@ To measure the distance between its estimated probability distribution and the g
 
 KL-Divergence measures the non-overlapping, or diverging, areas under the two curves, and an RBM's optimization algorithm attempts to minimize those areas so that the shared weights, when multiplied by activations of hidden layer one, produce a close approximation of the original input. On the left is the probability distibution of a set of original input, *p*, juxtaposed with the reconstructed distribution *q*; on the right, the integration of their differences. 
 
-![Alt text](../img/KL_divergence_RBM.png)
+![Alt text](./img/KL_divergence_RBM.png)
 
 By iteratively adjusting the weights according to the error they produce, an RBM learns to approximate the original data. You could say that the weights slowly come to reflect the structure of the input, which is encoded in the activations of the first hidden layer. The learning process looks like two probability distributions converging, step by step.
 
-![Alt text](../img/KLD_update_RBM.png)
+![Alt text](./img/KLD_update_RBM.png)
 
 ### <a name="probability">Probability Distributions</a> 
 
@@ -102,11 +102,11 @@ Languages are specific in the probability distribution of their letters, because
 
 In the same way, image datasets have unique probability distributions for their pixel values, depending on the kind of images in the set. Pixels values are distributed differently depending on whether the dataset includes MNIST's handwritten numerals:
 
-![Alt text](../img/mnist_render.png)
+![Alt text](./img/mnist_render.png)
 
 or the headshots found in Labeled Faces in the Wild:
 
-![Alt text](../img/LFW_reconstruction.jpg)
+![Alt text](./img/LFW_reconstruction.jpg)
 
 Imagine for a second that an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect? 
 
@@ -132,7 +132,7 @@ While RBMs have many uses, proper initialization of weights to facilitate later 
 
 To synthesize restricted Boltzmann machines in one diagram, here is a symmetrical bipartite and bidirectional graph:
 
-![Alt text](../img/sym_bipartite_graph_RBM.png)
+![Alt text](./img/sym_bipartite_graph_RBM.png)
 
 For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
@@ -203,11 +203,11 @@ Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguratio
      // A single layer learns features unsupervised.	
     }
 
-This is an example of an [RBM processing the Iris flower dataset](../iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
+This is an example of an [RBM processing the Iris flower dataset](./iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
 
 ## <a name="params">Parameters & k</a>
 
-The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Contrastive divergence is the method used to calculate the gradient (the slope representing the relationship between a network's weights and its error), without which no learning can occur. 
+The variable k is the number of times you run [contrastive divergence](./glossary.html#contrastivedivergence). Contrastive divergence is the method used to calculate the gradient (the slope representing the relationship between a network's weights and its error), without which no learning can occur. 
 
 Each time contrastive divergence is run, it's a sample of the Markov Chain composing the restricted Boltzmann machine. A typical value is 1. 
 
@@ -237,17 +237,17 @@ The input is the numeric data, a vector, fed to it from the previous layer (or a
 
 Those additional algorithms and their combinations can vary layer by layer. 
 
-An effective continuous restricted Boltzmann machine employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit transformation on the hidden layer. That's particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). For RBMs handling binary data, simply make both transformations binary ones. 
+An effective continuous restricted Boltzmann machine employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit transformation on the hidden layer. That's particularly useful in [facial reconstruction](./facial-reconstruction-tutorial.html). For RBMs handling binary data, simply make both transformations binary ones. 
 
-Gaussian transformations do not work well on RBMs' hidden layers. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).
+Gaussian transformations do not work well on RBMs' hidden layers. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](./deepbeliefnetwork.html).
 
 ### <a name="next">Conclusions & Next Steps</a>
 
-You can interpret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html). 
+You can interpret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](./understandingRBMs.html). 
 
 It should be noted that RBMs do not produce the most stable, consistent results of all shallow, feedforward networks. In many situations, a dense-layer [autoencoder](http://deeplearning4j.org/glossary.html#autoencoder) works better. Indeed, the industry is moving toward tools such as variational autoencoders. 
 
-Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
+Next, we'll show you how to implement a [deep-belief network](./deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
 
 ### <a name="resources">Other Resources</a>
 
@@ -257,8 +257,8 @@ Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwo
 
 ### Other Beginner's Guides
 
-* [Recurrent Networks/LSTMs](../lstm.html)
-* [Neural Networks](../neuralnet-overview.html)
-* [Eigenvectors, PCA and Entropy](../eigenvector.html)
-* [Neural Networks & Regression](../linear-regression.html)
-* [Convolutional Networks](../convolutionalnets.html)
+* [Recurrent Networks/LSTMs](./lstm.html)
+* [Neural Networks](./neuralnet-overview.html)
+* [Eigenvectors, PCA and Entropy](./eigenvector.html)
+* [Neural Networks & Regression](./linear-regression.html)
+* [Convolutional Networks](./convolutionalnets.html)

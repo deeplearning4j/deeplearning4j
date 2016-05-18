@@ -55,7 +55,7 @@ The data pre-vectorisation looks like this:
       Description: tie made finest quality pure silk hand-finished perfection wool interlining classic ties available range different approx width widest point cm approx length cm silk wool interlining dry clean only catalogue number approx width widest point cm approx length silk wool interlining dry clean only catalogue number
       Categories: woven silk ties
 
-I use [*word2vec*](../word2vec.html) to create vectors. A word needs to show at least 10 times, and I get 40 vectors for each wordset. I then proceed to sum all vectors per title, description and category, resulting in 120 vectors. In theory, this seemed like a bad idea. I was opposed to this approach because I expected the resulting vectors to be too spread out to be of any use. In practice, however, it works very well.
+I use [*word2vec*](./word2vec.html) to create vectors. A word needs to show at least 10 times, and I get 40 vectors for each wordset. I then proceed to sum all vectors per title, description and category, resulting in 120 vectors. In theory, this seemed like a bad idea. I was opposed to this approach because I expected the resulting vectors to be too spread out to be of any use. In practice, however, it works very well.
 
 ## Data Pipeline
 

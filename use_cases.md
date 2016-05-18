@@ -8,7 +8,7 @@ layout: default
 Deep learning excels at identifying patterns in unstructured data, which most people know as media such as images, sound, video and text. 
 Below is a list of sample use cases we've run across, paired with the sectors to which they pertain. 
 
-![Alt text](../img/use_case_industries.png)
+![Alt text](./img/use_case_industries.png)
 
 ## Feature Introspection
 
@@ -34,7 +34,7 @@ Object recognition is an algorithm's ability to identify arbitrary objects -- su
 
 Here's an example of faces clustered by a neural net:
 
-![Alt text](../img/faces_tsne.jpg)
+![Alt text](./img/faces_tsne.jpg)
 
 ### Machine Vision + Natural-Language Processing
 

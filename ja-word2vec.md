@@ -21,21 +21,21 @@ layout: ja-default
 
 ## <a name="intro">Word2Vecとは？</a>
 
-Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](../ja-neuralnet-overview)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。 
+Word2vecは、テキスト処理を行い、2層から成るニューラルネットワークです。  テキストコーパスを入力すると、出力結果には、ベクトルのセット、つまりコーパスにある単語の特徴量ベクトル（feature vector）が出されます。Word2vecは、[ディープ・ニューラル・ネットワーク](./ja-neuralnet-overview)ではありませんが、テキストをdeepネットワークが解釈できる数値形式に変えます。 
 
-Word2vecのアプリケーションが適用できる分野は、世間で使われる文の構文解析だけにとどまりません。パターンが識別される可能性のある<a href="#sequence">遺伝子、コード、再生リスト、ソーシャルメディアのグラフ、その他の文字列や記号列</a>にも適用できるのです。[Deeplearning4j](http://deeplearning4j.org/ja-quickstart.html)は、SparkやGPUで動作するJavaや[Scala](../scala.html)用の分散型Word2vecを実装しています。 
+Word2vecのアプリケーションが適用できる分野は、世間で使われる文の構文解析だけにとどまりません。パターンが識別される可能性のある<a href="#sequence">遺伝子、コード、再生リスト、ソーシャルメディアのグラフ、その他の文字列や記号列</a>にも適用できるのです。[Deeplearning4j](http://deeplearning4j.org/ja-quickstart.html)は、SparkやGPUで動作するJavaや[Scala](./scala.html)用の分散型Word2vecを実装しています。 
 
 Word2vecの目的及び有用性は、類似語のベクトルをベクトルスペースにグループ化することです。つまり、数値に基づいて類似性を検知するのです。 Word2vecは、分散した語の特徴（例えば個々の語のコンテキストなど）の数値表現であるベクトルを作成します。これは人間の介在なしに行われます。 
 
-Word2vec は、十分なデータ、利用例、コンテキストが与えられれば、ある単語の意味の推測を、過去の出現例を基に、かなり高い精度で行うことが出来ます。これらの推測により、ある語と他の語との関連性を確立することができます（例えば、 「man（男性）」と「 boy（少年）」の関係は、 「woman（女性）」と「girl（少女）」の関係に当たるものである。）また、文書をクラスタリングし、トピックによって分類するのにも使用できます。検索や[sentiment analysis（感情分析）](../sentiment_analysis_word2vec.html)、レコメンデーションの際にこれらのクラスタをベースに使うことができます。その分野は、科学的研究、法的発見、電子商取引、顧客関係管理など、幅広く適用できます。 
+Word2vec は、十分なデータ、利用例、コンテキストが与えられれば、ある単語の意味の推測を、過去の出現例を基に、かなり高い精度で行うことが出来ます。これらの推測により、ある語と他の語との関連性を確立することができます（例えば、 「man（男性）」と「 boy（少年）」の関係は、 「woman（女性）」と「girl（少女）」の関係に当たるものである。）また、文書をクラスタリングし、トピックによって分類するのにも使用できます。検索や[sentiment analysis（感情分析）](./sentiment_analysis_word2vec.html)、レコメンデーションの際にこれらのクラスタをベースに使うことができます。その分野は、科学的研究、法的発見、電子商取引、顧客関係管理など、幅広く適用できます。 
 
 Word2vecのニューラルネットワークで出力されるものは、語の集合で、それぞれの語にはベクトルが付与されており、これらのベクトルはディープラーニング・ネットワークに入力したり、語と語の間の関係を検知するためにクエリーに使用することができます。 
 
-[コサイン類似度](../glossary.html#cosine)を測定すると、90度としてで表される類似性はなく、完全一致を意味する類似度の1は、0度として表されます。スウェーデンはスウェーデンに等しく、ノルウェーは、スウェーデンとのコサイン距離がどの国よりも最も高く0.760124となっています。 
+[コサイン類似度](./glossary.html#cosine)を測定すると、90度としてで表される類似性はなく、完全一致を意味する類似度の1は、0度として表されます。スウェーデンはスウェーデンに等しく、ノルウェーは、スウェーデンとのコサイン距離がどの国よりも最も高く0.760124となっています。 
 
 以下は、Word2vecにより出力された「スウェーデン」と関連した語のリストです。近接性の高いものから順に並べられています。
 
-![Alt text](../img/sweden_cosine_distance.png) 
+![Alt text](./img/sweden_cosine_distance.png) 
 
 スカンジナビアの国々、いくつかの裕福な北ヨーロッパの国々、ゲルマン系の国々は上位9位に挙がっています。 
 
@@ -45,11 +45,11 @@ Word2vecのニューラルネットワークで出力されるものは、語の
 
 つまり、ニューラルネットワーク語の埋め込みとは、数値の付与された語のことなのです。シンプルですが、翻訳とはまた異なります。 
 
-Word2vecは、各語をベクトル化してエンコードするオートエンコーダーと似てはいますが、[制限付きボルツマン・マシン](../ja-restrictedboltzmannmachine.html)のように、入力された語を[再構成](../ja-restrictedboltzmannmachine.html#reconstruct)させてトレーニングするのではなく、word2vecはある語をその語に近い語との関連性に基づいてトレーニングします。 
+Word2vecは、各語をベクトル化してエンコードするオートエンコーダーと似てはいますが、[制限付きボルツマン・マシン](./ja-restrictedboltzmannmachine.html)のように、入力された語を[再構成](./ja-restrictedboltzmannmachine.html#reconstruct)させてトレーニングするのではなく、word2vecはある語をその語に近い語との関連性に基づいてトレーニングします。 
 
 一般に語のトレーニングには、2つの方法があります。コンテクストを使って対象語を推測する方法（continuous bag of words、CBOWと呼ばれる）、そして、ある語を使って、対象であるコンテクストを推測する方法です。後者の方法は、skip-gramと呼ばれますが、この方法を弊社は使用しています。こちらの方が、大きなデータセットでは、より精確な結果を生み出すからです。
 
-![Alt text](../img/word2vec_diagrams.png) 
+![Alt text](./img/word2vec_diagrams.png) 
 
 ある語に割り当てられた特徴量ベクトルがその語のコンテクストを精確に推測するに使用できない場合、ベクトルのコンポーネントが調整されます。コーパスの中のそれぞれの語が、*教師*のような役割を果たし、 特徴量ベクトルを調整させるためにエラーシグナルを送り返します。コンテクストからある語とある語のベクトルが類似していると判断された場合、ベクトルの数値を調整してより近くに移動させます。
 
@@ -61,11 +61,11 @@ Word2vecは、各語をベクトル化してエンコードするオートエン
 
 類似したものや考えは、「近い」ものとして表示されます。それらの相対的な意味が測定可能な距離として翻訳されます。質が量となり、アルゴリズムがその作業を行います。しかし、類似性は、Word2vecが学習できる多くの関連性の単なるベースに過ぎません。例えば、類似性は、ある言語におけるある語とある語の関係を測定し、別の言語にその関連性をマッピングすることもできるのです。
 
-![Alt text](../img/word2vec_translation.png) 
+![Alt text](./img/word2vec_translation.png) 
 
 これらのベクトルは、より包括的な単語の配列のベースに当たるものです。例えば、Rome、Paris、Berlin、Beijingは互いに近い距離に集まるでしょうが、これらの首都名はそれぞれ、それらの国名とも似た距離にあるでしょう。つまりRome - Italy = Beijing - Chinaとなるでしょう。そして、もし、ローマがイタリアの首都であるを知っていれば、中国の首都の名前を知らなくても、Rome -Italy + Chinaという式を使うと、Beijingという回答に行き着きます。これは決して冗談ではありません。 
 
-![Alt text](../img/countries_capitals.png) 
+![Alt text](./img/countries_capitals.png) 
 
 ## <a name="crazy">面白いWord2Vecの出力結果</a>
 
@@ -124,14 +124,14 @@ Word2vecモデルを使って別のタイプのクエリーも行うことがで
 
 * **SentenceIterator/DocumentIterator**：データセットをイテレートするのに使われます。SentenceIteratorは文字列を返し、DocumentIterator は InputStreamを返します。可能な限りSentenceIteratorを使ってください。
 * **Tokenizer/TokenizerFactory**：テキストをトークン化するのに使われます。自然言語処理の用語で、文はトークンの列として表現されます。TokenizerFactory は文をトークン化するための Tokenizer を生成します。 
-* **VocabCache**:：単語数、出現数、トークンの集合（この場合は語彙ではなく、出現したトークンの集合）、語彙（[単語のバッグ（多重集合）](../bagofwords-tf-idf.html)と単語ベクトル用のルックアップテーブルの両方に含まれる特徴）といったメタデータを追跡するのに使われます。
+* **VocabCache**:：単語数、出現数、トークンの集合（この場合は語彙ではなく、出現したトークンの集合）、語彙（[単語のバッグ（多重集合）](./bagofwords-tf-idf.html)と単語ベクトル用のルックアップテーブルの両方に含まれる特徴）といったメタデータを追跡するのに使われます。
 * **Inverted Index**: 単語の位置についてのメタデータを保管します。これはデータセットを理解するために使うことが出来ます。Lucene実装によってLuceneインデックス[1]が自動的に作成されます。 
 
 Word2vecは、関連したアルゴリズム群を使いますが、その実装に<a href="../glossary.html#skipgram">Skip-Gram</a>ネガティブ・サンプリングを使用します。
 
 ## <a name="setup">Word2Vecのセットアップ</a> 
 
-Mavenを使ってIntelliJに新規プロジェクトを作成します。その方法が分からない方は、[クイックスタート](../quickstart.html)をお読みください。そして、これらのプロパティーと依存関係を、プロジェクトのルートディレクトリにあるPOM.xmlファイルに入れます。（最新のバージョンは[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) でチェックします。)
+Mavenを使ってIntelliJに新規プロジェクトを作成します。その方法が分からない方は、[クイックスタート](./quickstart.html)をお読みください。そして、これらのプロパティーと依存関係を、プロジェクトのルートディレクトリにあるPOM.xmlファイルに入れます。（最新のバージョンは[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) でチェックします。)
 
 ``` java
                 <properties>
@@ -358,7 +358,7 @@ Word2vecの算術に一般に使用している語は、"king - queen = man - wo
 
 インポートしたパッケージに`import java.io.File;`と入力することを忘れないようにしてください。
 
-大規模なモデルでは、ヒープスペースの問題が生じるかもしれません。Googleモデルだと、RAMが10G必要なことがあり、JVMは、RAMが256 MB確保されていないと作動しません。このため、これに応じてヒープスペースを調整する必要が出てくるかもしれません。これは、`bash_profile`ファイル（ [トラブルシューティング](../ja-gettingstarted.html#trouble)をお読みください。）、またはIntelliJで調整可能です。 
+大規模なモデルでは、ヒープスペースの問題が生じるかもしれません。Googleモデルだと、RAMが10G必要なことがあり、JVMは、RAMが256 MB確保されていないと作動しません。このため、これに応じてヒープスペースを調整する必要が出てくるかもしれません。これは、`bash_profile`ファイル（ [トラブルシューティング](./ja-gettingstarted.html#trouble)をお読みください。）、またはIntelliJで調整可能です。 
 
     //以下をクリックし、
     IntelliJ Preferences > Compiler > Command Line Options 
@@ -381,7 +381,7 @@ Word2Vecのセットアップ方法の基本を説明して参りましたが、
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-[クイックスタート](../ja-quickstart.html)にある手順に従った後、この例をIntelliJで開き、それが動作するかを調べてみてください。トレーニングのコーパスにない語でクエリを行うと、Word2vecモデルは結果をゼロと返します。 
+[クイックスタート](./ja-quickstart.html)にある手順に従った後、この例をIntelliJで開き、それが動作するかを調べてみてください。トレーニングのコーパスにない語でクエリを行うと、Word2vecモデルは結果をゼロと返します。 
 
 ### <a name="trouble">トラブルシューティング & Word2Vecの調整</a>
 
@@ -431,7 +431,7 @@ Google Scholarを使うと、Deeplearning4jにWord2vecを実装した調査に�
 
 Andreas Klintberg氏は、Deeplearning4jにWord2vecを実装したものをスウェーデン語に適用し、[Mediumに徹底ガイド](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb)を執筆しました。 
 
-また、Word2Vecは、DL4Jが[ディープ・オートエンコーダ](../deepautoencoder)を使って実装するため、情報検索やQAシステム用のテキストベースデータを準備する際にも、特に役立ちます。 
+また、Word2Vecは、DL4Jが[ディープ・オートエンコーダ](./deepautoencoder)を使って実装するため、情報検索やQAシステム用のテキストベースデータを準備する際にも、特に役立ちます。 
 
 そして、マーケテイング担当者が、リコメンデーションエンジンを構築するために製品間の関係を求めたり、研究者が、ソーシャルグラフを分析して、シングルグループのメンバーやメンバーと場所や財政的支援などと関連する可能性のある関係を求めるのに利用できるでしょう。 
 
@@ -466,14 +466,14 @@ Deeplearning4jには、[列ベクトル（SequenceVectors）](https://github.com
 ### Doc2vec & その他のリソース
 
 * [DL4J Example of Text Classification With Paragraph Vectors（DL4Jによるパラグラフベクトルを使ったテキスト分類の例）](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/paragraphvectors/ParagraphVectorsClassifierExample.java)
-* [Doc2vec, or Paragraph Vectors, With Deeplearning4j（Deeplearning4jを使ったDoc2vec、またはパラグラフベクトル）](../doc2vec.html)
-* [Thought Vectors, Natural Language Processing & the Future of AI（思考ベクトル、自然言語処理、AIの未来）](../thoughtvectors.html)
+* [Doc2vec, or Paragraph Vectors, With Deeplearning4j（Deeplearning4jを使ったDoc2vec、またはパラグラフベクトル）](./doc2vec.html)
+* [Thought Vectors, Natural Language Processing & the Future of AI（思考ベクトル、自然言語処理、AIの未来）](./thoughtvectors.html)
 * [Quora: How Does Word2vec Work?（Quora：Word2vecの仕組みはどうなっているの？）](http://www.quora.com/How-does-word2vec-work)
 * [Quora: What Are Some Interesting Word2Vec Results?（Quora：Word2Vecの面白い結果にはどんなものがあるの？）](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec: an introduction（Word2Vecの紹介）](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google（GoogleでのMikolovのオリジナルWord2vecコード）](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method（word2vecの説明：Mikolov et al.のネガティブサンプリング語埋め込みメソッド）](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
-* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)（CBOW＆単語の出現頻度）](../bagofwords-tf-idf)
+* [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)（CBOW＆単語の出現頻度）](./bagofwords-tf-idf)
 
 ### <a name="doctorow">文学作品の中のWord2Vec</a>
 

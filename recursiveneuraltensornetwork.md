@@ -5,7 +5,7 @@ layout: default
 
 # Recursive Neural Tensor Network
 
-*N.B. We'll be updating this page with code snippets from an example soon. For the moment, please explore other neural nets [here](../quickstart.html).*
+*N.B. We'll be updating this page with code snippets from an example soon. For the moment, please explore other neural nets [here](./quickstart.html).*
 
 Recursive neural tensor networks (RNTNs) are neural nets useful for natural-language processing. They have a tree structure with a neural net at each node. You can use recursive neural tensor networks for boundary segmentation, to determine which word groups are positive and which are negative. The same applies to sentences as a whole. 
 
@@ -29,7 +29,7 @@ The trees are later binarized, which makes the math more convenient. Binarizing 
 
 Sentence trees have their a root at the top and leaves at the bottom, a top-down structure that looks like this:
 
-![Alt text](../img/constituency_tree.jpg) 
+![Alt text](./img/constituency_tree.jpg) 
 
 The entire sentence is at the root of the tree (at the top); each individual word is a leaf (at the bottom). 
 

@@ -23,7 +23,7 @@ Then install Spark with `brew`:
 
 * For other OS, see the instructions on [this page](https://spark.apache.org/downloads.html). We recommend a pre-built download rather than building from source. Below, we'll be working with  Hadoop 2.4 and Spark 1.4.1, but you may have slightly different versions. (Spark dataframes require 1.4.*)
 
-![Alt text](../img/spark_download.png)
+![Alt text](./img/spark_download.png)
 
 On Linux OS, you can follow steps similar to these (the URL will depend on the Spark and Hadoop versions you choose.):
 
@@ -46,4 +46,4 @@ On Linux OS, you can follow steps similar to these (the URL will depend on the S
 
 -->
 
-* Once you have Spark running, you can [build the DL4J examples](../spark.html).
+* Once you have Spark running, you can [build the DL4J examples](./spark.html).

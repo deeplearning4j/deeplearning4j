@@ -32,15 +32,15 @@ layout: kr-default
 
 텐서는 이 행렬의 각 성분을 더 큰 차원으로 바꿔주면 쉽게 만들 수 있습니다. 직육면체 형태의 3차원 텐서를 상상해보십시오. 액셀 시트를 두 장 포개놓은 것을 상상하시면 됩니다. 아래 그림은 2x3x2 크기의 텐서를 평면에 그려본 것입니다. 
 
-![Alt text](../img/tensor.png) 
+![Alt text](./img/tensor.png) 
 
 이 텐서 데이터를 직접 코딩할 경우 `[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]]`가 됩니다. 아래 그림은 거대한 3차원 텐서를 입체적으로 그린 것 입니다.
 
-![Alt text](../img/3d_matrix_cube.png) 
+![Alt text](./img/3d_matrix_cube.png) 
 
 즉, 텐서는 어레이의 어레이라고 생각할 수 있습니다. 그리고 그 어레이를 또 다른 어레이에 넣어서 차원을 얼마든지 확장할 수 있습니다. 4차원 텐서는 그 중에서 그나마 간단한 형태라고 할 수 있습니다. 위의 그림에서 각 (스칼라)값을 벡터로 바꿔주면 전체 차원이 하나 증가하면서 4차원 텐서가 됩니다. 그리고 컨볼루션 네트워크는 4차원 데이터를 다룹니다. 아래 그림이 컨볼루션 네트워크가 다루는 4차원 데이터의 예 입니다.
 
-![Alt text](../img/3d_matrix.png) 
+![Alt text](./img/3d_matrix.png) 
 
 ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 N차원 어레이를 담을 수 있는 데이터 타입으로, 이를 차수(order)를 이용해 표현하기도 합니다. 예를 들어 4차 어레이는 4차원의 어레이입니다.
 
@@ -103,7 +103,7 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 
 이미지는 수평선 뿐만 아니라 다양한 방향의 선으로 이루어져 있습니다. 따라서 수평선 필터 뿐만 아니라 다른 모양의 필터도 사용해야 합니다. 예를 들어 컨브넷이 96개의 다른 패턴을 조사해서 96개의 액티베이션 맵을 만들도록 디자인 할 수 있습니다. 즉 최종 결과는 10x10x96 행렬이 됩니다. 아래 그림을 참고하십시오.
 
-![Alt text](../img/karpathy-convnet-labels.png) 
+![Alt text](./img/karpathy-convnet-labels.png) 
 
 그동안 컨볼루션에 대해 자세히 다뤘습니다. 내용을 잘 이해했으면 컨볼루션을 복잡한 개념이 아니라 그저 두 행렬의 성분끼리 곱하는 것으로 편하게 생각하면 됩니다.
 
@@ -115,7 +115,7 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 
 이 층은 맥스 풀링(max pooling), 다운 샘플링(downsampling), 서브 샘플링(subsampling) 등 여러 이름을 가지고 있습니다. 위의 컨볼루션 층의 결과로 나온 액티베이션 맵은 일반적으로 다운 샘플링 층의 입력이 됩니다. 다운 샘플링 과정은 컨볼루션 층과 비슷하게 작은 패치 단위의 연산을 여러 번 수행하도록 되어있습니다. 컨볼루션 층과 달리 여기에선 행렬 곱보다 훨씬 간단한 작업을 합니다. 맥스 풀링은 이미지 패치에서 최대값을 결과로 출력합니다. 
 
-![Alt text](../img/maxpool.png) 
+![Alt text](./img/maxpool.png) 
 *위의 이미지는 [Andrej Karpathy](https://cs231n.github.io/)가 만든 이미지입니다.*
 
 따라서 패치 내에서 제일 큰 액티베이션 값만 결과로 남고 나머지는 버려집니다. 컨볼루션의 역할을 생각하면, 패치 내의 여러 위치 중에서 필터의 패턴과 가장 잘 일치하는 부분만 살아남게 됩니다. 
@@ -126,7 +126,7 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 
 아래 그림은 컨볼루션 네트워크 전체를 시각화한 것 입니다.
 
-![Alt text](../img/convnet.png) 
+![Alt text](./img/convnet.png) 
 
 왼쪽부터 구성 요소를 살펴보겠습니다.
 
@@ -150,16 +150,16 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 * 뉴욕대학교 교수 겸 페이스북 AI연구소장인 [얀 르쿤](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf)은 컨볼루션 네트워크의 선구자 입니다. 
 * [Andrej Karpathy의 스탠포드 강의자료](https://cs231n.github.io/) 컨볼루션 파트는 정말 훌륭합니다. 일독을 강력히 권합니다. 파이썬으로 된 연습문제도 있습니다.
 * [Deeplearning4j의 컨볼루션 테스트 코드](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java)도 참고하십시오.
-* DL4J의 컨볼루션 네트워크를 직접 실행해보려면 [저희의 예제 코드](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution)를 실행해보십시오. 예제 코드를 실행하려면 [퀵 스타트 가이드](../quickstart.html)를 먼저 참고하십시오. 
-* [DL4J의 RNN 소개 자료](../recurrentnet.html),
-* [DL4J의 RBM 소개 자료](../kr-restrictedboltzmannmachine.html),
-* [DL4J의 인공 신경망 소개자료](../kr-neuralnet-overview.html)도 참고하십시오.
+* DL4J의 컨볼루션 네트워크를 직접 실행해보려면 [저희의 예제 코드](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution)를 실행해보십시오. 예제 코드를 실행하려면 [퀵 스타트 가이드](./quickstart.html)를 먼저 참고하십시오. 
+* [DL4J의 RNN 소개 자료](./recurrentnet.html),
+* [DL4J의 RBM 소개 자료](./kr-restrictedboltzmannmachine.html),
+* [DL4J의 인공 신경망 소개자료](./kr-neuralnet-overview.html)도 참고하십시오.
 
 ## 다른 초보자 가이드
 
-* [초보자를 위한 RNNs과 LSTM 가이드](../kr-lstm)
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](../kr-eigenvector)
-* [컨볼루션 네트워크](../kr-convolutionalnets)
-* [Word2vec](../kr-word2vec)
-* [Neural Networks & Regression](../linear-regression)
-* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
+* [초보자를 위한 RNNs과 LSTM 가이드](./kr-lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](./kr-eigenvector)
+* [컨볼루션 네트워크](./kr-convolutionalnets)
+* [Word2vec](./kr-word2vec)
+* [Neural Networks & Regression](./linear-regression)
+* [심층학습(딥러닝) 활용 사례](./kr-use_cases)

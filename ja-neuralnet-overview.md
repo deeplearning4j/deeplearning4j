@@ -20,7 +20,7 @@ title: "ディープニューラルネットワークについて"
 
 ニューラルネットワークは、人間の脳を模倣したアルゴリズムの一式で、パターン認識をするように設計されています。一種の機械知覚により感覚データを解釈し、生の入力情報にラベルを付け、クラスタリングします。その認識するパターンは数値で表されたもので、ベクトルにあります。実際の社会にあるすべてのデータは、画像、音、テキスト、時系列であっても、このような数値に変換されます。 
 
-ニューラルネットワークは、人間に代わってデータをクラスタリングし、分類します。そして、ニューラルネットワークは層を成していて、クラスタリングや分類作業を保管や管理されるデータの上で行っていると思っていただいて結構です。exampleの入力情報を、類似性に基づいてラベル付けされていないデータをグループ化します。そして、ラベル付けが終了し、トレーニング可能なデータの一式が準備できると、データを分類します。（正確に言うと、ニューラルネットワークが特徴を抽出すると、それらの特徴が他のアルゴリズムに入力され、クラスタリングや分類が行われます。従って、ディープ・ニューラル・ネットワークは、[強化学習（reinforcement learning）](../reinforcementlearning.html)、分類、[回帰（regression）](../linear-regression.html)を行うためのアルゴリズムが導入された、より大型の機械学習アプリケーションのコンポーネントであると考えていただいていいでしょう。）
+ニューラルネットワークは、人間に代わってデータをクラスタリングし、分類します。そして、ニューラルネットワークは層を成していて、クラスタリングや分類作業を保管や管理されるデータの上で行っていると思っていただいて結構です。exampleの入力情報を、類似性に基づいてラベル付けされていないデータをグループ化します。そして、ラベル付けが終了し、トレーニング可能なデータの一式が準備できると、データを分類します。（正確に言うと、ニューラルネットワークが特徴を抽出すると、それらの特徴が他のアルゴリズムに入力され、クラスタリングや分類が行われます。従って、ディープ・ニューラル・ネットワークは、[強化学習（reinforcement learning）](./reinforcementlearning.html)、分類、[回帰（regression）](./linear-regression.html)を行うためのアルゴリズムが導入された、より大型の機械学習アプリケーションのコンポーネントであると考えていただいていいでしょう。）
 
 ディープラーニングが扱うことができる課題を一つ考える際には、どんなカテゴリーが気になっているのか、どの情報に基づいて行動するのがいいと思うか、考えてみてください。その答えが、データに適用されるラベルに当たります。例えば、`spam`か`not_spam`、`good_guy`か`bad_guy`、`angry_customer`か`happy_customer`などです。次に、自分は、それらのラベルを伴うデータを持っているか、ラベルの付いたデータを見つけることができるか、ラベルの付いたデータセットを作成することができるか、考えてみてください。
 
@@ -36,11 +36,11 @@ title: "ディープニューラルネットワークについて"
 
 下図は、ノードがどのようなものかを表したものです。
 
-![Alt text](../img/perceptron_node.png)
+![Alt text](./img/perceptron_node.png)
 
 ノードの層には、ネットワークに入力されると、オン、オフと切り替える神経細胞のスイッチのようなものが並んでいます。また、各層の出力は、次の層の入力となります。最初の層が、人間の入力したデータを受け取ります。  
 
-![Alt text](../img/mlp.png)
+![Alt text](./img/mlp.png)
 
 入力した特徴に調整可能な重みを付与することにより、その特徴に重要性の度合いを割り当て、これを基にしてネットワークは入力を分類し、クラスタリングします。 
 
@@ -52,9 +52,9 @@ title: "ディープニューラルネットワークについて"
 
 ディープラーニング・ネットワークでは、各ノード層は、前の層から受けた出力を基にして新しく別の特徴一式でトレーニングします。ニューラルネットワーク内を進めば進むほど、ノードはさらに複雑な特徴を認識できるようになります。この理由は、各層は、前の層が処理した特徴を集めて、再結合するからです。 
 
-![Alt text](../img/feature_hierarchy.png)
+![Alt text](./img/feature_hierarchy.png)
 
-これは、**特徴の階層（feature hierarchy）**と呼ばれ、複雑さと抽象さの度合の階層なのです。このため、ディープラーニング・ネットワークは、[非線形機能（nonlinear functions）](../glossary.html#nonlineartransformfunction)を通過する何十億ものパラメータを持ち、大規模で高次元のデータセットを処理することができるのです。 
+これは、**特徴の階層（feature hierarchy）**と呼ばれ、複雑さと抽象さの度合の階層なのです。このため、ディープラーニング・ネットワークは、[非線形機能（nonlinear functions）](./glossary.html#nonlineartransformfunction)を通過する何十億ものパラメータを持ち、大規模で高次元のデータセットを処理することができるのです。 
 
 とりわけ、これらのネットワークは、**まだラベル付与や構造化がされていないデータ**にある潜在的な構造を発見することが可能です。構造化されていないデータは、*生のメディア（raw media）*とも呼ばれ、写真、絵、テキスト、録画ビデオ、録音音声などが例です。従って、ディープラーニングが最も得意とすることの一つは、実際の社会から取ってきたラベルの付いていない生のメディアを処理し、クラスタリングすることで、いまだかつて誰も関連性データベースでオーガナイズしたり名前を付けたことのないデータから類似性や例外などを識別します。 
 
@@ -139,11 +139,11 @@ title: "ディープニューラルネットワークについて"
 
 微分積分の連鎖律は以下のように表されます。 
 
-![Alt text](../img/chain_rule.png)
+![Alt text](./img/chain_rule.png)
 
 そして、フィードフォワードニューラルネットワークの場合、ネットワークのエラーと重み1つは、以下のような式で表されます。
 
-![Alt text](../img/backprop_chain_rule.png)
+![Alt text](./img/backprop_chain_rule.png)
 
 つまり、*エラー*と*重み*の二つの変数の関係には、重みが通過する*活性化*が媒介しているため、*重み*の変化が*エラー*の変化にどのように影響しているかを計算するには、まず最初に*活性化*の変化が*エラー*の変化にどのように影響しているか、ということと*重み*の変化が*活性化*の変化にどのように影響しているかを計算する必要があります。  
 
@@ -163,7 +163,7 @@ title: "ディープニューラルネットワークについて"
 
 連続的な信号をバイナリ出力に変換していく仕組みは、ロジスティック回帰と呼ばれます。この名前は少し紛らわしいものになっています。というのは、ここでのロジスティック回帰は、多くの人になじみのある線的な回帰というより、分類に使われているからです。入力情報のセットがラベルに一致する可能性を計算します。  
 
-![Alt text](../img/logistic_regression.png)
+![Alt text](./img/logistic_regression.png)
 
 上記の数式を見てください。 
 
@@ -185,13 +185,13 @@ title: "ディープニューラルネットワークについて"
 
 ディープラーニングの初心者の方には、以下のチュートリアルやビデオがフィードフォワードニューラルネットワークの基礎を学ぶのに役に立ちます。是非お役立てください。
 
-* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](../restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](../eigenvector.html)
-* [Glossary of Deep-Learning and Neural-Net Terms（ディープラーニングとニューラルネットワーク用語集）](../glossary.html)
-* [Convolutional Networks（畳み込みネットアーク）](../convolutionalnets.html)
-* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](../lstm.html)
-* [Word2vec and Natural-Language Processing（Word2vecと自然言語処理）](../lstm.html)
-* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](../quickstart.html)
+* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms（ディープラーニングとニューラルネットワーク用語集）](./glossary.html)
+* [Convolutional Networks（畳み込みネットアーク）](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](./lstm.html)
+* [Word2vec and Natural-Language Processing（Word2vecと自然言語処理）](./lstm.html)
+* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](./quickstart.html)
 * [Neural Networks Demystified（ニューラルネットワークの解明ガイド）](https://www.youtube.com/watch?v=bxe2T-V8XRs)（7本の連続ビデオ）
 * [A Neural Network in 11 Lines of Python（パイソンの11のコマンドラインで実装するニューラルネットワーク）](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example（ステップごとに見る誤差逆伝播法の例）](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
