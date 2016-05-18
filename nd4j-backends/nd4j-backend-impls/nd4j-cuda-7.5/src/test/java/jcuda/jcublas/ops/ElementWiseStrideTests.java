@@ -4,6 +4,9 @@ import org.apache.commons.math3.util.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -11,12 +14,28 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Created by raver on 08.05.2016.
  */
 public class ElementWiseStrideTests {
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
+                .setMaximumBlockSize(128)
+                .enableDebug(true)
+                .setVerbose(true);
+
+
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testEWS1() throws Exception {
@@ -85,5 +104,74 @@ public class ElementWiseStrideTests {
         Nd4j.vstack(second);
 
         Nd4j.create(1);
+    }
+
+    @Test
+    public void testVstackWithMatrices(){
+        INDArray[] arr = new INDArray[3];
+        arr[0] = Nd4j.linspace(0,49,50).reshape('c',5,10);
+        arr[1] = Nd4j.linspace(50,59,10);
+        arr[2] = Nd4j.linspace(60,99,40).reshape('c',4,10);
+
+        INDArray expected = Nd4j.linspace(0,99,100).reshape('c',10,10);
+        INDArray actual = Nd4j.vstack(arr);
+        System.out.println(expected);
+        System.out.println();
+        System.out.println(actual);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testHstackConcatCols(){
+        int rows = 10;
+        INDArray[] arr = new INDArray[5];
+
+        for( int i=0; i<arr.length; i++ ){
+            arr[i] = Nd4j.linspace(i*rows,(i+1)*rows-1, rows).transpose();
+        }
+
+        INDArray expected = Nd4j.linspace(0,arr.length*rows-1, arr.length*rows).reshape('f',rows,arr.length);
+        INDArray actual = Nd4j.hstack(arr);
+
+        System.out.println(expected);
+        System.out.println();
+        System.out.println(actual);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testHstackConcatSimple(){
+        int rows = 10;
+        INDArray[] arr = new INDArray[5];
+
+        for( int i=0; i<arr.length; i++ ){
+            arr[i] = Nd4j.linspace(i*rows,(i+1)*rows-1, rows);
+        }
+
+        INDArray expected = Nd4j.linspace(0,arr.length*rows-1, arr.length*rows);
+        INDArray actual = Nd4j.hstack(arr);
+
+        System.out.println(expected);
+        System.out.println();
+        System.out.println(actual);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testVstackConcatRows(){
+        int cols = 10;
+        INDArray[] arr = new INDArray[5];
+
+        for( int i=0; i<arr.length; i++ ){
+            arr[i] = Nd4j.linspace(i*cols,(i+1)*cols-1, cols);
+        }
+
+        INDArray expected = Nd4j.linspace(0,arr.length*cols-1, arr.length*cols).reshape('c',arr.length, cols);
+        INDArray actual = Nd4j.vstack(arr);
+
+        System.out.println(expected);
+        System.out.println();
+        System.out.println(actual);
+        assertEquals(expected, actual);
     }
 }
