@@ -31,6 +31,34 @@ You should have all of these installed to use this QuickStart guide. DL4J target
 
 If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, **skip to <a href="#examples">DL4J Examples</a>**.
 
+#### A Taste of Code
+
+Deeplearning4j is a DSL to configure neural networks. This is what one configuration, with an input layer, two dense hidden layers and an output layer would look like. 
+
+``` java
+    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        .seed(12345)
+        .iterations(1)
+        .weightInit(WeightInit.XAVIER)
+        .updater(Updater.ADAGRAD)
+        .activation("relu")
+        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        .learningRate(0.05)
+        .regularization(true).l2(0.0001)
+        .list()
+        .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
+                .build())
+        .layer(1, new DenseLayer.Builder().nIn(250).nOut(10)
+                .build())
+        .layer(2, new DenseLayer.Builder().nIn(10).nOut(250)
+                .build())
+        .layer(3, new OutputLayer.Builder().nIn(250).nOut(784)
+                .lossFunction(LossFunctions.LossFunction.MSE)
+                .build())
+        .pretrain(false).backprop(true)
+        .build();
+```
+
 #### <a name="Java">Java</a>
 
 If you don't have Java 1.7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
