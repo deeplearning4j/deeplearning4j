@@ -22,7 +22,7 @@ We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning
 
 #### A Taste of Code
 
-Deeplearning4j is a domain-specific language to configure neural networks. This is what one configuration would look like: 
+Deeplearning4j is a domain-specific language to configure neural networks. Neural networks have hyperparameters that specify how they learn, which include how many iterations to perform, how to initialize the weights of the model, which optimization algorithm to use, which activation function to attached to the nodes, and how fast they should learn. This is what one configuration would look like: 
 
 ``` java
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -31,15 +31,14 @@ Deeplearning4j is a domain-specific language to configure neural networks. This 
         .activation("relu")
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .learningRate(0.05)
-        // ... other parameters
+        // ... other hyperparameters
         .backprop(true)
         .build();
 ```
 
-To add layers to your model, you simply call layer on the `NeuralNetConfiguration.Builder()`, specifying the number of input and output nodes, `nIn` and `nOut`.
+Deep neural networks have many layers. With Deeplearning4j, you add a layer by calling `layer` on the `NeuralNetConfiguration.Builder()`, specifying the number of input and output nodes, `nIn` and `nOut`, as well as the type: `DenseLayer`.
 
 ``` java
-
         .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
                 .build())
 ```
