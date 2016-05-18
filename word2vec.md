@@ -137,8 +137,8 @@ Create a new project in IntelliJ using Maven. If you don't know how to do that, 
 
 ``` xml
 <properties>
-  <nd4j.version>0.4-rc3.8</nd4j.version> // check Maven Central for latest versions!
-  <dl4j.version>0.4-rc3.8</dl4j.version>
+  <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
+  <dl4j.version>0.4-rc3.9</dl4j.version>
 </properties>
 
 <dependencies>
@@ -154,7 +154,7 @@ Create a new project in IntelliJ using Maven. If you don't know how to do that, 
    </dependency>
    <dependency>
      <groupId>org.nd4j</groupId>
-     <artifactId>nd4j-x86</artifactId> 
+     <artifactId>nd4j-native</artifactId> 
      <version>${nd4j.version}</version>
    </dependency>
 </dependencies>
