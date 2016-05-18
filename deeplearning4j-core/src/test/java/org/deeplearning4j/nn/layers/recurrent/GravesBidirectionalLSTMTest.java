@@ -230,7 +230,7 @@ public class GravesBidirectionalLSTMTest {
 
 		final INDArray act2 = bidirectionalLSTM.activate(sig);
 
-		assertArrayEquals(act2.data().asDouble(), act1.data().asDouble(),1e-14);
+		assertArrayEquals(act2.data().asDouble(), act1.data().asDouble(),1e-8);
 
 
 

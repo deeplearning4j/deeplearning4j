@@ -20,8 +20,9 @@ import static org.junit.Assert.assertEquals;
 public class LayerConfigValidationTest {
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testDropConnect() {
+        // Warning thrown only since some layers may not have l1 or l2
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
                 .useDropConnect(true)
