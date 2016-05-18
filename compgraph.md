@@ -7,7 +7,7 @@ layout: default
 
 This page describes how to build more complicated networks, using DL4J's Computation Graph functionality.
 
-***IMPORTANT: The ComputationGraph model is NOT available in DL4J 0.4-rc3.8 or earlier. It will be available in version 0.4-rc3.9 or later, as well as in the current [snapshot versions of DL4J](http://deeplearning4j.org/snapshot).***
+***IMPORTANT: The ComputationGraph model is NOT available in DL4J 0.4-rc3.8 or earlier. It is be available in version 0.4-rc3.9 and later.***
 
 
 **Contents**
