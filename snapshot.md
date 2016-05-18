@@ -5,9 +5,11 @@ layout: default
 
 # Using Deeplearning4j, ND4J and Canova SNAPSHOTS 
 
+(*May 17 2016: Please use our latest stable release, rc3.9, rather than the Snapshots.*)
+
 This page will explain how to update Deeplearning4j, ND4J and Canova to the current master in development, rather than the latest stable version of the libraries. 
 
-(To verify the stable version of Deeplearning4j, [go here](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). As of this writing, it was rc3.8).
+(To verify the stable version of Deeplearning4j, [go here](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). As of this writing, it was rc3.9).
 
 Deeplearning4j users who would like to explore the libraries' latest features need to work with a SNAPSHOT. We have made those SNAPSHOTS available via Maven. If you update your POM.xml file in your Deeplearning4j project, Maven will download and build the current SNAPSHOT automatically. You need to include the SNAPSHOT repository information. 
 
