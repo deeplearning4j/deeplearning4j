@@ -5,7 +5,7 @@ title: Getting Started on OSX
 
 # Getting Started on OSX
 
-* To run examples, go to our [quickstart](../quickstart.html).
+* To run examples, go to our [quickstart](./quickstart.html).
 
 * DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
@@ -26,13 +26,13 @@ title: Getting Started on OSX
 
 * As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. Mine was "java-deeplearning". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.)
 
-![Alt text](../img/open_project.png) 
+![Alt text](./img/open_project.png) 
 
 * You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then click on Plugins. (On Linux, you'll find the plugins in Settings.) Then choose "Browse Repositories" and search for "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
 
 * Click through the folder names to the examples folder -- java-deeplearning/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/ -- and then right-click on the dataset you're interested in. (MNIST is where most users start.) There, you will find a number of nets that will run on MNIST. Right click on RBMMnistExample. In the menu that appears, look for the green arrow and choose "Run." 
 
-![Alt text](../img/run_menu.png)
+![Alt text](./img/run_menu.png)
 
 * Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
 
@@ -102,8 +102,8 @@ title: Getting Started on OSX
              <version>0.0.3.2-SNAPSHOT</version>
            </dependency>
 
-**Next step**: Follow our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and [running a few examples](../quickstart.html). 
+**Next step**: Follow our [**MNIST tutorial**](./rbm-mnist-tutorial.html) and [running a few examples](./quickstart.html). 
 
-If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
+If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](./customdatasets.html).
 
 For a deeper dive, check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).

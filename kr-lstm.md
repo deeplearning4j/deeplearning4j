@@ -26,11 +26,11 @@ RNNs은 배열에 등장했던 패턴을 '기억'할 수 있는 능력이 있습
 
 ## <a name="feedforward">일반적인 인공 신경망</a>
 
-RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](../neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망을 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 **같은** 은닉층의 입력으로 들어가도록 연결되어 있습니다.
+RNNs을 이해하려면 우선 [일반적인 인공 신경망(FFNets)](./neuralnet-overview.html)를 이해하셔야 합니다. 일반적인 인공 신경망을 Feed-forward neural networks라고도 하는데 그 이름에서 이미 RNNs (Recurrent neural networks)과 어떤 점이 다른지 드러납니다. FFNets은 데이터를 입력하면 연산이 입력층에서 은닉층(hidden layers)를 거쳐 출력까지 차근차근 진행됩니다. 이 과정에서 입력 데이터는 모든 노드를 딱 한 번씩 지나가게 됩니다. 그러나 RNNs은 은닉층의 결과가 다시 **같은** 은닉층의 입력으로 들어가도록 연결되어 있습니다.
 
 FFNets의 입/출력이 각각 사진과 사진의 라벨(고양이, 코끼리..)이라면 (즉, 지도 학습의 경우) 이 FFNets은 사진에 있는 물체에서 패턴을 파악해서 적절한 라벨을 찾아줍니다. 아래 그림에 나온 FFNets의 구조를 참고하시기 바랍니다.
 
-![Alt text](../img/feedforward_rumelhart.png)
+![Alt text](./img/feedforward_rumelhart.png)
 
 FFNets은 라벨을 붙여놓은 이미지 데이터로 학습을 진행하면서 점점 오차를 줄여갑니다. 학습이 이루어지기 전에 데이터의 일부를 따로 관리하는데, 이를 테스트 셋이라고 합니다. 테스트 셋은 학습 과정에서는 사용하지 않습니다. 비유하자면 시험에 나올 문제의 유형과 범위는 알려주지만 출제할 문제는 정확히 알려주지 않는 것입니다. 한편 신경망은 학습 과정에서 사용하는 데이터를 독립적으로 학습합니다. 즉, 데이터의 순서는 중요하지 않습니다.
 
@@ -40,7 +40,7 @@ FFNets은 라벨을 붙여놓은 이미지 데이터로 학습을 진행하면�
 
 RNNs은 FFNets과는 좀 다릅니다. RNNs은 지금 들어온 입력 데이터와 과거에 입력 받았던 데이터를 동시에 고려합니다. 아래의 [Elman이 제안한 아주 간단한 RNNs](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html)의 구조도를 보면, 입력으로 *BTSXPE*가 들어오는데 은닉층에서는 이 입력데이터와 좌측 하단의 *CONTEXT UNIT*을 다 입력으로 받습니다.
 
-![Alt text](../img/srn_elman.png)
+![Alt text](./img/srn_elman.png)
 
 `t-1`시점의 RNNs 출력값은 `t`시점의 RNNs 출력값에도 영향을 줍니다. 결과적으로 RNNs은 두 개의 입력을 가지고 있는 셈입니다. 하나는 현재 들어온 입력이고,또 하나는 과거의 출력입니다.
 
@@ -52,7 +52,7 @@ RNNs은 FFNets과는 좀 다릅니다. RNNs은 지금 들어온 입력 데이터
 
 이제 이 작동 과정을 수식을 이용해 살펴보겠습니다.
 
-![Alt text](../img/recurrent_equation.png)
+![Alt text](./img/recurrent_equation.png)
 
 시간 t에서 은닉층의 상태, 즉 은닉층이 갖고 있는 값을 `h_t`라고 하겠습니다. 이 값은 같은 시점 t에 들어온 입력 `x_t`와 계수 행렬 `W`, 시간 t-1에서 은닉층의 값 `h_t-1`, 그리고 `h_t`와 `h_t-1`의 관계를 나타내는 행렬 `U`의 함수입니다. (이 행렬 `U`는 Markov 체인의 상태 전이 행렬(transition matrix)과 비슷합니다.) 계수 `W`는 지금 들어온 입력과 보유하고 있던 기억(은닉층의 값)이 얼마나 중요한지 판단하는 값입니다. 예를 들어 `W`가 아주 큰 값으로 이루어져 있다면 기억하고 있는 `h`는 별로 중요하지 않고, 현재 들어온 입력값 `x_t`를 위주로 판단을 내립니다. FFNets과 마찬가지로 출력단에서 오차를 계산하고 이 오차는 다시 이 은닉층으로 내려오는데, 그 값을 기준으로 `W`업데이트합니다.
 
@@ -102,7 +102,7 @@ RNNs은 시간을 거슬러 올라가며 과거 은닉값을 추적합니다. �
 
 아래 그래프를 보면 시그모이드를 여러 번 곱하면 어떻게 되는지 알 수 있습니다. 딱 네 번 곱했을 분인데 굉장히 함수가 굉장히 평평해집니다. RNNs의 backprop도 마찬가지입니다. 이렇게 평평해지면 기울기가 거의 모든 구간에서 0에 가까워집니다. 즉, 그라디언트가 제대로 전파 되지 않습니다.
 
-![Alt text](../img/sigmoid_vanishing_gradient.png)
+![Alt text](./img/sigmoid_vanishing_gradient.png)
 
 ## <a name="long">Long Short-Term Memory Units (LSTM)</a>
 
@@ -116,7 +116,7 @@ LSTM유닛은 여러 개의 게이트(gate)가 붙어있는 셀(cell)로 이루�
 
 아래 그림은 LSTM 유닛과 게이트의 작동 방식을 시각화한 것 입니다.
 
-![Alt text](../img/gers_lstm.png)
+![Alt text](./img/gers_lstm.png)
 
 LSTM의 구조는 간단하지 않습니다. 만일 LSTM을 처음 공부하신다면 이 다이어그램이 단번에 이해되진 않을 것입니다. 차근차근히 살펴보시길 바랍니다. 
 
@@ -128,7 +128,7 @@ LSTM의 구조는 간단하지 않습니다. 만일 LSTM을 처음 공부하신�
 
 아래 그림은 LSTM을 다른 방식으로 시각화한 것 입니다. 왼쪽의 유닛이 기본적인 RNNs의 유닛이고 오른쪽이 LSTM의 유닛입니다(파란 점선과 실선은 무시하세요).
 
-![Alt text](../img/greff_lstm_diagram.png)
+![Alt text](./img/greff_lstm_diagram.png)
 
 굉장히 복잡하지만 제일 중요한 것은 LSTM블록의 중간에 있는 **더하기(+)** 기호입니다. 일반적인 RNNs의 유닛은 곱하기로만 이루어져있는데, LSTM은 피드백을 더하기로 잇고 있습니다. 따라서 위에서 이야기한, sigmoid를 곱하다 보니 생기는 그라디언트 소실 문제가 없는 것 입니다. 
 
@@ -140,7 +140,7 @@ LSTM의 구조는 간단하지 않습니다. 만일 LSTM을 처음 공부하신�
 
 아래 그림은 각 단계마다 다른 게이트가 작동하는 모습을 그린 것입니다. 직선은 닫힌 게이트, 동그라미는 열린 게이트입니다. 그리고 은닉층의 노드에 위/왼쪽/아래의 게이트가 각각 출력/망각/입력 게이트입니다.
 
-![Alt text](../img/gates_lstm.png)
+![Alt text](./img/gates_lstm.png)
 
 마지막으로 RNNs과 FFNets의 아주 큰 차이를 간략히 언급하면, FFNets은 입력 하나에 출력 하나, 즉 입력:출력이 1:1입니다. 그런데 RNNs은 설정하기에 따라 일대일, 일대다(이미지 설명하기), 다대다(기계 번역), 다대일(음성신호 인식) 등 다양하게 적용할 수 있습니다. 
 
@@ -160,7 +160,7 @@ LSTM의 작동 과정에서 정확히 어떤 값이 입력되면 유닛의 쓰�
 
 RNNs 유닛의 한 종류로 GRU(Gated Recurrent Units)이 있습니다. GRU는 LSTM과 유사하지만 출력 게이트를 생략한 형태이며 따라서 항상 메모리에서 결과를 출력합니다.
 
-![Alt text](../img/lstm_gru.png)
+![Alt text](./img/lstm_gru.png)
 
 ## <a name="code">예제 코드</a>
 
@@ -198,12 +198,12 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">DL4J의 다른 튜토리알</a>
-* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
-* [아이겐벡터, 공분산, 주성분분석, 엔트로피](../kr-eigenvector.html)
-* [자연어처리: Word2vec](../kr-word2vec.html)
-* [인공 신경망](../kr-neuralnet-overview.html)
-* [컨볼루션 네트워크](../kr-convolutionalnets.html)
-* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
+* [RBMs: Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine.html)
+* [아이겐벡터, 공분산, 주성분분석, 엔트로피](./kr-eigenvector.html)
+* [자연어처리: Word2vec](./kr-word2vec.html)
+* [인공 신경망](./kr-neuralnet-overview.html)
+* [컨볼루션 네트워크](./kr-convolutionalnets.html)
+* [심층학습(딥러닝) 활용 사례](./kr-use_cases)
 
 ## 그 외
 * [RNNs 튜토리알(AIKorea 번역)](http://aikorea.org/blog/rnn-tutorial-1/)

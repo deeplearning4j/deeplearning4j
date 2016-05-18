@@ -5,11 +5,11 @@ layout: default
 
 # Model saving
 
-In DL4J, you can save models via the [Persistable](../doc/org/deeplearning4j/nn/Persistable.html) interface.
+In DL4J, you can save models via the [Persistable](./doc/org/deeplearning4j/nn/Persistable.html) interface.
 
 Each network and dataset implement this interface for saving data. Which is useful, because when you're pretraining networks, you can resume where you left off in both your dataset and the pretraining.
 
-For DataSets, you can preserialize them in an external process for later use. You can then use a [ListDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/impl/ListDataSetIterator.html) to iterate over the DataSet that's been presaved. That makes it very easy to create your own custom data set iterator.
+For DataSets, you can preserialize them in an external process for later use. You can then use a [ListDataSetIterator](./doc/org/deeplearning4j/datasets/iterator/impl/ListDataSetIterator.html) to iterate over the DataSet that's been presaved. That makes it very easy to create your own custom data set iterator.
 
 A more complete example below:
 

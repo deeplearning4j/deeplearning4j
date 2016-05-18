@@ -9,7 +9,7 @@ layout: default
 
 BoW lists words with their word counts per document. In the table where the words and documents effectively become vectors are stored, each row is a word, each column is a document and each cell is a word count. Each of the documents in the corpus is represented by columns of equal length. Those are wordcount vectors, an output stripped of context. 
 
-![Alt text](../img/wordcount-table.png) 
+![Alt text](./img/wordcount-table.png) 
 
 Before they're fed to the neural net, each vector of wordcounts is normalized such that all elements of the vector add up to one. Thus, the frequencies of each word is effectively converted to represent the probabilities of those words' occurrence in the document. Probabilities that surpass certain levels will activate nodes in the net and influence the document's classification. 
 
@@ -19,7 +19,7 @@ Before they're fed to the neural net, each vector of wordcounts is normalized su
 
 First, TF-IDF measures the number of times that words appear in a given document (that's term frequency). But because words such as "and" or "the" appear frequently in all documents, those are systematically discounted. That's the inverse-document frequency part. The more documents a word appears in, the less valuable that word is as a signal. That's intended to leave only the frequent AND distinctive words as markers. Each word's TF-IDF relevance is a normalized data format that also adds up to one. 
 
-![Alt text](../img/tfidf.png) 
+![Alt text](./img/tfidf.png) 
 
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them.
 
@@ -49,13 +49,13 @@ While simple, TF-IDF is incredibly powerful, and contributes to such ubiquitous 
 
 Click here to see [other BoW-based text-vectorization methods](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/bagofwords/vectorizer/BagOfWordsVectorizer.java).
 
-BoW is different from [Word2vec](../word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
+BoW is different from [Word2vec](./word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Word2vec](../word2vec)
-* [Introduction to Neural Networks](../neuralnet-overview)
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [LSTMs and Recurrent Networks](../lstm)
-* [Neural Networks and Regression](../linear-regression)
-* [Convolutional Networks for Images](../convolutionalnets)
+* [Word2vec](./word2vec)
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks for Images](./convolutionalnets)

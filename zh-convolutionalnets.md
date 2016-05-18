@@ -32,15 +32,15 @@ layout: zh-default
 
 张量涵括了二维平面以上的维度。数组按立方体排列的三维张量很容易想象。所示为水平呈现的2x3x2张量（想象各二元数组的底元素沿Z轴延伸以直观把握三维数组的命名原因）：
 
-![Alt text](../img/tensor.png)
+![Alt text](./img/tensor.png)
 
 上述张量可以用代码表示为：`[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]].`请见示意图：
 
-![Alt text](../img/3d_matrix_cube.png)
+![Alt text](./img/3d_matrix_cube.png)
 
 换言之，张量的形成原理为数组嵌套数组。这种嵌套可以无限持续下去，形成远超我们空间想象所能企及的、任意数量的维度。四维张量，即是用嵌套层次更深的数组取代上述各标量。卷积网络对四维张量的处理如下所示（请注意嵌套数组）。
 
-![Alt text](../img/3d_matrix.png)
+![Alt text](./img/3d_matrix.png)
 
 ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的维度`(1,2,3...n)`称为“阶”，也就是说，第五阶张量具有五个维度。
 
@@ -103,7 +103,7 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 
 由于图像上不同指向的线非常多，而且图像包含许多不同的形状和像素图案，因此需要使用其他过滤器扫描底层图像，以搜索这些图案。举例说，可以在像素中搜索96种不同图案。这96种图案可构成96张激活映射图，生成10x10x96的新体。在下图中，我们对输入图像、内核和输出的激活映射图重新作了标明。
 
-![Alt text](../img/karpathy-convnet-labels.png)
+![Alt text](./img/karpathy-convnet-labels.png)
 
 我们刚才描述的即是卷积。可以把卷积想象为信号处理中的一种奇特乘法。也可将两个矩阵生成点积想象为两个函数。图像就是底层函数，而过滤器就是在其上“卷过”的函数。
 
@@ -115,7 +115,7 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 
 卷积网络的下一层有三个名称：最大池化、降采样和二次抽样。如卷积的方法一样，将激活映射图每次一个片块地输入降采样层。最大池化仅取图像一个片块的最大值，将之置于存有其他片块最大值的矩阵中，并放弃激活映射图中所载的其他信息。
 
-![Alt text](../img/maxpool.png)
+![Alt text](./img/maxpool.png)
 *感谢[Andrej Karpathy](https://cs231n.github.io/)供图。*
 
 仅保留图像中与各特征（最大值）相关性最大的位置。这些最大值一起构成了一个较低维度的空间。
@@ -126,7 +126,7 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 
 下图是另一种显示典型卷积网络所涉转换顺序的方式。
 
-![Alt text](../img/convnet.png)
+![Alt text](./img/convnet.png)
 
 从左至右：
 
@@ -151,6 +151,6 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 * [Andrej Karpathy的斯坦福大学课程](https://cs231n.github.io/)讲授卷积网络，相当精彩。我们强烈推荐将之作为卷积网络重要概念的入门。(*包括Python练习。*)
 * [此处为我们卷积网络的Github测试](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java)。
 * 欲一睹DL4J卷积网络的运行实况，请根据[快速入门指南](http://deeplearning4j.org/zh-quickstart.html)运行我们的[示例](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution)。
-* [递归网络简介](../recurrentnet.html)
-* [受限玻尔兹曼机指南](../zh-restrictedboltzmannmachine.html)
-* [神经网络简介](../neuralnet-overview.html)
+* [递归网络简介](./recurrentnet.html)
+* [受限玻尔兹曼机指南](./zh-restrictedboltzmannmachine.html)
+* [神经网络简介](./neuralnet-overview.html)

@@ -13,9 +13,9 @@ Content
 
 Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism. 
 
-Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark and Hadoop for MapReduce, trains models in parallel and [iteratively averages](../iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
+Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark and Hadoop for MapReduce, trains models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
-With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](../sparkinstall.html).
+With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](./sparkinstall.html).
 
 ## <a name="build">Build the Examples</a>
 
@@ -36,7 +36,7 @@ Then make sure you're in the dl4j-spark-ml-examples directory and run
 
 The output, amid a river of other log info, should look like this:
 
-![Alt text](../img/dl4j_iris_dataframe.png)
+![Alt text](./img/dl4j_iris_dataframe.png)
 
 You can run other examples with the `bin/run-example` command:
 
@@ -65,4 +65,4 @@ Here's a Spark Notebook for Iris classification using [Deeplearning4j and Spark]
 * ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
 * [ND4J/ND4S Benchmarks](http://nd4j.org/benchmarking)
 * [ND4J, Scala & Scientific Computing](http://nd4j.org/scala.html)
-* [Intro to Iterative Reduce](../iterativereduce)
+* [Intro to Iterative Reduce](./iterativereduce)

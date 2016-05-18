@@ -27,7 +27,7 @@ The dataset is small, which can present its own problems, and the species I. vir
 
 Here is a single record:
 
-![data record table](../img/data_record.png)
+![data record table](./img/data_record.png)
 
 While the table above is human readable, Deeplearning4j’s algorithms need it to be something more like
 
@@ -44,7 +44,7 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. (To run the example, [use this file](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/iris/IrisExample.java).)
 
-![input output table](../img/ribbit_table.png)
+![input output table](./img/ribbit_table.png)
 
 (Contained within a DataSet object are two NDArrays, a fundamental object that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in scientific computing.) 
 
@@ -102,7 +102,7 @@ Lines 16-18: We start to binarize the labels with our outcomeTypes list. Each la
 
 By the time we finish, we'll a row with a numeric representation of labels. A data record classified as *i. setosa* would look like:
 
-![final table](../img/final_table.png)
+![final table](./img/final_table.png)
 
 The words you see in the upper boxes only serve to illustrate our tutorial and remind us which words go with which numbers. The numbers in the lower boxes will be what appear as a vector for data processing. In fact, the bottom, finished row is what we call *vectorized data*.
 
@@ -195,5 +195,5 @@ Our model wasn’t tuned all that well (back to the knobs!), and this is just a 
 
 In the end, a working network's visual representation of the Iris dataset will look something like this
 
-![Alt text](../img/iris_dataset.png)
+![Alt text](./img/iris_dataset.png)
 

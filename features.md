@@ -25,13 +25,13 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 
 ### Nets
 
-* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-* [Convolutional nets](../convolutionalnets.html)
+* [Restricted Boltzmann machines](./restrictedboltzmannmachine.html)
+* [Convolutional nets](./convolutionalnets.html)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
 * [Recurrent nets: Long Short-Term Memory (LSTM)](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/classifiers/lstm/LSTMTest.java) (including bi-directional LSTMs)
-* [Deep-belief networks](../deepbeliefnetwork.html)
-* [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
-* [Deep autoencoders](../deepautoencoder.html)
+* [Deep-belief networks](./deepbeliefnetwork.html)
+* [Denoising and Stacked Denoising autoencoders](./denoisingautoencoder.html)
+* [Deep autoencoders](./deepautoencoder.html)
 
 Since Deeplearning4j is a composable framework, users can arrange shallow nets to create various types of deeper nets. Combining convolutional nets with recurrent nets, for example, is how Google accurately generated captions from images in late 2014.
 
@@ -43,8 +43,8 @@ DL4J contains the following built-in vectorization algorithms:
 * Moving-window for images
 * Moving-window for text 
 * Viterbi for sequential classification
-* [Word2Vec](../word2vec.html)
-* [Bag-of-Words encoding for word count and TF-IDF](../bagofwords-tf-idf.html)
+* [Word2Vec](./word2vec.html)
+* [Bag-of-Words encoding for word count and TF-IDF](./bagofwords-tf-idf.html)
 * Constituency parsing
 * [DeepWalk](http://arxiv.org/abs/1403.6652)
 

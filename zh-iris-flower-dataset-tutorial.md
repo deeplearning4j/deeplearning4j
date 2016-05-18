@@ -25,7 +25,7 @@ DBN会从一组标签选择一个适合哪个输入记录的标签。这比了Bo
 
 这是一个记录:
 
-![data record table](../img/data_record.png)
+![data record table](./img/data_record.png)
 
 虽然我们人类都可以理解上面的表,但是Deeplearning4j的算法需要它的东西如下:
 
@@ -43,7 +43,7 @@ DBN会从一组标签选择一个适合哪个输入记录的标签。这比了Bo
 
 DL4J使用一个称为DataSet的对象将数据加载到一个神经网络。DataSet是用来储存预测数据(及其相关的标签)。以下的第一和第二列都是NDArrays 。其中一个NDArrays将保持数据的属性;其他保持的数据的标签。
 
-![input output table](../img/ribbit_table.png)
+![input output table](./img/ribbit_table.png)
 
 ( 包含在DataSet对象内的有两个NDArrays ,即是DL4J用于数值计算的基本对象)N二维数组是可伸缩及多维数组的,它适合于复杂的数学运算,并经常用于科学计算。 )
 
@@ -101,7 +101,7 @@ DL4J使用一个称为DataSet的对象将数据加载到一个神经网络。Dat
 
 当我们完成的时候,我们将有一排带着数字表示的标签。数据记录列为i. setosa会是这个样子的:
 
-![final table](../img/final_table.png)
+![final table](./img/final_table.png)
 
 您在框上部的第一列看到的词只是为了向您说明我们的教程,也顺便提醒我们应该使用哪个词和号码。在框下部的数将会以向量的形式出现来处理数据。事实上,在底部,完成的排就是我们所说的量化数据。
 
@@ -194,4 +194,4 @@ DL4J使用的评估对象(Evaluation Object)来收集有关模型的性能统计
 
 最后,鸢尾花数据集在一个能运作的网络的可视化将是这个样子:
 
-![Alt text](../img/iris_dataset.png)
+![Alt text](./img/iris_dataset.png)

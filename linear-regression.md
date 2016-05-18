@@ -5,7 +5,7 @@ layout: default
 
 # Using Neural Networks With Regression
 
-Broadly speaking, neural networks are used for the purpose of [unsupervised learning](../unsupervised-learning), classification, or regression. That is, they help group unlabeled data, categorize that data or predict continuous values after supervised training. 
+Broadly speaking, neural networks are used for the purpose of [unsupervised learning](./unsupervised-learning), classification, or regression. That is, they help group unlabeled data, categorize that data or predict continuous values after supervised training. 
 
 While classification typically uses a form of logistic regression in the net's final layer to convert continuous data into dummy variables like 0 and 1 -- e.g. given someone's height, weight and age you might bucket them as a heart-disease candidate or not -- true regression maps one set of continuous inputs to another set of continuous outputs. 
 
@@ -13,7 +13,7 @@ For example, given the age and floor space of a house and its distance from a go
 
 Reasonable people can disagree about whether using neural networks for regression is overkill. The point of this post is just to explain how it can be done (it's pretty easy).
 
-![Alt text](../img/neural-network-regression.png)
+![Alt text](./img/neural-network-regression.png)
 
 In the diagram above, `x` stands for input, the features passed forward from the network's previous layer. Many x's will be fed into each node of the last hidden layer, and each `x` will be multiplied by a corresponding weight, `w`.
 
@@ -27,7 +27,7 @@ To perform backpropagation and make the network learn, you simply compare ŷ to 
 
 In this way, you can use a neural network to get the function relating an arbitrary number of independent variables x to a dependent variable y that you're trying to predict. 
 
-To perform regression with a neural network in Deeplearning4j, you would [set up a multilayer neural network](../iris-flower-dataset-tutorial.html), and add an output layer at the end with the following properties:
+To perform regression with a neural network in Deeplearning4j, you would [set up a multilayer neural network](./iris-flower-dataset-tutorial.html), and add an output layer at the end with the following properties:
 
 ```
 //Create output layer
@@ -43,10 +43,10 @@ To perform regression with a neural network in Deeplearning4j, you would [set up
 Here's a more complete example of [using a neural network for regression](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/feedforward/regression) in order to approximate simple mathematical functions. 
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [LSTMs and Recurrent Networks](../lstm)
-* [Neural Networks](../neuralnet-overview)
-* [Convolutional Networks](../convolutionalnets)
-* [Deeplearning4j Quickstart Examples](../quickstart)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks](./neuralnet-overview)
+* [Convolutional Networks](./convolutionalnets)
+* [Deeplearning4j Quickstart Examples](./quickstart)
 * [ND4J: Numpy for the JVM](http://nd4j.org)

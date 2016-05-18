@@ -33,25 +33,25 @@ layout: zh-default
 
 我们举一个实际的例子来说明。（如需了解这种称为点积的矩阵乘法，请点击[此处](http://math.stackexchange.com/a/24469)。）
 
-![Alt text](../img/eigen_matrix.png)
+![Alt text](./img/eigen_matrix.png)
 
 于是*A*将*v*变换为*b*。在下图中，可以看到矩阵将较短、较低的线段*v*映射为较长、较高的线段*b*。 
 
-![Alt text](../img/two_vectors.png)
+![Alt text](./img/two_vectors.png)
 
 你可以不断将正向量输入矩阵A，而每个向量都会被投射至一个向右上方伸展出去的新空间。 
 
 想象所有输入向量*v*都位于这样一个普通网格空间内：
 
-![Alt text](../img/space_1.png)
+![Alt text](./img/space_1.png)
 
 而矩阵将它们全部投射到下图所示的新空间内，所有输出向量*b*都位于这个空间内：
 
-![Alt text](../img/space_2.png)
+![Alt text](./img/space_2.png)
 
 下图将这两个空间并置：
 
-![Alt text](../img/two_spaces.png)
+![Alt text](./img/two_spaces.png)
 
 （*供图：William Gould, Stata Blog*）
 
@@ -63,14 +63,14 @@ layout: zh-default
 
 可以把矩阵想象成一阵风，这股不可见的力产生了可见的变化效果。而风必定会吹向一个特定的方向。本征向量指出了矩阵这股“风”的方向。 
 
-![Alt text](../img/mona_lisa_eigenvector.png)
+![Alt text](./img/mona_lisa_eigenvector.png)
 （*供图：维基百科*）
 
 那么一个空间内所有受到矩阵影响的向量中，哪些才是本征向量呢？本征向量是不会改变方向的那个向量；也就是说，本征向量已经指向其它所有向量受矩阵推动而变换的方向。本征向量就像是风向标，可以叫本征向标。 
 
 因此本征向量的定义是，同矩阵相乘时仿佛只是与一个标量系数相乘的向量。在下面的等式中，A为矩阵，x为向量，λ为标量系数，比如5、37或者π。
 
-![Alt text](../img/lambda_eigen.png)
+![Alt text](./img/lambda_eigen.png)
 
 可以说本征向量是线性变换过程将输入向量拉伸或压缩时所遵循的轴线。本征向量是代表矩阵变换作用的线，也就是“线性变换”一词中所谓的“线”。
 
@@ -98,11 +98,11 @@ PCA是用于分析图像等高维度数据的模式的工具。在机器学习�
 
 *均值*就是数据集X中所有*x*的平均值，计算方法是将所有数据点之和除以数据点的数量*n*。
 
-![Alt text](../img/mean.png)
+![Alt text](./img/mean.png)
 
 *标准差*听上去不简单，但实际上就是数据点与均值之间距离的平方的平均数的算术平方根。在下图的公式中，根号内的分子为每个数据点与均值之差的平方之和，而分母则是数据点的数量（减去一），两者相除得到平均距离。 
 
-![Alt text](../img/standard_deviation.png)
+![Alt text](./img/standard_deviation.png)
 
 方差是衡量数据离散度的指标。以一支[荷兰篮球队的球员](http://www.theguardian.com/world/2015/apr/08/scientists-try-to-answer-why-dutch-people-are-so-tall)为例，如果测量他们的身高，得到的结果不会有太大差异。所有人的身高都超过一米八。 
 
@@ -110,13 +110,13 @@ PCA是用于分析图像等高维度数据的模式的工具。在机器学习�
 
 方差就是标准差的平方，通常写作*s^2*。
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 在计算方差和标准差时都会取数据点与均值之差的平方，目的是使差变为正值，避免高于平均数和低于平均数的值相互抵消。 
 
 假设以前文例子中每个人的年龄（x轴）和身高（y轴）为坐标绘图（将均值定为零），得到呈椭圆形的散点图。 
 
-![Alt text](../img/scatterplot.png)
+![Alt text](./img/scatterplot.png)
 
 PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归类似。 
 
@@ -124,7 +124,7 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 第一主成分是将散点图二等分的直线，可以解释最多的差异；也就是说，这条直线沿着数据集最长的维度伸展。（这也恰好是误差最少的一条直线，如红线所示……）在下图中，第一主成分沿“长棍面包”的长轴将其切开。
 
-![Alt text](../img/scatterplot_line.png)
+![Alt text](./img/scatterplot_line.png)
 
 第二主成分垂直于第一主成分穿过数据集，与第一主成分产生的误差点拟合。上图中只有两个主成分，但如果有第三个维度，那么第三个主成分则会与前两个成分的误差点拟合，以此类推。 
 
@@ -144,13 +144,13 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 对于2 x 2的矩阵而言，协方差矩阵可能如下所示：
 
-![Alt text](../img/covariance_matrix.png)
+![Alt text](./img/covariance_matrix.png)
 
 左上角和右下角的数字分别代表x与y两个变量的方差，而左下角与右上角的相同数字则代表x与y之间的协方差。由于这样的结构特点，此类矩阵被称为对称矩阵。可以看到协方差是正数，因为靠近PCA分段顶部的图像指向右上方。 
 
 如果两个变量同时增减（直线指向右上方），它们的协方差为正；如果一个变量增加时，另一个变量减少，则两者间的协方差为负（直线指向右下方）。 
 
-![Alt text](../img/covariances.png)
+![Alt text](./img/covariances.png)
 
 （*供图：Vincent Spruyt*）
 
@@ -158,11 +158,11 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 此外，如下面的公式所示，协方差与方差之间的差别其实很小。
 
-![Alt text](../img/covariance.png)
+![Alt text](./img/covariance.png)
 
 对比
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 计算协方差的妙处是，对于难以从直观上判断变量关系的高维度空间，可以通过协方差的正负以及存在与否来判断两个变量之间的互动方式。（*相关系数*是标准化的协方差，范围在-1和1之间。）
 
@@ -178,7 +178,7 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 上图所示的x轴与y轴称为矩阵的基；也就是说，它们为矩阵的点赋予x、y坐标。但是矩阵可以沿其他轴线重塑；例如，可以将矩阵的本征向量作为基础，赋予同个矩阵一组新坐标。矩阵和向量都是独立存在的，并不受限于x－y等坐标系的坐标数值。 
 
-![Alt text](../img/basis_change.png)
+![Alt text](./img/basis_change.png)
 
 上图显示了同一个向量v在两个坐标系中的不同位置，x－y坐标系为黑色实线，新坐标系的两轴为红色虚线。在第一个坐标系中，v = (1,1)，而在第二个坐标系中，v = (1,0)，但v自身并未改变。向量和矩阵因而可以同括号内的数字分离开来。 
 
@@ -198,7 +198,7 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 识别数据集的主成分可以与发现骰子是灌铅的相类比。两者的实质都是识别潜在的模式。
 
-信息从有关系统的*未知情况*转变为*已知情况*，这代表了熵的变化。洞悉系统的模式会使系统的熵降低。获得信息，降低熵——这就是信息增益。没错，这类信息熵具有主观性，因为它取决于我们对于系统的了解程度。（顺便一提，[信息增益](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)与我们在[受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)中探讨的KL散度意义相同。） 
+信息从有关系统的*未知情况*转变为*已知情况*，这代表了熵的变化。洞悉系统的模式会使系统的熵降低。获得信息，降低熵——这就是信息增益。没错，这类信息熵具有主观性，因为它取决于我们对于系统的了解程度。（顺便一提，[信息增益](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)与我们在[受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)中探讨的KL散度意义相同。） 
 
 所以每个贯穿散点图的主成分都会降低系统的熵，减少系统的不可预测性。 
 
@@ -222,9 +222,9 @@ PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归�
 
 ## <a name="resources">其他基础教程</a>
 
-* [回归分析与神经网络](../linear-regression.html)
-* [Word2vec：从原始文本中提取关系](../zh-word2vec.html)
-* [受限玻尔兹曼机：深度置信网络的基础组件](../zh-restrictedboltzmannmachine.html)
-* [递归神经网络和长短期记忆单元](../zh-lstm.html)
+* [回归分析与神经网络](./linear-regression.html)
+* [Word2vec：从原始文本中提取关系](./zh-word2vec.html)
+* [受限玻尔兹曼机：深度置信网络的基础组件](./zh-restrictedboltzmannmachine.html)
+* [递归神经网络和长短期记忆单元](./zh-lstm.html)
 
 <a name="ref">1)</a> *在有些情况下，矩阵可能没有一组完整的本征向量；矩阵线性独立的本征向量的数量至多等于矩阵的维度数。*

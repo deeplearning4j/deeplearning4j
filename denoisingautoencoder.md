@@ -23,4 +23,4 @@ To create the machine, you simply instantiate an AutoEncoder and set the corrupt
 
 That's how you set up a denoising autoencoder with one visible layer and one hidden layer using MNIST data. This net has a learning rate of 0.1, momentum of of 0.9, and utilizes reconstruction cross entropy as its loss function. 
 
-Next, we'll show you a [stacked denoising autoencoder](../stackeddenoisingautoencoder.html), which is simply many denoising autoencoders strung together.
+Next, we'll show you a [stacked denoising autoencoder](./stackeddenoisingautoencoder.html), which is simply many denoising autoencoders strung together.

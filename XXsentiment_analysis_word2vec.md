@@ -17,7 +17,7 @@ Contents
 * <a href="#code">**Just Give Me The Code**</a>
 * <a href="#resource">Other Resources</a>
 
-This tutorial covers sentiment analysis with [Word2vec](../word2vec.html) and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
+This tutorial covers sentiment analysis with [Word2vec](./word2vec.html) and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
 
 Sentiment has obvious applications for market research, business intelligence, product development, reputation management, political campaigns and sociological studies. 
 
@@ -29,11 +29,11 @@ Typically, people rely on word count to create vectors representing documents, a
 
 First, we count the number of times those words appear in two documents. Let’s say the x axis represents Moscow and the y axis Beijing. If Moscow appears once in document one and five times in document two, while Beijing appears three times in the first and twice in the second, then we have our two vectors: *doc1 = (1,3)* and *doc2 = (5,2)*.
 
-![Alt text](../img/sentiment_analysis_vectors.png)
+![Alt text](./img/sentiment_analysis_vectors.png)
 
 With Bag of Words, you can add as many dimensions as there are unique words in your documents, placing vectors in an n-dimensional space. Here's an example of a vector wending its way through three dimensions:
 
-![Alt text](../img/3d_vector.png)
+![Alt text](./img/3d_vector.png)
 
 To imagine n dimensions, just keep turning sharply through the wormhole to the right. ;)
 
@@ -53,13 +53,13 @@ Or to return to the example above, mere word count wouldn't necessarily tell us 
 
 But Word2vec *does* grasp context, because the algorithm learns to reconstruct the context surrounding each word. (Word2vec has two forms, one of which infers a target word from its context, while the other infers the context from the target word. We use the latter.)
 
-![Alt text](../img/word2vec_diagrams.png)
+![Alt text](./img/word2vec_diagrams.png)
 
 So the vectors produced by Word2vec are not populated with word counts. They are neural word embeddings that allow Word2vec to predict, given a certain word, what the most likely words around it are. 
 
 Creating a representation of those words for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
 
-![Alt text](../img/avg_word_vector.png)
+![Alt text](./img/avg_word_vector.png)
 
 This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set. 
 
@@ -73,7 +73,7 @@ In addition, the stream of comments harvested from social media can be used for 
 
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality. (See [Scherer](http://www.affective-sciences.org/user/scherer)'s [Typology of Affective States](http://www.amazon.com/Handbook-Affective-Sciences-Science/dp/0195126017) for a more rigorous categorization.)
 
-![Alt text](../img/scherer.png)
+![Alt text](./img/scherer.png)
 
 So the first step is to pick the categories you care about. The second is to create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's corpus and categories, you can download this set of [Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip) labeled by their positive and negative sentiment, as we show below.
 
@@ -89,17 +89,17 @@ Once you have a corpus, you feed its words into Word2vec to generate feature vec
 
 [Logistic regression](http://gormanalysis.com/logistic-regression-fundamentals/), despite its misleading name, classifies things. The simplest form of logistic regression is binary, predicting categories such as *spam* or *not_spam*. It does so by mapping input to a sigmoid space where large numbers asymptotically approach 1, and small ones approach zero.
 
-![Alt text](../img/sigmoid2.png)
+![Alt text](./img/sigmoid2.png)
 
 The equation that maps continuous input to sigmoid looks like this:
 
-![Alt text](../img/logistic_regression2.png)
+![Alt text](./img/logistic_regression2.png)
 
 With the slider in your mind, imagine that as *t* grows larger, so does *e*'s negative exponent, which means that *e^-t* approaches zero and the formula leaves us with 1; and vice versa with increasingly large negative *t*'s, which leave us with 0.
 
 Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify an input vector of x's. 
 
-![Alt text](../img/logistic_regression3.png)
+![Alt text](./img/logistic_regression3.png)
 
 A more complex form that buckets input into more than two categories is called multinomial logistic regression, or *softmax*. That’s what we’ll be using here. 
 
@@ -163,4 +163,4 @@ Below is the `main` method of our program. The comments give a high-level descri
 * [Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf); Mikolov et al
 * [Twitter Sentiment Classification using Distant Supervision](https://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf); Alec Go et al
 * [Thumbs up? Sentiment classification using machine learning techniques](http://www.cs.cornell.edu/home/llee/papers/sentiment.home.html); Bo Pang et al
-* [A Beginner's Guide to Word2Vec](../word2vec.html)
+* [A Beginner's Guide to Word2Vec](./word2vec.html)

@@ -20,7 +20,7 @@ Contents
 
 Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensory data through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, into which all real-world data, be it images, sound, text or time series, must be translated. 
 
-Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involved algorithms for [reinforcement learning](../reinforcementlearning.html), classification and [regression](../linear-regression.html).)
+Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involved algorithms for [reinforcement learning](./reinforcementlearning.html), classification and [regression](./linear-regression.html).)
 
 As you think about one problem deep learning can solve, ask yourself: What categories do I care about? What information can I act upon? Those outcomes are labels that would be applied to data: `spam` or `not_spam`, `good_guy` or `bad_guy`, `angry_customer` or `happy_customer`. Then ask: Do I have the data to accompany those labels? Can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) that I can use to teach an algorithm the correlation between labels and inputs?
 
@@ -36,11 +36,11 @@ Deep learning is a name for a certain set of stacked neural networks composed of
 
 Here's a diagram of what one node might look like.
 
-![Alt text](../img/perceptron_node.png)
+![Alt text](./img/perceptron_node.png)
 
 A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer receiving your data.  
 
-![Alt text](../img/mlp.png)
+![Alt text](./img/mlp.png)
 
 Pairing adjustable weights with input features is how we assign significance to those features with regard to how the network classifies and clusters input. 
 
@@ -52,9 +52,9 @@ Traditional machine learning relies on shallow nets, composed of one input and o
 
 In deep-learning networks, each layer of nodes trains on a distinct set of features based on the previous layer's output. The further you advance into the neural net, the more complex the features your nodes can recognize, since they aggregate and recombine features from the previous layer. 
 
-![Alt text](../img/feature_hierarchy.png)
+![Alt text](./img/feature_hierarchy.png)
 
-This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters that pass through [nonlinear functions](../glossary.html#nonlineartransformfunction). 
+This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters that pass through [nonlinear functions](./glossary.html#nonlineartransformfunction). 
 
 Above all, these nets are capable of discovering latent structures within **unlabeled, unstructured data**, which is the vast majority of data in the world. Another word for unstructured data is *raw media*; i.e. pictures, texts, video and audio recordings. Therefore, one of the problems deep learning solves best is in processing and clustering the world's raw, unlabeled media, discerning similarities and anomalies in data that no human has organized in a relational database or ever put a name to. 
 
@@ -139,11 +139,11 @@ Each weight is just one factor in a deep network that involves many transforms; 
 
 The chain rule in calculus states that 
 
-![Alt text](../img/chain_rule.png)
+![Alt text](./img/chain_rule.png)
 
 In a feedforward network, the relationship between the net's error and a single weight will look something like this:
 
-![Alt text](../img/backprop_chain_rule.png)
+![Alt text](./img/backprop_chain_rule.png)
 
 That is, given two variables, *Error* and *weight*, that are mediated by a third variable, *activation*, through which the weight is passed, you can calculate how a change in *weight* affects a change in *Error* by first calculating how a change in *activation* affects a change in *Error*, and how a change in *weight* affects a change in *activation*.  
 
@@ -163,7 +163,7 @@ So the output layer has to condense signals such as $67.59 spent on diapers, and
 
 The mechanism we use to convert continuous signals into binary output is called logistic regression. The name is unfortunate, since logistic regression is used for classification rather than regression in the linear sense that most people are familiar with. It calculates the probability that a set of inputs match the label.  
 
-![Alt text](../img/logistic_regression.png)
+![Alt text](./img/logistic_regression.png)
 
 Let's examine this little formula. 
 
@@ -185,14 +185,14 @@ That said, gradient descent is not recombining every weight with every other to 
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA, Covariance and Entropy](../eigenvector.html)
-* [Glossary of Deep-Learning and Neural-Net Terms](../glossary.html)
-* [Convolutional Networks](../convolutionalnets.html)
-* [Recurrent Networks and LSTMs](../lstm.html)
-* [Word2vec and Natural-Language Processing](../lstm.html)
-* [Iris Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
-* [Deeplearning4j Examples via Quickstart](../quickstart.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Word2vec and Natural-Language Processing](./lstm.html)
+* [Iris Flower Dataset Tutorial](./iris-flower-dataset-tutorial.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)

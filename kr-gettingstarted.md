@@ -132,7 +132,7 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 * 기존에 설치한 DL4J로 예제를 실행했을 때 오류가 발생한다면 우선 라이브러리를 최신 버전으로 업데이트하십시오. Maven을 사용하실 경우 설치된 POM.xml 파일의 내용만 업데이트 하시면 [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)에 나온 최신 버전으로 업데이트가 됩니다. 소스를 받아서 직접 설치하시는 경우엔 [ND4J](http://nd4j.org/kr-getstarted.html), Canova 및 DL4J 상의 `git clone`을 하신 뒤, 순서대로 각 디렉터리에서 `mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`을 실행하시면 됩니다.
 * 예제를 실행하다 보면 인공 신경망의 분류가 정확하게 이루어지고 있는지를 측정하는 [F1 점수](http://deeplearning4j.org/glossary.html#f1)가 생각보다 낮을수도 있습니다. 우선 예제는 빠른 실행과 검토를 위해 작은 데이터 셋을 사용하여 학습이 되기 때문에 실제 상황보다 낮은 점수가 나올 수 있습니다. 작은 데이터 셋을 사용할 경우 학습 데이터의 분포가 실제 데이터의 분포와 달라 실제 상황을 잘 반영하지 못할 수도 있고 인공 신경망의 학습엔 데이터의 양이 부족할 수도 있습니다. 예를 들어, 소문자 예제 데이터에서 저희의 DBN(Deep-Belief Net)의 F1 점수는 대체로 0.32 에서 1.0 사이의 값이 나옵니다.
 * Deeplearning4J는 **자도완성 기능**을 갖고 있습니다. 어떤 커맨드를 사용해야 할지 애매한 경우 아무 문자나 누르면 아래 그림처럼 드롭다운 목록이 나옵니다.
-![Alt text](../img/dl4j_autocomplete.png)
+![Alt text](./img/dl4j_autocomplete.png)
 * [Deeplearning4j’의 클래스와 메소드](http://deeplearning4j.org/doc/) 페이지를 참고하시기 바랍니다. **Javadoc**으로 쓰여져 있어 편리하게 사용할 수 있습니다.
 * 코드 양이 점점 많아지고 있기 때문에 소스에서 직접 설치할 경우 상당히 많은 메모리가 필요합니다. 이와 관련해서 DL4J 빌드 중에 `Permgen 오류`가 나타나는 경우 **힙 스페이스(heap space)**를 늘려야합니다. 이는 히든 파일인 `.bash_profile` 에 환경 변수(Environment variable)을 해서 해결할 수 있습니다. 우선 현재 설정된 환경 변수 목록을 보려면 커맨드 라인에서 `env`를 입력하십시오. 그리고 힙 스페이스를 늘리려면 터미널에서 다음의 커맨드를 입력하시기 바랍니다.
 		echo “export MAVEN_OPTS=”-Xmx512m -XX:MaxPermSize=512m”” > ~/.bash_profile
@@ -143,8 +143,8 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 * [Java CPP](https://github.com/bytedeco/javacpp)의 include path는 **Windows**에서 작동하지는 않을 수도 있습니다. 한 가지 해결 방법은 Visual Studio의 include directory에서 header 파일을 Java가 설치되어 있는 Java Run-Time Environment (JRE)의 include directory에 복사하는 것 입니다. (이는 standardio.h와 같은 파일에 영향을 미칠 것 입니다.) 더 많은 정보는 [여기](http://nd4j.org/kr-getstarted.html#windows)를 참고하시기 바랍니다.
 * GPU 모니터링은 [여기](http://nd4j.org/kr-getstarted.html#gpu)를 참고하시기 있습니다.
 * 자바의 강점 중 하나는 **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**에서 제공하는 진단 도구(diagnostics) 입니다. 자바를 설치하신 뒤 커맨드 라인에 `jvisualvm`를 입력하면 여러분의 CPU, Heap, PermGen, Classes 및 Threads 의 실시간 정보를 시각화 해서 보여줍니다. 팁: 우측 상단의 `Sampler` 탭을 클릭하시고, 시각화 할 디바이스(CPU 또는 Memory)에 해당하는 버튼을 선택하십시오. 
-![Alt text](../img/jvisualvm.png)
-* 기계 학습의 아이디어 및 원리에 익숙하지 않은 경우 사용중에 몇 가지 문제가 있을 수 있습니다. 저희는 Deeplearning4j 사용자들이 기계 학습의 기초를 이해할 수 있도록 저희의 튜토리알 뿐만 아니라 더 깊은 내용을 이해하시길 강력하게 추천합니다. 우선 [이 페이지](../deeplearningpapers.html)에 저희가 준비한 기계 학습 및 딥 러닝을 공부 목록을 포함시켰습니다. DL4J의 일부는 잘 문서화가 되어있지만, 전부 문서화가 되어있지는 않습니다. 특히 코드의 일부 핵심적인 부분은 문서화 되어있지 않고 코드로만 존재합니다.
+![Alt text](./img/jvisualvm.png)
+* 기계 학습의 아이디어 및 원리에 익숙하지 않은 경우 사용중에 몇 가지 문제가 있을 수 있습니다. 저희는 Deeplearning4j 사용자들이 기계 학습의 기초를 이해할 수 있도록 저희의 튜토리알 뿐만 아니라 더 깊은 내용을 이해하시길 강력하게 추천합니다. 우선 [이 페이지](./deeplearningpapers.html)에 저희가 준비한 기계 학습 및 딥 러닝을 공부 목록을 포함시켰습니다. DL4J의 일부는 잘 문서화가 되어있지만, 전부 문서화가 되어있지는 않습니다. 특히 코드의 일부 핵심적인 부분은 문서화 되어있지 않고 코드로만 존재합니다.
 * **Clojure** 에서 `deeplearning4j-nlp`을 사용할 때, 그리고 Leiningen에서 uberjar를 빌드 할 때, `project.clj`에서 akka `reference.conf` 리소스 파일들을 제대로 설정하려면 다음 내용을 따라야 합니다. `:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`. (대부분의 경우 .properties 맵의 첫 번째 항목이 디폴트로 설정되어 있습니다.) 이 설정이 되어있지 않으면 uberjar에서 실행하려고 할 때 다음의 exeption 오류가 날 수 있습니다. `Exception in thread "main" com.typesafe.config.ConfigException$Missing: No configuration setting found for key 'akka.version'`.
 * Float 데이터 형식은 OSX에서 종종 문제가 생깁니다. 만일 예제 실행 도중에 NAN 값이 나타난다면 변수의 데이터 형식을 `double`로 바꾸고 다시 시도해보십시오.
 * 자바 7에서 fork-join에 버그가 있습니다. 이 버그는 Java 8로 업데이트를 해야 해결할 수 있습니다. 만일 아래와 같은 OutofMemory 오류가 나온다면 fork join때문일 수 있으니 참고하십시오. `java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
@@ -160,6 +160,6 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 
 신경망을 설계하기 전에 [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
 
-속성 안내를 찾으신다면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)를, *Deep-Belief Networks (DBNs)*의 기본 원리를 이해하시려면 [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html) 가이드를 확인하시기 바랍니다.
+속성 안내를 찾으신다면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)를, *Deep-Belief Networks (DBNs)*의 기본 원리를 이해하시려면 [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html) 가이드를 확인하시기 바랍니다.
 
 새로운 프로젝트를 만드는 경우에 설계에 필요한 [POM 디펜던시](http://nd4j.org/kr-dependencies.html)를 include하시려면 [ND4J Getting Started](http://nd4j.org/kr-getstarted.html)의 설명을 참고하십시오.
