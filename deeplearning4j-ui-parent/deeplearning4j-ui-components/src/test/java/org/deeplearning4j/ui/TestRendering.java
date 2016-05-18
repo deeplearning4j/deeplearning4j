@@ -18,7 +18,6 @@
 package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
@@ -35,6 +34,7 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.awt.Color;

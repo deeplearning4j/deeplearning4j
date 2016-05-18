@@ -327,13 +327,13 @@ public class TestDecayPolicies {
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAGRAD))
                     lr = testAdaGradComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
-//                else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAM))
-//                    lr = testAdamComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
+                else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAM))
+                    lr = testAdamComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.RMSPROP))
                     lr = testRMSPropComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
 
-                // TODO check if this is cycling through the learning rate schedule...
-                assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), 1e-4);
+                if(i == 0) assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), lr);
+                else assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), learningRateAfter.get(1));
             }
         }
     }
