@@ -38,7 +38,7 @@ Hyperparameters are variables that determine how a neural network learns. They i
         .build();
 ```
 
-With Deeplearning4j, you add a layer by calling `layer` on the `NeuralNetConfiguration.Builder()`, specifying the number of input and output nodes, `nIn` and `nOut`, as well as the type: `DenseLayer`.
+With Deeplearning4j, you add a layer by calling `layer` on the `NeuralNetConfiguration.Builder()`, specifying its place in the order of layers (the zero-indexed layer below is the input layer), the number of input and output nodes, `nIn` and `nOut`, as well as the type: `DenseLayer`.
 
 ``` java
         .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
