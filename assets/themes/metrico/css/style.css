@@ -485,6 +485,17 @@ iframe {
 }
 
 
+/* PAGE CONTENT / documentation default wrapper */
+.page-content h1, 
+.page-content h2, 
+.page-content h3, 
+.page-content h4, 
+.page-content h5 {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 700;
+}
+
+
 
 /* FUN FACTS / Testimonials Box */
 .facts-box {
