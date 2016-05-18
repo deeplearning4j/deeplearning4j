@@ -453,7 +453,10 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
@@ -1760,6 +1763,8 @@ void   NativeOps::execTransformDouble(
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
 
+						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[15]);
 
 						// we call for IMax on specified dimension
@@ -1769,10 +1774,9 @@ void   NativeOps::execTransformDouble(
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxDouble<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+						fillDimensionalIsMaxDouble<<<768, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
-						if (debug)
-							checkCudaErrors(cudaStreamSynchronize(*stream));
+						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					}
 					break;
@@ -3269,14 +3273,17 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
+
+					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
+
 					bool scalarCheat = false;
 					if (extraParamsPointer == nullptr) {
 						scalarCheat = true;
 					} else {
-						//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
-						//if (shape::isVector(hostXShapeInfo) && extraParamsPointer[1] == 1) {
-						//	scalarCheat = true;
-						//}
+					/*	//extraParamsPointer == nullptr || (shape::isVector(hostXShapeInfo))
+						if (shape::isVector(hostXShapeInfo) && dimensionHostPointer[0] == 1) {
+							scalarCheat = true;
+						}*/
 					}
 
 					if (scalarCheat) {
@@ -3289,20 +3296,23 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						else
 							targetIdx = maxIdx * shape::stride(hostXShapeInfo)[shape::rank(hostXShapeInfo) - 1];
 
-						fillIsMaxFloat<<< 1, 128, 0, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
+						fillIsMaxFloat<<< 1, 128, 1536, *stream >>>(resultPointer, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
 						//printf("Going for dimension-based IsMax\n");
 
+						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimensionPointer = reinterpret_cast<int *> (extraPointers[15]);
 
 						// we call for IMax on specified dimension
 						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, (Nd4jPointer) special, (Nd4jPointer) hostYShapeInfo, (Nd4jPointer) dimensionPointer, 1);
 
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+						if (debug)
+							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<1, 128, 6192, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, nullptr, dimensionPointer, 1 );
+						fillDimensionalIsMaxFloat<<<768, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, resultPointer, resultShapeInfoPointer, tadMaxShapeInfo, dimensionPointer, 1, tadMaxOffsets );
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3394,7 +3404,7 @@ __device__ void concatKernelGeneric(int dimension,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
 									T *result,
-									int *resultShapeInfo) {
+									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
 	__shared__ UnifiedSharedMemory *manager;
@@ -3414,6 +3424,8 @@ __device__ void concatKernelGeneric(int dimension,
 
 	T **dataT = (T **) data;
 	int **shapeInfoPointers = (int **) inputShapeInfos;
+	int **tadShapes = (int **) tadPointers;
+	int **tadOffsets = (int **) offsetPointers;
 
 	if (shape::isScalar(shapeInfoPointers[0])) {
 
@@ -3443,7 +3455,7 @@ __device__ void concatKernelGeneric(int dimension,
 
 		char zOrder = shape::order(resultShapeInfo);
 		int sub[MAX_RANK];
-		int arrOffset = 0;
+	//	int arrOffset = 0;
 
 		int zEWS = shape::elementWiseStride(resultShapeInfo);
 		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
@@ -3491,34 +3503,39 @@ __device__ void concatKernelGeneric(int dimension,
 		// TODO: to be pulled into separate kernel. matrix concatenation
 		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 
+			int *currentShape = shapeInfoPointers[r];
+			T *currentData = dataT[r];
+			int *currentTad = tadShapes[r];
+			int *currentOffsets = tadOffsets[r];
+
 			if (threadIdx.x == 0) {
 				inputTAD = new((unsigned char *)managerInput->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
 				inputTAD->setExternalBuffers((void *) managerInput);
-				// inputTAD->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
-				inputTAD->init(shapeInfoPointers[r], &dimension, 1);
-				inputTAD->createTadOnlyShapeInfo();
+				inputTAD->initWithExternalTAD(currentTad, currentShape, &dimension, 1);
+				//inputTAD->init(shapeInfoPointers[r], &dimension, 1);
+				//inputTAD->createTadOnlyShapeInfo();
 
-				yLength = shape::length(inputTAD->tadOnlyShapeInfo);
-				yOrder = shape::order(inputTAD->tadOnlyShapeInfo);
-				yEWS = shape::elementWiseStride(inputTAD->tadOnlyShapeInfo);
+				yLength = shape::length(currentTad);
+				yOrder = shape::order(currentTad);
+				yEWS = shape::elementWiseStride(currentTad);
 			}
 			__syncthreads();
 
 
 
-			T *currentData = dataT[r];
-/*
+
+
 			__shared__ int arrOffset;
 			if (threadIdx.x == 0) {
 				arrOffset = 0;
 				for (int f = 0; f < r; f++) {
-					arrOffset +=  yLength;//shape::length(shapeInfoPointers[f]);
+					arrOffset +=  shape::length(tadShapes[f]);
 				}
 
-				printf("Block: [%i], arrOffset: [%i]\n", r, arrOffset);
+			//	printf("Block: [%i], arrOffset: [%i]\n", r, arrOffset);
 			}
 			__syncthreads();
-*/
+
 
 			for (int j = 0; j < inputTAD->numTads; j++) {
 
@@ -3596,11 +3613,14 @@ __device__ void concatKernelGeneric(int dimension,
 				__syncthreads();
 			}
 			__syncthreads();
-			arrOffset += yLength;
+		//	arrOffset += yLength;
 
 			if (threadIdx.x == 0)
 				delete inputTAD;
 		}
+
+		if (threadIdx.x == 0)
+			delete tad;
 	}
 }
 
@@ -3609,8 +3629,8 @@ extern "C" __global__ void concatKernelDouble(int dimension,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
 											  double *result,
-											  int *resultShapeInfo) {
-	concatKernelGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo);
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+	concatKernelGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 extern "C" __global__ void concatKernelFloat(int dimension,
@@ -3618,8 +3638,8 @@ extern "C" __global__ void concatKernelFloat(int dimension,
 											 Nd4jPointer *data,
 											 Nd4jPointer *inputShapeInfo,
 											 float *result,
-											 int *resultShapeInfo) {
-	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo);
+											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 template <typename T>
@@ -3775,7 +3795,9 @@ void NativeOps::flattenFloat(
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[(int) extraPointers[2]]);
 
@@ -3847,8 +3869,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 		cudaSetDevice(i);
 		cudaGetDeviceProperties(&deviceProperties[i], i);
 
-		//cudaDeviceSetLimit(cudaLimitStackSize, 4096);
-		//cudaDeviceSetLimit(cudaLimitMallocHeapSize , 10000);
+		cudaDeviceSetLimit(cudaLimitStackSize, 4096);
 	}
 
 	cudaSetDevice(0);
@@ -3938,6 +3959,12 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaFuncGetAttributes(&funcAttributes[34], flattenKernelDouble);
 
 	cudaFuncGetAttributes(&funcAttributes[35], concatKernelDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[36], fillDimensionalIsMaxFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
+
+
 }
 
 
@@ -4222,7 +4249,9 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
         Nd4jPointer result,
-        Nd4jPointer resultShapeInfo) {
+        Nd4jPointer resultShapeInfo,
+		Nd4jPointer *tadPointers,
+		Nd4jPointer *offsetPointers) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -4234,7 +4263,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<1, 64, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+	concatKernelFloat<<<128, 128, funcAttributes[31].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4250,16 +4279,21 @@ void NativeOps::concatDouble(
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
         Nd4jPointer result,
-        Nd4jPointer resultShapeInfo) {
+        Nd4jPointer resultShapeInfo,
+		Nd4jPointer *tadPointers,
+		Nd4jPointer *offsetPointers) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	double *resultData = reinterpret_cast<double *>(result);
 	int *resultShape = reinterpret_cast<int *>(resultShapeInfo);
 
+	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
+	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelDouble<<<1, 64, 4096, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape);
+	concatKernelDouble<<<128, 128, funcAttributes[35].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4274,11 +4308,13 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
 	int *target = reinterpret_cast<int *>(targetBuffer);
 	int *offsets = reinterpret_cast<int *>(offsetsBuffer);
 
+
 	shape::TAD *tad = new shape::TAD();
 	tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad->createTadOnlyShapeInfo();
 	tad->createOffsets();
+
 
 	std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
 	std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
@@ -4323,6 +4359,7 @@ Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, lon
 		return 0L;
 	}
 	else return 1;
+	return 0L;
 }
 
 Nd4jPointer NativeOps::getConstantSpace() {

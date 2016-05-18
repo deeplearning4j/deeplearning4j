@@ -1819,7 +1819,7 @@ void NativeOps::concatFloat(
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
         Nd4jPointer result,
-        Nd4jPointer resultShapeInfo) {
+        Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
     concatGeneric<float>(
             dimension,
             numArrays,
@@ -1840,7 +1840,7 @@ void NativeOps::concatDouble(
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
         Nd4jPointer result,
-        Nd4jPointer resultShapeInfo) {
+        Nd4jPointer resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
     concatGeneric<double>(
             dimension,
             numArrays,

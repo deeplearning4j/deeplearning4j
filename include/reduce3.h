@@ -445,7 +445,7 @@ namespace functions {
 
 						int *xShape = shape::shapeOf(tad->tadOnlyShapeInfo);
 						int *xStride = shape::stride(tad->tadOnlyShapeInfo);
-						Nd4jIndex tadLength = shape::length(tad->tadOnlyShapeInfo);
+						Nd4jIndex tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 						int rank = shape::rank(tad->tadOnlyShapeInfo);
 #pragma unroll
 						for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
