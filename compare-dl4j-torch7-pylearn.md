@@ -51,7 +51,7 @@ Most academic researchers in the field of deep learning rely on [**Theano**](htt
 
 Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
 
-In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](../spark.html). 
+In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and [Spark](./spark.html). 
 
 Pros and Cons
 
@@ -111,7 +111,7 @@ Deeplearning4j's underlying linear algebra computations, performed with ND4J, ha
 
 While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network on [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark), [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), or with [Akka and AWS](http://deeplearning4j.org/scaleout.html). Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
 
-For a full list of Deeplearning4j's features, please see our [features page](../features.html).
+For a full list of Deeplearning4j's features, please see our [features page](./features.html).
 
 ### <a name="java">Why Java?</a>
 
@@ -137,9 +137,9 @@ Finally, we are building the basic applications of Numpy, including ND-Array, in
 
 ### <a name="scala">Scala</a>
 
-We have paid special attention to [Scala](../scala) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM with a [Scala API](http://nd4j.org/scala.html) moves the community toward that goal. 
+We have paid special attention to [Scala](./scala) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM with a [Scala API](http://nd4j.org/scala.html) moves the community toward that goal. 
 
-To really understand the differences between DL4J and other frameworks, you may just have to [try us out](../quickstart).
+To really understand the differences between DL4J and other frameworks, you may just have to [try us out](./quickstart).
 
 ### <a name="ml">Machine-learning frameworks</a>
 
@@ -152,14 +152,14 @@ The deep-learning frameworks listed above are more specialized than general mach
 
 ### <a name="tutorial">Deeplearning4j Tutorials</a>
 
-* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
-* [Convolutional Networks Tutorial](../convolutionalnets.html)
-* [LSTM and Recurrent Network Tutorial](../lstm.html)
-* [Using Recurrent Nets With DL4J](../usingrnns.html)
-* [Deep-Belief Networks With MNIST](../deepbeliefnetwork.html)
-* [Facial Reconstruction With Labeled Faces in the Wild](../facial-reconstruction-tutorial.html)
-* [Customizing Data Pipelines With Canova](../image-data-pipeline.html)
-* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA and Entropy](../eigenvector.html)
-* [A Glossary of Deep-Learning Terms](../glossary.html)
-* [Word2vec, Doc2vec & GloVe](../word2vec)
+* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
+* [Convolutional Networks Tutorial](./convolutionalnets.html)
+* [LSTM and Recurrent Network Tutorial](./lstm.html)
+* [Using Recurrent Nets With DL4J](./usingrnns.html)
+* [Deep-Belief Networks With MNIST](./deepbeliefnetwork.html)
+* [Facial Reconstruction With Labeled Faces in the Wild](./facial-reconstruction-tutorial.html)
+* [Customizing Data Pipelines With Canova](./image-data-pipeline.html)
+* [Restricted Boltzmann machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA and Entropy](./eigenvector.html)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
+* [Word2vec, Doc2vec & GloVe](./word2vec)

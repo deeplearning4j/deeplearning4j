@@ -26,4 +26,4 @@ Pour une introduction rapide aux réseaux neuronaux, notre aperçu est a lire. E
 
 Il ya beaucoup de parametres à raffiner lorsque vous entrainez un réseau d'apprentissage automatique profond. Nous avons fait de notre mieux pour les expliquer, de sorte que le Deeplearning4j peut servir d'outil pour Java, Scala et Clojure programmeurs. Si vous avez des questions, veuillez vous joindre a notre groupe Google; pour le soutien professionel, [contactez-nous au Skymind](http://www.skymind.io/). [ND4J est un moteur de calcul scientifique Java](http://nd4j.org/) qui alimente les manipulations matricielles.
 
-![Alt text](../img/logos_8.png)
+![Alt text](./img/logos_8.png)

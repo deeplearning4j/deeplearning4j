@@ -18,7 +18,7 @@ Quick Start Guide
 
 This is everything you need to run DL4J examples and begin your own projects.
 
-We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](../deeplearningforbeginners.html) with links to courses, readings and other resources. 
+We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](./deeplearningforbeginners.html) with links to courses, readings and other resources. 
 
 ## Prerequisites
 
@@ -79,15 +79,15 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-0.4-examples' directory. 
 
-![select directory](../img/Install_IntJ_1.png)
+![select directory](./img/Install_IntJ_1.png)
 
 3. Choose 'Import project from external model' and ensure that Maven is selected. 
-![import project](../img/Install_IntJ_2.png)
+![import project](./img/Install_IntJ_2.png)
 
 4. Continue through the wizard's options. Select the SDK that begins with `jdk`. (You may need to click on a plus sign to see your options...) Then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
 
 5. Pick an example from the file tree on the left.
-![run IntelliJ example](../img/Install_IntJ_3.png)
+![run IntelliJ example](./img/Install_IntJ_3.png)
 Right-click the file to run. 
 
 ## Using DL4J In Your Own Projects: Configuring the POM.xml File
@@ -104,11 +104,11 @@ Within IntelliJ, you will need to choose the first Deeplearning4j example you're
 
 To run the example, right click on it and select the green button in the drop-down menu. You will see, in IntelliJ's bottom window, a series of scores. The rightmost number is the error score for the network's classifications. If your network is learning, then that number will decrease over time with each batch it processes. At the end, this window will tell you how accurate your neural-network model has become:
 
-![run IntelliJ example](../img/mlp_classifier_results.png)
+![run IntelliJ example](./img/mlp_classifier_results.png)
 
 In another window, a graph will appear, showing you how the multilayer perceptron (MLP) has classified the data in the example. It will look like this:
 
-![run IntelliJ example](../img/mlp_classifier_viz.png)
+![run IntelliJ example](./img/mlp_classifier_viz.png)
 
 And congratulations! You just trained your first neural network with Deeplearning4j...
 
@@ -124,6 +124,6 @@ Additional links:
   * [DL4J Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) is the main channel for all things DL4J. Most people hang out here.
   * [Tunning Help](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp) is for people just getting started with neural networks. Beginners please visit us here!
   * [Early Adopters](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters) is for those who are helping us vet and improve the next release. WARNING: This is for more experienced folks. 
-2. Read the [introduction to deep neural networks](../neuralnet-overview) or one of our detailed tutorials. 
-3. Check out the more detailed [Comprehensive Setup Guide](../gettingstarted).
-4. Browse the [DL4J documentation](../documentation).
+2. Read the [introduction to deep neural networks](./neuralnet-overview) or one of our detailed tutorials. 
+3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
+4. Browse the [DL4J documentation](./documentation).

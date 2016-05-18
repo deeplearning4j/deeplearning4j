@@ -17,7 +17,7 @@ layout: zh-default
 
 若您需要安装上述任意一项，请阅读[ND4J入门指南](http://nd4j.org/zh-getstarted.html)。（ND4J是我们用于深度学习的科学计算引擎，其入门指南中的内容对两个项目均适用。）本页中的样例只需安装上面列出的四项，无需安装“ND4J入门指南”中的所有软件。
 
-建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)以便提问或反馈。即使您加入后无意发言，也可默默潜水学习。此外，如果您对深度学习刚刚入门，我们还准备了一份[上手时需要学习的清单](../deeplearningforbeginners.html)。
+建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)以便提问或反馈。即使您加入后无意发言，也可默默潜水学习。此外，如果您对深度学习刚刚入门，我们还准备了一份[上手时需要学习的清单](./deeplearningforbeginners.html)。
 
 Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ等IDE，以及Maven等生成工具的专业Java开发者。如果您已熟悉上述工具，则更能对我们提供的工具驾轻就熟。
 
@@ -28,7 +28,7 @@ Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ�
 * 在命令行中输入`git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git`。（目前示例版本为0.0.4.x。）
 * 在IntelliJ中使用Maven创建新项目，并指向上述示例的根目录。
 * 复制、粘贴下列代码，确保您的POM.xml文件与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
-* 附加的[Windows系统说明可通过此链接访问](../zh-gettingstarted.html#windows)。
+* 附加的[Windows系统说明可通过此链接访问](./zh-gettingstarted.html#windows)。
 * 从左侧文件列表中选择`DBNIrisExample.java`。
 * 单击运行！（也即右键单击源文件时出现的绿色按钮……）
 
@@ -40,7 +40,7 @@ Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ�
 * 运行TSNE或其他示例请输入`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`。如果执行失败，或Maven在退出时无法终止守护进程，则可能需要上述参数。
 * 1000次迭代后，`tsne-standard-coords.csv`应被置于`dl4j-0.4-examples/target/archive-tmp/`目录。
 
-您应获得0.66上下、对Iris这类小型数据组来说较好的F1值。示例的逐行解释请见[Iris DBN教程](../iris-flower-dataset-tutorial.html)。
+您应获得0.66上下、对Iris这类小型数据组来说较好的F1值。示例的逐行解释请见[Iris DBN教程](./iris-flower-dataset-tutorial.html)。
 
 如发生问题，应首先检查POM.xml文件。该文件应与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
 
@@ -56,7 +56,7 @@ nd4j-x86后端应如下所示：
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-x86*可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](../zh-gettingstarted.html#open)。
+*nd4j-x86*可用于所有示例。OpenBlas、Windows和Linux用户如欲安装附加依赖项，请参见[Deepelearining4j入门页](./zh-gettingstarted.html#open)。
 
 ## 高级：在AWS上使用命令行
 
@@ -82,7 +82,7 @@ nd4j-x86后端应如下所示：
 
 ## 后续步骤
 
-运行示例后，请访问[完全安装页面](../gettingstarted.html)作进一步了解。
+运行示例后，请访问[完全安装页面](./gettingstarted.html)作进一步了解。
 
 ## <a name="walk">逐步说明</a>
 

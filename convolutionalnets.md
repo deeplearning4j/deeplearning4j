@@ -34,15 +34,15 @@ They can be hard to visualize, so let’s approach them by analogy. A scalar is 
 
 A tensor encompasses the dimensions beyond that 2-D plane. You can easily picture a three-dimensional tensor, with the array of numbers arranged in a cube. Here’s a 2 x 3 x 2 tensor presented flatly (picture the bottom element of each 2-element array extending along the z-axis to intuitively grasp why it’s called a 3-dimensional array):
 
-![Alt text](../img/tensor.png) 
+![Alt text](./img/tensor.png) 
 
 In code, the tensor above would appear like this: `[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]].` And here's a visual: 
 
-![Alt text](../img/3d_matrix_cube.png) 
+![Alt text](./img/3d_matrix_cube.png) 
 
 In other words, tensors are formed by arrays nested within arrays, and that nesting can go on infinitely, accounting for an arbitrary number of dimensions far greater than what we can visualize spatially. A 4-D tensor would simply replace each of these scalars with an array nested one level deeper. Convolutional networks deal in 4-D tensors like the one below (notice the nested array).
 
-![Alt text](../img/3d_matrix.png) 
+![Alt text](./img/3d_matrix.png) 
 
 ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor would have five dimensions.
 
@@ -108,7 +108,7 @@ A filter superimposed on the first three rows will slide across them and then be
 
 Now, because images have lines going in many directions, and contain many different kinds of shapes and pixel patterns, you will want to slide other filters across the underlying image in search of those patterns. You could, for example, look for 96 different patterns in the pixels. Those 96 patterns will create a stack of 96 activation maps, resulting in a new volume that is 10x10x96. In the diagram below, we've relabeled the input image, the kernels and the output activation maps to make sure we're clear. 
 
-![Alt text](../img/karpathy-convnet-labels.png) 
+![Alt text](./img/karpathy-convnet-labels.png) 
 
 What we just described is a convolution. You can think of Convolution as a fancy kind of multiplication used in signal processing. Another way to think about the two matrices creating a dot product is as two functions. The image is the underlying function, and the filter is the function you roll over it. 
 
@@ -120,7 +120,7 @@ One of the main problems with images is that they are high-dimensional, which me
 
 The next layer in a convolutional network has three names: max pooling, downsampling and subsampling. The activation maps are fed into a downsampling layer, and like convolutions, this method is applied one patch at a time. In this case, max pooling simply takes the largest value from one patch of an image, places it in a new matrix next to the max values from other patches, and discards the rest of the information contained in the activation maps.
 
-![Alt text](../img/maxpool.png) 
+![Alt text](./img/maxpool.png) 
 *Credit to [Andrej Karpathy](https://cs231n.github.io/).*
 
 Only the locations on the image that showed the strongest correlation to each feature (the maximum value) are preserved, and those maximum values combine to form a lower-dimensional space. 
@@ -131,7 +131,7 @@ Much information about lesser values is lost in this step, which has spurred res
 
 The image below is another attempt to show the sequence of transformations involved in a typical convolutional network. 
 
-![Alt text](../img/convnet.png) 
+![Alt text](./img/convnet.png) 
 
 From left to right you see:
 
@@ -151,12 +151,12 @@ Here's one example of how you might configure a ConvNet with Deeplearning4j:
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=42:73"></script>
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Introduction to Neural Networks](../neuralnet-overview)
-* [LSTMs and Recurrent Networks](../lstm)
-* [Word2vec](../word2vec)
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](../eigenvector)
-* [Neural Networks and Regression](../linear-regression)
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Word2vec](./word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Neural Networks and Regression](./linear-regression)
 
 ## <a name="resource">Other Resources</a>
 

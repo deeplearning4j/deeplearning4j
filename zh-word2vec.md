@@ -5,7 +5,7 @@ layout: zh-default
 
 # Word2vec
 
-本网站正在更新中，如想要获得最新的信息，[请参考](../word2vec.html) 
+本网站正在更新中，如想要获得最新的信息，[请参考](./word2vec.html) 
 
 目录
 
@@ -37,7 +37,7 @@ DL4J采用了Mikolov提出而流行的skip-gram表示方法，这种表示方法
 
 下面是使用Word2vec计算得出的和China（中国）相似的一些词画的图:
 
-![Alt text](../img/word2vec.png) 
+![Alt text](./img/word2vec.png) 
 
 ## <a name="anatomy">Word2vec分析</a>
 
@@ -267,4 +267,4 @@ Word2Vec对于信息检索和QA系统的预处理数据尤其有用。这些系�
 
 ## <a name="next">下一步</a>
 
-我们最近仍然在测试[Doc2Vec](../doc2vec.html)和GloVe的实现，请多关注这里！
+我们最近仍然在测试[Doc2Vec](./doc2vec.html)和GloVe的实现，请多关注这里！

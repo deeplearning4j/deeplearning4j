@@ -33,25 +33,25 @@ layout: kr-default
 
 구체적인 예를 보여드리겠습니다. (행렬 곱이 익숙하지 않으신 분은 [여기](http://math.stackexchange.com/a/24469) 또는 [이 강의자료(한글)](http://www.mathteacher.pe.kr/mt_11/mt_11_04.htm)를 참고하시기 바랍니다.)
 
-![Alt text](../img/eigen_matrix.png)
+![Alt text](./img/eigen_matrix.png)
 
 이렇게 행렬 *A*는 벡터 *v*를 벡터 *b*로 변환합니다. 어떻게 이 행렬 *A*가 짧은 파란색 벡터 *v*를 긴 빨간색 벡터 *b*에 매핑했는지 아래 그래프에서 확인하시기 바랍니다.
 
-![Alt text](../img/two_vectors.png)
+![Alt text](./img/two_vectors.png)
 
 이렇게 어떤 벡터든지 행렬 A에 곱해주면 더 높고 멀리 뻗은 새로운 벡터로 매핑이 될 것입니다. 이것을 하나의 공간(space)이 다른 공간(space)으로 투영(혹은 사영, projection)되는 개념으로 설명드리겠습니다. 
 
 우선 어떤 입력 벡터 *v*가 이와 같은 격자 공간(normal grid)에 있다고 상상해 보십시오.
 
-![Alt text](../img/space_1.png)
+![Alt text](./img/space_1.png)
 
 그러면 행렬 A는 이 공간을 아래와 같은 공간으로 투영합니다.
 
-![Alt text](../img/space_2.png)
+![Alt text](./img/space_2.png)
 
 두 공간을 같이 그려보았습니다. 
 
-![Alt text](../img/two_spaces.png)
+![Alt text](./img/two_spaces.png)
 
 (*제공: William Gould, Stata Blog*)
 
@@ -63,12 +63,12 @@ layout: kr-default
 
 이 파란색 벡터의 방향이 변하지 않는 이유는 행렬 *A*가 벡터를 투영하는 방향과 그 방향이 같기 때문입니다. 이런 벡터를 우리는 고유 벡터라고 부릅니다. 예를 들어 바람이 거세게 불면 풍향계는 바람을 받아서 바람의 방향을 가리키게 됩니다. 만일 풍향계가 원래부터 바람의 방향을 향하고 있었다면 그 풍향계의 방향은 바뀌지 않습니다. 즉, 행렬의 고유벡터는 그 행렬의 방향을 - 바람이 부는 방향을 - 나타냅니다. 
 
-![Alt text](../img/mona_lisa_eigenvector.png)
+![Alt text](./img/mona_lisa_eigenvector.png)
 (*제공: Wikipedia*)
 
 고유 벡터는 행렬 *A*를 곱하더라도 방향이 변하지 않고 그 크기만 변합니다. 따라서 고유 벡터는 아래 식과 같이 표현할 수 있씁니다. 행렬 *A*를 좌변에 곱하였지만 그 결과가 마치 어떤 숫자를 벡터에 곱한것과 같은 결과가 나오는 것 입니다. 이 방정식에서, *A*는 행렬, *x*는 벡터, lambda는 스칼라 값인 상관 계수(예:5, 37, pi와 같은 숫자) 입니다.
 
-![Alt text](../img/lambda_eigen.png)
+![Alt text](./img/lambda_eigen.png)
 
 다른 관점으로 생각할 수도 있습니다. 선형 변환은 입력 벡터의 크기를 늘이거나 줄이는 경우가 있는데 이 때 고유벡터는 크기를 늘이거나 줄이는 데 기준이 되는 축이라고 할 수 있습니다. 즉 선형 변환의 '선'에 해당하는 것이 바로 이 고유 벡터입니다.
 
@@ -96,11 +96,11 @@ PCA에 대해 설명하기 위해 우선 통계의 가장 기초적인 개념인
 
 *평균(mean)*은 모든 데이터의 합을 데이터의 개수 *n*으로 나누어 구할 수 있습니다. 말 그대로 우리가 갖고 있는 데이터 셋 X에 존재하는 모든 *x*의 평균 값입니다.
 
-![Alt text](../img/mean.png)
+![Alt text](./img/mean.png)
 
 *표준 편차(Standard deviation)*는 각 데이터 *x*와 평균 사이의 거리를 제곱하고, 이 평균을 구한 뒤, 그 값에 다시 제곱근(square root)을 씌운 값입니다. 아래 식을 참고하면 식의 분자는 각 데이터와 평균값과의 거리를 표현하고 있고, 분모는 전체 데이터의 수에서 1을 뺀 값입니다. 
 
-![Alt text](../img/standard_deviation.png)
+![Alt text](./img/standard_deviation.png)
 
 *분산(Variance)*은 데이터가 얼마나 분산되어 있는지, 즉 얼마나 퍼져있는지에 대한 측정값입니다. 예를 들어 [네덜란드 농구 팀 선수들의 키](http://www.theguardian.com/world/2015/apr/08/scientists-try-to-answer-why-dutch-people-are-so-tall) 데이터로 분산을 측정한다면 그 값은 그리 크지 않을 것입니다. 왜냐하면 그들은 대부분 190cm 이상의 장신이기 때문입니다. 
 
@@ -108,13 +108,13 @@ PCA에 대해 설명하기 위해 우선 통계의 가장 기초적인 개념인
 
 분산은 표준 편차의 제곱과 같고, 종종 *s^2*로 표현됩니다.
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 분산과 표준 편차의 계산 과정을 보면 둘 다 각 데이터와 평균과의 차이를 제곱합니다. 따라서 분산과 표준편차는 둘다 항상 양수입니다.
 
 이제 예를 들어봅시다. 우리 데이터는 여러 사람의 나이와 키 값이고, 나이를 x축에, 키를 y축에 나타내보겠 습니다. 보기 좋게 x축과 y축이 평균이 0이 되도록 데이터를 이동했다고 하겠습니다.
 
-![Alt text](../img/scatterplot.png)
+![Alt text](./img/scatterplot.png)
 
 PCA는 선형 회귀 분석과 유사하게, 데이터에서 의미있는 '선' 혹은 '축'을 찾는 과정입니다.
 
@@ -122,7 +122,7 @@ PCA는 선형 회귀 분석과 유사하게, 데이터에서 의미있는 '선' 
 
 첫 번째 주성분은 가장 길게, 가장 퍼져있는 방향의 축에 해당합니다. 예를 들어 아래의 그래프를 보면 마치 바게트를 길이 방향으로 길게 자르는 듯한 방향이 데이터의 분산이 가장 큰, 즉 가장 퍼져있는 방향에 해당합니다.
 
-![Alt text](../img/scatterplot_line.png)
+![Alt text](./img/scatterplot_line.png)
 
 두 번째 주성분의 경우 첫번째 주성분으로 표현할 수 없는 축 중에서 가장 분산이 큰 축에 해당합니다. 이 그림의 경우 전체가 2차원 데이터라 두 개의 주성분이 존재합니다. 만일 3차원 데이터라면 3개의 주성분이 존재합니다. 
 
@@ -142,13 +142,13 @@ PCA는 선형 회귀 분석과 유사하게, 데이터에서 의미있는 '선' 
 
 2x2 공분산 행렬의 예는 아래와 같습니다.
 
-![Alt text](../img/covariance_matrix.png)
+![Alt text](./img/covariance_matrix.png)
 
 좌측 하단 (2,1)성분 및 우측 상단의 (1,2) 성분의 값이 동일합니다. 이 값은 x와 y의 공분산을 포현합니다. 'x와 y의 공분산'과 'y와 x의 공분산'의 값이 같기 때문에 두 값이 동일한 것입니다. 한편 좌측 상단의 값은 x의 분산에, 우측 하단의 값은 y의 분산에 해당합니다. 결과적으로 공분산 행렬은 대각선 성분을 중심으로 대칭이 되게 됩니다. 그리고 PCA 섹션 상단의 데이터 그래프를 보면 데이터가 우상향입니다. 즉, x의 값이 커질수록 y의 값도 커지기 때문에 공분산의 값이 양수입니다. 
 
 만일 x의 값이 커질수록 y의 값이 감소하는 데이터라면 공분산 값은 음수가 됩니다. 
 
-![Alt text](../img/covariances.png)
+![Alt text](./img/covariances.png)
 
 (*제공: Vincent Spruyt*)
 
@@ -156,11 +156,11 @@ PCA는 선형 회귀 분석과 유사하게, 데이터에서 의미있는 '선' 
 
 아래 방정식을 보면 분산과 공분산을 구하는 과정은 거의 차이가 없다는 것을 알 수 있습니다. 예를 들면 'x의 분산'은 'x와 x의 공분산'이라고 생각할 수 있습니다.
 
-![Alt text](../img/covariance.png)
+![Alt text](./img/covariance.png)
 
 vs.
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 공분산은 아주 유용합니다. 고차원 변수의 경우 시각화하기 어렵기 때문에 변수의 상관 관계를 파악하기 어렵습니다. 이럴 때 공분산을 이용하면 각 변수의 값과 부호(음/양)를 통해 변수의 관계를 쉽게 알 수 있습니다. (*상관계수(Correlation coefficient)*공분산을 -1과 1 사이의 값으로 정규화한 것 입니다.)
 
@@ -176,7 +176,7 @@ vs.
 
 그 동안 우리는 기저로 x축과 y축을 사용해 왔습니다. 즉, 그 동안 데이터는 x, y축에서 어떤 값에 해당하는지를 x, y좌표로 나타냈습니다. 그러나 같은 데이터를 다른 축을 이용해서 표현할 수 있습니다. 예를 들면 한 행렬의 고유 벡터를 이용해 각 데이터의 값을 표현할 수 있습니다. 고유 벡터는 서로 수직이기 때문에 모든 데이터를 나타내는 것이 가능합니다. 
 
-![Alt text](../img/basis_change.png)
+![Alt text](./img/basis_change.png)
 
 위의 그래프에서, 하나의 벡터 v가 어떻게 다른 축을 이용해 표현되는지 볼 수 있습니다. 검정색 축은 x, y축입니다. 한편 붉은색 점선을 이용한 다른 축을 선택할 수도 있습니다. 검정색 축에 의하면 v는 (1,1)이지만 붉은색 축에 의하면 v는 (1,0)이 됩니다. 하지만 v는 여전히 같은 v입니다. 
 
@@ -196,7 +196,7 @@ vs.
 
 위의 주사위 굴리기 예제는 데이터 셋에서 주성분을 찾는 것과 비슷합니다. 
 
-우리가 시스템에 대해 알게 될수록 시스템의 엔트로피는 감소합니다. 예를 들어 데이터의 통계를 알게 되면 엔트로피는 감소합니다. 이것을 정보 이득(information gain)이라고 합니다. (참고로, [정보 이득](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)는 저희가 [RBM(Restricted Boltzmann Machines)](../kr-restrictedboltzmannmachine.html) 튜토리알에서 설명한 Kullback-Leibler divergence와 같습니다.) 
+우리가 시스템에 대해 알게 될수록 시스템의 엔트로피는 감소합니다. 예를 들어 데이터의 통계를 알게 되면 엔트로피는 감소합니다. 이것을 정보 이득(information gain)이라고 합니다. (참고로, [정보 이득](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)는 저희가 [RBM(Restricted Boltzmann Machines)](./kr-restrictedboltzmannmachine.html) 튜토리알에서 설명한 Kullback-Leibler divergence와 같습니다.) 
 
 데이터의 분포를 주성분으로 나타내면 성분의 차수가 낮아질수록 분산이 감소합니다. 그리고 분산이 낮아진다는 것은 엔트로피가 감소하는 것을 의미합니다. 
 
@@ -220,12 +220,12 @@ vs.
 
 ## <a name="resources">초보자용 다른 가이드들</a>
 
-* [RBMs: Restricted Boltzmann Machines](../kr-restrictedboltzmannmachine.html)
-* [자연어처리: Word2vec](../kr-word2vec.html)
-* [인공 신경망](../kr-neuralnet-overview.html)
-* [컨볼루션 네트워크](../kr-convolutionalnets.html)
-* [RNNs 및 LSTM (Long Short-Term Memory)](../kr-lstm.html)
-* [심층학습(딥러닝) 활용 사례](../kr-use_cases)
+* [RBMs: Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine.html)
+* [자연어처리: Word2vec](./kr-word2vec.html)
+* [인공 신경망](./kr-neuralnet-overview.html)
+* [컨볼루션 네트워크](./kr-convolutionalnets.html)
+* [RNNs 및 LSTM (Long Short-Term Memory)](./kr-lstm.html)
+* [심층학습(딥러닝) 활용 사례](./kr-use_cases)
 
 
 <a name="ref">1)</a> *고유 벡터의 최대 값은 행렬의 차원 수와 같습으며 때로는 행렬의 고유 벡터 수가 전체 차원의 수보다 적기도 합니다.*

@@ -5,7 +5,7 @@ layout: default
 
 ## Doc2Vec, or Paragraph Vectors, in Deeplearning4j
 
-The main purpose of Doc2Vec is associating arbitrary documents with labels, so labels are required. Doc2vec is an extension of word2vec that learns to correlate labels and words, rather than words with other words. Deeplearning4j's implentation is intended to serve the Java, [Scala](../scala.html) and Clojure communities. 
+The main purpose of Doc2Vec is associating arbitrary documents with labels, so labels are required. Doc2vec is an extension of word2vec that learns to correlate labels and words, rather than words with other words. Deeplearning4j's implentation is intended to serve the Java, [Scala](./scala.html) and Clojure communities. 
 
 The first step is coming up with a vector that represents the "meaning" of a document, which can then be used as input to a supervised machine learning algorithm to associate documents with labels.
 
@@ -41,4 +41,4 @@ Here's a full working example of [classification with paragraph vectors](https:/
 ### Further Reading
 
 * [Distributed Representations of Sentences and Documents](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
-* [Word2vec: A Tutorial](../word2vec)
+* [Word2vec: A Tutorial](./word2vec)

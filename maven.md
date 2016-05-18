@@ -15,7 +15,7 @@ As a build automation tool, Maven compiles source to byte code and links object 
 
 Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll find in the file POM.xml. 
 
-![Alt text](../img/maven_schema.png)
+![Alt text](./img/maven_schema.png)
 
 To quote *Maven: The Complete Reference*: 
 

@@ -26,11 +26,11 @@ layout: zh-default
 
 ## <a name="feedforward">前馈网络回顾</a>
 
-要理解递归网络，首先需要了解[前馈网络](../restrictedboltzmannmachine.html)的基础知识。这两种网络的名字都来自于它们通过一系列网络节点数学运算来传递信息的方式。前馈网络将信息径直向前递送（从不返回已经过的节点），而递归网络则将信息循环传递。
+要理解递归网络，首先需要了解[前馈网络](./restrictedboltzmannmachine.html)的基础知识。这两种网络的名字都来自于它们通过一系列网络节点数学运算来传递信息的方式。前馈网络将信息径直向前递送（从不返回已经过的节点），而递归网络则将信息循环传递。
 
 在前馈网络中，样例输入网络后被转换为一项输出；在进行有监督学习时，输出为一个标签。也就是说，前馈网络将原始数据映射到类别，识别出信号的模式，例如一张输入图像应当给予“猫”还是“大象”的标签。 
 
-![Alt text](../img/feedforward_rumelhart.png)
+![Alt text](./img/feedforward_rumelhart.png)
 
 我们用带有标签的图像定型一个前馈网络，直到网络在猜测图像类别时的错误达到最少。将参数，即权重定型后，网络就可以对从未见过的数据进行分类。已定型的前馈网络可以接受任何随机的图片组合，而输入的第一张照片并不会影响网络对第二张照片的分类。看到一张猫的照片不会导致网络预期下一张照片是大象。 
 
@@ -40,7 +40,7 @@ layout: zh-default
 
 递归网络与前馈网络不同，其输入不仅包括当前所见的输入样例，还包括网络在上一个时刻所感知到信息。以下是[由Elman提出的早期递归网络]的示意图(https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html)，图中最下行的*BTSXPE*代表当前的输入样例，而*CONTEXT UNIT*则表示前一时刻的输出。 
 
-![Alt text](../img/srn_elman.png)
+![Alt text](./img/srn_elman.png)
 
 递归网络在第`t-1`个时间步的判定会影响其在随后第`t`个时间步的判定。所以递归网络有来自当下和不久之前的两种输入，此二者的结合决定了网络对于新数据如何反应，与人类日常生活中的情形颇为相似。 
 
@@ -52,11 +52,11 @@ layout: zh-default
 
 让我们用数学语言来描述将记忆向前传递的过程：
 
-![Alt text](../img/recurrent_equation.png)
+![Alt text](./img/recurrent_equation.png)
 
 第t个时间步的隐藏状态是`h_t`。它是同一时间步的输入`x_t`的函数，由一个权重矩阵`W`（和我们在前馈网络中使用的一样）修正，加上前一时间步的隐藏状态`h_t-1`乘以它自己的隐藏状态－隐藏状态矩阵的`U`（或称过渡矩阵，与马尔可夫链近似）。权重矩阵是决定赋予当前输入及过去隐藏状态多少重要性的筛选器。它们所产生的误差将会通过反向传播返回，用于调整权重，直到误差不能再降低为止。
 
-权重输入与隐藏状态之和用函数`??`进行挤压－可能是逻辑S形函数（sigmoid函数）或双曲正切函数，视具体情况而定－这是将很大或很小的值压缩至一个逻辑空间内的标准工具，同时也用于产生反向传播所能接受的[梯度](../glossary.html#gradient)。 
+权重输入与隐藏状态之和用函数`??`进行挤压－可能是逻辑S形函数（sigmoid函数）或双曲正切函数，视具体情况而定－这是将很大或很小的值压缩至一个逻辑空间内的标准工具，同时也用于产生反向传播所能接受的[梯度](./glossary.html#gradient)。 
 
 由于这一反馈循环会在系列的每一个时间步发生，每一个隐藏状态不仅仅跟踪前一个隐藏状态，还包括了记忆能力范围内所有在`h_t-1`之前的状态。
 
@@ -102,7 +102,7 @@ layout: zh-default
 
 反复应用sigmoid函数的结果如下图所示。数据曲线越来越平缓，直至在较长的距离上无法检测到斜度。梯度在经过许多个层后消失的情况与此相似。 
 
-![Alt text](../img/sigmoid_vanishing_gradient.png)
+![Alt text](./img/sigmoid_vanishing_gradient.png)
 
 ## <a name="long">长短期记忆单元（LSTM）</a>
 
@@ -116,7 +116,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 
 下图显示了数据在记忆单元中如何流动，以及单元中的门如何控制数据流动。
 
-![Alt text](../img/gers_lstm.png)
+![Alt text](./img/gers_lstm.png)
 
 上图中的内容很多，如果读者刚开始学习LSTM，别急着向下阅读－请先花一些时间思考一下这张图。只要几分钟，你就会明白其中的秘密。 
 
@@ -128,7 +128,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 
 下面是另一张图，将简单递归网络（左）与LSTM单元（右）进行对比。蓝线可忽略；图例有助理解。 
 
-![Alt text](../img/greff_lstm_diagram.png)
+![Alt text](./img/greff_lstm_diagram.png)
 
 应当注意的是，LSTM的记忆单元在输入转换中给予加法和乘法不同的角色。两张图中央的**加号**其实就是LSTM的秘密。虽然看起来异常简单，这一基本的改变能帮助LSTM在必须进行深度反向传播时维持恒定的误差。LSTM确定后续单元状态的方式并非将当前状态与新输入相乘，而是将两者相加，这正是LSTM的特别之处。（当然，遗忘门依旧使用乘法。）
 
@@ -140,7 +140,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 
 在下图中可以看到门的运作方式，其中横线代表关闭的门，而空心小圆圈则代表打开的门。在隐藏层下方水平一行的横线和圆圈就是遗忘门。
 
-![Alt text](../img/gates_lstm.png)
+![Alt text](./img/gates_lstm.png)
 
 应当注意的是，前馈网络只能将一个输入映射至一个输出，而递归网络则可以像上图那样将一个输入映射至多个输出（从一张图像到标题中的许多词），也可以进行多对多（翻译）或多对一（语音分类）的映射。
 
@@ -160,7 +160,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 
 门控递归单元（GRU）本质上就是一个没有输出门的LSTM，因此它在每个时间步都会将记忆单元中的所有内容写入整体网络。 
 
-![Alt text](../img/lstm_gru.png)
+![Alt text](./img/lstm_gru.png)
 
 ## <a name="code">代码示例</a>
 
@@ -181,7 +181,7 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 * 总体而言，堆叠层是有好处的。
 * 对于LSTM，可使用softsign（而非softmax）激活函数替代tanh（更快且更不容易出现饱和（约0梯度））。
 * 更新器：RMSProp、AdaGrad或momentum（Nesterovs）通常都是较好的选择。AdaGrad还能衰减学习速率，有时会有帮助。
-* 最后，记住数据标准化、MSE损失函数 + 恒等激活函数用于回归、[Xavier权重初始化](../glossary.html#xavier)
+* 最后，记住数据标准化、MSE损失函数 + 恒等激活函数用于回归、[Xavier权重初始化](./glossary.html#xavier)
 
 ## <a name="resources">资源</a>
 * [DRAW:A Recurrent Neural Network For Image Generation](http://arxiv.org/pdf/1502.04623v2.pdf); (attention models)
@@ -198,12 +198,12 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 * [LSTM:A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
 ## <a name="beginner">其他基础教程</a>
-* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine.html)
-* [本征向量、协方差、主成分分析（PCA）和熵](../zh-eigenvector.html)
-* [Word2vec](../zh-word2vec.html)
-* [深度神经网络简介](../neuralnet-overview.html)
-* [神经网络与回归分析](../linear-regression.html)
-* [卷积网络教程](../zh-convolutionalnets.html)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)
+* [本征向量、协方差、主成分分析（PCA）和熵](./zh-eigenvector.html)
+* [Word2vec](./zh-word2vec.html)
+* [深度神经网络简介](./neuralnet-overview.html)
+* [神经网络与回归分析](./linear-regression.html)
+* [卷积网络教程](./zh-convolutionalnets.html)
 
 ### 注
 

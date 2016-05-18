@@ -28,7 +28,7 @@ Once network training starts (specifically, after the first parameter update) yo
 Once the UI opens, you will be presented with a display as follows:
 
 
-![Alt text](../img/DL4J_UI.png)
+![Alt text](./img/DL4J_UI.png)
 (Versions of DL4J before 0.4-rc3.9 will have a less sophisticated display, but contains the same information).
 
 
@@ -89,7 +89,7 @@ Tuning neural networks is often more an art than a science. However, here's some
 
 ## <a name="tsne">TSNE and Word2vec</a>
 
-We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of [word feature vectors](../word2vec.html) and project words into a two or three-dimensional space. Here's some code for using TSNE with Word2Vec:
+We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of [word feature vectors](./word2vec.html) and project words into a two or three-dimensional space. Here's some code for using TSNE with Word2Vec:
 
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()

@@ -64,7 +64,7 @@ layout: kr-default
 
 아래 그림은 신경망으로 각종 얼굴을 유사한 얼굴끼리 군집화한 것 입니다.
 
-![Alt text](../img/faces_tsne.jpg)
+![Alt text](./img/faces_tsne.jpg)
 
 ### 컴퓨터 비전 + 자연어 처리 Machine Vision + Natural-Language Processing
 
@@ -74,9 +74,9 @@ layout: kr-default
 
 ### 다른 초보자 가이드
 
-* [심층 신경망 소개](../kr-neuralnet-overview)
-* [초보자를 위한 RNNs과 LSTM 가이드](../kr-lstm)
-* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](../kr-eigenvector)
-* [컨볼루션 네트워크](../kr-convolutionalnets)
-* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](../kr-restrictedboltzmannmachine)
-* [Neural Networks & Regression](../linear-regression)
+* [심층 신경망 소개](./kr-neuralnet-overview)
+* [초보자를 위한 RNNs과 LSTM 가이드](./kr-lstm)
+* [고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의](./kr-eigenvector)
+* [컨볼루션 네트워크](./kr-convolutionalnets)
+* [초보자용 RBM(Restricted Boltzmann Machines) 튜토리알](./kr-restrictedboltzmannmachine)
+* [Neural Networks & Regression](./linear-regression)

@@ -20,7 +20,7 @@ layout: zh-default
 
 神经网络是一组大致模仿人类大脑构造设计的算法，用于识别模式。神经网络通过机器感知系统解释传感器数据，对原始输入进行标记或聚类。神经网络所能识别的模式是包含在向量中的数值形式，因此图像、声音、文本、时间序列等一切现实世界的数据必须转换为数值。 
 
-神经网络帮助我们进行聚类和分类。可以将其理解为建立在你所存储和管理的数据之上的一个聚类与分类层。对于未标记的数据，神经网络可以按照输入样例的相似之处将数据分组；若能用已标记的数据集定型，神经网络就可以对数据进行系统分类。（更准确地说，神经网络提取特征，再输入其他算法进行聚类和分类；因此可以将深度神经网络视为更大的机器学习应用系统的一部分，这个系统中还包括[强化学习](../reinforcementlearning.html)、分类和[回归分析](../linear-regression.html)的算法。)
+神经网络帮助我们进行聚类和分类。可以将其理解为建立在你所存储和管理的数据之上的一个聚类与分类层。对于未标记的数据，神经网络可以按照输入样例的相似之处将数据分组；若能用已标记的数据集定型，神经网络就可以对数据进行系统分类。（更准确地说，神经网络提取特征，再输入其他算法进行聚类和分类；因此可以将深度神经网络视为更大的机器学习应用系统的一部分，这个系统中还包括[强化学习](./reinforcementlearning.html)、分类和[回归分析](./linear-regression.html)的算法。)
 
 思考深度学习能够解决怎样的问题时，不妨先自问：我关注的是哪些类别？哪些信息可以作为我的行动依据？这两个问题的回答就是可以赋予数据的标签：`垃圾邮件`或`非垃圾邮件`、`好人`或`坏人`、`愤怒的客户`或`高兴的客户`。然后再问：有没有能和这些标签匹配的数据？能否找到已标记的数据，或者创建一个带标签的数据集（利用Mechanical Turk或Crowdflower一类的服务），用来让算法学习标签与输入之间的关联？
 
@@ -36,11 +36,11 @@ layout: zh-default
 
 以下是单个节点的示意图。
 
-![Alt text](../img/perceptron_node.png)
+![Alt text](./img/perceptron_node.png)
 
 节点层是一行类似神经元的开关，在输入数据通过网络时开启或关闭。从最初接收数据的第一个输入层开始，每一层的输出同时也是下一层的输入。  
 
-![Alt text](../img/mlp.png)
+![Alt text](./img/mlp.png)
 
 我们将输入特征与可调整的权重匹配，由此指定这些特征的重要性，即它们对网络的输入分类和聚类方式有多大程度的影响。 
 
@@ -52,9 +52,9 @@ layout: zh-default
 
 在深度学习网络中，每一个节点层在前一层输出的基础上学习识别一组特定的特征。随着神经网络深度增加，节点所能识别的特征也就越来越复杂，因为每一层会整合并重组前一层的特征。 
 
-![Alt text](../img/feature_hierarchy.png)
+![Alt text](./img/feature_hierarchy.png)
 
-这被称为**特征层次结构**，复杂度与抽象度逐层递增。这种结构让深度学习网络能处理大规模高维度数据集，进行数十亿个参数的[非线性函数](../glossary.html#nonlineartransformfunction)运算。 
+这被称为**特征层次结构**，复杂度与抽象度逐层递增。这种结构让深度学习网络能处理大规模高维度数据集，进行数十亿个参数的[非线性函数](./glossary.html#nonlineartransformfunction)运算。 
 
 最重要的是，深度学习网络可以发现**未标记、非结构化数据**中的潜在结构，而现实世界中的数据绝大多数都属于这一类型。非结构化数据的另一名称是*原始媒体*，即图片、文本、音视频文件等。因此，深度神经网络最擅长解决的一类问题就是对现实中各类未标记的原始媒体进行处理和聚类，在未经人工整理成关系数据库的数据中，甚至是尚未命名的数据中识别出相似点和异常情况。 
 
@@ -139,11 +139,11 @@ layout: zh-default
 
 微积分的链式法则公式如下： 
 
-![Alt text](../img/chain_rule.png)
+![Alt text](./img/chain_rule.png)
 
 在前馈网络中，网络误差与单一权重的关系可以用以下方法表示：
 
-![Alt text](../img/backprop_chain_rule.png)
+![Alt text](./img/backprop_chain_rule.png)
 
 亦即，*误差*和*权重*这两个给定的变量之间存在第三个变量*激活值*作为中介，权重通过中介变量传递。如要计算*权重*变化对于*误差*变化的影响，可以先计算*激活值*变化对于*误差*变化的影响，以及*权重*变化如何影响*激活值*的变化。  
 
@@ -163,7 +163,7 @@ layout: zh-default
 
 用于将连续信号转换为二进制输出的机制称为逻辑回归。逻辑回归名不副实，因为它的用途是分类，而非大多数人所熟悉的线性回归分析。逻辑回归用于计算一组输入与标签相匹配的概率。  
 
-![Alt text](../img/logistic_regression.png)
+![Alt text](./img/logistic_regression.png)
 
 我们看一看这个简单的公式。 
 
@@ -185,14 +185,14 @@ layout: zh-default
 
 以下教程和视频对前馈网络的基本概念进行了简明易懂的介绍，供刚开始了解深度学习的读者参考：
 
-* [受限玻尔兹曼机](../zh-restrictedboltzmannmachine)
-* [本征向量、PCA、协方差和熵](../zh-eigenvector)
-* [深度学习和神经网络词汇表](../glossary.html)
-* [卷积网络教程](../zh-convolutionalnets)
-* [递归网络和LSTM](../zh-lstm)
-* [Word2vec和自然语言处理](../zh-word2vec)
-* [鸢尾花数据集教程](../iris-flower-dataset-tutorial.html)
-* [Deeplearning4j快速入门](../zh-quickstart)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、PCA、协方差和熵](./zh-eigenvector)
+* [深度学习和神经网络词汇表](./glossary.html)
+* [卷积网络教程](./zh-convolutionalnets)
+* [递归网络和LSTM](./zh-lstm)
+* [Word2vec和自然语言处理](./zh-word2vec)
+* [鸢尾花数据集教程](./iris-flower-dataset-tutorial.html)
+* [Deeplearning4j快速入门](./zh-quickstart)
 * [神经网络解密](https://www.youtube.com/watch?v=bxe2T-V8XRs)（全系列共七个视频）
 * [11行Python代码实现的神经网络](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [反向传播分步示例](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
