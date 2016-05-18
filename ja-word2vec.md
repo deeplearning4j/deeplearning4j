@@ -135,8 +135,8 @@ Mavenを使ってIntelliJに新規プロジェクトを作成します。その�
 
 ``` java
                 <properties>
-                  <nd4j.version>0.4-rc3.8</nd4j.version> //最新バージョンは、Maven Centralで調べましょう!
-                  <dl4j.version>0.4-rc3.8</dl4j.version>
+                  <nd4j.version>0.4-rc3.9</nd4j.version> //最新バージョンは、Maven Centralで調べましょう!
+                  <dl4j.version>0.4-rc3.9</dl4j.version>
                 </properties>
                 
                 <dependencies>
@@ -152,7 +152,7 @@ Mavenを使ってIntelliJに新規プロジェクトを作成します。その�
                    </dependency>
                    <dependency>
                      <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-x86</artifactId> 
+                     <artifactId>nd4j-native</artifactId> 
                      <version>${nd4j.version}</version>
                    </dependency>
                 </dependencies>
