@@ -37,6 +37,8 @@ public class ContextPack {
     }
 
     public int nextRandomLane() {
+        if (availableLanes == 1)
+            return 0;
         return RandomUtils.nextInt(0, availableLanes);
     }
 }

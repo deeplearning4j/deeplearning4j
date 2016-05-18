@@ -98,7 +98,7 @@ public class AsynchronousFlowController implements FlowController{
                         context.getSpecialStream().address()) == 0)
                     throw new IllegalStateException("MemcpyAsync failed");
 
-                context.syncSpecialStream();
+                commitTransfer(context.getSpecialStream());
             }// else log.info("Not [DEVICE] memory, skipping...");
 
             // updating host read timer

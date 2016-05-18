@@ -58,10 +58,10 @@ public class SynchronousFlowController implements FlowController {
                         context.getOldStream()
                 );
                 */
-                if (nativeOps.memcpyAsync(point.getHostPointer().address(), point.getDevicePointer().address(), AllocationUtils.getRequiredMemory(point.getShape()), CudaConstants.cudaMemcpyDeviceToHost, context.getOldStream().address()) == 0)
+                if (nativeOps.memcpyAsync(point.getHostPointer().address(), point.getDevicePointer().address(), AllocationUtils.getRequiredMemory(point.getShape()), CudaConstants.cudaMemcpyDeviceToHost, context.getSpecialStream().address()) == 0)
                     throw new IllegalStateException("MemcpyAsync failed");
 
-                context.syncOldStream();
+                commitTransfer(context.getSpecialStream());
             }// else log.info("Not [DEVICE] memory, skipping...");
 
 
