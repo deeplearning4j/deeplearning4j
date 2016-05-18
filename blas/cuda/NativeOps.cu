@@ -27,7 +27,7 @@
 
 
 cudaDeviceProp *deviceProperties;
-cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[56];
+cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
 int maxThreads = 512;
 bool debug = false;
@@ -3722,6 +3722,17 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
 
 
+	cudaFuncGetAttributes(&funcAttributes[38], concatKernelScalarFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[39], concatKernelScalarDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[40], concatKernelVStackFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[41], concatKernelVStackDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
 }
 
 
@@ -4023,7 +4034,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 
 	// numArrays will be used as number of TADs, so each block process 1 input
 
-	int smem = funcAttributes[31].sharedSizeBytes;
+	int smem = 0;
 	bool isVstack = false;
 	bool isScalar = true;
 	bool isHstack = false;
@@ -4056,18 +4067,28 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	}
 
 	if (isScalar) {
-		printf("Going scalar concat\n");
-		concatKernelScalarFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+		if (debug && verbose)
+			printf("Going scalar concat\n");
+
+		smem = funcAttributes[38].sharedSizeBytes;
+		concatKernelScalarFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} if (isVstack) {
-		printf("Going VStack concat\n");
+		if (debug && verbose)
+			printf("Going VStack concat\n");
 
-		concatKernelVStackFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+		smem = funcAttributes[40].sharedSizeBytes;
+		concatKernelVStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else if (isHstack) {
-		printf("Going HStack concat\n");
+		if (debug && verbose)
+			printf("Going HStack concat\n");
+		smem = funcAttributes[42].sharedSizeBytes;
 
-		concatKernelHStackFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+		concatKernelHStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else {
-		smem += sizeof(shape::TAD) * 2 + sizeof(UnifiedSharedMemory) * 2;
+		if (debug && verbose)
+			printf("Going generic concat\n");
+
+		smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
 
 		concatKernelFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	}
@@ -4101,10 +4122,70 @@ void NativeOps::concatDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	int smem = funcAttributes[35].sharedSizeBytes + 1536;
+	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
 
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelDouble<<<128, 128, smem, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+
+	int smem = 0;
+	bool isVstack = false;
+	bool isScalar = true;
+	bool isHstack = false;
+
+	for (int i = 0; i < numArrays; i++) {
+		if (!shape::isScalar(hostShapePointers[i])) {
+			isScalar = false;
+			break;
+		}
+	}
+
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2) {
+		isVstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+				isVstack = false;
+				break;
+			}
+		}
+	}
+
+	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+		isHstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+				isHstack = false;
+				break;
+			}
+		}
+	}
+
+	if (isScalar) {
+		if (debug && verbose)
+			printf("Going scalar concat\n");
+
+		smem = funcAttributes[39].sharedSizeBytes;
+		concatKernelScalarDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} if (isVstack) {
+		if (debug && verbose)
+			printf("Going VStack concat\n");
+
+		smem = funcAttributes[41].sharedSizeBytes;
+		concatKernelVStackDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isHstack) {
+		if (debug && verbose)
+			printf("Going HStack concat\n");
+		smem = funcAttributes[43].sharedSizeBytes;
+
+		concatKernelHStackDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else {
+		if (debug && verbose)
+			printf("Going generic concat\n");
+
+		smem = nd4j::math::nd4j_max<int>(funcAttributes[35].sharedSizeBytes + 768, 1280);
+
+		concatKernelDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	}
+	if (debug && verbose)
+		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
