@@ -46,7 +46,7 @@ The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/master/can
 
 Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
 
-![Alt text](../img/recordreader_extensions.png)
+![Alt text](./img/recordreader_extensions.png)
 
 The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
 
@@ -59,7 +59,7 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 ## Configuring the Model
 
-Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
+Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](./iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 

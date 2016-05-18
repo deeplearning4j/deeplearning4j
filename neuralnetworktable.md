@@ -7,7 +7,7 @@ layout: default
 
 The following table attempts to show the neural nets most useful for different problems. 
 
-![Alt text](../img/neural_net_table.png) 
+![Alt text](./img/neural_net_table.png) 
 
 Start with [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for additional information on common structures and some code snipets:
 

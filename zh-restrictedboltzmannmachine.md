@@ -18,17 +18,17 @@ layout: zh-default
 
 ## <a name="define">定义与结构</a>
 
-受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](../linear-regression.html)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](../zh-neuralnet-overview)的应用方法，请参阅[应用案例](../use_cases.html))。
+受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](./linear-regression.html)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](./zh-neuralnet-overview)的应用方法，请参阅[应用案例](./use_cases.html))。
 
 我们首先介绍受限玻尔兹曼机这类神经网络，因为它相对简单且具有重要的历史意义。下文将以示意图和通俗的语言解释其运作原理。 
 
 RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基础部件。RBM的第一个层称为可见层，又称输入层，而第二个层是隐藏层。 
 
-![Alt text](../img/two_layer_RBM.png)
+![Alt text](./img/two_layer_RBM.png)
 
 上图中每个圆圈都是一个与神经元相似的单元，称为*节点*，运算在节点中进行。一个层中的节点与另一层中的所有节点分别连接，但与同一层中的其他节点并不相连。
 
-也就是说，层的内部不存在通信－这就是受限玻尔兹曼机被称为*受限*的原因。每个节点对输入进行处理和运算，判定是否继续传输输入的数据，而这种判定一开始是[随机](../glossary.html#stochasticgradientdescent)的。(“随机”（stochastic）一词在此处指与输入相乘的初始系数是随机生成的。)
+也就是说，层的内部不存在通信－这就是受限玻尔兹曼机被称为*受限*的原因。每个节点对输入进行处理和运算，判定是否继续传输输入的数据，而这种判定一开始是[随机](./glossary.html#stochasticgradientdescent)的。(“随机”（stochastic）一词在此处指与输入相乘的初始系数是随机生成的。)
 
 每个可见节点负责处理网络需要学习的数据集中一个项目的一种低层次特征。举例来说，如果处理的是一个灰度图像的数据集，则每个可见节点将接收一张图像中每个像素的像素值。（MNIST图像有784个像素，所以处理这类图像的神经网络的一个可见层必须有784个输入节点。）
 
@@ -36,11 +36,11 @@ RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基
 
 		激活函数f((权重w * 输入x) + 偏差b ) = 输出a
 
-![Alt text](../img/input_path_RBM.png)
+![Alt text](./img/input_path_RBM.png)
 
 下面来看一个隐藏节点如何整合多项输入。每个x分别与各自的权重相乘，乘积之和再与偏差相加，其结果同样经过激活函数运算得到节点的输出值。 
 
-![Alt text](../img/weighted_input_RBM.png)
+![Alt text](./img/weighted_input_RBM.png)
 
 由于每个可见节点的输入都被传递至所有的隐藏节点，所以也可将RBM定义为一种*对称二分图*。
 
@@ -50,11 +50,11 @@ RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基
 
 每个隐藏节点会接收四个与对应权重相乘后的输入值。这些乘积之和与一个偏差值相加（至少能强制让一部分节点激活），其结果再经过激活运算得到每个隐藏节点的输出a。 
 
-![Alt text](../img/multiple_inputs_RBM.png)
+![Alt text](./img/multiple_inputs_RBM.png)
 
 如果这两个层属于一个深度神经网络，那么第一隐藏层的输出会成为第二隐藏层的输入，随后再通过任意数量的隐藏层，直至到达最终的分类层。（简单的前馈动作仅能让RBM节点实现*自动编码器*的功能。）
 
-![Alt text](../img/multiple_hidden_layers_RBM.png)
+![Alt text](./img/multiple_hidden_layers_RBM.png)
 
 ## <a name="reconstructions">重构</a>
 
@@ -62,11 +62,11 @@ RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基
 
 在重构阶段，第一隐藏层的激活值成为反向传递中的输入。这些输入值与同样的权重相乘，每两个相连的节点之间各有一个权重，就像正向传递中输入x的加权运算一样。这些乘积的和再与每个可见层的偏差相加，所得结果就是重构值，亦即原始输入的近似值。这一过程可以用下图来表示：
 
-![Alt text](../img/reconstruction_RBM.png)
+![Alt text](./img/reconstruction_RBM.png)
 
 由于RBM权重初始值是随机决定的，重构值与原始输入之间的差别通常很大。可以将`r`值与输入值之差视为重构误差，此误差值随后经由反向传播来修正RBM的权重，如此不断反复，直至误差达到最小。 
 
-有关反向传播算法的详细介绍请参见[此页](../neuralnet-overview.html#forward)。 
+有关反向传播算法的详细介绍请参见[此页](./neuralnet-overview.html#forward)。 
 
 由此可见，RBM在正向传递中使用输入值来预测节点的激活值，亦即[输入为加权的x时输出的概率](https://en.wikipedia.org/wiki/Bayes%27_theorem)：`p(a|x; w)`。 
 
@@ -84,11 +84,11 @@ RBM用[Kullback Leibler散度](https://www.quora.com/What-is-a-good-laymans-expl
 
 KL散度衡量两条曲线下方不重叠（即离散）的面积，而RBM的优化算法会尝试将这些离散部分的面积最小化，使共用权重在与第一隐藏层的激活值相乘后，可以得到与原始输入高度近似的结果。下图左半边是一组原始输入的概率分布曲线*p*，与之并列的是重构值的概率分布曲线*q*；右半边的图则显示了两条曲线之间的差异。 
 
-![Alt text](../img/KL_divergence_RBM.png)
+![Alt text](./img/KL_divergence_RBM.png)
 
 RBM根据权重产生的误差反复调整权重，以此学习估计原始数据的近似值。可以说权重会慢慢开始反映出输入的结构，而这种结构被编码为第一个隐藏层的激活值。整个学习过程看上去像是两条概率分布曲线在逐步重合。
 
-![Alt text](../img/KLD_update_RBM.png)
+![Alt text](./img/KLD_update_RBM.png)
 
 ### <a name="probability">概率分布</a> 
 
@@ -102,11 +102,11 @@ RBM根据权重产生的误差反复调整权重，以此学习估计原始数�
 
 与此类似，图像数据集的像素值也有独特的概率分布，具体取决于数据集所包含图像的类别。数据集可能包括MNIST的手写数字图像：
 
-![Alt text](../img/mnist_render.png)
+![Alt text](./img/mnist_render.png)
 
 或是户外脸部检测数据集（Labeled Faces in the Wild）中的头像：
 
-![Alt text](../img/LFW_reconstruction.jpg)
+![Alt text](./img/LFW_reconstruction.jpg)
 
 试想有这样一个RBM，其输入数据都是大象和狗的图片，RBM仅有两个输出节点，分别对应一种动物。RBM在正向传递中要回答的问题是：在输入这些像素时，权重应当向哪个节点发送更强的信号？大象的节点还是狗的节点？而RBM在反向传递中要回答的问题是：如果输出是大象，则应当预期出现怎样的像素分布？ 
 
@@ -132,7 +132,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
 
 下面这幅对称二分二向图综合显示了玻尔兹曼机的运作方式。
 
-![Alt text](../img/sym_bipartite_graph_RBM.png)
+![Alt text](./img/sym_bipartite_graph_RBM.png)
 
 深度RBM是一种[有向无环图（DAG）](https://en.wikipedia.org/wiki/Directed_acyclic_graph)，如有兴趣可点击链接了解其结构。
 
@@ -203,11 +203,11 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
      // A single layer learns features unsupervised.	
     }
 
-以上是[用RBM处理鸢尾花数据集](../iris-flower-dataset-tutorial.html)的示例，可点击链接查看这个示例的专门教程。 
+以上是[用RBM处理鸢尾花数据集](./iris-flower-dataset-tutorial.html)的示例，可点击链接查看这个示例的专门教程。 
 
 ## <a name="params">参数与变量k</a>
 
-变量k是[对比散度](../glossary.html#contrastivedivergence)算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。 
+变量k是[对比散度](./glossary.html#contrastivedivergence)算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。 
 
 对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。典型的值为1。 
 
@@ -237,17 +237,17 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
 
 不同层可能采用不同的附加变换算法及组合方式。 
 
-有效的连续受限玻尔兹曼机对可见（输入）层采用高斯变换，而对隐藏层使用线性修正单元变换。这在[人脸重构](../facial-reconstruction-tutorial.html)方面特别有效。对于处理二进制数据的RBM，两种层都使用二进制变换即可。 
+有效的连续受限玻尔兹曼机对可见（输入）层采用高斯变换，而对隐藏层使用线性修正单元变换。这在[人脸重构](./facial-reconstruction-tutorial.html)方面特别有效。对于处理二进制数据的RBM，两种层都使用二进制变换即可。 
 
-RBM隐藏层使用高斯变换的效果并不理想。而线性修正单元变换则能够表示的特征多于二进制变换，我们将其用于[深度置信网络](../deepbeliefnetwork.html)。
+RBM隐藏层使用高斯变换的效果并不理想。而线性修正单元变换则能够表示的特征多于二进制变换，我们将其用于[深度置信网络](./deepbeliefnetwork.html)。
 
 ### <a name="next">总结与后续内容</a>
 
-你可以将RBM的输出数值视为百分数。重构的数值只要*不为零*就都是良好的现象，表明RBM在学习这一输入。如需从另一角度了解受限玻尔兹曼机的运作机制，请点击[此处](../understandingRBMs.html)。 
+你可以将RBM的输出数值视为百分数。重构的数值只要*不为零*就都是良好的现象，表明RBM在学习这一输入。如需从另一角度了解受限玻尔兹曼机的运作机制，请点击[此处](./understandingRBMs.html)。 
 
 应当注意的是，RBM并不是效果最稳定、最一致的浅层前馈网络。许多情况下，多层的[自动编码器](http://deeplearning4j.org/glossary.html#autoencoder)效果更好。整个行业也确实越来越倾向于使用变分自动编码器等工具。 
 
-下面我们将演示如何实施[深度置信网络](../deepbeliefnetwork.html)，其实质就是将许多受限玻尔兹曼机堆叠起来。
+下面我们将演示如何实施[深度置信网络](./deepbeliefnetwork.html)，其实质就是将许多受限玻尔兹曼机堆叠起来。
 
 ### <a name="resources">其他资源</a>
 
@@ -257,8 +257,8 @@ RBM隐藏层使用高斯变换的效果并不理想。而线性修正单元变�
 
 ### 其他基础教程
 
-* [递归网络/LSTM](../zh-lstm.html)
-* [深度神经网络简介](../zh-neuralnet-overview.html)
-* [本征向量、PCA和熵](../zh-eigenvector.html)
-* [神经网络与回归分析](../linear-regression.html)
-* [卷积网络教程](../zh-convolutionalnets.html)
+* [递归网络/LSTM](./zh-lstm.html)
+* [深度神经网络简介](./zh-neuralnet-overview.html)
+* [本征向量、PCA和熵](./zh-eigenvector.html)
+* [神经网络与回归分析](./linear-regression.html)
+* [卷积网络教程](./zh-convolutionalnets.html)

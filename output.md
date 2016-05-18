@@ -15,7 +15,7 @@ Another example would be multilayer networks. Multilayer networks are discrimina
 
 In machine learning, one metric used to determine how well a classifier performs is called the f1 score. The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy.
 
-DL4J has a class called [Evaluation](../doc/org/deeplearning4j/eval/Evaluation.html) that will output f1 scores for you.
+DL4J has a class called [Evaluation](./doc/org/deeplearning4j/eval/Evaluation.html) that will output f1 scores for you.
 
 Imagine each label is a binary matrix of 1 row and, say, 10 columns, with each column representing a number from one to 10. (The number of columns will actually vary with the number of possible outcomes, or labels.) There can only be a single 1 in this matrix, and it is located in the column representing the number labeled. That is, [0 1 0 0 0 0 0 0 0 0] means two, and so forth. 
 Each label is then assigned a likelihood of how accurately it describes the input, according to the features recognized by your network. Those probabilities are the network's guesses. At the end of your test, you compare the highest-probability label with the actual number of the input. The aggregate of these comparisons is your accuracy rate, or f score. 

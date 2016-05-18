@@ -26,7 +26,7 @@ Consider for the moment a standard feed-forward network (a multi-layer perceptro
 
 Conversely, data for RNNs are time series. Thus, they have 3 dimensions: one additional dimension for time. Input data thus has shape [numExamples,inputSize,timeSeriesLength], and output data has shape [numExamples,outputSize,timeSeriesLength]. This means that the data in our INDArray is laid out such that the value at position (i,j,k) is the jth value at the kth time step of the ith example in the minibatch. This data layout is shown below.
 
-![Data: Feed Forward vs. RNN](../img/rnn_data.png)
+![Data: Feed Forward vs. RNN](./img/rnn_data.png)
 
 #### RnnOutputLayer
 
@@ -48,13 +48,13 @@ Truncated backpropagation through time (BPTT) was developed in order to reduce t
 
 Consider what happens when training a recurrent neural network with a time series of length 12 time steps. Here, we need to do a forward pass of 12 steps, calculate the error (based on predicted vs. actual), and do a backward pass of 12 time steps:
 
-![Standard Backprop Training](../img/rnn_tbptt_1.png)
+![Standard Backprop Training](./img/rnn_tbptt_1.png)
 
 For 12 time steps, in the image above, this is not a problem. Consider, however, that instead the input time series was 10,000 or more time steps. In this case, standard backpropagation through time would require 10,000 time steps for each of the forward and backward passes for each and every parameter update. This is of course very computationally demanding.
 
 In practice, truncated BPTT splits the forward and backward passes into a set of smaller forward/backward pass operations. The specific length of these forward/backward pass segments is a parameter set by the user. For example, if we use truncated BPTT of length 4 time steps, learning looks like the following:
 
-![Truncated BPTT](../img/rnn_tbptt_2.png)
+![Truncated BPTT](./img/rnn_tbptt_2.png)
 
 Note that the overall complexity for truncated BPTT and standard BPTT are approximately the same - both do the same number of time step during forward/backward pass. Using this method however, we get 3 parameter updates instead of one for approximately the same amount of effort. However, the cost is not exactly the same there is a small amount of overhead per parameter update.
 
@@ -80,7 +80,7 @@ DL4J supports a number of related training features for RNNs, based on the idea 
 
 Suppose we want to train a recurrent neural network with inputs or outputs that don't occur at every time step. Examples of this (for a single example) are shown in the image below. DL4J supports training networks for all of these situations:
 
-![RNN Training Types](../img/rnn_masking_1.png)
+![RNN Training Types](./img/rnn_masking_1.png)
 
 Without masking and padding, we are restricted to the many-to-many case (above, left): that is, (a) All examples are of the same length, and (b) Examples have both inputs and outputs at all time steps.
 
@@ -92,7 +92,7 @@ Recall that with RNNs, our minibatch data has 3 dimensions, with shape [miniBatc
 
 For a single example, the input and output masking arrays are shown below:
 
-![RNN Training Types](../img/rnn_masking_2.png)
+![RNN Training Types](./img/rnn_masking_2.png)
 
 For the “Masking not required” cases, we could equivalently use a masking array of all 1s, which will give the same result as not having a mask array at all. Also note that it is possible to use zero, one or two masking arrays when learning RNNs - for example, the many-to-one case could have a masking array for the output only.
 
@@ -142,11 +142,11 @@ If we were to use the output method, at each hour we would need to feed in the f
 
 Alternatively, we could use the rnnTimeStep method. Of course, if we want to use the full 100 hours of history before we make our first prediction, we still need to do the full forward pass:
 
-![RNN Time Step](../img/rnn_timestep_1.png)
+![RNN Time Step](./img/rnn_timestep_1.png)
 
 For the first time we call rnnTimeStep, the only practical difference between the two approaches is that the activations/state of the last time step are stored - this is shown in orange. However, the next time we use the rnnTimeStep method, this stored state will be used to make the next predictions:
 
-![RNN Time Step](../img/rnn_timestep_2.png)
+![RNN Time Step](./img/rnn_timestep_2.png)
 
 There are a number of important differences here:
 
@@ -274,13 +274,13 @@ In fact, the same approach as in example 3 can do this:
 
 Alignment modes are relatively straightforward. They specify whether to pad the start or the end of the shorter time series. The diagram below shows how this works, along with the masking arrays (as discussed earlier in this document):
 
-![Sequence Alignment](../img/rnn_seq_alignment.png)
+![Sequence Alignment](./img/rnn_seq_alignment.png)
 
 The one-to-many case (similar to the last case above, but with only one input) is done by using AlignmentMode.ALIGN_START.
 
 Note that in the case of training data that contains time series of different lengths, the labels and inputs will be aligned for each example individually, and then the shorter time series will be padded as required:
 
-![Sequence Alignment](../img/rnn_seq_alignment_2.png)
+![Sequence Alignment](./img/rnn_seq_alignment_2.png)
 
 #### Alternative: Implementing a custom DataSetIterator
 In some cases, you will have to do something that doesn't fit into a typical data import scenario. One option for this scenario is to implement a custom [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java). DataSetIterator is merely an interface for iterating over DataSet objects - objects that encapsulate the input and target INDArrays, plus (optionally) the input and labels mask arrays.

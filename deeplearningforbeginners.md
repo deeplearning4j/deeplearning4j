@@ -59,23 +59,23 @@ Once you have programming basics down, tackle Java, the world's most widely used
 
 With that under your belt, we recommend you approach Deeplearning4j through its [examples](https://github.com/deeplearning4j/dl4j-0.4-examples). 
 
-* [Quickstart](../quickstart.html)
+* [Quickstart](./quickstart.html)
 
 Once you get those up and running, and you've understood the API, you're ready for a full install.
 
-* [Getting Started](../gettingstarted.html)
+* [Getting Started](./gettingstarted.html)
 
 ## Other Resources
 
 Most of what we know about deep learning is contained in academic papers.
 
-We've linked to a number of them [here](../deeplearningpapers.html). 
+We've linked to a number of them [here](./deeplearningpapers.html). 
 
 While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
 
 ## DL4J Beginner's Guides
 
-* [Regression & Neural Networks](../linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](../word2vec.html)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](../restrictedboltzmannmachine.html)
-* [Recurrent Networks and Long Short-Term Memory Units](../lstm.html)
+* [Regression & Neural Networks](./linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)

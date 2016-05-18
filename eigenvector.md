@@ -33,25 +33,25 @@ It [maps](https://en.wikipedia.org/wiki/Linear_map) one vector *v* to another, *
 
 We’ll illustrate with a concrete example. (You can see how this type of matrix multiply, called a dot product, is performed [here](http://math.stackexchange.com/a/24469).)
 
-![Alt text](../img/eigen_matrix.png)
+![Alt text](./img/eigen_matrix.png)
 
 So *A* turned *v* into *b*. In the graph below, we see how the matrix mapped the short, low line *v*, to the long, high one, *b*. 
 
-![Alt text](../img/two_vectors.png)
+![Alt text](./img/two_vectors.png)
 
 You could feed one positive vector after another into matrix A, and each would be projected onto a new space that stretches higher and farther to the right. 
 
 Imagine that all the input vectors *v* live in a normal grid, like this:
 
-![Alt text](../img/space_1.png)
+![Alt text](./img/space_1.png)
 
 And the matrix projects them all into a new space like the one below, which holds the output vectors *b*:
 
-![Alt text](../img/space_2.png)
+![Alt text](./img/space_2.png)
 
 Here you can see the two spaces juxtaposed:
 
-![Alt text](../img/two_spaces.png)
+![Alt text](./img/two_spaces.png)
 
 (*Credit: William Gould, Stata Blog*)
 
@@ -63,14 +63,14 @@ The blue lines are eigenvectors.
 
 You can imagine a matrix like a gust of wind, an invisible force that produces a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
-![Alt text](../img/mona_lisa_eigenvector.png)
+![Alt text](./img/mona_lisa_eigenvector.png)
 (*Credit: Wikipedia*)
 
 So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is like a weathervane. An eigenvane, as it were. 
 
 The definition of an eigenvector, therefore, is a vector that responds to a matrix as though that matrix were a scalar coefficient. In this equation, A is the matrix, x the vector, and lambda the scalar coefficient, a number like 5 or 37 or pi.
 
-![Alt text](../img/lambda_eigen.png)
+![Alt text](./img/lambda_eigen.png)
 
 You might also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix, the very "line" in linear transformation.
 
@@ -98,11 +98,11 @@ To get to PCA, we’re going to quickly define some basic statistical ideas -- *
 
 *Mean* is simply the average value of all *x*'s in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
 
-![Alt text](../img/mean.png)
+![Alt text](./img/mean.png)
 
 *Standard deviation*, as fun as that sounds, is simply the square root of the average square distance of data points to the mean. In the equation below, the numerator contains the sum of the differences between each datapoint and the mean, and the denominator is simply the number of data points (minus one), producing the average distance. 
 
-![Alt text](../img/standard_deviation.png)
+![Alt text](./img/standard_deviation.png)
 
 Variance is the measure of the data's spread. If I take a team of [Dutch basketball players](http://www.theguardian.com/world/2015/apr/08/scientists-try-to-answer-why-dutch-people-are-so-tall) and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
 
@@ -110,13 +110,13 @@ But if I throw the Dutch basketball team into a classroom of psychotic kindergar
 
 Variance is simply standard deviation squared, and is often expressed as *s^2*.
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 For both variance and standard deviation, squaring the differences between data points and the mean makes them positive, so that values above and below the mean don't cancel each other out. 
 
 Let's assume you plotted the age (x axis) and height (y axis) of those individuals (setting the mean to zero) and came up with an oblong scatterplot: 
 
-![Alt text](../img/scatterplot.png)
+![Alt text](./img/scatterplot.png)
 
 PCA attempts to draw straight, explanatory lines through data, like linear regression. 
 
@@ -124,7 +124,7 @@ Each straight line represents a "principal component," or a relationship between
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. (This happens to coincide with the least error, as expressed by the red lines...) In the graph below, it slices down the length of the "baguette."
 
-![Alt text](../img/scatterplot_line.png)
+![Alt text](./img/scatterplot_line.png)
 
 The second principal component cuts through the data perpendicular to the first, fitting the errors produced by the first. There are only two principal components in the graph above, but if it were three-dimensional, the third component would fit the errors from the first and second principal components, and so forth. 
 
@@ -144,13 +144,13 @@ When a matrix performs a linear transformation, eigenvectors trace the lines of 
 
 For a 2 x 2 matrix, a covariance matrix might look like this:
 
-![Alt text](../img/covariance_matrix.png)
+![Alt text](./img/covariance_matrix.png)
 
 The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and to the right. 
 
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
-![Alt text](../img/covariances.png)
+![Alt text](./img/covariances.png)
 
 (*Credit: Vincent Spruyt*)
 
@@ -158,11 +158,11 @@ Notice that when one variable or the other doesn't move at all, and the graph sh
 
 Also, in the equation below, you'll notice that there is only a small difference between covariance and variance.
 
-![Alt text](../img/covariance.png)
+![Alt text](./img/covariance.png)
 
 vs.
 
-![Alt text](../img/variance.png)
+![Alt text](./img/variance.png)
 
 The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know how two variables move together by the positive, negative or non-existent character of their covariance. (*Correlation* is a kind of normalized covariance, with a value between -1 and 1.)
 
@@ -178,7 +178,7 @@ Because the eigenvectors of the covariance matrix are orthogonal to each other, 
 
 The x and y axes we've shown above are what's called the basis of a matrix; that is, they provide the points of the matrix with x, y coordinates. But it is possible to recast a matrix along other axes; for example, the eigenvectors of a matrix can serve as the foundation of a new set of coordinates for the same matrix. Matrices and vectors are animals in themselves, independent of the numbers linked to a specific coordinate system like x and y. 
 
-![Alt text](../img/basis_change.png)
+![Alt text](./img/basis_change.png)
 
 In the graph above, we show how the same vector v can be situated differently in two coordinate systems, the x-y axes in black, and the two other axes shown by the red dashes. In the first coordinate system, v = (1,1), and in the second, v = (1,0), but v itself has not changed. Vectors and matrices can therefore be abstracted from the numbers that appear inside the brackets. 
 
@@ -198,7 +198,7 @@ Now let's imagine the die is loaded, it comes up "three" on five out of six roll
 
 Understanding the die is loaded is analogous to finding a principal component in a dataset. You simply identify an underlying pattern.
 
-That transfer of information, from *what we don't know* about the system to *what we know*, represents a change in entropy. Insight decreases the entropy of the system. Get information, reduce entropy. This is information gain. And yes, this type of entropy is subjective, in that it depends on what we know about the system at hand. (Fwiw, [information gain](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees) is synonymous with Kullback-Leibler divergence, which we explored briefly in this tutorial on [restricted Boltzmann machines](../restrictedboltzmannmachine.html).) 
+That transfer of information, from *what we don't know* about the system to *what we know*, represents a change in entropy. Insight decreases the entropy of the system. Get information, reduce entropy. This is information gain. And yes, this type of entropy is subjective, in that it depends on what we know about the system at hand. (Fwiw, [information gain](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees) is synonymous with Kullback-Leibler divergence, which we explored briefly in this tutorial on [restricted Boltzmann machines](./restrictedboltzmannmachine.html).) 
 
 So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. 
 
@@ -222,9 +222,9 @@ You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob
 
 ## <a name="resources">Other Beginner's Guides</a>
 
-* [Regression & Neural Networks](../linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](../word2vec.html)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](../restrictedboltzmannmachine.html)
-* [Recurrent Networks and Long Short-Term Memory Units](../lstm.html)
+* [Regression & Neural Networks](./linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
 
 <a name="ref">1)</a> *In some cases, matrices may not have a full set of eigenvectors; they can have at most as many linearly independent eigenvectors as their respective order, or number of dimensions.*

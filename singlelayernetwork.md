@@ -7,7 +7,7 @@ layout: default
 
 A single-layer neural network in deep learning is a net composed of an input layer, which is  visible layer, and a hidden output layer. 
 
-The single-layer network's goal, or [objective function](../glossary.html#objectivefunction), is to learn features by minimizing [reconstruction entropy](../glossary.html#reconstructionentropy).
+The single-layer network's goal, or [objective function](./glossary.html#objectivefunction), is to learn features by minimizing [reconstruction entropy](./glossary.html#reconstructionentropy).
 
 This allows it to autolearn features of the input, which leads to finding good correlations and higher accuracy in identifying discriminatory features. From there, a multilayer network leverages this to accurately classify the data. This is the pretraining step.
 
@@ -35,6 +35,6 @@ L2 is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki
 
 Here are the different kinds of single-layer networks:
 
-* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-* [Continuous Restricted Boltzmann Machine](../continuousrestrictedboltzmannmachine.html)
-* [Denoising AutoEncoder](../denoisingautoencoder.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Continuous Restricted Boltzmann Machine](./continuousrestrictedboltzmannmachine.html)
+* [Denoising AutoEncoder](./denoisingautoencoder.html)

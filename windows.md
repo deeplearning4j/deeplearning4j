@@ -5,7 +5,7 @@ title: Getting Started on Windows
 
 # Getting Started on Windows
 
-* To run examples, go to our [quickstart](../quickstart.html). 
+* To run examples, go to our [quickstart](./quickstart.html). 
 
 * While our Windows install is not always easy, Deeplearning4j is one of the few open-source deep learning projects that actually cares about trying to support the Windows community. Please see the [Windows section of our ND4J page](http://nd4j.org/getstarted.html#windows) for more instructions. 
 
@@ -43,4 +43,4 @@ If OpenBlas is not working correctly, follow these steps:
 * `sudo make PREFIX=/usr/local/ install`
 * As a last step, restart your IDE. 
 
-* For a complete review of requirements, see our [getting started page](../gettingstarted.html).
+* For a complete review of requirements, see our [getting started page](./gettingstarted.html).

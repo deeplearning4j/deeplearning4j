@@ -5,9 +5,9 @@ layout: default
 
 # Understanding RBMs
 
-[Restricted Boltzmann machines](../restrictedboltzmannmachine.html) are at the heart of many deep-learning nets as well as neural nets' renaissance, so their mechanism deserves a bit more attention. 
+[Restricted Boltzmann machines](./restrictedboltzmannmachine.html) are at the heart of many deep-learning nets as well as neural nets' renaissance, so their mechanism deserves a bit more attention. 
 
-To walk through the process of how an RBM works, we’ll use the example of [MNIST](../rbm-mnist-tutorial.html), a collection of images representing the handwritten numerals zero through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
+To walk through the process of how an RBM works, we’ll use the example of [MNIST](./rbm-mnist-tutorial.html), a collection of images representing the handwritten numerals zero through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
 
 Each RBM has just two "node" layers, a visible layer and a hidden one. The first, visible, layer receives input; that is, the data you feed into the net to be learned. You can think of the RBM's input nodes as receptacles into which random samples of data are placed. They’re boxes, each holding a data point, which in the initial layer would be a sampling of pixels. 
 
@@ -29,7 +29,7 @@ By analogy, 2s, 3s, 5s, 6s, 8s and 9s all have curves, but an unknown numeral-im
 
 In fact, the process is slightly more complex, because RBMs can be stacked to gradually aggregate groups of features, layer upon layer. These stacks are called deep-belief nets, and deep-belief nets are valuable because each RBM within them deals with more and more complex ensembles of features until they group enough together to recognize the whole: pixel (input), line, chin, jaw, lower face, visage, name of person (label). 
 
-![Alt text](../img/feature_hierarchy.png)
+![Alt text](./img/feature_hierarchy.png)
 
 But let's stick with the city and take just two features together. If an urban data sample shows an intersection of Market and an avenue named Van Ness, then the likelihood that it is San Francisco is high. Likewise, if data samples from the numeral-image show a vertical bar meeting a partial circle that opens to the left, then we very likely have a 5 and nothing else. 
 
@@ -37,7 +37,7 @@ Now let’s imagine both the numeral-images and invisible cities as maps whose p
 
 Likewise, if you start from Market in San Francisco, even if you don’t know you are in San Francisco, you have a high probability of hitting Van Ness at some point, given that the two streets bisect the city and cross each other at the center.
 
-![Alt text](../img/oldSF.png)
+![Alt text](./img/oldSF.png)
 
 The simple feature of hitting Market Street (which is on an early hidden layer of the deep-belief net) leads to another feature, both more complex and more rare, of hitting both Market and Van Ness, which would be represented on a later node layer aggregating the two features. 
 
@@ -67,4 +67,4 @@ Markov Chains are sequential. Their purpose is to give you a good idea, given on
 
 Remember that RBMs are being tested for accuracy against a benchmark dataset, and they record the features that lead them to the correct conclusion. Their job is to learn and adjust the probabilities between the feature-nodes in such a way that if the RBM receives a certain feature, which is a strong indicator of a 5, then the probabilities between nodes lead it to conclude it's in the presence of a 5. They register which features, feature groups and numeral-images tend to light up together. 
 
-Now, if you're ready, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html).
+Now, if you're ready, we'll show you how to implement a [deep-belief network](./deepbeliefnetwork.html).

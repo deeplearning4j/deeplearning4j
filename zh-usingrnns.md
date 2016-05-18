@@ -26,7 +26,7 @@ DL4J目前支持一种主要的递归网络，即LSTM（长短期记忆）模型
 
 而RNN的数据则是时间序列。这些数据具备三个维度，增加了一个时间维度。因此，输入数据的形状为[numExamples,inputSize,timeSeriesLength]，而输出数据的形状为[numExamples,outputSize,timeSeriesLength]。就INDArray中的数据布局而言，位于(i,j,k)的值即是一批数据中第i例的第k个时间步的第j个值。数据布局如下图所示。
 
-![Data: Feed Forward vs. RNN](../img/rnn_data.png)
+![Data: Feed Forward vs. RNN](./img/rnn_data.png)
 
 #### RnnOutputLayer
 
@@ -48,13 +48,13 @@ RnnOutputLayer配置与其他层采取相同的设计。例如，将MultiLayerNe
 
 假设用长度为12个时间步的时间序列定型一个递归网络。我们需要进行12步的正向传递，计算误差（基于预测与实际值对比），再进行12个时间步的反向传递：
 
-![Standard Backprop Training](../img/rnn_tbptt_1.png)
+![Standard Backprop Training](./img/rnn_tbptt_1.png)
 
 如上图所示，12个时间步并不会有问题。但试想输入的时间序列变为10,000个时间步，甚至更多。此时，若使用标准的沿时间反向传播算法，则每个参数每次更新都需要进行10,000次正向及反向传递。这种方法对运算能力的要求显然很高。
 
 在实际应用中，截断式BPTT可将正向和反向传递拆分为一系列较小时间段的正向／反向传递操作。正向／反向传递时间段的具体长度是用户可以自行设定的参数。例如，若将截断式BPTT的长度设定为4个时间步，则学习过程如下图所示：
 
-![Truncated BPTT](../img/rnn_tbptt_2.png)
+![Truncated BPTT](./img/rnn_tbptt_2.png)
 
 注意截断式BPTT和标准BPTT的总体复杂度大致相同－两者的正向／反向传递时间步数量相等。但是，采用该方法后，用原来1次参数更新的工作量可以完成3次更新。然而两种方法的运算量并不完全一致，因为每次参数更新会有少量额外运算量。
 
@@ -80,7 +80,7 @@ DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩�
 
 假设我们用于定型递归网络的输入和输出数据并不会在每个时间步都出现。具体示例（单个样例）见下图。DL4J支持以下所有情景的网络定型。
 
-![RNN Training Types](../img/rnn_masking_1.png)
+![RNN Training Types](./img/rnn_masking_1.png)
 
 如果没有掩模和填零操作，就只能支持多对多的情景（上图左一），即(a)所有样例长度相同且(b)样例在每一时间步均有输入和输出。
 
@@ -92,7 +92,7 @@ DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩�
 
 对单个样例而言，输入与输出的掩模数组如下：
 
-![RNN Training Types](../img/rnn_masking_2.png)
+![RNN Training Types](./img/rnn_masking_2.png)
 
 对于“不需要掩模”的情况，我们可以使用全部值为1的掩模数组，所得结果与不使用掩模数组相同。此外，RNN定型中使用的掩模数组可以是零个、一个或者两个，比如多对一的情景就有可能仅设置一个用于输出的掩模数组。
 
@@ -142,11 +142,11 @@ rnnTimeStep()方法的作用是提高正向传递（预测）的效率，一次�
 
 或者，我们可以使用rnnTimeStep方法。当然，在进行第一次预测时，我们仍需要使用全部100个小时的历史数据，进行完整的正向传递：
 
-![RNN Time Step](../img/rnn_timestep_1.png)
+![RNN Time Step](./img/rnn_timestep_1.png)
 
 首次调用rnnTimeStep时，唯一实际区别就是上一个时间步的激活情况／状态会被记录下来——图中以橙色表示。但是，第二次使用rnnTimeStep方法时，已存储的状态会被用于生成第二次预测：
 
-![RNN Time Step](../img/rnn_timestep_2.png)
+![RNN Time Step](./img/rnn_timestep_2.png)
 
 这里有几个重要的区别：
 
@@ -274,13 +274,13 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 对齐模式相对容易理解。它们指定是在较短时间序列的起始还是结尾处填零。下图描述了这一过程，并标出掩模数组（如本页前文所述）：
 
-![Sequence Alignment](../img/rnn_seq_alignment.png)
+![Sequence Alignment](./img/rnn_seq_alignment.png)
 
 一对多情景（与前一例相仿，但输入仅有一个）可以用AlignmentMode.ALIGN_START来处理。
 
 注意，在定型数据包含非等长时间序列的情况下，各个样例的标签和输入会被分别对齐，随后会按需要对较短的时间序列进行填零。
 
-![Sequence Alignment](../img/rnn_seq_alignment_2.png)
+![Sequence Alignment](./img/rnn_seq_alignment_2.png)
 
 #### 另类方法：运用自定义DataSetIterator
 有些时候，我们可能需要进行不符合常规情景的数据导入。此时的选项是运用自定义的[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)。DataSetIterator只是用于迭代DataSet对象的接口，这些对象封装了输入和目标INDArrays，以及输入和标签掩模数组（可选）。

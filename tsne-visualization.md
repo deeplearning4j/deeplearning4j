@@ -9,7 +9,7 @@ layout: default
 
 While it can be used for any data, t-SNE (pronounced Tee-Snee) is only really meaningful with labeled data, which clarify how the input is clustering. Below, you can see the kind of graphic you can generate in DL4J with t-SNE working on [MNIST data](http://deeplearning4j.org/deepbeliefnetwork.html). 
 
-![Alt text](../img/tsne.png)
+![Alt text](./img/tsne.png)
 
 Look closely and you can see the numerals clustered near their likes, alongside the dots. 
 

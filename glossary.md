@@ -60,7 +60,7 @@ Autoencoders are at the heart of representation learning. They encode input, usu
 To calculate the [gradient](#gradient) the relate weights to error, we use a technique known as backpropagation, which is also referred to as the backward pass of the network. Backpropagation is a repeated application of chain rule of calculus for partial
 derivatives. The first step is to calculate the derivatives of the objective function with respect to the output units, then the derivatives of the output of the last hidden layer to the input of the last hidden layer; then the input of the last hidden layer to the weights between it and the penultimate hidden layer, etc. Here's a [derivation of backpropagation](http://web.cs.swarthmore.edu/~meeden/cs81/s10/BackPropDeriv.pdf). And here's [Yann LeCun's important paper](http://yann.lecun.com/exdb/publis/pdf/lecun-88.pdf) on the subject.
 
-![Alt text](../img/backprop_lecun.png)
+![Alt text](./img/backprop_lecun.png)
 
 A special form of backpropagation is called backpropagation through time, or BPTT, which is specifically useful for recurrent networks analyzing text and time series. With BPTT, each time step of the RNN is the equivalent of a layer in a feed-forward network. To backpropagate over many time steps, BPTT can be truncated for the purpose of efficiency. Truncated BPTT limits the time steps over which error is propagated.
 
@@ -96,7 +96,7 @@ Also known as an error matrix or contingency table. Confusions matrices allow yo
 "[Contrastive divergence](http://www.robots.ox.ac.uk/~ojw/files/NotesOnCD.pdf) is a recipe for training undirected [graphical models](#graphicalmodels) (a class of probabilistic models used in machine learning). It relies on an approximation of the [gradient](#gradient) (a good direction of change for the parameters) of the [log-likelihood](#loglikelihood) (the basic criterion that most probabilistic learning algorithms try to optimize) based on a short Markov chain (a way to sample from probabilistic models) started at the last example seen. It has been popularized in the context of Restricted Boltzmann Machines (Hinton & Salakhutdinov, 2006, Science), the latter being the first and most popular building block for deep learning algorithms." ~[*Yoshua Bengio*](http://www.quora.com/What-is-contrastive-divergence)
 
 ### <a name="convolution">Convolutional Network (CNN)</a>
-[Convolutional networks](../convolutionalnets.html) are a deep neural network that is currently the state-of-the-art in image processing. They are setting new records in accuracy every year on widely accepted benchmark contests like ImageNet. 
+[Convolutional networks](./convolutionalnets.html) are a deep neural network that is currently the state-of-the-art in image processing. They are setting new records in accuracy every year on widely accepted benchmark contests like ImageNet. 
 
 From the Latin *convolvere*, “to convolve” means to roll together. For mathematical purposes, a convolution is the integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them: a fancy form of multiplication.
 
@@ -108,7 +108,7 @@ It turns out two vectors are just 66% of a triangle, so let's do a quick trig re
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like these 
 
-![Alt text](../img/trig_functions2.png)
+![Alt text](./img/trig_functions2.png)
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
@@ -116,11 +116,11 @@ Differences between word vectors, as they swing around the origin like the arms 
 
 And similar to ancient navigators gauging the stars by a sextant, we will measure the *angular distance* between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
 
-![Alt text](../img/angular_dist_cosine.png)
+![Alt text](./img/angular_dist_cosine.png)
 
 To find that distance knowing only the word vectors, we need the equation for vector dot multiplication (multiplying two vectors to produce a single, scalar value). 
 
-![Alt text](../img/colored_dot_product.png)
+![Alt text](./img/colored_dot_product.png)
 
 In Java, you can think of the formula to measure cosine similarity like this:
 
@@ -201,7 +201,7 @@ Precision answers: "Given a positive prediction from the classifier, how likely 
 
 For f1 to be high, both recall and precision of the model have to be high. 
 
-![Alt text](../img/precision_recall.png) 
+![Alt text](./img/precision_recall.png) 
 
 ### <a name="feedforward">Feed-Forward Network</a>
 A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network successively, without circulating. Feed-forward nets contrast with recurrent and recursive nets in that feed-forward nets never let the output of one node circle back to the same or previous nodes.
@@ -253,8 +253,8 @@ Google's LeNet architecture is a deep convolutional network. It won ILSVRC in 20
 ### <a name="lstm">Long Short-Term Memory Units (LSTM)</a>
 LSTMs are a form of recurrent neural network invented in the 1990s by Sepp Hochreiter and Juergen Schmidhuber, and now widely used for image, sound and time series analysis, because they help solve the vanishing gradient problem by using a memory gates. Alex Graves made significant improvements to the LSTM with what is now known as the Graves LSTM, which [Deeplearning4j implements here](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/rnn). 
 
-* [LSTMs with Deeplearning4j](../lstm.html)
-* [Using RNNs with Deeplearning4j](../usingrnns.html)
+* [LSTMs with Deeplearning4j](./lstm.html)
+* [Using RNNs with Deeplearning4j](./usingrnns.html)
 * [Original Paper: LONG SHORT-TERM MEMORY](http://deeplearning.cs.cmu.edu/pdfs/Hochreiter97_lstm.pdf)
 
 ### <a name="loglikelihood">Log-Likelihood</a>
@@ -303,7 +303,7 @@ Every object is really just a data structure that combines fields containing dat
 
 The way you talk about those fields and methods is with the dot operator `.`, and parentheses `()` that contain parameters. For example, if you wrote `iter.next(5)`, then you'd be telling the DataSetIterator to go across a dataset processing 5 instances of that data (say 5 images or records) at a time, where `next` is the method you call, and 5 is the parameter you pass into it.
 
-You can learn more about DataSetIterator and other classes in Deeplearning4j in our [Javadoc](../doc/).
+You can learn more about DataSetIterator and other classes in Deeplearning4j in our [Javadoc](./doc/).
 
 ### <a name="objectivefunction">Objective Function</a> 
 Also called a loss function or a cost function, an objective function is a heuristic function for reducing prediction error in a machine-learning algorithm. That is, an objective function allows you to measure how wrong your neural net it when it makes a guess, by comparing that guess to the ground-truth value of the training set. Measuring that error is a precondition to updating the neural net in such a way that its guesses generate less error. The error resulting from the loss function is fed into backpropagation in order to update the weights and biases that process input in the neural network. 
@@ -359,7 +359,7 @@ RMSProp is an optimization algorithm like Adagrad. In contrast to Adagrad, it re
 Serialization is how you translate data structures or object state into storable formats. Deeplearning4j's nets are serialized, which means they can operate on devices with limited memory.
 
 ### <a name="skipgram">Skipgram</a> 
-The prerequisite to a definition of skipgrams is one of ngrams. [An n-gram is a contiguous sequence of n items from a given sequence of text or speech.](https://en.wikipedia.org/wiki/N-gram) A unigram represents one "item," a bigram two, a trigram three and so forth. Skipgrams are ngrams in which the items are not necessarily contiguous. This can be illustrated best with [a few examples.](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) Skipping is a form of noise, in the sense of [noising and denoising](http://deeplearning4j.org/stackeddenoisingautoencoder.html), which allows neural nets to better generalize their extraction of features. See how skipgrams are implemented in [Word2vec](../word2vec.html).
+The prerequisite to a definition of skipgrams is one of ngrams. [An n-gram is a contiguous sequence of n items from a given sequence of text or speech.](https://en.wikipedia.org/wiki/N-gram) A unigram represents one "item," a bigram two, a trigram three and so forth. Skipgrams are ngrams in which the items are not necessarily contiguous. This can be illustrated best with [a few examples.](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) Skipping is a form of noise, in the sense of [noising and denoising](http://deeplearning4j.org/stackeddenoisingautoencoder.html), which allows neural nets to better generalize their extraction of features. See how skipgrams are implemented in [Word2vec](./word2vec.html).
 
 ### <a name="softmax">Softmax</a> 
 Softmax is a function used as the output layer of a neural network that classifies input. It converts vectors into class probabilities. Softmax normalizes the vector of scores by first exponentiating and then dividing by a constant. 
@@ -389,7 +389,7 @@ While support-vector machines are not neural networks, they are an important alg
 
 Here is an example of tensor along dimension (TAD):
 
-![Alt text](../img/tensorAlongDimension.png)
+![Alt text](./img/tensorAlongDimension.png)
 
 ### <a name="vanish">Vanishing Gradient Problem</a>
 The vanishing gradient problem is a challenge the confront backpropagation over many layers. Backpropagation establishes the relationship between a given weight and the error of a neural network. It does so through the chain rule of calculus, calculating how the change in a given weight along a gradient affects the change in error. However, in very deep neural networks, the gradient that relates the weight change to the error change can become very small. So small that updates in the net's parameters hardly change the net's guesses and error; so small, in fact, that it is difficult to know in which direction the weight should be adjusted to diminish error. Non-linear activation functions such as sigmoid and tanh make the vanishing gradient problem particularly difficult, because the activation funcion tapers off at both ends. This has led to the widespread adoption of rectified linear units (reLU) for activations in deep nets. It was in seeking to solve the vanishing gradient problem that Sepp Hochreiter and Juergen Schmidhuber invented a form of recurrent network called an LSTM in the 1990s. The inverse of the vanishing gradient problem, in which the gradient is impossibly small, is the exploding gradient problem, in which the gradient is impossibly large (i.e. changing a weight has too much impact on the error.)
@@ -398,17 +398,17 @@ The vanishing gradient problem is a challenge the confront backpropagation over 
 
 ### <a name="vectors">Vector</a>
 
-[Word2vec](../word2vec.html) and other neural networks represent input as vectors.
+[Word2vec](./word2vec.html) and other neural networks represent input as vectors.
 
 A vector is a data structure with at least two components, as opposed to a *scalar*, which has just one. For example, a vector can represent velocity, an idea that combines speed and direction: *wind velocity* = (50mph, 35 degrees North East). A scalar, on the other hand, can represent something with one value like temperature or height: 50 degrees Celsius, 180 centimeters.
 
 Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, with the coordinates x and y each representing one of the vector's values. 
 
-![Alt text](../img/vector.jpeg)
+![Alt text](./img/vector.jpeg)
 
 Two vectors can relate to one another mathematically, and similarities between them (and therefore between anything you can vectorize, including words) can be measured with precision. 
 
-![Alt text](../img/two_vectors2.png)
+![Alt text](./img/two_vectors2.png)
 
 As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
 
@@ -420,7 +420,7 @@ VGG is a deep convolutional architecture that won the benchmark ImageNet competi
 ### <a name="word2vec">Word2vec</a>
 Tomas Mikolov's neural networks, known as Word2vec, have become widely used because they help produce state-of-the-art word embeddings. Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep neural network, it turns text into a numerical form that deep nets can understand. Word2vec’s applications extend beyond parsing sentences in the wild. It can be applied just as well to genes, code, playlists, social media graphs and other verbal or symbolic series in which patterns may be discerned. Deeplearning4j implements a distributed form of Word2vec for Java and Scala, which works on Spark with GPUs.
 
-* [Word2vec in Deeplearning4j](../word2vec.html)
+* [Word2vec in Deeplearning4j](./word2vec.html)
 
 ### <a name="xavier">Xavier Initialization</a>
 

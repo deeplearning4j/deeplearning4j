@@ -5,7 +5,7 @@ layout: default
 
 # Creating deep-learning networks
 
-A multilayer network is a stacked representation of a [single-layer neural network](../singlelayernetwork.html). The input layer is tacked onto the first-layer neural network and a [feed-forward network](../glossary.html#feedforward). Each subsequent layer after the input layer uses the output of the previous layer as its input.
+A multilayer network is a stacked representation of a [single-layer neural network](./singlelayernetwork.html). The input layer is tacked onto the first-layer neural network and a [feed-forward network](./glossary.html#feedforward). Each subsequent layer after the input layer uses the output of the previous layer as its input.
 
 A multilayer network will accept the same kinds of inputs as a single-layer network. The multilayer network parameters are also typically the same as their single-layer network counterparts.
 
@@ -47,6 +47,6 @@ Finally, the [logistic regression](http://en.wikipedia.org/wiki/Multinomial_logi
 
 Below are the different kinds of multilayer networks:
 
-* [Stacked Denoising AutoEncoders](../stackeddenoisingautoencoder.html)
-* [Deep Belief Networks](../deepbeliefnetwork.html)
-* [Continuous Deep Belief Networks](../continuousdeepbeliefnetwork.html)
+* [Stacked Denoising AutoEncoders](./stackeddenoisingautoencoder.html)
+* [Deep Belief Networks](./deepbeliefnetwork.html)
+* [Continuous Deep Belief Networks](./continuousdeepbeliefnetwork.html)

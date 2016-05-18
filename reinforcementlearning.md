@@ -25,7 +25,7 @@ An **action** is almost self-explanatory, but it should be noted that agents cho
 
 A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards.
 
-![Alt text](../img/simple_RL_schema.png)
+![Alt text](./img/simple_RL_schema.png)
 
 In the feedback loop above, the subscripts denote time steps t and t+1, each of which refer to different states: the state at moment t, and the state at moment t+1. Unlike other forms of machine learning – such as supervised and unsupervised learning -- reinforcement learning can only be thought about sequentially in terms of state-action pairs that occur one after the other. 
 
@@ -45,7 +45,7 @@ One way to imagine an autonomous RL agent would be as a blind person attempting 
 
 (In fact, deciding *which types* of feedback your agent should pay attention to is a hard problem to solve, and glossed over by algorithms that are learning how to play video games, where the kinds of feedback are limited and well defined. These video games are much closer to the sterile environment of the lab, where ideas about reinforcement learning were initially tested.)
 
-![Alt text](../img/rat_wired.jpg)
+![Alt text](./img/rat_wired.jpg)
 
 The goal of reinforcement learning is to pick the best known action in any state, which means the actions have to be ranked, assigned values relative to one another. 
 
@@ -71,13 +71,13 @@ In reinforcement learning, convolutional networks can be used to recognize an ag
 
 But convolutional networks derive different interpretations from images in reinforcement learning than in supervised learning. In supervised learning, the network applies a label to an image; that is, it matches names to pixels. 
 
-![Alt text](../img/conv_classifier.png)
+![Alt text](./img/conv_classifier.png)
 
 In fact, it will rank the labels that best fit the image in terms of their probabilities. Shown an image of a donkey, it might decide the picture is 80% likely to be a donkey, 50% likely to be a horse, and 30% likely to be a dog. 
 
 In reinforcement learning, given an image that represents a state, a convolutional net can rank the actions possible to perform in that state; for example, it might predict that running right will return 5 points, jumping 7, and running left none. 
 
-![Alt text](../img/conv_agent.png)
+![Alt text](./img/conv_agent.png)
 
 Having assigned values to the expected rewards, the Q function simply selects the state-action pair with the highest so-called Q value. 
 
