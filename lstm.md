@@ -24,6 +24,10 @@ They are arguably the most powerful type of neural network, applicable even to i
 
 Since recurrent networks possess a certain type of memory, and memory is also part of the human condition, we'll make repeated analogies to memory in the brain.<sup>[1](#one)</sup>
 
+<p align="center">
+<a href="./quickstart" class="btn btn-custom">Deeplearning4j Quickstart</a>
+</p>
+
 ## <a name="feedforward">Review of Feedforward Networks</a>
 
 To understand recurrent nets, first you have to understand the basics of [feedforward nets](./restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through (never touching a given node twice), the other cycles it through a loop.
