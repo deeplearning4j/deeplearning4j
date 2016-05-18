@@ -6173,6 +6173,43 @@ __device__ void concatKernelGeneric(int dimension,
 }
 
 template <typename T>
+__device__ void concatKernelScalarGeneric(int dimension,
+									int numArrays,
+									Nd4jPointer *data,
+									Nd4jPointer *inputShapeInfos,
+									T *result,
+									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    T **input = (T **) data;
+
+    for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) {
+			result[i] = input[i][0];
+	}
+}
+
+extern "C" __global__ void concatKernelScalarFloat(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  float *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelScalarGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
+extern "C" __global__ void concatKernelScalarDouble(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  double *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelScalarGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
+
+template <typename T>
 __device__ void concatKernelVStackGeneric(int dimension,
 									int numArrays,
 									Nd4jPointer *data,
@@ -6223,6 +6260,16 @@ extern "C" __global__ void concatKernelVStackFloat(int dimension,
 											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
     concatKernelVStackGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+}
+
+extern "C" __global__ void concatKernelVStackDouble(int dimension,
+											  int numArrays,
+											  Nd4jPointer *data,
+											  Nd4jPointer *inputShapeInfo,
+											  double *result,
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+    concatKernelVStackGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
 }
 
 

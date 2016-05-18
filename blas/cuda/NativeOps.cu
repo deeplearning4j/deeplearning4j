@@ -4019,13 +4019,38 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
+
 	// numArrays will be used as number of TADs, so each block process 1 input
 
 	int smem = funcAttributes[31].sharedSizeBytes;
 	bool isVstack = true;
+	bool isScalar = true;
+	bool isHstack = true;
 
-	if (isVstack) {
+	for (int i = 0; i < numArrays; i++) {
+		if (!shape::isScalar(hostShapePointers[i]))
+			isScalar = false;
+	}
+
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2)
+		for (int i = 0; i < numArrays; i ++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0)
+				isVstack = false;
+		}
+
+	if (!isScalar && !isVstack && dimension == 1 && shape::rank(hostXShapeInfo) == 2)
+		for (int i = 0; i < numArrays; i ++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0)
+				isHstack = false;
+		}
+
+	if (isScalar) {
+		concatKernelScalarFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} if (isVstack) {
 		concatKernelVStackFloat<<< 128, 128, 1024, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isHstack) {
+
 	} else {
 		concatKernelFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	}
