@@ -8,7 +8,7 @@ layout: default
 Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact/) if anything breaks. 
 
 <p align="center">
-<a href="./quickstart" class="btn btn-custom">Deeplearning4j Quickstart</a>
+<a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
 </p>
 
 Content
