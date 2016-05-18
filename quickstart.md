@@ -20,17 +20,6 @@ This is everything you need to run DL4J examples and begin your own projects.
 
 We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](./deeplearningforbeginners.html) with links to courses, readings and other resources. 
 
-## Prerequisites
-
-* [Java (developer version)](#Java) 1.7 or later
-* [Apache Maven](#Maven)
-* [IntelliJ IDEA](#IntelliJ) or Eclipse
-* [Git](#Git)
-
-You should have all of these installed to use this QuickStart guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience with these.
-
-If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, **skip to <a href="#examples">DL4J Examples</a>**.
-
 #### A Taste of Code
 
 Deeplearning4j is a DSL to configure neural networks. This is what one configuration, with an input layer, two dense hidden layers and an output layer would look like. 
@@ -59,6 +48,17 @@ Deeplearning4j is a DSL to configure neural networks. This is what one configura
         .build();
 ```
 
+## Prerequisites
+
+* [Java (developer version)](#Java) 1.7 or later
+* [Apache Maven](#Maven) 
+* [IntelliJ IDEA](#IntelliJ) or Eclipse
+* [Git](#Git)
+
+You should have these installed to use this QuickStart guide. DL4J targets professional Java developers who are familiar with production deployments, IDEs and automated build tools. Working with DL4J will be easiest if you already have experience with these.
+
+If you are new to Java or unfamiliar with these tools, read the details below for help with installation and setup. Otherwise, **skip to <a href="#examples">DL4J Examples</a>**.
+
 #### <a name="Java">Java</a>
 
 If you don't have Java 1.7 or later, download the current [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). To check if you have a compatible version of Java installed, use the following command:
@@ -81,7 +81,7 @@ If you are working on a Mac, you can simply enter the following into the command
 brew install maven
 ```
 
-Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. 
+Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
 
