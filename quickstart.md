@@ -48,6 +48,31 @@ Deeplearning4j is a domain-specific language to configure neural networks. This 
         .build();
 ```
 
+You train a model with `model.fit` and evaluate it like so:
+
+``` java
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+        model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
+
+        for ( int n = 0; n < nEpochs; n++) {
+            model.fit( trainIter );
+        }
+
+        System.out.println("Evaluate model....");
+        Evaluation eval = new Evaluation(numOutputs);
+        while(testIter.hasNext()){
+            DataSet t = testIter.next();
+            INDArray features = t.getFeatureMatrix();
+            INDArray lables = t.getLabels();
+            INDArray predicted = model.output(features,false);
+
+            eval.eval(lables, predicted);
+
+        }
+```
+
 ## Prerequisites
 
 * [Java (developer version)](#Java) 1.7 or later
