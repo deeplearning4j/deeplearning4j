@@ -31,6 +31,12 @@ p {
   font-size: 15px;
 }
 
+.adjust-img-responsive img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 /* narrow the bootstrap container */
 .container {
   max-width: 1000px;
