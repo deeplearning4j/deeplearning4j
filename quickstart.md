@@ -24,7 +24,7 @@ We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning
 
 Deeplearning4j is a domain-specific language to configure deep neural networks, which are made of multiple layers. The core data structure is a `MultiLayerConfiguration`, which organizes those layers and their hyperparameters.
 
-Hyperparameters are variables that determine how a net learns; they include how many iterations to perform, how to initialize the weights of the model, which optimization algorithm to use, which activation function to attached to the nodes, and how fast they should learn. This is what one configuration would look like: 
+Hyperparameters are variables that determine how a net learns; they include how many times to update the weights of the model, how to initialize those weights, which optimization algorithm to use, which activation function to attach to the nodes, and how fast the model should learn. This is what one configuration would look like: 
 
 ``` java
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
