@@ -26,52 +26,25 @@ Deeplearning4j is a domain-specific language to configure neural networks. This 
 
 ``` java
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-        .seed(12345)
         .iterations(1)
         .weightInit(WeightInit.XAVIER)
-        .updater(Updater.ADAGRAD)
         .activation("relu")
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .learningRate(0.05)
-        .regularization(true).l2(0.0001)
-        .list()
-        .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
-                .build())
-        .layer(1, new DenseLayer.Builder().nIn(250).nOut(10)
-                .build())
-        .layer(2, new DenseLayer.Builder().nIn(10).nOut(250)
-                .build())
-        .layer(3, new OutputLayer.Builder().nIn(250).nOut(784)
-                .lossFunction(LossFunctions.LossFunction.MSE)
-                .build())
-        .pretrain(false).backprop(true)
+        // ... other parameters
+        .backprop(true)
         .build();
 ```
 
-You train a model with `model.fit` and evaluate it like so:
+To add layers to your model, you simply call layer on the `NeuralNetConfiguration.Builder()`, specifying the number of input and output nodes, `nIn` and `nOut`.
 
 ``` java
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-        model.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
-
-        for ( int n = 0; n < nEpochs; n++) {
-            model.fit( trainIter );
-        }
-
-        System.out.println("Evaluate model....");
-        Evaluation eval = new Evaluation(numOutputs);
-        while(testIter.hasNext()){
-            DataSet t = testIter.next();
-            INDArray features = t.getFeatureMatrix();
-            INDArray lables = t.getLabels();
-            INDArray predicted = model.output(features,false);
-
-            eval.eval(lables, predicted);
-
-        }
+        .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
+                .build())
 ```
+
+You train a model with `model.fit`.
 
 ## Prerequisites
 
