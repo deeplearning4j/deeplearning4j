@@ -5,7 +5,7 @@ title: Deeplearning4j on Spark
 
 # Deeplearning4j on Spark
 
-**No longer supported**
+**No longer supported. Please go to [Deeplearning4j on Spark](../spark).**
 
 Content
 
