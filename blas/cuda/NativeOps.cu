@@ -72,7 +72,7 @@ int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
 	int memory_limit = funcAttr.sharedSizeBytes;
 
 	// TODO: remove this later
-	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4) + 768;
+	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4);
 /*
 	if (xRank == 0) xRank = 2;
 
@@ -4046,10 +4046,10 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 		}
 	}
 
-	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2) {
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
 		isVstack = true;
 		for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
 				isVstack = false;
 				break;
 			}
@@ -4072,7 +4072,7 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 
 		smem = funcAttributes[38].sharedSizeBytes;
 		concatKernelScalarFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
-	} if (isVstack) {
+	} else if (isVstack) {
 		if (debug && verbose)
 			printf("Going VStack concat\n");
 
@@ -4138,10 +4138,10 @@ void NativeOps::concatDouble(
 		}
 	}
 
-	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2) {
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
 		isVstack = true;
 		for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
 				isVstack = false;
 				break;
 			}
@@ -4164,7 +4164,7 @@ void NativeOps::concatDouble(
 
 		smem = funcAttributes[39].sharedSizeBytes;
 		concatKernelScalarDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
-	} if (isVstack) {
+	} else if (isVstack) {
 		if (debug && verbose)
 			printf("Going VStack concat\n");
 

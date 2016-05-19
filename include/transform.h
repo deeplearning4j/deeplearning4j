@@ -5974,6 +5974,8 @@ __device__ void concatKernelGeneric(int dimension,
 	int **shapeInfoPointers = (int **) inputShapeInfos;
 	int **tadShapes = (int **) tadPointers;
 	int **tadOffsets = (int **) offsetPointers;
+
+
     __shared__ int tDim[1];
     __shared__ int baseIdx;
 
@@ -6000,6 +6002,41 @@ __device__ void concatKernelGeneric(int dimension,
 
         __shared__ int arrOffset;
 		__shared__ int numTads;
+
+
+        if (shape::isVector(resultShapeInfo)) {
+			//if (threadIdx.x == 0)
+				//printf("Vector here\n");
+			if (zEWS >= 1) {
+				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
+						yLength = shape::length(shapeInfoPointers[r]);
+						yEWS = shape::elementWiseStride(shapeInfoPointers[r]);
+						// FIXME: this is bad
+						__shared__ int baseIdx;
+						if (threadIdx.x == 0) {
+							baseIdx = 0;
+							for (int f = 0; f < r; f++) {
+								baseIdx += shape::length(shapeInfoPointers[f]);
+							}
+						}
+						__syncthreads();
+						for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
+							result[baseIdx + i * zEWS] = dataT[r][i * yEWS];
+						}
+						__syncthreads();
+					} else {
+						if (tid == 0)
+							printf("Non-matched order for vector\n");
+					}
+				}
+			} else {
+				if (tid == 0)
+					printf("Vector Non-1 zEWS\n");
+			}
+			return;
+		}
+
 
 		// TODO: to be pulled into separate kernel. matrix concatenation
 		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
