@@ -9,9 +9,9 @@ For those developers and engineers who prefer to use the most up-to-date version
 
 Building locally requires that you build the entire Deeplearning4j stack which includes:
 
-* [libnd4j](https://github.com/deeplearning4j/libnd4j)
-* [nd4j](https://github.com/deeplearning4j/nd4j)
-* [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
+- [libnd4j](https://github.com/deeplearning4j/libnd4j)
+- [nd4j](https://github.com/deeplearning4j/nd4j)
+- [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA).
 
@@ -19,20 +19,22 @@ Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, a
 
 Your local machine will require some essential software and environment variables set *before* you try to build and install the DL4J stack. Depending on your platform and the version of your operating system, the instructions may vary in getting them to work. This software includes:
 
-* git
-* cmake with OpenMP
-* gcc (3.2 or higher)
-* maven (3 or higher)
+- git
+- cmake with OpenMP
+- gcc (3.2 or higher)
+- maven (3 or higher)
 
 Architecture-specific software includes:
 
 **CPU options:**
-* Intel MKL
-* OpenBLAS
-* ATLAS
+- Intel MKL
+- OpenBLAS
+- ATLAS
+- ND4J-Java (Android)
 
 **GPU options:**
-* Jcublas/CUDA
+- Jcublas/CUDA
+- JOCL (coming soon)
 
 ### Installing Prerequisite Tools
 
@@ -74,16 +76,16 @@ Type `cl` into your CMD. You may get a message informing you that certain `.dll`
 
 If you use Visual Studio: 
 
-* Set up `PATH` environment variable to point to `\bin\` (for `cl.exe` etc)
-* Also try running `vcvars32.bat` (also in bin) to set up environment before doing `mvn clean install` on ND4J (it may save you from copying headers around)
-* `vcvars32` may be temporary, so you might need to run it every time you want to do ND4J `mvn install`.
-* After installing Visual Studio 2015 and setting the PATH variable, you need to run the `vcvars32.bat` to set up the environment variables (INCLUDE, LIB, LIBPATH) properly so that you don't have to copy header files. But if you run the bat file from Explorer, since the settings are temporary, they're not properly set. So run `vcvars32.bat` from the same CMD window as your `mvn install`, and all the environment variables will be set correctly.
-* Here is how they should be set: 
+1. Set up `PATH` environment variable to point to `\bin\` (for `cl.exe` etc)
+1. Also try running `vcvars32.bat` (also in bin) to set up environment before doing `mvn clean install` on ND4J (it may save you from copying headers around)
+1. `vcvars32` may be temporary, so you might need to run it every time you want to do ND4J `mvn install`.
+1. After installing Visual Studio 2015 and setting the PATH variable, you need to run the `vcvars32.bat` to set up the environment variables (INCLUDE, LIB, LIBPATH) properly so that you don't have to copy header files. But if you run the bat file from Explorer, since the settings are temporary, they're not properly set. So run `vcvars32.bat` from the same CMD window as your `mvn install`, and all the environment variables will be set correctly.
+1. Here is how they should be set: 
 
     INCLUDE = C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
     LIB = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib"
     //so you can link to .lib files^^
-* In Visual Studio, you also have to click on C++. It is no longer set by default. 
+1. In Visual Studio, you also have to click on C++. It is no longer set by default. 
 (*In addition, the include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on Windows. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as `standardio.h`.*)
 * For a walkthrough of installing our examples with Git, IntelliJ and Maven, please see our [Quickstart page](http://deeplearning4j.org/quickstart.html#walk)
 
@@ -97,9 +99,9 @@ Once you have installed the prerequisite tools, you can now install the required
 
 Of all the existing architectures available for CPU, Intel MKL is currently the fastest. However, it requires some "overhead" before you actually install it.
 
-* Apply for a license at [Intel's site](https://software.intel.com/en-us/intel-mkl)
-* After a few steps through Intel, you will receive a download link
-* Download and install Intel MKL using [the setup guide](https://software.intel.com/sites/default/files/managed/94/bf/Install_Guide_0.pdf)
+1. Apply for a license at [Intel's site](https://software.intel.com/en-us/intel-mkl)
+2. After a few steps through Intel, you will receive a download link
+3. Download and install Intel MKL using [the setup guide](https://software.intel.com/sites/default/files/managed/94/bf/Install_Guide_0.pdf)
 
 ##### OpenBLAS
 
@@ -141,16 +143,16 @@ brew install homebrew/science/openblas
 ###### Windows
 
 [This page](http://avulanov.blogspot.cz/2014/09/howto-to-run-netlib-javabreeze-in.html) describes how to obtain dll for the Windows 64 platform:
-* Download dll libraries and place them in the Java bin folder (e.g. `C:\prg\Java\jdk1.7.0_45\bin`).
-* Library `netlib-native_system-win-x86_64.dll` depends on: 
+1. Download dll libraries and place them in the Java bin folder (e.g. `C:\prg\Java\jdk1.7.0_45\bin`).
+2. Library `netlib-native_system-win-x86_64.dll` depends on: 
 `libgcc_s_seh-1.dll
 libgfortran-3.dll
 libquadmath-0.dll
 libwinpthread-1.dll
 libblas3.dll
 liblapack3.dll`
-* (`liblapack3.dll` and `libblas3.dll` are just renamed copies of `libopeblas.dll`)
-* You can download compiled libs from [here](http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Automated%20Builds/), [here](http://www.openblas.net/), or [here](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22netlib-native_system-win-x86_64%22)
+3. (`liblapack3.dll` and `libblas3.dll` are just renamed copies of `libopeblas.dll`)
+4. You can download compiled libs from [here](http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Automated%20Builds/), [here](http://www.openblas.net/), or [here](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22netlib-native_system-win-x86_64%22)
 
 ##### ATLAS
 
@@ -224,7 +226,6 @@ export LD_PRELOAD=/lib64/libgomp.so.1
 When libnd4j cannot be rebuilt, we can use the MKL libraries after the facts and get them loaded instead of OpenBLAS at runtime, but things are a bit trickier. Please additionally follow the instructions below.
 
 1. Make sure that files such as `/lib64/libopenblas.so.0` and `/lib64/libblas.so.3` are not available (or appear after in the `PATH` on Windows), or they will get loaded by libnd4j by their absolute paths, before anything else.
-
 2. Inside `/path/to/intel64/lib/`, create a symbolic link or copy of `libmkl_rt.so` (or `mkl_rt.dll` on Windows) to the name that libnd4j expect to load, for example:
 
     ```bash
@@ -236,7 +237,6 @@ When libnd4j cannot be rebuilt, we can use the MKL libraries after the facts and
     copy mkl_rt.dll libopenblas.dll
     copy mkl_rt.dll libblas3.dll
     ```
-
 3. Finally, add `/path/to/intel64/lib/` to the `LD_LIBRARY_PATH` environment variable (or early in the `PATH` on Windows) and run your Java application as usual.
 
 
