@@ -5,6 +5,8 @@ title: Deeplearning4j on Spark
 
 # Deeplearning4j on Spark
 
+**No longer supported**
+
 Content
 
 * [Build with the CLI](#build)
