@@ -1,8 +1,8 @@
 lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
 
 lazy val root = (project in file(".")).settings(
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.6", "2.11.7"),
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8"),
   name := "nd4s",
   version := "0.4-rc3.9-SNAPSHOT",
   organization := "org.nd4j",
@@ -11,8 +11,8 @@ lazy val root = (project in file(".")).settings(
   libraryDependencies ++= Seq(
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
     "org.nd4j" % "nd4j-x86" % nd4jVersion.value % Test,
-    "org.scalatest" %% "scalatest" % "2.2.4" % Test,
-    "ch.qos.logback" % "logback-classic" % "1.1.3" % Test,
+    "org.scalatest" %% "scalatest" % "2.2.6" % Test,
+    "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test,
     "org.scalanlp" %% "breeze" % "0.12" % Test,
     "com.github.julien-truffaut" %% "monocle-core" % "1.2.0" % Test
@@ -61,4 +61,3 @@ lazy val root = (project in file(".")).settings(
   releasePublishArtifactsAction := com.typesafe.sbt.pgp.PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
   initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._")
-
