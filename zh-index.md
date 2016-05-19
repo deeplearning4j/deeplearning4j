@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j是什么？
-layout: zh-default
+layout: default
 ---
 
 # Deeplearning4j是什么？
@@ -55,7 +55,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### Deeplearning4j教程
 
-* [深度神经网络简介](./neuralnet-overview)
+* [深度神经网络简介](./zh-neuralnet-overview)
 * [卷积网络教程](./zh-convolutionalnets)
 * [LSTM和递归网络教程](./zh-lstm)
 * [通过DL4J使用递归网络](./zh-usingrnns)
