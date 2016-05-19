@@ -50,7 +50,6 @@ sudo apt-get purge maven maven2 maven3
 sudo add-apt-repository ppa:natecarlson/maven3
 sudo apt-get update
 sudo apt-get install maven build-essentials cmake libgomp1
-
 ```
 
 #### OS X
