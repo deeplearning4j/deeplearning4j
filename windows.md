@@ -68,7 +68,7 @@ Please notice the single quotes around the last parameter, if you leave them out
 
 In order to use your new shiny backends you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend instead of x86.
 
-For this you change the version of all your ND4J dependencies to "0.4-rc3.9-SNAPSHOT".
+For this you change the version of all your ND4J dependencies to "0.4-rc3.10-SNAPSHOT".
 
 
 ### CPU Backend
@@ -78,7 +78,7 @@ Exchange nd4j-x86 for nd4j-native like that:
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-native</artifactId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.4-rc3.10-SNAPSHOT</version>
     </dependency>
 
 ### CUDA Backend
@@ -88,7 +88,7 @@ Exchange nd4j-x86 for nd4j-cuda-7.5 like that:
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-cuda-7.5</artifactId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.4-rc3.10-SNAPSHOT</version>
     </dependency>
 
     
