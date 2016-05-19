@@ -1,6 +1,6 @@
 ---
 title: 完全安装Deeplearning4j
-layout: zh-default
+layout: default
 ---
 
 # 完全安装
