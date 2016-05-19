@@ -1,6 +1,10 @@
 package jcuda.jcublas.ops;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -8,10 +12,25 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Created by raver on 19.05.2016.
+ * @author AlexDBlack
+ * @author raver119@gmail.com
  */
 public class EndlessTests {
     private static final int RUN_LIMIT = 1000000;
+
+    @Before
+    public void setUp() {
+        CudaEnvironment.getInstance().getConfiguration()
+                .setFirstMemory(AllocationStatus.DEVICE)
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
+                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
+                .setMaximumBlockSize(256)
+                .enableDebug(true)
+                .setVerbose(true);
+
+
+        System.out.println("Init called");
+    }
 
     @Test
     public void testTransformsForeverSingle(){
@@ -74,6 +93,15 @@ public class EndlessTests {
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             Nd4j.argMax(arr,Integer.MAX_VALUE);
+        }
+    }
+
+    @Test
+    public void testStdDevForeverFull(){
+        INDArray arr = Nd4j.ones(100,100);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            arr.stdNumber();
         }
     }
 
