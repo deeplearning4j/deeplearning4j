@@ -1,6 +1,6 @@
 ---
 title: "本征向量、PCA和熵"
-layout: zh-default
+layout: default
 ---
 
 # 本征向量、PCA和熵的基础教程
