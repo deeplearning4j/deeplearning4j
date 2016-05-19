@@ -1,6 +1,6 @@
 ---
 title: "深度神经网络简介"
-layout: zh-default
+layout: default
 ---
 
 # 深度神经网络简介
