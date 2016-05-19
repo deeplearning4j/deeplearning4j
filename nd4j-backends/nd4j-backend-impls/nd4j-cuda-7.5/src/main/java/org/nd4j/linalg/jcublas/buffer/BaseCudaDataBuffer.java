@@ -663,9 +663,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
                 indexer = DoubleIndexer.create((DoublePointer) pointer);
 
+                double[] array = new double[(int) length];
+
                 for(int i = 0; i < length(); i++) {
-                    put(i,s.readDouble());
+                    array[i] = s.readDouble();
                 }
+                setData(array);
+
             } else if(t == Type.FLOAT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
@@ -675,9 +679,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
 
+                float[] array = new float[(int) length];
+
                 for(int i = 0; i < length(); i++) {
-                    put(i,s.readFloat());
+                    array[i] = s.readFloat();
                 }
+                setData(array);
+
             } else if(t == Type.INT) {
                 this.elementSize = 4;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize));
@@ -686,9 +694,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
 
+                int[] array = new int[(int) length];
+
                 for(int i = 0; i < length(); i++) {
-                    put(i,s.readInt());
+                    array[i] = s.readInt();
                 }
+                setData(array);
+
             } else throw new IllegalStateException("Unknown dataType: ["+ t.toString()+"]");
 
 
