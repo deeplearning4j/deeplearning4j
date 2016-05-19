@@ -300,7 +300,7 @@ cd ..
 ```
 
 
-## Using local dependencies
+## Using Local Dependencies
 
 Once you've installed the DL4J stack to your local maven repository, you can now include it in your build tool's dependencies. Follow the typical [Getting Started](http://deeplearning4j.org/gettingstarted) instructions for Deeplearning4j, and appropriately replace versions with the SNAPSHOT version currently on the [master POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml).
 
