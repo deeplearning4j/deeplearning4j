@@ -1,6 +1,6 @@
 ---
 title: "必备项"
-layout: zh-default
+layout: default
 ---
 
 快速入门指南
