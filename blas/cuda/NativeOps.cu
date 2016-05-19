@@ -72,7 +72,7 @@ int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
 	int memory_limit = funcAttr.sharedSizeBytes;
 
 	// TODO: remove this later
-	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4);
+	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4) + 768;
 /*
 	if (xRank == 0) xRank = 2;
 
