@@ -128,7 +128,7 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
       * Javaバージョン（7、8） : ターミナル/コマンドプロンプトにjava -versionと入力すると分かります。 
       * Maven のバージョン : ターミナル/コマンドプロンプトにmvn --versionと入力すると分かります。
       * スタックトレース:gistのエラーコードをペーストし、リンクをお送りください。[https://gist.github.com/](https://gist.github.com/)
-* 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/ja-getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`と実行してください。
+* 既にDL4Jがインストールされており、exampleがエラーを多く送出させている場合、ライブラリをアップデートしてください。Mavenについては、[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)を使ってPOM.xmlファイルにあるバージョンを最新のものにアップデートしてください。ソースについては、3つのディレクトリである[ND4J](http://nd4j.org/ja-getstarted.html)、Canova、DL4Jをこの順で`git clone`、次に`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`と実行してください。
 * exampleを実行するとき、[F1スコア](./glossary.html#f1)結果が低くなるかもしれません。F1スコアとは、ネットの分類作業の精確さを示すものです。しかし、この場合、 F1値が低い原因は、精確性が低いからではなく、小さいデータセットを使用しているためです。小さめのデータセットだと素早く走らせることができるからです。小さめのデータセットは、大きいものより代表的にはなりませんが、結果は様々に異なります。例えば、非常に小さいexampleのデータでは、弊社のディープ・ビリーフ・ネットワークのF1スコアは0.32から1.0にまで及びます。 
 * Deeplearning4jには**オートコンプリート機能**が含まれます。どのコマンドが使用可能か分からないときは、任意の文字を1つ打つと、ドロップダウンメニューが下記のように
 ![Alt text](./img/dl4j_autocomplete.png)表示されます。
