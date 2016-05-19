@@ -14,7 +14,7 @@ import scala.util.control.Breaks._
 trait CollectionLikeNDArray[A <: INDArray] {
   val underlying: A
 
-  def filterRCi(f: Double => Boolean)(g:IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A,_]): A = notCleanedUp { array =>
+  def filterRCi(f: Double => Boolean)(g:IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A,_]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner.exec(FilterOps(ev.linearView(underlying), f,g)).z().asInstanceOf[A], shape: _*)
   }
@@ -29,7 +29,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
 
   def filterC(f: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, IComplexNumber]): A = filterRC(_ => false)(f)
 
-  def filterBitRCi(f: Double => Boolean)(g: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { array =>
+  def filterBitRCi(f: Double => Boolean)(g: IComplexNumber => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner.exec(BitFilterOps(ev.linearView(underlying), f, g)).z().asInstanceOf[A], shape: _*)
   }
@@ -44,7 +44,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
 
   def filterBit(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, Double]): A = filterBitRC(f)(_ => false)
 
-  def mapRCi(f: Double => Double)(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { array =>
+  def mapRCi(f: Double => Double)(g: IComplexNumber => IComplexNumber)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner.exec(MapOps(ev.linearView(underlying), f, g)).z().asInstanceOf[A], shape: _*)
   }
