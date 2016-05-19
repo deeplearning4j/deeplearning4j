@@ -229,13 +229,13 @@ A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockp
 Use the build script as follows:
 
 ```
-bash build-dl4j-stack.sh cpu
+./build-dl4j-stack.sh cpu
 ```
 
 If you are using a GPU backend:
 
 ```
-bash build-dl4j-stack.sh gpu
+./build-dl4j-stack.sh gpu
 ```
 
 The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
