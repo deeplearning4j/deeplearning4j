@@ -20,9 +20,10 @@ Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, a
 Your local machine will require some essential software and environment variables set *before* you try to build and install the DL4J stack. Depending on your platform and the version of your operating system, the instructions may vary in getting them to work. This software includes:
 
 - git
-- cmake with OpenMP
-- gcc (3.2 or higher)
-- maven (3 or higher)
+- cmake (3.2 or higher)
+- OpenMP
+- gcc (4.9 or higher)
+- maven (3.3 or higher)
 
 Architecture-specific software includes:
 
