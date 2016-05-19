@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -11,6 +12,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author AlexDBlack
@@ -76,6 +79,20 @@ public class EndlessTests {
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             arr.maxNumber();
+        }
+    }
+
+    @Test
+    public void testAccumForeverMaxDifferent(){
+
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            int rows = RandomUtils.nextInt(1, 500);
+            int columns = RandomUtils.nextInt(1, 500);
+            INDArray arr = Nd4j.ones(rows, columns);
+            float res = arr.maxNumber().floatValue();
+
+            assertEquals("Failed on rows: ["+rows+"], columns: ["+columns+"], iteration: ["+i+"]", 1.0f, res, 0.01f);
         }
     }
 
