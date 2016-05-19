@@ -177,7 +177,26 @@ make install
 
 #### CUDA
 
+##### Linux & OS X
+
 Detailed instructions for installing GPU architectures such as CUDA can be found [here](http://nd4j.org/gpu_native_backends.html).
+
+##### Windows
+
+The CUDA Backend has some additional requirements before it can be built:
+
+* [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
+* [Visual Studio 2012 or 2013](https://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx) (Please note: Visual Studio 2015 is *NOT SUPPORTED* by CUDA 7.5 and below)
+
+In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
+But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
+
+1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
+2. Run `c:\msys64\mingw64_shell.bat` inside that
+3. Change to your libnd4j folder
+4. `./buildnativeoperations.sh -c cuda`
+
+This builds the CUDA nd4j.dll.
 
 ## Installing the DL4J Stack
 
@@ -226,16 +245,16 @@ copy mkl_rt.dll libblas3.dll
 
 A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
-Use the build script as follows:
+Use the build script as follows for CPU architectures:
 
 ```
-./build-dl4j-stack.sh cpu
+./build-dl4j-stack.sh
 ```
 
 If you are using a GPU backend:
 
 ```
-./build-dl4j-stack.sh gpu
+./build-dl4j-stack.sh -c cuda
 ```
 
 The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
@@ -259,9 +278,9 @@ rm -rf deeplearning4j
 # compile libnd4j
 git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
-bash buildnativeoperations.sh cpu
+./buildnativeoperations.sh
 # or when using GPU
-#bash buildnativeoperations.sh -c cuda
+#./buildnativeoperations.sh -c cuda
 export LIBND4J_HOME=`pwd`
 cd ..
 
