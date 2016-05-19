@@ -32,11 +32,10 @@ CPU options:
 - Intel MKL
 - OpenBLAS
 - ATLAS
-- ND4J-Java (Android)
 
 GPU options:
 
-- Jcublas/CUDA
+- CUDA
 - JOCL (coming soon)
 
 ### Installing Prerequisite Tools
@@ -73,24 +72,15 @@ brew install maven clang-omp
 
 #### Windows
 
-Windows users may need to install [Visual Studio Community 2013 or later](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx), which is free. You will need to add its path to your PATH environment variable manually. The path will look something like this: `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin`
+libnd4j depends on some Unix utilities for compilation. So in order to compile it you will need to install  [Msys2](https://msys2.github.io/).
 
-Type `cl` into your CMD. You may get a message informing you that certain `.dll` files are missing. Make sure that your VS/IDE folder is in the path (see above). If your CMD returns usage info for `cl`, then it's in the right place. 
+After you have setup Msys2 by following [their instructions](https://msys2.github.io/), you will have to install some additional development packages. Start the msys2 shell and setup the dev environment with:
 
-If you use Visual Studio: 
+    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas
 
-1. Set up `PATH` environment variable to point to `\bin\` (for `cl.exe` etc)
-1. Also try running `vcvars32.bat` (also in bin) to set up environment before doing `mvn clean install` on ND4J (it may save you from copying headers around)
-1. `vcvars32` may be temporary, so you might need to run it every time you want to do ND4J `mvn install`.
-1. After installing Visual Studio 2015 and setting the PATH variable, you need to run the `vcvars32.bat` to set up the environment variables (INCLUDE, LIB, LIBPATH) properly so that you don't have to copy header files. But if you run the bat file from Explorer, since the settings are temporary, they're not properly set. So run `vcvars32.bat` from the same CMD window as your `mvn install`, and all the environment variables will be set correctly.
-1. Here is how they should be set: 
+This will install the needed dependencies for use in the msys2 shell.
 
-    INCLUDE = C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
-    LIB = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib"
-    //so you can link to .lib files^^
-1. In Visual Studio, you also have to click on C++. It is no longer set by default. 
-(*In addition, the include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on Windows. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as `standardio.h`.*)
-* For a walkthrough of installing our examples with Git, IntelliJ and Maven, please see our [Quickstart page](http://deeplearning4j.org/quickstart.html#walk)
+You will also need to setup your PATH environment variable to include `C:\msys64\mingw64\bin` (or where ever you have decided to install msys2). If you have IntelliJ (or another IDE) open, you will have to restart it before this change takes effect for applications started through them. If you don't, you probably will see a "Can't find dependent libraries" error.
 
 ### Installing Prerequisite Architectures
 
@@ -143,17 +133,7 @@ brew install homebrew/science/openblas
 
 ##### Windows
 
-[This page](http://avulanov.blogspot.cz/2014/09/howto-to-run-netlib-javabreeze-in.html) describes how to obtain dll for the Windows 64 platform:
-1. Download dll libraries and place them in the Java bin folder (e.g. `C:\prg\Java\jdk1.7.0_45\bin`).
-2. Library `netlib-native_system-win-x86_64.dll` depends on: 
-`libgcc_s_seh-1.dll
-libgfortran-3.dll
-libquadmath-0.dll
-libwinpthread-1.dll
-libblas3.dll
-liblapack3.dll`
-3. (`liblapack3.dll` and `libblas3.dll` are just renamed copies of `libopeblas.dll`)
-4. You can download compiled libs from [here](http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Automated%20Builds/), [here](http://www.openblas.net/), or [here](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22netlib-native_system-win-x86_64%22)
+An OpenBLAS package is available for `msys2`. You can install it using the `pacman` command.
 
 #### ATLAS
 
@@ -195,9 +175,9 @@ make time
 make install
 ```
 
-#### Jcublas/CUDA
+#### CUDA
 
-Detailed instructions for installing GPU architectures such as Jcublas can be found [here](http://nd4j.org/gpu_native_backends.html).
+Detailed instructions for installing GPU architectures such as CUDA can be found [here](http://nd4j.org/gpu_native_backends.html).
 
 ## Installing the DL4J Stack
 
@@ -219,8 +199,7 @@ export LIBND4J_HOME=/home/user/directory/libnd4j
 
 You can link with MKL either at build time, or at runtime with binaries initially linked with another BLAS implementation such as OpenBLAS. To build against MKL, simply add the path containing `libmkl_rt.so` (or `mkl_rt.dll` on Windows), say `/path/to/intel64/lib/`, to the `LD_LIBRARY_PATH` environment variable on Linux (or `PATH` on Windows) and build like before. On Linux though, to make sure it uses the correct version of OpenMP, we also might need to set these environment variables:
 
-```
-bash
+```bash
 export MKL_THREADING_LAYER=GNU
 export LD_PRELOAD=/lib64/libgomp.so.1
 ```
@@ -230,14 +209,12 @@ When libnd4j cannot be rebuilt, we can use the MKL libraries after the facts and
 1. Make sure that files such as `/lib64/libopenblas.so.0` and `/lib64/libblas.so.3` are not available (or appear after in the `PATH` on Windows), or they will get loaded by libnd4j by their absolute paths, before anything else.
 2. Inside `/path/to/intel64/lib/`, create a symbolic link or copy of `libmkl_rt.so` (or `mkl_rt.dll` on Windows) to the name that libnd4j expect to load, for example:
 
-```
-bash
+```bash
 ln -s libmkl_rt.so libopenblas.so.0
 ln -s libmkl_rt.so libblas.so.3
 ```
 
-```
-cmd
+```cmd
 copy mkl_rt.dll libopenblas.dll
 copy mkl_rt.dll libblas3.dll
 ```
@@ -248,6 +225,20 @@ copy mkl_rt.dll libblas3.dll
 ### Build Script
 
 A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
+
+Use the build script as follows:
+
+```
+bash build-dl4j-stack.sh cpu
+```
+
+If you are using a GPU backend:
+
+```
+bash build-dl4j-stack.sh gpu
+```
+
+The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
 
 ## Using local dependencies
 
