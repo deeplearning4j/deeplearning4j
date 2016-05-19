@@ -240,6 +240,47 @@ If you are using a GPU backend:
 
 The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
 
+### Building Manually
+
+If you prefer, you can build each piece in the DL4J stack by hand. The procedure for each piece of software is essentially:
+
+1. Git clone
+2. Build
+3. Install
+
+The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for.
+
+```
+# removes any existing repositories to ensure a clean build
+rm -rf libnd4j
+rm -rf nd4j
+rm -rf deeplearning4j
+
+# compile libnd4j
+git clone https://github.com/deeplearning4j/libnd4j.git
+cd libnd4j
+bash buildnativeoperations.sh cpu
+# or when using GPU
+#bash buildnativeoperations.sh -c cuda
+export LIBND4J_HOME=`pwd`
+cd ..
+
+# build and install nd4j to maven locally
+git clone https://github.com/deeplearning4j/nd4j.git
+cd nd4j
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-tests'
+# or when using GPU
+#mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
+cd ..
+
+# build and install deeplearning4j
+git clone https://github.com/deeplearning4j/deeplearning4j.git
+cd deeplearning4j
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+cd ..
+```
+
+
 ## Using local dependencies
 
 Once you've installed the DL4J stack to your local maven repository, you can now include it in your build tool's dependencies. Follow the typical [Getting Started](http://deeplearning4j.org/gettingstarted) instructions for Deeplearning4j, and appropriately replace versions with the SNAPSHOT version currently on the [master POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml).
