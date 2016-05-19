@@ -130,7 +130,7 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
       * Java版本（7、8）：type java -version in your terminal/CMD
       * Maven版本：type mvn --version in your terminal/CMD
       * Stacktrace：请在Gist上发布错误代码，并将链接分享给我们：[https://gist.github.com/](https://gist.github.com/)
-* 如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)中的最新版本相符。使用源进行升级时，可以在[ND4J](http://nd4j.org/zh-getstarted.html)、Canova和DL4J上运行`git clone`，并以此顺序在所有三个目录内运行`mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`。
+* 如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)中的最新版本相符。使用源进行升级时，可以在[ND4J](http://nd4j.org/zh-getstarted.html)、Canova和DL4J上运行`git clone`，并以此顺序在所有三个目录内运行`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`。
 * 在运行示例时，可能会得到较低的[f1分数](./glossary.html#f1)。这一分数评估的，是网络分类准确的可能性。在这一情况下，f1分数分数低并不表明表现不佳，因为示例是通过小数据组进行定型的。之所以数据组较小，是为了加快运行速度。因为小数据组相比大数据组较不具有代表性，所以其生成的结果也会有很大差异性。比如说，在示例数据量微小的情况下，我们的深度置信网络f1分数目前为从0.32到1.0不等。 
 * Deeplearning4j包括**自动完成功能**。如果您不确定哪些命令可用，可任意按下某一字母键，将出现如下所示的下拉式菜单：
 ![Alt text](./img/dl4j_autocomplete.png)

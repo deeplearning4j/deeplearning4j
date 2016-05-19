@@ -129,7 +129,7 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
       * 자바 버전 : 커맨드 라인에서 java -version 을 입력하여 확인
       * Maven 버전 : type mvn --version in your terminal/CMD
       * Stacktrace 오류: [Gist (https://gist.github.com/)](https://gist.github.com/)에 에러 코드를 올린 뒤 링크를 공유: 
-* 기존에 설치한 DL4J로 예제를 실행했을 때 오류가 발생한다면 우선 라이브러리를 최신 버전으로 업데이트하십시오. Maven을 사용하실 경우 설치된 POM.xml 파일의 내용만 업데이트 하시면 [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)에 나온 최신 버전으로 업데이트가 됩니다. 소스를 받아서 직접 설치하시는 경우엔 [ND4J](http://nd4j.org/kr-getstarted.html), Canova 및 DL4J 상의 `git clone`을 하신 뒤, 순서대로 각 디렉터리에서 `mvn clean install -Dskiptests=true -Dmaven.javadoc.skip=true`을 실행하시면 됩니다.
+* 기존에 설치한 DL4J로 예제를 실행했을 때 오류가 발생한다면 우선 라이브러리를 최신 버전으로 업데이트하십시오. Maven을 사용하실 경우 설치된 POM.xml 파일의 내용만 업데이트 하시면 [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)에 나온 최신 버전으로 업데이트가 됩니다. 소스를 받아서 직접 설치하시는 경우엔 [ND4J](http://nd4j.org/kr-getstarted.html), Canova 및 DL4J 상의 `git clone`을 하신 뒤, 순서대로 각 디렉터리에서 `mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`을 실행하시면 됩니다.
 * 예제를 실행하다 보면 인공 신경망의 분류가 정확하게 이루어지고 있는지를 측정하는 [F1 점수](http://deeplearning4j.org/glossary.html#f1)가 생각보다 낮을수도 있습니다. 우선 예제는 빠른 실행과 검토를 위해 작은 데이터 셋을 사용하여 학습이 되기 때문에 실제 상황보다 낮은 점수가 나올 수 있습니다. 작은 데이터 셋을 사용할 경우 학습 데이터의 분포가 실제 데이터의 분포와 달라 실제 상황을 잘 반영하지 못할 수도 있고 인공 신경망의 학습엔 데이터의 양이 부족할 수도 있습니다. 예를 들어, 소문자 예제 데이터에서 저희의 DBN(Deep-Belief Net)의 F1 점수는 대체로 0.32 에서 1.0 사이의 값이 나옵니다.
 * Deeplearning4J는 **자도완성 기능**을 갖고 있습니다. 어떤 커맨드를 사용해야 할지 애매한 경우 아무 문자나 누르면 아래 그림처럼 드롭다운 목록이 나옵니다.
 ![Alt text](./img/dl4j_autocomplete.png)
