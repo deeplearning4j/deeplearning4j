@@ -7,7 +7,7 @@ layout: default
 
 While we encourage Deeplearning4j, ND4J and Canova users to employ Maven, it's worthwhile documenting how to configure build files for other tools, like Ivy, Gradle and SBT -- particularly since Google prefers Gradle over Maven for Android projects. 
 
-The instructions below apply to all DL4J and ND4J submodules, such as *deeplearning4j-api, deeplearning4j-scaleout, and ND4J backends. You can find the **latest version** of any project or submodule on [Maven Central](https://search.maven.org/). As of February 2016, the latest version is `rc3.8`.
+The instructions below apply to all DL4J and ND4J submodules, such as *deeplearning4j-api, deeplearning4j-scaleout, and ND4J backends. You can find the **latest version** of any project or submodule on [Maven Central](https://search.maven.org/). As of May 2016, the latest version is `rc3.9`.
 
 ## Maven
 
@@ -17,7 +17,7 @@ You can use Deeplearning4j with Maven by adding the following to your POM.xml:
       <dependency>
           <groupId>org.deeplearning4j</groupId>
           <artifactId>deeplearning4j-core</artifactId>
-          <version>0.4-rc3.8</version>
+          <version>0.4-rc3.9</version>
           <scope>provided</scope>
       </dependency>
     </dependencies>
