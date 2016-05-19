@@ -40,7 +40,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean debug = true;
 
-    @Getter private boolean verbose = false;
+    @Getter private boolean verbose = true;
 
     private boolean forceSingleGPU = true;
 

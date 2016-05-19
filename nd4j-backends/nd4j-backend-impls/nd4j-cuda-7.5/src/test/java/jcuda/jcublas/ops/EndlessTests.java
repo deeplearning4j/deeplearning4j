@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
@@ -25,8 +26,8 @@ public class EndlessTests {
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
                 .setMaximumBlockSize(256)
-                .enableDebug(true)
-                .setVerbose(true);
+                .enableDebug(false)
+                .setVerbose(false);
 
 
         System.out.println("Init called");
@@ -66,6 +67,15 @@ public class EndlessTests {
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             arr.sumNumber();
+        }
+    }
+
+    @Test
+    public void testAccumForeverMax(){
+        INDArray arr = Nd4j.ones(100,100);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            arr.maxNumber();
         }
     }
 
@@ -140,6 +150,45 @@ public class EndlessTests {
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
             arr.addi(1.0);
+        }
+    }
+
+    @Test public void testReduce3(){
+        INDArray first = Nd4j.ones(10,10);
+        INDArray second = Nd4j.ones(10,10);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            Nd4j.getExecutioner().exec(new CosineSimilarity(first,second));
+        }
+    }
+
+    @Test
+    public void testReduce3AlongDim(){
+        INDArray first = Nd4j.ones(10,10);
+        INDArray second = Nd4j.ones(10,10);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            Nd4j.getExecutioner().exec(new CosineSimilarity(first,second),0);
+        }
+    }
+
+    @Test
+    public void testMmulForever(){
+        INDArray first = Nd4j.zeros(10,10);
+        INDArray second = Nd4j.zeros(10,10);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            first.mmul(second);
+        }
+    }
+
+    @Test
+    public void testAxpyForever(){
+        INDArray first = Nd4j.zeros(10,10);
+        INDArray second = Nd4j.zeros(10,10);
+
+        for (int i = 0; i < RUN_LIMIT; i++ ) {
+            Nd4j.getBlasWrapper().level1().axpy(100,1,first,second);
         }
     }
 }
