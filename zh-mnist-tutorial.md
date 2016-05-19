@@ -1,6 +1,6 @@
 ---
 title: "深信度网络的MNIST"
-layout: zh-default
+layout: default
 ---
 
 # 深信度网络的MNIST
