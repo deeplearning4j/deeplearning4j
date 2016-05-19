@@ -1,6 +1,6 @@
 ---
 title: "使用深度信念网来运行鸢尾花分类"
-layout: zh-default
+layout: default
 ---
 
 # 使用深度信念网来运行鸢尾花分类
