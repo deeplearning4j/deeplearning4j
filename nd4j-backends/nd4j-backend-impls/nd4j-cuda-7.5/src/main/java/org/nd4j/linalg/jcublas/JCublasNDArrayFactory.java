@@ -552,11 +552,13 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long[] dataPointers = new long[toConcat.length];
         long[] tadPointers = new long[toConcat.length];
         long[] offsetsPointers = new long[toConcat.length];
+        long[] hostShapeInfoPointers = new long[toConcat.length];
 
         TADManager tadManager = ((JCudaExecutioner) Nd4j.getExecutioner()).getTadManager();
         for(int i = 0; i < toConcat.length; i++) {
             shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
+            hostShapeInfoPointers[i] = AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[]{dimension});
 
@@ -574,17 +576,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long dZ = AtomicAllocator.getInstance().getPointer(ret, context).address();
         long dZShapeInfo = AddressRetriever.retrieveDeviceAddress(ret.shapeInfoDataBuffer(), context);
 
-        long[] extras = new long[]{
-                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
-                context.getOldStream().getNativePointer(),
-                allocator.getDeviceId(),
-                context.getBufferAllocation(),
-                context.getBufferReduction(),
-                context.getBufferScalar(),
-                context.getBufferSpecial(),
-                AddressRetriever.retrieveHostAddress(toConcat[0].shapeInfoDataBuffer()),
-                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer())
-        };
+
 
         CudaDoubleDataBuffer tempData = new CudaDoubleDataBuffer(toConcat.length);
         CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(toConcat.length);
@@ -601,7 +593,21 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context).address();
         long offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context).address();
 
+
        // System.out.println("ShapesPointer after conversion: " + shapesPointer);
+
+        long[] extras = new long[]{
+                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
+                context.getOldStream().getNativePointer(),
+                allocator.getDeviceId(),
+                context.getBufferAllocation(),
+                context.getBufferReduction(),
+                context.getBufferScalar(),
+                context.getBufferSpecial(),
+                AddressRetriever.retrieveHostAddress(toConcat[0].shapeInfoDataBuffer()),
+                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
+                new LongPointer(hostShapeInfoPointers).address()
+        };
 
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(
