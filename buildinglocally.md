@@ -27,12 +27,14 @@ Your local machine will require some essential software and environment variable
 Architecture-specific software includes:
 
 **CPU options:**
+
 - Intel MKL
 - OpenBLAS
 - ATLAS
 - ND4J-Java (Android)
 
 **GPU options:**
+
 - Jcublas/CUDA
 - JOCL (coming soon)
 
