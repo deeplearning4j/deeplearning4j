@@ -5,7 +5,9 @@ import org.nd4s.Implicits._
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import scalaxy.loops._
 
+import scala.language.postfixOps
 import scala.util.control.Breaks._
 
 /*
@@ -70,7 +72,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length()
+        i <- 0 until lv.length() optimized
       } if (!f(ev.get(lv, i))) {
         result = true
         break()
@@ -88,7 +90,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length()
+        i <- 0 until lv.length() optimized
       } if (!f(ev.get(lv, i))) {
         result = false
         break()

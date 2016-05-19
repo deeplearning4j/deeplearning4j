@@ -9,6 +9,7 @@ lazy val root = (project in file(".")).settings(
   resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
   nd4jVersion := "0.4-rc3.8",
   libraryDependencies ++= Seq(
+    "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
     "org.nd4j" % "nd4j-api" % nd4jVersion.value,
     "org.nd4j" % "nd4j-x86" % nd4jVersion.value % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test,
