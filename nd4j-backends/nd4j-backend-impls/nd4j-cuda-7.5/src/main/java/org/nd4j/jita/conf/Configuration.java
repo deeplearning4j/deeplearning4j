@@ -38,9 +38,9 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private boolean debug = true;
+    @Getter private boolean debug = false;
 
-    @Getter private boolean verbose = true;
+    @Getter private boolean verbose = false;
 
     private boolean forceSingleGPU = true;
 
