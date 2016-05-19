@@ -27,7 +27,7 @@
 
 
 cudaDeviceProp *deviceProperties;
-cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[56];
+cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
 int maxThreads = 512;
 bool debug = false;
@@ -72,7 +72,7 @@ int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
 	int memory_limit = funcAttr.sharedSizeBytes;
 
 	// TODO: remove this later
-	memory_limit += xRank * 4 * 2;
+	memory_limit += sizeof(shape::TAD) + sizeof(UnifiedSharedMemory) + (xRank * 4 * 4);
 /*
 	if (xRank == 0) xRank = 2;
 
@@ -3398,249 +3398,6 @@ void   NativeOps::execTransformFloat(
 
 }
 
-template <typename T>
-__device__ void concatKernelGeneric(int dimension,
-									int numArrays,
-									Nd4jPointer *data,
-									Nd4jPointer *inputShapeInfos,
-									T *result,
-									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-	__shared__ UnifiedSharedMemory *manager;
-	__shared__ UnifiedSharedMemory *managerInput;
-
-	int zRank = shape::rank(resultShapeInfo);
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), zRank + 3);
-
-		managerInput = new((unsigned char *) manager->getSharedReductionBuffer()) UnifiedSharedMemory((int *) manager->getSharedReductionBuffer());
-		managerInput->init(sizeof(UnifiedSharedMemory), 8, 8, sizeof(shape::TAD), zRank + 3);
-	}
-	__syncthreads();
-
-	T **dataT = (T **) data;
-	int **shapeInfoPointers = (int **) inputShapeInfos;
-	int **tadShapes = (int **) tadPointers;
-	int **tadOffsets = (int **) offsetPointers;
-
-	if (shape::isScalar(shapeInfoPointers[0])) {
-
-//		if (threadIdx.x == 0)
-//			printf("Scalar concat\n");
-
-		for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) {
-			result[i] = dataT[i][0];
-		}
-	} else {
-		__shared__ shape::TAD *tad;
-		__shared__ shape::TAD *inputTAD;
-		__shared__ int yLength;
-		__shared__ char yOrder;
-		__shared__ int yEWS;
-		if (threadIdx.x == 0) {
-
-//			printf("Creating TAD\n");
-
-			tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-			tad->setExternalBuffers((void *) manager);
-			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
-			tad->init(resultShapeInfo, &dimension, 1);
-			tad->createTadOnlyShapeInfo();
-		}
-		__syncthreads();
-
-		char zOrder = shape::order(resultShapeInfo);
-		int sub[MAX_RANK];
-	//	int arrOffset = 0;
-
-		int zEWS = shape::elementWiseStride(resultShapeInfo);
-		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-		int zLength = shape::length(resultShapeInfo);
-
-		// TODO: to be cut into separate kernel. vector concatenation
-		if (shape::isVector(resultShapeInfo)) {
-			//if (threadIdx.x == 0)
-				//printf("Vector here\n");
-			if (zEWS >= 1) {
-				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
-
-					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
-						yLength = shape::length(shapeInfoPointers[r]);
-						yEWS = shape::elementWiseStride(shapeInfoPointers[r]);
-
-						// FIXME: this is bad
-						__shared__ int baseIdx;
-						if (threadIdx.x == 0) {
-							baseIdx = 0;
-							for (int f = 0; f < r; f++) {
-								baseIdx += shape::length(shapeInfoPointers[f]);
-							}
-						}
-						__syncthreads();
-
-						for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
-							result[baseIdx + i * zEWS] = dataT[r][i * yEWS];
-						}
-						__syncthreads();
-					} else {
-						if (tid == 0)
-							printf("Non-matched order for vector\n");
-					}
-				}
-			} else {
-				if (tid == 0)
-					printf("Vector Non-1 zEWS\n");
-			}
-
-			return;
-		}
-
-
-		// TODO: to be pulled into separate kernel. matrix concatenation
-		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
-
-			int *currentShape = shapeInfoPointers[r];
-			T *currentData = dataT[r];
-			int *currentTad = tadShapes[r];
-			int *currentOffsets = tadOffsets[r];
-
-			if (threadIdx.x == 0) {
-				inputTAD = new((unsigned char *)managerInput->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-				inputTAD->setExternalBuffers((void *) managerInput);
-				inputTAD->initWithExternalTAD(currentTad, currentShape, &dimension, 1);
-				//inputTAD->init(shapeInfoPointers[r], &dimension, 1);
-				//inputTAD->createTadOnlyShapeInfo();
-
-				yLength = shape::length(currentTad);
-				yOrder = shape::order(currentTad);
-				yEWS = shape::elementWiseStride(currentTad);
-			}
-			__syncthreads();
-
-
-
-
-
-			__shared__ int arrOffset;
-			if (threadIdx.x == 0) {
-				arrOffset = 0;
-				for (int f = 0; f < r; f++) {
-					arrOffset +=  shape::length(tadShapes[f]);
-				}
-
-			//	printf("Block: [%i], arrOffset: [%i]\n", r, arrOffset);
-			}
-			__syncthreads();
-
-
-			for (int j = 0; j < inputTAD->numTads; j++) {
-
-				int inputOffset = inputTAD->tadOffset(j);
-				int resultOffset = tad->tadOffset(j);
-
-				T *dataTAD = currentData + inputOffset;
-				T *resultTAD = result + resultOffset;
-
-				shape::ind2subC(shape::rank(tad->tadOnlyShapeInfo),shape::shapeOf(tad->tadOnlyShapeInfo),arrOffset, sub);
-				Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(tad->tadOnlyShapeInfo),shape::stride(tad->tadOnlyShapeInfo), sub, shape::rank(tad->tadOnlyShapeInfo));
-
-				resultTAD += baseOffset;
-
-				if (zOrder == yOrder && yEWS > 0  && tadEWS > 0) {
-//					if (threadIdx.x == 0)
-//						printf("Internal count\n");
-
-					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
-						resultTAD[i * tadEWS] = dataTAD[i * yEWS];
-					}
-				} else {
-					//printf("Non-matching order, yEWS: [%i]\n", yEWS);
-					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(inputTAD->tadOnlyShapeInfo)) {
-//						if (threadIdx.x == 0)
-//							printf("IN SHAPE ITER 1\n");
-
-						// FIXME: this is bad
-						__shared__ int baseIdx;
-						if (threadIdx.x == 0) {
-							baseIdx = 0;
-							for (int f = 0; f < r; f++) {
-								baseIdx += shape::length(shapeInfoPointers[f]);
-							}
-						}
-						__syncthreads();
-
-						if (inputTAD->wholeThing) {
-							for(int k = threadIdx.x; k < yLength; k+= blockDim.x) {
-								resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
-							}
-						} else {
-
-							int yIdx[MAX_RANK];
-
-							int yRank = shape::rank(inputTAD->tadOnlyShapeInfo);
-
-							for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-								shape::ind2sub(yRank, shape::shapeOf(inputTAD->tadOnlyShapeInfo), i, yIdx);
-								int yOffset = shape::getOffset(0, shape::shapeOf(inputTAD->tadOnlyShapeInfo), shape::stride(inputTAD->tadOnlyShapeInfo), yIdx, yRank);
-
-								resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
-							}
-						}
-					} else {
-
-//						if (threadIdx.x == 0)
-//							printf("IN SHAPE ITER 2\n");
-
-						int yIdx[MAX_RANK];
-
-						int yRank = shape::rank(inputTAD->tadOnlyShapeInfo);
-						int tadRank = shape::rank(tad->tadOnlyShapeInfo);
-
-						for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-							shape::ind2sub(yRank, shape::shapeOf(inputTAD->tadOnlyShapeInfo), i,yIdx);
-
-							int yOffset = shape::getOffset(0, shape::shapeOf(inputTAD->tadOnlyShapeInfo), shape::stride(inputTAD->tadOnlyShapeInfo), yIdx, yRank);
-							int resultOffset = shape::getOffset(0, shape::shapeOf(tad->tadOnlyShapeInfo), shape::stride(tad->tadOnlyShapeInfo), yIdx, tadRank);
-
-							resultTAD[resultOffset] =  dataTAD[yOffset];
-						}
-					}
-				}
-				__syncthreads();
-			}
-			__syncthreads();
-		//	arrOffset += yLength;
-
-			if (threadIdx.x == 0)
-				delete inputTAD;
-		}
-
-		if (threadIdx.x == 0)
-			delete tad;
-	}
-}
-
-extern "C" __global__ void concatKernelDouble(int dimension,
-											  int numArrays,
-											  Nd4jPointer *data,
-											  Nd4jPointer *inputShapeInfo,
-											  double *result,
-											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
-}
-
-extern "C" __global__ void concatKernelFloat(int dimension,
-											 int numArrays,
-											 Nd4jPointer *data,
-											 Nd4jPointer *inputShapeInfo,
-											 float *result,
-											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
-}
 
 template <typename T>
 __device__ void flattenKernelGeneric(int dOffset,
@@ -3965,6 +3722,17 @@ void NativeOps::initializeDevicesAndFunctions() {
 	cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
 
 
+	cudaFuncGetAttributes(&funcAttributes[38], concatKernelScalarFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[39], concatKernelScalarDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[40], concatKernelVStackFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[41], concatKernelVStackDouble);
+
+	cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
+
+	cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
 }
 
 
@@ -4262,8 +4030,70 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
+
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelFloat<<<128, 128, funcAttributes[31].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+
+	int smem = 0;
+	bool isVstack = false;
+	bool isScalar = true;
+	bool isHstack = false;
+
+	for (int i = 0; i < numArrays; i++) {
+		if (!shape::isScalar(hostShapePointers[i])) {
+			isScalar = false;
+			break;
+		}
+	}
+
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
+		isVstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+				isVstack = false;
+				break;
+			}
+		}
+	}
+
+	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+		isHstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+				isHstack = false;
+				break;
+			}
+		}
+	}
+
+	if (isScalar) {
+		if (debug && verbose)
+			printf("Going scalar concat\n");
+
+		smem = funcAttributes[38].sharedSizeBytes;
+		concatKernelScalarFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isVstack) {
+		if (debug && verbose)
+			printf("Going VStack concat\n");
+
+		smem = funcAttributes[40].sharedSizeBytes;
+		concatKernelVStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isHstack) {
+		if (debug && verbose)
+			printf("Going HStack concat\n");
+		smem = funcAttributes[42].sharedSizeBytes;
+
+		concatKernelHStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else {
+		if (debug && verbose)
+			printf("Going generic concat\n");
+
+		smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
+
+		concatKernelFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	}
+	if (debug && verbose)
+		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4292,8 +4122,70 @@ void NativeOps::concatDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
+	int **hostShapePointers = reinterpret_cast<int **>(extraPointers[9]);
+
 	// numArrays will be used as number of TADs, so each block process 1 input
-	concatKernelDouble<<<128, 128, funcAttributes[35].sharedSizeBytes + 128, *stream>>>(dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+
+	int smem = 0;
+	bool isVstack = false;
+	bool isScalar = true;
+	bool isHstack = false;
+
+	for (int i = 0; i < numArrays; i++) {
+		if (!shape::isScalar(hostShapePointers[i])) {
+			isScalar = false;
+			break;
+		}
+	}
+
+	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
+		isVstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+				isVstack = false;
+				break;
+			}
+		}
+	}
+
+	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+		isHstack = true;
+		for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+				isHstack = false;
+				break;
+			}
+		}
+	}
+
+	if (isScalar) {
+		if (debug && verbose)
+			printf("Going scalar concat\n");
+
+		smem = funcAttributes[39].sharedSizeBytes;
+		concatKernelScalarDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isVstack) {
+		if (debug && verbose)
+			printf("Going VStack concat\n");
+
+		smem = funcAttributes[41].sharedSizeBytes;
+		concatKernelVStackDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else if (isHstack) {
+		if (debug && verbose)
+			printf("Going HStack concat\n");
+		smem = funcAttributes[43].sharedSizeBytes;
+
+		concatKernelHStackDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	} else {
+		if (debug && verbose)
+			printf("Going generic concat\n");
+
+		smem = nd4j::math::nd4j_max<int>(funcAttributes[35].sharedSizeBytes + 768, 1280);
+
+		concatKernelDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], resultData, resultShape, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+	}
+	if (debug && verbose)
+		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
