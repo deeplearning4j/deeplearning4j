@@ -13,7 +13,7 @@ Building locally requires that you build the entire Deeplearning4j stack which i
 - [nd4j](https://github.com/deeplearning4j/nd4j)
 - [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
-Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA).
+Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
 
 ## Prerequisites
 
@@ -26,14 +26,14 @@ Your local machine will require some essential software and environment variable
 
 Architecture-specific software includes:
 
-**CPU options:**
+CPU options:
 
 - Intel MKL
 - OpenBLAS
 - ATLAS
 - ND4J-Java (Android)
 
-**GPU options:**
+GPU options:
 
 - Jcublas/CUDA
 - JOCL (coming soon)
