@@ -5,6 +5,8 @@ layout: default
 
 # Developer Guide
 
+*Note: Developers who are contributing will need to build from source. Follow our [building locally](./buildinglocally.html) guide before getting started.*
+
 ## DeepLearning4J and Related Projects - An Overview
 
 DeepLearning4j is perhaps the more visible project, there are a number of other projects that you should be familiar with - and may consider contributing to. These include:
