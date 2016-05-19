@@ -9,7 +9,7 @@ import org.nd4s.Implicits._
 object FilterOps{
   def apply(x:INDArray,f:Double=>Boolean, g:IComplexNumber => Boolean):FilterOps = new FilterOps(x,x.length(),f,g)
 }
-class FilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => Boolean) extends BaseScalarOp(_x,null:INDArray,_x,len,0){
+class FilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => Boolean) extends BaseScalarOp(_x,null:INDArray,_x,len,0) with LeftAssociativeBinaryOp {
   def this(){
     this(0.toScalar,0,null,null)
   }
@@ -20,16 +20,6 @@ class FilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => Boo
   override def opForDimension(index: Int, dimension: Int): Op = FilterOps(x.tensorAlongDimension(index,dimension),f,g)
 
   override def opForDimension(index: Int, dimension: Int*): Op = FilterOps(x.tensorAlongDimension(index,dimension:_*),f,g)
-
-  override def op(origin: IComplexNumber, other: Double): IComplexNumber = op(origin)
-
-  override def op(origin: IComplexNumber, other: Float): IComplexNumber = op(origin)
-
-  override def op(origin: IComplexNumber, other: IComplexNumber): IComplexNumber = op(origin)
-
-  override def op(origin: Float, other: Float): Float = op(origin)
-
-  override def op(origin: Double, other: Double): Double = op(origin)
 
   override def op(origin: Double): Double = if(f(origin)) origin else 0
 
