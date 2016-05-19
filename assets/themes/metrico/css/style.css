@@ -495,6 +495,35 @@ iframe {
   font-weight: 700;
 }
 
+.page-content h1, 
+.page-content h2, 
+.page-content h3{
+  margin-top: 30px;
+}
+
+.page-content h4, 
+.page-content h5, 
+.page-content h6 {
+  margin-top: 20px;
+  opacity: 0.8;
+}
+
+.page-content h2 {
+  font-size: 32px;
+}
+
+.page-content h3 {
+  font-size: 27px;
+}
+
+.page-content h4 {
+  font-size: 23px;
+}
+
+.page-content h5 {
+  font-size: 19px;
+}
+
 
 
 /* FUN FACTS / Testimonials Box */
