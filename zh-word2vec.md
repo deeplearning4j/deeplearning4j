@@ -1,6 +1,6 @@
 ---
 title: Word2vec
-layout: zh-default
+layout: default
 ---
 
 # Word2vec
