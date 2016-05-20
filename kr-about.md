@@ -1,6 +1,6 @@
 ---
 title: "회사 소개"
-layout: kr-default
+layout: default
 ---
 
 # 회사 소개
