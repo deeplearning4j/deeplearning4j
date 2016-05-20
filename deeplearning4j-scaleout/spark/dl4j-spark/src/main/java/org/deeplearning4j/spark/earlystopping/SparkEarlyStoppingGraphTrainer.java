@@ -38,8 +38,20 @@ public class SparkEarlyStoppingGraphTrainer extends BaseSparkEarlyStoppingTraine
     private SparkComputationGraph sparkNet;
 
     public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+                                          JavaRDD<MultiDataSet> train, int examplesPerFit, int totalExamples) {
+        this(sc,esConfig,net,train,examplesPerFit,totalExamples,0,null);
+    }
+
+    public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
                                           JavaRDD<MultiDataSet> train, int examplesPerFit, int totalExamples, int numPartitions) {
         this(sc,esConfig,net,train,examplesPerFit,totalExamples,numPartitions,null);
+    }
+
+    public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
+                                          JavaRDD<MultiDataSet> train, int examplesPerFit, int totalExamples, 
+                                          EarlyStoppingListener<ComputationGraph> listener) {
+        super(sc, esConfig, net, null, train, examplesPerFit, totalExamples, 0, listener);
+        this.sparkNet = new SparkComputationGraph(sc,net);
     }
 
     public SparkEarlyStoppingGraphTrainer(SparkContext sc, EarlyStoppingConfiguration<ComputationGraph> esConfig, ComputationGraph net,
