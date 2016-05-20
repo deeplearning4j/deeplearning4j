@@ -1,6 +1,5 @@
-package org.nd4j.jita.constant;
+package org.nd4j.linalg.cache;
 
-import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
