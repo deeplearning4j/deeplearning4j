@@ -68,10 +68,18 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
             throw new IllegalArgumentException("Cannot conduct early stopping without a termination condition (both Iteration "
                 + "and Epoch termination conditions are null/empty)");
         }
+
+        // repartition if size is different
+        if(numPartitions != 0 && numPartitions != train.partitions().size()){
+            log.info("Repartitioning training set to {}", numPartitions);
+            this.train = train.repartition(numPartitions);
+        } else {
+            this.train = train;
+        }
+
         this.sc = sc;
         this.esConfig = esConfig;
         this.net = net;
-        this.train = train;
         this.trainMulti = trainMulti;
         this.examplesPerFit = examplesPerFit;
         this.totalExamples = totalExamples;
@@ -99,14 +107,6 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
         if(esConfig.getEpochTerminationConditions() != null){
             for( EpochTerminationCondition c : esConfig.getEpochTerminationConditions()){
                 c.initialize();
-            }
-        }
-
-        // repartition if size is different
-        if(numPartitions != 0){
-            if(numPartitions != train.partitions().size()){
-                log.info("Repartitioning training set to {}", numPartitions);
-                train.repartition(numPartitions);
             }
         }
 
