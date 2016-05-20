@@ -24,7 +24,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>spark_${scala.binary.version}</artifactId>
+    <artifactId>spark</artifactId>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -38,29 +38,41 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>1.0.4</hadoop.version>
         <spark.version>1.5.2</spark.version>
-        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                </configuration>
                 <executions>
                     <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
                         <goals>
+                            <goal>add-source</goal>
                             <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
                             <goal>testCompile</goal>
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                </configuration>
             </plugin>
-
-
         </plugins>
     </build>
 
