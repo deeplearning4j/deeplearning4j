@@ -1,6 +1,6 @@
 ---
 title: 초보자용 RBM(Restricted Boltzmann Machines) 튜토리알
-layout: kr-default
+layout: default
 ---
 
 # 초보자용 RBM(Restricted Boltzmann Machines) 튜토리알
