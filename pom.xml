@@ -70,6 +70,8 @@
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
+        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.11.7</scala.version>
     </properties>
 
 
