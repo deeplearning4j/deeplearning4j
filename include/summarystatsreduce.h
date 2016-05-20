@@ -806,8 +806,9 @@ struct SharedSummaryStatsData<double> {
 			        val.n = 0;
                     sPartials[threadIdx.x] =  val;
 
-					if (threadIdx.x < gridDim.x)
-						sPartials[threadIdx.x] =  pBuffer[threadIdx.x];
+                    for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], pBuffer[i] ,extraParams);
+                    }
 
 
 					__syncthreads();
