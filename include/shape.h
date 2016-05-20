@@ -1192,7 +1192,13 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    void printIntArray(int *arr,int length);
+    inline void printIntArray(int *arr,int length);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    void printArray(float *arr,int length);
+
 
     /**
      * Dimension collapse is an algorithm
@@ -4250,6 +4256,18 @@ __device__ int tadOffset(int *xInfo, int offset) {
         printf("ShapeInfo: [");
         for (int i = 0; i < rank * 2 + 4; i++) {
             printf("%i, ", shapeInfo[i]);
+        }
+        printf("]\n");
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    inline void printArray(float *arr,int length) {
+        printf("Array: [");
+        for (int i = 0; i < length; i ++) {
+            printf("%f", arr[i]);
+            if (i + 1 < length) printf(", ");
         }
         printf("]\n");
     }
