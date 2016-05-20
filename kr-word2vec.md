@@ -1,6 +1,6 @@
 ---
 title: "Word2vec: Java에서 인공 신경망으로 Word Embeddings 구현하기"
-layout: kr-default
+layout: default
 ---
 
 # Word2Vec
