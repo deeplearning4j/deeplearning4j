@@ -18,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -32,6 +33,7 @@ public class CudaTransformsTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setAllocationModel(Configuration.AllocationModel.DIRECT)
+                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setMaximumBlockSize(64)
                 .enableDebug(true)
                 .setVerbose(true);
@@ -679,5 +681,31 @@ public class CudaTransformsTests {
 
 
         }
+    }
+
+    @Test
+    public void testSoftmax1D_1() throws Exception {
+        INDArray input1T = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).transpose();
+        INDArray input1 = Nd4j.create(new double[]{ -0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04});
+        INDArray input2 = Nd4j.zerosLike(input1);
+        Nd4j.copy(input1, input2);
+        INDArray output1 = Nd4j.create(1, 10);
+        INDArray output1T = Nd4j.create(1, 10);
+
+        System.out.println("FA --------------------");
+        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
+        Nd4j.getExecutioner().exec(new SoftMax(input1T, output1T));
+        System.out.println("FB --------------------");
+
+        System.out.println("Softmax = " + output1);
+        INDArray output2 = Nd4j.create(1,10);
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(input2, output2));
+        System.out.println("Softmax Derivative = " + output2);
+
+        INDArray assertion1 = Nd4j.create(new double[]{0.04, 0.16, 0.14, 0.26, 0.05, 0.11, 0.06, 0.06, 0.02, 0.09});
+
+        assertArrayEquals(assertion1.data().asFloat(), output1.data().asFloat(), 0.01f);
+        assertArrayEquals(assertion1.data().asFloat(), output1T.data().asFloat(), 0.01f);
+
     }
 }
