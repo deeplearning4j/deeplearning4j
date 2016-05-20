@@ -3880,8 +3880,9 @@ namespace functions {
             scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
         __syncthreads();
 
-    	scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+    	scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
+
 
         if (threadIdx.x == 0)
             exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
@@ -4130,7 +4131,7 @@ namespace functions {
             scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
         __syncthreads();
 
-		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+		scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
 
         if (threadIdx.x == 0)
@@ -4413,7 +4414,7 @@ namespace functions {
             scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
         __syncthreads();
 
-		scalarSub->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+		scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		__syncthreads();
 
         if (threadIdx.x == 0)
