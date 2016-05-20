@@ -13,6 +13,10 @@ Reinforcement algorithms with deep learning at their core are currently beating 
 
 In time, we expect RL to perform better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. When people talk about building robot armies, this is what they mean. :) 
 
+<p align="center">
+<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+</p>
+
 ## Reinforcement Learning
 
 Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. 
