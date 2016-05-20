@@ -1,6 +1,6 @@
 ---
 title: 고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)
-layout: kr-default
+layout: default
 ---
 
 # 고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의
