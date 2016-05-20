@@ -49,7 +49,7 @@ Once you've configured your net, you train the model with `model.fit`.
 
 ## Prerequisites
 
-* [Java (developer version)](#Java) 1.7 or later
+* [Java (developer version)](#Java) 1.7 or later (**Only 64-Bit versions supported**)
 * [Apache Maven](#Maven) 
 * [IntelliJ IDEA](#IntelliJ) or Eclipse
 * [Git](#Git)
@@ -65,6 +65,8 @@ If you don't have Java 1.7 or later, download the current [Java Development Kit 
 ``` shell
 java -version
 ```
+
+Please make sure you have a 64-Bit version of java installed, as you will see an error telling you `no jnind4j in java.library.path` if you decide to try to use a 32-Bit version instead.
 
 #### <a name="Maven">Apache Maven</a>
 
