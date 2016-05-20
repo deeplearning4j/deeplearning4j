@@ -24,7 +24,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dl4j-spark-nlp</artifactId>
+    <artifactId>dl4j-spark-nlp_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-nlp</name>

@@ -24,7 +24,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dl4j-spark</artifactId>
+    <artifactId>dl4j-spark_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
 
     <name>dl4j-spark</name>
@@ -180,7 +180,7 @@
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>canova-spark</artifactId>
+            <artifactId>canova-spark_${scala.binary.version}</artifactId>
             <version>${canova.version}</version>
         </dependency>
 
