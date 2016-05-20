@@ -256,6 +256,12 @@ If you are using a GPU backend:
 ./build-dl4j-stack.sh -c cuda
 ```
 
+For Scala users, you can pass your binary version for Spark compatibility:
+
+```
+./build-dl4j-stack.sh -c cuda --scalav 2.11
+```
+
 The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
 
 ### Building Manually
@@ -295,6 +301,8 @@ cd ..
 git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+# or cross-build across Scala versions
+#./buildmultiplescalaversions.sh -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 ```
 
