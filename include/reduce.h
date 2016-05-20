@@ -214,7 +214,7 @@ namespace functions {
                 }
 
                 __syncthreads();
-                aggregatePartials(sPartials, threadIdx.x, blockDim.x,extraParams);
+                aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n),extraParams);
 
 
                 __syncthreads();
@@ -240,10 +240,10 @@ namespace functions {
                     if (amLast) {
                         tc[4096] = 0;
 
-                        sPartials[threadIdx.x] = 0;
+                        sPartials[threadIdx.x] = this->startingValue(dx);
 
                         for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(reductionBuffer[i],extraParams),extraParams);
+                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], reductionBuffer[i] ,extraParams);
                         }
                         __syncthreads();
 
