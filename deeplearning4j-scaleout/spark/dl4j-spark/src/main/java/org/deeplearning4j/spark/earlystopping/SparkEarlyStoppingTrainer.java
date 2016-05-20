@@ -51,6 +51,17 @@ public class SparkEarlyStoppingTrainer extends BaseSparkEarlyStoppingTrainer<Mul
     private SparkDl4jMultiLayer sparkNet;
 
     public SparkEarlyStoppingTrainer(SparkContext sc, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                                     JavaRDD<DataSet> train, int examplesPerFit, int totalExamples) {
+        this(sc, esConfig, net, train, examplesPerFit, totalExamples, 0, null);
+    }
+
+    public SparkEarlyStoppingTrainer(SparkContext sc, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
+                                     JavaRDD<DataSet> train, int examplesPerFit, int totalExamples, EarlyStoppingListener<MultiLayerNetwork> listener) {
+        super(sc, esConfig, net, train, null, examplesPerFit, totalExamples, 0, listener);
+        sparkNet = new SparkDl4jMultiLayer(sc, net);
+    }
+
+    public SparkEarlyStoppingTrainer(SparkContext sc, EarlyStoppingConfiguration<MultiLayerNetwork> esConfig, MultiLayerNetwork net,
                                      JavaRDD<DataSet> train, int examplesPerFit, int totalExamples, int numPartitions) {
         this(sc, esConfig, net, train, examplesPerFit, totalExamples, numPartitions, null);
     }
