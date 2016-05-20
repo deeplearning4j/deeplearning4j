@@ -156,3 +156,13 @@ Additional links:
 2. Read the [introduction to deep neural networks](./neuralnet-overview) or one of our detailed tutorials. 
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
+
+
+## Troubleshooting
+
+### I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
+
+It may be that you have incompatible DLLs on your PATH. In order to tell DL4J to ignore those you have to add the following as a VM parameter (Run -> Edit Configurations -> VM Options in IntelliJ):
+```
+-Djava.library.path=""
+```
