@@ -1,4 +1,4 @@
-package org.nd4j.jita.constant;
+package org.nd4j.linalg.cache;
 
 import java.util.Arrays;
 

@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.cache.ConstantHandler;
+import org.nd4j.linalg.cpu.nativecpu.cache.ConstantBuffersCache;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -25,6 +27,7 @@ import java.util.Arrays;
 
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = new NativeOps();
+    private ConstantHandler constantHandler = new ConstantBuffersCache();
 
     @Override
     public Op exec(Op op) {
@@ -88,7 +91,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dimension = new int[]{Integer.MAX_VALUE};
 
 
-        long dimensionAddress = Nd4j.createBuffer(dimension).address();
+        long dimensionAddress = constantHandler.getConstantBuffer(dimension).address();
         long[] dummy = new long[1];
         long x = op.x().data().address();
         long z = op.z().data().address();
@@ -175,7 +178,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
         op.setZ(ret);
         long[] dummy = new long[1];
-        long dimensionAddress = Nd4j.createBuffer(dimension).address();
+
+        long dimensionAddress = constantHandler.getConstantBuffer(dimension).address();
+
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if(op instanceof Variance) {
                 if(ret.isScalar()) {
@@ -504,7 +509,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Arrays.sort(dimension);
 
         long[] dummy = new long[1];
-        long dimensionAddress = Nd4j.createBuffer(dimension).address();
+        long dimensionAddress = constantHandler.getConstantBuffer(dimension).address();
+
         if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execBroadcastDouble(dummy,op.opNum(),
                     op.x().data().address()

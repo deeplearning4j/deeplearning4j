@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -216,6 +217,4 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         }
         setData(arr);
     }
-
-
 }

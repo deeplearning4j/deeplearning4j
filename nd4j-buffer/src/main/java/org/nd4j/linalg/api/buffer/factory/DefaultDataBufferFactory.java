@@ -254,12 +254,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createDouble(byte[] data,int length) {
-        return new FloatBuffer(Unpooled.wrappedBuffer(data),length);
+        return new DoubleBuffer(Unpooled.wrappedBuffer(data),length);
     }
 
     @Override
     public DataBuffer createFloat(byte[] data,int length) {
-        return new DoubleBuffer(Unpooled.wrappedBuffer(data),length);
+        return new FloatBuffer(Unpooled.wrappedBuffer(data),length);
     }
 
     @Override
@@ -289,7 +289,6 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createDouble(int[] data, boolean copy) {
-
         return new DoubleBuffer(ArrayUtil.toDoubles(data), copy);
     }
 
@@ -320,7 +319,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createDouble(float[] data, boolean copy) {
-        return new FloatBuffer(data, copy);
+        return new DoubleBuffer(data, copy);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api;
 
 import org.apache.commons.math3.util.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,6 +13,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Created by Alex on 30/04/2016.
  */
+
 public class TestNDArrayCreationUtil extends BaseNd4jTest {
 
 

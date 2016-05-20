@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version> 0.4-rc3.9-SNAPSHOT</version>
+    <version> 0.4-rc3.10-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -323,6 +323,32 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.6</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>nexus-releases</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
+                </configuration>
+            </plugin>
         </plugins>
 
         <pluginManagement>
@@ -362,7 +388,10 @@
                     <version>2.5</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
-                        <arguments>-Psonatype-oss-release -DskipTests</arguments>
+                        <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgnd4j-xxxx -->
+                        <arguments>-Psonatype-oss-release -DskipTests ${arguments}</arguments>
+                        <localCheckout>true</localCheckout>
+                        <pushChanges>false</pushChanges>
                     </configuration>
                 </plugin>
                 <plugin>
