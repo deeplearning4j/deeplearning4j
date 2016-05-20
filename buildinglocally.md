@@ -304,7 +304,7 @@ git clone https://github.com/deeplearning4j/canova.git
 cd canova
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
-#./buildmultiplescalaversions.sh -DskipTests -Dmaven.javadoc.skip=true
+#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 
 # build and install deeplearning4j
@@ -312,7 +312,7 @@ git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
-#./buildmultiplescalaversions.sh -DskipTests -Dmaven.javadoc.skip=true
+#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 ```
 
