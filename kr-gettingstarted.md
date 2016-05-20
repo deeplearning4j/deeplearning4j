@@ -1,6 +1,6 @@
 ---
 title: 전체 설치
-layout: kr-default
+layout: default
 ---
 
 # 전체 설치
