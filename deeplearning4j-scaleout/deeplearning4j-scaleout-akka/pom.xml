@@ -24,7 +24,7 @@
 		<artifactId>deeplearning4j-scaleout</artifactId>
 		<version>0.4-rc3.10-SNAPSHOT</version>
 	</parent>
-	<artifactId>deeplearning4j-scaleout-akka</artifactId>
+	<artifactId>deeplearning4j-scaleout-akka__${scala.binary.version}</artifactId>
 	<name>deeplearning4j-scaleout-akka</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

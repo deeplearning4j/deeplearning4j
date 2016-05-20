@@ -38,9 +38,11 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>1.0.4</hadoop.version>
         <scala.version>2.11.6</scala.version>
-        <spark.version>1.3.0</spark.version>
+        <spark.version>1.5.2</spark.version>
         <scala.binary.version>2.11</scala.binary.version>
     </properties>
+
+
     <build>
         <plugins>
             <plugin>
