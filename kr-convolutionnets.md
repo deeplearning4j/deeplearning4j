@@ -1,6 +1,6 @@
 ---
 title: 자바와 컨볼루션 네트워크
-layout: kr-default
+layout: default
 ---
 
 # 컨볼루션 네트워크
