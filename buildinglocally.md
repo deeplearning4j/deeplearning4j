@@ -11,6 +11,7 @@ Building locally requires that you build the entire Deeplearning4j stack which i
 
 - [libnd4j](https://github.com/deeplearning4j/libnd4j)
 - [nd4j](https://github.com/deeplearning4j/nd4j)
+- [canova](https://github.com/deeplearning4j/canova)
 - [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
@@ -256,6 +257,12 @@ If you are using a GPU backend:
 ./build-dl4j-stack.sh -c cuda
 ```
 
+For Scala users, you can pass your binary version for Spark compatibility:
+
+```
+./build-dl4j-stack.sh -c cuda --scalav 2.11
+```
+
 The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
 
 ### Building Manually
@@ -272,6 +279,7 @@ The overall procedure looks like the following commands below, with the exceptio
 # removes any existing repositories to ensure a clean build
 rm -rf libnd4j
 rm -rf nd4j
+rm -rf canova
 rm -rf deeplearning4j
 
 # compile libnd4j
@@ -291,10 +299,20 @@ mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:n
 #mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
 
+# build and install canova
+git clone https://github.com/deeplearning4j/canova.git
+cd canova
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+# or cross-build across Scala versions
+#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+cd ..
+
 # build and install deeplearning4j
 git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+# or cross-build across Scala versions
+#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 ```
 
