@@ -11,6 +11,10 @@ Data parallelism shards large datasets and hands those pieces to separate neural
 
 With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](./sparkinstall.html).
 
+<p align="center">
+<a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j on Spark</a>
+</p>
+
 ## Spark Examples
 
 DL4J's Spark examples repository is here:
