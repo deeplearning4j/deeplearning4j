@@ -1,5 +1,5 @@
 ---
-layout: ja-default
+layout: default
 title: "Deeplearning4jのフルインストール"
 ---
 
