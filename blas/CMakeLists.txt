@@ -22,7 +22,7 @@ if (OPENMP_FOUND)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -71,7 +71,7 @@ if(CUDA_BLAS)
         SET(CUDA_SEPARABLE_COMPILATION OFF)
         set(CUDA_COMPUTE_CAPABILITY "35")
         if (CMAKE_BUILD_TYPE STREQUAL "Release")
-            list(APPEND CUDA_NVCC_FLAGS "--ptxas-options=-v; -DVERBOSE; -lcublas; --cudart=static -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53")
+            list(APPEND CUDA_NVCC_FLAGS "--ptxas-options=-v; -DVERBOSE; -lcublas; --cudart=static -O3 -gencode arch=compute_52,code=sm_52")
         else()
             list(APPEND CUDA_NVCC_FLAGS "--ptxas-options=-v; -DVERBOSE; -G; -g; -lcublas; --cudart=static -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53")
         endif()

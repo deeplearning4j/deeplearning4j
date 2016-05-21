@@ -404,8 +404,8 @@ struct SharedIndexValue<double> {
 					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 					pBuffer[blockIdx.x] = {sPartials[0].value, sPartials[0].index};
 				}
-				__syncthreads();
 				__threadfence();
+				__syncthreads();
 
 				if (tid==0) {
 					unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
@@ -428,7 +428,7 @@ struct SharedIndexValue<double> {
 
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x,gridDim.x,extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
 
 					__syncthreads();
 					if (tid == 0) {

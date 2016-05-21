@@ -193,12 +193,10 @@ namespace functions {
                 T *sPartials = (T *) manager->getSharedReductionBuffer();
 
                 sPartials[threadIdx.x] = this->startingValue(dx);
-                __syncthreads();
 
                 if(elementWiseStride >= 1) {
                     for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
-                        //for(int i = elementWiseStride * tid;i < n; i += (blockDim.x * gridDim.x * elementWiseStride)) {
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams); //
+                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams);
                     }
                 }
                 else {
@@ -227,8 +225,8 @@ namespace functions {
                     if (threadIdx.x == 0) {
                         reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
                     }
-                    __syncthreads();
                     __threadfence();
+                    __syncthreads();
 
                     if (threadIdx.x==0) {
                         unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
@@ -247,7 +245,7 @@ namespace functions {
                         }
                         __syncthreads();
 
-                        aggregatePartials(sPartials, threadIdx.x, gridDim.x, extraParams);
+                        aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
