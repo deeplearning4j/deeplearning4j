@@ -1,6 +1,6 @@
 ---
 title: "Word2vec"
-layout: ja-default
+layout: default
 ---
 
 # Word2Vec
