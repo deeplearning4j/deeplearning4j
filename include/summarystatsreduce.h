@@ -882,32 +882,21 @@ struct SharedSummaryStatsData<double> {
                 int length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride == 1) {
-#pragma omp parallel for shared(startingIndex)
                     for (int i = 0; i < length; i++) {
                         SummaryStatsData<T> curr;
                         curr.initWithValue(x[i]);
-#pragma omp critical
-                        {
-                            startingIndex = update(startingIndex, curr,
-                                                   extraParams);
-                        }
-
+                        startingIndex = update(startingIndex, curr,
+                                                 extraParams);
                     }
 
                     T finalVal = this->getValue(startingIndex);
                     return finalVal;
                 } else {
-
-#pragma omp parallel for shared(startingIndex)
                     for (int i = 0; i < length; i++) {
                         SummaryStatsData<T> curr;
                         curr.initWithValue(x[i]);
-#pragma omp critical
-                        {
-                            startingIndex = update(startingIndex, curr,
-                                                   extraParams);
-                        }
-
+                        startingIndex = update(startingIndex, curr,
+                                               extraParams);
                     }
 
                     T finalVal = this->getValue(startingIndex);
