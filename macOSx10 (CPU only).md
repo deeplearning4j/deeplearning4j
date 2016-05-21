@@ -37,7 +37,7 @@ Exchange nd4j-x86 for nd4j-native like that:
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-native</artifactId>
-        <version>0.4-rc3.9-SNAPSHOT</version>
+        <version>0.4-rc3.10-SNAPSHOT</version>
     </dependency>
 
 and then reimport and try out.
