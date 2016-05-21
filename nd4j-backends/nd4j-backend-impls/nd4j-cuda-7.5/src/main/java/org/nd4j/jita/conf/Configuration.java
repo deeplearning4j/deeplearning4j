@@ -32,7 +32,7 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
-    @Getter private ExecutionModel executionModel = ExecutionModel.ASYNCHRONOUS;
+    @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 

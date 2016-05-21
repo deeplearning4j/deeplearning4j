@@ -526,7 +526,7 @@ public class CudaZeroHandler implements MemoryHandler {
             CudaContext context = flowController.prepareAction(point);
             tContext = context;
             if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream().address()) == 0)
-                throw new IllegalStateException("MemcpyAsync failed");
+                throw new IllegalStateException("MemcpyAsync H2H failed: [" + srcPointer.address() + "] -> [" + dP.address() + "]");
 
                 flowController.commitTransfer(tContext.getSpecialStream());
 

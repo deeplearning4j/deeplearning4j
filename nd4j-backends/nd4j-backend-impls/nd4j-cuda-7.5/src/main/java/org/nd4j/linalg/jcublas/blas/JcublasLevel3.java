@@ -36,8 +36,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
+        //A = Shape.toOffsetZero(A);
+        //B = Shape.toOffsetZero(B);
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         CublasPointer cAPointer = new CublasPointer(A, ctx);
@@ -156,8 +156,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
+        //A = Shape.toOffsetZero(A);
+        //B = Shape.toOffsetZero(B);
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
