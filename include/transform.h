@@ -4249,7 +4249,7 @@ namespace functions {
                                 result[i] = nd4j::math::nd4j_exp<T>(result[i]);
                             }
 
-#pragma omp parallel for simd reduction(+:sum)
+#pragma omp parallel for simd reduction(+:sum)  shared(result)
                             for (int i = 0; i < length; i++) {
                                sum += result[i];
                             }
@@ -4276,7 +4276,7 @@ namespace functions {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
-#pragma omp parallel for simd reduction(+:sum)
+#pragma omp parallel for simd reduction(+:sum)  shared(result, elementWiseStride)
                             for (int i = 0; i < length; i++) {
                                 sum += result[i * elementWiseStride];
 
@@ -4552,7 +4552,7 @@ namespace functions {
                                 result[i] = nd4j::math::nd4j_exp<T>(result[i]);
                             }
 
-#pragma omp parallel for simd reduction(+:sum)
+#pragma omp parallel for simd reduction(+:sum)  shared(result)
                             for (int i = 0; i < length; i++) {
                                 sum += result[i];
                             }
@@ -4579,7 +4579,7 @@ namespace functions {
                                 result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
                             }
 
-#pragma omp parallel for simd reduction(+:sum)
+#pragma omp parallel for simd reduction(+:sum) shared(result, elementWiseStride)
                             for (int i = 0; i < length; i++) {
                                     sum += result[i * elementWiseStride];
                             }
