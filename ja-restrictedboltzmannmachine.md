@@ -1,6 +1,6 @@
 ---
 title: "制限付きボルツマンマシンの初心者向けガイド"
-layout: ja-default
+layout: default
 ---
 
 # 制限付きボルツマンマシンの初心者向けガイド
