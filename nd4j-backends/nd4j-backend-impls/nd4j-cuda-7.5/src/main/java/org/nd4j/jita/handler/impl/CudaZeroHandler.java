@@ -378,8 +378,17 @@ public class CudaZeroHandler implements MemoryHandler {
                  cudaMemcpyKind.cudaMemcpyHostToDevice,
                  context.getOldStream()
              );*/
-            if (nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), AllocationUtils.getRequiredMemory(shape), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address()) == 0)
-                throw new IllegalStateException("MemcpyAsync failed");
+            if (nativeOps.memcpyAsync(
+                            point.getPointers().getDevicePointer().address(),
+                            point.getPointers().getHostPointer().address(),
+                            AllocationUtils.getRequiredMemory(shape),
+                            CudaConstants.cudaMemcpyHostToDevice,
+                            context.getSpecialStream().address()) == 0)
+                throw new IllegalStateException("MemcpyAsync relocate H2D failed: [" + point.getHostPointer().address() + "] -> [" + point.getDevicePointer().address() + "]");
+
+            flowController.commitTransfer(context.getSpecialStream());
+                //
+                //
 
             //context.syncOldStream();
 
@@ -534,13 +543,14 @@ public class CudaZeroHandler implements MemoryHandler {
                 tContext  = flowController.prepareAction(point);
             //log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 
-            if (nativeOps.memcpyAsync(
+            if (
+                    nativeOps.memcpyAsync(
                         rDP.address(),
                         dP.address(),
                         length,
                         CudaConstants.cudaMemcpyHostToDevice,
                         tContext.getSpecialStream().address()) == 0)
-                throw new IllegalStateException("MemcpyAsync failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
+                throw new IllegalStateException("MemcpyAsync H2D failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
             flowController.commitTransfer(tContext.getSpecialStream());
 

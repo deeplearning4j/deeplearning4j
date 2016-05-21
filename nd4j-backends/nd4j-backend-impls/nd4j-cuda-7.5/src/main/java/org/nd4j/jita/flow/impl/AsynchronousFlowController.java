@@ -96,7 +96,7 @@ public class AsynchronousFlowController implements FlowController{
                         AllocationUtils.getRequiredMemory(point.getShape()),
                         CudaConstants.cudaMemcpyDeviceToHost,
                         context.getSpecialStream().address()) == 0)
-                    throw new IllegalStateException("MemcpyAsync failed");
+                    throw new IllegalStateException("MemcpyAsync D2H failed: [" + point.getDevicePointer().address() + "] -> [" + point.getHostPointer().address() + "]");
 
                 commitTransfer(context.getSpecialStream());
             }// else log.info("Not [DEVICE] memory, skipping...");
@@ -315,7 +315,7 @@ public class AsynchronousFlowController implements FlowController{
             //int pendingLanes[] = new int[]{-1, -1};
 
             // FIXME: this is wrong.
-            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
             for (INDArray operand: operands) {
@@ -376,7 +376,7 @@ public class AsynchronousFlowController implements FlowController{
 
             // FIXME: this is wrong.
             //int pendingLanes[] = new int[]{-1, -1, -1, -1};
-            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
             for (INDArray operand: operands) {
@@ -437,6 +437,7 @@ public class AsynchronousFlowController implements FlowController{
         if (!lanesCounter.containsKey(newLane)) {
             lanesCounter.put(newLane, new AtomicLong(0));
         }
+
 
         lanesCounter.get(newLane).incrementAndGet();
 

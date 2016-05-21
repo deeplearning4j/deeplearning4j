@@ -18,8 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,6 +38,8 @@ public class CudaConstantHandler implements ConstantHandler {
     private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected FlowController flowController;
+
+    protected List<DataBuffer> protector = new CopyOnWriteArrayList<>();
 
     protected Semaphore lock = new Semaphore(1);
 
@@ -56,7 +60,7 @@ public class CudaConstantHandler implements ConstantHandler {
 
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        if (currentOffset >= 49152 || requiredMemoryBytes > 272)  {
+        if (currentOffset + requiredMemoryBytes >= 49152 || requiredMemoryBytes > 272)  {
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
             flowController.commitTransfer(context.getSpecialStream());
 
@@ -86,6 +90,8 @@ public class CudaConstantHandler implements ConstantHandler {
         point.setConstant(true);
         point.tickDeviceWrite();
         point.tickHostRead();
+
+        protector.add(dataBuffer);
 
         return cAddr;
     }

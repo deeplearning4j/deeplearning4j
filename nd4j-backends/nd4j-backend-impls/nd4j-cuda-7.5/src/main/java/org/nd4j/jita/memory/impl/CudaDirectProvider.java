@@ -143,6 +143,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 // cudaFree call
                 //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
 
+
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
          //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
