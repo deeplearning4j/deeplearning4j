@@ -10,6 +10,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.CollectionUtils;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.ArrayList;
@@ -155,7 +156,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         //Convert to 3d minibatch
         //Note: using f order here, as each  time step is contiguous in the buffer with f order (isn't the case with c order)
         INDArray featuresOut = Nd4j.create(new int[]{listFeatures.size(),listFeatures.get(0).size(1),maxLength},'f');
-        INDArray labelsOut = Nd4j.create(new int[]{listFeatures.size(),(regression ? 1 : numPossibleLabels),maxLength},'f');
+        INDArray labelsOut = Nd4j.create(new int[]{listLabels.size(),listLabels.get(0).size(1),maxLength},'f');
         INDArray featuresMask = null;
         INDArray labelsMask = null;
 
@@ -429,7 +430,13 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         while (iter.hasNext()) {
             Collection<Writable> step = iter.next();
             if (i == 0) {
-                shape[1] = step.size();
+                for( Writable w : step){
+                    if(w instanceof NDArrayWritable){
+                        shape[1] += ((NDArrayWritable) w).get().length();
+                    } else {
+                        shape[1]++;
+                    }
+                }
                 out = Nd4j.create(shape,'f');
             }
 
@@ -437,15 +444,15 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             int f = 0;
             while (timeStepIter.hasNext()) {
                 Writable current = timeStepIter.next();
-                try {
+
+                if(current instanceof NDArrayWritable){
+                    //Array writable -> multiple values
+                    INDArray arr = ((NDArrayWritable) current).get();
+                    out.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(f,f+arr.length())}, arr);
+                    f += arr.length();
+                } else {
+                    //Single value case
                     out.put(i, f++, current.toDouble());
-                } catch (UnsupportedOperationException e) {
-                    // This isn't a scalar, so check if we got an array already
-                    if (current instanceof NDArrayWritable) {
-                        out.putRow(i, ((NDArrayWritable)current).get());
-                    } else {
-                        throw e;
-                    }
                 }
             }
             i++;
@@ -463,10 +470,18 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         int i = 0;
         INDArray out = null;
         while (iter.hasNext()) {
-            Collection<Writable> step = iter.next();
+            Collection<Writable> stepCollection = iter.next();
+            List<Writable> step = (stepCollection instanceof List ? (List<Writable>)stepCollection : new ArrayList<>(stepCollection));
+
             if (i == 0) {
                 if (regression) {
-                    shape[1] = step.size();
+                    for(Writable w : step){
+                        if(w instanceof NDArrayWritable){
+                            shape[1] += ((NDArrayWritable) w).get().length();
+                        } else {
+                            shape[1]++;
+                        }
+                    }
                 } else {
                     shape[1] = numPossibleLabels;
                 }
@@ -479,7 +494,13 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Load all values
                 while (timeStepIter.hasNext()) {
                     Writable current = timeStepIter.next();
-                    out.put(i, f++, current.toDouble());
+                    if(current instanceof NDArrayWritable){
+                        INDArray w = ((NDArrayWritable) current).get();
+                        out.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(f,f+w.length())},w);
+                        f += w.length();
+                    } else {
+                        out.put(i, f++, current.toDouble());
+                    }
                 }
             } else {
                 //Expect a single value (index) -> convert to one-hot vector
@@ -499,12 +520,40 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
 
         int i=0;
         INDArray features = null;
-        INDArray labels = Nd4j.zeros(input.size(), regression ? 1 : numPossibleLabels);
+        INDArray labels = null;    //= Nd4j.zeros(input.size(), regression ? 1 : numPossibleLabels);
 
+        int featureSize = 0;
         while(iter.hasNext()){
-            Collection<Writable> step = iter.next();
+            Collection<Writable> stepCollection = iter.next();
+            List<Writable> step = (stepCollection instanceof List ? (List<Writable>)stepCollection : new ArrayList<>(stepCollection));
             if (i == 0) {
-                features = Nd4j.zeros( input.size(), step.size()-1);
+                //First: determine the features size. Usually equal to the number of Writable objects, except when
+                // one or more of the Writables is an INDArray (i.e., NDArrayWritable)
+                int j=0;
+                for(Writable w : step){
+                    if(j++ != labelIndex) {
+                        if (w instanceof NDArrayWritable) {
+                            featureSize += ((NDArrayWritable) w).get().length();
+                        } else {
+                            featureSize += 1;
+                        }
+                    }
+                }
+                features = Nd4j.zeros( input.size(), featureSize);
+
+                //Second: determine the output (labels) size.
+                int labelSize;
+                if(regression){
+                    if(step.get(labelIndex) instanceof NDArrayWritable){
+                        labelSize = ((NDArrayWritable) step.get(labelIndex)).get().length();
+                    } else {
+                        labelSize = 1;
+                    }
+                } else {
+                    //Classification: integer -> one-hot
+                    labelSize = numPossibleLabels;
+                }
+                labels = Nd4j.zeros(input.size(), labelSize);
             }
 
             Iterator<Writable> timeStepIter = step.iterator();
@@ -515,22 +564,26 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 if(countIn++ == labelIndex){
                     //label
                     if(regression){
-                        labels.put(i,0,current.toDouble());
+                        if(current instanceof NDArrayWritable){
+                            //Standard case
+                            labels.putRow(i, ((NDArrayWritable) current).get());
+                        } else {
+                            labels.put(i,0,current.toDouble());
+                        }
                     } else {
-                        INDArray line = FeatureUtil.toOutcomeVector(current.toInt(), numPossibleLabels);
-                        labels.putRow(i, line);
+                        labels.putScalar(i,current.toInt(),1.0);    //Labels initialized as 0s
                     }
                 } else {
                     //feature
-                    try {
+                    if(current instanceof NDArrayWritable){
+                        //NDArrayWritable: multiple values
+                        INDArray w = ((NDArrayWritable) current).get();
+                        int length = w.length();
+                        features.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.interval(countFeatures,countFeatures+length)}, w);
+                        countFeatures += length;
+                    } else {
+                        //Standard case: single value
                         features.put(i, countFeatures++, current.toDouble());
-                    } catch (UnsupportedOperationException e) {
-                        // This isn't a scalar, so check if we got an array already
-                        if (current instanceof NDArrayWritable) {
-                            features.putRow(i, ((NDArrayWritable)current).get());
-                        } else {
-                            throw e;
-                        }
                     }
                 }
             }
