@@ -60,7 +60,7 @@
 #define FOPEN(fHandle, filename, mode) (fHandle = fopen(filename, mode))
 #endif
 #ifndef FOPEN_FAIL
-#define FOPEN_FAIL(result) (result == nullptr)
+#define FOPEN_FAIL(result) (result == NULL)
 #endif
 #ifndef SSCANF
 #define SSCANF sscanf
@@ -93,7 +93,7 @@ inline int getFileExtension(char *filename, char **extension) {
 		string_length += 2;
 
 	if (string_length == 0)
-		*extension = nullptr;
+		*extension = NULL;
 	else
 		*extension = &filename[string_length];
 
@@ -211,7 +211,7 @@ inline bool getCmdLineArgumentString(int argc,  char **argv,
 	}
 
 	if (!bFound) {
-		*string_retval = nullptr;
+		*string_retval = NULL;
 	}
 
 	return bFound;
