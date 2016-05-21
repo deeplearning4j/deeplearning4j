@@ -280,26 +280,26 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 	return launchDims;
 }
 
-dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *zShapeInfo, cudaFuncAttributes funcAttr, int dimensionLength, int elementSize, int reductionSize) {
+dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *tadShapeInfo, cudaFuncAttributes funcAttr, int dimensionLength, int elementSize, int reductionSize) {
 
 	int tadLength = 0;
 	int numTads = 0;
-	if (zShapeInfo != nullptr) {
-		tadLength = shape::length(xShapeInfo) / shape::length(zShapeInfo);
+	if (tadShapeInfo != nullptr) {
+		tadLength = shape::length(tadShapeInfo);
 		numTads = shape::length(xShapeInfo) / tadLength;
 
 		if (tadLength == 1) {
 			if (debug && verbose)
-				printf("A xLength: [%i], zLength: [%i]\n", shape::length(xShapeInfo), shape::length(zShapeInfo));
+				printf("A xLength: [%i], zLength: [%i]\n", shape::length(xShapeInfo), shape::length(tadShapeInfo));
 		}
 	} else{
 		// we have special case - reduction along all dimensions
-		tadLength = nd4j::math::nd4j_min<int>(shape::length(xShapeInfo), 1024);
+		tadLength = nd4j::math::nd4j_min<int>(shape::length(xShapeInfo), 768);
 		numTads = shape::length(xShapeInfo) / tadLength;
 	}
 
 	int xRank = shape::rank(xShapeInfo);
-	int zRank = zShapeInfo == nullptr ? 0 : shape::rank(zShapeInfo);
+	int zRank = tadShapeInfo == nullptr ? 0 : shape::rank(tadShapeInfo);
 
 	dim3 launchDims = getBetterDimensions(deviceId, numTads, tadLength, xRank, funcAttr, dimensionLength, elementSize, reductionSize);
 
@@ -470,7 +470,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[27], 1, sizeof(double), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[27], 1, sizeof(double), 2);
 
 	indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -530,7 +530,7 @@ void   NativeOps::execIndexReduceDouble(
 	if (debug && verbose)
 		printf("D2 opNum:[%i]\n", opNum);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[27], dimensionLength, sizeof(double), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[27], dimensionLength, sizeof(double), 2);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
@@ -596,7 +596,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 
 //	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[26], deviceProperties[(int) extraPointers[2]]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[26],  dimensionLength, sizeof(double), 0);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[26],  dimensionLength, sizeof(double), 0);
 
 	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -850,7 +850,7 @@ void   NativeOps::execReduceDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[22], 1, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
 
 	reduceScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -910,7 +910,7 @@ void   NativeOps::execReduceDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 1);
 
 	if (dimensionLength == 1) {
 		reduceDouble1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -988,7 +988,7 @@ double NativeOps::execReduceScalarDouble(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[22], 1, sizeof(double), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
 
 	reduceScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1411,7 +1411,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[17], 1, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], 1, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1472,7 +1472,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[17], 1, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], 1, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1534,7 +1534,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[17], dimensionLength, sizeof(double), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], dimensionLength, sizeof(double), 8);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -1902,7 +1902,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[13], 1, sizeof(float), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], 1, sizeof(float), 2);
 
 	if (debug && verbose && launchDims.x == 1)
 		printf("AF1 opNum:[%i]\n", opNum);
@@ -1970,7 +1970,7 @@ void   NativeOps::execIndexReduceFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[13], dimensionLength, sizeof(float), 2);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[13], dimensionLength, sizeof(float), 2);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
@@ -2037,7 +2037,7 @@ void   NativeOps::execBroadcastFloat(
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[(int) extraPointers[2]]);
 
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
 
 	broadcastFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			opNum,
@@ -2175,7 +2175,7 @@ void NativeOps::execPairwiseTransformFloat(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[10], 1, sizeof(float), 0);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[10], 1, sizeof(float), 0);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF5 opNum:[%i]\n", opNum);
@@ -2305,7 +2305,7 @@ void   NativeOps::execReduceFloat(
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, sizeof(float), 1);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
@@ -2380,7 +2380,7 @@ void   NativeOps::execReduceFloat(
 
 // dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, int yRank, int zRank, int dimensionLength, int elementSize, int reduction)
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF8 opNum:[%i]\n", opNum);
@@ -2924,7 +2924,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[3], 1, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF16 opNum:[%i]\n", opNum);
@@ -2986,7 +2986,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, nullptr, funcAttributes[3], 1, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF17 opNum:[%i]\n", opNum);
@@ -3050,7 +3050,7 @@ void   NativeOps::execSummaryStatsFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostZShapeInfo, funcAttributes[3], dimensionLength, sizeof(float), 8);
+	dim3 launchDims = getReduceLaunchParams((int) extraPointers[2], hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], dimensionLength, sizeof(float), 8);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF18 opNum:[%i]\n", opNum);

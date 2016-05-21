@@ -712,7 +712,7 @@ struct SharedSummaryStatsData<double> {
 
 
 #pragma unroll
-				for(int i = blockIdx.x; i < tadLength; i+= gridDim.x) {
+				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
 		    		int tadOffsetForBlock = tadOffsets[i];
 
 					int indexX = tadOffsetForBlock + xElementWiseStride * threadIdx.x;
@@ -724,7 +724,7 @@ struct SharedSummaryStatsData<double> {
 					}
 #pragma unroll
 					for (int x = threadIdx.x + blockDim.x; x < tadLength; x+= blockDim.x) {
-						indexX = tadOffsetForBlock + x * xElementWiseStride;
+						indexX = tadOffsetForBlock + x * tadEWS;
 						SummaryStatsData <T> indexVal2;
 					    indexVal2.initWithValue(dx[indexX]);
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
