@@ -1,6 +1,6 @@
 ---
 title: "Deeplearning 4 j のクイックスタートガイド"
-layout: ja-default
+layout: default
 ---
 
 # Deeplearning4jとは何か?
