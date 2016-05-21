@@ -19,12 +19,18 @@
 package org.deeplearning4j.datasets.canova;
 
 import org.apache.commons.io.FilenameUtils;
+import org.canova.api.io.data.IntWritable;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.SequenceRecordReader;
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.records.reader.impl.CSVSequenceRecordReader;
+import org.canova.api.records.reader.impl.CollectionRecordReader;
+import org.canova.api.records.reader.impl.CollectionSequenceRecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.api.split.NumberedFileInputSplit;
+import org.canova.api.writable.ArrayWritable;
+import org.canova.api.writable.Writable;
+import org.canova.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.junit.Test;
@@ -34,9 +40,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -603,4 +607,129 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(3,countF);
         assertEquals(1,iteratorRegression.totalOutcomes());
     }
+
+
+
+    @Test
+    public void testSeqRRDSIArrayWritableOneReader(){
+
+        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new IntWritable(0)));
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new IntWritable(1)));
+        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new IntWritable(2)));
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new IntWritable(3)));
+
+
+        SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1,sequence2));
+
+        SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rr,2,4,1,false);
+
+        DataSet ds = iter.next();
+
+        INDArray expFeatures = Nd4j.create(2,3,2);  //2 examples, 3 values per time step, 2 time steps
+        expFeatures.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,4},{2,5},{3,6}}));
+        expFeatures.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{7,10},{8,11},{9,12}}));
+
+        INDArray expLabels = Nd4j.create(2,4,2);
+        expLabels.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,0},{0,1},{0,0},{0,0}}));
+        expLabels.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{0,0},{0,0},{1,0},{0,1}}));
+
+        assertEquals(expFeatures, ds.getFeatureMatrix());
+        assertEquals(expLabels, ds.getLabels());
+    }
+
+    @Test
+    public void testSeqRRDSIArrayWritableOneReaderRegression(){
+        //Regression, where the output is an array writable
+        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new NDArrayWritable(Nd4j.create(new double[]{100,200,300}))));
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new NDArrayWritable(Nd4j.create(new double[]{400,500,600}))));
+        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new NDArrayWritable(Nd4j.create(new double[]{700,800,900}))));
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200}))));
+
+
+        SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1,sequence2));
+
+        SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rr,2,-1,1,true);
+
+        DataSet ds = iter.next();
+
+        INDArray expFeatures = Nd4j.create(2,3,2);  //2 examples, 3 values per time step, 2 time steps
+        expFeatures.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,4},{2,5},{3,6}}));
+        expFeatures.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{7,10},{8,11},{9,12}}));
+
+        INDArray expLabels = Nd4j.create(2,3,2);
+        expLabels.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{100,400},{200,500},{300,600}}));
+        expLabels.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{700,1000},{800,1100},{900,1200}}));
+
+        assertEquals(expFeatures, ds.getFeatureMatrix());
+        assertEquals(expLabels, ds.getLabels());
+    }
+
+    @Test
+    public void testSeqRRDSIMultipleArrayWritablesOneReader(){
+        //Input with multiple array writables:
+
+        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new NDArrayWritable(Nd4j.create(new double[]{100,200,300})), new IntWritable(0)));
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new NDArrayWritable(Nd4j.create(new double[]{400,500,600})), new IntWritable(1)));
+        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new NDArrayWritable(Nd4j.create(new double[]{700,800,900})), new IntWritable(2)));
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200})), new IntWritable(3)));
+
+
+        SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1,sequence2));
+
+        SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rr,2,4,2,false);
+
+        DataSet ds = iter.next();
+
+        INDArray expFeatures = Nd4j.create(2,6,2);  //2 examples, 6 values per time step, 2 time steps
+        expFeatures.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,4},{2,5},{3,6},{100,400},{200,500},{300,600}}));
+        expFeatures.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{7,10},{8,11},{9,12},{700,1000},{800,1100},{900,1200}}));
+
+        INDArray expLabels = Nd4j.create(2,4,2);
+        expLabels.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,0},{0,1},{0,0},{0,0}}));
+        expLabels.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{0,0},{0,0},{1,0},{0,1}}));
+
+        assertEquals(expFeatures, ds.getFeatureMatrix());
+        assertEquals(expLabels, ds.getLabels());
+    }
+
+    @Test
+    public void testSeqRRDSIArrayWritableTwoReaders(){
+        Collection<Collection<Writable>> sequence1 = new ArrayList<>();
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1,2,3})), new IntWritable(100)));
+        sequence1.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{4,5,6})), new IntWritable(200)));
+        Collection<Collection<Writable>> sequence2 = new ArrayList<>();
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{7,8,9})), new IntWritable(300)));
+        sequence2.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{10,11,12})), new IntWritable(400)));
+        SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1,sequence2));
+
+        Collection<Collection<Writable>> sequence1L = new ArrayList<>();
+        sequence1L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{100,200,300})), new IntWritable(101)));
+        sequence1L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{400,500,600})), new IntWritable(201)));
+        Collection<Collection<Writable>> sequence2L = new ArrayList<>();
+        sequence2L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{700,800,900})), new IntWritable(301)));
+        sequence2L.add(Arrays.asList((Writable)new NDArrayWritable(Nd4j.create(new double[]{1000,1100,1200})), new IntWritable(401)));
+        SequenceRecordReader rrLabels = new CollectionSequenceRecordReader(Arrays.asList(sequence1L,sequence2L));
+
+        SequenceRecordReaderDataSetIterator iter = new SequenceRecordReaderDataSetIterator(rrFeatures,rrLabels,2,-1,true);
+
+        INDArray expFeatures = Nd4j.create(2,4,2);  //2 examples, 4 values per time step, 2 time steps
+        expFeatures.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{1,4},{2,5},{3,6},{100,200}}));
+        expFeatures.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{7,10},{8,11},{9,12},{300,400}}));
+
+        INDArray expLabels = Nd4j.create(2,4,2);
+        expLabels.tensorAlongDimension(0,1,2).assign(Nd4j.create(new double[][]{{100,400},{200,500},{300,600},{101,201}}));
+        expLabels.tensorAlongDimension(1,1,2).assign(Nd4j.create(new double[][]{{700,1000},{800,1100},{900,1200},{301,401}}));
+
+        DataSet ds = iter.next();
+        assertEquals(expFeatures, ds.getFeatureMatrix());
+        assertEquals(expLabels, ds.getLabels());
+    }
+
+
 }
