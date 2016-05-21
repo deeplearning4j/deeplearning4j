@@ -21,7 +21,7 @@ https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml
 
 Specifics
 
-- Supports GPUs via CUDA and Native via native and x86.
+- Supports GPUs via with the CUDA backend nd4j-cuda-7.5 and Native via nd4j-native.
 - All of this is wrapped in a unifying interface.
 - The API mimics the semantics of Numpy, Matlab and scikit-learn.
 
@@ -109,7 +109,6 @@ Or, run the following command to execute TestSuite with only specified backend e
 
 - nd4j-cuda-7.5
 - nd4j-native
-- nd4j-x86
 
 Or, run the following command to execute only specified tests in TestSuite with only specified backend.
 
