@@ -6,8 +6,7 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 
-import org.nd4j.linalg.api.buffer.util.LibUtils;
-import org.nd4j.linalg.api.ndarray.INDArray;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
