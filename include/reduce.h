@@ -440,7 +440,7 @@ namespace functions {
             T aggregateBuffer(int n, T *buffer, T *extraParams) {
 
                 T ret = buffer[0];
-#pragma omp for
+#pragma omp simd
                 for (int i = 1; i < n; i++) {
                     ret = update(ret, buffer[i], extraParams);
                 }
@@ -590,7 +590,7 @@ namespace functions {
                             Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
                             const T *chunk = x + newOffset;
                             Nd4jIndex itemsToLoop = info.items;
-
+#pragma omp simd
 
                             for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
                                 T curr = op(chunk[i * xElementWiseStride], extraParams);
@@ -725,6 +725,7 @@ namespace functions {
 
                 if(tad.wholeThing) {
                     T start = this->startingValue(x);
+#pragma omp simd
                     for(int i = 0; i < shape::length(tad.tadOnlyShapeInfo); i++) {
                         start = update(start, op(x[i], extraParams), extraParams);
                     }
