@@ -1023,14 +1023,24 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int sumAlongDim = 0;
         boolean allC = toConcat[0].ordering() == 'c';
 
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+        outputShape[dimension] = sumAlongDim;
+
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].size(dimension);
             allC = allC && toConcat[i].ordering() == 'c';
+            for(int j = 0; j < toConcat[i].rank(); j++) {
+                if(j != dimension) {
+                    if(toConcat[i].size(j) != outputShape[j]) {
+                        throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
+                    }
+                }
+            }
         }
 
-        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
-        outputShape[dimension] = sumAlongDim;
+
+
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
