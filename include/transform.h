@@ -4235,7 +4235,7 @@ namespace functions {
                         int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                         int length = shape::length(xShapeBuffer);
                         if (elementWiseStride == 1) {
-#pragma omp simd
+#pragma omp parallel for simd reduction(max:max) shared(result)
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i]);  
                             }
@@ -4262,7 +4262,7 @@ namespace functions {
 
                         }
                         else {
-#pragma omp simd
+#pragma omp parallel for simd reduction(max:max) shared(result, elementWiseStride)
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
@@ -4538,7 +4538,7 @@ namespace functions {
                         int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                         int length = shape::length(xShapeBuffer);
                         if (elementWiseStride == 1) {
-#pragma omp simd
+#pragma omp parallel for simd reduction(max:max) shared(result)
 							for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i]);
                             }
@@ -4565,7 +4565,7 @@ namespace functions {
                         }
                         else {
 
-#pragma omp simd
+#pragma omp parallel for simd reduction(max:max) shared(result)
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
@@ -4960,7 +4960,7 @@ namespace functions {
                                     }
                                 }
                                 else {
-#pragma omp parallel for shared(maxIdx,currMax)
+#pragma omp parallel for simd shared(maxIdx,currMax)
                                     for (int i = 0; i < length; i++) {
                                         if (currMax < dx[i]) {
                                             currMax = dx[i];
@@ -4993,7 +4993,7 @@ namespace functions {
                                     }
                                 }
                                 else {
-#pragma omp parallel for shared(maxIdx,currMax)
+#pragma omp parallel for simd shared(maxIdx,currMax)
                                     for (int i = 0; i < length; i++) {
                                         if (currMax < dx[i * eleStride]) {
                                             currMax = dx[i * eleStride];
