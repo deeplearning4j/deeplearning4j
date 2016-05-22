@@ -2,6 +2,9 @@
 
 
 export CMAKE_COMMAND="cmake"
+if which cmake3 &> /dev/null; then
+    export CMAKE_COMMAND="cmake3"
+fi
 export MAKE_COMMAND="make"
 echo eval $CMAKE_COMMAND
 if [ "$(uname)" == "Darwin" ]; then
