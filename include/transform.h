@@ -4239,7 +4239,7 @@ namespace functions {
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i]);  
                             }
-#pragma omp parallel for simd
+#pragma omp parallel for simd shared(max)
                             for (int i = 0; i < length; i++) {
                                 result[i] -= max;
                             }

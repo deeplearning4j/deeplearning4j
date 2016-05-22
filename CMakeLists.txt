@@ -13,7 +13,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 find_path(STDIO_INCLUDE_PATH stdio.h)
 
-set(CMAKE_CXX_FLAGS_RELEASE  "-Wall -fopenmp -std=c++11 -fassociative-math -funsafe-math-optimizations")
+set(CMAKE_CXX_FLAGS_RELEASE  "-Wall -O3 -fopenmp -std=c++11 -fassociative-math -funsafe-math-optimizations")
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -O0 -fopenmp -std=c++11")
 
 
