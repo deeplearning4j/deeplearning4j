@@ -4389,6 +4389,17 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+    /**
+     * Create an ndarray of zeros
+     *
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public static INDArray zeros(int[] shape,char order) {
+        INDArray ret = INSTANCE.create(shape,order);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     /**
      * Create an ndarray of zeros
