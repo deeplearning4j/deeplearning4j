@@ -4524,6 +4524,7 @@ namespace functions {
                         int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                         int length = shape::length(xShapeBuffer);
                         if (elementWiseStride == 1) {
+
 #pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
 			    for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i]);
@@ -4543,10 +4544,12 @@ namespace functions {
 
                         }
                         else {
+
 #pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
                             for (int i = 0; i < length; i++) {
                                 max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
                             }
+
 
 #pragma omp parallel for simd reduction(+:sum) shared(result, elementWiseStride) schedule(guided)
                             for (int i = 0; i < length; i++) {
@@ -4933,6 +4936,7 @@ namespace functions {
                                     }
                                 }
                                 else {
+
 #pragma omp parallel for simd shared(maxIdx,currMax) schedule(guided)
                                     for (int i = 0; i < length; i++) {
                                         if (currMax < dx[i]) {
@@ -4966,7 +4970,7 @@ namespace functions {
                                     }
                                 }
                                 else {
-#pragma omp parallel for simd shared(maxIdx,currMax)
+#pragma omp parallel for simd shared(maxIdx,currMax) schedule(guided)
                                     for (int i = 0; i < length; i++) {
                                         if (currMax < dx[i * eleStride]) {
                                             currMax = dx[i * eleStride];

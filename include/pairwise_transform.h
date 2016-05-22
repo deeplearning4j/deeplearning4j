@@ -320,6 +320,7 @@ namespace functions {
                     int *yIndexes,
                     int *resultIndexes) {
                 Nd4jIndex n = shape::length(xShapeBuffer);
+
 #pragma omp parallel for simd schedule(guided)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
@@ -355,6 +356,7 @@ namespace functions {
                     T *extraParams,
                     int *indexes) {
                 Nd4jIndex n = shape::length(xShapeBuffer);
+
 #pragma omp parallel for simd schedule(guided)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
