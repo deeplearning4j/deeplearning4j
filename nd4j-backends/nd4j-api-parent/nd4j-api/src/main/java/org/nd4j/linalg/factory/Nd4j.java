@@ -41,8 +41,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactoryProvider;
+
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -119,7 +118,6 @@ public class Nd4j {
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
     protected static Class<? extends OpFactory> opFactoryClazz;
-    protected static Class<? extends TaskFactory> taskFactoryClazz;
     protected static Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz;
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
@@ -133,7 +131,6 @@ public class Nd4j {
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
-    protected static TaskFactory TASK_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
@@ -520,12 +517,6 @@ public class Nd4j {
     public static OpFactory getOpFactory() {
         return OP_FACTORY_INSTANCE;
     }
-
-    /** Get the task factory */
-    public static TaskFactory getTaskFactory() {
-        return TASK_FACTORY_INSTANCE;
-    }
-
     /**
      * Returns the fft instance
      *
@@ -695,13 +686,17 @@ public class Nd4j {
         return ret.reshape(aPlusB);
     }
 
-    /** matrix multiply: implements op(a)*op(b) where op(x) means transpose x (or not) depending on
+    /**
+     *
+     * matrix multiply: implements op(a)*op(b)
+     *
+     * where op(x) means transpose x (or not) depending on
      * setting of arguments transposea and transposeb.<br>
      * so gemm(a,b,false,false) == a.mmul(b), gemm(a,b,true,false) == a.transpose().mmul(b) etc.
      * @param a first matrix
      * @param b second matrix
-     * @param transposea if true: transpose matrix a before mmul
-     * @param transposeb if true: transpose matrix b before mmul
+     * @param transposeA if true: transpose matrix a before mmul
+     * @param transposeB if true: transpose matrix b before mmul
      * @return result
      */
     public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
@@ -4768,8 +4763,6 @@ public class Nd4j {
 
             opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY, DefaultOpFactory.class.getName()));
 
-            taskFactoryClazz = (Class<? extends TaskFactory>) Class.forName(System.getProperty(TASK_FACTORY, TaskFactoryProvider.getDefaultTaskFactoryForBackend(backend)));
-
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
             String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
@@ -4777,7 +4770,6 @@ public class Nd4j {
 
 
             instrumentation = instrumentationClazz.newInstance();
-            TASK_FACTORY_INSTANCE = taskFactoryClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             FFT_INSTANCE = fftInstanceClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);

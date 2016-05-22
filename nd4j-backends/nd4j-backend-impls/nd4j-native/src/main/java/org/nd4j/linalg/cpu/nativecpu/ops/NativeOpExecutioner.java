@@ -123,30 +123,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return op.z();
     }
 
-    @Override
-    protected void doAccumulationOp(Accumulation op) {
-        exec(op);
-    }
 
-    @Override
-    protected void doBroadcastOp(BroadcastOp op) {
-        exec(op);
-    }
-
-    @Override
-    protected void doIndexAccumulationOp(IndexAccumulation op) {
-        exec(op);
-    }
-
-    @Override
-    protected void doScalarOp(ScalarOp op) {
-        exec(op);
-    }
-
-    @Override
-    protected void doTransformOp(TransformOp op) {
-        exec(op);
-    }
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {

@@ -22,7 +22,6 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 
 /**
  * An operation executioner handles storage specific details of
@@ -36,7 +35,6 @@ public interface OpExecutioner {
         JAVA, NATIVE
     }
 
-    ParallelExecutioner parallelExecutioner();
 
     /**
      * Execute the operation
