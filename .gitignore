@@ -12,6 +12,7 @@ build
 *.cubin
 cubinbuild
 pitxbuild
+blasbuild
 testbuild
 .idea/
 libnd4jtests
