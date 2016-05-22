@@ -58,7 +58,7 @@ int opSize() {
 
             T dIn = dbIn;
             T dOut = dbOut;
-#pragma omp parallel for collapse(4)
+#pragma omp parallel for simd collapse(4)
             for (int ex = exampleFrom; ex < exampleTo; ex++) {
                 for (int d = depthFrom; d < depthTo; d++) {
                     inIndices[0] = ex;
