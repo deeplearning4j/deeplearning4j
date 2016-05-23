@@ -164,7 +164,6 @@ public class DataSetIteratorTest {
 	}
 
 	@Test
-	@Ignore	//Until CifarDataSetIterator / CifarLoader is fixed
 	public void testCifarIterator() throws Exception {
 		int numExamples = 10;
 		int row = 28;
@@ -179,7 +178,6 @@ public class DataSetIteratorTest {
 
 
 	@Test
-	@Ignore	//Until CifarDataSetIterator / CifarLoader is fixed
 	public void testCifarModel() throws Exception{
 		final int height = 32;
 		final int width = 32;
