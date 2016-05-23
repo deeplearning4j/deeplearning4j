@@ -285,9 +285,13 @@ Note that in the case of training data that contains time series of different le
 #### Alternative: Implementing a custom DataSetIterator
 In some cases, you will have to do something that doesn't fit into a typical data import scenario. One option for this scenario is to implement a custom [DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java). DataSetIterator is merely an interface for iterating over DataSet objects - objects that encapsulate the input and target INDArrays, plus (optionally) the input and labels mask arrays.
 
-Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded. F order works better for RNN data. 
+Note however that this approach is quite low level: implementing a DataSetIterator requires you to manually create the required INDArrays for the input and the labels, as well as (if required) the input and labels mask arrays. However, this approach gives you a great degree of flexibility over exactly how data is loaded.
 
-For example of this approach in practice, see the the iterator for the [tex/character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
+For example of this approach in practice, see the the iterator for the [character example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/CharacterIterator.java) and for the [Word2Vec movie review sentiment example](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/word2vec/sentiment/SentimentExampleIterator.java).
+
+**Note**: When creating a custom DataSetIterator, it is important that your data arrays - the input features, the labels, and any mask arrays - are created in 'f' (fortran) order. See the [ND4J user guide](http://nd4j.org/userguide.html#inmemory) for details on array orders. In practice, this means using the Nd4j.create methods that allow you to specify the array order: ```Nd4j.create(new int[]{numExamples, inputSize, timeSeriesLength},'f')```. Though 'c' order arrays will also work, performance will be reduced due to the need to copy the arrays to 'f' order first, for certain operations.
+
+
 
 ## <a name="examples">Examples</a>
 
