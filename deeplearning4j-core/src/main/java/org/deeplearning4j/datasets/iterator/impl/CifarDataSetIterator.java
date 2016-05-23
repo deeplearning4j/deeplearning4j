@@ -10,8 +10,11 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.bytedeco.javacpp.opencv_core.*;
 
 /**
  * Created by nyghtowl on 12/18/15.
@@ -62,7 +65,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
         super(null, batchSize, 1, CifarLoader.NUM_LABELS);
-        this.loader = new CifarLoader();
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2]);
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
     }
@@ -75,7 +78,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories) {
         super(null, batchSize, 1, numCategories);
-        this.loader = new CifarLoader();
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2]);
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
     }
@@ -101,7 +104,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      */
     public CifarDataSetIterator(int batchSize, int[] imgDim)  {
         super(null, batchSize, 1, CifarLoader.NUM_LABELS);
-        this.loader = new CifarLoader();
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2]);
         this.inputStream  = loader.getInputStream();
     }
 
@@ -117,18 +120,19 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         byte[] byteFeature = new byte[numPixels];
         List<DataSet> dataSets = new ArrayList<>();
         INDArray label = null; // first value in the 3073 byte array
-        INDArray featureVector = Nd4j.create(numPixels-1); // feature are 3072
+        Mat image = new Mat(height, width, CV_8UC(channels)); // feature are 3072
+        ByteBuffer imageData = image.createBuffer();
 
         try {
             while((inputStream.read(byteFeature)) != -1 && batchNumCount != num) {
-                int featureCount = 0;
                 label = FeatureUtil.toOutcomeVector(byteFeature[0], numPossibleLabels);
-                for (int j = 1; j <= featureVector.length(); j++)
-                    featureVector.putScalar(featureCount++, byteFeature[j]);
-                dataSets.add(new DataSet(featureVector, label));
+                for (int i = 0; i < height * width; i++) {
+                    imageData.put(3 * i,     byteFeature[i + 1 + 2 * height * width]); // blue
+                    imageData.put(3 * i + 1, byteFeature[i + 1 +     height * width]); // green
+                    imageData.put(3 * i + 2, byteFeature[i + 1                     ]); // red
+                }
+                dataSets.add(new DataSet(loader.asRowVector(image), label));
                 batchNumCount++;
-                byteFeature = new byte[numPixels];
-                featureVector = Nd4j.create(numPixels-1);
             }
             exampleCount += batchSize;
         } catch (IOException e) {
