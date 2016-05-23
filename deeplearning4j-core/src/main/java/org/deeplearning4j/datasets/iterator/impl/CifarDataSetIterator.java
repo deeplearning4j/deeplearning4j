@@ -76,9 +76,35 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      * @param imgDim an array of height, width and channels
      * @param numExamples the overall number of examples
      * */
+    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, String version) {
+        super(null, batchSize, 1, CifarLoader.NUM_LABELS);
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], version);
+        this.inputStream  = loader.getInputStream();
+        this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
+    }
+
+    /**
+     * Create Cifar data specific iterator
+     * @param batchSize the batch size of the examples
+     * @param imgDim an array of height, width and channels
+     * @param numExamples the overall number of examples
+     * */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories) {
         super(null, batchSize, 1, numCategories);
         this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2]);
+        this.inputStream  = loader.getInputStream();
+        this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
+    }
+
+    /**
+     * Create Cifar data specific iterator
+     * @param batchSize the batch size of the examples
+     * @param imgDim an array of height, width and channels
+     * @param numExamples the overall number of examples
+     * */
+    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, String version) {
+        super(null, batchSize, 1, numCategories);
+        this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], version);
         this.inputStream  = loader.getInputStream();
         this.numExamples = numExamples > totalExamples? totalExamples: numExamples;
     }
@@ -175,11 +201,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     @Override
     public void reset() {
-        try {
-            inputStream.reset();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        inputStream = loader.getInputStream();
     }
 
     @Override
