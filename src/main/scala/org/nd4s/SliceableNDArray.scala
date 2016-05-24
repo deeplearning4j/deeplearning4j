@@ -69,12 +69,12 @@ trait SliceableNDArray [A <: INDArray]{
       val indicesOnAxis = (tgt zip stride).collect {
         case (range, st) => range.toList.map(_ * st)
       }
-      indicesOnAxis.reduceLeft[List[Int]] { case (l, r) =>
+      indicesOnAxis.reduceLeftOption[List[Int]] { case (l, r) =>
         if (underlying.ordering() == NDOrdering.C.value)
           l.flatMap { i => r.map(_ + i)}
         else
           r.flatMap { i => l.map(_ + i)}
-      }
+      }.getOrElse(List.empty)
     }
 
     val indices = calcIndices(modifiedTarget.toList, Nd4j.getStrides(originalShape,underlying.ordering()).toList)

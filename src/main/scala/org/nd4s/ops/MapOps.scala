@@ -8,7 +8,7 @@ import org.nd4s.Implicits._
 object MapOps{
   def apply(x:INDArray,f:Double=>Double,g:IComplexNumber =>IComplexNumber):MapOps = new MapOps(x,f,g)
 }
-class MapOps(_x:INDArray,f:Double => Double, g:IComplexNumber => IComplexNumber) extends BaseScalarOp(_x,null,_x,_x.length(),0){
+class MapOps(_x:INDArray,f:Double => Double, g:IComplexNumber => IComplexNumber) extends BaseScalarOp(_x,null,_x,_x.length(),0) with LeftAssociativeBinaryOp {
   x = _x
   def this(){
     this(0.toScalar,null,null)
@@ -19,16 +19,6 @@ class MapOps(_x:INDArray,f:Double => Double, g:IComplexNumber => IComplexNumber)
   override def opForDimension(index: Int, dimension: Int): Op = MapOps(x.tensorAlongDimension(index,dimension),f,g)
 
   override def opForDimension(index: Int, dimension: Int*): Op = MapOps(x.tensorAlongDimension(index,dimension:_*),f,g)
-
-  override def op(origin: IComplexNumber, other: Double): IComplexNumber = op(origin)
-
-  override def op(origin: IComplexNumber, other: Float): IComplexNumber = op(origin)
-
-  override def op(origin: IComplexNumber, other: IComplexNumber): IComplexNumber = op(origin)
-
-  override def op(origin: Float, other: Float): Float = op(origin)
-
-  override def op(origin: Double, other: Double): Double = op(origin)
 
   override def op(origin: Double): Double = f(origin)
 
