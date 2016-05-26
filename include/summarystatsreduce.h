@@ -590,7 +590,7 @@ struct SharedSummaryStatsData<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 
 		/**
@@ -660,32 +660,39 @@ struct SharedSummaryStatsData<double> {
 		__syncthreads();
 		if (!resultScalar) {
 
-            __shared__ shape::TAD *tad;
+            __shared__ int tadLength;
+            __shared__ int tadEWS;
+            __shared__ int tadRank;
+            __shared__ int numTads;
+            __shared__ int *tadShape;
+            __shared__ int *tadStride;
+
             if (threadIdx.x == 0) {
-                tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-                tad->setExternalBuffers((void *) manager);
-                tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
+            //    tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
+            //    tad->setExternalBuffers((void *) manager);
+            //    tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
                 //tad->init(xShapeInfo,dimension,dimensionLength);
                 //tad->createTadOnlyShapeInfo();
+
+                tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                tadRank = shape::rank(tadOnlyShapeInfo);
+                numTads = shape::length(xShapeInfo) / tadLength;
+
+                tadShape = shape::shapeOf(tadOnlyShapeInfo);
+                tadStride = shape::stride(tadOnlyShapeInfo);
             }
             __syncthreads();
 
 		    if (dimensionLength > 1) {
-                int rank = shape::rank(tad->tadOnlyShapeInfo);
-                /*
-                long allocSize = sizeof(int) * rank;
-                int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
-                */
                 int xCoord[MAX_RANK];
 
-                for (int r = blockIdx.x; r < resultLength; r += gridDim.x) {
-                    if (threadIdx.x == 0)
-                        tad->createOffsetForBlock(r);
-                    __syncthreads();
+                for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+                    int tadOffsetForBlock = tadOffsets[r];
 
-                    for(int i = threadIdx.x;i < shape::length(tad->tadOnlyShapeInfo); i += blockDim.x) {
-                        shape::ind2subC(rank,tad->tadShape, i, xCoord);
-                        Nd4jIndex xOffset = shape::getOffset(tad->tadOffsetForBlock, tad->tadShape, tad->tadStride, xCoord, rank);
+                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                        shape::ind2subC(tadRank, tadShape, i, xCoord);
+                        int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						SummaryStatsData <T> indexVal2;
 					    indexVal2.initWithValue(dx[xOffset]);
@@ -693,7 +700,7 @@ struct SharedSummaryStatsData<double> {
                         sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
                     }
                     __syncthreads();
-                    aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)) ,extraParams);
+                    aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -702,33 +709,29 @@ struct SharedSummaryStatsData<double> {
 
                 }
 		    } else {
-                int xLength = shape::length(xShapeInfo);
-				int tadLength = xLength / resultLength;
 
 
 #pragma unroll
-				for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-		    		if (threadIdx.x == 0)
-                        tad->createOffsetForBlock(i);
-                    __syncthreads();
+				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
+		    		int tadOffsetForBlock = tadOffsets[i];
 
-					int indexX = tad->tadOffsetForBlock + xElementWiseStride * threadIdx.x;
+					int indexX = tadOffsetForBlock + xElementWiseStride * threadIdx.x;
 
-					if (threadIdx.x < shape::length(tad->tadOnlyShapeInfo)) {
+					if (threadIdx.x < tadLength) {
 					    SummaryStatsData <T> indexVal;
 				        indexVal.initWithValue(dx[indexX]);
 					    sPartials[threadIdx.x] = op(indexVal, extraParams);
 					}
 #pragma unroll
 					for (int x = threadIdx.x + blockDim.x; x < tadLength; x+= blockDim.x) {
-						indexX = tad->tadOffsetForBlock + x * xElementWiseStride;
+						indexX = tadOffsetForBlock + x * tadEWS;
 						SummaryStatsData <T> indexVal2;
 					    indexVal2.initWithValue(dx[indexX]);
 						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, shape::length(tad->tadOnlyShapeInfo)) ,extraParams);
+					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength) ,extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -752,16 +755,20 @@ struct SharedSummaryStatsData<double> {
 					reduction =  update(reduction,indexVal2, extraParams);
     			}
             } else {
-                int rank = shape::rank(xShapeInfo);
-                /*
-                long allocSize = sizeof(int) * rank;
-    			int *ind2sub = shape::cuMalloc(allocationBuffer, allocSize, manager); //(int *) malloc(sizeof(int) * rank);
-    			*/
+                __shared__ int rank;
+                __shared__ int *xShape;
+                __shared__ int *xStride;
+                if (threadIdx.x == 0) {
+                    rank = shape::rank(xShapeInfo);
+                    xShape = shape::shapeOf(xShapeInfo);
+                    xStride = shape::stride(xShapeInfo);
+                }
+
     			int ind2sub[MAX_RANK];
 #pragma unroll
 	    		for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
     				shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-                    int offset = shape::getOffset(0,xShapeInfo,shape::stride(xShapeInfo),ind2sub,rank);
+                    int offset = shape::getOffset(0,xShape,xStride, ind2sub,rank);
     				SummaryStatsData <T> indexVal2;
 					indexVal2.initWithValue(dx[offset]);
     				reduction =  update(reduction,indexVal2, extraParams);
@@ -1418,7 +1425,7 @@ __device__ void summaryStatsReduceGeneric(
 		T *result,
 		int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo) {
+		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
 	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
@@ -1446,7 +1453,7 @@ __device__ void summaryStatsReduceGeneric(
 	    postProcessOrNot,
 	    allocationBuffer,
 	    reductionBuffer,
-	    manager, tadOnlyShapeInfo);
+	    manager, tadOnlyShapeInfo, tadOffsets);
 }
 
 /**
@@ -1473,7 +1480,7 @@ __global__ void summaryStatsReduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		bool biasCorrected, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo) {
+		bool biasCorrected, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	summaryStatsReduceGeneric<double>(
 			op,
 			dx,
@@ -1483,7 +1490,7 @@ __global__ void summaryStatsReduceDouble(
 			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
-			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -1510,7 +1517,7 @@ __global__ void summaryStatsReduceDouble(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	summaryStatsReduceGeneric<float>(
 			op,
 			dx,
@@ -1520,7 +1527,7 @@ __global__ void summaryStatsReduceDouble(
 			resultShapeInfo, zRank,
 			dimension,
 			dimensionLength,
-			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo);
+			postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
 }
 

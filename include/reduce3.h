@@ -357,7 +357,7 @@ namespace functions {
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
-					int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+					int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 				/**
                  * Gpu information for the problem
                  */
@@ -420,7 +420,20 @@ namespace functions {
 
 
 				if (!resultScalar) {
-					__shared__ shape::TAD *tad;
+					__shared__ int tadLength;
+        	        __shared__ int tadEWS;
+    	            __shared__ int tadRank;
+	                __shared__ int numTads;
+
+                	if (threadIdx.x == 0) {
+            		    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        	            tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+    	                tadRank = shape::rank(tadOnlyShapeInfo);
+	                    numTads = shape::length(xShapeInfo) / tadLength;
+                	}
+                	__syncthreads();
+
+					/*__shared__ shape::TAD *tad;
                     if (threadIdx.x == 0) {
                         tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
                         tad->setExternalBuffers((void *) manager);
@@ -428,7 +441,7 @@ namespace functions {
                         //tad->init(xShapeInfo,dimension,dimensionLength);
                         //tad->createTadOnlyShapeInfo();
                     }
-                    __syncthreads();
+                    __syncthreads();*/
 
 
 					if(dimensionLength > 1) {
@@ -443,26 +456,23 @@ namespace functions {
 						//to the back.
 						//permuted version of the x shape info for setting up the tad problem
 
-						int *xShape = shape::shapeOf(tad->tadOnlyShapeInfo);
-						int *xStride = shape::stride(tad->tadOnlyShapeInfo);
-						Nd4jIndex tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-						int rank = shape::rank(tad->tadOnlyShapeInfo);
+						int *xShape = shape::shapeOf(tadOnlyShapeInfo);
+						int *xStride = shape::stride(tadOnlyShapeInfo);
+						int *yStride = shape::stride(yShapeInfo);
+
+                        int xStridesIter[MAX_RANK];
+						int yStridesIter[MAX_RANK];
+						int shapeIter[MAX_RANK];
+						int coord[MAX_RANK];
+						Nd4jIndex n = shape::length(xShapeInfo);
+						int rank = shape::rank(xShapeInfo);
 #pragma unroll
 						for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-							int offset = tad->tadOffset(i);
-							int shapeIter[MAX_RANK];
-							int coord[MAX_RANK];
+							int offset = tadOffsets[i];
 							int dim;
-							int xStridesIter[MAX_RANK];
-							int yStridesIter[MAX_RANK];
 							T *xPointer = dx + offset;
 							T start = this->startingValue(xPointer);
-							int *xShape = shape::shapeOf(xShapeInfo);
-							int *xStride = shape::stride(xShapeInfo);
-							int *yStride = shape::stride(yShapeInfo);
 							T startingVal = this->startingValue(dx);
-							Nd4jIndex n = shape::length(xShapeInfo);
-							int rank = shape::rank(xShapeInfo);
 							if(PrepareTwoRawArrayIter<T>(rank,
 														 xShape,
 														 dx,
@@ -500,21 +510,12 @@ namespace functions {
 						__syncthreads();
 					}
 					else {
+				//		Nd4jIndex xLength = shape::length(xShapeInfo);
 
-						/**
-                         * The element wise stride belong longs to a reduction index.
-                         * When used out of order, we can get rid of the data
-                         * dependencies and rely on using the max dimension
-                         * specified for stride instead.
-                         * Say we take the sum(0,1) along long arr
-                         * we can use arr.stride(1) as a representation
-                         * along long which to iterate.
-                         */
-						Nd4jIndex xLength = shape::length(xShapeInfo);
-						Nd4jIndex tadLength = xLength / resultLength;
-
-						Nd4jIndex i = 0,j = 0;
 /*
+
+						// DO NOT REMOVE THIS COMMENTED BLOCK PLEASE
+
 						for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
                             if (threadIdx.x == 0)
                                 tad->createOffsetForBlock(r);
@@ -545,14 +546,14 @@ namespace functions {
 
 */
 
-						for(i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
-							int xOffsetForTad = tad->tadOffset(i);
+						for(int i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
+							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = xOffsetForTad;//tad->tadOffset(i);
 							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
 
 							sPartials[tid] = op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
-							for(j = 1; j < tadLength; j++) {
+							for(int j = 1; j < tadLength; j++) {
 								sPartials[i] =  update(sPartials[i],op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
 							}
 
@@ -562,21 +563,6 @@ namespace functions {
 
 					}
 				}
-				else {
-
-					printf("shifting to execScalarCuda\n");
-/*
-					this->execScalarCuda(
-							dx,
-							xShapeInfo,
-							dy,
-							yShapeInfo,
-							extraParams,
-							result,
-							resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
-							*/
-				}
-
 			}
 
 
@@ -1577,7 +1563,7 @@ __device__ void reduce3Generic(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 
 	__shared__ functions::reduce3::Reduce3<T> * op;
@@ -1605,7 +1591,7 @@ __device__ void reduce3Generic(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo);
+			postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
 }
 
 template <typename T>
@@ -1618,7 +1604,7 @@ __device__ void reduce3ScalarGeneric(
 		T *extraParams,
 		T *result,
 		int *resultShapeInfo,
-		 int *allocationPointer, int *tadOnlyShapeInfo) {
+		 int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
 
 	__shared__ functions::reduce3::Reduce3<T> * op;
@@ -1674,7 +1660,7 @@ __global__ void reduce3Double(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	reduce3Generic<double>(
 			opNum,
 			dx,
@@ -1686,7 +1672,7 @@ __global__ void reduce3Double(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -1718,7 +1704,7 @@ __global__ void reduce3Float(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	reduce3Generic<float>(
 			opNum,
 			dx,
@@ -1730,7 +1716,7 @@ __global__ void reduce3Float(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
+			postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -1746,7 +1732,7 @@ __global__ void reduce3ScalarFloat(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	reduce3ScalarGeneric<float>(
 			opNum,
 			dx,
@@ -1756,7 +1742,7 @@ __global__ void reduce3ScalarFloat(
 			extraParams,
 			result,
 			resultShapeInfo,
-			allocationPointer, tadOnlyShapeInfo);
+			allocationPointer, tadOnlyShapeInfo, tadOffsets);
 
 }
 
@@ -1772,7 +1758,7 @@ __global__ void reduce3ScalarDouble(
 		int *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
+		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 	reduce3ScalarGeneric<double>(
 			opNum,
 			dx,
@@ -1782,7 +1768,7 @@ __global__ void reduce3ScalarDouble(
 			extraParams,
 			result,
 			resultShapeInfo,
-			allocationPointer, tadOnlyShapeInfo);
+			allocationPointer, tadOnlyShapeInfo, tadOffsets);
 
 }
 

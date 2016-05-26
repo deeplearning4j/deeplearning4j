@@ -5855,7 +5855,6 @@ extern "C" __global__ void fillIsMaxDouble(double *dx, long length, long idx) {
 template <typename T>
 __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *zShapeInfo, int *tadOnlyShapeInfo, int *dimension, int dimensionLength, int *tadOffsets) {
 
-    __shared__ shape::TAD *tad;
     __shared__ int tadLength;
     __shared__ int tadEWS;
     __shared__ int numTads;

@@ -221,35 +221,8 @@ namespace functions {
 			int incz,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-		if (incy == 0) {
-#pragma unroll
-				for (int i = tid; i < n; i+= gridDim.x * blockDim.x) {
-					result[i * incz] = op(dx[i * incx], params);
-				}
-		} else if ((incx == incy) && (incx > 0)) {
-			/* equal, positive, increments */
-			if (incx == 1) {
-				/* both increments equal to 1 */
-#pragma unroll
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
-					result[i * incz] = op(dx[i * incx], dy[i * incy],
-							params);
-				}
-			} else {
-				/* equal, positive, non-unit increments. */
-#pragma unroll
-				for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
-					result[i * incz] = op(dx[i * incx], dy[i * incy],
-							params);
-				}
-			}
-		} else {
-			/* unequal or nonpositive increments */
-#pragma unroll
-			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
-				result[i * incz] = op(dx[i * incx], dy[i * incy],
-						params);
-			}
+		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+			result[i * incz] = op(dx[i * incx], dy[i * incy], params);
 		}
 	}
 
@@ -2321,7 +2294,6 @@ __device__ void pairWiseTransformStridedGeneric(
 		int incz, int *allocationPointer, int *tadOnlyShapeInfo) {
 
 	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -2330,7 +2302,7 @@ __device__ void pairWiseTransformStridedGeneric(
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
 	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
 
-    	newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
+    	functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
 		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();

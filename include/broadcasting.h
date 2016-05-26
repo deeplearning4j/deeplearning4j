@@ -79,7 +79,6 @@ namespace functions {
 		//moving all dimensions (in sorted order)
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
-	  __shared__ shape::TAD *tad;
 	  __shared__ int tadLength;
       __shared__ int tadEWS;
       __shared__ int tadRank;
