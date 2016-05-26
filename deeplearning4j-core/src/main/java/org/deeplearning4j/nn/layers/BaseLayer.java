@@ -48,6 +48,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         implements Layer {
 
     protected INDArray input;
+    protected INDArray paramsFlattened;
     protected Map<String,INDArray> params;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
@@ -292,6 +293,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             setParam(s,get.reshape(order,param.shape()));
             idx += param.length();
         }
+    }
+
+    @Override
+    public void setParamsViewArray(INDArray params){
+        if(params.length() != numParams()) throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
+            + ", got params of length " + params.length());
+
+        this.paramsFlattened = params;
     }
 
     @Override

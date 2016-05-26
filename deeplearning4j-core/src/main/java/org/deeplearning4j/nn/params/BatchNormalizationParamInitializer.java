@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Map;
@@ -19,32 +20,37 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public final static String BETA = "beta";
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        // gamma & beta per activation for DNN and per per feature matrix for CNN layers
-        // TODO setup for CNN & RNN
-        params.put(GAMMA,createGamma(conf));
-        conf.addVariable(GAMMA);
-        params.put(BETA, createBeta(conf));
-        conf.addVariable(BETA);
+    public int numParams(NeuralNetConfiguration conf, boolean backprop){
+        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        return 2*layer.getNOut();
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-        init(params,conf);
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramView) {
+        // gamma & beta per activation for DNN and per per feature matrix for CNN layers
+        // TODO setup for CNN & RNN
+        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        int nOut = layer.getNOut();
+
+        INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nOut));
+        INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut,2*nOut));
+
+        params.put(GAMMA,createGamma(conf, gammaView));
+        conf.addVariable(GAMMA);
+        params.put(BETA, createBeta(conf, betaView));
+        conf.addVariable(BETA);
     }
 
-    protected INDArray createBeta(NeuralNetConfiguration conf) {
+    protected INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), layer.getBeta());
-        ret.data().persist();
-        return ret;
+        betaView.assign(layer.getBeta());
+        return betaView;
     }
 
-    protected INDArray createGamma(NeuralNetConfiguration conf) {
+    protected INDArray createGamma(NeuralNetConfiguration conf, INDArray gammaView) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        INDArray ret = Nd4j.valueArrayOf(layer.getNOut(), layer.getGamma());
-        ret.data().persist();
-        return ret;
+        gammaView.assign(layer.getGamma());
+        return gammaView;
     }
 
 }

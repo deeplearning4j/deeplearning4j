@@ -348,15 +348,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (initCalled)
             return;
 
-        if (getnLayers() < 1)
+        int nLayers = getnLayers();
+
+        if (nLayers < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
         if (this.layers == null || this.layers[0] == null) {
             if (this.layers == null)
-                this.layers = new Layer[getnLayers()];
+                this.layers = new Layer[nLayers];
+
+            //First: Work out total length of (backprop) params
+            int backpropParamLength = 0;
+            for( int i=0; i<nLayers; i++ ){
+                NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+                backpropParamLength += LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            }
+
+            //Create parameters array:
+            params = Nd4j.create(1,backpropParamLength);
 
             // construct multi-layer
-            for (int i = 0; i < getnLayers(); i++) {
+            for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
@@ -432,6 +444,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Redistribute parameters handles
      * having parameters as a view
      */
+    @Deprecated
     public void reDistributeParams(boolean backwardOnly) {
         List<INDArray> params = new ArrayList<>();
         for(Layer l : layers) {
@@ -809,8 +822,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the params for this neural net
      */
     public INDArray params(boolean backwardOnly) {
-        if(params != null)
-            return params;
+        if(backwardOnly) return params();
+
+//        if(params != null)
+//            return params;
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
@@ -835,19 +850,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public INDArray params() {
-        if(params != null)
-            return params;
+        return params;
+//        if(params != null)
+//            return params;
 
-        List<INDArray> params = new ArrayList<>();
-        for (Layer layer: getLayers()){
-            INDArray layerParams;
-            if( layer instanceof BasePretrainNetwork){
-                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
-            }
-            else layerParams = layer.params();
-            if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
-        }
-        return Nd4j.toFlattened('f',params);
+//        List<INDArray> params = new ArrayList<>();
+//        for (Layer layer: getLayers()){
+//            INDArray layerParams;
+//            if( layer instanceof BasePretrainNetwork){
+//                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
+//            }
+//            else layerParams = layer.params();
+//            if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
+//        }
+//        return Nd4j.toFlattened('f',params);
     }
 
     /**
@@ -860,17 +876,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if(this.params != null) this.params = params;  //not null if isRedistributeParams
-        int idx = 0;
-        for (int i = 0; i < getLayers().length; i++) {
-            Layer layer = getLayer(i);
-            int range = (layer instanceof BasePretrainNetwork ?
-                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
-            if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
-            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-            layer.setParams(get);
-            idx += range;
-        }
+        if(this.params == null) this.params = params;
+        else this.params.assign(params);
+
+//        if(this.params != null) this.params = params;  //not null if isRedistributeParams
+//        int idx = 0;
+//        for (int i = 0; i < getLayers().length; i++) {
+//            Layer layer = getLayer(i);
+//            int range = (layer instanceof BasePretrainNetwork ?
+//                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+//            if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
+//            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+//            layer.setParams(get);
+//            idx += range;
+//        }
     }
 
     /**
