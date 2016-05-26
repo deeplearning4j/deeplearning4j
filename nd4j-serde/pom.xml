@@ -12,6 +12,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>nd4j-jackson</module>
+        <module>nd4j-kryo</module>
     </modules>
 
 </project>

@@ -200,6 +200,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(ByteBuf buf,int length) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        pointer = new Pointer(buf.nioBuffer());
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.wrappedBuffer = buf.nioBuffer();
         this.length = length;
@@ -438,36 +439,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(ByteBuffer buffer,int length) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
-        allocationMode = AllocUtil.getAllocationModeFromContext();
+        this.pointer = new Pointer(buffer.order(ByteOrder.nativeOrder()));
         this.length = length;
-        this.underlyingLength = length;
-        buffer.order(ByteOrder.nativeOrder());
-        if(allocationMode() == AllocationMode.DIRECT) {
-            this.wrappedBuffer = buffer;
-        }
-        else if(dataType() == Type.INT) {
-            intData = new int[length];
-            IntBuffer intBuffer = buffer.asIntBuffer();
-            for(int i = 0; i < length; i++) {
-                intData[i] = intBuffer.get(i);
-            }
-        }
-        else if(dataType() == Type.DOUBLE) {
-            doubleData = new double[length];
-            DoubleBuffer doubleBuffer = buffer.asDoubleBuffer();
-            for(int i = 0; i < length; i++) {
-                doubleData[i] = doubleBuffer.get(i);
-            }
+        allocationMode = AllocUtil.getAllocationModeFromContext();
 
-
-        }
-        else if(dataType() == Type.FLOAT) {
-            floatData = new float[length];
-            FloatBuffer floatBuffer = buffer.asFloatBuffer();
-            for(int i = 0; i < length; i++) {
-                floatData[i] = floatBuffer.get(i);
-            }
-        }
     }
 
     //sets the nio wrapped buffer (allows to be overridden for other use cases like cuda)

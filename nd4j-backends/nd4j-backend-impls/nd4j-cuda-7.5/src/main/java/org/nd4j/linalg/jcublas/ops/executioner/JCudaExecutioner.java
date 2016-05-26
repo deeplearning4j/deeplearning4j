@@ -79,10 +79,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return nativeOps;
     }
 
-    @Override
-    protected void doBroadcastOp(BroadcastOp op) {
-        exec(op);
-    }
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {

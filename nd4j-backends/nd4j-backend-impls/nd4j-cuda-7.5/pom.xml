@@ -90,6 +90,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <propertyFile>${project.basedir}/src/main/resources/org/bytedeco/javacpp/properties/${javacpp.platform}-nd4j.properties</propertyFile>
                             <outputDirectory>${project.build.outputDirectory}/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>

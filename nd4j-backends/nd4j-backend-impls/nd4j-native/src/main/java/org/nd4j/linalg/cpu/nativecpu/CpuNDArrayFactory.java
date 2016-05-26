@@ -73,7 +73,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void createLevel2() {
-       level2 = new CpuLevel2();
+        level2 = new CpuLevel2();
     }
 
     @Override
@@ -153,7 +153,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
-            return new ComplexNDArray(data, shape);
+        return new ComplexNDArray(data, shape);
     }
 
     /**
@@ -559,19 +559,26 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             return toConcat[0];
         long[] shapeInfoPointers = new long[toConcat.length];
         long[] dataPointers = new long[toConcat.length];
-        for(int i = 0; i < toConcat.length; i++) {
-            shapeInfoPointers[i] = toConcat[i].shapeInfoDataBuffer().address();
-            dataPointers[i] = toConcat[i].data().address();
-        }
 
         int sumAlongDim = 0;
-        for (int i = 0; i < toConcat.length; i++) {
-            sumAlongDim += toConcat[i].size(dimension);
-        }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
+
+        for(int i = 0; i < toConcat.length; i++) {
+            shapeInfoPointers[i] = toConcat[i].shapeInfoDataBuffer().address();
+            dataPointers[i] = toConcat[i].data().address();
+            sumAlongDim += toConcat[i].size(dimension);
+            for(int j = 0; j < toConcat[i].rank(); j++)
+                if(j != dimension) {
+                    if(toConcat[i].size(j) != outputShape[j]) {
+                        throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
+                    }
+                }
+        }
+
         outputShape[dimension] = sumAlongDim;
+
         int[] sortedStrides = Nd4j.getStrides(outputShape);
 
         long dummy[] = new long[1];
@@ -605,6 +612,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         }
         return ret;
-       // return super.concat(dimension,toConcat);
+        // return super.concat(dimension,toConcat);
     }
 }

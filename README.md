@@ -21,22 +21,18 @@ https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml
 
 Specifics
 
-- Supports GPUs via CUDA and Native via Jblas and Netlib Blas.
+- Supports GPUs via with the CUDA backend nd4j-cuda-7.5 and Native via nd4j-native.
 - All of this is wrapped in a unifying interface.
 - The API mimics the semantics of Numpy, Matlab and scikit-learn.
 
 ---
 ## Modules
-Several of these modules are different backend options for ND4J (including GPUs with JCublas).
+Several of these modules are different backend options for ND4J (including GPUs).
 
 - api = core
 - instrumentation
-- java = java backend
-- jblas = jblas backend
-- jcublas-parent = jcublas backend (GPUs)
 - jdbc = Java Database Connectivity
 - jocl-parent = Java bindings for OpenCL
-- netlib-blas = netlib blas backend
 - scala-api = API for Scala users
 - scala-notebook = Integration with Scala Notebook
 
@@ -66,13 +62,13 @@ Clone the repository:
 Compile the project:
 
     $ cd nd4j
-    $ mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+    $ mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
 
 Add the local compiled file dependency (choose the module for your backend) to your pom.xml file:
 
     <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-x86</artifactId>
+        <artifactId>nd4j-native</artifactId>
         <version>${nd4j.version}</version>
     </dependency>
 
@@ -107,15 +103,12 @@ Run the following command to execute all tests at once.
 
     mvn test
 
-Or, run the following command to execute TestSuite with only specified backend e.g. jcublas on GPU.
+Or, run the following command to execute TestSuite with only specified backend e.g. nd4j-cuda-7.5 on GPU.
 
     mvn test -pl nd4j-XXX
 
-- nd4j-java
-- nd4j-jblas
-- nd4j-jcublas-parent/nd4j-jcublas-X.X
-- nd4j-netlib-blas
-- nd4j-x86
+- nd4j-cuda-7.5
+- nd4j-native
 
 Or, run the following command to execute only specified tests in TestSuite with only specified backend.
 

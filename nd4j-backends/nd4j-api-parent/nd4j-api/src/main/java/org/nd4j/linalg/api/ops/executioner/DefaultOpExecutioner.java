@@ -25,9 +25,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.parallel.ParallelExecutioner;
-import org.nd4j.linalg.api.parallel.tasks.Task;
-import org.nd4j.linalg.api.parallel.tasks.TaskFactory;
+
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -41,16 +39,10 @@ public  class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
-    protected TaskFactory taskFactory;
 
     public DefaultOpExecutioner() {
-        taskFactory = Nd4j.getTaskFactory();
     }
 
-    @Override
-    public ParallelExecutioner parallelExecutioner() {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Op exec(Op op) {
@@ -59,18 +51,7 @@ public  class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
 
-        if (op instanceof TransformOp) {
-            doTransformOp((TransformOp) op);
-        } else if (op instanceof Accumulation) {
-            doAccumulationOp((Accumulation) op);
-        } else if (op instanceof ScalarOp) {
-            doScalarOp((ScalarOp) op);
-        } else if (op instanceof IndexAccumulation) {
-            doIndexAccumulationOp((IndexAccumulation) op);
-        } else if (op instanceof BroadcastOp){
-            doBroadcastOp((BroadcastOp) op);
-        }
-        return op;
+        throw new IllegalStateException("Java computation no longer supported");
     }
 
     @Override
@@ -231,8 +212,7 @@ public  class DefaultOpExecutioner implements OpExecutioner {
             throw new IllegalStateException("exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
         } else if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
-            doScalarOp((ScalarOp) op);
-            return op;
+            throw new IllegalStateException("Java computation no longer supported");
         }else if (op instanceof TransformOp) {
             throw new UnsupportedOperationException("Executing transform ops along a dimension should be done via exec special");
         } else {
@@ -282,10 +262,9 @@ public  class DefaultOpExecutioner implements OpExecutioner {
                 ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
 
             return ret;
-        } else {
-            Task<INDArray> task = taskFactory.getAccumulationTask(op, dimension);
-            return task.invokeBlocking();
         }
+
+        throw new UnsupportedOperationException("Java computation no longer supported");
     }
 
     @Override
@@ -309,200 +288,8 @@ public  class DefaultOpExecutioner implements OpExecutioner {
         this.executionMode = executionMode;
     }
 
-    protected void doTransformOp(TransformOp op) {
-        INDArray x = op.x();
-        INDArray y = op.y();
-        INDArray z = op.z();
-
-        if(x instanceof IComplexNDArray || y instanceof IComplexNDArray || z instanceof IComplexNDArray ){
-            //Complex
-            if(y != null){
-                //Complex: x, y and/or z are complex
-                if (z instanceof IComplexNDArray) {
-                    IComplexNDArray cz = (IComplexNDArray) z;
-                    if (x instanceof IComplexNDArray) {
-                        IComplexNDArray cx = (IComplexNDArray) x;
-                        if (y instanceof IComplexNDArray) {
-                            IComplexNDArray cy = (IComplexNDArray) y;
-                            //x,y,z all complex
-                            for (int i = 0; i < op.n(); i++) {
-                                cz.putScalar(i, op.op(cx.getComplex(i), cy.getComplex(i)));
-                            }
-                        } else {
-                            //x,z complex, y real
-                            for (int i = 0; i < op.n(); i++) {
-                                cz.putScalar(i, op.op(cx.getComplex(i), y.getDouble(i)));
-                            }
-                        }
-                    }
-                } else {
-                    //IComplexNDArray in, but real out
-                    throw new UnsupportedOperationException("Invalid op: z is real but x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
-                }
-            } else {
-                //x and/or z are complex
-                if (z instanceof IComplexNDArray) {
-                    IComplexNDArray cz = (IComplexNDArray) z;
-                    if (x instanceof IComplexNDArray) {
-                        IComplexNDArray cx = (IComplexNDArray) x;
-                        for (int i = 0; i < op.n(); i++) {
-                            cz.putScalar(i, op.op(cx.getComplex(i)));
-                        }
-                    } else {
-                        for (int i = 0; i < op.n(); i++) {
-                            cz.putScalar(i, op.op(x.getDouble(i)));
-                        }
-                    }
-                }
-            }
-        } else {
-            Task task = taskFactory.getTransformAction(op);
-            task.invokeBlocking();
-        }
-    }
 
 
-    protected void doAccumulationOp(Accumulation op) {
-        INDArray x = op.x();
-        INDArray y = op.y();
-        if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
-            Task<Double> task = taskFactory.getAccumulationTask(op);
-            task.invokeBlocking();
-        } else {
-            //Complex
-            if (y == null) {
-                //Accumulation(x)
-                //x must be complex
-                IComplexNDArray cx = (IComplexNDArray) x;
-                IComplexNumber accum = op.zeroComplex();
-                for (int i = 0; i < op.n(); i++) {
-                    accum = op.update(accum, cx.getComplex(i), i);
-                }
-                op.setFinalResultComplex(accum);
-            } else {
-                //Accumulation(x,y)
-                if (!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)) {
-                    throw new UnsupportedOperationException("Invalid input for accumulation op: x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
-                }
-                IComplexNDArray cx = (IComplexNDArray) x;
-                IComplexNDArray cy = (IComplexNDArray) y;
-                IComplexNumber accum = op.zeroComplex();
-                for (int i = 0; i < op.n(); i++) {
-                    accum = op.update(accum, cx.getComplex(i), cy.getComplex(i));
-                }
-                op.setFinalResultComplex(accum);
-            }
-        }
-    }
-
-    protected void doScalarOp(ScalarOp op) {
-        INDArray x = op.x();
-        INDArray z = op.z();
-
-        if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
-            Task task = taskFactory.getScalarAction(op);
-            task.invokeBlocking();
-        } else {
-            //Complex
-            if (z instanceof IComplexNDArray) {
-                IComplexNDArray cz = (IComplexNDArray) z;
-                if (x instanceof IComplexNDArray) {
-                    IComplexNDArray cx = (IComplexNDArray) x;
-                    for (int i = 0; i < op.n(); i++) cz.putScalar(i, op.op(cx.getComplex(i)));
-                } else {
-                    for (int i = 0; i < op.n(); i++) cz.putScalar(i, op.op(x.getDouble(i)));
-                }
-            } else {
-                //Put complex into real -> not supported
-                throw new UnsupportedOperationException("Scalar op with complex x but real z: not supported");
-            }
-        }
-    }
-
-    protected void doIndexAccumulationOp(IndexAccumulation op) {
-        INDArray x = op.x();
-        INDArray y = op.y();
-
-        if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
-            Task<Pair<Double,Integer>> task = taskFactory.getIndexAccumulationTask(op);
-            task.invokeBlocking();
-        } else {
-            //Complex
-            if (y == null) {
-                //IndexAccumulation(x)
-                //x must be complex
-                int accumIdx = -1;
-                IComplexNDArray cx = (IComplexNDArray) x;
-                IComplexNumber accum = op.zeroComplex();
-                for (int i = 0; i < op.n(); i++) {
-                    accumIdx = op.update(accum, accumIdx, cx.getComplex(i), i);
-                    if (accumIdx == i) accum = op.op(cx.getComplex(i));
-                }
-                op.setFinalResult(accumIdx);
-            } else {
-                //IndexAccumulation(x,y)
-                if (!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)) {
-                    throw new UnsupportedOperationException("Invalid input for index accumulation op: x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
-                }
-                int accumIdx = -1;
-                IComplexNDArray cx = (IComplexNDArray) x;
-                IComplexNDArray cy = (IComplexNDArray) y;
-                IComplexNumber accum = op.zeroComplex();
-                for (int i = 0; i < op.n(); i++) {
-                    accumIdx = op.update(accum, accumIdx, cx.getComplex(i), cy.getComplex(i), i);
-                    if (accumIdx == i) accum = op.op(cx.getComplex(i), cy.getComplex(i));
-                }
-                op.setFinalResult(accumIdx);
-            }
-        }
-    }
-
-    protected void doBroadcastOp(BroadcastOp op) {
-        INDArray x = op.x();
-        INDArray y = op.y();
-        INDArray z = op.z();
-        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
-            taskFactory.getBroadcastOpAction(op).invokeBlocking();
-        } else {
-            //Complex vector op
-            int nTensors = x.tensorssAlongDimension(op.getDimension());
-            if(x instanceof IComplexNDArray){
-                IComplexNDArray cx = (IComplexNDArray)x;
-                IComplexNDArray cz = (IComplexNDArray)z;
-                if(y instanceof IComplexNDArray){
-                    IComplexNDArray cy = (IComplexNDArray)y;
-                    for( int i = 0; i<nTensors; i++ ){
-                        IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
-                        IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
-                        for( int j = 0; j < tx.length(); j++ ){
-                            tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),cy.getComplex(j))));
-                        }
-                    }
-                } else {
-                    if(y == null) {
-                        for (int i = 0; i < nTensors; i++) {
-                            IComplexNDArray tx = (IComplexNDArray) cx.tensorAlongDimension(i,op.getDimension());
-                            IComplexNDArray tz = (IComplexNDArray) cz.tensorAlongDimension(i,op.getDimension());
-                            for( int j = 0; j < tz.length(); j++) {
-                                tz.put(i,Nd4j.scalar(op.op(tx.getComplex(i))));
-                            }
-                        }
-                    } else {
-                        //Y is real
-                        for( int i = 0; i < nTensors; i++) {
-                            IComplexNDArray tx = (IComplexNDArray)cx.tensorAlongDimension(i,op.getDimension());
-                            IComplexNDArray tz = (IComplexNDArray)cz.tensorAlongDimension(i,op.getDimension());
-                            for( int j = 0; j<tx.length(); j++ ){
-                                tz.put(j,Nd4j.scalar(op.op(tx.getComplex(j),y.getDouble(j))));
-                            }
-                        }
-                    }
-                }
-            } else {
-                throw new UnsupportedOperationException("Complex vector op with real x not supported/implemented");
-            }
-        }
-    }
 
     @Override
     public INDArray exec(BroadcastOp broadcast, int... dimension) {
@@ -515,8 +302,7 @@ public  class DefaultOpExecutioner implements OpExecutioner {
             return broadcast.z();
         }
 
-        Task<Void> task = taskFactory.getBroadcastOpAction(broadcast);
-        task.invokeBlocking();
-        return broadcast.z();
+        throw new IllegalStateException("Java computation no longer supported");
+
     }
 }

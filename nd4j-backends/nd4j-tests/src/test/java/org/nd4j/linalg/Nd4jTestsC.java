@@ -54,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -1828,7 +1830,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testNullPointerDataBuffer() {
+        ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
+        allocate.asFloatBuffer().put(new float[]{1,2,3,4,5,6,7,8,9,10});
+        DataBuffer buff = Nd4j.createBuffer(allocate, DataBuffer.Type.FLOAT, 10);
+        System.out.println(Nd4j.create(buff).sumNumber());
 
+    }
 
     @Test
     public void testEps() {

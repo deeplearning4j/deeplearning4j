@@ -131,7 +131,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         ones.assign(tensor);
         assertEquals(tensor,ones);
     }
-    
+
     @Test
     public void testConcatColVectorAndMatrix() {
         INDArray colVector = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3}, new int[]{6, 1});
@@ -141,7 +141,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
         INDArray concat = Nd4j.vstack(colVector, matrix);
         assertEquals(assertion,concat);
-        
+
     }
 
     @Test
@@ -199,6 +199,11 @@ public class ConcatTestsC extends BaseNd4jTest {
         INDArray concat2 = Nd4j.concat(2, first, second, third);
 
         assertEquals(exp, concat2);
+    }
+
+    @Test(expected =  IllegalArgumentException.class)
+    public void testConcatVector() {
+        System.out.println(Nd4j.concat(0, Nd4j.ones(1000000), Nd4j.create(1)));
     }
 
     @Test

@@ -15,12 +15,14 @@ import org.bytedeco.javacpp.annotation.Platform;
 @Platform(include = "NativeBlas.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
 public class Nd4jBlas extends Pointer {
     static {
-        // using our custom platform properties from resources, load
-        // in priority libraries found in library path over bundled ones
+        // using our custom platform properties from resources, and on user request,
+        // load in priority libraries found in the library path over bundled ones
         String platform = Loader.getPlatform();
         Properties properties = Loader.loadProperties(platform + "-nd4j", platform);
         properties.remove("platform.preloadpath");
-        Loader.load(Nd4jBlas.class, properties, true);
+        String s = System.getProperty("org.nd4j.nativeblas.pathsfirst", "false").toLowerCase();
+        boolean pathsFirst = s.equals("true") || s.equals("t") || s.equals("");
+        Loader.load(Nd4jBlas.class, properties, pathsFirst);
     }
 
     public Nd4jBlas() {
