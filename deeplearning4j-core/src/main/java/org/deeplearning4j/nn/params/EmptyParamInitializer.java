@@ -12,12 +12,12 @@ import java.util.Map;
  */
 public class EmptyParamInitializer implements ParamInitializer {
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-
+    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+        return 0;
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
 
     }
 }

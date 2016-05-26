@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Map;
 
@@ -39,34 +40,50 @@ public class DefaultParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = "b";
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
+    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        int nIn = layerConf.getNIn();
+        int nOut = layerConf.getNOut();
+        return nIn*nOut + nOut;     //weights + bias
+    }
+
+    @Override
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
         if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
-        params.put(WEIGHT_KEY,createWeightMatrix(conf));
-        params.put(BIAS_KEY,createBias(conf));
+        int length = numParams(conf,true);
+        if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView);
+
+        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        int nIn = layerConf.getNIn();
+        int nOut = layerConf.getNOut();
+
+        int nWeightParams = nIn*nOut;
+        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams));
+        INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
+
+
+        params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView));
+        params.put(BIAS_KEY,createBias(conf, biasView));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
     }
 
-    @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-        init(params,conf);
 
-    }
-
-
-    protected INDArray createBias(NeuralNetConfiguration conf) {
+    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         INDArray ret =  Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
-        ret.data().persist();
-        return ret;
+        biasParamView.assign(ret);
+        return biasParamView;
     }
 
 
-    protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
+    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
@@ -75,8 +92,8 @@ public class DefaultParamInitializer implements ParamInitializer {
                 layerConf.getNIn(),
                 layerConf.getNOut(),
                 layerConf.getWeightInit(),
-                dist);
-        ret.data().persist();
+                dist,
+                weightParamView);
         return ret;
     }
 
