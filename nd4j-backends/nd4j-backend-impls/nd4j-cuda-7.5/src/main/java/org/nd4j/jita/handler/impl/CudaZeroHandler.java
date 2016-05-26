@@ -188,7 +188,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     @Override
-    public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape) {
+    public PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape, boolean initialize) {
 
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
         CudaContext context = getCudaContext();
@@ -216,15 +216,11 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair pair = provider.malloc(shape, point, targetMode);
 
 
-                //JCuda.cudaMemsetAsync(new Pointer(pair.getHostPointer().address()), 0, reqMemory, context.getOldStream());
-                //JCuda.cudaStreamSynchronize(context.getOldStream());
-             //   if (point.isConstant()) {
+                if (initialize) {
                     org.bytedeco.javacpp.Pointer.memset(pair.getHostPointer(), 0, reqMemory);
                     point.tickHostWrite();
-            //    } else {
-            //        JCuda.cudaMemsetAsync(new Pointer(pair.getHostPointer().address()), 0, reqMemory, context.getOldStream());
-                    //point.tickHostWrite();
-         //       }
+                }
+
 
                 pickupHostAllocation(point);
 
@@ -238,7 +234,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 // if the initial memory location is device, there's a chance we don't have zero memory allocated
                 if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
-                    tmpPair = alloc(AllocationStatus.HOST, point, point.getShape());
+                    tmpPair = alloc(AllocationStatus.HOST, point, point.getShape(), initialize);
 
                     returnPair.setDevicePointer(tmpPair.getHostPointer());
                     returnPair.setHostPointer(tmpPair.getHostPointer());
@@ -806,7 +802,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             point.setDeviceId(getDeviceId());
 
-            PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape);
+            PointersPair newPointers = alloc(AllocationStatus.DEVICE, point, shape, false);
 
             if (newPointers != null && newPointers.getDevicePointer() != null) {
                 //relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, point, shape);

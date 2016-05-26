@@ -55,7 +55,7 @@ public interface MemoryHandler {
      * @param targetMode valid arguments are DEVICE, ZERO
      * @return
      */
-    PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape);
+    PointersPair alloc(AllocationStatus targetMode, AllocationPoint point, AllocationShape shape, boolean initialize);
 
     /**
      * This method checks if specified device has free memory

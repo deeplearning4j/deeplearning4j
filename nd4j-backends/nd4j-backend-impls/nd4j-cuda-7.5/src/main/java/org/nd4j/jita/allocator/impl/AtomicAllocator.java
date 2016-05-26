@@ -322,16 +322,12 @@ public class AtomicAllocator implements Allocator {
      * @param requiredMemory
      */
     @Override
-    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, boolean initialize) {
         // by default we allocate on initial location
         AllocationPoint point = null;
 
         // TODO: size limitation should be rised in final release to something more sensible
-//        if (buffer instanceof CudaIntDataBuffer || AllocationUtils.getRequiredMemory(requiredMemory) / requiredMemory.getLength() <= 2) {
-//            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST);
-//        } else {
-            point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation());
-//        }
+        point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
 
         return point;
     }
@@ -345,7 +341,7 @@ public class AtomicAllocator implements Allocator {
      * @param location
      */
     @Override
-    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location) {
+    public AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location, boolean initialize) {
         AllocationPoint point = new AllocationPoint();
 
         // we use these longs as tracking codes for memory tracking
@@ -368,7 +364,7 @@ public class AtomicAllocator implements Allocator {
 
 
         // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
-        PointersPair pair = memoryHandler.alloc(location, point, requiredMemory);
+        PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
         point.setPointers(pair);
 
         allocationsMap.put(allocId, point);

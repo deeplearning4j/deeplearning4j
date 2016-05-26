@@ -45,10 +45,6 @@ public class CudaDirectProvider implements MemoryProvider {
                 Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
-
-           //     log.info("Allocating {} bytes on [HOST]", reqMem);
-
-
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
@@ -58,12 +54,7 @@ public class CudaDirectProvider implements MemoryProvider {
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
 
                 Pointer hostPointer = new CudaPointer(pointer);
-/*
-                JCuda.cudaHostGetDevicePointer(
-                        devicePointer,
-                        hostPointer,
-                        0);
-*/
+
                 PointersPair devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
@@ -76,24 +67,12 @@ public class CudaDirectProvider implements MemoryProvider {
             case DEVICE: {
                 // cudaMalloc call
 
-
-
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
-  //              log.info("Allocating {} bytes on [DEVICE]", reqMem);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
-/*
-                if (reqMem == 65536 || reqMem == 1048576 || reqMem == 262144)
-                    emergencyCounter.incrementAndGet();
-
-                if (emergencyCounter.get() > 2000)
-                    throw new RuntimeException("PEW");
-*/
-                // FIXME: it would be nice to get rid of typecasting here
-
 
                 long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
                 if (pointer == 0)
