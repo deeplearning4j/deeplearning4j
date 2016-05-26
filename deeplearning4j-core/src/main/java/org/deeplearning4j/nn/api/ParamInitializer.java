@@ -31,18 +31,21 @@ import java.util.Map;
  */
 public interface ParamInitializer {
 
-    /**
-     * Initialize the parameters
-     * @param params the parameters to initialize
-     * @param conf the configuration
-     */
-    void init(Map<String, INDArray> params, NeuralNetConfiguration conf);
+    int numParams( NeuralNetConfiguration conf, boolean backprop );
 
     /**
-     * Initialization via extra parameters where necessary
-     * @param params  the params to configure
-     * @param conf the configuration to use
-     * @param extraConf an extra configuration for extensions
+     * Initialize the parameters
+     * @param paramsMap the map (initially empty) that will contain a view of the 'paramsView' array
+     * @param conf the configuration
+     * @param paramsView a view of the full network (backprop) parameters
      */
-    void init(Map<String,INDArray> params,NeuralNetConfiguration conf,Configuration extraConf);
+    void init(Map<String, INDArray> paramsMap, NeuralNetConfiguration conf, INDArray paramsView);
+
+//    /**
+//     * Initialization via extra parameters where necessary
+//     * @param params  the params to configure
+//     * @param conf the configuration to use
+//     * @param extraConf an extra configuration for extensions
+//     */
+//    void init(Map<String,INDArray> params,NeuralNetConfiguration conf,Configuration extraConf);
 }

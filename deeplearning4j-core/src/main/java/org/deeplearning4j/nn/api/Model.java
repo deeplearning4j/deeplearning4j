@@ -96,6 +96,13 @@ public interface Model {
     void setParams(INDArray params);
 
     /**
+     * Set the initial parameters array as a view of the full (backprop) network parameters
+     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users
+     * @param params
+     */
+    void setParamsViewArray(INDArray params);
+
+    /**
      * Update learningRate using for this model.
      * Use the learningRateScoreBasedDecay to adapt the score
      * if the Eps termination condition is met

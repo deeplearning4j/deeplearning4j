@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  *
@@ -59,9 +60,11 @@ public interface LayerFactory {
      * @param conf the configuration to create the layer based on
      * @param iterationListeners the list of iterations listners
      * @param index the layer number
+     * @param layerParamsView An array where the parameters are stored, in flattened order
      * @return the created layer
      */
-    <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index);
+    <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index,
+                               INDArray layerParamsView);
 
 
     /**
