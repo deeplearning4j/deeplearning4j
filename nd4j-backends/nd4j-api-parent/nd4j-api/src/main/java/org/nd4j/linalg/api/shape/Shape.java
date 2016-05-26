@@ -350,12 +350,20 @@ public class Shape {
      * @param col                 Column index to get the offset for
      * @return                    Buffer offset
      */
-    public static long getOffset(DataBuffer shapeInformation, int row, int col){
+    public static long getOffset(DataBuffer shapeInformation, int row, int col) {
         int rank = rank(shapeInformation);
-        if(rank != 2) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
+        if (rank != 2)
+            throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 2 (rank is: " + rank + ")");
+        return getOffsetUnsafe(shapeInformation, row, col);
+    }
+
+    /**
+     * Identical to {@link Shape#getOffset(DataBuffer, int, int)} but without input validation on array rank
+     */
+    public static long getOffsetUnsafe(DataBuffer shapeInformation, int row, int col){
         long offset = 0;
-        int size_0 = size(shapeInformation,0);
-        int size_1 = size(shapeInformation,1);
+        int size_0 = sizeUnsafe(shapeInformation,0);
+        int size_1 = sizeUnsafe(shapeInformation,1);
         if(row >= size_0 || col >= size_1) throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a " +
                 Arrays.toString(shape(shapeInformation)) + " NDArray");
 
@@ -420,13 +428,21 @@ public class Shape {
      * @param dim2                dimension 2 index to get the offset for
      * @return                    Buffer offset
      */
-    public static long getOffset(DataBuffer shapeInformation, int dim0, int dim1, int dim2){
+    public static long getOffset(DataBuffer shapeInformation, int dim0, int dim1, int dim2) {
         int rank = rank(shapeInformation);
-        if(rank != 3) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
+        if (rank != 3)
+            throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 3 (rank is: " + rank + ")");
+        return getOffsetUnsafe(shapeInformation, dim0, dim1, dim2);
+    }
+
+    /**
+     * Identical to {@link Shape#getOffset(DataBuffer, int, int, int)} but without input validation on array rank
+     */
+    public static long getOffsetUnsafe(DataBuffer shapeInformation, int dim0, int dim1, int dim2){
         long offset = 0;
-        int size_0 = size(shapeInformation,0);
-        int size_1 = size(shapeInformation,1);
-        int size_2 = size(shapeInformation,2);
+        int size_0 = sizeUnsafe(shapeInformation,0);
+        int size_1 = sizeUnsafe(shapeInformation,1);
+        int size_2 = sizeUnsafe(shapeInformation,2);
         if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2) throw new IllegalArgumentException("Invalid indices: cannot get ["
                 + dim0 + "," + dim1 + "," + dim2 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
@@ -474,14 +490,19 @@ public class Shape {
      * @param dim3                dimension 3 index to get the offset for
      * @return                    Buffer offset
      */
-    public static long getOffset(DataBuffer shapeInformation, int dim0, int dim1, int dim2, int dim3){
+    public static long getOffset(DataBuffer shapeInformation, int dim0, int dim1, int dim2, int dim3) {
         int rank = rank(shapeInformation);
-        if(rank != 4) throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
+        if (rank != 4)
+            throw new IllegalArgumentException("Cannot use this getOffset method on arrays of rank != 4 (rank is: " + rank + ")");
+        return getOffsetUnsafe(shapeInformation, dim0, dim1, dim2, dim3);
+    }
+
+    public static long getOffsetUnsafe(DataBuffer shapeInformation, int dim0, int dim1, int dim2, int dim3){
         long offset = 0;
-        int size_0 = size(shapeInformation,0);
-        int size_1 = size(shapeInformation,1);
-        int size_2 = size(shapeInformation,2);
-        int size_3 = size(shapeInformation,3);
+        int size_0 = sizeUnsafe(shapeInformation,0);
+        int size_1 = sizeUnsafe(shapeInformation,1);
+        int size_2 = sizeUnsafe(shapeInformation,2);
+        int size_3 = sizeUnsafe(shapeInformation,3);
         if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3) throw new IllegalArgumentException("Invalid indices: cannot get ["
                 + dim0 + "," + dim1 + "," + dim2 + "," + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
@@ -1418,6 +1439,16 @@ public class Shape {
     public static int size(DataBuffer buffer, int dimension){
         int rank = rank(buffer);
         if(dimension >= rank) throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer.getInt(1+dimension);
+    }
+
+    /**
+     * Get the size of the specified dimension. Identical to Shape.size(...), but does not perform any input validation
+     * @param buffer       The buffer to get the shape from
+     * @param dimension    The dimension to get.
+     * @return             The size of the specified dimension
+     */
+    public static int sizeUnsafe(DataBuffer buffer, int dimension){
         return buffer.getInt(1+dimension);
     }
 
