@@ -113,7 +113,7 @@ public interface Allocator {
      *
      * @param requiredMemory
      */
-    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, boolean initialize);
 
     /**
      * This method allocates required chunk of memory in specific location
@@ -123,7 +123,7 @@ public interface Allocator {
      * @param requiredMemory
      * @param location
      */
-    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location);
+    AllocationPoint allocateMemory(DataBuffer buffer,AllocationShape requiredMemory, AllocationStatus location, boolean initialize);
 
 
     void memcpyBlocking(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset);
