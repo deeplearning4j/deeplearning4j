@@ -560,6 +560,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
             hostShapeInfoPointers[i] = AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
 
+            sumAlongDim += toConcat[i].size(dimension);
+            for(int j = 0; j < toConcat[i].rank(); j++)
+                if(j != dimension) {
+                    if(toConcat[i].size(j) != outputShape[j]) {
+                        throw new IllegalArgumentException("Illegal concatneation at array " + i + " and shape element "  + j);
+                    }
+                }
+
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[]{dimension});
 
             long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
@@ -569,6 +577,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             tadPointers[i] = devTadShapeInfo;
             offsetsPointers[i] = devTadOffsets;
+
         }
 
         //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
