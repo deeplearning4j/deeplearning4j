@@ -111,7 +111,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaDoubleDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, length);
+        super(buffer, (int)length);
     }
 
     public CudaDoubleDataBuffer(ByteBuffer buffer, long length, long offset) {

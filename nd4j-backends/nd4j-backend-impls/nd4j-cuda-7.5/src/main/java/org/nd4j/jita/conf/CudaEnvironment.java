@@ -23,11 +23,6 @@ public class CudaEnvironment {
     }
 
     public Configuration getConfiguration() {
-        if (configuration.isInitialized()) {
-            if (configuration.isInitialized()) {
-                logger.warn("Please note, CudaEnvironment is already initialized. Configuration changes won't have effect");
-            }
-        }
         return configuration;
     }
 }

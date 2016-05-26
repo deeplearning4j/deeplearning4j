@@ -398,7 +398,8 @@ public class Configuration implements Serializable {
         if (numThreads <= 0 || numThreads >20)
             throw new IllegalStateException("Please, use something in range of [1..20] as number of GC threads");
 
-        this.numberOfGcThreads = numThreads;
+        if (!isInitialized())
+            this.numberOfGcThreads = numThreads;
 
         return this;
     }
