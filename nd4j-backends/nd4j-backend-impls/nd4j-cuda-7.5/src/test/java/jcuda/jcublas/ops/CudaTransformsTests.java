@@ -32,11 +32,13 @@ public class CudaTransformsTests {
     public void setUp() {
         CudaEnvironment.getInstance().getConfiguration()
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setAllocationModel(Configuration.AllocationModel.DIRECT)
-                .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
-                .setMaximumBlockSize(64)
-                .enableDebug(true)
-                .setVerbose(true);
+                .setExecutionModel(Configuration.ExecutionModel.ASYNCHRONOUS)
+                .setAllocationModel(Configuration.AllocationModel.CACHE_ALL)
+                .setMaximumSingleDeviceAllocation(1024 * 1024 * 1024L)
+                .setMaximumBlockSize(128)
+                .setMaximumGridSize(256)
+                .enableDebug(false)
+                .setVerbose(false);
 
 
 
@@ -682,6 +684,41 @@ public class CudaTransformsTests {
 
         }
     }
+
+    @Test
+    public void testSignXZ(){
+        double[] d =   {1.0, -1.1,  1.2,  1.3, -1.4, -1.5, 1.6, -1.7, -1.8, -1.9, -1.01, -1.011};
+        double[] e =   {1.0, -1.0,  1.0,  1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
+
+        INDArray arrF = Nd4j.create(d,new int[]{4,3},'f');
+        INDArray arrC = Nd4j.create(new int[]{4,3},'c').assign(arrF);
+
+        INDArray exp = Nd4j.create(e, new int[]{4,3}, 'f');
+
+        //First: do op with just x (inplace)
+        INDArray arrFCopy = arrF.dup('f');
+        INDArray arrCCopy = arrC.dup('c');
+        Nd4j.getExecutioner().exec(new Sign(arrFCopy));
+        Nd4j.getExecutioner().exec(new Sign(arrCCopy));
+        assertEquals(exp, arrFCopy);
+        assertEquals(exp, arrCCopy);
+
+        //Second: do op with both x and z:
+        INDArray zOutFC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutFF = Nd4j.create(new int[]{4,3},'f');
+        INDArray zOutCC = Nd4j.create(new int[]{4,3},'c');
+        INDArray zOutCF = Nd4j.create(new int[]{4,3},'f');
+        Nd4j.getExecutioner().exec(new Sign(arrF, zOutFC));
+        Nd4j.getExecutioner().exec(new Sign(arrF, zOutFF));
+        Nd4j.getExecutioner().exec(new Sign(arrC, zOutCC));
+        Nd4j.getExecutioner().exec(new Sign(arrC, zOutCF));
+
+        assertEquals(exp, zOutFC);  //fails
+        assertEquals(exp, zOutFF);  //pass
+        assertEquals(exp, zOutCC);  //pass
+        assertEquals(exp, zOutCF);  //fails
+    }
+
 
     @Test
     public void testSoftmax1D_1() throws Exception {

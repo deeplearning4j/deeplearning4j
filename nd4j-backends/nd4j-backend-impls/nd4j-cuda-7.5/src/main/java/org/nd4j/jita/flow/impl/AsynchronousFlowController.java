@@ -20,9 +20,9 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +52,26 @@ public class AsynchronousFlowController implements FlowController{
 
     protected static final AtomicLong eventCounts = new AtomicLong(0);
 
+    protected ArrayList<ArrayList<Queue<cudaEvent_t>>> eventsBarrier = new ArrayList<>();
+    protected ArrayList<ArrayList<AtomicLong>> laneClocks = new ArrayList<>();
+    protected ArrayList<AtomicLong> deviceClocks = new ArrayList<>();
+
+    public AsynchronousFlowController() {
+        int numLanes = configuration.getCommandLanesNumber();
+        int numDevices = configuration.getAvailableDevices().size();
+
+        for (int d = 0; d < numDevices; d++) {
+            eventsBarrier.add(d, new ArrayList<Queue<cudaEvent_t>>());
+            laneClocks.add(d, new ArrayList<AtomicLong>());
+            deviceClocks.add(d, new AtomicLong(0));
+            for (int l = 0; l < numLanes; l++){
+                eventsBarrier.get(d).add(l, new ConcurrentLinkedQueue<cudaEvent_t>());
+                laneClocks.get(d).add(l, new AtomicLong(0));
+            }
+        }
+
+    }
+
     @Override
     public void init(Allocator allocator) {
         this.allocator = allocator;
@@ -76,9 +96,9 @@ public class AsynchronousFlowController implements FlowController{
                         AllocationUtils.getRequiredMemory(point.getShape()),
                         CudaConstants.cudaMemcpyDeviceToHost,
                         context.getSpecialStream().address()) == 0)
-                    throw new IllegalStateException("MemcpyAsync failed");
+                    throw new IllegalStateException("MemcpyAsync D2H failed: [" + point.getDevicePointer().address() + "] -> [" + point.getHostPointer().address() + "]");
 
-                context.syncSpecialStream();
+                commitTransfer(context.getSpecialStream());
             }// else log.info("Not [DEVICE] memory, skipping...");
 
             // updating host read timer
@@ -133,6 +153,9 @@ public class AsynchronousFlowController implements FlowController{
 
             setReadLane(operand, event);
         }
+
+        Integer deviceId = allocator.getDeviceId();
+        fillTail(deviceId, event.getLaneId(), event);
     }
 
     protected void setWriteLane(INDArray array, cudaEvent_t event) {
@@ -163,6 +186,14 @@ public class AsynchronousFlowController implements FlowController{
         if (array == null) return -1;
 
         cudaEvent_t event = getWriteLane(array);
+        if (event == null || event.isDestroyed()) return -1;
+
+        return event.getLaneId();
+    }
+
+    protected int hasActiveWrite(AllocationPoint point) {
+
+        cudaEvent_t event = point.getWriteLane();
         if (event == null || event.isDestroyed()) return -1;
 
         return event.getLaneId();
@@ -230,6 +261,9 @@ public class AsynchronousFlowController implements FlowController{
         nativeOps.registerEvent(event.address(), context.getOldStream().address());
 
         result.setWriteLane(event);
+
+        Integer deviceId = allocator.getDeviceId();
+        fillTail(deviceId, event.getLaneId(), event);
     }
 
     @Override
@@ -281,7 +315,7 @@ public class AsynchronousFlowController implements FlowController{
             //int pendingLanes[] = new int[]{-1, -1};
 
             // FIXME: this is wrong.
-            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
             for (INDArray operand: operands) {
@@ -342,7 +376,7 @@ public class AsynchronousFlowController implements FlowController{
 
             // FIXME: this is wrong.
             //int pendingLanes[] = new int[]{-1, -1, -1, -1};
-            int pendingLanes[] = new int[configuration.getCommandLanesNumber()];
+            int pendingLanes[] = new int[operands.length + 1];
             Arrays.fill(pendingLanes, -1);
 
             for (INDArray operand: operands) {
@@ -404,10 +438,12 @@ public class AsynchronousFlowController implements FlowController{
             lanesCounter.put(newLane, new AtomicLong(0));
         }
 
+
         lanesCounter.get(newLane).incrementAndGet();
 
         if (context == null)
             throw new IllegalStateException("Context shouldn't be null: " + newLane);
+
 
         return context;
     }
@@ -416,5 +452,60 @@ public class AsynchronousFlowController implements FlowController{
         long totalHits = asyncHit.get() + asyncMiss.get();
         float cacheRatio = asyncHit.get() * 100 / (float) totalHits;
         return cacheRatio;
+    }
+
+    protected void fillTail(int deviceId, int lane, cudaEvent_t event) {
+        eventsBarrier.get(deviceId).get(lane).add(event);
+        long tick = deviceClocks.get(deviceId).incrementAndGet();
+        laneClocks.get(deviceId).get(lane).set(tick);
+    }
+
+    /**
+     * This method ensures the events in the beginning of FIFO queues are finished
+     */
+    protected void sweepTail() {
+        Integer deviceId = allocator.getDeviceId();
+        int cnt = 0;
+
+        // we get number of issued commands for specific device
+        long lastCommandId = deviceClocks.get(deviceId).get();
+
+        for (int l = 0; l < configuration.getCommandLanesNumber(); l++) {
+            Queue<cudaEvent_t> queue = eventsBarrier.get(deviceId).get(l);
+
+            if (queue.size() >= MAX_EXECUTION_QUEUE || laneClocks.get(deviceId).get(l).get() < lastCommandId - MAX_EXECUTION_QUEUE) {
+                cudaEvent_t event = queue.poll();
+                if (event != null && !event.isDestroyed()) {
+                    event.synchronize();
+                    event.destroy();
+                    cnt++;
+                }
+            }
+
+        }
+
+        deviceClocks.get(deviceId).incrementAndGet();
+
+      //  log.info("Events sweeped: [{}]", cnt);
+    }
+
+
+    protected void cutTail() {
+        Integer deviceId = allocator.getDeviceId();
+
+        for (int l = 0; l < configuration.getCommandLanesNumber(); l++) {
+            Queue<cudaEvent_t> queue = eventsBarrier.get(deviceId).get(l);
+            cudaEvent_t event;
+            while ((event = queue.poll()) != null) {
+                event.synchronize();
+                event.destroy();
+            }
+        }
+    }
+
+    @Override
+    public void commitTransfer(cudaStream_t streamUsed) {
+        sweepTail();
+        streamUsed.synchronize();
     }
 }

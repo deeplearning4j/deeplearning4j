@@ -590,6 +590,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
+            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+
             nd4jBlas.sscal(new long[]{ctx.getHandle().address()},
                     N,
                     alpha,

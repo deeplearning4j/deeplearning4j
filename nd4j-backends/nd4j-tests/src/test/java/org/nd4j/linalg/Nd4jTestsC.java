@@ -1835,8 +1835,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
         allocate.asFloatBuffer().put(new float[]{1,2,3,4,5,6,7,8,9,10});
         DataBuffer buff = Nd4j.createBuffer(allocate, DataBuffer.Type.FLOAT, 10);
-        System.out.println(Nd4j.create(buff).sumNumber());
-
+        float sum = Nd4j.create(buff).sumNumber().floatValue();
+        System.out.println(sum);
+        assertEquals(55f, sum, 0.001f);
     }
 
     @Test

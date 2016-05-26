@@ -50,4 +50,9 @@ public interface FlowController {
     void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands);
 
     void waitTillReleased(AllocationPoint point);
+
+    /**
+     * This method should be called after memcpy operations, to control their flow.
+     */
+    void commitTransfer(cudaStream_t streamUsed);
 }

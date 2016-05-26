@@ -26,7 +26,8 @@ public class CudaPairwiseTrainformsTests {
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(256)
                 .setMaximumGridSize(64)
-                .enableDebug(true);
+                .enableDebug(true)
+                .setVerbose(true);
 
         System.out.println("Init called");
     }

@@ -241,14 +241,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this(Unpooled.wrappedBuffer(data),length);
     }
 
-    public BaseCudaDataBuffer(ByteBuffer buffer, long length) {
+    public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
         //super(buffer,length);
-        throw new UnsupportedOperationException("OOPS 3");
+        this(buffer, length, 0);
     }
 
     public BaseCudaDataBuffer(ByteBuffer buffer, long length, long offset) {
         //super(buffer, length, offset);
-        throw new UnsupportedOperationException("OOPS 4");
+        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, offset);
+
+        Pointer srcPtr = new CudaPointer(new Pointer(buffer.order(ByteOrder.nativeOrder())));
+
+        allocator.memcpyAsync(this, srcPtr, length * elementSize, offset * elementSize);
     }
 
     /**
