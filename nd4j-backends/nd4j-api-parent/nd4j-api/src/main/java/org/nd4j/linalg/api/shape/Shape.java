@@ -367,8 +367,8 @@ public class Shape {
         if(row >= size_0 || col >= size_1) throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a " +
                 Arrays.toString(shape(shapeInformation)) + " NDArray");
 
-        if(size_0 != 1) offset += row * stride(shapeInformation, 0);
-        if(size_1 != 1) offset += col * stride(shapeInformation, 1);
+        if(size_0 != 1) offset += row * strideUnsafe(shapeInformation, 0, 2);
+        if(size_1 != 1) offset += col * strideUnsafe(shapeInformation, 1, 2);
 
         return offset;
     }
@@ -446,9 +446,9 @@ public class Shape {
         if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2) throw new IllegalArgumentException("Invalid indices: cannot get ["
                 + dim0 + "," + dim1 + "," + dim2 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
-        if(size_0 != 1) offset += dim0 * stride(shapeInformation, 0);
-        if(size_1 != 1) offset += dim1 * stride(shapeInformation, 1);
-        if(size_2 != 1) offset += dim2 * stride(shapeInformation, 2);
+        if(size_0 != 1) offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
+        if(size_1 != 1) offset += dim1 * strideUnsafe(shapeInformation, 1, 3);
+        if(size_2 != 1) offset += dim2 * strideUnsafe(shapeInformation, 2, 3);
 
         return offset;
     }
@@ -506,10 +506,10 @@ public class Shape {
         if(dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3) throw new IllegalArgumentException("Invalid indices: cannot get ["
                 + dim0 + "," + dim1 + "," + dim2 + "," + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
-        if(size_0 != 1) offset += dim0 * stride(shapeInformation, 0);
-        if(size_1 != 1) offset += dim1 * stride(shapeInformation, 1);
-        if(size_2 != 1) offset += dim2 * stride(shapeInformation, 2);
-        if(size_3 != 1) offset += dim3 * stride(shapeInformation, 3);
+        if(size_0 != 1) offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
+        if(size_1 != 1) offset += dim1 * strideUnsafe(shapeInformation, 1, 4);
+        if(size_2 != 1) offset += dim2 * strideUnsafe(shapeInformation, 2, 4);
+        if(size_3 != 1) offset += dim3 * strideUnsafe(shapeInformation, 3, 4);
 
         return offset;
     }
@@ -1497,6 +1497,17 @@ public class Shape {
     public static int stride(DataBuffer buffer, int dimension){
         int rank = rank(buffer);
         if(dimension >= rank) throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer.getInt(1+rank+dimension);
+    }
+
+    /**
+     * Get the stride of the specified dimension, without any input validation
+     * @param buffer       The buffer to get the stride from
+     * @param dimension    The dimension to get.
+     * @param rank         Rank of the array
+     * @return             The stride of the specified dimension
+     */
+    public static int strideUnsafe(DataBuffer buffer, int dimension, int rank){
         return buffer.getInt(1+rank+dimension);
     }
 
