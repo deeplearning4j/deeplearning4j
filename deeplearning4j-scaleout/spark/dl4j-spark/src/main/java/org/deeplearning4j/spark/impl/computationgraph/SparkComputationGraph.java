@@ -224,7 +224,9 @@ public class SparkComputationGraph implements Serializable {
                 iterations + "), (num partions = " + rdd.partitions().size() + ")");
         if(!averageEachIteration) {
             //Do multiple iterations and average once at the end
-            runIteration(rdd);
+            for(int i = 0; i < iterations; i++) {
+                runIteration(rdd);
+            }
         } else {
             //Temporarily set numIterations = 1. Control numIterations externally here so we can average between iterations
             for(GraphVertex gv : conf.getVertices().values()) {

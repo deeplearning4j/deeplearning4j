@@ -338,7 +338,9 @@ public class SparkDl4jMultiLayer implements Serializable {
                 iterations + "), (num partions = " + rdd.partitions().size() + ")");
         if(!averageEachIteration) {
             //Do multiple iterations and average once at the end
-            runIteration(rdd);
+            for(int i = 0; i < iterations; i++) {
+                runIteration(rdd);
+            }
         } else {
             //Temporarily set numIterations = 1. Control numIterations externall here so we can average between iterations
             for(NeuralNetConfiguration conf : this.conf.getConfs()) {
