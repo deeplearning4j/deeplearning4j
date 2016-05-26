@@ -4327,6 +4327,19 @@ public class Nd4j {
     }
 
     /**
+     * Concatenates two matrices horizontally. Matrices must have identical
+     * numbers of rows.
+     *
+     * @param arrs the first matrix to concat
+     */
+    public static INDArray hstack(Collection<INDArray> arrs) {
+        INDArray[] arrays = arrs.toArray(new INDArray[0]);
+        INDArray ret = INSTANCE.hstack(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Concatenates two matrices vertically. Matrices must have identical
      * numbers of columns.
      *
@@ -4338,6 +4351,19 @@ public class Nd4j {
         return ret;
     }
 
+
+    /**
+     * Concatenates two matrices vertically. Matrices must have identical
+     * numbers of columns.
+     *
+     * @param arrs
+     */
+    public static INDArray vstack(Collection<INDArray> arrs) {
+        INDArray[] arrays = arrs.toArray(new INDArray[0]);
+        INDArray ret = INSTANCE.vstack(arrays);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
 
 
