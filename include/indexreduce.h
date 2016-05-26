@@ -575,16 +575,12 @@ struct SharedIndexValue<double> {
 					}
 
 					else {
-#pragma omp parallel for
 						for (int i = 0; i < length; i++) {
 							IndexValue<T> curr;
 							curr.value = x[i * xElementWiseStride];
 							curr.index = i;
-#pragma omp critical
-							{
-								startingIndex = update(startingIndex, curr,
-													   extraParams);
-							}
+							startingIndex = update(startingIndex, curr,
+												   extraParams);
 
 						}
 

@@ -172,9 +172,8 @@ namespace functions {
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int *resultStride = shape::stride(tadShapeShapeInfo);
-
 				if (result == x) {
-#pragma omp  parallel  for
+#pragma omp  parallel  for schedule(guided)
 					for (int i = 0; i < tads; i++) {
 						int offset = tad.tadOffsets[i];
 						T *xIter = x + offset;
@@ -222,7 +221,7 @@ namespace functions {
 				}
 				else {
 
-#pragma omp  parallel  for
+#pragma omp  parallel  for schedule(guided)
 					for (int i = 0; i < tads; i++) {
 						int offset = tad.tadOffsets[i];
 						T *xIter = x + offset;

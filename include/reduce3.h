@@ -593,7 +593,7 @@ namespace functions {
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-#pragma omp parallel for
+#pragma omp parallel for simd
 				for(int i = 0; i < this->extraParamsLength();i++) {
 					extraParamsVals[i] = startingVal;
 				}
@@ -602,49 +602,19 @@ namespace functions {
 				char yOrder = shape::order(yShapeInfo);
 				if(xOrder == yOrder) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-						if(length < 8000) {
 #pragma omp simd
-							for(int i = 0; i < length; i++) {
-								startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
-							}
-
+						for(int i = 0; i < length; i++) {
+							startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
 						}
-						else {
-#pragma omp parallel for shared(extraParamsVals)
-							for(Nd4jIndex i = 0; i < length; i++) {
-#pragma omp critical
-								{
-									startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
-
-								}
-							}
-
-						}
-
 
 						return postProcess(startingVal, length,&(extraParamsVals));
 
 					}
 
 					else {
-						if(length < 8000) {
 #pragma omp simd
-							for(int i = 0; i < length; i++) {
-								startingVal = update(startingVal,op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
-
-
-							}
-
-						}
-						else {
-#pragma omp parallel for shared(extraParamsVals)
-							for(Nd4jIndex i = 0; i < length; i++) {
-#pragma omp critical
-								{
-									startingVal = update(startingVal,op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
-
-								}
-							}
+						for(Nd4jIndex i = 0; i < length; i++) {
+							startingVal = update(startingVal,op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
 						}
 
 						return  postProcess(startingVal, length,&(extraParamsVals));

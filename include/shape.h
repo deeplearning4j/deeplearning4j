@@ -2679,7 +2679,7 @@ __device__ inline int *cuMalloc(int *buffer, long size) {
         shapeInfo->order = 'c';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
-        delete stride;
+        delete[] stride;
         delete shapeInfo;
         return shapeInfoBuffer;
     }

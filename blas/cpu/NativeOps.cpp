@@ -1428,12 +1428,13 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
         else if (resultEleStride >= 1 && inputEleStride >= 1) {
             if (len < 8000) {
+#pragma omp simd
                 for (int i = 0; i < len; i++) {
                     resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
                 }
             }
             else {
-#pragma omp parallel for
+#pragma omp parallel for simd
                 for (int i = 0; i < len; i++) {
                     resultPointer[i * resultEleStride] = inputPointer[i * inputEleStride];
                 }

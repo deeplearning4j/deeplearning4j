@@ -293,7 +293,8 @@ namespace functions {
                     int *yIndexes,
                     int *resultIndexes) {
                 Nd4jIndex n = shape::length(xShapeBuffer);
-#pragma omp parallel for
+
+#pragma omp parallel for simd schedule(guided)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
@@ -328,7 +329,8 @@ namespace functions {
                     T *extraParams,
                     int *indexes) {
                 Nd4jIndex n = shape::length(xShapeBuffer);
-#pragma omp parallel for
+
+#pragma omp parallel for simd schedule(guided)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[indexes[i]] = op(dx[indexes[i]],y[indexes[i]], extraParams);
 
@@ -549,7 +551,6 @@ namespace functions {
                               Nd4jIndex resultStride,
                               T *extraParams,
                               Nd4jIndex n) {
-
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
                     if(n < 8000) {
 
@@ -561,7 +562,7 @@ namespace functions {
 
                     }
                     else {
-#pragma omp parallel for
+#pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             result[i] = op(dx[i], y[i], extraParams);
                         }
@@ -580,7 +581,7 @@ namespace functions {
                         }
                     }
                     else {
-#pragma omp parallel for
+#pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = op(dx[i * xStride],
                                                           y[i * yStride], extraParams);
