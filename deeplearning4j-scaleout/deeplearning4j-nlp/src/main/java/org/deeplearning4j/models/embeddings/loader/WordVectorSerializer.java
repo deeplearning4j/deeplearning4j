@@ -476,19 +476,24 @@ public class WordVectorSerializer {
                 // backward compatibility code
                 vocabCache.putVocabWord(word.getLabel());
 
-                INDArray row = Nd4j.create(1, split.length - 2);
+                float[] vector = new float[split.length - 2];
+
                 for (int i = 2; i < split.length; i++) {
-                    row.putScalar(i - 2, Float.parseFloat(split[i]));
+                    vector[i-2] = Float.parseFloat(split[i]);
                 }
+
+                INDArray row = Nd4j.create(vector);
 
                 arrays.add(row);
             }
 
             // now we create syn0 matrix, using previously fetched rows
-            INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
+            /*INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
             for (int i = 0; i < syn.rows(); i++) {
                 syn.putRow(i, arrays.get(i));
-            }
+            }*/
+            INDArray syn = Nd4j.vstack(arrays);
+
 
 
             InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
@@ -677,8 +682,8 @@ public class WordVectorSerializer {
         conf.setVocabSize(vocabCache.numWords());
 
 
-        printWriter.println(conf.toJson());
-        log.info("Word2Vec conf. JSON: " + conf.toJson());
+        //printWriter.println(conf.toJson());
+        //log.info("Word2Vec conf. JSON: " + conf.toJson());
         /*
             We have the following map:
             Line 0 - VectorsConfiguration JSON string
@@ -753,7 +758,7 @@ public class WordVectorSerializer {
                 vw.setHistoricalGradient(ada);
             }
 
-            printWriter.println(vw.toJson());
+         //   printWriter.println(vw.toJson());
         }
 
         // at this moment we have whole vocab serialized
@@ -1095,20 +1100,28 @@ public class WordVectorSerializer {
             cache.addWordToIndex(word1.getIndex(), word);
 
             cache.putVocabWord(word);
-            INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
+
+            float[] vector = new float[split.length - 2];
+
             for (int i = 1; i < split.length; i++) {
-                row.putScalar(i - 1, Float.parseFloat(split[i]));
+                vector[i-1] = Float.parseFloat(split[i]);
             }
+
+            INDArray row = Nd4j.create(vector);
+
             arrays.add(row);
 
             // workaround for skipped first row
             line = "";
         }
 
+        /*
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
         for (int i = 0; i < syn.rows(); i++) {
             syn.putRow(i,arrays.get(i));
         }
+        */
+        INDArray syn = Nd4j.vstack(arrays);
 
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
                 .vectorLength(arrays.get(0).columns())
@@ -1158,10 +1171,22 @@ public class WordVectorSerializer {
             cache.addWordToIndex(word1.getIndex(), word);
 
             cache.putVocabWord(word);
+
+            /*
             INDArray row = Nd4j.create(Nd4j.createBuffer(split.length - 1));
             for (int i = 1; i < split.length; i++) {
                 row.putScalar(i - 1, Float.parseFloat(split[i]));
             }
+            */
+
+            float[] vector = new float[split.length - 2];
+
+            for (int i = 1; i < split.length; i++) {
+                vector[i-1] = Float.parseFloat(split[i]);
+            }
+
+            INDArray row = Nd4j.create(vector);
+
             arrays.add(row);
         }
 
@@ -1170,10 +1195,13 @@ public class WordVectorSerializer {
                 .cache(cache)
                 .build();
 
+        /*
         INDArray syn = Nd4j.create(new int[]{arrays.size(), arrays.get(0).columns()});
         for (int i = 0; i < syn.rows(); i++) {
             syn.putRow(i,arrays.get(i));
         }
+        */
+        INDArray syn = Nd4j.vstack(arrays);
 
         Nd4j.clearNans(syn);
         lookupTable.setSyn0(syn);
@@ -1414,10 +1442,13 @@ public class WordVectorSerializer {
                 .vectorLength(rows.get(0).columns())
                 .build();
 
+        /*
         INDArray syn0 = Nd4j.create(rows.size(), rows.get(0).columns());
         for (int x = 0; x < rows.size(); x++) {
             syn0.putRow(x, rows.get(x));
         }
+        */
+        INDArray syn0 = Nd4j.vstack(rows);
 
         lookupTable.setSyn0(syn0);
 
