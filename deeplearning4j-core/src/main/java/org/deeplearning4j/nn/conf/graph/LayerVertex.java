@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.convolution.KernelValidationUtil;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
@@ -71,12 +72,11 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
-        throw new RuntimeException("Not yer (re)-implemented");
-//        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(
-//                graph, name, idx,
-//                LayerFactories.getFactory(layerConf).create(layerConf, null, idx),
-//                preProcessor);
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(
+                graph, name, idx,
+                LayerFactories.getFactory(layerConf).create(layerConf, null, idx, paramsView),
+                preProcessor);
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.conf.graph;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** A MergeVertex is used to combine the activations of two or more layers/GraphVertex by means of concatenation/merging.<br>
  * Exactly how this is done depends on the type of input.<br>
@@ -55,7 +56,7 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
         return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph,name,idx);
     }
 
