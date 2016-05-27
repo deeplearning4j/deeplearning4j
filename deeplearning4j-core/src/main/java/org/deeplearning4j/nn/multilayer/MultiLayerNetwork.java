@@ -178,7 +178,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                       /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
                     if (this.getInput() == null || this.getLayers() == null)
                         initializeLayers(input());
-                    getLayers()[i].fit(input());
+                    layers[i].fit(input());
                     log.info("Training on layer " + (i + 1) + " with " + input().size(0) + " examples");
                 }
 
