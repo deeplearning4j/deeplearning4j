@@ -96,8 +96,8 @@ public class StandardScaler {
      * @param dataSet the dataset to transform
      */
     public void transform(DataSet dataSet) {
-        dataSet.setFeatures(dataSet.getFeatures().subiRowVector(mean));
-        dataSet.setFeatures(dataSet.getFeatures().diviRowVector(std));
+        dataSet.setFeatures(dataSet.getFeatures().subRowVector(mean));
+        dataSet.setFeatures(dataSet.getFeatures().divRowVector(std));
     }
 
 
