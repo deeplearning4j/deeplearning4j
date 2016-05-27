@@ -269,11 +269,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = new ArrayList<>(listeners);
-    }
-
-    @Override
     public void setIndex(int index) {
         this.index = index;
     }

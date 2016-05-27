@@ -372,7 +372,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             // construct multi-layer
             int paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
-                INDArray paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+//                INDArray paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                INDArray paramsView;
+                if(nParamsPerLayer[i] > 0){
+                    paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                } else {
+                    paramsView = null;
+                }
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);

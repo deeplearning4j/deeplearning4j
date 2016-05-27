@@ -47,8 +47,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
 
     @Override
     public int numParams(NeuralNetConfiguration conf, boolean backprop) {
-        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
+                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
 
         int nL = layerConf.getNOut();	//i.e., n neurons in this layer
         int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer

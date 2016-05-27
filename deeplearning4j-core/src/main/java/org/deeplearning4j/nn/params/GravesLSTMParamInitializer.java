@@ -83,7 +83,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         
         params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist,inputWeightView));
         params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, recurrentWeightView));
-        INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
+//        INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
         biasView.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
         /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
@@ -93,7 +93,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
          *  gates will create a vanishing gradients problem."
          *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          */
-        params.put(BIAS_KEY, biases);
+        params.put(BIAS_KEY, biasView);
 
         params.get(INPUT_WEIGHT_KEY).data().persist();
         params.get(RECURRENT_WEIGHT_KEY).data().persist();
