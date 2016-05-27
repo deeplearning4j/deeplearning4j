@@ -48,16 +48,6 @@ public class DefaultLayerFactory implements LayerFactory {
     }
 
     @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
-        return create(conf, iterationListeners, index);
-    }
-
-    @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf, new ArrayList<IterationListener>(), 0);
-    }
-
-    @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index,
                                       INDArray layerParamsView) {
         Layer ret = getInstance(conf);
@@ -76,8 +66,6 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
             return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
-        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.ImageLSTM)
-            return new org.deeplearning4j.nn.layers.recurrent.ImageLSTM(conf);
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
             return new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
         if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM)

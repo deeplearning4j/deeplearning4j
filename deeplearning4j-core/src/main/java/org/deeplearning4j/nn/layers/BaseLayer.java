@@ -310,7 +310,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void initParams() {
-        paramInitializer.init(paramTable(), conf());
+//        paramInitializer.init(paramTable(), conf());
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -581,7 +582,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             clonedLayerConf.setNIn(nIn);
             clonedLayerConf.setNOut(nOut);
 
-            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index);
+            //TODO: Need to check this is safe with the 'params are always a view' thing
+            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsFlattened.dup());
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());
             layer.setParam(DefaultParamInitializer.BIAS_KEY,b.dup());
         } catch (Exception e) {

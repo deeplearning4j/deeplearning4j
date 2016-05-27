@@ -129,7 +129,10 @@ public class NeuralNetConfigurationTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer)
                 .build();
-        Layer model = LayerFactories.getFactory(conf).create(conf);
+
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer model = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
@@ -148,7 +151,10 @@ public class NeuralNetConfigurationTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer2)
                 .build();
-        Layer model2 = LayerFactories.getFactory(conf2).create(conf2);
+
+        int numParams2 = LayerFactories.getFactory(conf2).initializer().numParams(conf,true);
+        INDArray params2 = Nd4j.create(1, numParams);
+        Layer model2 = LayerFactories.getFactory(conf2).create(conf2, null, 0, params2);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -249,8 +255,9 @@ public class NeuralNetConfigurationTest {
 
     private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit){
         NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit);
-        return LayerFactories.getFactory(conf).create(conf);
-
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, params);
     }
 
 

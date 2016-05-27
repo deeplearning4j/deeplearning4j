@@ -1169,6 +1169,11 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
+    public void setParamsViewArray(INDArray params) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
     public void applyLearningRateScoreDecay() {
         throw new UnsupportedOperationException("Not implemented");
     }
