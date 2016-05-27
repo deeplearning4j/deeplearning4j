@@ -53,8 +53,8 @@ public class DefaultLayerFactory implements LayerFactory {
         Layer ret = getInstance(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(index);
-//        ret.setParamTable(getParams(conf));
         ret.setParamsViewArray(layerParamsView);
+        ret.setParamTable(getParams(conf, layerParamsView));
         ret.setConf(conf);
         return (E) ret;
     }
