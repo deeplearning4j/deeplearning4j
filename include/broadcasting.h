@@ -40,12 +40,13 @@ namespace functions {
              * @param d2
              * @return
              */
+#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
-
+			inline
 
 #endif
 			T op(T d1, T d2) = 0;
@@ -54,13 +55,14 @@ namespace functions {
              * @param d1
              * @return
              */
+#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
 
-
+			inline
 #endif
 			T op(T d1) = 0;
 
@@ -181,6 +183,7 @@ namespace functions {
 					for (int i = 0; i < tads; i++) {
 						int offset = tad.tadOffsets[i];
 
+
 						for (int i = 0; i < tadLength; i++) {
 							result[offset + i * tadEWS] = this->op(x[offset + i * tadEWS], y[i * yStride]);
 						}
@@ -277,7 +280,7 @@ namespace functions {
                  * @param d2
                  * @return
                  */
-
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
@@ -293,13 +296,14 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -324,13 +328,13 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
-				__host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2;
@@ -340,13 +344,13 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -372,13 +376,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 / d2;
@@ -388,13 +391,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -420,13 +422,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 * d2;
@@ -436,13 +437,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -468,13 +468,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2 / d1;
@@ -484,13 +483,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -516,13 +514,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2 - d1;
@@ -532,13 +529,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -563,13 +559,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 - d2;
