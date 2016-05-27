@@ -297,7 +297,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setParamsViewArray(INDArray params){
-        if(params.length() != numParams()) throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
+        if(this.params != null && params.length() != numParams()) throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
             + ", got params of length " + params.length());
 
         this.paramsFlattened = params;
