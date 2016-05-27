@@ -20,11 +20,13 @@ package org.deeplearning4j.scaleout.perform;
 
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.scaleout.job.Job;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
@@ -65,6 +67,9 @@ public class NeuralNetWorkPerformer implements WorkerPerformer {
     @Override
     public void setup(Configuration conf) {
         NeuralNetConfiguration conf2 = NeuralNetConfiguration.fromJson(conf.get(NEURAL_NET_CONF));
-        this.neuralNetwork = LayerFactories.getFactory(conf2.getLayer()).create(conf2);
+        LayerFactory layerFactory = LayerFactories.getFactory(conf2.getLayer());
+        int numParams = layerFactory.initializer().numParams(conf2,true);
+        INDArray params = Nd4j.create(1, numParams);
+        this.neuralNetwork = LayerFactories.getFactory(conf2.getLayer()).create(conf2, null, 0, params);
     }
 }

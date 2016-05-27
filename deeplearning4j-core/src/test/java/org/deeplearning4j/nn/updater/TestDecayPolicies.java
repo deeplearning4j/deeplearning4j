@@ -97,7 +97,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -129,7 +131,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -161,7 +165,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -191,7 +197,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -224,7 +232,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0,params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -256,7 +266,9 @@ public class TestDecayPolicies {
                             .nIn(nIn).nOut(nOut).updater(updaterFunc).build())
                     .build();
 
-            Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+            int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            INDArray params = Nd4j.create(1, numParams);
+            Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
             Updater updater = UpdaterCreator.getUpdater(layer);
 
             Gradient gradientActual = new DefaultGradient();
@@ -429,7 +441,9 @@ public class TestDecayPolicies {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientExpected = new DefaultGradient();

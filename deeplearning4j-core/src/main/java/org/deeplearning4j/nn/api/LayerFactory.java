@@ -36,27 +36,6 @@ public interface LayerFactory {
     /**
      *
      * Create a layer based on the based in configuration
-     * and an added context.
-     * @param conf the configuration to create the layer based on
-     * @param index the index of the layer
-     * @param numLayers the number of total layers in the net work
-     * @return the created layer
-     */
-    <E extends Layer> E create(NeuralNetConfiguration conf,int index,int numLayers, Collection<IterationListener> iterationListeners);
-
-    /**
-    *
-    * Create a layer based on the based in configuration
-    * @param conf the configuration to create the layer based on
-    * @return the created layer
-    */
-    <E extends Layer> E create(NeuralNetConfiguration conf);
-
-
-
-    /**
-     *
-     * Create a layer based on the based in configuration
      * @param conf the configuration to create the layer based on
      * @param iterationListeners the list of iterations listners
      * @param index the layer number

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 import junit.framework.TestCase;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -49,7 +50,9 @@ public class GravesBidirectionalLSTMTest {
 						.build())
 				.build();
 
-		final GravesBidirectionalLSTM layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		final GravesBidirectionalLSTM layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -94,8 +97,10 @@ public class GravesBidirectionalLSTMTest {
 						.activation("tanh")
 						.build())
 				.build();
-		
-		GravesBidirectionalLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GravesBidirectionalLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());
@@ -156,7 +161,9 @@ public class GravesBidirectionalLSTMTest {
 				.build())
 		.build();
 
-		final GravesBidirectionalLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		final GravesBidirectionalLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		final INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
 		lstm.setInput(input);
 
@@ -216,7 +223,9 @@ public class GravesBidirectionalLSTMTest {
 				.build();
 
 
-		final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional);
+		int numParams = LayerFactories.getFactory(confBidirectional).initializer().numParams(confBidirectional,true);
+		INDArray params = Nd4j.create(1, numParams);
+		final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional,null,0,params);
 
 
 
@@ -224,7 +233,7 @@ public class GravesBidirectionalLSTMTest {
 
 		final INDArray act1 = bidirectionalLSTM.activate(sig);
 
-		final INDArray params = bidirectionalLSTM.params();
+		params = bidirectionalLSTM.params();
 
 		bidirectionalLSTM.setParams(params);
 
@@ -264,8 +273,12 @@ public class GravesBidirectionalLSTMTest {
                         .build())
                 .build();
 
-        final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional);
-        final GravesLSTM forwardsLSTM = LayerFactories.getFactory(confForwards.getLayer()).create(confForwards);
+		int numParams = LayerFactories.getFactory(confForwards).initializer().numParams(confForwards,true);
+		INDArray params = Nd4j.create(1, numParams);
+		int numParamsBD = LayerFactories.getFactory(confBidirectional).initializer().numParams(confBidirectional,true);
+		INDArray paramsBD = Nd4j.create(1, numParamsBD);
+        final GravesBidirectionalLSTM bidirectionalLSTM = LayerFactories.getFactory(confBidirectional.getLayer()).create(confBidirectional,null,0,paramsBD);
+        final GravesLSTM forwardsLSTM = LayerFactories.getFactory(confForwards.getLayer()).create(confForwards,null,0,params);
 
 
         final INDArray sig = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
