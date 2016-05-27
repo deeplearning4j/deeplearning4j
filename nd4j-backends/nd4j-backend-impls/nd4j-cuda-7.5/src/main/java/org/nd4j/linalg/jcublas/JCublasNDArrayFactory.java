@@ -23,7 +23,7 @@ import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
-import org.nd4j.jita.allocator.tad.TADManager;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -31,7 +31,6 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
@@ -49,7 +48,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 

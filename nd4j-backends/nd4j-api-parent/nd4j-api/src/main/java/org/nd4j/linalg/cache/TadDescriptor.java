@@ -1,4 +1,4 @@
-package org.nd4j.jita.allocator.tad;
+package org.nd4j.linalg.cache;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
