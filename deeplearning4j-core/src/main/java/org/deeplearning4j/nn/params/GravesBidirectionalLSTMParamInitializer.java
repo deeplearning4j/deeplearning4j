@@ -94,16 +94,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         INDArray iwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(iwROffset, rwROffset));
         INDArray rwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset));
         INDArray bR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
-        
-        params.put(INPUT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwF));
-        params.put(RECURRENT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwF));
-        params.put(INPUT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
-        params.put(RECURRENT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
 
-//        INDArray biasesForwards = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
-        bF.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
-
-//        INDArray biasesBackwards = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
+        bF.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
         bR.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
         /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
@@ -113,7 +105,13 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
          *  gates will create a vanishing gradients problem."
          *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          */
+        
+        params.put(INPUT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwF));
+        params.put(RECURRENT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwF));
         params.put(BIAS_KEY_FORWARDS, bF);
+        params.put(INPUT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
+        params.put(RECURRENT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
         params.put(BIAS_KEY_BACKWARDS,bR);
+
     }
 }
