@@ -23,6 +23,7 @@ import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication.
@@ -62,7 +63,7 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;
         switch(this.op){
             case Add:

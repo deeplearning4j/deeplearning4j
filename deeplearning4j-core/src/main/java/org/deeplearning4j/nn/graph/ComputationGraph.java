@@ -73,6 +73,7 @@ public class ComputationGraph implements Serializable, Model {
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
     protected transient Solver solver;	//Used to call optimizers during backprop
+    protected INDArray params;
     protected Gradient gradient;
     protected double score;
     @Setter private boolean initDone = false;
@@ -215,8 +216,11 @@ public class ComputationGraph implements Serializable, Model {
     public void init(){
         if(initCalled) return;
 
+        //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
+        topologicalOrder = topologicalSortOrder();
+
         //Initialization: create the GraphVertex objects, based on configuration structure
-        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
+        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
 
         //Names of all of the (data) inputs to the ComputationGraph
         List<String> networkInputNames = configuration.getNetworkInputs();
@@ -228,39 +232,58 @@ public class ComputationGraph implements Serializable, Model {
         //All names: inputs, layers and graph nodes (index to name map)
         Map<String,Integer> allNamesReverse = new HashMap<>();
 
-        int i=0;
-
             //Create network input vertices:
+        int vertexNumber=0;
         for( String name : networkInputNames){
-            GraphVertex gv = new InputVertex(this,name,i,null);  //Output vertices: set later
-            allNamesReverse.put(name,i);
-            vertices[i++] = gv;
+            GraphVertex gv = new InputVertex(this,name,vertexNumber,null);  //Output vertices: set later
+            allNamesReverse.put(name,vertexNumber);
+            vertices[vertexNumber++] = gv;
         }
 
-        //Go through layers, and work out total number of parameters:
+        //Go through layers, and work out total number of parameters. Then allocate full parameters array
         int numParams = 0;
-        for(Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : nodeMap.entrySet()){
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-            String name = nodeEntry.getKey();
-
-
+        int[] numParamsForVertex = new int[topologicalOrder.length];
+        int i=0;
+        for(; i<configuration.getNetworkInputs().size(); i++ ){
+            numParamsForVertex[i] = 0;  //No parameters for input vertices
         }
+        for(Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()){
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+            numParamsForVertex[i] = n.numParams(true);
+            numParams += numParamsForVertex[i];
+            i++;
+        }
+        params = Nd4j.create(1,numParams);
+
+        //Given the topological ordering: work out the subset of the parameters array used for each layer
+        // Then extract out for use when initializing the Layers
+        INDArray[] paramsViewForVertex = new INDArray[topologicalOrder.length];
+        int paramOffsetSoFar = 0;
+        i=0;
+        for( int vertexIdx : topologicalOrder ){
+            int nParamsThisVertex = numParamsForVertex[vertexIdx];
+            if(nParamsThisVertex != 0){
+                paramsViewForVertex[vertexIdx] = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+            }
+            i++;
+            paramOffsetSoFar += nParamsThisVertex;
+        }
+
 
         int numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
-
-        for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : nodeMap.entrySet() ){
+        for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet() ){
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = n.instantiate(this,name,i);
+            GraphVertex gv = n.instantiate(this,name,vertexNumber,paramsViewForVertex[vertexNumber]);
 
             if(gv.hasLayer()){
                 numLayers++;
                 tempLayerList.add(gv.getLayer());
             }
 
-            allNamesReverse.put(name,i);
-            vertices[i++] = gv;
+            allNamesReverse.put(name,vertexNumber);
+            vertices[vertexNumber++] = gv;
         }
         layers = tempLayerList.toArray(new Layer[numLayers]);
 
@@ -271,7 +294,8 @@ public class ComputationGraph implements Serializable, Model {
             verticesMap.put(gv.getVertexName(),gv);
         }
 
-        //Now: do another pass to set the input and output indices...
+        //Now: do another pass to set the input and output indices, for each vertex
+        // These indices are used during forward and backward passes
         //To get output indices: need to essentially build the graph in reverse...
         Map<String,List<String>> verticesOutputTo = new HashMap<>();    //Key: vertex. Values: vertices that this node is an input for
         for( GraphVertex gv : vertices ){
@@ -347,9 +371,6 @@ public class ComputationGraph implements Serializable, Model {
             }
             gv.setOutputVertices(outputIndices);
         }
-
-        //Given the graph structure, do a topological sort to define forward pass and flattening order:
-        topologicalOrder = topologicalSortOrder();
 
         initCalled = true;
     }
@@ -617,23 +638,62 @@ public class ComputationGraph implements Serializable, Model {
         if(topologicalOrder != null) return topologicalOrder;
 
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
-        int[] out = new int[vertices.length];
+        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
+        List<String> networkInputNames = configuration.getNetworkInputs();
+        int numVertices = networkInputNames.size() + configuration.getVertices().size();
+        int[] out = new int[numVertices];
         int outCounter = 0;
 
         //First: represent the graph more usefully as a Map<Integer,Set<Integer>>, where map represents edges i -> j
         // key represents j, set is set of i (inputs) for vertices j
-        Map<Integer,Set<Integer>> inputEdges = new HashMap<>();
-        for(GraphVertex gv : vertices){
-            VertexIndices[] vertexInputsFrom = gv.getInputVertices();
-            if(vertexInputsFrom == null || vertexInputsFrom.length == 0){
-                inputEdges.put(gv.getVertexIndex(),null);
+        Map<Integer,String> vertexNamesMap = new HashMap<>();
+        Map<String,Integer> vertexNamesMap2 = new HashMap<>();
+        int i=0;
+        for( String inputName : configuration.getNetworkInputs()){
+            vertexNamesMap.put(i,inputName);
+            vertexNamesMap2.put(inputName, i);
+            i++;
+        }
+        for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
+            String name = entry.getKey();
+            vertexNamesMap.put(i,name);
+            vertexNamesMap2.put(name,i);
+            i++;
+        }
+
+        Map<Integer,Set<Integer>> inputEdges = new HashMap<>();     //key: vertex. Values: vertices that the key vertex receives input from
+        Map<Integer,Set<Integer>> outputEdges = new HashMap<>();    //key: vertex. Values: vertices that the key vertex outputs to
+
+        for(String s : configuration.getNetworkInputs() ){
+            int idx = vertexNamesMap2.get(s);
+            inputEdges.put(idx, null);
+        }
+
+        for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()){
+            String thisVertexName  = entry.getKey();
+            int idx = vertexNamesMap2.get(thisVertexName);
+            List<String> inputsToThisVertex = configuration.getVertexInputs().get(thisVertexName);
+
+            if(inputsToThisVertex == null || inputsToThisVertex.size() == 0){
+                inputEdges.put(idx,null);
                 continue;
             }
-            Set<Integer> set = new HashSet<>();
-            for( VertexIndices v : vertexInputsFrom ){
-                set.add(v.getVertexIndex());
+
+            Set<Integer> inputSet = new HashSet<>();
+            for(String s : inputsToThisVertex){
+                Integer inputIdx = vertexNamesMap2.get(s);
+                if(inputIdx==null){
+                    System.out.println();
+                }
+                inputSet.add(inputIdx);
+                Set<Integer> outputSetForInputIdx = outputEdges.get(inputIdx);
+                if(outputSetForInputIdx == null){
+                    outputSetForInputIdx = new HashSet<>();
+                    outputEdges.put(inputIdx,outputSetForInputIdx);
+                }
+                outputSetForInputIdx.add(idx);  //input vertex outputs to the current vertex
             }
-            inputEdges.put(gv.getVertexIndex(),set);
+            inputEdges.put(idx, inputSet);
         }
 
         //Now: do topological sort
@@ -650,14 +710,15 @@ public class ComputationGraph implements Serializable, Model {
             int next = noIncomingEdges.removeFirst();
             out[outCounter++] = next;   //Add to sorted list
 
-            VertexIndices[] vertexOutputsTo = vertices[next].getOutputVertices();  //Edges: next -> vertexOutpusTo[...]
+            Set<Integer> vertexOutputsTo = outputEdges.get(next);
+
             //Remove edges next -> vertexOuputsTo[...] from graph;
             if(vertexOutputsTo != null ) {
-                for (VertexIndices v : vertexOutputsTo) {
-                    Set<Integer> set = inputEdges.get(v.getVertexIndex());
+                for( Integer v : vertexOutputsTo){
+                    Set<Integer> set = inputEdges.get(v);
                     set.remove(next);
                     if (set.size() == 0) {
-                        noIncomingEdges.add(v.getVertexIndex()); //No remaining edges for vertex i -> add to list for processing
+                        noIncomingEdges.add(v); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
             }
@@ -668,12 +729,11 @@ public class ComputationGraph implements Serializable, Model {
             Set<Integer> set = entry.getValue();
             if(set == null) continue;
             if(set.size() > 0) throw new IllegalStateException("Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
-                + "cycle includes vertex \"" + vertices[entry.getKey()].getVertexName() + "\")");
+                    + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey()) + "\")");
         }
 
         return out;
     }
-
 
     @Override
     public void computeGradientAndScore() {
@@ -956,17 +1016,14 @@ public class ComputationGraph implements Serializable, Model {
      * @param backwardOnly If true: backprop parameters only (i.e., no visible layer biases used in layerwise pretraining layers)
      */
     public INDArray params(boolean backwardOnly){
+        if(backwardOnly) return params;
+
         List<INDArray> list = new ArrayList<>(layers.length);
         for( int i=0; i<topologicalOrder.length; i++ ){
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
 
             Layer l = vertices[topologicalOrder[i]].getLayer();
-            INDArray layerParams;
-            if(backwardOnly && l instanceof BasePretrainNetwork ){
-                layerParams = ((BasePretrainNetwork)l).paramsBackprop();
-            } else {
-                layerParams = l.params();
-            }
+            INDArray layerParams = l.params();
             if(layerParams != null) list.add(layerParams);    //may be null: subsampling etc layers
         }
 
@@ -1144,12 +1201,12 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public INDArray params() {
-        return params(false);
+        return params(true);
     }
 
     @Override
     public int numParams() {
-        return numParams(false);
+        return numParams(true);
     }
 
     @Override
@@ -1163,6 +1220,11 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParams(INDArray params) {
+        if(this.params != null && this.params.length() == params.length()){
+            this.params.assign(params);
+            return;
+        }
+
         int idx = 0;
         for( int i=0; i<topologicalOrder.length; i++ ){
             if(!vertices[topologicalOrder[i]].hasLayer()) continue;
