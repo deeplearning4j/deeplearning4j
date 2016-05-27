@@ -31,7 +31,10 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -55,7 +58,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
-    protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
@@ -154,8 +156,16 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
+
+        INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);    //f order
+        Nd4j.gemm(input,delta,weightGrad,true,false,1.0,0.0);
+        INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+//        Nd4j.getExecutioner().exec(new Sum(delta,biasGrad),0);    //TODO: do it this way, without the assign
+        INDArray tempBiasGrad = delta.sum(0);
+        biasGrad.assign(tempBiasGrad);
+
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
         
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
@@ -312,7 +322,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 + ", got params of length " + gradients.length());
 
         this.gradientsFlattened = gradients;
-        this.gradientViews = paramInitializer.getGradientsFromFlattened(conf,gradients);
+        this.gradientViews = LayerFactories.getFactory(conf).initializer().getGradientsFromFlattened(conf,gradients);
     }
 
     @Override
@@ -569,7 +579,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 ", input=" + input +
                 ", params=" + params +
                 ", dropoutMask=" + dropoutMask +
-                ", paramInitializer=" + paramInitializer +
                 ", score=" + score +
                 ", optimizer=" + optimizer +
                 ", listeners=" + iterationListeners +

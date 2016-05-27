@@ -418,9 +418,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         flattenedGradients = Nd4j.createUninitialized(new int[]{1,backpropParamLength},'f');    //No need to initialize, as each layer will do it each iteration anyway
 
-
-
-        throw new UnsupportedOperationException("Not implemented");
+        int backpropParamsSoFar = 0;
+        for(int i=0; i<layers.length; i++ ){
+            INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
+            layers[i].setBackpropGradientsViewArray(thisLayerGradView);
+            backpropParamsSoFar += nParamsPerLayer[i];
+        }
     }
 
 
@@ -1003,8 +1006,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
         if (layerWiseConfigurations.isBackprop()) {
-            if(flattenedGradients == null) initGradientsView();
-
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             update(TaskUtils.buildTask(iter));
@@ -1039,6 +1040,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
     protected void backprop() {
+        if(flattenedGradients == null) initGradientsView();
         Pair<Gradient,INDArray> pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getFirst());
         this.epsilon = (pair == null ? null : pair.getSecond());
@@ -1200,6 +1202,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient(){
+        if(flattenedGradients == null) initGradientsView();
         String multiGradientKey;
         gradient = new DefaultGradient();
         Layer currLayer;
@@ -1368,8 +1371,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()) {
-            if(flattenedGradients == null) initGradientsView();
-
             if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(data,labels,null,null);
             }
