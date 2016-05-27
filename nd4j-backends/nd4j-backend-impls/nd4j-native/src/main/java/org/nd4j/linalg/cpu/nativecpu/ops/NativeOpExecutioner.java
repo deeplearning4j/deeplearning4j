@@ -99,7 +99,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         long dimensionAddress = constantHandler.getConstantBuffer(dimension).address();
-        long[] dummy = new long[1];
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+
+        long hostTadShapeInfo = tadBuffers.getFirst().address();
+        long hostTadOffsets = tadBuffers.getSecond().address();
+
+        long[] dummy = new long[]{
+                hostTadShapeInfo,
+                hostTadOffsets,
+        };
+
         long x = op.x().data().address();
         long z = op.z().data().address();
 
@@ -161,7 +171,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
         op.setZ(ret);
-        long[] dummy = new long[1];
+
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+
+        long hostTadShapeInfo = tadBuffers.getFirst().address();
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        long hostTadOffsets = offsets == null ? 0 : offsets.address();
+
+        long[] dummy = new long[]{
+                hostTadShapeInfo,
+                hostTadOffsets,
+        };
 
         long dimensionAddress = constantHandler.getConstantBuffer(dimension).address();
 
@@ -496,7 +518,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         long hostTadShapeInfo = tadBuffers.getFirst().address();
         long hostTadOffsets = tadBuffers.getSecond().address();
-
 
         long[] dummy = new long[]{
                 hostTadShapeInfo,
