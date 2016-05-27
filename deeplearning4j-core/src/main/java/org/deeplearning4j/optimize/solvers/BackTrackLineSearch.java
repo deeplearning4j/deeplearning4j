@@ -215,7 +215,7 @@ public class BackTrackLineSearch implements LineOptimizer {
                 throw new IllegalArgumentException("Current step == oldStep");
 
             // step
-            candidateParameters = Shape.toOffsetZeroCopy(parameters,'f');   //Convention: f order for params and gradient flattening
+            candidateParameters = parameters.dup('f');
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 

@@ -66,7 +66,7 @@ public class GradientCheckUtil {
         }
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient();
-        INDArray originalParams = mln.params();
+        INDArray originalParams = mln.params().dup();
 
         int nParams = originalParams.length();
 
@@ -158,7 +158,7 @@ public class GradientCheckUtil {
         updater.update(graph, gradAndScore.getFirst(), 0, graph.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient();
-        INDArray originalParams = graph.params();
+        INDArray originalParams = graph.params().dup();
 
         int nParams = originalParams.length();
 

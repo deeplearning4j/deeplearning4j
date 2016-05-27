@@ -36,8 +36,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * Please note that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
  * Additionally, variable length data sets will also not work with the bidirectional layer.
  *
- * @author Alex Black
- * @author Benjamin Joseph
+ * @author Alex Black (LSTM implementation)
+ * @author Benjamin Joseph (refactoring for bidirectional LSTM)
  */
 public class LSTMHelpers {
 
