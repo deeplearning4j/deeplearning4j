@@ -214,7 +214,9 @@ public class SubsamplingLayerTest {
                         .build())
                 .build();
 
-        return LayerFactories.getFactory(new SubsamplingLayer()).create(conf);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, params);
     }
 
     public INDArray getData() throws Exception {

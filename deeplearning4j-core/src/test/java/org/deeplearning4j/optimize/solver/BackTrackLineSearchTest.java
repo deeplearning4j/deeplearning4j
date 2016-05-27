@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solver;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -18,6 +19,7 @@ import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -130,7 +132,9 @@ public class BackTrackLineSearchTest {
                         .build())
                 .build();
 
-        return LayerFactories.getFactory(conf.getLayer()).create(conf);
+        int numParams = LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        return LayerFactories.getFactory(conf.getLayer()).create(conf, null, 0, params);
     }
 
 ///////////////////////////////////////////////////////////////////////////

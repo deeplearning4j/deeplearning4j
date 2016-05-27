@@ -45,9 +45,12 @@ public class BatchNormalizationTest {
 
     protected Layer setupActivations(int nIn, int nOut){
         BatchNormalization bN = new BatchNormalization.Builder().nIn(nIn).nOut(nOut).build();
-        NeuralNetConfiguration layerConf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
-        Layer layer =  LayerFactories.getFactory(layerConf).create(layerConf);
+
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
         return layer;
     }
 

@@ -354,6 +354,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setParamsViewArray(INDArray params) {
+            throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
         public void applyLearningRateScoreDecay() {
 
         }
@@ -505,6 +510,11 @@ public class TestOptimizers {
         @Override
         public int numParams(boolean backwards) {
             return 0;
+        }
+
+        @Override
+        public void setParamsViewArray(INDArray params) {
+            throw new UnsupportedOperationException("Not supported");
         }
 
         @Override
@@ -670,6 +680,11 @@ public class TestOptimizers {
         @Override
         public int numParams(boolean backwards) {
             return 0;
+        }
+
+        @Override
+        public void setParamsViewArray(INDArray params) {
+            throw new UnsupportedOperationException("Not supported");
         }
 
         @Override

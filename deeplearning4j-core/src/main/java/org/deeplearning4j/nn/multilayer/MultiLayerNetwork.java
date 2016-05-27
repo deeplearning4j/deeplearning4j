@@ -359,18 +359,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             //First: Work out total length of (backprop) params
             int backpropParamLength = 0;
+            int[] nParamsPerLayer = new int[nLayers];
             for( int i=0; i<nLayers; i++ ){
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                backpropParamLength += LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+                nParamsPerLayer[i] = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+                backpropParamLength += nParamsPerLayer[i];
             }
 
             //Create parameters array:
             params = Nd4j.create(1,backpropParamLength);
 
             // construct multi-layer
+            int paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
+                INDArray paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                paramCountSoFar += nParamsPerLayer[i];
+
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i);
+                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -387,8 +393,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         //all params are views
-        if(getLayerWiseConfigurations().isRedistributeParams())
-            reDistributeParams(false);
+//        if(getLayerWiseConfigurations().isRedistributeParams())
+//            reDistributeParams(false);
     }
 
 
@@ -890,6 +896,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 //            layer.setParams(get);
 //            idx += range;
 //        }
+    }
+
+    @Override
+    public void setParamsViewArray(INDArray params) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**

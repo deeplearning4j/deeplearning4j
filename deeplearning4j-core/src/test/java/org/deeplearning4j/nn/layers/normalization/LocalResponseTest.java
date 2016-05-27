@@ -123,7 +123,9 @@ public class LocalResponseTest {
                         .build())
                 .build();
 
-        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, params);
         activationsActual = layer.activate(x);
     }
 
