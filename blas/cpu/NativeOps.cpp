@@ -111,6 +111,8 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     DoubleNativeOpExecutioner::getInstance()->execBroadcast(
             opNum,
             xPointer,
@@ -119,7 +121,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
             yShapeInfoPointer,
             resultPointer,
             dimensionPointer,
-            dimensionLength, nullptr, nullptr);
+            dimensionLength, tadShapeInfo, tadOffsets);
 
 }
 
@@ -771,8 +773,10 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength,
-                                                           nullptr, nullptr);
+                                                           tadShapeInfo, tadOffsets);
 
 }
 
@@ -2069,7 +2073,23 @@ void NativeOps::setGridLimit(int gridSize) {
 }
 
 void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, int dimensionLength, Nd4jPointer targetBuffer, Nd4jPointer offsetsBuffer) {
-    // TODO: add impl here
+    int *hostXShapeInfo = reinterpret_cast<int *>(xShapeInfo);
+    int *dimensionPointer = reinterpret_cast<int *>(dimension);
+    int *target = reinterpret_cast<int *>(targetBuffer);
+    int *offsets = reinterpret_cast<int *>(offsetsBuffer);
+
+
+    shape::TAD *tad = new shape::TAD();
+    tad->init(hostXShapeInfo, dimensionPointer, dimensionLength);
+    //tad->setOutputBuffer(target);
+    tad->createTadOnlyShapeInfo();
+    tad->createOffsets();
+
+
+    std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
+    std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
+
+    delete tad;
 }
 
 Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
