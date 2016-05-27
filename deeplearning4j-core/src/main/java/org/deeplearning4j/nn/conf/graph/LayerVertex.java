@@ -66,6 +66,11 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
+    public int numParams(boolean backprop){
+        return LayerFactories.getFactory(layerConf).initializer().numParams(layerConf,backprop);
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
         throw new RuntimeException("Not yer (re)-implemented");
 //        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(

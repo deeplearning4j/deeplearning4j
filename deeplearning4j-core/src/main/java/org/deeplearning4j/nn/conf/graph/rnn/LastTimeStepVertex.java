@@ -68,6 +68,11 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
+    public int numParams(boolean backprop){
+        return 0;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph, String name, int idx) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph,name,idx,maskArrayInputName);
     }
