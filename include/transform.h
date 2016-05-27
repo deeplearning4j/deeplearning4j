@@ -3943,7 +3943,8 @@ namespace functions {
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0], 1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+                                  nullptr, nullptr);
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
@@ -3956,7 +3957,8 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+                                  nullptr, nullptr);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
@@ -4203,7 +4205,8 @@ namespace functions {
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0], 1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+                                  nullptr, nullptr);
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
@@ -4216,7 +4219,8 @@ namespace functions {
 
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+                                  nullptr, nullptr);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
@@ -4472,7 +4476,8 @@ namespace functions {
                             maxResult[i] = 0.0;
                         int maxShape[2] = {shape[0], 1};
                         int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1);
+                        max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+                                  nullptr, nullptr);
 
                         //subtract max of each row
                         functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
@@ -4486,7 +4491,7 @@ namespace functions {
                         //take the sum for the exponential
                         functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
                         sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
-                                  1);
+                                  1, nullptr, nullptr);
 
                         //divide by the sum
                         functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();

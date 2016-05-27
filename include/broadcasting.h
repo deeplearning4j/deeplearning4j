@@ -161,17 +161,24 @@ namespace functions {
 							  int *yShapeInfo,
 							  T *result,
 							  int *dimension,
-							  int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
-				/*
-				shape::TAD tad(xShapeInfo,dimension,dimensionLength);
-				tad.createTadOnlyShapeInfo();
-				tad.createOffsets();
-				*/
+							  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
 				int *tadShapeShapeInfo =  tadShapeInfo;
+				int *tadOffsets = tadOffset;
+				shape::TAD *tad = nullptr;
+
+				if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
+					tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+					tad->createTadOnlyShapeInfo();
+					tad->createOffsets();
+
+					tadShapeShapeInfo = tad->tadOnlyShapeInfo;
+					tadOffsets = tad->tadOffsets;
+				}
 
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
@@ -263,9 +270,8 @@ namespace functions {
 
 				}
 
-
-
-
+				if (tad != nullptr)
+					delete tad;
 			}
 
 			virtual inline

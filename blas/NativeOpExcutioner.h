@@ -230,9 +230,9 @@ public:
                     T *result,
                     int *resultShapeInfo,
                     int *dimension,
-                    int dimensionLength) {
+                    int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
         functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
-        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength);
+        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
         delete reduceFunction;
     }
 

@@ -297,7 +297,10 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
+    DoubleNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength, tadShapeInfo, tadOffsets);
 
 }
 
@@ -928,7 +931,8 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,int opNum,
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimension = new int[1];
     dimension[0] = MAX_DIMENSION;
-    FloatNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimension,1);
+    FloatNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimension,1,
+                                                        nullptr, nullptr);
     delete[] dimension;
 }
 
@@ -957,6 +961,9 @@ void   NativeOps::execReduceFloat(
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
     FloatNativeOpExecutioner::getInstance()->execReduce(
             opNum,
             xPointer,
@@ -965,7 +972,7 @@ void   NativeOps::execReduceFloat(
             resultPointer,
             resultShapeInfoPointer,
             dimensionPointer,
-            dimensionLength);
+            dimensionLength, tadShapeInfo, tadOffsets);
 
 }
 
