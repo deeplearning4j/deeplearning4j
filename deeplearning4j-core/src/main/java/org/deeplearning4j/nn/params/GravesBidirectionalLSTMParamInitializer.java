@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**LSTM Parameter initializer, for LSTM based on
@@ -112,6 +113,41 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         params.put(INPUT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
         params.put(RECURRENT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
         params.put(BIAS_KEY_BACKWARDS,bR);
+    }
 
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf = (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+
+        int nL = layerConf.getNOut();	//i.e., n neurons in this layer
+        int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
+
+        int nParamsInput = nLast * (4*nL);
+        int nParamsRecurrent = nL * (4 * nL + 3);
+        int nBias = 4*nL;
+
+        int rwFOffset = nParamsInput;
+        int bFOffset = rwFOffset + nParamsRecurrent;
+        int iwROffset = bFOffset + nBias;
+        int rwROffset = iwROffset + nParamsInput;
+        int bROffset = rwROffset + nParamsRecurrent;
+
+        INDArray iwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, rwFOffset)).reshape('f',nLast, 4*nL);
+        INDArray rwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',nL, 4*nL+3);
+        INDArray bFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bFOffset, iwROffset));
+        INDArray iwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(iwROffset, rwROffset)).reshape('f',nLast, 4*nL);
+        INDArray rwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',nL, 4*nL+3);
+        INDArray bRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
+
+        Map<String,INDArray> out = new LinkedHashMap<>();
+        out.put(INPUT_WEIGHT_KEY_FORWARDS, iwFG);
+        out.put(RECURRENT_WEIGHT_KEY_FORWARDS, rwFG);
+        out.put(BIAS_KEY_FORWARDS, bFG);
+        out.put(INPUT_WEIGHT_KEY_BACKWARDS, iwRG);
+        out.put(RECURRENT_WEIGHT_KEY_BACKWARDS, rwRG);
+        out.put(BIAS_KEY_BACKWARDS, bRG);
+
+        return out;
     }
 }

@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -71,6 +72,24 @@ public class DefaultParamInitializer implements ParamInitializer {
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
+    }
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        int nIn = layerConf.getNIn();
+        int nOut = layerConf.getNOut();
+        int nWeightParams = nIn*nOut;
+
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
+        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));    //Already a row vector
+
+        Map<String,INDArray> out = new LinkedHashMap<>();
+        out.put(WEIGHT_KEY, weightGradientView);
+        out.put(BIAS_KEY, biasView);
+
+        return out;
     }
 
 
