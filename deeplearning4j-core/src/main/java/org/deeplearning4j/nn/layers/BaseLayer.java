@@ -49,7 +49,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected INDArray input;
     protected INDArray paramsFlattened;
+    protected INDArray gradientsFlattened;
     protected Map<String,INDArray> params;
+    protected transient Map<String,INDArray> gradientViews;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
@@ -302,6 +304,15 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             + ", got params of length " + params.length());
 
         this.paramsFlattened = params;
+    }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray gradients) {
+        if(this.params != null && gradients.length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
+                + ", got params of length " + gradients.length());
+
+        this.gradientsFlattened = gradients;
+        this.gradientViews = paramInitializer.getGradientsFromFlattened(conf,gradients);
     }
 
     @Override

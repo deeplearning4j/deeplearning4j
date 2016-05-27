@@ -65,4 +65,9 @@ public class GRUParamInitializer implements ParamInitializer {
 
         throw new UnsupportedOperationException("Not yet implemented"); //TODO
     }
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

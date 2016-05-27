@@ -1,14 +1,12 @@
 package org.deeplearning4j.nn.params;
 
-import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -39,6 +37,21 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         conf.addVariable(GAMMA);
         params.put(BETA, createBeta(conf, betaView));
         conf.addVariable(BETA);
+    }
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        int nOut = layer.getNOut();
+
+        INDArray gammaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nOut));
+        INDArray betaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut,2*nOut));
+
+        Map<String,INDArray> out = new LinkedHashMap<>();
+        out.put(GAMMA, gammaView);
+        out.put(BETA, betaView);
+
+        return out;
     }
 
     protected INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView) {

@@ -97,10 +97,17 @@ public interface Model {
 
     /**
      * Set the initial parameters array as a view of the full (backprop) network parameters
-     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users
-     * @param params
+     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
+     * @param params a 1 x nParams row vector that is a view of the larger (MLN/CG) parameters array
      */
     void setParamsViewArray(INDArray params);
+
+    /**
+     * Set the gradients array as a view of the full (backprop) network parameters
+     * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
+     * @param gradients a 1 x nParams row vector that is a view of the larger (MLN/CG) gradients array
+     */
+    void setBackpropGradientsViewArray(INDArray gradients);
 
     /**
      * Update learningRate using for this model.

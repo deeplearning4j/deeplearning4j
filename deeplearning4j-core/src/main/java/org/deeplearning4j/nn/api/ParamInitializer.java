@@ -41,11 +41,14 @@ public interface ParamInitializer {
      */
     void init(Map<String, INDArray> paramsMap, NeuralNetConfiguration conf, INDArray paramsView);
 
-//    /**
-//     * Initialization via extra parameters where necessary
-//     * @param params  the params to configure
-//     * @param conf the configuration to use
-//     * @param extraConf an extra configuration for extensions
-//     */
-//    void init(Map<String,INDArray> params,NeuralNetConfiguration conf,Configuration extraConf);
+    /**
+     * Return a map of gradients (in their standard non-flattened representation), taken from the flattened (row vector) gradientView array.
+     * The idea is that operates in exactly the same way as the the paramsView does in {@link #init(Map, NeuralNetConfiguration, INDArray)};
+     * thus the position in the view (and, the array orders) must match those of the parameters
+     * @param conf            Configuration
+     * @param gradientView    The flattened gradients array, as a view of the larger array
+     * @return                A map containing an array by parameter type, that is a view of the full network gradients array
+     */
+    Map<String,INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView);
+
 }

@@ -1245,6 +1245,11 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
+    public void setBackpropGradientsViewArray(INDArray gradients) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public void applyLearningRateScoreDecay() {
         throw new UnsupportedOperationException("Not implemented");
     }

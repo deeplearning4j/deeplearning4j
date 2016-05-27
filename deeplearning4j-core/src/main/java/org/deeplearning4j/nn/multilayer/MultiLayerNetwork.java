@@ -54,7 +54,6 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
@@ -93,7 +92,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected INDArray epsilon;
     protected double score;
     @Setter protected boolean initDone = false;
-    private INDArray params;
+    protected INDArray flattenedParams;     //Params for all layers are a view of this array
+    protected transient INDArray flattenedGradients; //Gradients for all layers are a view of this array
+
     /*
       Binary drop connect mask
      */
@@ -340,7 +341,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * Initialize
+     * Initialize the MultiLayerNetwork. This should be called once before the network is used.
      */
     public void init() {
         if (layerWiseConfigurations == null || layers == null)
@@ -367,15 +368,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
 
             //Create parameters array:
-            params = Nd4j.create(1,backpropParamLength);
+            flattenedParams = Nd4j.create(1,backpropParamLength);
 
             // construct multi-layer
             int paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
-//                INDArray paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
                 INDArray paramsView;
                 if(nParamsPerLayer[i] > 0){
-                    paramsView = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                    paramsView = flattenedParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
                 } else {
                     paramsView = null;
                 }
@@ -397,10 +397,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 defaultConfiguration.addVariable(i+"_"+s);
             }
         }
+    }
 
-        //all params are views
-//        if(getLayerWiseConfigurations().isRedistributeParams())
-//            reDistributeParams(false);
+    /**
+     * This method: initializes the flattened gradients array (used in backprop) and sets it in all layers.
+     */
+    protected void initGradientsView(){
+        if(layers == null) init();
+
+        int nLayers = layers.length;
+
+        //First: Work out total length of (backprop) params
+        int backpropParamLength = 0;
+        int[] nParamsPerLayer = new int[nLayers];
+        for( int i=0; i<nLayers; i++ ){
+            NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+            nParamsPerLayer[i] = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+            backpropParamLength += nParamsPerLayer[i];
+        }
+
+        flattenedGradients = Nd4j.createUninitialized(new int[]{1,backpropParamLength},'f');    //No need to initialize, as each layer will do it each iteration anyway
+
+
+
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 
@@ -449,56 +469,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 //            avgActivations.add(layer.activationMean());
 //            }
 //        return Nd4j.toFlattened(avgActivations);
-    }
-
-
-    /**
-     * Redistribute parameters handles
-     * having parameters as a view
-     */
-    @Deprecated
-    public void reDistributeParams(boolean backwardOnly) {
-        List<INDArray> params = new ArrayList<>();
-        for(Layer l : layers) {
-            if(backwardOnly && l instanceof BasePretrainNetwork) {
-                BasePretrainNetwork network = (BasePretrainNetwork) l;
-                INDArray paramsForL = network.paramsBackprop();
-                params.add(paramsForL);
-            }
-            else {
-                INDArray paramsForL = l.params();
-                params.add(paramsForL);
-            }
-        }
-
-        this.params = Nd4j.toFlattened('f', params);
-        int idx = 0;
-        for(Layer l : layers) {
-            if(backwardOnly && l instanceof BasePretrainNetwork) {
-                BasePretrainNetwork network = (BasePretrainNetwork) l;
-                INDArray paramsForL = network.paramsBackprop();
-                params.add(paramsForL);
-                int range = l.numParams(backwardOnly);
-                INDArray get = this.params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-                if (get.length() < 1)
-                    continue;
-                l.setParams(get);
-                idx += range;
-            }
-            else {
-                INDArray paramsForL = l.params();
-                params.add(paramsForL);
-                int range = l.numParams();
-                INDArray get = this.params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-                if (get.length() < 1)
-                    continue;
-                l.setParams(get);
-                idx += range;
-            }
-
-        }
-
-
     }
 
     /**
@@ -862,7 +832,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public INDArray params() {
-        return params;
+        return flattenedParams;
 //        if(params != null)
 //            return params;
 
@@ -888,8 +858,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if(this.params == null) this.params = params;
-        else this.params.assign(params);
+        if(this.flattenedParams == null) this.flattenedParams = params;
+        else this.flattenedParams.assign(params);
 
 //        if(this.params != null) this.params = params;  //not null if isRedistributeParams
 //        int idx = 0;
@@ -906,6 +876,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setParamsViewArray(INDArray params) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray gradients) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -1028,6 +1003,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
         if (layerWiseConfigurations.isBackprop()) {
+            if(flattenedGradients == null) initGradientsView();
+
             if(layerWiseConfigurations.isPretrain())
                 iter.reset();
             update(TaskUtils.buildTask(iter));
@@ -1391,6 +1368,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()) {
+            if(flattenedGradients == null) initGradientsView();
+
             if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(data,labels,null,null);
             }
