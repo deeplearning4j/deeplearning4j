@@ -1058,7 +1058,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     protected Pair<Gradient,INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         String multiGradientKey;
-        Gradient gradient = new DefaultGradient();
+//        Gradient gradient = new DefaultGradient();
+        Gradient gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
 
 
