@@ -359,6 +359,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setBackpropGradientsViewArray(INDArray gradients) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void applyLearningRateScoreDecay() {
 
         }
@@ -515,6 +520,11 @@ public class TestOptimizers {
         @Override
         public void setParamsViewArray(INDArray params) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void setBackpropGradientsViewArray(INDArray gradients) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -685,6 +695,11 @@ public class TestOptimizers {
         @Override
         public void setParamsViewArray(INDArray params) {
             throw new UnsupportedOperationException("Not supported");
+        }
+
+        @Override
+        public void setBackpropGradientsViewArray(INDArray gradients) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

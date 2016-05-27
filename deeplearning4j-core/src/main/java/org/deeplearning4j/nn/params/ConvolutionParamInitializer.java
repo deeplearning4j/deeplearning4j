@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -54,7 +55,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
-        if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
+        if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length != 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
@@ -72,6 +73,26 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
+    }
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+
+        int[] kernel = layerConf.getKernelSize();
+        int nIn = layerConf.getNIn();
+        int nOut = layerConf.getNOut();
+
+        INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf,true)))
+                .reshape('c',nOut, nIn, kernel[0], kernel[1]);
+
+        Map<String,INDArray> out = new LinkedHashMap<>();
+        out.put(BIAS_KEY, biasGradientView);
+        out.put(WEIGHT_KEY, weightGradientView);
+        return out;
     }
 
     //1 bias per feature map
