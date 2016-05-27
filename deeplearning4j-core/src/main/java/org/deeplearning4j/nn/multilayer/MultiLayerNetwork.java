@@ -420,6 +420,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         int backpropParamsSoFar = 0;
         for(int i=0; i<layers.length; i++ ){
+            if(nParamsPerLayer[i] == 0) continue;   //This layer doesn't have any parameters...
             INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
             layers[i].setBackpropGradientsViewArray(thisLayerGradView);
             backpropParamsSoFar += nParamsPerLayer[i];
