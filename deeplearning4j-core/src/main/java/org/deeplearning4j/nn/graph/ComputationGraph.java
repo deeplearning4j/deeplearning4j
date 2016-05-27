@@ -237,6 +237,15 @@ public class ComputationGraph implements Serializable, Model {
             vertices[i++] = gv;
         }
 
+        //Go through layers, and work out total number of parameters:
+        int numParams = 0;
+        for(Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : nodeMap.entrySet()){
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+            String name = nodeEntry.getKey();
+
+
+        }
+
         int numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
 
