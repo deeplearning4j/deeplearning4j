@@ -3082,12 +3082,31 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arrf = Nd4j.create(new double[6],new int[]{3,2},'f').assign(arrc);
 
         assertEquals(arrc,arrf);
-        //c works
         INDArray cSum = arrc.sum(0);
-        //f doesn't
         INDArray fSum = arrf.sum(0);
         assertEquals(cSum,fSum);  //Expect: 0.51, 1.79; getting [0.51,1.71] for f order
     }
+
+    @Test
+    public void testCreateUnitialized(){
+
+        INDArray arrC = Nd4j.createUninitialized(new int[]{10,10},'c');
+        INDArray arrF = Nd4j.createUninitialized(new int[]{10,10},'f');
+
+        assertEquals('c', arrC.ordering());
+        assertArrayEquals(new int[]{10,10}, arrC.shape());
+        assertEquals('f', arrF.ordering());
+        assertArrayEquals(new int[]{10,10}, arrF.shape());
+
+        //Can't really test that it's *actually* uninitialized...
+        arrC.assign(0);
+        arrF.assign(0);
+
+        assertEquals(Nd4j.create(new int[]{10,10}), arrC);
+        assertEquals(Nd4j.create(new int[]{10,10}), arrF);
+    }
+
+
     @Override
     public char ordering() {
         return 'c';

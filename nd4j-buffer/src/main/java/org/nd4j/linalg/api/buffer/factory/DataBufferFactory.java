@@ -299,12 +299,30 @@ public interface DataBufferFactory {
     DataBuffer createDouble(long length);
 
     /**
+     * Create a double data buffer, with optional initialization
+     *
+     * @param initialize If true: initialize the buffer. If false: don't initialize.
+     *
+     * @return the new data buffer
+     */
+    DataBuffer createDouble(long length, boolean initialize);
+
+    /**
      * Create a float data buffer
      *
      * @param length the length of the buffer
      * @return the new data buffer
      */
     DataBuffer createFloat(long length);
+
+    /**
+     * Create a float data buffer, with optional initialization
+     *
+     * @param length the length of the buffer
+     * @param initialize If true: initialize the buffer. If false: don't initialize.
+     * @return the new data buffer
+     */
+    DataBuffer createFloat(long length, boolean initialize);
 
     /**
      * Create an int data buffer
@@ -314,6 +332,14 @@ public interface DataBufferFactory {
      */
     DataBuffer createInt(long length);
 
+    /**
+     * Create an int data buffer, with optional initialization
+     *
+     * @param length the length of the data buffer
+     * @param initialize If true: initialize the buffer. If false: don't initialize.
+     * @return the create data buffer
+     */
+    DataBuffer createInt(long length, boolean initialize);
 
     /**
      * Creates a double data buffer

@@ -222,6 +222,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public INDArray createUninitialized(int[] shape, char ordering){
+        return new JCublasNDArray(shape,  Nd4j.getStrides(shape, ordering), 0, ordering, false);
+    }
+
+    @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
         return new JCublasNDArray(data, newShape, newStride, offset, ordering);
     }

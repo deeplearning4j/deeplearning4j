@@ -1151,13 +1151,17 @@ public class Nd4j {
      * @return the buffer to create
      */
     public static DataBuffer createBuffer(long length) {
+        return createBuffer(length, true);
+    }
+
+    public static DataBuffer createBuffer(long length, boolean initialize){
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);
         else if(dataType() == DataBuffer.Type.INT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4026,6 +4030,29 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
+    /**
+     * Creates an *uninitialized* ndarray with the specified shape and ordering.<br>
+     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
+     *
+     * @param shape the shape of the ndarray
+     * @param ordering the order of the ndarray
+     * @return the instance
+     */
+    public static INDArray createUninitialized(int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+        else if(shape.length == 1) {
+            shape = new int[] {1,shape[0]};
+        }
+        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
 
     /**
      * Create complex ndarray
