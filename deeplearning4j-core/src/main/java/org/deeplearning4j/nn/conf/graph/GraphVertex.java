@@ -53,6 +53,8 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     @Override
     public abstract int hashCode();
 
+    public abstract int numParams(boolean backprop);
+
     /** Create a {@link org.deeplearning4j.nn.graph.vertex.GraphVertex} instance, for the given computation graph,
      * given the configuration instance.
      * @param graph The computation graph that this GraphVertex is to be part of
