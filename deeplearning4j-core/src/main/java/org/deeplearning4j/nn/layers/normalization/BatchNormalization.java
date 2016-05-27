@@ -86,6 +86,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray gamma = (layerConf.isLockGammaBeta())? Nd4j.ones(shape) : getParam(BatchNormalizationParamInitializer.GAMMA);
         Gradient retGradient = new DefaultGradient();
 
+        INDArray dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
+        INDArray dBetaView = gradientViews.get(BatchNormalizationParamInitializer.BETA);
+
         // paper and long calculation
         if (epsilon.rank() == 2) {
             INDArray dGamma = epsilon.mul(xHat).sum(0);
@@ -105,8 +108,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray r = xMu.divRowVector(Transforms.pow(std, 2)).mulRowVector(epsilon.mul(xMu).sum(0));
             INDArray otherEp = epsilon.mul(2).subRowVector(dBeta).mulRowVector(gamma.div(std.mul(2))).sub(r);
 
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
+
+            //TODO rework this to avoid the assign here
+            dGammaView.assign(dGamma);
+            dBetaView.assign(dBeta);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
         } else if (epsilon.rank() == 4){
             INDArray dGamma = epsilon.mul(xHat).sum(0,2,3);
@@ -122,8 +131,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dmu = dx1.sum(0).neg();
             INDArray dx2 = dmu.div(batchSize);
             nextEpsilon = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(dx1, dx2, dx1.dup(), new int[]{1,2,3}));
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
-            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGamma);
+//            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBeta);
+
+            //TODO rework this to avoid the assign here
+            dGammaView.assign(dGamma);
+            dBetaView.assign(dBeta);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
+            retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf

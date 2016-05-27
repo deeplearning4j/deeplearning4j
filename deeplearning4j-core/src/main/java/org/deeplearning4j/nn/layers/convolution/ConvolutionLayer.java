@@ -92,6 +92,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
         int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
+
+        INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
+        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);    //4d, c order
+
+
+
         INDArray delta;
         String afn = conf.getLayer().getActivationFunction();
 
@@ -144,8 +150,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta2d.sum(1));
-        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGrads, 'c');
+        INDArray biasGradTemp = delta2d.sum(1);
+        biasGradView.assign(biasGradTemp); //TODO do this properly
+        weightGradView.assign(weightGrads); //TODO do this properly
+
+        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
         return new Pair<>(retGradient,epsNext);
     }
