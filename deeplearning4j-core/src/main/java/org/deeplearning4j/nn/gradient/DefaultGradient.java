@@ -34,7 +34,13 @@ public class DefaultGradient implements Gradient {
     public static final char DEFAULT_FLATTENING_ORDER = 'f';
     private Map<String,INDArray> gradients = new LinkedHashMap<>();
     private Map<String,Character> flatteningOrders;
+    private INDArray flattenedGradient;
 
+    public DefaultGradient(){ }
+
+    public DefaultGradient(INDArray flattenedGradient){
+        this.flattenedGradient = flattenedGradient;
+    }
 
     @Override
     public Map<String, INDArray> gradientForVariable() {
@@ -66,6 +72,8 @@ public class DefaultGradient implements Gradient {
 
     @Override
     public INDArray gradient() {
+        if(flattenedGradient != null) return flattenedGradient;
+
         if(flatteningOrders != null){
             //Arrays with non-default order get flattened to row vector first, then everything is flattened to f order
             //TODO revisit this, and make more efficient
@@ -79,11 +87,12 @@ public class DefaultGradient implements Gradient {
                     toFlatten.add(entry.getValue());
                 }
             }
-            return Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
+            flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
         } else {
             //Standard case: flatten all to f order
-            return Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
+            flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
         }
+        return flattenedGradient;
     }
 
     @Override
