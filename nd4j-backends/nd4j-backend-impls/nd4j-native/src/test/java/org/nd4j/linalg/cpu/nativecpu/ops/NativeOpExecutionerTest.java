@@ -22,10 +22,12 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void execBroadcastOp() throws Exception {
-        INDArray array = Nd4j.ones(12, 1024);
+        INDArray array = Nd4j.ones(1024, 1024);
         INDArray arrayRow = Nd4j.linspace(1, 1024, 1024);
 
         float sum = (float) array.sumNumber().doubleValue();
+
+        array.addiRowVector(arrayRow);
 
         long time1 = System.nanoTime();
         for (int x = 0; x < 1000; x++) {
@@ -35,8 +37,8 @@ public class NativeOpExecutionerTest {
 
         System.out.println("Execution time: " + ((time2 - time1) / 1000));
 
-        assertEquals(2.0, array.getFloat(0), 0.1f);
-        assertEquals(3.0, array.getFloat(1), 0.1f);
+        assertEquals(1002, array.getFloat(0), 0.1f);
+        assertEquals(2003, array.getFloat(1), 0.1f);
     }
 
     @Test
