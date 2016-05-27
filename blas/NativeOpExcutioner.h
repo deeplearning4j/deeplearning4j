@@ -103,10 +103,10 @@ public:
                        T *y,
                        int *yShapeInfo,
                        T *result,
-                       int *dimension, int dimensionLength) {
+                       int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
         functions::broadcast::Broadcast<T> *broadcast = broadcastOpFactory->getOp(opNum);
-        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength);
+        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
         delete broadcast;
     }
 

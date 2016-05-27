@@ -161,31 +161,55 @@ namespace functions {
 							  int *yShapeInfo,
 							  T *result,
 							  int *dimension,
-							  int dimensionLength) {
+							  int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
+				/*
 				shape::TAD tad(xShapeInfo,dimension,dimensionLength);
 				tad.createTadOnlyShapeInfo();
 				tad.createOffsets();
+				*/
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
-				int *tadShapeShapeInfo =  tad.tadOnlyShapeInfo;
-				int tads = tad.numTads;
+				int *tadShapeShapeInfo =  tadShapeInfo;
+
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int *resultStride = shape::stride(tadShapeShapeInfo);
 				int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+				int tadRank = shape::rank(tadShapeShapeInfo);
 				int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 				int yStride = shape::elementWiseStride(yShapeInfo);
+				int tads =shape::length(xShapeInfo) / tadLength;
 
 				if (result == x) {
 #pragma omp parallel for schedule(guided) if (tads > 16)
 					for (int i = 0; i < tads; i++) {
-						int offset = tad.tadOffsets[i];
+						int offset = tadOffsets[i];
 
+						if (tadEWS > 0 && yStride > 0) {
+							T *oRes = result + offset;
+							T *oX = x + offset;
 
-						for (int i = 0; i < tadLength; i++) {
-							result[offset + i * tadEWS] = this->op(x[offset + i * tadEWS], y[i * yStride]);
+							if (tadEWS == 1 && yStride == 1) {
+#pragma omp simd
+								for (int f = 0; f < tadLength; f++) {
+									oRes[f] = this->op(oX[f], y[f]);
+								}
+							} else {
+#pragma omp simd
+								for (int f = 0; f < tadLength; f++) {
+									oRes[f * tadEWS] = this->op(oX[f * tadEWS], y[f * yStride]);
+								}
+							}
+						} else {
+							int xCoord[MAX_RANK];
+
+							for (int f = 0; f < tadLength; f++) {
+								shape::ind2subC(tadRank,xShape, f, xCoord);
+								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
+								result[xOffset] = this->op(x[xOffset], y[f * yStride]);
+							}
 						}
 					}
 				}
@@ -193,7 +217,7 @@ namespace functions {
 
 #pragma omp  parallel  for schedule(guided)
 					for (int i = 0; i < tads; i++) {
-						int offset = tad.tadOffsets[i];
+						int offset = tadOffsets[i];
 						T *xIter = x + offset;
 						T *resultIter = result + offset;
 						int shapeIter[MAX_RANK];

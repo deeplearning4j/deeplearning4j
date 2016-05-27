@@ -119,7 +119,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
             yShapeInfoPointer,
             resultPointer,
             dimensionPointer,
-            dimensionLength);
+            dimensionLength, nullptr, nullptr);
 
 }
 
@@ -771,7 +771,8 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *resultPointer = reinterpret_cast<float *>(result);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength);
+    FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength,
+                                                           nullptr, nullptr);
 
 }
 
