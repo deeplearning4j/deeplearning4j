@@ -172,50 +172,17 @@ namespace functions {
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int *resultStride = shape::stride(tadShapeShapeInfo);
+				int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+				int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+				int yStride = shape::elementWiseStride(yShapeInfo);
+
 				if (result == x) {
-#pragma omp  parallel  for schedule(guided)
+#pragma omp parallel for schedule(guided) if (tads > 16)
 					for (int i = 0; i < tads; i++) {
 						int offset = tad.tadOffsets[i];
-						T *xIter = x + offset;
-						T *resultIter = result + offset;
-						int shapeIter[MAX_RANK];
-						int coord[MAX_RANK];
-						int dim;
-						int xStridesIter[MAX_RANK];
-						int resultStridesIter[MAX_RANK];
-						int rank = shape::rank(tadShapeShapeInfo);
-						int vectorIdx = 0;
 
-						if (PrepareTwoRawArrayIter<T>(rank,
-													  xShape,
-													  xIter,
-													  xStride,
-													  resultIter,
-													  resultStride,
-													  &rank,
-													  shapeIter,
-													  &xIter,
-													  xStridesIter,
-													  &resultIter,
-													  resultStridesIter) >= 0) {
-							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-							{
-								/* Process the innermost dimension */
-								T val = this->op(xIter[0], y[vectorIdx]);
-								// printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
-								xIter[0] = val;
-								vectorIdx += shape::elementWiseStride(yShapeInfo);
-							}
-							ND4J_RAW_ITER_TWO_NEXT(dim,
-												   rank,
-												   coord,
-												   shapeIter,
-												   xIter,
-												   xStridesIter,
-												   resultIter,
-												   resultStridesIter);
-
-
+						for (int i = 0; i < tadLength; i++) {
+							result[offset + i * tadEWS] = this->op(x[offset + i * tadEWS], y[i * yStride]);
 						}
 					}
 				}
@@ -310,13 +277,13 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 + d2;
