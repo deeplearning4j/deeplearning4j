@@ -43,6 +43,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, 8);
     }
 
+    public CudaDoubleDataBuffer(long length, boolean initialize){
+        super(length, 8, initialize);
+    }
+
     public CudaDoubleDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }

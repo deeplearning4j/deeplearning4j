@@ -508,6 +508,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length the length of the buffer
      */
     protected BaseDataBuffer(long length) {
+        this(length, true);
+    }
+
+    protected BaseDataBuffer(long length, boolean initialize){
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
         this.length = length;
@@ -528,19 +532,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if(dataType() == Type.DOUBLE) {
                 pointer = new DoublePointer(length());
                 indexer = DoubleIndexer.create((DoublePointer)pointer);
-                fillPointerWithZero();
-
+                if(initialize) fillPointerWithZero();
             }
             else if(dataType() == Type.FLOAT) {
                 pointer = new FloatPointer(length());
                 indexer = FloatIndexer.create((FloatPointer)pointer);
-                fillPointerWithZero();
+                if(initialize) fillPointerWithZero();
 
             }
             else if(dataType() == Type.INT) {
                 pointer = new IntPointer(length());
                 indexer = IntIndexer.create((IntPointer)pointer);
-                fillPointerWithZero();
+                if(initialize) fillPointerWithZero();
             }
         }
         else {

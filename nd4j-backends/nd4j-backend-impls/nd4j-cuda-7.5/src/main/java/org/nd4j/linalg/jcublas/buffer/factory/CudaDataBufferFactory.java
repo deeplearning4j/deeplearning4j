@@ -222,13 +222,28 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(long length, boolean initialize){
+        return new CudaDoubleDataBuffer(length, initialize);
+    }
+
+    @Override
     public DataBuffer createFloat(long length) {
         return new CudaFloatDataBuffer(length);
     }
 
     @Override
+    public DataBuffer createFloat(long length, boolean initialize){
+        return new CudaFloatDataBuffer(length, initialize);
+    }
+
+    @Override
     public DataBuffer createInt(long length) {
         return new CudaIntDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createInt(long length, boolean initialize){
+        return new CudaIntDataBuffer(length, initialize);
     }
 
     @Override

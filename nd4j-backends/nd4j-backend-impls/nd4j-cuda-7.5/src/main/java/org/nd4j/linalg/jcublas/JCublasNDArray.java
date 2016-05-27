@@ -65,8 +65,6 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
-
-
     }
 
     /**
@@ -77,8 +75,6 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
-
-
     }
 
     /**
@@ -92,7 +88,19 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public JCublasNDArray(int[] shape, int[] stride, int offset, char ordering) {
         super(shape, stride, offset, ordering);
+    }
 
+    /**
+     * Construct an JCublasNDArray of the specified shape, with optional initialization
+     *
+     * @param shape    the shape of the JCublasNDArray
+     * @param stride   the stride of the JCublasNDArray
+     * @param offset   the desired offset
+     * @param ordering the ordering of the JCublasNDArray
+     * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
+     */
+    public JCublasNDArray(int[] shape, int[] stride, int offset, char ordering, boolean initialize) {
+        super(shape, stride, offset, ordering, initialize);
     }
 
     /**

@@ -36,6 +36,10 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    public DoubleBuffer(long length, boolean initialize){
+        super(length, initialize);
+    }
+
     public DoubleBuffer(int length, int elementSize) {
         super(length, elementSize);
     }

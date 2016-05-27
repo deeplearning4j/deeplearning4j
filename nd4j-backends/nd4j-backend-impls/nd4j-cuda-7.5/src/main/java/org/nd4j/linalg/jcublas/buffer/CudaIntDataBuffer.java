@@ -42,6 +42,11 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         this.constant = true;
     }
 
+    public CudaIntDataBuffer(long length, boolean initialize){
+        super(length, 4, initialize);
+        this.constant = true;
+    }
+
     public CudaIntDataBuffer(long length, int elementSize) {
         super(length, elementSize);
         this.constant = true;
