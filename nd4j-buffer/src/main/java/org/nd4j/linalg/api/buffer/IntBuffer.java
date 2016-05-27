@@ -37,6 +37,10 @@ public class IntBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    public IntBuffer(long length, boolean initialize){
+        super(length, initialize);
+    }
+
     protected IntBuffer(ByteBuf buf, int length, int offset) {
         super(buf, length, offset);
     }

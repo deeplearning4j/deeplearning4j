@@ -1417,6 +1417,9 @@ public interface NDArrayFactory {
      */
     INDArray create(int[] shape, char ordering);
 
+
+    INDArray createUninitialized(int[] shape, char ordering);
+
     /**
      *
      * @param data

@@ -40,6 +40,10 @@ public class FloatBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    public FloatBuffer(long length, boolean initialize){
+        super(length, initialize);
+    }
+
     public FloatBuffer(int length, int elementSize) {
         super(length, elementSize);
     }

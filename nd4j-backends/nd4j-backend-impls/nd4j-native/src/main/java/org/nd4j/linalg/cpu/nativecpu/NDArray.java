@@ -108,6 +108,19 @@ public class NDArray extends BaseNDArray {
     }
 
     /**
+     * Construct an ndarray of the specified shape, with optional initialization
+     *
+     * @param shape    the shape of the ndarray
+     * @param stride   the stride of the ndarray
+     * @param offset   the desired offset
+     * @param ordering the ordering of the ndarray
+     * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
+     */
+    public NDArray(int[] shape, int[] stride, int offset, char ordering, boolean initialize) {
+        super(shape, stride, offset, ordering, initialize);
+    }
+
+    /**
      * Create the ndarray with
      * the specified shape and stride and an offset of 0
      *

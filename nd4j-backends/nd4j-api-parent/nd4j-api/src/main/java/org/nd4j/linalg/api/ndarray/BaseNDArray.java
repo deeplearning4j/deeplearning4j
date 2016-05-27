@@ -225,6 +225,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(Nd4j.createBuffer(ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
     }
 
+    /**
+     * Construct an ndarray of the specified shape.
+     *
+     * @param shape    the shape of the ndarray
+     * @param stride   the stride of the ndarray
+     * @param offset   the desired offset
+     * @param ordering the ordering of the ndarray
+     * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
+     */
+    public BaseNDArray(int[] shape, int[] stride, int offset, char ordering, boolean initialize) {
+        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
+    }
+
 
     /**
      * Create the ndarray with

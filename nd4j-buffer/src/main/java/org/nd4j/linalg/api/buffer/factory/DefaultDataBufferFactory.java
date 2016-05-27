@@ -223,13 +223,28 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(long length, boolean initialize){
+        return new DoubleBuffer(length, initialize);
+    }
+
+    @Override
     public DataBuffer createFloat(long length) {
         return new FloatBuffer(length);
     }
 
     @Override
+    public DataBuffer createFloat(long length, boolean initialize){
+        return new FloatBuffer(length, initialize);
+    }
+
+    @Override
     public DataBuffer createInt(long length) {
         return new IntBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createInt(long length, boolean initialize) {
+        return new IntBuffer(length, initialize);
     }
 
     @Override
