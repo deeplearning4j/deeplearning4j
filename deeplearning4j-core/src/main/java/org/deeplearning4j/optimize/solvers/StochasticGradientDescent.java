@@ -58,7 +58,10 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
             INDArray params = model.params();
             stepFunction.step(params,gradient.gradient());
-            //Assumption here: model.params() is always in-place, hence no setParams is necessary
+            //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
+            //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary
+            //But setParams should be a no-op for MLN and CG
+            model.setParams(params);
 
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);

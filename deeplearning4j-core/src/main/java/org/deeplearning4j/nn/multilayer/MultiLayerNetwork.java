@@ -837,19 +837,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public INDArray params() {
         return flattenedParams;
-//        if(params != null)
-//            return params;
-
-//        List<INDArray> params = new ArrayList<>();
-//        for (Layer layer: getLayers()){
-//            INDArray layerParams;
-//            if( layer instanceof BasePretrainNetwork){
-//                layerParams = ((BasePretrainNetwork) layer).paramsBackprop();
-//            }
-//            else layerParams = layer.params();
-//            if(layerParams != null) params.add(layerParams);    //may be null: subsampling etc layers
-//        }
-//        return Nd4j.toFlattened('f',params);
     }
 
     /**
@@ -862,20 +849,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if(this.flattenedParams == null) this.flattenedParams = params;
-        else this.flattenedParams.assign(params);
+        if(flattenedParams == params) return;   //No op
 
-//        if(this.params != null) this.params = params;  //not null if isRedistributeParams
-//        int idx = 0;
-//        for (int i = 0; i < getLayers().length; i++) {
-//            Layer layer = getLayer(i);
-//            int range = (layer instanceof BasePretrainNetwork ?
-//                    ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
-//            if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
-//            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-//            layer.setParams(get);
-//            idx += range;
-//        }
+        if(flattenedParams != null && params.length() == flattenedParams.length()){
+            flattenedParams.assign(params);
+        } else {
+            int idx = 0;
+            for (int i = 0; i < getLayers().length; i++) {
+                Layer layer = getLayer(i);
+                int range = (layer instanceof BasePretrainNetwork ?
+                        ((BasePretrainNetwork<?>)layer).numParamsBackprop() : layer.numParams());
+                if(range <= 0) continue;    //Some layers: no parameters (subsampling, etc)
+                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+                layer.setParams(get);
+                idx += range;
+            }
+        }
     }
 
     @Override
