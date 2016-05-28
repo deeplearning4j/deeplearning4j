@@ -591,6 +591,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
+        INDArray vb = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         Layer layer;
         try {
             NeuralNetConfiguration clone = conf.clone();  // assume a deep clone here
@@ -602,10 +603,23 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             clonedLayerConf.setNIn(nIn);
             clonedLayerConf.setNOut(nOut);
 
-            //TODO: Need to check this is safe with the 'params are always a view' thing
-            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsFlattened.dup());
+            //Need to swap the hidden and visible biases for pretrain layers
+            INDArray newB;
+            INDArray newVB = null;
+
+            if(vb != null){
+                newB = vb.dup();
+                newVB = b.dup();
+            } else {
+                newB = Nd4j.create(1,nOut);
+            }
+
+            INDArray paramsView = Nd4j.create(1,w.length() + nOut);
+            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsView);
+
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());
-            layer.setParam(DefaultParamInitializer.BIAS_KEY,b.dup());
+            layer.setParam(DefaultParamInitializer.BIAS_KEY,newB);
+            if(vb != null) layer.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, newVB);
         } catch (Exception e) {
             throw new RuntimeException("unable to construct transposed layer", e);
         }

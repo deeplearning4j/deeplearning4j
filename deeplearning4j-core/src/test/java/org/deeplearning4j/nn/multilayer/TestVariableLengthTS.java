@@ -20,6 +20,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -171,6 +172,10 @@ public class TestVariableLengthTS {
             net.computeGradientAndScore();
             double score1 = net.score();
             Gradient g1 = net.gradient();
+            Map<String,INDArray> map1 = g1.gradientForVariable();
+            for( String s : map1.keySet()){
+                map1.put(s, map1.get(s).dup()); //Note: gradients are a view normally -> second computeGradientAndScore would have modified the original gradient map values...
+            }
 
             net.setInput(in2);
             net.setLabels(labels2);
@@ -190,6 +195,10 @@ public class TestVariableLengthTS {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
+                System.out.println("-------");
+                System.out.println("Variable: " + s);
+                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
+                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
                 assertNotEquals(s, g1s, g2s);
             }
 
