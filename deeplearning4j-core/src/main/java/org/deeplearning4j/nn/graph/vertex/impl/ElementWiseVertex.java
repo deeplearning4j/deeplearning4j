@@ -113,6 +113,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
     @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
+
+    @Override
     public String toString() {
         return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op + ")";
     }

@@ -177,6 +177,10 @@ public class TestVariableLengthTSCG {
             net.computeGradientAndScore();
             double score1 = net.score();
             Gradient g1 = net.gradient();
+            Map<String,INDArray> map = g1.gradientForVariable();
+            for(String s : map.keySet()){
+                map.put(s, map.get(s).dup());   //Gradients are views; need to dup otherwise they will be modified by next computeGradientAndScore
+            }
 
             net.setInput(0,in2);
             net.setLabel(0, labels2);
