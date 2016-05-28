@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
@@ -53,14 +54,17 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     @Override
     public abstract int hashCode();
 
+    public abstract int numParams(boolean backprop);
+
     /** Create a {@link org.deeplearning4j.nn.graph.vertex.GraphVertex} instance, for the given computation graph,
      * given the configuration instance.
      * @param graph The computation graph that this GraphVertex is to be part of
      * @param name The name of the GraphVertex object
      * @param idx The index of the GraphVertex
+     * @param paramsView A view of the full parameters array
      * @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
-    public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx);
+    public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView);
 
     /** Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary
      * processing or modifications of the inputs, the output types can be quite different to the input type(s).<br>

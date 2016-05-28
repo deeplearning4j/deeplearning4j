@@ -37,31 +37,37 @@ public class GRUParamInitializer implements ParamInitializer {
     public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-    	org.deeplearning4j.nn.conf.layers.GRU layerConf =
-                (org.deeplearning4j.nn.conf.layers.GRU) conf.getLayer();
-        Distribution dist = Distributions.createDistribution(layerConf.getDist());
-
-        int nL = layerConf.getNOut();	//i.e., n neurons in this layer
-        int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
-        
-        conf.addVariable(INPUT_WEIGHT_KEY);
-        conf.addVariable(RECURRENT_WEIGHT_KEY);
-        conf.addVariable(BIAS_KEY);
-        
-        
-        //Order: RUC - i.e., reset, update, candidate
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, layerConf.getWeightInit(), dist));
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, layerConf.getWeightInit(), dist));
-        params.put(BIAS_KEY, Nd4j.zeros(1,3*nL));
-
-        params.get(INPUT_WEIGHT_KEY).data().persist();
-        params.get(RECURRENT_WEIGHT_KEY).data().persist();
-        params.get(BIAS_KEY).data().persist();
+    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+        throw new UnsupportedOperationException("Not yet implemented"); //TODO
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, Configuration extraConf) {
-        init(params,conf);
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
+    	org.deeplearning4j.nn.conf.layers.GRU layerConf =
+                (org.deeplearning4j.nn.conf.layers.GRU) conf.getLayer();
+//        Distribution dist = Distributions.createDistribution(layerConf.getDist());
+//
+//        int nL = layerConf.getNOut();	//i.e., n neurons in this layer
+//        int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
+//
+//        conf.addVariable(INPUT_WEIGHT_KEY);
+//        conf.addVariable(RECURRENT_WEIGHT_KEY);
+//        conf.addVariable(BIAS_KEY);
+//
+//        //Order: RUC - i.e., reset, update, candidate
+//        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, layerConf.getWeightInit(), dist));
+//        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, layerConf.getWeightInit(), dist));
+//        params.put(BIAS_KEY, Nd4j.zeros(1,3*nL));
+//
+//        params.get(INPUT_WEIGHT_KEY).data().persist();
+//        params.get(RECURRENT_WEIGHT_KEY).data().persist();
+//        params.get(BIAS_KEY).data().persist();
+
+        throw new UnsupportedOperationException("Not yet implemented"); //TODO
+    }
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

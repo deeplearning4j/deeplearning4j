@@ -24,6 +24,7 @@ import java.util.Random;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -71,7 +72,10 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params);
+		l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
@@ -102,7 +106,12 @@ public class OutputLayerTest {
                         .nIn(4).nOut(3)
                         .activation("softmax")
                         .weightInit(WeightInit.XAVIER).build()).build();
-        org.deeplearning4j.nn.layers.OutputLayer layer = LayerFactories.getFactory(conf).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        org.deeplearning4j.nn.layers.OutputLayer layer = LayerFactories.getFactory(conf).create(conf,null,0,params);
+		layer.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
+
         DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
         layer.setListeners(new ScoreIterationListener(1));
@@ -117,7 +126,7 @@ public class OutputLayerTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
-        NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .miniBatch(false)
                 .seed(123)
@@ -131,7 +140,10 @@ public class OutputLayerTest {
                         .activation("softmax").build())
                 .build();
 
-        OutputLayer o = LayerFactories.getFactory(neuralNetConfiguration).create(neuralNetConfiguration);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        OutputLayer o = LayerFactories.getFactory(conf).create(conf,null,0,params);
+		o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         int numSamples = 150;
         int batchSize = 150;
@@ -174,7 +186,7 @@ public class OutputLayerTest {
                         {0, 1}});
 
         DataSet dataset = new DataSet(data,data2);
-        NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .seed(123)
                 .iterations(200)
@@ -188,7 +200,11 @@ public class OutputLayerTest {
                         .build())
                 .build();
 
-        OutputLayer o = LayerFactories.getFactory(neuralNetConfiguration).create(neuralNetConfiguration);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        OutputLayer o = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		o.setBackpropGradientsViewArray(Nd4j.create(1,params.length()));
+
         o.setListeners(new ScoreIterationListener(1));
         o.fit(dataset);
 
@@ -209,7 +225,10 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params);
+		l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
@@ -243,8 +262,10 @@ public class OutputLayerTest {
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-        INDArray params = l.params();
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params);
+        params = l.params();
         l.setParams(params);
         assertEquals(params,l.params());
     }

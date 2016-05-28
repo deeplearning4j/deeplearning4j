@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -41,8 +42,10 @@ public class GRUTest {
 						.activation("tanh")
 						.build())
 				.build();
-	
-		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -89,8 +92,10 @@ public class GRUTest {
 						.activation("tanh")
 						.build())
 				.build();
-		
-		GRU gru = LayerFactories.getFactory(conf.getLayer()).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GRU gru = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		//Set input, do a forward pass:
 		gru.activate(inputData);
 		assertNotNull(gru.input());

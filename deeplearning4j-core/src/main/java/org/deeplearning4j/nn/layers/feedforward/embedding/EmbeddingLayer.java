@@ -55,7 +55,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         }
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray weightGradients = Nd4j.zeros(weights.shape());
+        INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
+        weightGradients.assign(0);
 
         int[] indexes = new int[input.length()];
         for( int i=0; i<indexes.length; i++ ){
@@ -64,11 +65,13 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
+        INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
         INDArray biasGradients = delta.sum(0);
+        biasGradientsView.assign(biasGradients);    //TODO do this without the assign...
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradients);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
 
         return new Pair<>(ret,null);    //Don't bother returning epsilons: no layer below this one...
     }

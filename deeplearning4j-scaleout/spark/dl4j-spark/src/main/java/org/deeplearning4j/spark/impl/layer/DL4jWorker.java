@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * This is considered the "Worker"
@@ -47,8 +48,9 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
         LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
         if(layerFactory == null)
             throw new IllegalStateException("Please specify a layer factory");
-        this.network = layerFactory.create(conf);
-        int numParams = this.network.numParams();
+        int numParams = layerFactory.initializer().numParams(conf,true);
+        INDArray thisParams = Nd4j.create(1, numParams);
+        this.network = layerFactory.create(conf, null, 0, thisParams);
         if(numParams != params.length())
             throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
         Layer network = (Layer) this.network;

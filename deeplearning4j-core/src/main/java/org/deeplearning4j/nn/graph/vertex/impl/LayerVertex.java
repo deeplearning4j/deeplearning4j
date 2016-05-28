@@ -121,6 +121,11 @@ public class LayerVertex extends BaseGraphVertex {
         return new Pair<>(pair.getFirst(), new INDArray[]{pair.getSecond()});
     }
 
+    @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        layer.setBackpropGradientsViewArray(backpropGradientsViewArray);
+    }
+
 
     @Override
     public String toString(){
