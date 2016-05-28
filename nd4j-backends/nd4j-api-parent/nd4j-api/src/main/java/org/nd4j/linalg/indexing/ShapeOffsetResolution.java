@@ -56,6 +56,57 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
 
+
+        if(arr.isVector()) {
+            //return the whole vector
+            if(indexes[0] instanceof NDArrayIndexAll) {
+                offset = 0;
+                this.shapes = arr.shape();
+                this.strides = arr.stride();
+                this.offsets = new int[arr.rank()];
+                return true;
+            }
+            //point or interval is possible
+            if(arr.isRowVector()) {
+                if(indexes[0] instanceof PointIndex) {
+                    if(indexes[1] instanceof IntervalIndex) {
+                        offset = indexes[1].offset();
+                        this.shapes = new int[indexes[1].length()];
+                        shapes[0] = 1;
+                        shapes[1] = indexes[1].length();
+                        this.strides = new int[indexes[1].length()];
+                        strides[0] = 0;
+                        strides[1] = indexes[1].stride();
+                        this.offsets = new int[indexes[1].length()];
+                        return true;
+                    }
+                }
+                else {
+                    throw new UnsupportedOperationException("Illegal combination of indexes for vector");
+
+                }
+            }
+            else {
+                if(indexes[1] instanceof PointIndex) {
+                    if(indexes[0] instanceof IntervalIndex) {
+                        offset = indexes[0].offset();
+                        this.shapes = new int[indexes[1].length()];
+                        shapes[1] = 1;
+                        shapes[0] = indexes[1].length();
+                        this.strides = new int[indexes[1].length()];
+                        strides[1] = 0;
+                        strides[0] = indexes[1].stride();
+                        this.offsets = new int[indexes[1].length()];
+                        return true;
+                    }
+                }
+                else {
+                  throw new UnsupportedOperationException("Illegal combination of indexes for vector");
+                }
+            }
+        }
+
+
         //specific easy case
         if(numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex > 0 && numAll > 0) {
             int minDimensions = Math.max(arr.rank() - pointIndex,2);

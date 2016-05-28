@@ -1,33 +1,43 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * CPU lapack implementation
  */
 public class CpuLapack extends BaseLapack {
 
-    @Override
-    public void dgetrf(int M, int N, double[] A, int lda, int[] IPIV, int INFO) {
-       throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public void dgetri(int N, double[] A, int lda, int[] IPIV, double[] WORK, int lwork, int INFO) {
-        throw new UnsupportedOperationException();
-    }
 
+    /**
+     * LU decomposiiton of a matrix
+     *
+     * @param M
+     * @param N
+     * @param A
+     * @param lda
+     * @param IPIV
+     * @param INFO
+     */
     @Override
-    public void sgetrf(int M, int N, float[] A, int lda, int[] IPIV, int INFO) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public void sgetri(int N, float[] A, int lda, int[] IPIV, float[] WORK, int lwork, int INFO) {
-        throw new UnsupportedOperationException();
+    public void getrf(int M, int N, INDArray A, int lda, int[] IPIV, int INFO) {
 
     }
 
+    /**
+     * Generate inverse ggiven LU decomp
+     *
+     * @param N
+     * @param A
+     * @param lda
+     * @param IPIV
+     * @param WORK
+     * @param lwork
+     * @param INFO
+     */
+    @Override
+    public void getri(int N, INDArray A, int lda, int[] IPIV, INDArray WORK, int lwork, int INFO) {
 
+    }
 }

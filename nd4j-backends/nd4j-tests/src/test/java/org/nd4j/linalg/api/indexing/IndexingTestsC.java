@@ -22,8 +22,19 @@ public class IndexingTestsC extends BaseNd4jTest {
     public IndexingTestsC(Nd4jBackend backend) {
         super(backend);
     }
-
-
+    @Test
+    public void testVectorIndexing2() {
+        INDArray wholeVector = Nd4j.linspace(1,5,5).get(NDArrayIndex.interval(1,2,3,true));
+        INDArray assertion = Nd4j.create(new double[]{2,4});
+        assertEquals(assertion,wholeVector);
+        INDArray wholeVectorTwo = Nd4j.linspace(1,5,5).get(NDArrayIndex.interval(1,2,4,true));
+        assertEquals(assertion,wholeVectorTwo);
+        INDArray wholeVectorThree = Nd4j.linspace(1,5,5).get(NDArrayIndex.interval(1,2,4,false));
+        assertEquals(assertion,wholeVectorThree);
+        INDArray threeFiveAssertion = Nd4j.create(new double[]{3,5});
+        INDArray threeFive = Nd4j.linspace(1,5,5).get(NDArrayIndex.interval(2,2,4,true));
+        assertEquals(threeFiveAssertion,threeFive);
+    }
 
 
     @Test

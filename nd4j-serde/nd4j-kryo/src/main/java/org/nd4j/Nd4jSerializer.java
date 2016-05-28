@@ -60,6 +60,6 @@ public class Nd4jSerializer extends Serializer<INDArray> {
         }
     }
 
-   
+
 
 }
