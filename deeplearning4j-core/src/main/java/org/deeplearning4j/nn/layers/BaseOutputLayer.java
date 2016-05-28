@@ -216,7 +216,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 //                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
 //                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
                 weightGradView.assign(input.transpose().mmul(delta));
-                biasGradView.assign(outSubLabels.sum(0));
+                biasGradView.assign(delta.sum(0));
                 triple = new Triple<>(gradient,delta,output);
                 break;
 
