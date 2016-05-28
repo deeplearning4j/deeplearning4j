@@ -252,12 +252,10 @@ public class LSTMHelpers {
             endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength);
         }
 
-//        INDArray iwGradientsOut = Nd4j.create(new int[]{prevLayerSize, 4 * hiddenLayerSize}, 'f');
-//        INDArray rwGradientsOut = Nd4j.create(new int[]{hiddenLayerSize, 4 * hiddenLayerSize + 3},'f');    //Order: {I,F,O,G,FF,OO,GG}
-//        INDArray bGradientsOut = Nd4j.create(1,4*hiddenLayerSize);
-
+        //Get gradients. Note that we have to manually zero these, as they might not be initialized (or still has data from last iteration)
+        //Also note that they are in f order (as per param initializer) so can be used in gemm etc
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
-        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey);
+        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey);    //Order: {I,F,O,G,FF,OO,GG}
         INDArray bGradientsOut = gradientViews.get(biasWeightKey);
         iwGradientsOut.assign(0);
         rwGradientsOut.assign(0);

@@ -94,7 +94,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
-        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);    //4d, c order
+        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);    //4d, c order. Shape: [outDepth,inDepth,kH,kW]
+        INDArray weightGradView2df = Shape.newShapeNoCopy(weightGradView, new int[]{outDepth,inDepth*kH*kW}, false).transpose();
 
 
 
@@ -126,10 +127,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
         INDArray im2col2d = col.reshape('c', miniBatch*outH*outW, inDepth*kH*kW);
 
-        //Calculate weight gradients, using cc->c mmul
-        //Using the fact that AB = (B^T A^T)^T; output here (post transpose) is in c order, not usual f order
-        INDArray weightGrads2d = Nd4j.gemm(im2col2d,delta2d,true,true).transpose();
-        INDArray weightGrads = Shape.newShapeNoCopy(weightGrads2d,new int[]{outDepth,inDepth,kH,kW},false);
+        //Calculate weight gradients, using cc->c mmul.
+        //weightGradView2df is f order, but this is because it's transposed from c order
+        //Here, we are using the fact that AB = (B^T A^T)^T; output here (post transpose) is in c order, not usual f order
+        Nd4j.gemm(im2col2d,delta2d,weightGradView2df,true,true,1.0,0.0);
 
         //Flatten 4d weights to 2d... this again is a zero-copy op (unless weights are not originally in c order for some reason)
         INDArray wPermuted = weights.permute(3,2,1,0);  //Start with c order weights, switch order to f order
@@ -151,8 +152,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient retGradient = new DefaultGradient();
         INDArray biasGradTemp = delta2d.sum(1);
-        biasGradView.assign(biasGradTemp); //TODO do this properly
-        weightGradView.assign(weightGrads); //TODO do this properly
+        biasGradView.assign(biasGradTemp); //TODO do this properly, without the assign
 
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
