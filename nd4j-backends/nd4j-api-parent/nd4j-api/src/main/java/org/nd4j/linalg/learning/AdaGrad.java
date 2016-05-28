@@ -92,17 +92,12 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).add(epsilon);
+        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).addi(epsilon);
         else historicalGradient.addi(gradient.mul(gradient));
 
-        INDArray sqrtHistory = sqrt(historicalGradient);
+        INDArray sqrtHistory = sqrt(historicalGradient.add(epsilon),false);
         // lr * gradient / sqrt(sumSquaredGradients + 1e-8)
-        INDArray ret;
-        try {
-            ret = sqrtHistory.rdivi(learningRate).muli(gradient);
-        } catch (ArithmeticException ae) {
-            ret = sqrtHistory.rdivi(learningRate).muli(gradient.add(epsilon));
-        }
+        INDArray ret = gradient.muli(sqrtHistory.rdivi(learningRate));
         numIterations++;
         return ret;
     }

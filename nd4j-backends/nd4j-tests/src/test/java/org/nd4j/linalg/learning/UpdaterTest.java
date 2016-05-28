@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
@@ -54,6 +55,34 @@ public class UpdaterTest extends BaseNd4jTest {
         AdaGrad grad = new AdaGrad(rows, cols, 1e-3);
         INDArray W = Nd4j.ones(rows, cols);
         assertEquals(1e-1, grad.getGradient(W, 0).getDouble(0), 1e-1);
+    }
+
+
+    @Test
+    public void testEnsureInPlace(){
+        //All updaters MUST execute in-place operations on the arrays. This is important for how DL4J works
+
+        GradientUpdater[] updaters = new GradientUpdater[]{
+                new AdaDelta(0.95),
+                new AdaGrad(0.1),
+                new Adam(0.9),
+                new Nesterovs(0.9),
+                new RmsProp(0.1,0.95),
+                new Sgd(0.1),
+        };
+
+        Nd4j.getRandom().setSeed(12345);
+        for( int i=0; i<updaters.length; i++ ){
+            GradientUpdater u = updaters[i];
+
+            String msg = u.getClass().toString();
+
+            INDArray input = Nd4j.rand(10,10);
+            for( int j=0; j<3; j++ ) {
+                INDArray out = u.getGradient(input, j);
+                assertTrue(msg, input == out);   //Needs to be exact same object, not merely equal
+            }
+        }
     }
 
     @Test

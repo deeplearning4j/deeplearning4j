@@ -73,9 +73,10 @@ public class Adam implements Serializable, GradientUpdater {
 
         double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0) alphat = epsilon;
-        INDArray sqrtV = Transforms.sqrt(v).addi(epsilon);
+        INDArray sqrtV = Transforms.sqrt(v,true).addi(epsilon);
         INDArray ret = m.mul(alphat).divi(sqrtV);
-        return ret;
+        gradient.assign(ret);
+        return gradient;
     }
 
     @Override
