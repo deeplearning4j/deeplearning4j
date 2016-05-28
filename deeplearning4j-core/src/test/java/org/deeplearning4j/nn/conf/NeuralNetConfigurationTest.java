@@ -289,7 +289,6 @@ public class NeuralNetConfigurationTest {
         assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
         assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
         assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);        //If not explicitly set, bias learning rate should be same as weights LR
         assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4);        //From global LR
         assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4);        //From global LR
     }
@@ -355,7 +354,6 @@ public class NeuralNetConfigurationTest {
         assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 1e-4);
         assertEquals(0.5, net.getLayer(1).conf().getL2ByParam("gamma"), 1e-4);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("b"), 1e-4);
         assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 1e-4);
     }

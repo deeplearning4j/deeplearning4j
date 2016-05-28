@@ -1046,8 +1046,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Gradients and the error (epsilon) at the input
      */
     protected Pair<Gradient,INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
+        if(flattenedGradients == null) initGradientsView();
         String multiGradientKey;
-//        Gradient gradient = new DefaultGradient();
         Gradient gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
 
@@ -1294,6 +1294,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      */
     public void finetune() {
+        if(flattenedGradients == null) initGradientsView();
+
         if (!(getOutputLayer() instanceof BaseOutputLayer)) {
             log.warn("Output layer not instance of output layer returning.");
             return;

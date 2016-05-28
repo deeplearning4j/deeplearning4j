@@ -27,7 +27,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testDistribution(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.DISTRIBUTION, dist, params);
 
         // expected calculation
@@ -39,7 +39,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testNormalize(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.NORMALIZED, dist, params);
 
         // expected calculation
@@ -52,7 +52,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testRelu(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.RELU, dist,params);
 
         // expected calculation
@@ -64,7 +64,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testSize(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.SIZE, dist, params);
 
         // expected calculation
@@ -78,7 +78,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testUniform(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.UNIFORM, dist, params);
 
         // expected calculation
@@ -91,7 +91,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testVI(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.VI, dist, params);
 
         // expected calculation
@@ -106,7 +106,7 @@ public class WeightInitUtilTest {
 
     @Test
     public void testXavier(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.XAVIER, dist, params);
 
         // expected calculation
@@ -120,11 +120,11 @@ public class WeightInitUtilTest {
 
     @Test
     public void testZero(){
-        INDArray params = Nd4j.create(shape);
+        INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.ZERO, dist, params);
 
         // expected calculation
-        INDArray weightsExpected = Nd4j.create(shape);
+        INDArray weightsExpected = Nd4j.create(shape,'f');
 
         assertEquals(weightsExpected, weightsActual);
     }
