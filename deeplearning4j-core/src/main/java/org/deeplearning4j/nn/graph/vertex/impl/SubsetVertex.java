@@ -113,4 +113,9 @@ public class SubsetVertex extends BaseGraphVertex {
     public String toString() {
         return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",toIdx=" + to + ")";
     }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
 }
