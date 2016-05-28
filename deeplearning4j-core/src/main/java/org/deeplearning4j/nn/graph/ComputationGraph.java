@@ -1258,6 +1258,8 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParams(INDArray params) {
+        if(params == flattenedParams) return;   //No op
+
         if(this.flattenedParams != null && this.flattenedParams.length() == params.length()){
             this.flattenedParams.assign(params);
             return;

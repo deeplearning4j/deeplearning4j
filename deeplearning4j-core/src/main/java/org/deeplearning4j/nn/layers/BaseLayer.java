@@ -284,6 +284,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setParams(INDArray params) {
+        if(params == paramsFlattened) return;   //no op
         setParams(params,'f');
     }
 
@@ -301,7 +302,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            setParam(s,get.reshape(order,param.shape()));
+            param.assign(get.reshape(order,param.shape())); //Use assign due to backprop params being a view of a larger array
             idx += param.length();
         }
     }
