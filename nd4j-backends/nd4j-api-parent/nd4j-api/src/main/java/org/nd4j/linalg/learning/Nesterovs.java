@@ -3,6 +3,7 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -57,9 +58,11 @@ public class Nesterovs implements Serializable,GradientUpdater {
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v
         //i.e., we do params -= updatedGradient, not params += updatedGradient
-        
+
         INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
-        return ret;
+        gradient.assign(ret);
+
+        return gradient;
     }
 
     @Override

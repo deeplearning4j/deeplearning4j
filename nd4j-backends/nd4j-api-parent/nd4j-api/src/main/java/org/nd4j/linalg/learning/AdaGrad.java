@@ -35,6 +35,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  * Vectorized Learning Rate used per Connection Weight
  * <p/>
  * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
+ * See also http://cs231n.github.io/neural-networks-3/#ada
  *
  * @author Adam Gibson
  */
@@ -47,7 +48,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
-    private double epsilon = 1e-8;
+    private double epsilon = 1e-6;
 
     /**
      *
@@ -92,17 +93,12 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).add(epsilon);
+        if(historicalGradient == null) historicalGradient = gradient.mul(gradient).addi(epsilon);
         else historicalGradient.addi(gradient.mul(gradient));
 
-        INDArray sqrtHistory = sqrt(historicalGradient);
-        // lr * gradient / sqrt(sumSquaredGradients + 1e-8)
-        INDArray ret;
-        try {
-            ret = sqrtHistory.rdivi(learningRate).muli(gradient);
-        } catch (ArithmeticException ae) {
-            ret = sqrtHistory.rdivi(learningRate).muli(gradient.add(epsilon));
-        }
+        INDArray sqrtHistory = sqrt(historicalGradient,true).addi(epsilon);
+        // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
+        INDArray ret = gradient.muli(sqrtHistory.rdivi(learningRate));
         numIterations++;
         return ret;
     }
@@ -147,7 +143,7 @@ public class AdaGrad implements Serializable,GradientUpdater {
         }
         if(gradient.length() != learningRates.length())
             gradient.muli(learningRates.slice(slice));
-       else
+        else
             gradient.muli(learningRates);
 
         this.historicalGradient.slice(slice).addi(gradient.mul(gradient));
