@@ -98,6 +98,7 @@ public class GravesLSTMTest {
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
 		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
+		lstm.setBackpropGradientsViewArray(Nd4j.create(1, LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true)));
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());

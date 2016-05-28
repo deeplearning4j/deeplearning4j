@@ -702,23 +702,23 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         // VALIDATION SECTION //
         private void updaterValidation(String layerName){
             if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn(layerName + " momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
+                log.warn("Layer \"" + layerName + "\" momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
             if ((momentumSchedule != null || layer.getMomentumSchedule() != null) && layer.getUpdater() != Updater.NESTEROVS)
-                log.warn("Layer " + layerName + " momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
+                log.warn("Layer \"" + layerName + "\" momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
             if ((!Double.isNaN(adamVarDecay) || (!Double.isNaN(layer.getAdamVarDecay()))) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer " + layerName + " adamVarDecay is set but will not be applied unless the updater is set to Adam.");
+                log.warn("Layer \"" + layerName + "\" adamVarDecay is set but will not be applied unless the updater is set to Adam.");
             if ((!Double.isNaN(adamMeanDecay) || !Double.isNaN(layer.getAdamMeanDecay())) && layer.getUpdater() != Updater.ADAM)
-                log.warn("Layer " + layerName +" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
+                log.warn("Layer \"" + layerName + "\" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
             if ((!Double.isNaN(rho) || !Double.isNaN(layer.getRho())) && layer.getUpdater() != Updater.ADADELTA)
-                log.warn(layerName +" rho is set but will not be applied unless the updater is set to ADADELTA.");
+                log.warn("Layer \"" + layerName + "\" rho is set but will not be applied unless the updater is set to ADADELTA.");
             if ((!Double.isNaN(rmsDecay) || (!Double.isNaN(layer.getRmsDecay()))) && layer.getUpdater() != Updater.RMSPROP)
-                log.warn(layerName + " rmsdecay is set but will not be applied unless the updater is set to RMSPROP.");
+                log.warn("Layer \"" + layerName + "\" rmsdecay is set but will not be applied unless the updater is set to RMSPROP.");
 
             switch (layer.getUpdater()) {
                 case NESTEROVS:
                     if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
                         layer.setMomentum(0.9);
-                        log.warn(layerName + " momentum is automatically set to 0.9. Add momentum to configuration to change the value.");
+                        log.warn("Layer \"" + layerName + "\" momentum is automatically set to 0.9. Add momentum to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getMomentum()))
                         layer.setMomentum(momentum);
@@ -730,13 +730,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case ADAM:
                     if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
                         layer.setAdamMeanDecay(0.9);
-                        log.warn(layerName + " adamMeanDecay is automatically set to 0.9. Add adamVarDecay to configuration to change the value.");
+                        log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to 0.9. Add adamVarDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getAdamMeanDecay()))
                         layer.setAdamMeanDecay(adamMeanDecay);
                     if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
                         layer.setAdamVarDecay(0.999);
-                        log.warn(layerName + " adamVarDecay is automatically set to 0.999. Add adamVarDecay to configuration to change the value.");
+                        log.warn("Layer \"" + layerName + "\" adamVarDecay is automatically set to 0.999. Add adamVarDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getAdamVarDecay()))
                         layer.setAdamVarDecay(adamVarDecay);
@@ -747,7 +747,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case RMSPROP:
                     if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
                         layer.setRmsDecay(0.95);
-                        log.warn(layerName + " rmsDecay is automatically set to 0.95. Add rmsDecay to configuration to change the value.");
+                        log.warn("Layer \"" + layerName + "\" rmsDecay is automatically set to 0.95. Add rmsDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getRmsDecay()))
                         layer.setRmsDecay(rmsDecay);
@@ -761,42 +761,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
                 if(!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null) &&
                         !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
-                    throw new IllegalStateException(layerName + " learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
+                    throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
             switch (learningRatePolicy) {
                 case Inverse:
                 case Poly:
                     if (Double.isNaN(lrPolicyPower))
-                        throw new IllegalStateException(layerName +" learning rate policy power (lrPolicyPower) must be set to use " + learningRatePolicy);
+                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy power (lrPolicyPower) must be set to use " + learningRatePolicy);
                         break;
                 case Step:
                 case Sigmoid:
                     if (Double.isNaN(lrPolicySteps))
-                        throw new IllegalStateException(layerName +" learning rate policy steps (lrPolicySteps) must be set to use " + learningRatePolicy);
+                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy steps (lrPolicySteps) must be set to use " + learningRatePolicy);
                     break;
                 case Schedule:
                     if(learningRateSchedule == null)
-                        throw new IllegalStateException(layerName +" learning rate policy schedule (learningRateSchedule) must be set to use " + learningRatePolicy);
+                        throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy schedule (learningRateSchedule) must be set to use " + learningRatePolicy);
                     break;
             }
 
             if (!Double.isNaN(lrPolicyPower) && (learningRatePolicy != LearningRatePolicy.Inverse && learningRatePolicy != LearningRatePolicy.Poly))
-                throw new IllegalStateException(layerName + " power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
+                throw new IllegalStateException("Layer \"" + layerName + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
             if (!Double.isNaN(lrPolicySteps) && (learningRatePolicy != LearningRatePolicy.Step && learningRatePolicy != LearningRatePolicy.Sigmoid))
-                throw new IllegalStateException(layerName +" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
+                throw new IllegalStateException("Layer \"" + layerName + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
             if ((learningRateSchedule != null) && (learningRatePolicy != LearningRatePolicy.Schedule))
-                throw new IllegalStateException(layerName +" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
+                throw new IllegalStateException("Layer \"" + layerName + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
 
         }
 
         private void generalValidation(String layerName){
             if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-                log.warn(layerName +" dropConnect is set to true but dropout rate has not been added to configuration.");
-            if(useDropConnect && dropOut == 0.0) log.warn(layerName + " dropConnect is set to true but dropout rate is set to 0.0");
+                log.warn("Layer \"" + layerName + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
+            if(useDropConnect && dropOut == 0.0) log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
             if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1())
                     && Double.isNaN(l2) && Double.isNaN(layer.getL2())
                     && (Double.isNaN(dropOut) || dropOut==0.0) && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
-                log.warn(layerName +" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
+                log.warn( "Layer \"" + layerName + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
             // CompGraph may have null layers TODO confirm valid configuration
             if (layer != null) {
                 if (useRegularization) {
@@ -807,7 +807,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 } else if (!useRegularization &&
                         (!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2()) ||
                         layer.getL1() != 0.0 || layer.getL2() != 0.0))
-                    log.warn(layerName +" l1 or l2 has been added to configuration but useRegularization is set to false.");
+                    log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
                 if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
                     layer.setL2(0.0);
                 if (Double.isNaN(l1) && Double.isNaN(layer.getL1()))
@@ -817,10 +817,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                         layer.setDist(dist);
                     else if (dist == null && layer.getDist() == null) {
                         layer.setDist(new NormalDistribution(1e-3, 1));
-                        log.warn(layerName +" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
+                        log.warn("Layer \"" + layerName + "\" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
                     }
                 } else if ((dist != null || layer.getDist() != null))
-                    log.warn(layerName + " distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
+                    log.warn("Layer \"" + layerName + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
             }
         }
 
