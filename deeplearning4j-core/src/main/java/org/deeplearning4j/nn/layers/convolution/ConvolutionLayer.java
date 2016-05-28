@@ -120,7 +120,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
-        INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
+        INDArray col = Nd4j.createUninitialized(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
 
@@ -189,7 +189,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
-        INDArray col = Nd4j.create(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
+        INDArray col = Nd4j.createUninitialized(new int[]{miniBatch,outH,outW,inDepth,kH,kW},'c');
         INDArray col2 = col.permute(0,3,4,5,1,2);
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], false, col2);
 
