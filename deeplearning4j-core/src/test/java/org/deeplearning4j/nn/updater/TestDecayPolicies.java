@@ -67,9 +67,9 @@ public class TestDecayPolicies {
 
         for (int j=0; j < nLayers; j++){
             wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            gradientMLN.setGradientFor(wKey, weightGradient);
+            gradientMLN.setGradientFor(wKey, weightGradient.dup());
             bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY ;
-            gradientMLN.setGradientFor(bKey, biasGradient);
+            gradientMLN.setGradientFor(bKey, biasGradient.dup());
         }
 
         val = null;
@@ -272,12 +272,12 @@ public class TestDecayPolicies {
             Updater updater = UpdaterCreator.getUpdater(layer);
 
             Gradient gradientActual = new DefaultGradient();
-            gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-            gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+            gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+            gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
             Gradient gradientExpected = new DefaultGradient();
-            gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-            gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+            gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+            gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
             for (int i = 0; i < 2; i++) {
                 updater.update(layer, gradientActual, i, 1);
@@ -322,18 +322,19 @@ public class TestDecayPolicies {
 
             Updater updater = UpdaterCreator.getUpdater(net);
             String wKey, bKey;
-            Gradient gradientActual = new DefaultGradient();
-            Gradient gradientExpected = new DefaultGradient();
-            for (int k = 0; k < net.getnLayers(); k++) {
-                wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-                gradientActual.setGradientFor(wKey, weightGradient);
-                gradientExpected.setGradientFor(wKey, weightGradient);
-                bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
-                gradientActual.setGradientFor(bKey, biasGradient);
-                gradientExpected.setGradientFor(bKey, biasGradient);
-            }
 
             for (int i = 0; i < 2; i++) {
+                Gradient gradientActual = new DefaultGradient();
+                Gradient gradientExpected = new DefaultGradient();
+                for (int k = 0; k < net.getnLayers(); k++) {
+                    wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+                    gradientActual.setGradientFor(wKey, weightGradient.dup());
+                    gradientExpected.setGradientFor(wKey, weightGradient.dup());
+                    bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
+                    gradientActual.setGradientFor(bKey, biasGradient.dup());
+                    gradientExpected.setGradientFor(bKey, biasGradient.dup());
+                }
+
                 updater.update(net, gradientActual, i, 1);
                 if(updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.SGD))
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
@@ -447,8 +448,8 @@ public class TestDecayPolicies {
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientExpected = new DefaultGradient();
-        gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (int i = 0; i < 2; i++) {
             updater.update(layer, gradientSingle, i, 1);
@@ -485,9 +486,9 @@ public class TestDecayPolicies {
         Gradient gradientExpected = new DefaultGradient();
         for (int k=0; k < net.getnLayers(); k++){
             wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            gradientExpected.setGradientFor(wKey, weightGradient);
+            gradientExpected.setGradientFor(wKey, weightGradient.dup());
             bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY ;
-            gradientExpected.setGradientFor(bKey, biasGradient);
+            gradientExpected.setGradientFor(bKey, biasGradient.dup());
         }
 
         for (int i = 0; i < 2; i++) {
@@ -507,7 +508,8 @@ public class TestDecayPolicies {
             val = entry.getValue();
             gradExpected = val.mul(lr);
             gradientExpected.setGradientFor(key, gradExpected);
-            assertEquals(gradExpected, gradientActual.getGradientFor(key));
+            INDArray act = gradientActual.getGradientFor(key);
+            assertEquals(gradExpected, act);
         }
         return lr;
     }
@@ -528,7 +530,8 @@ public class TestDecayPolicies {
             gradExpected = vPrev.muli(mu).addi(vTmp.mul(-mu - 1));
             gradientExpected.setGradientFor(key, gradExpected);
 
-            assertEquals(gradExpected, gradientActual.getGradientFor(entry.getKey()));
+            INDArray act = gradientActual.getGradientFor(entry.getKey());
+            assertEquals(gradExpected, act);
             tmpStorage.put(key, vTmp);
         }
         return mu;
@@ -592,6 +595,7 @@ public class TestDecayPolicies {
 
     public double testRMSPropComputation(Gradient gradientActual, Gradient gradientExpected, double lr, Map<Integer, Double> learningRateAfter, int i) {
         double rmsDecay = 0.95;
+        double epsilon = 1e-8;
 
         for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
             if (learningRateAfter != null)
@@ -604,7 +608,7 @@ public class TestDecayPolicies {
                 lastGTmp = Nd4j.zeros(val.shape());
 
             lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(Nd4j.EPS_THRESHOLD)));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
             gradientExpected.setGradientFor(key, gradExpected);
 
             assertEquals(gradExpected, gradientActual.getGradientFor(key));

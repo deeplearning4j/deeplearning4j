@@ -52,8 +52,8 @@ public class TestUpdaters {
 
 	@Before
 	public void beforeDo(){
-		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-		gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+		gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 	}
 
 	@Test
@@ -76,8 +76,8 @@ public class TestUpdaters {
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		Gradient gradientDup = new DefaultGradient();
-		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
 		for (int i = 0; i < 2; i++) {
             updater.update(layer, gradient, i, 1);
@@ -211,8 +211,8 @@ public class TestUpdaters {
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -250,8 +250,8 @@ public class TestUpdaters {
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
 			key = entry.getKey();
@@ -288,8 +288,8 @@ public class TestUpdaters {
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -317,6 +317,9 @@ public class TestUpdaters {
 		
 		for( int i=0; i<weightGradient.length(); i++ ) weightGradient.putScalar(i, r.nextDouble());
 		for( int i=0; i<biasGradient.length(); i++ ) biasGradient.putScalar(i, r.nextDouble());
+
+		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradient);
+		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
 		updater.update(layer, gradient, -1, 1);
 		
