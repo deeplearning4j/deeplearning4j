@@ -58,7 +58,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
             INDArray params = model.params();
             stepFunction.step(params,gradient.gradient());
-            model.setParams(params);    //params() may not be in-place
+            //Assumption here: model.params() is always in-place, hence no setParams is necessary
 
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);
