@@ -184,6 +184,7 @@ public class EvalTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
+
                 .build();
 
         // Instantiate model

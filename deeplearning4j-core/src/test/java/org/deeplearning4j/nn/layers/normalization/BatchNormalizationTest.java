@@ -91,6 +91,7 @@ public class BatchNormalizationTest {
         layer.setParam("beta", Nd4j.linspace(0,15,16));
 
         layer.preOutput(dnnInput);
+        layer.setBackpropGradientsViewArray(Nd4j.create(1,32));
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
 
         INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[] {
@@ -178,6 +179,7 @@ public class BatchNormalizationTest {
         layer.setParam("gamma", Nd4j.linspace(2,3,2));
         layer.setParam("beta", Nd4j.linspace(2,3,2));
         layer.preOutput(cnnInput);
+        layer.setBackpropGradientsViewArray(Nd4j.create(1,4));
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(cnnEpsilon);
 
         INDArray expectedEpsilonOut = Nd4j.create(new double[] {

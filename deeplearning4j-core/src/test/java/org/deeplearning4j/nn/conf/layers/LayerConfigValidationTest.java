@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -50,6 +51,7 @@ public class LayerConfigValidationTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @Ignore //Old assumption: throw exception on l1 but no regularization. Current design: warn, not exception
     public void testRegNotSetL1Global() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
@@ -63,6 +65,7 @@ public class LayerConfigValidationTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @Ignore //Old assumption: throw exception on l1 but no regularization. Current design: warn, not exception
     public void testRegNotSetL2Local() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.3)
