@@ -92,8 +92,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected INDArray epsilon;
     protected double score;
     @Setter protected boolean initDone = false;
-    protected INDArray flattenedParams;     //Params for all layers are a view of this array
-    protected transient INDArray flattenedGradients; //Gradients for all layers are a view of this array
+    protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
+    protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
     /*
       Binary drop connect mask
@@ -400,7 +400,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * This method: initializes the flattened gradients array (used in backprop) and sets it in all layers.
+     * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
      */
     protected void initGradientsView(){
         if(layers == null) init();

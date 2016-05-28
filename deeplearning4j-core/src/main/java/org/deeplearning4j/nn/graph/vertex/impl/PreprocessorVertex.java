@@ -74,4 +74,9 @@ public class PreprocessorVertex extends BaseGraphVertex {
     public String toString() {
         return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor=" + preProcessor.toString() + ")";
     }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
 }
