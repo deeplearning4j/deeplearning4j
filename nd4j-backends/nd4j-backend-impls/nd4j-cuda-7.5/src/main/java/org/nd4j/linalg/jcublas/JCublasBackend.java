@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Resource;
+import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.util.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,5 +68,14 @@ public class JCublasBackend extends Nd4jBackend {
         return new ClassPathResource(LINALG_PROPS, JCublasBackend.class.getClassLoader());
     }
 
+    @Override
+    public Class getNDArrayClass() {
+        return JCublasNDArray.class;
+    }
+
+    @Override
+    public Class getComplexNDArrayClass() {
+        return JCublasComplexNDArray.class;
+    }
 
 }

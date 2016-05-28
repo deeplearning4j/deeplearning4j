@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-kryo</artifactId>
+    <artifactId>nd4j-kryo_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4j-kryo</name>
@@ -26,7 +26,13 @@
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
-            <version>2.21</version>
+            <version>${kryo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

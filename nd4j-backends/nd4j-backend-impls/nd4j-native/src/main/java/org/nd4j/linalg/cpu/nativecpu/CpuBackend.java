@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.Resource;
 import org.slf4j.Logger;
@@ -59,5 +60,15 @@ public class CpuBackend extends Nd4jBackend {
     @Override
     public Resource getConfigurationResource() {
         return new ClassPathResource(LINALG_PROPS, CpuBackend.class.getClassLoader());
+    }
+
+    @Override
+    public Class getNDArrayClass() {
+        return NDArray.class;
+    }
+
+    @Override
+    public Class getComplexNDArrayClass() {
+        return ComplexNDArray.class;
     }
 }

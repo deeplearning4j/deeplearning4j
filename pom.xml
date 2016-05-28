@@ -258,6 +258,8 @@
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+        <scala.binary.version>2.11</scala.binary.version>
+        <spark.version>1.5.2</spark.version>
     </properties>
 
     <developers>

@@ -110,6 +110,7 @@ public class Nd4j {
     public static boolean shouldInstrument = false;
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
+    public static Nd4jBackend backend;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -144,8 +145,6 @@ public class Nd4j {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
     }
-
-
 
 
     public  enum PadMode {
@@ -1219,6 +1218,10 @@ public class Nd4j {
      */
     public static DataBuffer.Type dataType() {
         return DataTypeUtil.getDtypeFromContext();
+    }
+
+    public static Nd4jBackend getBackend() {
+        return backend;
     }
 
     public static BlasWrapper getBlasWrapper() {
@@ -4762,6 +4765,7 @@ public class Nd4j {
                     !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {
                 return;
             }
+            Nd4j.backend = backend;
             props = Nd4jContext.getInstance().getConf();
             InputStream is = backend.getConfigurationResource().getInputStream();
             Nd4jContext.getInstance().updateProperties(is);
