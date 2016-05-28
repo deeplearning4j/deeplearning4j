@@ -184,7 +184,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
 
-        //TODO: Do this properly
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
 
