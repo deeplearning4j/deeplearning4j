@@ -195,69 +195,48 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         Triple<Gradient,INDArray,INDArray> triple;
         switch (layerConf().getLossFunction()) {
+            case NEGATIVELOGLIKELIHOOD:
             case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(outSubLabels));
-                biasGradView.assign(outSubLabels.sum(0));
+                Nd4j.gemm(input,outSubLabels,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(outSubLabels));
+                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
                 triple = new Triple<>(gradient,outSubLabels,output);
                 break;
 
             case XENT: // cross-entropy (single binary output variable)
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
-                biasGradView.assign(outSubLabels.sum(0));
+                Nd4j.gemm(input, outSubLabels.div(output.mul(output.rsub(1))), weightGradView, true, false, 1.0, 0.0);  //Equivalent to:  weightGradView.assign(input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
+                biasGradView.assign(outSubLabels.sum(0));    //TODO: do this without the assign
                 triple = new Triple<>(gradient,outSubLabels,output);
                 break;
 
             case MSE: // mean squared error
                 INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
-                weightGradView.assign(input.transpose().mmul(delta));
-                biasGradView.assign(delta.sum(0));
+                Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);   //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
+                biasGradView.assign(delta.sum(0));         //TODO: do this without the assign
                 triple = new Triple<>(gradient,delta,output);
                 break;
 
             case EXPLL: // exponential logarithmic
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(labels.rsub(1).divi(output)));
-                biasGradView.assign(outSubLabels.sum(0));
+                Nd4j.gemm(input,labels.rsub(1).divi(output),weightGradView,true,false,1.0,0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(labels.rsub(1).divi(output)));
+                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
                 triple = new Triple<>(gradient,outSubLabels,output);
                 break;
 
             case RMSE_XENT: // root mean squared error cross entropy
                 INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(sqrt));
-                biasGradView.assign(outSubLabels.sum(0));
+                Nd4j.gemm(input,sqrt,weightGradView,true,false,1.0,0.0);    //Equivalent to: weightGradView.assign(input.transpose().mmul(sqrt));
+                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
                 triple = new Triple<>(gradient,outSubLabels,output);
                 break;
 
             case SQUARED_LOSS:
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(pow(outSubLabels,2)));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(pow(outSubLabels,2)));
-                biasGradView.assign(outSubLabels.sum(0));
+                Nd4j.gemm(input,outSubLabels.mul(outSubLabels),weightGradView,true,false,1.0,0.0);  //Equivalent to: weightGradView.assign(input.transpose().mmul(outSubLabels.mul(outSubLabels)));
+                biasGradView.assign(outSubLabels.sum(0));   //TODO: do this without the assign
                 triple = new Triple<>(gradient,outSubLabels,output);
                 break;
-
-            case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
-//                gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
-//                gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
-                weightGradView.assign(input.transpose().mmul(outSubLabels));
-                biasGradView.assign(outSubLabels.sum(0));
-                triple = new Triple<>(gradient,outSubLabels,output);
-                break;
-
             default:
                 throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
         }
-
 
         return triple;
     }
