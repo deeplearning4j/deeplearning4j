@@ -160,9 +160,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);    //f order
         Nd4j.gemm(input,delta,weightGrad,true,false,1.0,0.0);
         INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-//        Nd4j.getExecutioner().exec(new Sum(delta,biasGrad),0);    //TODO: do it this way, without the assign
-        INDArray tempBiasGrad = delta.sum(0);
-        biasGrad.assign(tempBiasGrad);
+        biasGrad.assign(delta.sum(0));  //TODO: do this without the assign
 
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
