@@ -23,6 +23,7 @@ import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
@@ -67,7 +68,12 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+    public int numParams(boolean backprop){
+        return 0;
+    }
+
+    @Override
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
         return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph,name,idx,from,to);
     }
 

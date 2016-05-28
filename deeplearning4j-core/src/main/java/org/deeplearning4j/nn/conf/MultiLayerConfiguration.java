@@ -55,6 +55,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
     //whether to redistribute params or not
+    @Deprecated
     protected boolean redistributeParams = false;
 
     /**
@@ -168,6 +169,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
+        @Deprecated
         protected boolean redistributeParams = false;
         protected int[] cnnInputSize = null;    //Order: height/width/depth
 
@@ -177,6 +179,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          *                           as a view or not
          * @return
          */
+        @Deprecated
         public Builder redistributeParams(boolean redistributeParams) {
             this.redistributeParams = redistributeParams;
             return this;

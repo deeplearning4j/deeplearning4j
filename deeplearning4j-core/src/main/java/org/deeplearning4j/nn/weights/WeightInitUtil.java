@@ -37,16 +37,16 @@ public class WeightInitUtil {
      */
     public static final char DEFAULT_WEIGHT_INIT_ORDER = 'f';
 
-    /**
-     * Normalized weight init
-     *
-     * @param shape shape
-     * @param nIn   number of inputs
-     * @return the weights
-     */
-    public static INDArray normalized(int[] shape, int nIn) {
-        return Nd4j.rand(shape).subi(0.5).divi((double) nIn);
-    }
+//    /**
+//     * Normalized weight init
+//     *
+//     * @param shape shape
+//     * @param nIn   number of inputs
+//     * @return the weights
+//     */
+//    public static INDArray normalized(int[] shape, int nIn) {
+//        return Nd4j.rand(shape).subi(0.5).divi((double) nIn);
+//    }
 
     /**
      * Generate a random matrix with respect to the number of inputs and outputs.
@@ -70,7 +70,7 @@ public class WeightInitUtil {
 
     /**
      * Initializes a matrix with the given weight initialization scheme.
-     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(int[], WeightInit, Distribution, char)}
+     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(int[], WeightInit, Distribution, char, INDArray)}
      * to control this
      *
      * @param shape      the shape of the matrix
@@ -78,28 +78,32 @@ public class WeightInitUtil {
      * @return a matrix of the specified dimensions with the specified
      * distribution based on the initialization scheme
      */
-    public static INDArray initWeights(int[] shape, WeightInit initScheme, Distribution dist) {
-        return initWeights(shape, initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER);
+    public static INDArray initWeights(int[] shape, WeightInit initScheme, Distribution dist, INDArray paramView) {
+        return initWeights(shape, initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER, paramView);
     }
 
-    public static INDArray initWeights(int[] shape, WeightInit initScheme, Distribution dist, char order) {
+    public static INDArray initWeights(int[] shape, WeightInit initScheme, Distribution dist, char order, INDArray paramView) {
         //Note: using f order here as params get flattened to f order
 
         INDArray ret;
         switch (initScheme) {
             case DISTRIBUTION:
                 ret = dist.sample(shape);
-                return ret;
+                break;
             case NORMALIZED:
                 ret = Nd4j.rand(order, shape);
-                return ret.subi(0.5).divi(shape[0]);
+                ret.subi(0.5).divi(shape[0]);
+                break;
             case RELU:
-                return Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / shape[0]));   //N(0, 2/nIn)
+                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / shape[0]));   //N(0, 2/nIn)
+                break;
             case SIZE:
-                return uniformBasedOnInAndOut(shape, shape[0], shape[1]);
+                ret = uniformBasedOnInAndOut(shape, shape[0], shape[1]);
+                break;
             case UNIFORM:
                 double a = 1 / (double) shape[0];
-                return Nd4j.rand(order, shape).muli(2 * a).subi(a);
+                ret = Nd4j.rand(order, shape).muli(2 * a).subi(a);
+                break;
             case VI:
                 ret = Nd4j.rand(order, shape);
                 int len = 0;
@@ -108,15 +112,23 @@ public class WeightInitUtil {
                 }
                 double r = Math.sqrt(6) / Math.sqrt(len + 1);
                 ret.muli(2 * r).subi(r);
-                return ret;
+                break;
             case XAVIER:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0] + shape[1]));
-                return ret;
+                break;
             case ZERO:
-                return Nd4j.create(shape, order);
+                ret = Nd4j.create(shape, order);
+                break;
+            default:
+                throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
 
-        throw new IllegalStateException("Illegal weight init value");
+        INDArray flat = Nd4j.toFlattened(order,ret);
+        if(flat.length() != paramView.length()) throw new RuntimeException("ParamView length does not match initialized weights length");
+
+        paramView.assign(flat);
+
+        return paramView.reshape(order, shape);
     }
 
     /**
@@ -128,8 +140,8 @@ public class WeightInitUtil {
      * @return a matrix of the specified dimensions with the specified
      * distribution based on the initialization scheme
      */
-    public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, Distribution dist) {
-        return initWeights(new int[]{nIn, nOut}, initScheme, dist);
+    public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, Distribution dist, INDArray paramView) {
+        return initWeights(new int[]{nIn, nOut}, initScheme, dist, paramView);
     }
 
 

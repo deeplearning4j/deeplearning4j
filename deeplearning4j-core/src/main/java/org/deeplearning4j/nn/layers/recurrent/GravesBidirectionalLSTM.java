@@ -102,7 +102,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 true,
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                 GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS);
+                GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS,
+                gradientViews);
 
 
 
@@ -120,7 +121,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 false,
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                 GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS);
+                GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS,
+                gradientViews);
 
 
         //merge the gradient, which is key value pair of String,INDArray

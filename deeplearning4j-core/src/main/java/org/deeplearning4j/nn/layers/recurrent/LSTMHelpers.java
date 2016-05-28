@@ -15,6 +15,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Map;
+
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
@@ -36,8 +38,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * Please note that truncated backpropagation through time (BPTT) will not work with the bidirectional layer as-is.
  * Additionally, variable length data sets will also not work with the bidirectional layer.
  *
- * @author Alex Black
- * @author Benjamin Joseph
+ * @author Alex Black (LSTM implementation)
+ * @author Benjamin Joseph (refactoring for bidirectional LSTM)
  */
 public class LSTMHelpers {
 
@@ -216,7 +218,8 @@ public class LSTMHelpers {
                                                                   final boolean forwards,
                                                                   final String inputWeightKey,
                                                                   final String recurrentWeightKey,
-                                                                  final String biasWeightKey) {
+                                                                  final String biasWeightKey,
+                                                                  final Map<String,INDArray> gradientViews) {
 
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
@@ -249,9 +252,14 @@ public class LSTMHelpers {
             endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength);
         }
 
-        INDArray iwGradientsOut = Nd4j.create(new int[]{prevLayerSize, 4 * hiddenLayerSize}, 'f');
-        INDArray rwGradientsOut = Nd4j.create(new int[]{hiddenLayerSize, 4 * hiddenLayerSize + 3},'f');    //Order: {I,F,O,G,FF,OO,GG}
-        INDArray bGradientsOut = Nd4j.create(1,4*hiddenLayerSize);
+        //Get gradients. Note that we have to manually zero these, as they might not be initialized (or still has data from last iteration)
+        //Also note that they are in f order (as per param initializer) so can be used in gemm etc
+        INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
+        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey);    //Order: {I,F,O,G,FF,OO,GG}
+        INDArray bGradientsOut = gradientViews.get(biasWeightKey);
+        iwGradientsOut.assign(0);
+        rwGradientsOut.assign(0);
+        bGradientsOut.assign(0);
 
         INDArray rwGradientsIFOG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4*hiddenLayerSize));
         INDArray rwGradientsFF = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize));

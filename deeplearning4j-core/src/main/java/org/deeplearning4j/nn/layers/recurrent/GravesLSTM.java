@@ -99,7 +99,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                 true,
                 GravesLSTMParamInitializer.INPUT_WEIGHT_KEY,
                 GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                GravesLSTMParamInitializer.BIAS_KEY);
+                GravesLSTMParamInitializer.BIAS_KEY,
+                gradientViews);
     }
 
 
