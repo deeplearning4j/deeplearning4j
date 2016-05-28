@@ -55,7 +55,7 @@ public class DefaultParamInitializer implements ParamInitializer {
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
         int length = numParams(conf,true);
-        if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView);
+        if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView.length());
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
@@ -71,7 +71,6 @@ public class DefaultParamInitializer implements ParamInitializer {
         params.put(BIAS_KEY,createBias(conf, biasView));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
-
     }
 
     @Override

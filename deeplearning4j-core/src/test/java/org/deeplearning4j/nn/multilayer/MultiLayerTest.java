@@ -512,6 +512,8 @@ public class MultiLayerTest {
         net.init();
 
         Layer layer = net.getLayer(0);
+        int nParamsBackprop = layer.numParams(true);
+        int nParamsBoth = layer.numParams(false);
         Layer transposed = layer.transpose();
 
         assertArrayEquals(new int[]{4,3},layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
