@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -73,7 +72,8 @@ public class ComputationGraph implements Serializable, Model {
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
     protected transient Solver solver;	//Used to call optimizers during backprop
-    protected INDArray params;
+    protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
+    protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
     @Setter private boolean initDone = false;
@@ -253,7 +253,7 @@ public class ComputationGraph implements Serializable, Model {
             numParams += numParamsForVertex[i];
             i++;
         }
-        params = Nd4j.create(1,numParams);
+        flattenedParams = Nd4j.create(1,numParams);
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -263,7 +263,7 @@ public class ComputationGraph implements Serializable, Model {
         for( int vertexIdx : topologicalOrder ){
             int nParamsThisVertex = numParamsForVertex[vertexIdx];
             if(nParamsThisVertex != 0){
-                paramsViewForVertex[vertexIdx] = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
             }
             i++;
             paramOffsetSoFar += nParamsThisVertex;
@@ -360,9 +360,7 @@ public class ComputationGraph implements Serializable, Model {
             for( String s : thisVertexOutputsTo ){
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
-                GraphVertex next = verticesMap.get(s);
-                List<String> nextVertexInputNames;
-                nextVertexInputNames = vertexInputs.get(s);
+                List<String> nextVertexInputNames = vertexInputs.get(s);
 
                 int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
 
@@ -373,6 +371,44 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         initCalled = true;
+    }
+
+    /**
+     * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
+     */
+    protected void initGradientsView(){
+        if(!initCalled) init();
+
+        //Go through layers, and work out total number of parameters. Then allocate full parameters array
+        int numParams = 0;
+        int[] numParamsForVertex = new int[topologicalOrder.length];
+        int i=0;
+        for(; i<configuration.getNetworkInputs().size(); i++ ){
+            numParamsForVertex[i] = 0;  //No parameters for input vertices
+        }
+        Map<String,org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
+        for(Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()){
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+            numParamsForVertex[i] = n.numParams(true);
+            numParams += numParamsForVertex[i];
+            i++;
+        }
+        flattenedGradients = Nd4j.create(1,numParams);
+
+        //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
+        int paramOffsetSoFar = 0;
+        i=0;
+        for( int vertexIdx : topologicalOrder ){
+            int nParamsThisVertex = numParamsForVertex[vertexIdx];
+            if(nParamsThisVertex != 0){
+                INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
+            }
+            i++;
+            paramOffsetSoFar += nParamsThisVertex;
+        }
+
+
     }
 
     /** Pretrain network with a single input and single output. DataSetIterators can only be used if the number of input
@@ -870,6 +906,8 @@ public class ComputationGraph implements Serializable, Model {
      * @param truncatedBPTT false: normal backprop. true: calculate gradients using truncated BPTT for RNN layers
      */
     protected void backprop(boolean truncatedBPTT){
+        if(flattenedGradients == null) initGradientsView();
+
         LinkedList<Triple<String,INDArray,Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
@@ -916,7 +954,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         //Now, add the gradients in the order we need them in for flattening (same as params order)
-        Gradient gradient = new DefaultGradient();
+        Gradient gradient = new DefaultGradient(flattenedGradients);
         for(Triple<String,INDArray,Character> t : gradients ){
             gradient.setGradientFor(t.getFirst(),t.getSecond(),t.getThird());
         }
@@ -1016,7 +1054,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param backwardOnly If true: backprop parameters only (i.e., no visible layer biases used in layerwise pretraining layers)
      */
     public INDArray params(boolean backwardOnly){
-        if(backwardOnly) return params;
+        if(backwardOnly) return flattenedParams;
 
         List<INDArray> list = new ArrayList<>(layers.length);
         for( int i=0; i<topologicalOrder.length; i++ ){
@@ -1220,8 +1258,8 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public void setParams(INDArray params) {
-        if(this.params != null && this.params.length() == params.length()){
-            this.params.assign(params);
+        if(this.flattenedParams != null && this.flattenedParams.length() == params.length()){
+            this.flattenedParams.assign(params);
             return;
         }
 
@@ -1520,6 +1558,7 @@ public class ComputationGraph implements Serializable, Model {
 
     /** Fit the network using truncated BPTT */
     protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks, INDArray[] labelMasks ){
+        if(flattenedGradients == null) initGradientsView();
 
         //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
 

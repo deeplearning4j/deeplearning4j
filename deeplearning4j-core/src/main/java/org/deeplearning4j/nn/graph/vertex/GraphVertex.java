@@ -133,4 +133,10 @@ public interface GraphVertex extends Serializable {
      * @see #setError(int, INDArray)
      */
     void setErrors(INDArray... errors);
+
+    /**
+     * See {@link Layer#setBackpropGradientsViewArray(INDArray)}
+     * @param backpropGradientsViewArray
+     */
+    void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
 }
