@@ -103,6 +103,77 @@ public class AdaGrad implements Serializable,GradientUpdater {
         return ret;
     }
 
+    public double getGradient(double gradient, int column, int[] shape) {
+        boolean historicalInitialized = false;
+        if (this.historicalGradient == null) {
+            this.historicalGradient = Nd4j.ones(shape);
+            historicalInitialized = true;
+        }
+
+        double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column)) : historicalGradient.getDouble(column);
+        double learningRates = learningRate / (sqrtHistory + epsilon);
+        double adjustedGradient = gradient * (learningRates);
+
+        historicalGradient.putScalar(column, historicalGradient.getDouble(column) + gradient * gradient);
+        numIterations++;
+
+        //ensure no zeros
+        return adjustedGradient;
+    }
+
+    public INDArray getGradient(INDArray gradient, int slice, int[] shape) {
+        boolean historicalInitialized = false;
+        INDArray sqrtHistory;
+
+        if (this.historicalGradient == null) {
+            this.historicalGradient = Nd4j.zeros(shape).add(epsilon);
+            historicalInitialized = true;
+        } else if (!this.historicalGradient.isVector() && this.historicalGradient.slice(slice).length() != gradient.length())
+            throw new IllegalArgumentException("Illegal gradient");
+
+        if (historicalGradient.isVector())
+            sqrtHistory = sqrt(historicalGradient);
+        else
+            sqrtHistory = !historicalInitialized ? sqrt(historicalGradient.slice(slice)) : historicalGradient;
+        INDArray learningRates;
+        try {
+            learningRates = sqrtHistory.rdivi(learningRate);
+        } catch (ArithmeticException ae) {
+            learningRates = sqrtHistory.rdivi(learningRate + epsilon);
+        }
+        if(gradient.length() != learningRates.length())
+            gradient.muli(learningRates.slice(slice));
+        else
+            gradient.muli(learningRates);
+
+        this.historicalGradient.slice(slice).addi(gradient.mul(gradient));
+        numIterations++;
+
+        //ensure no zeros
+        return gradient;
+    }
+
+    public AdaGrad createSubset(int index) {
+        if (historicalGradient == null)
+            this.historicalGradient = Nd4j.ones(shape);
+
+        if (Shape.isMatrix(shape)) {
+            AdaGrad a = new AdaGrad(1, historicalGradient.columns());
+            //grab only the needed elements
+            INDArray slice = historicalGradient.slice(index).dup();
+            a.historicalGradient = slice;
+            a.setLearningRate(learningRate);
+            return a;
+        } else {
+            AdaGrad a = new AdaGrad(1, 1);
+            //grab only the needed elements
+            INDArray slice = Nd4j.scalar(historicalGradient.getDouble(index));
+            a.historicalGradient = slice;
+            a.setLearningRate(learningRate);
+            return a;
+        }
+    }
+
     @Override
     public GradientUpdaterAggregator getAggregator(boolean addThis){
         AdaGradAggregator ag = new AdaGradAggregator();
