@@ -59,11 +59,8 @@ public class Nesterovs implements Serializable,GradientUpdater {
         // x += mu * v_prev + (-1 - mu) * v
         //i.e., we do params -= updatedGradient, not params += updatedGradient
 
-
-        Nd4j.getExecutioner().execAndReturn(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient ));
-        //Above line: equivalent to the following, but one less op
-        //INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
-        //gradient.assign(ret)
+        INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
+        gradient.assign(ret);
 
         return gradient;
     }
