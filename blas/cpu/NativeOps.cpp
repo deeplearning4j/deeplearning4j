@@ -79,9 +79,9 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
-
-
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    DoubleNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo,tadOffsets);
 }
 
 
@@ -747,7 +747,10 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength);
+    int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
+    FloatNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo, tadOffsets);
 
 
 }

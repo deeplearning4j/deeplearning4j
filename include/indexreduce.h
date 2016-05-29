@@ -644,18 +644,17 @@ struct SharedIndexValue<double> {
 					  T *result,
 					  int *resultShapeInfoBuffer,
 					  int *dimension,
-					  int dimensionLength) {
+					  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 
 				if(shape::isScalar(resultShapeInfoBuffer)) {
 					result[0] = execScalar(x,xShapeInfo,extraParams);
 					return;
 				}
 
-
-				int resultLength = shape::length(resultShapeInfoBuffer);
+				const int resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
-#pragma omp parallel for
+#pragma omp parallel for if (resultLength > 32)
 				for (int i = 0; i < resultLength; i++) {
 					IndexValue<T> val;
 					val.value = this->startingValue(x);
@@ -663,14 +662,29 @@ struct SharedIndexValue<double> {
 					startingIndex[i] = val;
 				}
 
+				int *tadOnlyShapeInfo = tadShapeInfo;
+				int *tadOffsets = tadOffset;
+				shape::TAD *tad = nullptr;
 
-				shape::TAD tad(xShapeInfo,dimension,dimensionLength);
-				tad.createTadOnlyShapeInfo();
-				tad.createOffsets();
-                if(tad.dimensionLength < 1)
-                    return;
-				if(!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
-																			shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing))) {
+				if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
+					tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+					tad->createTadOnlyShapeInfo();
+					tad->createOffsets();
+
+					if (tad->dimensionLength < 1) {
+						delete tad;
+						return;
+					}
+
+					tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
+					tadOffsets = tad->tadOffsets;
+				}
+
+				int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+				int numTads = shape::length(xShapeInfo) / tadLength;
+
+
+				if(!(shape::elementWiseStride(tadOnlyShapeInfo) > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo)))) {
 					/**
                                  * The element wise stride belong longs to a reduction index.
                                  * When used out of order, we can get rid of the data
@@ -681,13 +695,14 @@ struct SharedIndexValue<double> {
                                  * along long which to iterate.
                                  */
 
-					int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+					int *tadShapeShapeInfo = tadOnlyShapeInfo;
 					int *xShape = shape::shapeOf(tadShapeShapeInfo);
 					int *xStride = shape::stride(tadShapeShapeInfo);
 					int rank = shape::rank(tadShapeShapeInfo);
-#pragma omp  parallel  for
+
+#pragma omp  parallel for if (resultLength > 32)
 					for(int i = 0; i < resultLength; i++) {
-						int offset = tad.tadOffsets[i];
+						int offset = tadOffsets[i];
 						int shapeIter[MAX_RANK];
 						int coord[MAX_RANK];
 						int dim;
@@ -722,29 +737,25 @@ struct SharedIndexValue<double> {
 							printf("Unable to prepare array\n");
 						}
 
-
-
 						result[i] = indexValue.index;
-
 					}
-				}
-
-				else {
-					int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
-					int tadLength = shape::length(tad.tadOnlyShapeInfo);
-#pragma omp parallel for
+				} else {
+					int tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
+					const int tadLength = shape::length(tadOnlyShapeInfo);
+#pragma omp parallel for if (resultLength > 32)
 					for(int i = 0;  i < resultLength; i++) {
-						int baseOffset = tad.tadOffsets[i];
+						int baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue;
 						indexValue.index = 0;
 						indexValue.value = x[baseOffset];
+
+#pragma omp simd
 						for(int j = 1; j < tadLength; j++) {
 							IndexValue<T> comp;
 							comp.index = j;
 							comp.value = x[baseOffset + tadElementWiseStride * j];
 							indexValue =  update(indexValue,comp,extraParams);
 						}
-
 						result[i] = indexValue.index;
 					}
 

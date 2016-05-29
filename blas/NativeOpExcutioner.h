@@ -79,9 +79,9 @@ public:
                          T *extraParams,
                          T *result,
                          int *resultShapeInfoBuffer,
-                         int *dimension, int dimensionLength) {
+                         int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
         functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength);
+        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength, tadShapeInfo, tadOffsets);
         delete op;
     }
 
