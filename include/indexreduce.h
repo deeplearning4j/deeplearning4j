@@ -654,7 +654,7 @@ struct SharedIndexValue<double> {
 				const int resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
-#pragma omp parallel for if (resultLength > 32)
+#pragma omp parallel for schedule(guided) if (resultLength > 32)
 				for (int i = 0; i < resultLength; i++) {
 					IndexValue<T> val;
 					val.value = this->startingValue(x);
@@ -700,7 +700,7 @@ struct SharedIndexValue<double> {
 					int *xStride = shape::stride(tadShapeShapeInfo);
 					int rank = shape::rank(tadShapeShapeInfo);
 
-#pragma omp  parallel for if (resultLength > 32)
+#pragma omp  parallel for schedule(guided) if (resultLength > 32)
 					for(int i = 0; i < resultLength; i++) {
 						int offset = tadOffsets[i];
 						int shapeIter[MAX_RANK];
@@ -742,7 +742,8 @@ struct SharedIndexValue<double> {
 				} else {
 					int tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
 					const int tadLength = shape::length(tadOnlyShapeInfo);
-#pragma omp parallel for if (resultLength > 32)
+
+#pragma omp parallel for schedule(guided) if (resultLength > 32)
 					for(int i = 0;  i < resultLength; i++) {
 						int baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue;
@@ -758,9 +759,6 @@ struct SharedIndexValue<double> {
 						}
 						result[i] = indexValue.index;
 					}
-
-
-
 				}
 
 				delete[] startingIndex;

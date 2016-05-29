@@ -353,43 +353,22 @@ namespace functions {
                               T *result,
                               int resultStride,
                               T *extraParams,
-                              int n) {
+                              const int n) {
 
                 if (xStride == 1 && resultStride == 1) {
-                    if(n < 8000) {
-#pragma omp simd
+#pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (int i = 0; i < n; i++) {
                             result[i] = op(dx[i], extraParams);
                         }
-                    }
-                    else {
-#pragma omp parallel  for simd schedule(guided)
-                        for (int i = 0; i < n; i++) {
-                            result[i] = op(dx[i], extraParams);
-                        }
-                    }
-
                 }
 
 
                 else {
-                    if(n < 8000) {
-#pragma omp simd
+#pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (int i = 0; i < n; i++) {
-                            result[i * resultStride] = op(dx[i * xStride],
-                                                          extraParams);
+                            result[i * resultStride] = op(dx[i * xStride], extraParams);
                         }
-                    }
-                    else {
-#pragma omp parallel for simd schedule(guided)
-                        for (int i = 0; i < n; i++) {
-                            result[i * resultStride] = op(dx[i * xStride],
-                                                          extraParams);
-                        }
-                    }
-
                 }
-
             }
             virtual inline
 #ifdef __CUDACC__
