@@ -121,7 +121,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         int[] toGet2 = {0,1,2,0,1,2};
         INDArray out2 = in.getRows(toGet2);
-        for( int i=0; i<toGet2.length; i++ ){
+        for( int i = 0; i < toGet2.length; i++) {
             assertEquals(in.getRow(toGet2[i]),out2.getRow(i));
         }
     }

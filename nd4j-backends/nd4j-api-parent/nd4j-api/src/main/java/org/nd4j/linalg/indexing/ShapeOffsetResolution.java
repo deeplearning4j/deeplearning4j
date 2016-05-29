@@ -59,11 +59,35 @@ public class ShapeOffsetResolution implements Serializable {
 
         if(arr.isVector()) {
             //return the whole vector
-            if(indexes[0] instanceof NDArrayIndexAll) {
+            if(indexes[0] instanceof NDArrayIndexAll && indexes.length == 1) {
                 offset = 0;
                 this.shapes = arr.shape();
                 this.strides = arr.stride();
                 this.offsets = new int[arr.rank()];
+                return true;
+            }
+            else if(indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll) {
+                this.shapes = new int[2];
+                this.strides = new int[2];
+                for(int i = 0; i < 2; i++) {
+                    shapes[i] = 1;
+                    strides[i] = 1;
+                }
+
+                this.offsets = new int[arr.rank()];
+                this.offset = indexes[0].offset();
+
+                return true;
+            }
+            if(indexes[0] instanceof PointIndex && indexes.length == 1) {
+                this.shapes = new int[2];
+                this.strides = new int[2];
+                for(int i = 0; i < 2; i++) {
+                    shapes[i] = 1;
+                    strides[i] = 1;
+                }
+
+                this.offset = indexes[0].offset();
                 return true;
             }
             //point or interval is possible
@@ -80,6 +104,9 @@ public class ShapeOffsetResolution implements Serializable {
                         this.offsets = new int[2];
                         return true;
                     }
+                }
+                else if(indexes[0] instanceof IntervalIndex) {
+                    //allow through
                 }
                 else {
                     throw new UnsupportedOperationException("Illegal combination of indexes for vector");
@@ -100,12 +127,48 @@ public class ShapeOffsetResolution implements Serializable {
                         return true;
                     }
                 }
+                else if(indexes[0] instanceof IntervalIndex) {
+                    //allow through
+                }
                 else {
-                  throw new UnsupportedOperationException("Illegal combination of indexes for vector");
+                    throw new UnsupportedOperationException("Illegal combination of indexes for vector");
                 }
             }
         }
 
+        //all and specified only
+        if(numSpecified > 0 && interval < 1 && newAxis < 1 && numAll > 0 && pointIndex < 1  && arr.rank() == 2) {
+            shapes = new int[arr.rank()];
+            strides = new int[arr.rank()];
+            offsets = new int[arr.rank()];
+            offset = 0;
+            boolean allSpecified = true;
+            for(int i = 0; i < 2; i++) {
+                allSpecified = allSpecified && indexes[i] instanceof SpecifiedIndex;
+            }
+            for(int i = 0; i < arr.rank(); i++) {
+                if(indexes[i] instanceof  SpecifiedIndex) {
+                    shapes[i] = indexes[i].length();
+                    offsets[i] = indexes[i].offset();
+                    if(!allSpecified || i == 0 && allSpecified)
+                        offset = offsets[i] * arr.stride(i);
+                    if(indexes[i].length() != 1)
+                        strides[i] = arr.stride(i);
+                    else
+                        strides[i] = 1;
+                }
+                else if(indexes[i] instanceof NDArrayIndexAll) {
+                    shapes[i] = arr.size(i);
+                    strides[i] = arr.tensorAlongDimension(0,i).elementWiseStride();
+                }
+                else
+                    throw new IllegalArgumentException("Illegal type of index " + indexes[i].getClass().getName());
+            }
+
+
+            return true;
+
+        }
 
         //specific easy case
         if(numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex > 0 && numAll > 0) {
