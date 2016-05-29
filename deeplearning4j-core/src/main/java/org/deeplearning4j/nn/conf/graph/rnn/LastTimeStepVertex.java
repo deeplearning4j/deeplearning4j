@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -68,7 +69,12 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph, String name, int idx) {
+    public int numParams(boolean backprop){
+        return 0;
+    }
+
+    @Override
+    public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph,name,idx,maskArrayInputName);
     }
 

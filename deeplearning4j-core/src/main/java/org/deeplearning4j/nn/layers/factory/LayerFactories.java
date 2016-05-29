@@ -44,9 +44,7 @@ public class LayerFactories {
      */
     public static LayerFactory getFactory(Layer layer) {
         Class<? extends Layer> clazz = layer.getClass();
-        if(clazz.equals(ImageLSTM.class))
-            return new ImageLSTMLayerFactory(ImageLSTM.class);
-        else if(clazz.equals(GravesLSTM.class))
+        if(clazz.equals(GravesLSTM.class))
         	return new GravesLSTMLayerFactory(GravesLSTM.class);
         else if (clazz.equals(GravesBidirectionalLSTM.class))
             return new GravesBidirectionalLSTMLayerFactory(GravesBidirectionalLSTM.class);

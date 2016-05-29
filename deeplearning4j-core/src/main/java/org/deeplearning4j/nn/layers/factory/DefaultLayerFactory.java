@@ -32,79 +32,70 @@ import java.util.*;
 
 /**
  * Default layer factory: create a bias and a weight matrix
+ *
  * @author Adam Gibson
  */
 public class DefaultLayerFactory implements LayerFactory {
-   
+
     protected org.deeplearning4j.nn.conf.layers.Layer layerConfig;
 
     public DefaultLayerFactory(Class<? extends org.deeplearning4j.nn.conf.layers.Layer> layerConfig) {
         try {
             this.layerConfig = layerConfig.newInstance();
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
-        return create(conf, iterationListeners, index);
-    }
-
-    @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf,new ArrayList<IterationListener>(),0);
-    }
-
-    @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index) {
+    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index,
+                                      INDArray layerParamsView) {
         Layer ret = getInstance(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(index);
-        ret.setParamTable(getParams(conf));
+        ret.setParamsViewArray(layerParamsView);
+        ret.setParamTable(getParams(conf, layerParamsView));
         ret.setConf(conf);
         return (E) ret;
     }
-    
+
     protected Layer getInstance(NeuralNetConfiguration conf) {
-        if(layerConfig instanceof DenseLayer)
+        if (layerConfig instanceof DenseLayer)
             return new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
             return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
             return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ImageLSTM)
-            return new org.deeplearning4j.nn.layers.recurrent.ImageLSTM(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
-        	return new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
-        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM )
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
+            return new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM)
             return new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GRU )
-        	return new org.deeplearning4j.nn.layers.recurrent.GRU(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.GRU)
+            return new org.deeplearning4j.nn.layers.recurrent.GRU(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)
             return new org.deeplearning4j.nn.layers.OutputLayer(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RnnOutputLayer)
-        	return new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.RnnOutputLayer)
+            return new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
             return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
             return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
-         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.BatchNormalization)
-             return new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.BatchNormalization)
+            return new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.LocalResponseNormalization)
             return new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.EmbeddingLayer)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.EmbeddingLayer)
             return new EmbeddingLayer(conf);
-        if(layerConfig instanceof  org.deeplearning4j.nn.conf.layers.ActivationLayer)
+        if (layerConfig instanceof org.deeplearning4j.nn.conf.layers.ActivationLayer)
             return new org.deeplearning4j.nn.layers.ActivationLayer(conf);
         throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 
 
-    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
+    protected Map<String, INDArray> getParams(NeuralNetConfiguration conf, INDArray paramsView) {
         ParamInitializer init = initializer();
-        Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
-        init.init(params,conf);
+        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+        init.init(params, conf, paramsView);
         return params;
     }
 

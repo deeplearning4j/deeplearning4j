@@ -17,6 +17,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -45,7 +46,9 @@ public class DenseTest {
                 .layer(build)
                 .build();
 
-        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 
         assertEquals(1, layer.getParam("b").size(0));
     }

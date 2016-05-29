@@ -52,8 +52,8 @@ public class TestUpdaters {
 
 	@Before
 	public void beforeDo(){
-		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-		gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+		gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+		gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 	}
 
 	@Test
@@ -70,12 +70,14 @@ public class TestUpdaters {
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		Gradient gradientDup = new DefaultGradient();
-		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+		gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+		gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
 		for (int i = 0; i < 2; i++) {
             updater.update(layer, gradient, i, 1);
@@ -123,7 +125,9 @@ public class TestUpdaters {
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
@@ -155,7 +159,9 @@ public class TestUpdaters {
 						.nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, iteration, 1);
@@ -197,14 +203,16 @@ public class TestUpdaters {
 						.nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -234,14 +242,16 @@ public class TestUpdaters {
 						.nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
 			key = entry.getKey();
@@ -269,15 +279,17 @@ public class TestUpdaters {
 				.layer(new DenseLayer.Builder().nIn(nIn)
 						.nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
 				.build();
-		
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
 
         Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
+        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -298,11 +310,16 @@ public class TestUpdaters {
 				.layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
 				.build();
 
-		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 		
 		for( int i=0; i<weightGradient.length(); i++ ) weightGradient.putScalar(i, r.nextDouble());
 		for( int i=0; i<biasGradient.length(); i++ ) biasGradient.putScalar(i, r.nextDouble());
+
+		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradient);
+		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
 		updater.update(layer, gradient, -1, 1);
 		

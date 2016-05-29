@@ -65,7 +65,9 @@ public class RenderTest {
 
         INDArray input = d2.getFeatureMatrix();
         Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1),listener);
-        Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0, params);
         da.fit(input);
 
 

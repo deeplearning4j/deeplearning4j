@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -232,7 +233,12 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx) {
+        public int numParams(boolean backprop) {
+            return 0;
+        }
+
+        @Override
+        public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
             throw new UnsupportedOperationException("Not supported");
         }
 
