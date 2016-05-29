@@ -545,9 +545,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
         outputShape[dimension] = sumAlongDim;
-        int[] sortedStrides = Nd4j.getStrides(outputShape);
 
-        INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        INDArray ret = Nd4j.createUninitialized(outputShape,Nd4j.order());
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 

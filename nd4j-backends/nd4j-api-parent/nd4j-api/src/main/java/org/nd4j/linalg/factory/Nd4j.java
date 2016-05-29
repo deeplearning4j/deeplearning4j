@@ -4237,7 +4237,7 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified value
+     * Creates a row vector ndarray with the specified value
      * as the  only value in the ndarray
      *
      * @param num   number of columns

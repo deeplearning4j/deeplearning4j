@@ -146,9 +146,7 @@ public class Shape {
             char outOrder = (anyOrder ? arr.ordering() : order);
             if(outOrder == 'a')
                 outOrder = Nd4j.order();
-//            System.out.println("ShapeInfo on original: " + arr.shapeInfoDataBuffer() + " isView: " + arr.isView());
-            INDArray z = Nd4j.create(arr.shape(),outOrder);
-//            System.out.println("ShapeInfo on dup(): " + z.shapeInfoDataBuffer());
+            INDArray z = Nd4j.createUninitialized(arr.shape(),outOrder);
             z.assign(arr);
             return z;
         }

@@ -69,7 +69,7 @@ public class Im2col extends BaseTransformOp {
         int outHeight = Convolution.outSize(h, kernelHeight, strideY, padHeight, coverAll);
         int outWidth = Convolution.outSize(w, kernelWidth, strideX, padWidth, coverAll);
 
-        return Nd4j.create(n, c, kernelHeight, kernelWidth, outHeight, outWidth);
+        return Nd4j.createUninitialized(new int[]{n, c, kernelHeight, kernelWidth, outHeight, outWidth},'c');
     }
 
     @Override
