@@ -22,6 +22,18 @@ public class IndexingTestsC extends BaseNd4jTest {
     public IndexingTestsC(Nd4jBackend backend) {
         super(backend);
     }
+
+
+    @Test
+    public void testGetPointRowVector(){
+        INDArray arr = Nd4j.linspace(1,1000,1000);
+
+        INDArray arr2 = arr.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,100));
+
+        assertEquals(100, arr2.length());   //Returning: length 0
+        assertEquals(arr2, Nd4j.linspace(1, 100, 100));
+    }
+
     @Test
     public void testVectorIndexing2() {
         INDArray wholeVector = Nd4j.linspace(1,5,5).get(NDArrayIndex.interval(1,2,3,true));
