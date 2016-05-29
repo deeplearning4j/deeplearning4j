@@ -119,6 +119,24 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
                                 true, false, a, b, 1e-4, 1e-6));
                         assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt,
                                 true, true, a, b, 1e-4, 1e-6));
+
+                        //Also: Confirm that if the C array is uninitialized and beta is 0.0, we don't have issues like 0*NaN = NaN
+                        if(b == 0.0){
+                            cff.assign(Double.NaN);
+                            cft.assign(Double.NaN);
+                            ctf.assign(Double.NaN);
+                            ctt.assign(Double.NaN);
+
+                            assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff,
+                                    false, false, a, b, 1e-4, 1e-6));
+                            assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft,
+                                    false, true, a, b, 1e-4, 1e-6));
+                            assertTrue(errorMsgtf, CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf,
+                                    true, false, a, b, 1e-4, 1e-6));
+                            assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt,
+                                    true, true, a, b, 1e-4, 1e-6));
+                        }
+
                     }
                 }
             }

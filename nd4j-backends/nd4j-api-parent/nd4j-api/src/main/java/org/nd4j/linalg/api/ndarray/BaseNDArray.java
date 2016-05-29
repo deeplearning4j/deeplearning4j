@@ -60,6 +60,8 @@ import java.nio.IntBuffer;
 import java.util.*;
 import java.util.Set;
 
+import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
+
 
 /**
  * NDArray: (think numpy)
@@ -2436,7 +2438,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmul(INDArray other) {
         int[] shape = {rows(), other.columns()};
-        INDArray result = create(shape,'f');
+        INDArray result = createUninitialized(shape,'f');
         if(result.isScalar())
             return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this,other));
         return mmuli(other, result);
@@ -3338,7 +3340,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray ret = Nd4j.create(shape,order);
+        INDArray ret = Nd4j.createUninitialized(shape,order);
         if(order != ordering()) {
             ret.setData(dup(order).data());
         }
@@ -4524,7 +4526,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected void read(ObjectInputStream s) {
         shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank)],0);
         shapeInformation.read(s);
-        data = Nd4j.createBuffer(length);
+        data = Nd4j.createBuffer(length,false);
         data().read(s);
     }
 }

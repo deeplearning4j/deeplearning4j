@@ -701,7 +701,7 @@ public class Nd4j {
     public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
         int cRows = (transposeA ? a.columns() : a.rows() );
         int cCols = (transposeB ? b.rows() : b.columns() );
-        INDArray c = Nd4j.create(new int[]{cRows, cCols}, 'f');
+        INDArray c = Nd4j.createUninitialized(new int[]{cRows, cCols}, 'f');
         return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
     }
 
@@ -4237,7 +4237,7 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified value
+     * Creates a row vector ndarray with the specified value
      * as the  only value in the ndarray
      *
      * @param num   number of columns
