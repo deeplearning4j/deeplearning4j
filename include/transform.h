@@ -11,6 +11,7 @@
 #include <vector>
 #include <templatemath.h>
 #include <op.h>
+#include <ops.h>
 #include <omp.h>
 #include <pairwise_util.h>
 #include <dll.h>
@@ -3926,8 +3927,8 @@ namespace functions {
                                   nullptr, nullptr);
 
                         //subtract max of each row
-                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
+                        functions::broadcast::Broadcast<T> *sub = new functions::broadcast::Broadcast<T>();
+                        sub->template exec<simdOps::Subtract>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
                                   nullptr, nullptr);
 
                         //after subtracting the row wise maxes take the exp
@@ -3940,8 +3941,8 @@ namespace functions {
                                   nullptr, nullptr);
 
                         //divide by the sum
-                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
+						functions::broadcast::Broadcast<T> *div = new functions::broadcast::Broadcast<T>();
+                        div->template exec<simdOps::Divide>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
                                   nullptr, nullptr);
 
 
@@ -4188,8 +4189,8 @@ namespace functions {
                                   nullptr, nullptr);
 
                         //subtract max of each row
-                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
+						functions::broadcast::Broadcast<T> *sub = new functions::broadcast::Broadcast<T>();
+                        sub->template exec<simdOps::Subtract>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
                                   nullptr, nullptr);
 
                         //after subtracting the row wise maxes take the exp
@@ -4202,8 +4203,8 @@ namespace functions {
                                   nullptr, nullptr);
 
                         //divide by the sum
-                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
+						functions::broadcast::Broadcast<T> *div = new functions::broadcast::Broadcast<T>();
+                        div->template exec<simdOps::Divide>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
                                   nullptr, nullptr);
 
                         functions::transform::ops::Log<T> *log = new functions::transform::ops::Log<T>();
@@ -4459,8 +4460,8 @@ namespace functions {
                                   nullptr, nullptr);
 
                         //subtract max of each row
-                        functions::broadcast::ops::Subtract<T> *sub = new functions::broadcast::ops::Subtract<T>();
-                        sub->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
+						functions::broadcast::Broadcast<T> *sub = new functions::broadcast::Broadcast<T>();
+                        sub->template exec<simdOps::Subtract>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1,
                                   nullptr, nullptr);
 
                         //after subtracting the row wise maxes take the exp
@@ -4473,8 +4474,8 @@ namespace functions {
                                   1, nullptr, nullptr);
 
                         //divide by the sum
-                        functions::broadcast::ops::Divide<T> *div = new functions::broadcast::ops::Divide<T>();
-                        div->exec(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1, nullptr, nullptr);
+						functions::broadcast::Broadcast<T> *div = new functions::broadcast::Broadcast<T>();
+                        div->template exec<simdOps::Divide>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, dimension, 1, nullptr, nullptr);
 
                         if (resultEleStide >= 1) {
                             if (resultEleStide == 1) {

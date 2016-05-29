@@ -21,7 +21,6 @@
 template <typename T>
 class NativeOpExcutioner {
 private:
-    functions::broadcast::BroadcastOpFactory<T> *broadcastOpFactory = new functions::broadcast::BroadcastOpFactory<T>();
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
     functions::pairwise_transforms::PairWiseTransformOpFactory<T> *pairWiseTransformOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
     functions::reduce::ReduceOpFactory<T> *reduceOpFactory = new functions::reduce::ReduceOpFactory<T>();
@@ -32,7 +31,6 @@ private:
 
 public:
     ~NativeOpExcutioner() {
-        delete broadcastOpFactory;
         delete indexReduceOpFactory;
         delete pairWiseTransformOpFactory;
         delete reduceOpFactory;
@@ -105,9 +103,8 @@ public:
                        T *result,
                        int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-        functions::broadcast::Broadcast<T> *broadcast = broadcastOpFactory->getOp(opNum);
-        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
-        delete broadcast;
+		functions::broadcast::Broadcast<T> broadcast;
+        broadcast.exec(opNum, x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
     }
 
 
