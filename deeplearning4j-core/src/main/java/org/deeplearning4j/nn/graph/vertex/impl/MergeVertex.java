@@ -197,4 +197,9 @@ public class MergeVertex extends BaseGraphVertex {
 
         return new Pair<>(null,out);
     }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
 }

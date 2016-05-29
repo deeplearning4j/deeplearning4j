@@ -41,6 +41,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -194,7 +195,9 @@ public class Train extends BaseSubCommand {
             try {
                 NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
                 LayerFactory factory = LayerFactories.getFactory(conf);
-                Layer l = factory.create(conf);
+                int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+                INDArray params = Nd4j.create(1, numParams);
+                Layer l = factory.create(conf, null, 0, params);
                 DataSetIterator iter = new RecordReaderDataSetIterator( reader , 1);
                 while(iter.hasNext()) {
                     l.fit(iter.next().getFeatureMatrix());

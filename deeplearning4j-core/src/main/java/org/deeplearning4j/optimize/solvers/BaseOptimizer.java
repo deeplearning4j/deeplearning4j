@@ -296,7 +296,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
-        INDArray params = model.params();
+        INDArray params = model.params().dup(); //Need dup here: params returns an array that isn't a copy (hence changes to this are problematic for line search methods)
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);

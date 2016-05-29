@@ -8,7 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -45,8 +46,10 @@ public class GravesLSTMTest {
 						.activation("tanh")
 						.build())
 				.build();
-	
-		GravesLSTM layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GravesLSTM layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -91,8 +94,11 @@ public class GravesLSTMTest {
 						.activation("tanh")
 						.build())
 				.build();
-		
-		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
+
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
+		lstm.setBackpropGradientsViewArray(Nd4j.create(1, LayerFactories.getFactory(conf.getLayer()).initializer().numParams(conf,true)));
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());
@@ -142,7 +148,9 @@ public class GravesLSTMTest {
 				.build())
 		.build();
 
-		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
+		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+		INDArray params = Nd4j.create(1, numParams);
+		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
 		INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
 		lstm.setInput(input);
 

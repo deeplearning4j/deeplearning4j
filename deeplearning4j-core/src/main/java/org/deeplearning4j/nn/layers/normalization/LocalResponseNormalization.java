@@ -120,6 +120,8 @@ public class LocalResponseNormalization extends BaseLayer<org.deeplearning4j.nn.
                     NDArrayIndex.all()}, tmp.addi(addVal));
         }
 
+        //TODO: make sure returned gradients are using the view arrays...
+
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
         INDArray nextEpsilon = epsilon.mul(scale).sub(input.mul(2 * alpha * beta).mul(sumPart.div(unitScale)));
         return new Pair<>(retGradient,nextEpsilon);
