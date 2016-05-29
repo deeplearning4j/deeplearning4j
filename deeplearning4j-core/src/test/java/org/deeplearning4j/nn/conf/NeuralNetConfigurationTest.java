@@ -129,7 +129,10 @@ public class NeuralNetConfigurationTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer)
                 .build();
-        Layer model = LayerFactories.getFactory(conf).create(conf);
+
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer model = LayerFactories.getFactory(conf).create(conf, null, 0, params);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
@@ -148,7 +151,10 @@ public class NeuralNetConfigurationTest {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer2)
                 .build();
-        Layer model2 = LayerFactories.getFactory(conf2).create(conf2);
+
+        int numParams2 = LayerFactories.getFactory(conf2).initializer().numParams(conf,true);
+        INDArray params2 = Nd4j.create(1, numParams);
+        Layer model2 = LayerFactories.getFactory(conf2).create(conf2, null, 0, params2);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -249,8 +255,9 @@ public class NeuralNetConfigurationTest {
 
     private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit){
         NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit);
-        return LayerFactories.getFactory(conf).create(conf);
-
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, params);
     }
 
 
@@ -282,7 +289,6 @@ public class NeuralNetConfigurationTest {
         assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
         assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
         assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("b"), 1e-4);        //If not explicitly set, bias learning rate should be same as weights LR
         assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4);        //From global LR
         assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4);        //From global LR
     }
@@ -348,7 +354,6 @@ public class NeuralNetConfigurationTest {
         assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 1e-4);
         assertEquals(0.5, net.getLayer(1).conf().getL2ByParam("gamma"), 1e-4);
-        assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("b"), 1e-4);
         assertEquals(l2, net.getLayer(2).conf().getL2ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(2).conf().getL2ByParam("b"), 1e-4);
     }

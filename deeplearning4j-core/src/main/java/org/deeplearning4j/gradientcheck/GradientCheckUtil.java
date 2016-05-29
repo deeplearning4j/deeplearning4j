@@ -65,8 +65,8 @@ public class GradientCheckUtil {
             updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
         }
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient();
-        INDArray originalParams = mln.params();
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray originalParams = mln.params().dup();   //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
 
@@ -157,8 +157,8 @@ public class GradientCheckUtil {
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
         updater.update(graph, gradAndScore.getFirst(), 0, graph.batchSize());
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient();
-        INDArray originalParams = graph.params();
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup();    //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
+        INDArray originalParams = graph.params().dup();   //need dup: params are a *view* of full parameters
 
         int nParams = originalParams.length();
 

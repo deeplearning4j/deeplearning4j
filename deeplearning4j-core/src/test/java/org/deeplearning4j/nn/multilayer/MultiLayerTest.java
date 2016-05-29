@@ -107,29 +107,6 @@ public class MultiLayerTest {
     }
 
     @Test
-    public void testReDistribute() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(4).nOut(3)
-                        .activation("tanh")
-                        .build())
-                .layer(1, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
-                        .build())
-                .build();
-
-
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        INDArray params = network.params(true);
-        network.reDistributeParams(true);
-        INDArray params2 = network.params(true);
-        assertEquals(params,params2);
-    }
-
-
-
-    @Test
     public void testBatchNorm() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -535,6 +512,8 @@ public class MultiLayerTest {
         net.init();
 
         Layer layer = net.getLayer(0);
+        int nParamsBackprop = layer.numParams(true);
+        int nParamsBoth = layer.numParams(false);
         Layer transposed = layer.transpose();
 
         assertArrayEquals(new int[]{4,3},layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());

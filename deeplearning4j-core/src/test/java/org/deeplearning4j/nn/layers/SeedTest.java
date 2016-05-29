@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,7 +37,9 @@ public class SeedTest {
                 .seed(123)
                 .build();
 
-        Layer layer = LayerFactories.getFactory(conf).create(conf);
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
         layer.fit(data.getFeatureMatrix());
 
         layer.computeGradientAndScore();

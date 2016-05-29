@@ -137,6 +137,11 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
+
+    @Override
     public String toString(){
         return "LastTimeStepVertex(inputName="+inputName+")";
     }

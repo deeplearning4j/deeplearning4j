@@ -144,6 +144,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public void setParams(INDArray params) {
+        if(params == paramsFlattened) return;   //No op
+
         //SetParams has two different uses: during pretrain vs. backprop.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
@@ -162,15 +164,19 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
                 + " or " + lengthBackprop + " for backprop. Is: " + params.length());
         }
 
+        if(!pretrain){
+            paramsFlattened.assign(params);
+            return;
+        }
+
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet) {
-            if(!pretrain && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) continue;  //skip visible bias for backprop
             INDArray param = getParam(s);
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            setParam(s,get.reshape('f',param.shape()));
+            param.assign(get.reshape('f',param.shape()));  //Use assign due to backprop params being a view of a larger array
             idx += param.length();
 
         }
