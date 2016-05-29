@@ -21,6 +21,7 @@ package org.deeplearning4j.datasets.fetchers;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -126,37 +127,43 @@ public class MnistDataFetcher extends BaseDataFetcher {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
 
-        //we need to ensure that we don't overshoot the number of examples total
-        List<DataSet> toConvert = new ArrayList<>(numExamples);
+
+        float[][] featureData = new float[numExamples][0];
+        float[][] labelData = new float[numExamples][0];
+
+        int actualExamples = 0;
         for( int i=0; i<numExamples; i++, cursor++ ){
-            if(!hasMore()) {
-                break;
-            }
+            if(!hasMore()) break;
 
             byte[] img = man.readImageUnsafe(order[cursor]);
-            INDArray in = Nd4j.create(1, img.length);
+            int label = man.readLabel(order[cursor]);
+
+            float[] featureVec = new float[img.length];
+            featureData[actualExamples] = featureVec;
+            labelData[actualExamples] = new float[10];
+            labelData[actualExamples][label] = 1.0f;
+
             for( int j=0; j<img.length; j++ ){
-                in.putScalar(j, ((int)img[j]) & 0xFF);  //byte is loaded as signed -> convert to unsigned
-            }
-
-            if(binarize) {
-                for(int d = 0; d < in.length(); d++) {
-                    if(in.getDouble(d) > 30) {
-                        in.putScalar(d,1);
-                    }
-                    else {
-                        in.putScalar(d,0);
-                    }
+                float v = ((int)img[j]) & 0xFF; //byte is loaded as signed -> convert to unsigned
+                if(binarize){
+                    if(v > 30.0f) featureVec[j] = 1.0f;
+                    else featureVec[j] = 0.0f;
+                } else {
+                    featureVec[j] = v/255.0f;
                 }
-            } else {
-                in.divi(255);
             }
 
-            INDArray out = createOutputVector(man.readLabel(order[cursor]));
-
-            toConvert.add(new DataSet(in,out));
+            actualExamples++;
         }
-        initializeCurrFromList(toConvert);
+
+        if(actualExamples < numExamples){
+            featureData = Arrays.copyOfRange(featureData,0,actualExamples);
+            labelData = Arrays.copyOfRange(labelData,0,actualExamples);
+        }
+
+        INDArray features = Nd4j.create(featureData);
+        INDArray labels = Nd4j.create(labelData);
+        curr = new DataSet(features,labels);
     }
 
     @Override
