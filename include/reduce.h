@@ -701,13 +701,7 @@ namespace functions {
                       T *result,
                       int *resultShapeInfoBuffer,
                       int *dimension,
-                      int dimensionLength) {
-                shape::TAD tad(xShapeInfo, dimension, dimensionLength);
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
-                if(tad.dimensionLength < 1)
-                    return;
-
+                      int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 
                 int resultLength = shape::length(resultShapeInfoBuffer);
 
@@ -715,91 +709,80 @@ namespace functions {
                 //shape information for tad offset
                 //the squeezed information doesn't render the right strides for
                 //tad offset
-                if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
+                // || tad.wholeThing
+                if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo) ) {
                     result[0] = execScalar(x, xShapeInfo, extraParams);
                     return;
                 }
 
+                int *tadOnlyShapeInfo = tadShapeInfo;
+                int *tadOffsets = tadOffset;
+                shape::TAD *tad = nullptr;
 
-                if(tad.wholeThing) {
-                    T start = this->startingValue(x);
-#pragma omp simd
-                    for(int i = 0; i < shape::length(tad.tadOnlyShapeInfo); i++) {
-                        start = update(start, op(x[i], extraParams), extraParams);
+                if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
+                    tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+                    tad->createTadOnlyShapeInfo();
+                    tad->createOffsets();
+
+                    if (tad->dimensionLength < 1) {
+                        delete tad;
+                        return;
                     }
 
-                    result[0] = this->postProcess(start,shape::length(tad.tadOnlyShapeInfo),extraParams);
-
+                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
+                    tadOffsets = tad->tadOffsets;
                 }
-                else if(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
-                                                                               shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) {
 
-#pragma omp parallel for
+
+                int tadRank = shape::rank(tadOnlyShapeInfo);
+                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int numTads = shape::length(xShapeInfo) / tadLength;
+                int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+
+                if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
+
+#pragma omp parallel for if (resultLength > 16 && tadLength > 16)
                     for(int i = 0; i < resultLength; i++) {
-                        T *iter = x + tad.tadOffsets[i];
+                        T *iter = x + tadOffsets[i];
                         T start = this->startingValue(iter);
-                        int eleStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
-                        if(eleStride == 1) {
-#pragma omp simd
-                            for(int j = 0; j < shape::length(tad.tadOnlyShapeInfo); j++) {
+                        if(tadEWS == 1) {
+
+                            for(int j = 0; j < tadLength; j++) {
                                 start = update(start, op(iter[j], extraParams), extraParams);
 
                             }
-                        }
-                        else {
-#pragma omp simd
-                            for(int j = 0; j < shape::length(tad.tadOnlyShapeInfo); j++) {
-                                start = update(start, op(iter[j * eleStride], extraParams), extraParams);
+                        } else {
+
+                            for(int j = 0; j < tadLength; j++) {
+                                start = update(start, op(iter[j * tadEWS], extraParams), extraParams);
                             }
                         }
-
-                        result[i] = this->postProcess(start,shape::length(tad.tadOnlyShapeInfo),extraParams);
-
+                        result[i] = this->postProcess(start, tadLength, extraParams);
                     }
-                }
-                else {
-#pragma omp  parallel  for
+                } else {
+                    int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
+                    int *tadStride = shape::stride(tadOnlyShapeInfo);
+
+#pragma omp  parallel for schedule(guided) if (resultLength > 16 && tadLength > 16)
                     for (int i = 0; i <  resultLength; i++) {
-                        int offset = tad.tadOffsets[i];
-                        int shapeIter[MAX_RANK];
-                        int coord[MAX_RANK];
-                        int dim;
-                        int rankIter = shape::rank(tad.tadOnlyShapeInfo);
-                        int xStridesIter[MAX_RANK];
-                        T *xPointer = x + offset;
-                        T start = this->startingValue(xPointer);
-                        if (PrepareOneRawArrayIter<T>(rankIter,
-                                                      shape::shapeOf(tad.tadOnlyShapeInfo),
-                                                      xPointer,
-                                                      shape::stride(tad.tadOnlyShapeInfo),
-                                                      &rankIter,
-                                                      shapeIter,
-                                                      &xPointer,
-                                                      xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, shape::rank(tad.tadOnlyShapeInfo), coord, shapeIter); {
-                                    /* Process the innermost dimension */
-                                    if(xPointer > 0)
-                                        start = update(start, op(xPointer[0], extraParams), extraParams);
-                                    else printf("Xpointer is < 0\n");
-                                }
-                            ND4J_RAW_ITER_ONE_NEXT(dim,
-                                                   rankIter,
-                                                   coord,
-                                                   shapeIter,
-                                                   xPointer,
-                                                   xStridesIter);
-                            start = postProcess(start, shape::length(tad.tadOnlyShapeInfo), extraParams);
-                        }
-                        else {
-                            printf("Unable to prepare array\n");
+                        int offset = tadOffsets[i];
+                        int xCoord[MAX_RANK];
+
+                        T start = this->startingValue(x + offset);
+
+                        for(int j = 0; j < tadLength; j++) {
+                            shape::ind2subC(tadRank, tadShape, j, xCoord);
+                            int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
+
+                            start = update(start, op(x[xOffset], extraParams), extraParams);
                         }
 
-                        result[i] = start;
+                        result[i] = this->postProcess(start, tadLength, extraParams);;
                     }
                 }
 
-
-
+                if (tad != nullptr)
+                    delete tad;
             }
 
             virtual inline

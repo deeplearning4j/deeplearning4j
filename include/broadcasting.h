@@ -40,12 +40,13 @@ namespace functions {
              * @param d2
              * @return
              */
+#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
-
+			inline
 
 #endif
 			T op(T d1, T d2) = 0;
@@ -54,13 +55,14 @@ namespace functions {
              * @param d1
              * @return
              */
+#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
 
 #elif defined(__GNUC__)
 
-
+			inline
 #endif
 			T op(T d1) = 0;
 
@@ -159,63 +161,62 @@ namespace functions {
 							  int *yShapeInfo,
 							  T *result,
 							  int *dimension,
-							  int dimensionLength) {
-				shape::TAD tad(xShapeInfo,dimension,dimensionLength);
-				tad.createTadOnlyShapeInfo();
-				tad.createOffsets();
+							  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+
 				//decompose in to several sub tads after
 				//moving all dimensions (in sorted order)
 				//to the back.
 				//permuted version of the x shape info for setting up the tad problem
-				int *tadShapeShapeInfo =  tad.tadOnlyShapeInfo;
-				int tads = tad.numTads;
+				int *tadShapeShapeInfo =  tadShapeInfo;
+				int *tadOffsets = tadOffset;
+				shape::TAD *tad = nullptr;
+
+				if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
+					tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+					tad->createTadOnlyShapeInfo();
+					tad->createOffsets();
+
+					tadShapeShapeInfo = tad->tadOnlyShapeInfo;
+					tadOffsets = tad->tadOffsets;
+				}
+
 				int *xShape = shape::shapeOf(tadShapeShapeInfo);
 				int *xStride = shape::stride(tadShapeShapeInfo);
 				int *resultStride = shape::stride(tadShapeShapeInfo);
+				int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+				int tadRank = shape::rank(tadShapeShapeInfo);
+				int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+				int yStride = shape::elementWiseStride(yShapeInfo);
+				int tads =shape::length(xShapeInfo) / tadLength;
+
 				if (result == x) {
-#pragma omp  parallel  for schedule(guided)
+#pragma omp parallel for schedule(guided) if (tads > 16)
 					for (int i = 0; i < tads; i++) {
-						int offset = tad.tadOffsets[i];
-						T *xIter = x + offset;
-						T *resultIter = result + offset;
-						int shapeIter[MAX_RANK];
-						int coord[MAX_RANK];
-						int dim;
-						int xStridesIter[MAX_RANK];
-						int resultStridesIter[MAX_RANK];
-						int rank = shape::rank(tadShapeShapeInfo);
-						int vectorIdx = 0;
+						int offset = tadOffsets[i];
 
-						if (PrepareTwoRawArrayIter<T>(rank,
-													  xShape,
-													  xIter,
-													  xStride,
-													  resultIter,
-													  resultStride,
-													  &rank,
-													  shapeIter,
-													  &xIter,
-													  xStridesIter,
-													  &resultIter,
-													  resultStridesIter) >= 0) {
-							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-							{
-								/* Process the innermost dimension */
-								T val = this->op(xIter[0], y[vectorIdx]);
-								// printf("TAD %d x %f and y %f with vector idx %d and result %f\n",i,xIter[0],y[vectorIdx],vectorIdx,val);
-								xIter[0] = val;
-								vectorIdx += shape::elementWiseStride(yShapeInfo);
+						if (tadEWS > 0 && yStride > 0) {
+							T *oRes = result + offset;
+							T *oX = x + offset;
+
+							if (tadEWS == 1 && yStride == 1) {
+#pragma omp simd
+								for (int f = 0; f < tadLength; f++) {
+									oRes[f] = this->op(oX[f], y[f]);
+								}
+							} else {
+#pragma omp simd
+								for (int f = 0; f < tadLength; f++) {
+									oRes[f * tadEWS] = this->op(oX[f * tadEWS], y[f * yStride]);
+								}
 							}
-							ND4J_RAW_ITER_TWO_NEXT(dim,
-												   rank,
-												   coord,
-												   shapeIter,
-												   xIter,
-												   xStridesIter,
-												   resultIter,
-												   resultStridesIter);
+						} else {
+							int xCoord[MAX_RANK];
 
-
+							for (int f = 0; f < tadLength; f++) {
+								shape::ind2subC(tadRank,xShape, f, xCoord);
+								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
+								result[xOffset] = this->op(x[xOffset], y[f * yStride]);
+							}
 						}
 					}
 				}
@@ -223,7 +224,7 @@ namespace functions {
 
 #pragma omp  parallel  for schedule(guided)
 					for (int i = 0; i < tads; i++) {
-						int offset = tad.tadOffsets[i];
+						int offset = tadOffsets[i];
 						T *xIter = x + offset;
 						T *resultIter = result + offset;
 						int shapeIter[MAX_RANK];
@@ -269,9 +270,8 @@ namespace functions {
 
 				}
 
-
-
-
+				if (tad != nullptr)
+					delete tad;
 			}
 
 			virtual inline
@@ -310,13 +310,13 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 + d2;
@@ -326,13 +326,14 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
 
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -357,13 +358,13 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
-				__host__  __device__
+				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2;
@@ -373,13 +374,13 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
 
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -405,13 +406,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 / d2;
@@ -421,13 +421,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -453,13 +452,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 * d2;
@@ -469,13 +467,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -501,13 +498,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2 / d1;
@@ -517,13 +513,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -549,13 +544,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d2 - d1;
@@ -565,13 +559,12 @@ namespace functions {
                  * @param d1
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1) {
 					return d1;
@@ -596,13 +589,12 @@ namespace functions {
                  * @param d2
                  * @return
                  */
+#pragma omp declare simd
 				virtual
 #ifdef __CUDACC__
 				inline __host__  __device__
-
 #elif defined(__GNUC__)
-
-
+				inline
 #endif
 				T op(T d1, T d2) {
 					return d1 - d2;
