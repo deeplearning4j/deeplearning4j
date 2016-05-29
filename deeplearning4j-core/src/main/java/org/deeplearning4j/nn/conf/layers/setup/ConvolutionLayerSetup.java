@@ -130,6 +130,12 @@ public class ConvolutionLayerSetup {
                             conf.inputPreProcessor(i + 1, new CnnToRnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
                         case "ActivationLayer":
+                            feedForwardLayer = (ActivationLayer) outputLayer;
+                            lastOutChannels = lastnOut = convolutionLayer.getNOut();
+                            storeNInAndNOut(inLayerName, lastnOut);
+                            feedForwardLayer.setNOut(lastnOut);
+                            useCNN = true;
+                            break;
                         case "BatchNormalization":
                             feedForwardLayer= (BatchNormalization) outputLayer;
                             lastOutChannels = lastnOut = convolutionLayer.getNOut();

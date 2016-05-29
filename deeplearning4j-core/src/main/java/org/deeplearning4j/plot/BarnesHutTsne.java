@@ -609,6 +609,16 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
+    public void setParamsViewArray(INDArray params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray gradients) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void applyLearningRateScoreDecay() {
         throw new UnsupportedOperationException("Not yet implemented");
     }

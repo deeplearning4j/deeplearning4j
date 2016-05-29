@@ -45,9 +45,12 @@ public class BatchNormalizationTest {
 
     protected Layer setupActivations(int nIn, int nOut){
         BatchNormalization bN = new BatchNormalization.Builder().nIn(nIn).nOut(nOut).build();
-        NeuralNetConfiguration layerConf = new NeuralNetConfiguration.Builder()
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
-        Layer layer =  LayerFactories.getFactory(layerConf).create(layerConf);
+
+        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
         return layer;
     }
 
@@ -88,6 +91,7 @@ public class BatchNormalizationTest {
         layer.setParam("beta", Nd4j.linspace(0,15,16));
 
         layer.preOutput(dnnInput);
+        layer.setBackpropGradientsViewArray(Nd4j.create(1,32));
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(dnnEpsilon);
 
         INDArray dnnExpectedEpsilonOut = Nd4j.create(new double[] {
@@ -175,6 +179,7 @@ public class BatchNormalizationTest {
         layer.setParam("gamma", Nd4j.linspace(2,3,2));
         layer.setParam("beta", Nd4j.linspace(2,3,2));
         layer.preOutput(cnnInput);
+        layer.setBackpropGradientsViewArray(Nd4j.create(1,4));
         Pair<Gradient, INDArray> actualOut = layer.backpropGradient(cnnEpsilon);
 
         INDArray expectedEpsilonOut = Nd4j.create(new double[] {
