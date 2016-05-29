@@ -197,8 +197,8 @@ namespace functions {
                            T *extraParams,
                            int *indexes,
                            int *resultIndexes) {
-                Nd4jIndex n = shape::length(xShapeInfo);
-#pragma omp parallel for
+                const Nd4jIndex n = shape::length(xShapeInfo);
+#pragma omp parallel for schedule(guided) if (n > 2048)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = op(x[indexes[i]], scalar,extraParams);
                 }
@@ -293,7 +293,7 @@ namespace functions {
 
                 }
                 else {
-                    Nd4jIndex n = shape::length(xShapeInfo);
+                    const Nd4jIndex n = shape::length(xShapeInfo);
 
 
                     if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
@@ -311,7 +311,7 @@ namespace functions {
                         int xOffset = shape::offset(xShapeInfo);
                         int resultOffset = shape::offset(resultShapeInfo);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) if (n > 2048)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
@@ -343,16 +343,16 @@ namespace functions {
              * @param n the number of elements to loop over
              */
             void transform(T *x, int xStride, T *result, int resultStride,
-                           T scalar, T *extraParams,  Nd4jIndex n) {
+                           T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
-#pragma omp parallel for
+#pragma omp parallel for simd schedule(guided) if (n > 2048)
                     for (Nd4jIndex i = 0; i < n; i++) {
                         result[i] = op(x[i], scalar, extraParams);
                     }
                 }
 
                 else {
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) if (n > 2048)
                     for (Nd4jIndex i = 0; i < n; i++) {
                         result[i * resultStride] = op(x[i * xStride], scalar,
                                                       extraParams);

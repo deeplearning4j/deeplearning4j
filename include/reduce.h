@@ -735,7 +735,7 @@ namespace functions {
 
 
                 int tadRank = shape::rank(tadOnlyShapeInfo);
-                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 int numTads = shape::length(xShapeInfo) / tadLength;
                 int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
@@ -747,12 +747,13 @@ namespace functions {
                         T start = this->startingValue(iter);
                         if(tadEWS == 1) {
 
+#pragma omp simd
                             for(int j = 0; j < tadLength; j++) {
                                 start = update(start, op(iter[j], extraParams), extraParams);
 
                             }
                         } else {
-
+#pragma omp simd
                             for(int j = 0; j < tadLength; j++) {
                                 start = update(start, op(iter[j * tadEWS], extraParams), extraParams);
                             }
