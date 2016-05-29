@@ -191,6 +191,12 @@ public class CheckUtil {
 			for( int j = 0; j < outShape[1]; j++) {
 				double expOut = rmResult.getEntry(i, j);
 				double actOut = result.getDouble(i,j);
+
+                if(Double.isNaN(actOut)){
+                    System.out.println("NaN failure on value: (" +i+","+j+" exp="+expOut + ", act="+actOut);
+                    return false;
+                }
+
 				if(expOut==0.0 && actOut==0.0)
                     continue;
 				double absError = Math.abs(expOut - actOut);
