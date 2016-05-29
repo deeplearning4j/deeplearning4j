@@ -3633,21 +3633,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getColumn(int c) {
-        if(isColumnVector() && c == 0)
-            return this;
-
-        if (rank() == 2) {
-            INDArray ret = vectorAlongDimension(c, 0);
-            return ret.reshape(ret.length(),1);
-        }
-        else if (isRowVector()) {
-            return createScalarForIndex(c,true);
-        } else if (isColumnVector() && c == 0)
-            return this;
-
-
-        else
-            throw new IllegalArgumentException("Unable to getFloat scalar column of non 2d matrix");
+        return get(NDArrayIndex.all(),NDArrayIndex.point(c));
     }
 
 
@@ -3670,6 +3656,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
+        if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll)
+            return this;
+
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
 
@@ -3692,10 +3681,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 while(indexes[0].hasNext()) {
                     int nextIdx = indexes[0].next();
                     INDArray next = slice(nextIdx);
-                    if(indexes.length > 1)
-                        ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
-                    else if(next.isVector())
+                    if(indexes.length > 1) {
+                        INDArray slice = next.get(Arrays.copyOfRange(indexes, 1, indexes.length));
+                        ret.putSlice(count++, slice);
+                    }
+                    else if(next.isScalar()) {
+                        ret.putScalar(count++,next.getDouble(0));
+                    }
+                    else if(next.isVector()) {
                         ret.putSlice(count++,next);
+                    }
+
                     else
                         ret.putSlice(count++, next.get(indexes));
 
@@ -3734,26 +3730,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getRow(int r) {
-        if(isRowVector() && r == 0)
-            return this;
-
-
-        if (rank() == 2) {
-            if (isColumnVector())
-                return createScalarForIndex(r,true);
-            return vectorAlongDimension(r, 1);
-        }
-
-        else if(size(0) == 1 && rank() == 3) {
-            return slice(0).vectorAlongDimension(r,1);
-        }
-
-        else if (isRowVector() && r == 0)
-            return this;
-
-
-        else
-            throw new IllegalArgumentException("Unable to getFloat row of non 2d matrix");
+        return get(NDArrayIndex.point(r),NDArrayIndex.all());
     }
 
 

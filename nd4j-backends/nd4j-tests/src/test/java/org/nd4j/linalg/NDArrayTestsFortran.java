@@ -1089,7 +1089,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
 
         INDArray col = Nd4j.ones(5, 1);
-        for( int i = 0; i < 5; i++ ){
+        for( int i = 0; i < 5; i++) {
             INDArray row2 = col.getRow(i);
             assertArrayEquals(row2.shape(), new int[]{1, 1});
         }
