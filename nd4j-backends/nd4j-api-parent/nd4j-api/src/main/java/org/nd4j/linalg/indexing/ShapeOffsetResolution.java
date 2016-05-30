@@ -115,7 +115,7 @@ public class ShapeOffsetResolution implements Serializable {
                 }
             }
             else {
-                if(indexes[0] instanceof PointIndex) {
+                if(indexes[1] instanceof PointIndex) {
                     if(indexes[0] instanceof IntervalIndex) {
                         offset = indexes[0].offset();
                         this.shapes = new int[2];
