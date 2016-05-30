@@ -508,14 +508,13 @@ public:
                        int resultStride,
                        T *extraParams,
                        Nd4jIndex n) {
-        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
-        transform->exec(dx,
+		functions::transform::Transform<T> transform;
+        transform.exec(opNum, dx,
                         xStride,
                         result,
                         resultStride,
                         extraParams,
                         n);
-        delete transform;
 
     }
 
@@ -535,14 +534,12 @@ public:
                        T *result,
                        int *resultShapeInfo,
                        T *extraParams) {
-        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
-        transform->exec(dx,
+		functions::transform::Transform<T> transform;
+        transform.exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
                         extraParams);
-        delete transform;
-
     }
 
     /**
@@ -563,15 +560,14 @@ public:
                        T *extraParams,
                        Nd4jIndex *xIndexes,
                        Nd4jIndex *resultIndexes) {
-        functions::transform::Transform<T> *transform = transformOpFactory->getOp(opNum);
-        transform->exec(dx,
+		functions::transform::Transform<T> transform;
+        transform.exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
                         extraParams,
                         xIndexes,
                         resultIndexes);
-        delete transform;
 
     }
 
