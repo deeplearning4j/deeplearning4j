@@ -7,35 +7,6 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 
-class DoubleNativeOpExecutioner : public NativeOpExcutioner<double> {
-private:
-    static DoubleNativeOpExecutioner *DOUBLE_INSTANCE;
-public:
-    static DoubleNativeOpExecutioner * getInstance() {
-        if(DOUBLE_INSTANCE == nullptr)
-            DOUBLE_INSTANCE = new DoubleNativeOpExecutioner();
-        return DOUBLE_INSTANCE;
-    }
-};
-
-class FloatNativeOpExecutioner : public NativeOpExcutioner<float> {
-private:
-    static FloatNativeOpExecutioner *FLOAT_INSTANCE ;
-public:
-    static FloatNativeOpExecutioner * getInstance() {
-        if(FLOAT_INSTANCE == nullptr)
-            FLOAT_INSTANCE = new FloatNativeOpExecutioner();
-        return FLOAT_INSTANCE;
-    }
-};
-
-
-
-
-FloatNativeOpExecutioner *FloatNativeOpExecutioner::FLOAT_INSTANCE = nullptr;
-DoubleNativeOpExecutioner *DoubleNativeOpExecutioner::DOUBLE_INSTANCE = nullptr;
-
-
 
 /**
  *
@@ -51,7 +22,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+	NativeOpExcutioner<double>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 
 }
 
@@ -81,7 +52,7 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-    DoubleNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo,tadOffsets);
+	NativeOpExcutioner<double>::execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo,tadOffsets);
 }
 
 
@@ -113,7 +84,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-    DoubleNativeOpExecutioner::getInstance()->execBroadcast(
+	NativeOpExcutioner<double>::execBroadcast(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -151,7 +122,7 @@ void   NativeOps::execPairwiseTransformDouble(Nd4jPointer *extraPointers,int opN
     double *yPointer = reinterpret_cast<double *>(y);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execPairwiseTransform(opNum,xPointer,xStride,yPointer,yStride,resultPointer,resultStride,extraParamsPointer,n);
+	NativeOpExcutioner<double>::execPairwiseTransform(opNum,xPointer,xStride,yPointer,yStride,resultPointer,resultStride,extraParamsPointer,n);
 }
 
 /**
@@ -192,7 +163,7 @@ void NativeOps::execPairwiseTransformDouble(
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    DoubleNativeOpExecutioner::getInstance()->execPairwiseTransform(
+	NativeOpExcutioner<double>::execPairwiseTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -235,7 +206,7 @@ void NativeOps::execPairwiseTransformDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execPairwiseTransform(
+	NativeOpExcutioner<double>::execPairwiseTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -267,7 +238,7 @@ void   NativeOps::execReduceDouble(
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    resultPointer[0] = DoubleNativeOpExecutioner::getInstance()->execReduceScalar(
+    resultPointer[0] = NativeOpExcutioner<double>::execReduceScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -300,7 +271,7 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
-    DoubleNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength, tadShapeInfo, tadOffsets);
+	NativeOpExcutioner<double>::execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength, tadShapeInfo, tadOffsets);
 
 }
 
@@ -319,7 +290,7 @@ double NativeOps::execReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+    return NativeOpExcutioner<double>::execReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 }
 
 /**
@@ -348,7 +319,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    DoubleNativeOpExecutioner::getInstance()->execReduce3(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer);
+	NativeOpExcutioner<double>::execReduce3(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer);
 }
 
 /**
@@ -371,7 +342,7 @@ double   NativeOps::execReduce3ScalarDouble(Nd4jPointer *extraPointers,int opNum
     double *yPointer = reinterpret_cast<double *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
-    return DoubleNativeOpExecutioner::getInstance()->execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
+    return NativeOpExcutioner<double>::execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
 }
 /**
  *
@@ -404,7 +375,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParamsVals);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execReduce3(opNum,
+	NativeOpExcutioner<double>::execReduce3(opNum,
                                                           xPointer,
                                                           xShapeInfoPointer,
                                                           extraParamsPointer,
@@ -440,7 +411,7 @@ void   NativeOps::execScalarDouble(
     double *xPointer = reinterpret_cast<double *>(x);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execScalar(
+	NativeOpExcutioner<double>::execScalar(
             opNum,
             xPointer,
             xStride,
@@ -477,7 +448,7 @@ void NativeOps::execScalarDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execScalar(
+	NativeOpExcutioner<double>::execScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -519,7 +490,7 @@ void NativeOps::execScalarDouble(
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    DoubleNativeOpExecutioner::getInstance()->execScalar(
+	NativeOpExcutioner<double>::execScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -544,7 +515,7 @@ double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, int
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    return DoubleNativeOpExecutioner::getInstance()->execSummaryStatsScalar(
+	NativeOpExcutioner<double>::execSummaryStatsScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -570,7 +541,7 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, int opNum,
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(
+	NativeOpExcutioner<double>::execSummaryStats(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -602,7 +573,7 @@ void   NativeOps::execSummaryStatsDouble(Nd4jPointer *extraPointers, int opNum,N
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    DoubleNativeOpExecutioner::getInstance()->execSummaryStats(
+	NativeOpExcutioner<double>::execSummaryStats(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -632,7 +603,7 @@ void   NativeOps::execTransformDouble(Nd4jPointer *extraPointers, int opNum,
     double *xPointer = reinterpret_cast<double *>(dx);
     double *resultPointer = reinterpret_cast<double *>(result);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xStride,resultPointer,resultStride,extraParamsPointer,n);
+	NativeOpExcutioner<double>::execTransform(opNum,xPointer,xStride,resultPointer,resultStride,extraParamsPointer,n);
 }
 
 /**
@@ -658,7 +629,7 @@ void   NativeOps::execTransformDouble(
     double *resultPointer = reinterpret_cast<double *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-    DoubleNativeOpExecutioner::getInstance()->execTransform(
+	NativeOpExcutioner<double>::execTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -694,7 +665,7 @@ void   NativeOps::execTransformDouble(
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
     Nd4jIndex *xIndexesPointer = reinterpret_cast<Nd4jIndex*>(xIndexes);
     Nd4jIndex *resultIndexesPointer = reinterpret_cast<Nd4jIndex *>(resultIndexes);
-    DoubleNativeOpExecutioner::getInstance()->execTransform(
+	NativeOpExcutioner<double>::execTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -720,7 +691,7 @@ float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, int op
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+	NativeOpExcutioner<float>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 }
 
 /**
@@ -750,7 +721,7 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
-    FloatNativeOpExecutioner::getInstance()->execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo, tadOffsets);
+	NativeOpExcutioner<float>::execIndexReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimensionPointer,dimensionLength,tadShapeInfo, tadOffsets);
 
 
 }
@@ -781,7 +752,7 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-    FloatNativeOpExecutioner::getInstance()->execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength,
+	NativeOpExcutioner<float>::execBroadcast(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,dimensionPointer,dimensionLength,
                                                            tadShapeInfo, tadOffsets);
 
 }
@@ -814,7 +785,7 @@ void   NativeOps::execPairwiseTransformFloat(
     float *yPointer = reinterpret_cast<float *>(y);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(
+	NativeOpExcutioner<float>::execPairwiseTransform(
             opNum,
             xPointer,
             xStride,
@@ -864,7 +835,7 @@ void NativeOps::execPairwiseTransformFloat(
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *yIndexesPointer = reinterpret_cast<int *>(yIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(
+	NativeOpExcutioner<float>::execPairwiseTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -908,7 +879,7 @@ void NativeOps::execPairwiseTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execPairwiseTransform(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
+	NativeOpExcutioner<float>::execPairwiseTransform(opNum,xPointer,xShapeInfoPointer,yPointer,yShapeInfoPointer,resultPointer,resultShapeInfoPointer,extraParamsPointer);
 
 }
 
@@ -934,7 +905,7 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,int opNum,
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimension = new int[1];
     dimension[0] = MAX_DIMENSION;
-    FloatNativeOpExecutioner::getInstance()->execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimension,1,
+	NativeOpExcutioner<float>::execReduce(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,resultPointer,resultShapeInfoPointer,dimension,1,
                                                         nullptr, nullptr);
     delete[] dimension;
 }
@@ -967,7 +938,7 @@ void   NativeOps::execReduceFloat(
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
-    FloatNativeOpExecutioner::getInstance()->execReduce(
+	NativeOpExcutioner<float>::execReduce(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -996,7 +967,7 @@ float NativeOps::execReduceScalarFloat(
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+    return NativeOpExcutioner<float>::execReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 }
 
 /**
@@ -1027,7 +998,7 @@ void   NativeOps::execReduce3Float(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    FloatNativeOpExecutioner::getInstance()->execReduce3(
+	NativeOpExcutioner<float>::execReduce3(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1059,7 +1030,7 @@ float   NativeOps::execReduce3ScalarFloat(Nd4jPointer *extraPointers,int opNum,
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-    return FloatNativeOpExecutioner::getInstance()->execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
+	NativeOpExcutioner<float>::execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
 }
 /**
  *
@@ -1092,7 +1063,7 @@ void   NativeOps::execReduce3Float(Nd4jPointer *extraPointers,int opNum,
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execReduce3(
+	NativeOpExcutioner<float>::execReduce3(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1127,7 +1098,7 @@ void   NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
     float *xPointer = reinterpret_cast<float *>(x);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execScalar(opNum,xPointer,xStride,resultPointer,resultStride,scalar,extraParamsPointer,n);
+	NativeOpExcutioner<float>::execScalar(opNum,xPointer,xStride,resultPointer,resultStride,scalar,extraParamsPointer,n);
 
 }
 
@@ -1155,7 +1126,7 @@ void NativeOps::execScalarFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execScalar(opNum,xPointer,resultShapeInfoPointer,resultPointer,resultShapeInfoPointer,scalar,extraParamsPointer);
+	NativeOpExcutioner<float>::execScalar(opNum,xPointer,resultShapeInfoPointer,resultPointer,resultShapeInfoPointer,scalar,extraParamsPointer);
 
 }
 
@@ -1190,7 +1161,7 @@ void NativeOps::execScalarFloat(
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *xIndexesPointer = reinterpret_cast<int *>(xIndexes);
     int *resultIndexesPointer = reinterpret_cast<int *>(resultIndexes);
-    FloatNativeOpExecutioner::getInstance()->execScalar(
+	NativeOpExcutioner<float>::execScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1218,7 +1189,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    return FloatNativeOpExecutioner::getInstance()->execSummaryStatsScalar(
+    return NativeOpExcutioner<float>::execSummaryStatsScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1247,7 +1218,7 @@ void   NativeOps::execSummaryStatsFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execSummaryStats(
+	NativeOpExcutioner<float>::execSummaryStats(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1279,7 +1250,7 @@ void   NativeOps::execSummaryStatsFloat(Nd4jPointer *extraPointers,int opNum,Nd4
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfoBuffer);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     int *dimensionPointer = reinterpret_cast<int *>(dimension);
-    FloatNativeOpExecutioner::getInstance()->execSummaryStats(
+	NativeOpExcutioner<float>::execSummaryStats(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1312,7 +1283,7 @@ void   NativeOps::execTransformFloat(
     float *xPointer = reinterpret_cast<float *>(dx);
     float *resultPointer = reinterpret_cast<float *>(result);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execTransform(opNum,xPointer,xStride,resultPointer,resultStride,extraParamsPointer,n);
+	NativeOpExcutioner<float>::execTransform(opNum,xPointer,xStride,resultPointer,resultStride,extraParamsPointer,n);
 }
 
 /**
@@ -1338,7 +1309,7 @@ void   NativeOps::execTransformFloat(
     float *resultPointer = reinterpret_cast<float *>(result);
     int *resultShapeInfoPointer = reinterpret_cast<int *>(resultShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-    FloatNativeOpExecutioner::getInstance()->execTransform(
+	NativeOpExcutioner<float>::execTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -1374,7 +1345,7 @@ void   NativeOps::execTransformFloat(
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
     Nd4jIndex *xIndexesPointer = reinterpret_cast<Nd4jIndex*>(xIndexes);
     Nd4jIndex *resultIndexesPointer = reinterpret_cast<Nd4jIndex *>(resultIndexes);
-    FloatNativeOpExecutioner::getInstance()->execTransform(
+	NativeOpExcutioner<float>::execTransform(
             opNum,
             xPointer,
             xShapeInfoPointer,

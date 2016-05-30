@@ -30,7 +30,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    T execIndexReduceScalar(int opNum,
+    static T execIndexReduceScalar(int opNum,
                             T *x,
                             int *xShapeInfo,
                             T *extraParams) {
@@ -48,7 +48,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void execIndexReduce(int opNum,
+	static void execIndexReduce(int opNum,
                          T *x,
                          int *xShapeInfo,
                          T *extraParams,
@@ -70,7 +70,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void execBroadcast(int opNum,
+	static void execBroadcast(int opNum,
                        T *x,
                        int *xShapeInfo,
                        T *y,
@@ -93,7 +93,7 @@ public:
      * @param extraParams
      * @param n
      */
-    void execPairwiseTransform(int opNum,
+	static void execPairwiseTransform(int opNum,
                                T *dx,
                                int xStride,
                                T *y,
@@ -124,7 +124,7 @@ public:
   * @param extraParams
   * @param n
   */
-    void execPairwiseTransform(int opNum,
+	static void execPairwiseTransform(int opNum,
                                T *dx,
                                int *xShapeInfo,
                                T *y,
@@ -154,7 +154,7 @@ public:
 * @param extraParams
 * @param n
 */
-    void execPairwiseTransform(int opNum,
+	static void execPairwiseTransform(int opNum,
                                T *dx,
                                int *xShapeInfo,
                                T *y,
@@ -189,7 +189,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void execReduce(int opNum,
+	static void execReduce(int opNum,
                     T *x,
                     int *xShapeInfo,
                     T *extraParams,
@@ -208,7 +208,7 @@ public:
      * @param extraParams
      * @return
      */
-    T execReduceScalar(int opNum,
+	static T execReduceScalar(int opNum,
                        T *x,
                        int *xShapeInfo,
                        T *extraParams) {
@@ -225,7 +225,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void execReduce3(int opNum,
+	static void execReduce3(int opNum,
                      T *x,
                      int *xShapeInfo,
                      T *extraParamsVals,
@@ -249,7 +249,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    T execReduce3Scalar(int opNum,
+	static T execReduce3Scalar(int opNum,
                         T *x,
                         int *xShapeInfo,
                         T *extraParamsVals,
@@ -271,7 +271,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void execReduce3(int opNum,
+	static void execReduce3(int opNum,
                      T *x,
                      int *xShapeInfo,
                      T *extraParamsVals,
@@ -295,7 +295,7 @@ public:
      * @param extraParams
      * @param n
      */
-    void execScalar(int opNum,
+	static void execScalar(int opNum,
                     T *x,
                     int xStride,
                     T *result,
@@ -318,7 +318,7 @@ public:
      * @param extraParams
      * @param n
      */
-    void execScalar(int opNum,
+	static void execScalar(int opNum,
                     T *x,
                     int *xShapeInfo,
                     T *result,
@@ -347,7 +347,7 @@ public:
  * @param extraParams
  * @param n
  */
-    void execScalar(int opNum,
+	static void execScalar(int opNum,
                     T *x,
                     int *xShapeInfo,
                     T *result,
@@ -376,7 +376,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void execSummaryStats(int opNum,
+	static void execSummaryStats(int opNum,
                           T *x,
                           int *xShapeInfo,
                           T *extraParams,
@@ -394,7 +394,7 @@ public:
     * @param result
     * @param resultShapeInfo
     */
-    T execSummaryStatsScalar(int opNum,
+	static T execSummaryStatsScalar(int opNum,
                              T *x,
                              int *xShapeInfo,
                              T *extraParams,bool biasCorrected) {
@@ -412,7 +412,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    void execSummaryStats(int opNum,T *x,
+	static void execSummaryStats(int opNum,T *x,
                           int *xShapeInfo,
                           T *extraParams,
                           T *result,
@@ -439,7 +439,7 @@ public:
      * @param extraParams
      * @param n
      */
-    void execTransform(int opNum,
+	static void execTransform(int opNum,
                        T *dx,
                        int xStride,
                        T *result,
@@ -465,7 +465,7 @@ public:
  * @param extraParams
  * @param n
  */
-    void execTransform(int opNum,
+	static void execTransform(int opNum,
                        T *dx,
                        int *xShapeInfo,
                        T *result,
@@ -488,7 +488,7 @@ public:
 * @param extraParams
 * @param n
 */
-    void execTransform(int opNum,
+	static void execTransform(int opNum,
                        T *dx,
                        int *xShapeInfo,
                        T *result,
