@@ -80,11 +80,7 @@ public class LayerVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training){
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
-        INDArray currInput = inputs[0];
-        if(layerPreProcessor != null){
-            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
-        }
-        return layer.activate(currInput,training);
+        return layer.activate(training);
     }
 
     @Override
@@ -119,6 +115,18 @@ public class LayerVertex extends BaseGraphVertex {
 
         //Layers always have single activations input -> always have single epsilon output during backprop
         return new Pair<>(pair.getFirst(), new INDArray[]{pair.getSecond()});
+    }
+
+    @Override
+    public void setInput(int inputNumber, INDArray input){
+        if(inputNumber > 0) throw new IllegalArgumentException("Invalid input number: LayerVertex instances have only ");
+        inputs[inputNumber] = input;
+
+        INDArray currInput = inputs[0];
+        if(layerPreProcessor != null){
+            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+        }
+        layer.setInput(currInput);
     }
 
     @Override
