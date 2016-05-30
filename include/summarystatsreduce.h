@@ -11,7 +11,6 @@
 #include <dll.h>
 
 #include <shape.h>
-#include <op.h>
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

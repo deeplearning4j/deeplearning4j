@@ -8,7 +8,6 @@
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
 #include <shape.h>
-#include <op.h>
 #include <omp.h>
 #include <dll.h>
 #include <ops.h>

@@ -3,7 +3,6 @@
 #include <sharedmem.h>
 #include <stdio.h>
 #include <shape.h>
-#include <op.h>
 #include <omp.h>
 #include <templatemath.h>
 #include <helper_cuda.h>

@@ -12,7 +12,6 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
-#include <op.h>
 #include <templatemath.h>
 #include <ops.h>
 

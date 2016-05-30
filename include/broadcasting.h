@@ -10,7 +10,6 @@
 #include <dll.h>
 #include <sharedmem.h>
 #include <shape.h>
-#include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <pairwise_util.h>

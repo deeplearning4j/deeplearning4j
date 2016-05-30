@@ -10,7 +10,6 @@
 
 #define EXTRA_PARAMS_LENGTH 10
 
-#include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <sharedmem.h>

@@ -10,7 +10,6 @@
 #define TRANSFORM_H_
 #include <vector>
 #include <templatemath.h>
-#include <op.h>
 #include <ops.h>
 #include <omp.h>
 #include <pairwise_util.h>
