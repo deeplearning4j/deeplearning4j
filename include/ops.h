@@ -1118,4 +1118,238 @@ namespace simdOps {
 			return sqrtRet;
 		}
 	};
+
+	template<typename T>
+	class CosineSimilarity {
+	public:
+		constexpr static const int extraParamsLen = 2;
+
+		op_def static T * generateExtraParams() {
+			T *extraParams = new T[2];
+			return extraParams;
+		}
+
+		op_def static void finalizeExtraParams(T **extraParams) {
+			delete[] * extraParams;
+		}
+
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(n, extraParamsRef)
+		op_def static  T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+			T *extraParams = *extraParamsRef;
+			return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
+		}
+
+#pragma omp declare simd
+		op_def static T op(T d1, T d2, T **extraParamsRef) {
+			T *extraParams = *extraParamsRef;
+			extraParams[0] += d1 * d1;
+			extraParams[1] += d2 * d2;
+			return (d1 * d2);
+		}
+
+
+		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
+			T *extraParamsTotalRef = *extraParamsTotal;
+			T *extraParamsLocalRef = *extraParamsLocal;
+			extraParamsTotalRef[0] += extraParamsLocalRef[0];
+			extraParamsTotalRef[1] += extraParamsLocalRef[1];
+
+		}
+
+#ifdef __CUDACC__
+		virtual __device__
+			inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+			T *extraParams = *extraParamsRef;
+
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], d1 * d1);
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], d2 * d2);
+
+			return (d1 * d2);
+		}
+#endif
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
+			return old + opOutput;
+		}
+
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+			return update(old, opOutput, extraParamsRef);
+		}
+	};
+
+
+	/**
+	* Dot product between 2 arrays
+	*/
+	template<typename T>
+	class Dot {
+	public:
+		constexpr static const int extraParamsLen = 0;
+
+		op_def static T * generateExtraParams() {
+			return nullptr;
+		}
+		
+		op_def static void finalizeExtraParams(T **extraParamsRef) {
+			//no-op
+			delete[] * extraParamsRef;
+		}
+		
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(n, extraParamsRef)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+			return reduction;
+		}
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T op(T d1, T d2, T **extraParamsRef) {
+			return d1 * d2;
+		}
+
+	
+#ifdef __CUDACC__
+		virtual
+			__device__
+
+
+			inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+			return op(d1, d2, extraParamsRef);
+		}
+#endif
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T update(T old, T opOutput, T **extraParamsRef) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+			return update(old, opOutput, extraParamsRef);
+		}
+
+		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
+	};
+
+
+
+	template<typename T>
+	class EuclideanDistance {
+	public:
+		constexpr static const int extraParamsLen = 0;
+
+		op_def static T * generateExtraParams() {
+			return nullptr;
+		}
+
+		op_def static void finalizeExtraParams(T **extraParamsRef) {
+			//no-op
+			delete[] * extraParamsRef;
+		}
+
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(n, extraParamsRef)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+			return nd4j::math::nd4j_sqrt<T>(reduction);
+		}
+		
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T op(T d1, T d2, T **extraParamsRef) {
+			T ret = d1 - d2;
+			return ret * ret;
+		}
+
+		
+#ifdef __CUDACC__
+		virtual
+			__device__
+
+
+			inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+			return op(d1, d2, extraParamsRef);
+		}
+#endif
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T update(T old, T opOutput, T **extraParamsRef) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+			return update(old, opOutput, extraParamsRef);
+		}
+		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
+
+	};
+
+
+	template<typename T>
+	class ManhattanDistance  {
+	public:
+		constexpr static const int extraParamsLen = 0;
+
+		op_def static T * generateExtraParams() {
+			return nullptr;
+	}
+
+		op_def static void finalizeExtraParams(T **extraParamsRef) {
+			//no-op
+			delete[] * extraParamsRef;
+		}
+
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(n, extraParamsRef)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+			return reduction;
+		}
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T op(T d1, T d2, T **extraParamsRef) {
+			return nd4j::math::nd4j_abs<T>(d1 - d2);
+		}
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
+			return old + opOutput;
+		}
+
+		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
+		
+
+#ifdef __CUDACC__
+		virtual	__device__
+
+
+			inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+			return op(d1, d2, extraParamsRef);
+		}
+#endif
+
+#pragma omp declare simd uniform(extraParamsRef)
+		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+			return update(old, opOutput, extraParamsRef);
+		}
+
+
+	};
 }

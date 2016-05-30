@@ -22,13 +22,11 @@ template <typename T>
 class NativeOpExcutioner {
 private:
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-    functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
     functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
 
 public:
     ~NativeOpExcutioner() {
         delete indexReduceOpFactory;
-        delete reduce3OpFactory;
         delete summaryStatsReduceOpFactory;
     }
 
@@ -229,8 +227,7 @@ public:
                        T *x,
                        int *xShapeInfo,
                        T *extraParams) {
-        T ret = functions::reduce::ReduceFunction<T>::execScalar(opNum, x,xShapeInfo,extraParams);
-        return ret;
+        return functions::reduce::ReduceFunction<T>::execScalar(opNum, x,xShapeInfo,extraParams);
     }
     /**
      *
@@ -250,10 +247,7 @@ public:
                      T *y,
                      int *yShapeInfo,
                      T *result, int *resultShapeInfo) {
-        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
-        reduce3->exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfo);
-        delete reduce3;
-
+        functions::reduce3::Reduce3<T>::exec(opNum, x,xShapeInfo,extraParamsVals,y,yShapeInfo, result, resultShapeInfo, nullptr, 0);
     }
 
 
@@ -276,11 +270,7 @@ public:
                         T *extraParamsVals,
                         T *y,
                         int *yShapeInfo) {
-        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
-        T ret = reduce3->execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
-        delete reduce3;
-        return ret;
-
+        return functions::reduce3::Reduce3<T>::execScalar(opNum,x,xShapeInfo,extraParamsVals,y,yShapeInfo);
     }
 
     /**
@@ -306,10 +296,7 @@ public:
                      int *resultShapeInfoBuffer,
                      int *dimension,
                      int dimensionLength) {
-        functions::reduce3::Reduce3<T> *reduce3 = reduce3OpFactory->getOp(opNum);
-        reduce3->exec(x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer,dimension,dimensionLength);
-        delete reduce3;
-
+        functions::reduce3::Reduce3<T>::exec(opNum, x,xShapeInfo,extraParamsVals,y,yShapeInfo,result,resultShapeInfoBuffer,dimension,dimensionLength);
     }
 
     /**

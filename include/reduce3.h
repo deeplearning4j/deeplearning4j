@@ -18,6 +18,7 @@
 #include <pairwise_util.h>
 #include <dll.h>
 #include <shape.h>
+#include <ops.h>
 
 #ifdef __JNI__
 #include <jni.h>
@@ -36,89 +37,9 @@ namespace functions {
  * 2 arrays
  */
 		template<typename T>
-		class Reduce3: public virtual functions::ops::Op<T> {
+		class Reduce3 {
 
 		public:
-
-			virtual
-#ifdef __CUDACC__
-			__host__  __device__
-
-#endif
-			inline T postProcess(T reduction, Nd4jIndex n,T **extraParamsRef) = 0;
-
-			virtual
-#ifdef __CUDACC__
-			__inline__ __host__ __device__
-#endif
-			T startingValue(T *input) = 0;
-
-			virtual
-#ifdef __CUDACC__
-			__inline__ __host__ __device__
-#endif
-			T * generateExtraParams() = 0;
-			virtual
-#ifdef __CUDACC__
-			__inline__ __host__ __device__
-#endif
-			void finalizeExtraParams(T **extraParamsRef)  = 0;
-
-			/**
-             *
-             * @param d1
-             * @param d2
-             * @param extraParams
-             * @return
-             */
-			//an op for the kernel
-			virtual
-#ifdef __CUDACC__
-			__host__  __device__
-
-#endif
-			inline T op(T d1, T d2, T **extraParamsRef) = 0;
-
-			//calculate an update of the reduce operation
-			/**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-			virtual
-#ifdef __CUDACC__
-			__host__  __device__
-
-#endif
-			inline T update(T old, T opOutput, T **extraParamsRef) = 0;
-
-			/**
-             *
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-			virtual
-#ifdef __CUDACC__
-			__host__  __device__
-
-#endif
-			inline T merge(T old, T opOutput, T **extraParamsRef) = 0;
-
-
-
-
-			/**
-             *
-             * @param d1
-             * @param d2
-             * @param extraParams
-             * @return
-             */
-			//an op for the kernel
 #ifdef __CUDACC__
 			virtual __device__
 
@@ -570,31 +491,65 @@ namespace functions {
 
 
 #endif
-			/**
-             *
-             * @param x
-             * @param xShapeInfo
-             * @param extraParamsVals
-             * @param y
-             * @param yShapeInfo
-             * @param result
-             * @param resultShapeInfo
-             */
+
+			static T execScalar(
+				const int op,
+				T *x,
+				int *xShapeInfo,
+				T *extraParamsVals,
+				T *y,
+				int *yShapeInfo) {
+				if (op == 0)
+					return execScalar<simdOps::ManhattanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+				else if (op == 1)
+					return execScalar<simdOps::EuclideanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+				else if (op == 2)
+					return execScalar<simdOps::CosineSimilarity>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+				else if (op == 3)
+					return execScalar<simdOps::Dot>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+				else
+					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+				return 0;
+			}
+
+			static void exec( const int op,
+				T *x, int *xShapeInfo,
+				T *extraParamsVals,
+				T *y,
+				int *yShapeInfo,
+				T *result,
+				int *resultShapeInfoBuffer,
+				int *dimension,
+				int dimensionLength) {
+				if (op == 0)
+					exec<simdOps::ManhattanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+				else if (op == 1)
+					exec<simdOps::EuclideanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+				else if (op == 2)
+					exec<simdOps::CosineSimilarity>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+				else if (op == 3)
+					exec<simdOps::Dot>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+				else
+					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+			}
+			
+
+			template<template <typename> typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
-			T execScalar(
+			static T execScalar(
 					T *x,
 					int *xShapeInfo,
 					T *extraParamsVals,
 					T *y,
 					int *yShapeInfo) {
-				T startingVal = this->startingValue(x);
+				T startingVal = OpType<T>::startingValue(x);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-#pragma omp parallel for simd
-				for(int i = 0; i < this->extraParamsLength();i++) {
+
+				for(int i = 0; i < OpType<T>::extraParamsLen;i++) {
 					extraParamsVals[i] = startingVal;
 				}
 
@@ -604,20 +559,20 @@ namespace functions {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 						for(int i = 0; i < length; i++) {
-							startingVal = update(startingVal,op(x[i],y[i],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType<T>::update(startingVal, OpType<T>::op(x[i],y[i],&extraParamsVals),&extraParamsVals);
 						}
 
-						return postProcess(startingVal, length,&(extraParamsVals));
+						return  OpType<T>::postProcess(startingVal, length,&(extraParamsVals));
 
 					}
 
 					else {
 #pragma omp simd
 						for(Nd4jIndex i = 0; i < length; i++) {
-							startingVal = update(startingVal,op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType<T>::update(startingVal, OpType<T>::op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
 						}
 
-						return  postProcess(startingVal, length,&(extraParamsVals));
+						return   OpType<T>::postProcess(startingVal, length,&(extraParamsVals));
 					}
 
 				}
@@ -627,7 +582,7 @@ namespace functions {
 					int *xShape = shape::shapeOf(xShapeInfo);
 					int *xStride = shape::stride(xShapeInfo);
 					int *yStride = shape::stride(yShapeInfo);
-					T startingVal = this->startingValue(x);
+					T startingVal = OpType<T>::startingValue(x);
 					Nd4jIndex n = shape::length(xShapeInfo);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
@@ -651,7 +606,7 @@ namespace functions {
 								/* Process the innermost dimension */
 								T *xIter = x;
 								T *yIter = y;
-								startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								startingVal = OpType<T>::update(startingVal, OpType<T>::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -661,7 +616,7 @@ namespace functions {
 													 y,
 													 yStridesIter);
 
-						return postProcess(startingVal,n,&extraParamsVals);
+						return OpType<T>::postProcess(startingVal,n,&extraParamsVals);
 					}
 					else {
 						printf("Unable to prepare array\n");
@@ -675,72 +630,8 @@ namespace functions {
 			}
 
 
-			/**
-             *
-             * @param x
-             * @param xShapeInfo
-             * @param extraParamsVals
-             * @param y
-             * @param yShapeInfo
-             * @param result
-             * @param resultShapeInfo
-             */
-#ifdef __CUDACC__
-			__host__
-#endif
-			void execScalar(
-					T *x,
-					int *xShapeInfo,
-					T *extraParamsVals,
-					T *y,
-					int *yShapeInfo,
-					T *result,
-					int *resultShapeIfo) {
-				result[0] = execScalar(x,xShapeInfo,extraParamsVals,y,yShapeInfo);
-			}
-			/**
-             *
-             * @param x
-             * @param xShapeInfo
-             * @param extraParamsVals
-             * @param y
-             * @param yShapeInfo
-             * @param result
-             * @param resultShapeInfo
-             */
-#ifdef __CUDACC__
-			__host__
-#endif
-			void exec(
-					T *x,
-					int *xShapeInfo,
-					T *extraParamsVals,
-					T *y, int *yShapeInfo,
-					T *result, int *resultShapeInfo) {
-
-				execScalar(
-						x,
-						xShapeInfo,
-						extraParamsVals,
-						y,
-						yShapeInfo,
-						result,
-						resultShapeInfo);
-			}
-
-			/**
-             *
-             * @param x
-             * @param xShapeInfo
-             * @param extraParamsVals
-             * @param y
-             * @param yShapeInfo
-             * @param result
-             * @param resultShapeInfoBuffer
-             * @param dimension
-             * @param dimensionLength
-             */
-			void exec(T *x, int *xShapeInfo,
+			template<template <typename> typename OpType>
+			static void exec(T *x, int *xShapeInfo,
 					  T *extraParamsVals,
 					  T *y,
 					  int *yShapeInfo,
@@ -749,14 +640,12 @@ namespace functions {
 					  int *dimension,
 					  int dimensionLength) {
 				if(shape::isScalar(resultShapeInfoBuffer)) {
-					execScalar(
+					result[0] = execScalar<OpType>(
 							x,
 							xShapeInfo,
 							extraParamsVals,
 							y,
-							yShapeInfo,
-							result,
-							resultShapeInfoBuffer);
+							yShapeInfo);
 					return;
 				}
 
@@ -798,7 +687,7 @@ namespace functions {
 								T *yIter = y;
 								Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
 								int reductionIndex = xOffset / resultLength;
-								result[reductionIndex] = update(result[reductionIndex],op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								result[reductionIndex] = OpType<T>::update(result[reductionIndex], OpType<T>::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -811,7 +700,7 @@ namespace functions {
 
 #pragma  omp parallel for
 						for(Nd4jIndex i = 0; i < resultLength ;i++) {
-							result[i] = postProcess(result[i],tadLength,&extraParamsVals);
+							result[i] = OpType<T>::postProcess(result[i],tadLength,&extraParamsVals);
 						}
 					}
 
@@ -820,7 +709,7 @@ namespace functions {
 					}
 				}
 				else {
-					T startingVal = this->startingValue(x);
+					T startingVal = OpType<T>::startingValue(x);
 
 					Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
 					shape::TAD xTad(yShapeInfo,dimension,dimensionLength);
@@ -841,19 +730,19 @@ namespace functions {
 #pragma omp parallel for
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						T *localExtraParams = nullptr;
-						if(this->extraParamsLength() > 0)
-							localExtraParams = new T[this->extraParamsLength()];
-						for(int extraParamsIdx = 0; extraParamsIdx < this->extraParamsLength(); extraParamsIdx++) {
+						if(OpType<T>::extraParamsLen > 0)
+							localExtraParams = new T[OpType<T>::extraParamsLen];
+						for(int extraParamsIdx = 0; extraParamsIdx <  OpType<T>::extraParamsLen; extraParamsIdx++) {
 							localExtraParams[extraParamsIdx] = startingVal;
 						}
 
 						Nd4jIndex offset = xTad.tadOffsets[i];
-						result[i] = op(x[offset], y[offset],&localExtraParams);
+						result[i] = OpType<T>::op(x[offset], y[offset],&localExtraParams);
 						for(int j = 1; j < tadLength; j++) {
-							result[i] =  update(result[i],op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
+							result[i] = OpType<T>::update(result[i], OpType<T>::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
 						}
 
-						result[i] = postProcess(result[i],tadLength,&localExtraParams);
+						result[i] = OpType<T>::postProcess(result[i],tadLength,&localExtraParams);
 
 						if(localExtraParams != nullptr)
 							delete[] localExtraParams;
@@ -861,590 +750,9 @@ namespace functions {
 
 				}
 
-
-			}
-
-
-
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			virtual ~Reduce3() {
-			}
-
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			Reduce3() {
 			}
 
 		};
-
-		namespace ops {
-/**
- * Cosine similarity between 2
- * arrays
- */
-			template<typename T>
-			class CosineSimilarity: public virtual Reduce3<T> {
-			public:
-
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T * generateExtraParams() {
-					T *extraParams = new T[2];
-					return extraParams;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				void finalizeExtraParams(T **extraParams)  {
-					delete[] *extraParams;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T startingValue(T *input) {
-					return 0.0;
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				inline T postProcess(T reduction, Nd4jIndex n,T **extraParamsRef) {
-					T *extraParams = *extraParamsRef;
-					return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
-				}
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T op(T d1, T d2, T **extraParamsRef) {
-					T *extraParams = *extraParamsRef;
-					extraParams[0] += d1 * d1;
-					extraParams[1] += d2 * d2;
-					return (d1 * d2);
-				}
-
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-					T *extraParamsTotalRef = *extraParamsTotal;
-					T *extraParamsLocalRef = *extraParamsLocal;
-					extraParamsTotalRef[0] += extraParamsLocalRef[0];
-					extraParamsTotalRef[1] += extraParamsLocalRef[1];
-
-				}
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-#ifdef __CUDACC__
-				virtual __device__
-				inline T opAtomic(T d1, T d2, T **extraParamsRef) {
-					T *extraParams = *extraParamsRef;
-
-					nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],d1 * d1);
-					nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],d2 * d2);
-
-					return (d1 * d2);
-				}
-#endif
-				//calculate an update of the reduce operation
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T update(T old, T opOutput, T **extraParamsRef) {
-					return old + opOutput;
-				}
-
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T merge(T old, T opOutput, T **extraParamsRef) {
-					return update(old, opOutput, extraParamsRef);
-				}
-
-
-
-
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				virtual ~CosineSimilarity() {
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				CosineSimilarity() {
-					this->extraParamsLen = 2;
-				}
-			};
-
-
-/**
- * Dot product between 2 arrays
- */
-			template<typename T>
-			class Dot: public virtual Reduce3<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T * generateExtraParams() {
-					return nullptr;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				void finalizeExtraParams(T **extraParamsRef)  {
-					//no-op
-					delete[] *extraParamsRef;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T startingValue(T *input) {
-					return 0.0;
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				inline T postProcess(T reduction, Nd4jIndex n,T **extraParamsRef) {
-					return reduction;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T op(T d1, T d2, T **extraParamsRef) {
-					return d1 * d2;
-				}
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-
-#ifdef __CUDACC__
-				virtual
-				__device__
-
-
-				inline T opAtomic(T d1, T d2, T **extraParamsRef) {
-					return op(d1,d2,extraParamsRef);
-				}
-#endif
-
-				//calculate an update of the reduce operation
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T update(T old, T opOutput, T **extraParamsRef) {
-					return opOutput + old;
-				}
-
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T merge(T old, T opOutput, T **extraParamsRef) {
-					return update(old, opOutput, extraParamsRef);
-				}
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-					//no extra params aggregation needs to happen
-				}
-
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				virtual ~Dot() {
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				Dot() {
-				}
-			};
-
-
-
-/**
- * Euclidean distance between 2 arrays
- */
-			template<typename T>
-			class EuclideanDistance: public virtual Reduce3<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T * generateExtraParams() {
-					return nullptr;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				void finalizeExtraParams(T **extraParamsRef)  {
-					//no-op
-					delete[] *extraParamsRef;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T startingValue(T *input) {
-					return 0.0;
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				inline T postProcess(T reduction, Nd4jIndex n,T **extraParamsRef) {
-					return nd4j::math::nd4j_sqrt<T>(reduction);
-				}
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T op(T d1, T d2, T **extraParamsRef) {
-					T ret = d1 - d2;
-					return ret * ret;
-				}
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-
-#ifdef __CUDACC__
-				virtual
-				__device__
-
-
-				inline T opAtomic(T d1, T d2, T **extraParamsRef) {
-					return op(d1,d2,extraParamsRef);
-				}
-#endif
-
-				//calculate an update of the reduce operation
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T update(T old, T opOutput, T **extraParamsRef) {
-					return opOutput + old;
-				}
-
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T merge(T old, T opOutput, T **extraParamsRef) {
-					return update(old, opOutput, extraParamsRef);
-				}
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-					//no extra params aggregation needs to happen
-				}
-
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				virtual ~EuclideanDistance() {
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				EuclideanDistance() {
-				}
-			};
-
-
-/**
- * Manhattan distance between 2 arrays
- */
-			template<typename T>
-			class ManhattanDistance: public virtual Reduce3<T> {
-			public:
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T * generateExtraParams() {
-					return nullptr;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				void finalizeExtraParams(T **extraParamsRef)  {
-					//no op
-					delete[] *extraParamsRef;
-				}
-				virtual
-#ifdef __CUDACC__
-				__inline__ __host__ __device__
-#endif
-				T startingValue(T *input) {
-					return 0.0;
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				inline T postProcess(T reduction, Nd4jIndex n,T **extraParamsRef) {
-					return reduction;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T op(T d1, T d2, T **extraParamsRef) {
-					return nd4j::math::nd4j_abs<T>(d1 - d2);
-				}
-
-				//calculate an update of the reduce operation
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T update(T old, T opOutput, T **extraParamsRef) {
-					return old + opOutput;
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-					//no extra params aggregation needs to happen
-				}
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @param extraParams
-                 * @return
-                 */
-				//an op for the kernel
-
-#ifdef __CUDACC__
-				virtual	__device__
-
-
-				inline T opAtomic(T d1, T d2, T **extraParamsRef) {
-					return op(d1,d2,extraParamsRef);
-				}
-#endif
-
-				/**
-                 *
-                 * @param old
-                 * @param opOutput
-                 * @param extraParams
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				__host__  __device__
-
-#endif
-				inline T merge(T old, T opOutput, T **extraParamsRef) {
-					return update(old, opOutput, extraParamsRef);
-				}
-
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				virtual ~ManhattanDistance() {
-				}
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				ManhattanDistance() {
-				}
-			};
-
-		}
-
-		template<typename T>
-		class Reduce3OpFactory {
-		public:
-
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			Reduce3OpFactory() {
-			}
-
-
-			/**
-             * Create an op given an op number
-             * @param op the op number
-             * 0: manhattan distance
-             * 1: euclidean distance
-             * 2: cosine similarity
-             * @return
-             */
-#ifdef __CUDACC__
-			__inline__ __device__
-			Reduce3<T> * getOp(int op, unsigned char *buffer) {
-#else
-				Reduce3<T> * getOp(int op) {
-#endif
-				if (op == 0)
-#ifdef __CUDACC__
-					return new(buffer) functions::reduce3::ops::ManhattanDistance<T>();
-#else
-					return new functions::reduce3::ops::ManhattanDistance<T>();
-#endif
-				else if (op == 1)
-#ifdef __CUDACC__
-					return new(buffer) functions::reduce3::ops::EuclideanDistance<T>();
-#else
-					return new functions::reduce3::ops::EuclideanDistance<T>();
-#endif
-				else if (op == 2)
-#ifdef __CUDACC__
-					return new(buffer) functions::reduce3::ops::CosineSimilarity<T>();
-#else
-					return new functions::reduce3::ops::CosineSimilarity<T>();
-#endif
-				else if (op == 3)
-#ifdef __CUDACC__
-					return new(buffer) functions::reduce3::ops::Dot<T>();
-#else
-				return new functions::reduce3::ops::Dot<T>();
-#endif
-				return nullptr;
-			}
-		};
-
 	}
 }
 
