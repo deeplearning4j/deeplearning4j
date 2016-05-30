@@ -126,6 +126,25 @@ public class IndexingTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testGetRowEdgeCase(){
+        INDArray rowVec = Nd4j.linspace(1,5,5);
+        INDArray get = rowVec.getRow(0);    //Returning shape [1,1]
+
+        assertArrayEquals(new int[]{1,5}, get.shape());
+        assertEquals(rowVec, get);
+    }
+
+    @Test
+    public void testGetColumnEdgeCase(){
+        INDArray colVec = Nd4j.linspace(1,5,5).transpose();
+        INDArray get = colVec.getColumn(0);  //Returning shape [1,1]
+
+        assertArrayEquals(new int[]{5,1}, get.shape());
+        assertEquals(colVec, get);
+    }
+
     @Test
     public void testConcatColumns() {
         INDArray input1 = Nd4j.zeros(2, 1);

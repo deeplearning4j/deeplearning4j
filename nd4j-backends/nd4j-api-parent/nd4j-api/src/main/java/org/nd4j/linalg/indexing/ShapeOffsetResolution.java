@@ -60,6 +60,7 @@ public class ShapeOffsetResolution implements Serializable {
         if(arr.isVector()) {
             //return the whole vector
             if(indexes[0] instanceof NDArrayIndexAll && indexes.length == 1) {
+
                 offset = 0;
                 this.shapes = arr.shape();
                 this.strides = arr.stride();
@@ -315,8 +316,8 @@ public class ShapeOffsetResolution implements Serializable {
         for (int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
             // On vectors, the first dimension can be ignored when indexing them with a single point index
-            if(idx instanceof PointIndex && (arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i+1] : idx.current() >= shape[i])){
-                throw new IllegalArgumentException("INDArrayIndex["+i+"] is out of bounds (value: "+idx.current()+")");
+            if(idx instanceof PointIndex && (arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i + 1] : idx.current() >= shape[i])){
+                throw new IllegalArgumentException("INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");
             }
         }
 

@@ -287,7 +287,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] stride = Nd4j.getStrides(shape,ordering);
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-    //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -322,7 +322,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = ret;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-    //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
         if(slices.get(0).isScalar()) {
             for (int i = 0; i < length(); i++) {
@@ -365,7 +365,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         init(shape,stride);
-       // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape,stride,ordering == 'f'));
+        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape,stride,ordering == 'f'));
 
     }
 
@@ -380,7 +380,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = Nd4j.createBuffer(data,offset,ArrayUtil.prodLong(shape));
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset, Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order());
         init(shape,stride);
-      //  Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
+        //  Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
 
 
     }
@@ -3285,7 +3285,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *
      * Return transposed version of this matrix.
      *
-     * PLEASE NOTE: This method is NOT inplace, it will return transposed copy instead.
+     * PLEASE NOTE: This method is NOT in place, it will return transposed copy instead.
      */
     @Override
     public INDArray transposei() {
@@ -3335,7 +3335,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
         if(reshapeAttempt != null) {
             // kinda strange get/set usage
-          //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
+            //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
         }
 
@@ -3635,6 +3635,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getColumn(int c) {
+        if(isColumnVector() && c == 0)
+            return this;
+        else if(isColumnVector() && c > 0)
+            throw new IllegalArgumentException("Illegal index for row");
         return get(NDArrayIndex.all(),NDArrayIndex.point(c));
     }
 
@@ -3660,6 +3664,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll)
             return this;
+
 
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
@@ -3732,6 +3737,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getRow(int r) {
+        if(isRowVector() && r == 0)
+            return this;
+        else if(isRowVector() && r > 0)
+            throw new IllegalArgumentException("Illegal index for row");
         return get(NDArrayIndex.point(r),NDArrayIndex.all());
     }
 
@@ -4158,7 +4167,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(Shape.shapeOf(shapeInformation), rearrange);
         int[] newStride = doPermuteSwap(Shape.stride(shapeInformation), rearrange);
-    
+
         char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
         INDArray value = create(
