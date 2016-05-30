@@ -21,6 +21,7 @@
 #include "broadcasting.h"
 #include <shape.h>
 #include <ops.h>
+#include <special_ops.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
