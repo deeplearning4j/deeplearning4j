@@ -157,6 +157,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = reshape3dTo2d(input);
         INDArray out = super.activate(true);
         this.input = origInput;
+        if(maskArray != null){
+            out.muliColumnVector(maskArray);
+        }
         return reshape2dTo3d(out,input.size(0));
     }
 
@@ -173,6 +176,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
                 input2d.mmul(W).addiRowVector(b)));
+        if(maskArray != null){
+            act2d.muliColumnVector(maskArray);
+        }
         return reshape2dTo3d(act2d, input.size(0));
     }
 

@@ -779,7 +779,7 @@ public class ComputationGraph implements Serializable, Model {
             backprop(true);
         }
         else {
-            feedForward(true);
+            feedForward(true, true);
             backprop(false);
         }
 
@@ -833,7 +833,11 @@ public class ComputationGraph implements Serializable, Model {
      * @param train If true: do forward pass at training time; false: do forward pass at test time
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
-    public Map<String,INDArray> feedForward(boolean train){
+    public Map<String,INDArray> feedForward(boolean train) {
+        return feedForward(train, false);
+    }
+
+    private Map<String,INDArray> feedForward(boolean train, boolean excludeOutputLayers){
         Map<String,INDArray> layerActivations = new HashMap<>();
 
         //Do forward pass according to the topological ordering of the network
@@ -849,11 +853,16 @@ public class ComputationGraph implements Serializable, Model {
                     int vIdx = v.getVertexIndex();
                     int vIdxInputNum = v.getVertexEdgeNumber();
                     //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum,input.dup());  //TODO When to dup?
+                    vertices[vIdx].setInput(vIdxInputNum,input.dup());
                 }
 
             } else {
                 //Do forward pass:
+                if(excludeOutputLayers && current.isOutputVertex() && current.hasLayer() && current.getLayer() instanceof BaseOutputLayer){
+                    //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
+                    // we only need to ensure the input to the output layers is set properly
+                    continue;
+                }
                 INDArray out = current.doForward(train);
 
                 if(current.hasLayer()){
