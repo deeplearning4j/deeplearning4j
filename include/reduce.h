@@ -9,6 +9,8 @@
 #include <helper_cuda.h>
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
+#include <ops.h>
+
 #pragma once
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -31,100 +33,7 @@ namespace functions {
  */
         template<typename T>
         class ReduceFunction: public functions::ops::Op<T> {
-        protected:
-            int extraParamsLength = 0;
-            int indexBased = 1;
         public:
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            int getIndexBased() {
-                return indexBased;
-            }
-
-
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            ReduceFunction<T> ** extraParamsFunctions() = 0;
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            int getExtraParamsLength() {
-                return extraParamsLength;
-            }
-
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            T * createExtraParams() {
-                T *ret = (T *) malloc(sizeof(T) * this->getExtraParamsLength());
-                return ret;
-            }
-
-
-#ifdef __CUDACC__
-            virtual __host__ __device__
-            T * generateExtraParamsCuda(T *input,int *shapeInfo) {
-                return nullptr;
-            }
-#endif
-
-            /**
-             * Merge the 2 inputs
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            virtual
-#ifdef __CUDACC__
-            inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-            T merge(T old, T opOutput, T *extraParams) = 0;
-
-            /**
-             * Op with 1 parameter
-             * @param d1
-             * @param extraParams
-             * @return
-             */
-            virtual
-#ifdef __CUDACC__
-            inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-            T op(T d1, T *extraParams) = 0;
-
-            //calculate an update of the reduce operation
-            /**
-             * Op with 2 parameters
-             * @param old
-             * @param opOutput
-             * @param extraParams
-             * @return
-             */
-            virtual
-#ifdef __CUDACC__
-            inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-            T update(T old, T opOutput, T *extraParams) = 0;
-
 #ifdef __CUDACC__
             __inline__ __device__ virtual void transformCuda1D(T *dx,
                     int *xShapeInfo,
@@ -421,33 +330,6 @@ namespace functions {
 
             virtual
 #ifdef __CUDACC__
-            inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-            T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
-                return reduction;
-            }
-
-#ifdef __CUDACC__
-            __inline__ __host__
-#endif
-
-            T aggregateBuffer(int n, T *buffer, T *extraParams) {
-
-                T ret = buffer[0];
-#pragma omp simd
-                for (int i = 1; i < n; i++) {
-                    ret = update(ret, buffer[i], extraParams);
-                }
-
-                return ret;
-            }
-
-            virtual
-#ifdef __CUDACC__
             __host__ __device__
 #endif
             ~ReduceFunction() {
@@ -460,163 +342,64 @@ namespace functions {
             ReduceFunction() {
             }
 
+			T execScalar(const int op, T *x, int *xShapeInfo, T *extraParams) {
+				if (op == 0)
+					return execScalar<simdOps::Mean>(x, xShapeInfo, extraParams);
+				else if (op == 1)
+					return execScalar<simdOps::Sum>(x, xShapeInfo, extraParams);
+				else if (op == 3)
+					return execScalar<simdOps::Max>(x, xShapeInfo, extraParams);
+				else if (op == 4)
+					return execScalar<simdOps::Min>(x, xShapeInfo, extraParams);
+				else if (op == 5)
+					return execScalar<simdOps::Norm1>(x, xShapeInfo, extraParams);
+				else if (op == 6)
+					return execScalar<simdOps::Norm2>(x, xShapeInfo, extraParams);
+				else if (op == 7)
+					return execScalar<simdOps::NormMax>(x, xShapeInfo, extraParams);
+				else if (op == 8)
+					return execScalar<simdOps::Prod>(x, xShapeInfo, extraParams);
+				else if (op == 9)
+					return execScalar<simdOps::StandardDeviation>(x, xShapeInfo, extraParams);
+				else if (op == 10)
+					return execScalar<simdOps::Variance>(x, xShapeInfo, extraParams);
+				else {
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+					return 0;
+				}
+			}
 
-
-
-
-            /**
-             * CPU implementation
-             * @param x the input data
-             * @param xShapeInfo the shape information for
-             * the input data
-             * @param extraParams the extra parameters for the problem
-             * @param result the result buffer
-             * @param resultShapeInfo the shape information
-             */
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-
-            void exec(T *x,
-                      int *xShapeInfo,
-                      T *extraParams,
-                      T *result,
-                      int *resultShapeInfo) {
-                T startingVal = this->execScalar(x, xShapeInfo, extraParams);
-                result[0] = startingVal;
-
-            }
-
-
-
-            /**
-             * Reduce down to 1 number
-             * @param x the input
-             * @param xShapeInfo the shape information
-             * for the input
-             * @param extraParams the extra params
-             * @return
-             */
-#ifdef __CUDACC__
-            __host__
-#endif
-
-            T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
-                T startingVal = this->startingValue(x);
-                if (xElementWiseStride == 1) {
-                    if (length < 8000) {
-                        T local = this->startingValue(x);
-#pragma omp simd
-                        for (Nd4jIndex i = 0; i < length; i++) {
-                            T curr = op(x[i], extraParams);
-                            local = update(local, curr, extraParams);
-
-                        }
-                        local = postProcess(local, length, extraParams);
-
-                        return local;
-                    }
-
-                    else {
-                        T finalVal = startingVal;
-                        BlockInformation info(length);
-                        T *blocks = new T[info.chunks];
-#pragma omp parallel
-                        {
-                            T local = this->startingValue(x);
-                            for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
-                                Nd4jIndex newOffset = (i * info.items);
-                                const T *chunk = x + newOffset;
-                                Nd4jIndex itemsToLoop = info.items;
-                                if (newOffset >= length) {
-                                    break;
-                                }
-
-                                //handle modulo case
-                                if (newOffset + info.items >= length) {
-                                    itemsToLoop = length - newOffset;
-                                }
-#pragma omp simd
-                                for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
-                                    T curr = op(chunk[j], extraParams);
-                                    local = update(local, curr, extraParams);
-                                }
-
-                            }
-
-                            blocks[omp_get_thread_num()] = local;
-                        }
-
-#pragma omp simd
-                        for(int i = 0; i < info.threads; i++) {
-                            finalVal = update(finalVal,blocks[i],extraParams);
-                        }
-
-
-                        finalVal = postProcess(finalVal, length, extraParams);
-						delete[] blocks;
-                        return finalVal;
-
-                    }
-
-                }
-
-                else {
-                    if (length < 8000) {
-                        T local = this->startingValue(x);
-#pragma omp simd
-                        for (Nd4jIndex i = 0; i < length; i++) {
-                            T curr = op(x[i * xElementWiseStride], extraParams);
-                            local = update(local, curr, extraParams);
-
-                        }
-
-                        local = postProcess(local, length, extraParams);
-
-                        return local;
-                    }
-
-                    T finalVal = startingVal;
-                    BlockInformation info(length);
-                    T *blocks = new T[info.chunks];
-
-
-#pragma omp parallel
-                    {
-                        T local = this->startingValue(x);
-                        for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
-                            Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
-                            const T *chunk = x + newOffset;
-                            Nd4jIndex itemsToLoop = info.items;
-#pragma omp simd
-
-                            for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
-                                T curr = op(chunk[i * xElementWiseStride], extraParams);
-                                local = update(local, curr, extraParams);
-                            }
-
-
-                        }
-
-                        blocks[omp_get_thread_num()] = local;
-
-
-                    }
-
-#pragma omp simd
-                    for(int i = 0; i < info.threads; i++) {
-                        finalVal = update(finalVal,blocks[i],extraParams);
-                    }
-
-                    finalVal = postProcess(finalVal, length, extraParams);
-					delete[] blocks;
-                    return finalVal;
-
-                }
-
-            }
-
-
+			void exec(const int op, 
+				T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfoBuffer,
+				int *dimension,
+				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+				if (op == 0)
+					exec<simdOps::Mean>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 1)
+					exec<simdOps::Sum>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 3)
+					exec<simdOps::Max>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 4)
+					exec<simdOps::Min>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 5)
+					exec<simdOps::Norm1>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 6)
+					exec<simdOps::Norm2>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 7)
+					exec<simdOps::NormMax>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 8)
+					exec<simdOps::Prod>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 9)
+					exec<simdOps::StandardDeviation>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else if (op == 10)
+					exec<simdOps::Variance>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+			}
 
             /**
              * Reduce down to 1 number
@@ -629,12 +412,12 @@ namespace functions {
 #ifdef __CUDACC__
             __host__
 #endif
-
-            T execScalar(T *x, int *xShapeInfo, T *extraParams) {
+			template<template <typename> typename OpType>
+			T execScalar(T *x, int *xShapeInfo, T *extraParams) {
                 const Nd4jIndex length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride >= 1) {
-                    return execScalar(x, xElementWiseStride, length, extraParams);
+                    return execScalar<OpType>(x, xElementWiseStride, length, extraParams);
                 }
                 else {
                     int shapeIter[MAX_RANK];
@@ -644,7 +427,7 @@ namespace functions {
 
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *xStride = shape::stride(xShapeInfo);
-                    T start = this->startingValue(x);
+                    T start = OpType<T>::startingValue(x);
                     int rank = shape::rank(xShapeInfo);
 
                     if (PrepareOneRawArrayIter<T>(rank,
@@ -659,7 +442,7 @@ namespace functions {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 const T *xIter = x;
-                                start = update(start, op(xIter[0], extraParams), extraParams);
+                                start = OpType<T>::update(start, OpType<T>::op(xIter[0], extraParams), extraParams);
                             }
                         ND4J_RAW_ITER_ONE_NEXT(dim,
                                                rank,
@@ -667,7 +450,7 @@ namespace functions {
                                                shapeIter,
                                                x,
                                                xStridesIter);
-                        start = postProcess(start, shape::length(xShapeInfo), extraParams);
+                        start = OpType<T>::postProcess(start, shape::length(xShapeInfo), extraParams);
                     }
                     else {
                         printf("Unable to prepare array\n");
@@ -691,10 +474,10 @@ namespace functions {
              * the reduce along long
              * @param dimensionLength the length of the dimension buffer
              */
-            virtual
 #ifdef __CUDACC__
             __host__
 #endif
+			template<template <typename> typename OpType>
             void exec(T *x,
                       int *xShapeInfo,
                       T *extraParams,
@@ -711,7 +494,7 @@ namespace functions {
                 //tad offset
                 // || tad.wholeThing
                 if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo) ) {
-                    result[0] = execScalar(x, xShapeInfo, extraParams);
+                    result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
                     return;
                 }
 
@@ -744,21 +527,21 @@ namespace functions {
 #pragma omp parallel for if (resultLength > 16 && tadLength > 16)
                     for(int i = 0; i < resultLength; i++) {
                         T *iter = x + tadOffsets[i];
-                        T start = this->startingValue(iter);
+                        T start = OpType<T>::startingValue(iter);
                         if(tadEWS == 1) {
 
 #pragma omp simd
                             for(int j = 0; j < tadLength; j++) {
-                                start = update(start, op(iter[j], extraParams), extraParams);
+                                start = OpType<T>::update(start, OpType<T>::op(iter[j], extraParams), extraParams);
 
                             }
                         } else {
 #pragma omp simd
                             for(int j = 0; j < tadLength; j++) {
-                                start = update(start, op(iter[j * tadEWS], extraParams), extraParams);
+                                start = OpType<T>::update(start, OpType<T>::op(iter[j * tadEWS], extraParams), extraParams);
                             }
                         }
-                        result[i] = this->postProcess(start, tadLength, extraParams);
+                        result[i] = OpType<T>::postProcess(start, tadLength, extraParams);
                     }
                 } else {
                     int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
@@ -769,16 +552,16 @@ namespace functions {
                         int offset = tadOffsets[i];
                         int xCoord[MAX_RANK];
 
-                        T start = this->startingValue(x + offset);
+                        T start = OpType<T>::startingValue(x + offset);
 
                         for(int j = 0; j < tadLength; j++) {
                             shape::ind2subC(tadRank, tadShape, j, xCoord);
                             int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
-                            start = update(start, op(x[xOffset], extraParams), extraParams);
+                            start = OpType<T>::update(start, OpType<T>::op(x[xOffset], extraParams), extraParams);
                         }
 
-                        result[i] = this->postProcess(start, tadLength, extraParams);;
+                        result[i] = OpType<T>::postProcess(start, tadLength, extraParams);;
                     }
                 }
 
@@ -786,23 +569,167 @@ namespace functions {
                     delete tad;
             }
 
-            virtual inline
+
+
+
+
+			/**
+			* CPU implementation
+			* @param x the input data
+			* @param xShapeInfo the shape information for
+			* the input data
+			* @param extraParams the extra parameters for the problem
+			* @param result the result buffer
+			* @param resultShapeInfo the shape information
+			*/
 #ifdef __CUDACC__
-            __host__ __device__
+			__host__ __device__
 #endif
-            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-                // no extra params aggregation needs to happen
-            }
+				template<template <typename> typename OpType>
+				void exec(T *x,
+					int *xShapeInfo,
+					T *extraParams,
+					T *result,
+					int *resultShapeInfo) {
+				return execScalar<OpType>(x, xShapeInfo, extraParams);
+			}
 
-            virtual
+
+
+			/**
+			* Reduce down to 1 number
+			* @param x the input
+			* @param xShapeInfo the shape information
+			* for the input
+			* @param extraParams the extra params
+			* @return
+			*/
 #ifdef __CUDACC__
-            __host__ __device__
+			__host__
 #endif
-            T startingValue(const T *input) = 0;
+				template<template <typename> typename OpType>
+				T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
+				T startingVal = OpType<T>::startingValue(x);
+				if (xElementWiseStride == 1) {
+					if (length < 8000) {
+						T local = OpType<T>::startingValue(x);
+#pragma omp simd
+						for (Nd4jIndex i = 0; i < length; i++) {
+							T curr = OpType<T>::op(x[i], extraParams);
+							local = OpType<T>::update(local, curr, extraParams);
+
+						}
+						local = OpType<T>::postProcess(local, length, extraParams);
+
+						return local;
+					}
+
+					else {
+						T finalVal = startingVal;
+						BlockInformation info(length);
+						T *blocks = new T[info.chunks];
+#pragma omp parallel
+						{
+							T local = OpType<T>::startingValue(x);
+							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
+								Nd4jIndex newOffset = (i * info.items);
+								const T *chunk = x + newOffset;
+								Nd4jIndex itemsToLoop = info.items;
+								if (newOffset >= length) {
+									break;
+								}
+
+								//handle modulo case
+								if (newOffset + info.items >= length) {
+									itemsToLoop = length - newOffset;
+								}
+#pragma omp simd
+								for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
+									T curr = OpType<T>::op(chunk[j], extraParams);
+									local = OpType<T>::update(local, curr, extraParams);
+								}
+
+							}
+
+							blocks[omp_get_thread_num()] = local;
+						}
+
+#pragma omp simd
+						for (int i = 0; i < info.threads; i++) {
+							finalVal = OpType<T>::update(finalVal, blocks[i], extraParams);
+						}
 
 
+						finalVal = OpType<T>::postProcess(finalVal, length, extraParams);
+						delete[] blocks;
+						return finalVal;
+
+					}
+
+				}
+
+				else {
+					if (length < 8000) {
+						T local = OpType<T>::startingValue(x);
+#pragma omp simd
+						for (Nd4jIndex i = 0; i < length; i++) {
+							T curr = OpType<T>::op(x[i * xElementWiseStride], extraParams);
+							local = OpType<T>::update(local, curr, extraParams);
+
+						}
+
+						local = OpType<T>::postProcess(local, length, extraParams);
+
+						return local;
+					}
+
+					T finalVal = startingVal;
+					BlockInformation info(length);
+					T *blocks = new T[info.chunks];
 
 
+#pragma omp parallel
+					{
+						T local = OpType<T>::startingValue(x);
+						for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
+							Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
+							const T *chunk = x + newOffset;
+							Nd4jIndex itemsToLoop = info.items;
+#pragma omp simd
+
+							for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
+								T curr = OpType<T>::op(chunk[i * xElementWiseStride], extraParams);
+								local = OpType<T>::update(local, curr, extraParams);
+							}
+
+
+						}
+
+						blocks[omp_get_thread_num()] = local;
+
+
+					}
+
+#pragma omp simd
+					for (int i = 0; i < info.threads; i++) {
+						finalVal = OpType<T>::update(finalVal, blocks[i], extraParams);
+					}
+
+					finalVal = OpType<T>::postProcess(finalVal, length, extraParams);
+					delete[] blocks;
+					return finalVal;
+
+				}
+
+			}
+
+			virtual inline
+#ifdef __CUDACC__
+				__host__ __device__
+#endif
+				void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
+				//no extra params aggregation needs to happen
+			}
         };
 
 #ifdef __CUDACC__
@@ -822,913 +749,6 @@ namespace functions {
         }
 
 #endif
-
-        namespace ops {
-/**
- * Summation operation
- */
-            template<typename T>
-            class Sum: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return (T) 0.0;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Sum() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Sum() {
-                }
-            };
-
-/**
- * The product operation
- */
-            template<typename T>
-            class Prod: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput * old;
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return opOutput * old;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return 1.0;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ~Prod() {
-                }
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                Prod() {
-                }
-            };
-
-/**
- * Mean operation
- */
-            template<typename T>
-            class Mean: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return 0.0;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction / (T) n;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ~Mean() {
-                }
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                Mean() {
-                }
-            };
-
-
-/**
- * Max reduction
- */
-            template<typename T>
-            class Max: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return nd4j::math::nd4j_max<T>(old, opOutput);
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return nd4j::math::nd4j_max<T>(opOutput, old);
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    return input[0];
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Max() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Max() {
-                    this->indexBased = 1;
-                }
-            };
-
-/**
- * Min operation
- */
-            template<typename T>
-            class Min: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return nd4j::math::nd4j_min<T>(old, opOutput);
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return nd4j::math::nd4j_min<T>(opOutput, old);
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    return input[0];
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Min() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Min() {
-                    this->indexBased = 1;
-                }
-            };
-
-/**
- * Norm1 of a buffer
- */
-            template<typename T>
-            class Norm1: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return 0.0;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return nd4j::math::nd4j_abs<T>(d1);
-                }
-
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return reduction;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Norm1() {}
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Norm1() {}
-            };
-
-/**
- * Norm2 of an array
- */
-            template<typename T>
-            class Norm2: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return 0.0;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1 * d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return nd4j::math::nd4j_sqrt<T>(reduction);
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Norm2() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Norm2() {
-                }
-            };
-
-/**
- * Norm max of an array
- */
-            template<typename T>
-            class NormMax: public virtual functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) {
-                    (void)input;
-                    return 0.0;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return opOutput + old;
-
-                }
-
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),
-                                                   nd4j::math::nd4j_abs<T>(opOutput));
-
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    return d1;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
-                                                   nd4j::math::nd4j_abs<T>(reduction));
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~NormMax() {
-                }
-
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                NormMax() {
-                }
-            };
-
-            template<typename T>
-            class Variance: public  functions::reduce::ReduceFunction<T> {
-            public:
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                T startingValue(const T *input) override {
-                    (void)input;
-                    return 0.0;
-                }
-                virtual
-#ifdef __CUDACC__
-                __host__ __device__
-#endif
-                ReduceFunction<T> ** extraParamsFunctions() {
-                    return nullptr;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T merge(T old, T opOutput, T *extraParams) override {
-                    return old + opOutput;
-
-                }
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T update(T old, T opOutput, T *extraParams) override {
-                    return old + opOutput;
-
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T op(T d1, T *extraParams) override {
-                    T mean = extraParams[0];
-                    T ret = d1 - mean;
-                    return ret * ret;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    T bias = extraParams[1];
-                    return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T) n))
-                           / (T) (n - 1.0);
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~Variance() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                Variance() {
-                    this->extraParamsLength = 2;
-                }
-            };
-
-/**
- * Standard deviation of a buffer
- */
-            template<typename T>
-            class StandardDeviation: public virtual Variance<T> {
-            public:
-
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-                T postProcess(T reduction, Nd4jIndex n,T *extraParams) override {
-                    T ret = Variance<T>::postProcess(reduction,n,extraParams);
-                    T sqrtRet = nd4j::math::nd4j_sqrt<T>(ret);
-                    return sqrtRet;
-                }
-
-                virtual
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                ~StandardDeviation() {
-                }
-#ifdef __CUDACC__
-                inline __host__ __device__
-#endif
-                StandardDeviation() : Variance<T>() {
-                }
-            };
-
-
-
-        }
-
-        template<typename T>
-        class ReduceOpFactory: public virtual functions::ops::OpFactory<T> {
-
-        public:
-#ifdef __CUDACC__
-            __device__ __host__
-#endif
-            ReduceOpFactory() {
-            }
-
-            /**
-             * Create an operation given an op number
-             * @param op the operation number
-             * 0: mean
-             * 1: sum
-             * 2: bias
-             * 3: max
-             * 4: min
-             * 5: norm1
-             * 6: norm2
-             * 7: normmaxc
-             * 8: prod
-             * 9: std
-             * 10: variance
-             * @return
-             */
-#ifdef __CUDACC__
-            __inline__ __device__
-            virtual functions::reduce::ReduceFunction<T> * create(int op, unsigned char *buffer) {
-
-#else
-                virtual functions::reduce::ReduceFunction<T> * create(int op) {
-#endif
-                if (op == 0)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Mean<T>();
-#else
-                    return new functions::reduce::ops::Mean<T>();
-#endif
-                else if (op == 1)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Sum<T>();
-#else
-                    return new functions::reduce::ops::Sum<T>();
-#endif
-                else if (op == 3)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Max<T>();
-#else
-                    return new functions::reduce::ops::Max<T>();
-#endif
-                else if (op == 4)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Min<T>();
-#else
-                    return new functions::reduce::ops::Min<T>();
-#endif
-                else if (op == 5)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Norm1<T>();
-#else
-                    return new functions::reduce::ops::Norm1<T>();
-#endif
-                else if (op == 6)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Norm2<T>();
-#else
-                    return new functions::reduce::ops::Norm2<T>();
-#endif
-                else if (op == 7)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::NormMax<T>();
-#else
-                    return new functions::reduce::ops::NormMax<T>();
-#endif
-                else if (op == 8)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Prod<T>();
-#else
-                    return new functions::reduce::ops::Prod<T>();
-#endif
-                else if (op == 9)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::StandardDeviation<T>();
-#else
-                    return new functions::reduce::ops::StandardDeviation<T>();
-#endif
-                else if (op == 10)
-#ifdef __CUDACC__
-                    return new(buffer) functions::reduce::ops::Variance<T>();
-#else
-                return new functions::reduce::ops::Variance<T>();
-#endif
-                return nullptr;
-            }
-
-
-#ifdef __CUDACC__
-            __device__ __host__
-#endif
-
-            virtual ~ReduceOpFactory() {
-            }
-        };
 
     }
 

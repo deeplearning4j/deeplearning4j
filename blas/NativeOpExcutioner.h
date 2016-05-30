@@ -22,7 +22,6 @@ template <typename T>
 class NativeOpExcutioner {
 private:
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-    functions::reduce::ReduceOpFactory<T> *reduceOpFactory = new functions::reduce::ReduceOpFactory<T>();
     functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
     functions::scalar::ScalarOpFactory<T> *scalarOpFactory = new functions::scalar::ScalarOpFactory<T>();
     functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
@@ -30,7 +29,6 @@ private:
 public:
     ~NativeOpExcutioner() {
         delete indexReduceOpFactory;
-        delete reduceOpFactory;
         delete reduce3OpFactory;
         delete scalarOpFactory;
         delete summaryStatsReduceOpFactory;
@@ -223,9 +221,8 @@ public:
                     int *resultShapeInfo,
                     int *dimension,
                     int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
-        functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
-        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
-        delete reduceFunction;
+		functions::reduce::ReduceFunction<T> reduceFunction;
+        reduceFunction.exec(opNum, x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
     }
 
     /**
@@ -240,9 +237,8 @@ public:
                        T *x,
                        int *xShapeInfo,
                        T *extraParams) {
-        functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
-        T ret = reduceFunction->execScalar(x,xShapeInfo,extraParams);
-        delete reduceFunction;
+		functions::reduce::ReduceFunction<T> reduceFunction;
+        T ret = reduceFunction.execScalar(opNum, x,xShapeInfo,extraParams);
         return ret;
     }
     /**

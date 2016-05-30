@@ -2,7 +2,6 @@
 
 #include <shape.h>
 #include <vector>
-#include <reduce.h>
 
 #define no_op_exec_special 	static constexpr const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #define MIN 1e-12
@@ -24,6 +23,11 @@ namespace functions {
 	namespace transform {
 		template <typename T>
 		class Transform;
+	}
+
+	namespace reduce {
+		template <typename T>
+		class ReduceFunction;
 	}
 }
 
@@ -278,38 +282,6 @@ namespace simdOps {
 
 	};
 
-
-
-
-	template<typename T>
-	class Max {
-	public:
-#pragma omp declare simd uniform(params)
-		op_def static T op(T d1, T d2, T *params) {
-			return nd4j::math::nd4j_max<T>(d1, d2);
-		}
-
-#pragma omp declare simd uniform(params)
-		op_def static T op(T d1, T *params) {
-			return d1;
-		}
-
-	};
-
-
-	template<typename T>
-	class Min {
-	public:
-#pragma omp declare simd uniform(params)
-		op_def static T op(T d1, T d2, T *params) {
-			return nd4j::math::nd4j_min(d1, d2);
-		}
-
-#pragma omp declare simd uniform(params)
-		op_def static T op(T d1, T *params) {
-			return d1;
-		}
-	};
 
 	template<typename T>
 	class Abs {
@@ -811,13 +783,336 @@ namespace simdOps {
 		}
 	};
 
+	template<typename T>
+	class Sum {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return (T) 0.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+		
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams, n)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction;
+		}
+	};
+
+
+	template<typename T>
+	class Prod {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return (T) 1.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput * old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput * old;
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction;
+		}
+	};
+
+	template<typename T>
+	class Mean {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			(void)input;
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction / (T)n;
+		}
+	};
+
+
+	template<typename T>
+	class Max { 
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return input[0];
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return nd4j::math::nd4j_max<T>(old, opOutput);
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return nd4j::math::nd4j_max<T>(opOutput, old);
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_max<T>(d1, d2);
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction;
+		}
+	};
+
+
+	template<typename T>
+	class Min {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return input[0];
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return nd4j::math::nd4j_min<T>(old, opOutput);
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return nd4j::math::nd4j_min<T>(opOutput, old);
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_min(d1, d2);
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction;
+		}
+	};
+
 	
+	template<typename T>
+	class Norm1 {
+	public:
+#pragma omp declare simd uniform(input)
+			op_def static T startingValue(const T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return nd4j::math::nd4j_abs<T>(d1);
+		}
+
+#pragma omp declare simd uniform(extraParams, n)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return reduction;
+		}
+	};
+
+
+	template<typename T>
+	class Norm2 {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1 * d1;
+		}
+
+#pragma omp declare simd uniform(extraParams, n)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return nd4j::math::nd4j_sqrt<T>(reduction);
+		}
+	};
+
+	
+	template<typename T>
+	class NormMax {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return 0.0;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),
+				nd4j::math::nd4j_abs<T>(opOutput));
+
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			return d1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+			op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
+				nd4j::math::nd4j_abs<T>(reduction));
+		}
+	};
+
+	template<typename T>
+	class Variance {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return 0.0;
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return old + opOutput;
+
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return old + opOutput;
+
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			T mean = extraParams[0];
+			T ret = d1 - mean;
+			return ret * ret;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			T bias = extraParams[1];
+			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T)n))
+				/ (T)(n - 1.0);
+		}
+	};
+
+	/**
+	* Standard deviation of a buffer
+	*/
+	template<typename T>
+	class StandardDeviation {
+	public:
+#pragma omp declare simd uniform(input)
+		op_def static T startingValue(const T *input) {
+			return 0.0;
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return old + opOutput;
+
+		}
+#pragma omp declare simd uniform(extraParams)
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return old + opOutput;
+
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T op(T d1, T *extraParams) {
+			T mean = extraParams[0];
+			T ret = d1 - mean;
+			return ret * ret;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			T ret = Variance<T>::postProcess(reduction, n, extraParams);
+			T sqrtRet = nd4j::math::nd4j_sqrt<T>(ret);
+			return sqrtRet;
+		}
+	};
+
+
+
 	template<typename T>
 	class Im2col {
 	public:
 		static constexpr const bool requiresSpecial = true;
 #ifdef __CUDACC__
-			inline __host__ __device__
+		inline __host__ __device__
 #elif defined(__GNUC__)
 
 #endif
@@ -922,7 +1217,7 @@ namespace simdOps {
 #endif
 
 
-		 static void execSpecial(
+		static void execSpecial(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -1514,19 +1809,19 @@ namespace simdOps {
 			if (shape::isMatrix(xShapeBuffer)) {
 				functions::broadcast::Broadcast<T> *broadcast = new functions::broadcast::Broadcast<T>();
 				functions::transform::Transform<T> *transform = new functions::transform::Transform<T>();
+				functions::reduce::ReduceFunction<T> *reduce = new functions::reduce::ReduceFunction<T>();
 
 				int *shape = shape::shapeOf(xShapeBuffer);
 				//iterate along rows
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
-				functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
 				std::vector <T> maxResult(shape[0]);
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-				max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+				reduce->template exec<simdOps::Max>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
 					nullptr, nullptr);
 
 				//subtract max of each row
@@ -1537,8 +1832,7 @@ namespace simdOps {
 				transform->template exec<simdOps::Exp>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
 				//take the sum for the exponential
-				functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-				sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+				reduce->template exec<simdOps::Sum>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
 					nullptr, nullptr);
 
 				//divide by the sum
@@ -1548,8 +1842,7 @@ namespace simdOps {
 
 				delete broadcast;
 				delete transform;
-				delete sum;
-				delete max;
+				delete reduce;
 
 				delete[] maxResultShapeBuffer;
 			}
@@ -1711,7 +2004,7 @@ namespace simdOps {
 		}
 #endif
 
-	
+
 		static void execSpecial(
 			T *dx,
 			int *xShapeBuffer,
@@ -1722,19 +2015,20 @@ namespace simdOps {
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				functions::broadcast::Broadcast<T> *broadcast = new functions::broadcast::Broadcast<T>();
 				functions::transform::Transform<T> *transform = new functions::transform::Transform<T>();
+				functions::reduce::ReduceFunction<T> *reduce = new functions::reduce::ReduceFunction<T>();
+
 
 				int *shape = shape::shapeOf(xShapeBuffer);
 				//iterate along rows
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
-				functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
 				std::vector <T> maxResult(shape[0]);
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-				max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+				reduce->template exec<simdOps::Max>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
 					nullptr, nullptr);
 
 				//subtract max of each row
@@ -1745,8 +2039,7 @@ namespace simdOps {
 				transform->template exec<simdOps::Exp>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
 				//take the sum for the exponential
-				functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-				sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+				reduce->template exec<simdOps::Sum>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
 					nullptr, nullptr);
 
 				//divide by the sum
@@ -1757,8 +2050,7 @@ namespace simdOps {
 
 				delete broadcast;
 				delete transform;
-				delete sum;
-				delete max;
+				delete reduce;
 
 
 				delete[] maxResultShapeBuffer;
@@ -1937,7 +2229,7 @@ namespace simdOps {
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				functions::broadcast::Broadcast<T> *broadcast = new functions::broadcast::Broadcast<T>();
 				functions::transform::Transform<T> *transform = new functions::transform::Transform<T>();
-
+				functions::reduce::ReduceFunction<T> *reduce = new functions::reduce::ReduceFunction<T>();
 
 				int *shape = shape::shapeOf(xShapeBuffer);
 
@@ -1948,14 +2240,13 @@ namespace simdOps {
 				int maxDimension[1] = { 1 };
 				int len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
-				functions::reduce::ops::Max<T> *max = new functions::reduce::ops::Max<T>();
 				std::vector <T> maxResult(shape[0]);
 #pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
-				max->exec(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
+				reduce->template exec<simdOps::Max>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
 					nullptr, nullptr);
 
 				//subtract max of each row
@@ -1966,8 +2257,7 @@ namespace simdOps {
 				transform->template exec<simdOps::Exp>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams);
 
 				//take the sum for the exponential
-				functions::reduce::ops::Sum<T> *sum = new functions::reduce::ops::Sum<T>();
-				sum->exec(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
+				reduce->template exec<simdOps::Sum>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension,
 					1, nullptr, nullptr);
 
 				//divide by the sum
@@ -1997,8 +2287,7 @@ namespace simdOps {
 
 				delete transform;
 				delete broadcast;
-				delete sum;
-				delete max;
+				delete reduce;
 
 				delete[] maxResultShapeBuffer;
 			}
@@ -2328,7 +2617,7 @@ namespace simdOps {
 			}
 		}
 #endif
-		
+
 		static void execSpecial(
 			T *dx,
 			int *xShapeBuffer,
@@ -2502,4 +2791,6 @@ namespace simdOps {
 			return nd4j::math::softplus<T>(d1);
 		}
 	};
+
+
 }
