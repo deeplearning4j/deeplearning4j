@@ -19,20 +19,17 @@
 package org.deeplearning4j.aws.ec2.provision;
 
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
+
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.model.Region;
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Future;
 
 /**
  * Sets up a DL4J cluster
@@ -60,7 +57,7 @@ public class ClusterSetup {
     @Option(name = "-region",usage = "specify a region")
     private String region = Regions.US_EAST_1.getName();
 
-    private ActorSystem as;
+    private ExecutorService as;
 
 	private static final Logger log = LoggerFactory.getLogger(ClusterSetup.class);
 
@@ -96,35 +93,23 @@ public class ClusterSetup {
 
 
 	private void provisionWorkers(List<String> workers) {
-		as = ActorSystem.create("Workers");
-        for(final String workerHost : workers) {
+		as = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		for(final String workerHost : workers) {
 			try {
-                Future<Void> f = Futures.future(new Callable<Void>(){
+              as.submit(new Runnable() {
+				  @Override
+				  public void run() {
+					  HostProvisioner uploader = new HostProvisioner(workerHost, "ec2-user");
+					  try {
+						  uploader.addKeyFile(pathToPrivateKey);
+						  //uploader.runRemoteCommand("sudo hostname " + workerHost);
+						  uploader.uploadAndRun(workerSetupScriptPath, "");
+					  } catch (Exception e) {
+						  e.printStackTrace();
+					  }
 
-                    /**
-                     * Computes a result, or throws an exception if unable to do so.
-                     *
-                     * @return computed result
-                     * @throws Exception if unable to compute a result
-                     */
-                    @Override
-                    public Void call() throws Exception {
-
-                        HostProvisioner uploader = new HostProvisioner(workerHost, "ec2-user");
-                        uploader.addKeyFile(pathToPrivateKey);
-                        //uploader.runRemoteCommand("sudo hostname " + workerHost);
-                        uploader.uploadAndRun(workerSetupScriptPath, "");
-                        return null;
-                    }
-                },as.dispatcher());
-                f.onComplete(new OnComplete<Void>() {
-                    @Override
-                    public void onComplete(Throwable throwable, Void aVoid) throws Throwable {
-                        if(throwable != null)
-                            throw throwable;
-                    }
-                },as.dispatcher());
-
+				  }
+			  });
 
 			}catch(Exception e) {
 				log.error("Error ",e);
