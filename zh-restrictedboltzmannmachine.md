@@ -66,7 +66,7 @@ RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基
 
 由于RBM权重初始值是随机决定的，重构值与原始输入之间的差别通常很大。可以将`r`值与输入值之差视为重构误差，此误差值随后经由反向传播来修正RBM的权重，如此不断反复，直至误差达到最小。 
 
-有关反向传播算法的详细介绍请参见[此页](./neuralnet-overview.html#forward)。 
+有关反向传播算法的详细介绍请参见[此页](./zh-neuralnet-overview.html#forward)。 
 
 由此可见，RBM在正向传递中使用输入值来预测节点的激活值，亦即[输入为加权的x时输出的概率](https://en.wikipedia.org/wiki/Bayes%27_theorem)：`p(a|x; w)`。 
 
