@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,4 +70,46 @@ public class NativeOpExecutionerTest {
         System.out.println("Execution time: " + (time2 - time1));
     }
 
+    @Test
+    public void execTransformOp1() throws Exception {
+        INDArray array1 = Nd4j.linspace(1, 2048, 2048);
+        INDArray array2 = Nd4j.linspace(1, 2048, 2048);
+
+        Nd4j.getExecutioner().exec(new Exp(array1, array2));
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 10000; x++) {
+            Nd4j.getExecutioner().exec(new Exp(array1, array2));
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time: " + ((time2 - time1) / 10000));
+
+       // System.out.println("Array1: " + array1);
+       // System.out.println("Array2: " + array2);
+
+        assertEquals(2.71f, array2.getFloat(0), 0.01);
+    }
+
+
+    @Test
+    public void testScalarOp1() throws Exception {
+        // simple way to stop test if we're not on CUDA backend here
+
+        INDArray array1 = Nd4j.linspace(1, 20480, 20480);
+        INDArray array2 = Nd4j.linspace(1, 20480, 20480);
+        array2.addi(0.5f);
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 10000; x++) {
+            array2.addi(0.5f);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time: " + ((time2 - time1) / 10000));
+
+        System.out.println("Divi result: " + array2.getFloat(0));
+        assertEquals(5001.5, array2.getFloat(0), 0.01f);
+
+    }
 }

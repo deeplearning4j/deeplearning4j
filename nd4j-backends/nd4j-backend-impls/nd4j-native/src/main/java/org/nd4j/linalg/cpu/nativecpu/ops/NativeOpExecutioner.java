@@ -103,7 +103,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
         long hostTadShapeInfo = tadBuffers.getFirst().address();
-        long hostTadOffsets = tadBuffers.getSecond().address();
+
+        DataBuffer offsets = tadBuffers.getSecond();
+        long hostTadOffsets = offsets == null ? 0 : offsets.address();
 
         long[] dummy = new long[]{
                 hostTadShapeInfo,
