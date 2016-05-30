@@ -1,6 +1,5 @@
-
 ---
-title: 受限玻尔兹曼机基础教程
+title: "受限玻尔兹曼机基础教程"
 layout: default
 ---
 
