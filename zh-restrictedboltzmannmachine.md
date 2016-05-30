@@ -18,7 +18,7 @@ layout: default
 
 ## <a name="define">定义与结构</a>
 
-受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](./linear-regression.html)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](./neuralnet-overview.html)的应用方法，请参阅[应用案例](./use_cases.html))。
+受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](./linear-regression.html)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](./zh-neuralnet-overview.html)的应用方法，请参阅[应用案例](./use_cases.html))。
 
 我们首先介绍受限玻尔兹曼机这类神经网络，因为它相对简单且具有重要的历史意义。下文将以示意图和通俗的语言解释其运作原理。 
 
@@ -257,8 +257,8 @@ RBM隐藏层使用高斯变换的效果并不理想。而线性修正单元变�
 
 ### 其他基础教程
 
-* [递归网络/LSTM](./lstm.html)
-* [深度神经网络简介](./neuralnet-overview.html)
-* [本征向量、PCA和熵](./eigenvector.html)
+* [递归网络/LSTM](./zh-lstm.html)
+* [深度神经网络简介](./zh-neuralnet-overview.html)
+* [本征向量、PCA和熵](./zh-eigenvector.html)
 * [神经网络与回归分析](./linear-regression.html)
-* [卷积网络教程](./convolutionalnets.html)
+* [卷积网络教程](./zh-convolutionalnets.html)
