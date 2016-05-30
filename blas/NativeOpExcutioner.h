@@ -23,14 +23,12 @@ class NativeOpExcutioner {
 private:
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
     functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
-    functions::scalar::ScalarOpFactory<T> *scalarOpFactory = new functions::scalar::ScalarOpFactory<T>();
     functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
 
 public:
     ~NativeOpExcutioner() {
         delete indexReduceOpFactory;
         delete reduce3OpFactory;
-        delete scalarOpFactory;
         delete summaryStatsReduceOpFactory;
     }
 
@@ -340,11 +338,8 @@ public:
                     T scalar,
                     T *extraParams,
                     Nd4jIndex n) {
-        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
-        scalarTransform->transform(x,xStride,result,resultStride,scalar,extraParams,n);
-        delete scalarTransform;
-
-
+		functions::scalar::ScalarTransform<T> scalarTransform;
+        scalarTransform.transform(opNum, x,xStride,result,resultStride,scalar,extraParams,n);
     }
 
 
@@ -366,14 +361,14 @@ public:
                     int *resultShapeInfo,
                     T scalar,
                     T *extraParams) {
-        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
-        scalarTransform->transform(x,
-                                   xShapeInfo,
-                                   result,
-                                   resultShapeInfo,
-                                   scalar,
-                                   extraParams);
-        delete scalarTransform;
+		functions::scalar::ScalarTransform<T> scalarTransform;
+		scalarTransform.transform(opNum,
+			x,
+			xShapeInfo,
+			result,
+			resultShapeInfo,
+			scalar,
+			extraParams);
 
 
     }
@@ -398,18 +393,16 @@ public:
                     T *extraParams,
                     int *xIndexes,
                     int *resultIndexes) {
-        functions::scalar::ScalarTransform<T> *scalarTransform = scalarOpFactory->getOp(opNum);
-        scalarTransform->transform(x,
-                                   xShapeInfo,
-                                   result,
-                                   resultShapeInfo,
-                                   scalar,
-                                   extraParams,
-                                   xIndexes,
-                                   resultIndexes);
-        delete scalarTransform;
-
-
+		functions::scalar::ScalarTransform<T> scalarTransform;
+		scalarTransform.transform(opNum,
+			x,
+			xShapeInfo,
+			result,
+			resultShapeInfo,
+			scalar,
+			extraParams,
+			xIndexes,
+			resultIndexes);
     }
 
     /**

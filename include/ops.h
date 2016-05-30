@@ -165,6 +165,36 @@ namespace simdOps {
 		}
 	};
 
+	template<typename T>
+	class SetValOrLess {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			if (d2 < d1) {
+				return d1;
+			}
+			return d2;
+		}
+	};
+
+	template<typename T>
+	class Mod {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return (int)d1 % (int)d2;
+		}
+	};
+
+	template<typename T>
+	class ReverseMod {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return (int)d2 % (int)d1;
+		}
+	};
+
 	/**
 	* Whether 2 elements in an array
 	* are epsilion equal
@@ -2791,6 +2821,4 @@ namespace simdOps {
 			return nd4j::math::softplus<T>(d1);
 		}
 	};
-
-
 }
