@@ -734,60 +734,6 @@ namespace functions {
 
 
         };
-
-
-        template<typename T>
-        class TransformOpFactory {
-        public:
-#ifdef __CUDACC__
-            __device__ __host__
-#endif
-
-            TransformOpFactory() {
-            }
-
-
-
-            /**
-             * Create an op
-             * @param op the op to create
-             * 0: abs
-             * 1: ceiling
-             * 2: cosine
-             * 3: exp
-             * 4: floor
-             * 5: log
-             * 6: neg
-             * 7: pow
-             * 8: round
-             * 9: setrange
-             * 10:sigmoid
-             * 11: sign
-             * 12: sin
-             * 13:softplus
-             * 14:sqrt
-             * 15:tanh
-             * 16:acos
-             * 17:asin
-             * 18:atan
-             * @return the op given the number
-             */
-#ifdef __CUDACC__
-            __inline__ __device__
-            Transform<T> * getOp(int op, unsigned char *buffer) {
-#else
-            Transform<T> * getOp(int op) {
-#endif
-                /**
-                 * We are likely going to need constant symbols for device memory for different operations
-                 * or switch to arithmetic based approaches?
-                 */
-                
-
-                return nullptr;
-            }
-
-        };
     }
 }
 
