@@ -39,7 +39,7 @@ namespace functions {
     namespace transform {
 
         template<typename T>
-        class Transform : public functions::ops::Op<T> {
+        class Transform {
         public:
 
 #ifdef __CUDACC__
@@ -177,7 +177,7 @@ namespace functions {
 #endif
 
 
-			void exec(
+			static void exec(
 				int op,
 				T *dx,
 				int xStride,
@@ -320,7 +320,7 @@ namespace functions {
 				}
 			}
 
-			void exec(
+			static void exec(
 				int op,
 				T *dx,
 				int *xShapeInfo,
@@ -465,7 +465,7 @@ namespace functions {
 			}
 
 
-			void exec(
+			static void exec(
 				int op,
 				T *dx,
 				int *xShapeInfo,
@@ -609,7 +609,7 @@ namespace functions {
 
 
 			template<template <typename> typename OpType>
-            void exec(
+			static void exec(
                     T *dx,
                     int *xShapeInfo,
                     T *result,
@@ -673,7 +673,7 @@ namespace functions {
 
 
 			template<template <typename> typename OpType>
-			void exec(
+			static void exec(
 				T *dx,
 				int *xShapeInfo,
 				T *result,
@@ -690,7 +690,7 @@ namespace functions {
 			}
 
 			template<template <typename> typename OpType>
-            void exec(T *dx,
+			static void exec(T *dx,
                               int xStride,
                               T *result,
                               int resultStride,
@@ -708,31 +708,6 @@ namespace functions {
                         }
                 }
             }
-            virtual inline
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-                //no op aggregation needs to happen for transforms
-            }
-#ifdef __CUDACC__
-            inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-            virtual ~Transform() {
-            }
-#ifdef __CUDACC__
-            __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-            Transform() {
-            }
-
-
         };
     }
 }

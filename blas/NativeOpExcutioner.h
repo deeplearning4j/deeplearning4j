@@ -94,9 +94,7 @@ public:
                        int *yShapeInfo,
                        T *result,
                        int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
-
-		functions::broadcast::Broadcast<T> broadcast;
-        broadcast.exec(opNum, x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
+		functions::broadcast::Broadcast<T>::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
     }
 
 
@@ -120,8 +118,7 @@ public:
                                T *result,
                                int resultStride,
                                T *extraParams, Nd4jIndex n) {
-		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;;
-		pairwiseTransform.exec(opNum,
+		functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum,
                 dx,
                 xStride,
                 y,
@@ -152,8 +149,7 @@ public:
                                T *result,
                                int *resultShapeInfo,
                                T *extraParams) {
-		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;
-		pairwiseTransform.exec(opNum,
+		functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum,
 			     dx,
                  xShapeInfo,
                  y,
@@ -186,8 +182,7 @@ public:
                                int *xIndexes,
                                int *yIndexes,
                                int *resultIndexes) {
-		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;
-		pairwiseTransform.exec(opNum,
+		functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum,
 			    dx,
                  xShapeInfo,
                  y,
@@ -219,8 +214,7 @@ public:
                     int *resultShapeInfo,
                     int *dimension,
                     int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
-		functions::reduce::ReduceFunction<T> reduceFunction;
-        reduceFunction.exec(opNum, x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
+		functions::reduce::ReduceFunction<T>::exec(opNum, x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
     }
 
     /**
@@ -235,8 +229,7 @@ public:
                        T *x,
                        int *xShapeInfo,
                        T *extraParams) {
-		functions::reduce::ReduceFunction<T> reduceFunction;
-        T ret = reduceFunction.execScalar(opNum, x,xShapeInfo,extraParams);
+        T ret = functions::reduce::ReduceFunction<T>::execScalar(opNum, x,xShapeInfo,extraParams);
         return ret;
     }
     /**
@@ -338,8 +331,7 @@ public:
                     T scalar,
                     T *extraParams,
                     Nd4jIndex n) {
-		functions::scalar::ScalarTransform<T> scalarTransform;
-        scalarTransform.transform(opNum, x,xStride,result,resultStride,scalar,extraParams,n);
+		functions::scalar::ScalarTransform<T>::transform(opNum, x,xStride,result,resultStride,scalar,extraParams,n);
     }
 
 
@@ -361,8 +353,7 @@ public:
                     int *resultShapeInfo,
                     T scalar,
                     T *extraParams) {
-		functions::scalar::ScalarTransform<T> scalarTransform;
-		scalarTransform.transform(opNum,
+		functions::scalar::ScalarTransform<T>::transform(opNum,
 			x,
 			xShapeInfo,
 			result,
@@ -393,8 +384,7 @@ public:
                     T *extraParams,
                     int *xIndexes,
                     int *resultIndexes) {
-		functions::scalar::ScalarTransform<T> scalarTransform;
-		scalarTransform.transform(opNum,
+		functions::scalar::ScalarTransform<T>::transform(opNum,
 			x,
 			xShapeInfo,
 			result,
@@ -492,8 +482,7 @@ public:
                        int resultStride,
                        T *extraParams,
                        Nd4jIndex n) {
-		functions::transform::Transform<T> transform;
-        transform.exec(opNum, dx,
+		functions::transform::Transform<T>::exec(opNum, dx,
                         xStride,
                         result,
                         resultStride,
@@ -518,8 +507,7 @@ public:
                        T *result,
                        int *resultShapeInfo,
                        T *extraParams) {
-		functions::transform::Transform<T> transform;
-        transform.exec(opNum, dx,
+		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,
@@ -544,8 +532,7 @@ public:
                        T *extraParams,
                        Nd4jIndex *xIndexes,
                        Nd4jIndex *resultIndexes) {
-		functions::transform::Transform<T> transform;
-        transform.exec(opNum, dx,
+		functions::transform::Transform<T>::exec(opNum, dx,
                         xShapeInfo,
                         result,
                         resultShapeInfo,

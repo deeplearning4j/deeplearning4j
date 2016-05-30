@@ -27,7 +27,7 @@ namespace functions {
  *  operation to an array
  */
         template<typename T>
-        class ScalarTransform: public virtual functions::ops::Op<T> {
+        class ScalarTransform {
 
         public:
 
@@ -167,7 +167,7 @@ namespace functions {
 	}
 #endif
 
-		void transform(const int op,
+		static void transform(const int op,
 			T *x,
 			int *xShapeInfo,
 			T *result,
@@ -215,7 +215,7 @@ namespace functions {
 
 		}
 
-		void transform(const int op, T *x, int xStride, T *result, int resultStride,
+		static void transform(const int op, T *x, int xStride, T *result, int resultStride,
 			T scalar, T *extraParams, const Nd4jIndex n) {
 			if (op == 0)
 				transform<simdOps::Add>(x, xStride, result, resultStride, scalar, extraParams, n);
@@ -255,7 +255,7 @@ namespace functions {
 				printf("[ERROR] Unknown opNum=%d for scalar", op);
 		}
 
-		void transform(const int op,
+		static void transform(const int op,
 			T *x,
 			int *xShapeInfo,
 			T *result,
@@ -310,8 +310,8 @@ namespace functions {
          * neccssary
          * @param n the number of elements to loop over
          */
-		template<template <typename> typename OpType>
-          void transform(T *x,
+		 template<template <typename> typename OpType>
+		 static void transform(T *x,
                            int *xShapeInfo,
                            T *result,
                            int *resultShapeInfo,
@@ -328,31 +328,6 @@ namespace functions {
 
 
 
-
-            /**
-         * CPU implementation of scalar operation
-         * @param x the input
-         * @param xStride the stride for the input
-         * @param result the result buffer
-         * @param resultStride the stride for the result
-         * @param scalar the scalar to apply
-         * @param extraParams the extra parameters where
-         * neccssary
-         * @param n the number of elements to loop over
-         */
-          /*  void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo,
-                           T scalar, T *extraParams,int *indexes) {
-                transform(x,
-                          xShapeInfo,
-                          result,
-                          resultShapeInfo,
-                          scalar,
-                          extraParams,
-                          indexes,
-                          indexes);
-            }*/
-
-
             /**
          * CPU implementation of scalar operation
          * @param x the input
@@ -365,7 +340,7 @@ namespace functions {
          * @param n the number of elements to loop over
          */
 		  template<template <typename> typename OpType>
-            void transform(T *x,
+		  static  void transform(T *x,
                            int *xShapeInfo,
                            T *result,
                            int *resultShapeInfo,
@@ -467,7 +442,7 @@ namespace functions {
              * @param n the number of elements to loop over
              */
 			template<template <typename> typename OpType>
-            void transform(T *x, int xStride, T *result, int resultStride,
+			static void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
@@ -485,23 +460,6 @@ namespace functions {
                     }
                 }
 
-            }
-            virtual inline
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-                //no extra params aggregation needs to happen
-            }
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            virtual inline ~ScalarTransform() {
-            }
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            ScalarTransform() {
             }
         };
     }

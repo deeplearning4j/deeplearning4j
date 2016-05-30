@@ -31,7 +31,7 @@ namespace functions {
  * Transforms involving 2 arrays
  */
         template<typename T>
-        class PairWiseTransform : public virtual functions::ops::Op<T> {
+        class PairWiseTransform {
         public:
 
 #ifdef __CUDACC__
@@ -211,7 +211,7 @@ namespace functions {
 
 #endif
         public:
-			void exec(
+			static void exec(
 				const int op,
 				T *dx,
 				int *xShapeBuffer,
@@ -261,7 +261,7 @@ namespace functions {
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
 
-			void exec(
+			static void exec(
 				const int op,
 				T *dx,
 				int *xShapeBuffer,
@@ -308,7 +308,7 @@ namespace functions {
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
 			
-			void exec(
+			static void exec(
 				const int op,
 				T *dx,
 				Nd4jIndex xStride,
@@ -357,7 +357,7 @@ namespace functions {
 			}
 
 			template<template <typename> typename OpType>
-            void exec(
+			static void exec(
                     T *dx,
                     int *xShapeBuffer,
                     T *y,
@@ -378,7 +378,7 @@ namespace functions {
             }
 
 			template<template <typename> typename OpType>
-            void exec(
+			static void exec(
                     T *dx,
                     int *xShapeBuffer,
                     T *y,
@@ -531,7 +531,7 @@ namespace functions {
             }
 
 			template<template <typename> typename OpType>
-            void exec(T *dx,
+			static void exec(T *dx,
                               Nd4jIndex xStride,
                               T *y,
                               Nd4jIndex yStride,
@@ -554,31 +554,6 @@ namespace functions {
                         }
                 }
             }
-
-            virtual inline
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-                //no extra params aggregation needs to happen
-            }
-#ifdef __CUDACC__
-            inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-            virtual ~PairWiseTransform() {
-            }
-#ifdef __CUDACC__
-            inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-            PairWiseTransform() {
-            }
-
 		};
     }
 }

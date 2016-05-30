@@ -32,317 +32,304 @@ namespace functions {
  * elements.
  */
         template<typename T>
-        class ReduceFunction: public functions::ops::Op<T> {
-        public:
+		class ReduceFunction {
+		public:
 #ifdef __CUDACC__
-            __inline__ __device__ virtual void transformCuda1D(T *dx,
-                    int *xShapeInfo,
-                    T *extraParams,
-                    T *result,
-                    int *resultShapeInfo,
-                    int *dimension,
-                    int dimensionLength,
-                    T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+			__inline__ __device__ virtual void transformCuda1D(T *dx,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-                //shared memory space for storing intermediate results
-                T *sPartials = (T *) manager->getSharedReductionBuffer();
+				//shared memory space for storing intermediate results
+				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
-                sPartials[threadIdx.x] = this->startingValue(dx);
+				sPartials[threadIdx.x] = this->startingValue(dx);
 
-                __shared__ int tadLength;
-                __shared__ int tadEWS;
-                __shared__ int tadRank;
-                __shared__ int numTads;
-                if (threadIdx.x == 0) {
-            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                    tadRank = shape::rank(tadOnlyShapeInfo);
-                    numTads = shape::length(xShapeInfo) / tadLength;
-                }
-                __syncthreads();
+				__shared__ int tadLength;
+				__shared__ int tadEWS;
+				__shared__ int tadRank;
+				__shared__ int numTads;
+				if (threadIdx.x == 0) {
+					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+					tadRank = shape::rank(tadOnlyShapeInfo);
+					numTads = shape::length(xShapeInfo) / tadLength;
+				}
+				__syncthreads();
 
-                for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-                    int tadOffsetForBlock = tadOffsets[r];
+				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+					int tadOffsetForBlock = tadOffsets[r];
 
-                    sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
 
-                    for(int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
-                    }
-                    __syncthreads();
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
+					}
+					__syncthreads();
 
-                    // aggregate. do NOT reduce for elements > tadLength
-                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
-
-
-                    __syncthreads();
-                    if (threadIdx.x == 0) {
-                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
-                    }
-                }
-            }
+					// aggregate. do NOT reduce for elements > tadLength
+					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
-            __inline__ __device__ void execScalarCuda(
-                    T *dx,
-                    int *xShapeInfo,
-                    T *extraParams,
-                    T *result,
-                    int *resultShapeInfo,
-                    T *reductionBuffer,
-                    UnifiedSharedMemory *manager,
-                    int *tadOnlyShapeInfo) {
-                int elementWiseStride = shape::elementWiseStride(xShapeInfo);
-
-                int n = shape::length(xShapeInfo);
-
-                int tid = blockDim.x * blockIdx.x + threadIdx.x;
-
-                //shared memory space for storing intermediate results
-                T *sPartials = (T *) manager->getSharedReductionBuffer();
-
-                sPartials[threadIdx.x] = this->startingValue(dx);
-
-                if(elementWiseStride >= 1) {
-                    for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[i * elementWiseStride],extraParams),extraParams);
-                    }
-                }
-                else {
-                    int rank = shape::rank(xShapeInfo);
-                    int ind2sub[MAX_RANK];
-
-                    for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
-                        int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[offset],extraParams),extraParams);
-                        __syncthreads();
-                    }
-                }
-
-                __syncthreads();
-                aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n),extraParams);
+					__syncthreads();
+					if (threadIdx.x == 0) {
+						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+					}
+				}
+			}
 
 
-                __syncthreads();
+			__inline__ __device__ void execScalarCuda(
+				T *dx,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo) {
+				int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-                if (gridDim.x > 1) {
-                    unsigned int *tc = (unsigned int *) reductionBuffer;
-                    __shared__ bool amLast;
-                    int rank = shape::rank(xShapeInfo);
-                    tid = threadIdx.x;
-                    if (threadIdx.x == 0) {
-                        reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
-                    }
-                    __threadfence();
-                    __syncthreads();
+				int n = shape::length(xShapeInfo);
 
-                    if (threadIdx.x==0) {
-                        unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
-                        amLast = (ticket == gridDim.x-1);
-                    }
+				int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
-                    __syncthreads();
+				//shared memory space for storing intermediate results
+				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
-                    if (amLast) {
-                        tc[4096] = 0;
+				sPartials[threadIdx.x] = this->startingValue(dx);
 
-                        sPartials[threadIdx.x] = this->startingValue(dx);
+				if (elementWiseStride >= 1) {
+					for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
+						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[i * elementWiseStride], extraParams), extraParams);
+					}
+				}
+				else {
+					int rank = shape::rank(xShapeInfo);
+					int ind2sub[MAX_RANK];
 
-                        for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-                            sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], reductionBuffer[i] ,extraParams);
-                        }
-                        __syncthreads();
+					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
+						shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
+						int offset = shape::getOffset(0, shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), ind2sub, rank);
+						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[offset], extraParams), extraParams);
+						__syncthreads();
+					}
+				}
 
-                        aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
-
-                        __syncthreads();
-                        if (threadIdx.x == 0) {
-                            result[0] = this->postProcess(sPartials[0],n,extraParams);
-                        }
-                    }
-                } else {
-                    if (threadIdx.x == 0) {
-                        unsigned int *tc = (unsigned *) reductionBuffer;
-                        tc[4096] = 0;
-                        result[0] = this->postProcess(sPartials[0],n,extraParams);
-                    }
-                }
-            }
-            /**
-             * Kernel invocation for reduce
-             * @param n the length of the buffer
-             * @param dx the input
-             * @param xShapeInfo the shape information for the input
-             * @param extraParams extra parameters (starting value,..)
-             * @param result the result buffer
-             * @param resultShapeInfo the shapeinformation for the result buffer
-             * @param gpuInformation the gpu information (shared memory allocated,..)
-             * @param dimension the dimension to do reduce along long
-             * @param dimensionLength the length of the dimension buffer
-             * @param postProcessOrNot whether to reduce or not
-             */
-             __inline__ __device__ virtual void transformCuda6D(
-                    T *dx,
-                    int *xShapeInfo,
-                    T *extraParams,
-                    T *result,
-                    int *resultShapeInfo,
-                    int *dimension,
-                    int dimensionLength,
-                    T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
-
-                //shared memory space for storing intermediate results
-                T *sPartials = (T *) manager->getSharedReductionBuffer();
-
-                __shared__ int tadLength;
-                __shared__ int tadEWS;
-                __shared__ int tadRank;
-                __shared__ int numTads;
-                __shared__ int *tadShape;
-                __shared__ int *tadStride;
-                if (threadIdx.x == 0) {
-            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                    tadRank = shape::rank(tadOnlyShapeInfo);
-                    numTads = shape::length(xShapeInfo) / tadLength;
-
-                    tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                    tadStride = shape::stride(tadOnlyShapeInfo);
-                }
-                sPartials[threadIdx.x] = this->startingValue(dx);
-                __syncthreads();
-
-                int xCoord[3];
-
-                for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-                    int tadOffsetForBlock = tadOffsets[r];
-
-                    sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
-
-                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                        shape::ind2subC(tadRank, tadShape, i, xCoord);
-                        int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
-                    }
-                    __syncthreads();
-
-                    // aggregate. do NOT reduce for elements > tadLength
-                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
-
-                    __syncthreads();
-                    if (threadIdx.x == 0)
-                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
-                }
-            }
-
-            __inline__ __device__ virtual void transformCudaXD(
-                    T *dx,
-                    int *xShapeInfo,
-                    T *extraParams,
-                    T *result,
-                    int *resultShapeInfo,
-                    int *dimension,
-                    int dimensionLength,
-                    T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
-
-                //shared memory space for storing intermediate results
-                T *sPartials = (T *) manager->getSharedReductionBuffer();
-
-//                __shared__ shape::TAD *tad;
-                __shared__ int tadLength;
-                __shared__ int tadEWS;
-                __shared__ int tadRank;
-                __shared__ int numTads;
-                __shared__ int *tadShape;
-                __shared__ int *tadStride;
-                if (threadIdx.x == 0) {
-            	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                    tadRank = shape::rank(tadOnlyShapeInfo);
-                    numTads = shape::length(xShapeInfo) / tadLength;
-
-                    tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                    tadStride = shape::stride(tadOnlyShapeInfo);
-                }
-                sPartials[threadIdx.x] = this->startingValue(dx);
-                __syncthreads();
-
-                int xCoord[MAX_RANK];
-
-                for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-                    int tadOffsetForBlock = tadOffsets[r];
-
-                    sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
-
-                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                        shape::ind2subC(tadRank, tadShape, i, xCoord);
-                        int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-
-                        sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(dx[xOffset],extraParams),extraParams);
-                    }
-                    __syncthreads();
-
-                    // aggregate. do NOT reduce for elements > tadLength
-                    aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+				__syncthreads();
+				aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraParams);
 
 
-                    __syncthreads();
-                    if (threadIdx.x == 0)
-                        result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
-                }
-            }
+				__syncthreads();
 
-            /**
-             *
-             * @param sPartialsRef
-             * @param tid
-             * @param extraParams
-             */
-            __device__ virtual void aggregatePartials(T *sPartials, int tid, int numItems,T *extraParams) {
-                // start the shared memory loop on the next power of 2 less
-                // than the block size.  If block size is not a power of 2,
-                // accumulate the intermediate sums in the remainder range.
-                int floorPow2 = numItems;
+				if (gridDim.x > 1) {
+					unsigned int *tc = (unsigned int *)reductionBuffer;
+					__shared__ bool amLast;
+					int rank = shape::rank(xShapeInfo);
+					tid = threadIdx.x;
+					if (threadIdx.x == 0) {
+						reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],n,extraParams);
+					}
+					__threadfence();
+					__syncthreads();
 
-                if (floorPow2 & (floorPow2 - 1)) {
-                    while (floorPow2 & (floorPow2 - 1)) {
-                        floorPow2 &= floorPow2 - 1;
-                    }
-                    if (tid >= floorPow2) {
-                        sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
-                    }
-                    __syncthreads();
-                }
-                __syncthreads();
+					if (threadIdx.x == 0) {
+						unsigned int ticket = atomicInc(&tc[4096], gridDim.x);
+						amLast = (ticket == gridDim.x - 1);
+					}
+
+					__syncthreads();
+
+					if (amLast) {
+						tc[4096] = 0;
+
+						sPartials[threadIdx.x] = this->startingValue(dx);
+
+						for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+							sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
+						}
+						__syncthreads();
+
+						aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+
+						__syncthreads();
+						if (threadIdx.x == 0) {
+							result[0] = this->postProcess(sPartials[0], n, extraParams);
+						}
+					}
+				}
+				else {
+					if (threadIdx.x == 0) {
+						unsigned int *tc = (unsigned *)reductionBuffer;
+						tc[4096] = 0;
+						result[0] = this->postProcess(sPartials[0], n, extraParams);
+					}
+				}
+			}
+			/**
+			 * Kernel invocation for reduce
+			 * @param n the length of the buffer
+			 * @param dx the input
+			 * @param xShapeInfo the shape information for the input
+			 * @param extraParams extra parameters (starting value,..)
+			 * @param result the result buffer
+			 * @param resultShapeInfo the shapeinformation for the result buffer
+			 * @param gpuInformation the gpu information (shared memory allocated,..)
+			 * @param dimension the dimension to do reduce along long
+			 * @param dimensionLength the length of the dimension buffer
+			 * @param postProcessOrNot whether to reduce or not
+			 */
+			__inline__ __device__ virtual void transformCuda6D(
+				T *dx,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+
+				//shared memory space for storing intermediate results
+				T *sPartials = (T *)manager->getSharedReductionBuffer();
+
+				__shared__ int tadLength;
+				__shared__ int tadEWS;
+				__shared__ int tadRank;
+				__shared__ int numTads;
+				__shared__ int *tadShape;
+				__shared__ int *tadStride;
+				if (threadIdx.x == 0) {
+					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+					tadRank = shape::rank(tadOnlyShapeInfo);
+					numTads = shape::length(xShapeInfo) / tadLength;
+
+					tadShape = shape::shapeOf(tadOnlyShapeInfo);
+					tadStride = shape::stride(tadOnlyShapeInfo);
+				}
+				sPartials[threadIdx.x] = this->startingValue(dx);
+				__syncthreads();
+
+				int xCoord[3];
+
+				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+					int tadOffsetForBlock = tadOffsets[r];
+
+					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						shape::ind2subC(tadRank, tadShape, i, xCoord);
+						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+
+						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[xOffset], extraParams), extraParams);
+					}
+					__syncthreads();
+
+					// aggregate. do NOT reduce for elements > tadLength
+					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+
+					__syncthreads();
+					if (threadIdx.x == 0)
+						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+				}
+			}
+
+			__inline__ __device__ virtual void transformCudaXD(
+				T *dx,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+
+				//shared memory space for storing intermediate results
+				T *sPartials = (T *)manager->getSharedReductionBuffer();
+
+				//                __shared__ shape::TAD *tad;
+				__shared__ int tadLength;
+				__shared__ int tadEWS;
+				__shared__ int tadRank;
+				__shared__ int numTads;
+				__shared__ int *tadShape;
+				__shared__ int *tadStride;
+				if (threadIdx.x == 0) {
+					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+					tadRank = shape::rank(tadOnlyShapeInfo);
+					numTads = shape::length(xShapeInfo) / tadLength;
+
+					tadShape = shape::shapeOf(tadOnlyShapeInfo);
+					tadStride = shape::stride(tadOnlyShapeInfo);
+				}
+				sPartials[threadIdx.x] = this->startingValue(dx);
+				__syncthreads();
+
+				int xCoord[MAX_RANK];
+
+				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+					int tadOffsetForBlock = tadOffsets[r];
+
+					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						shape::ind2subC(tadRank, tadShape, i, xCoord);
+						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+
+						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[xOffset], extraParams), extraParams);
+					}
+					__syncthreads();
+
+					// aggregate. do NOT reduce for elements > tadLength
+					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+
+
+					__syncthreads();
+					if (threadIdx.x == 0)
+						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+				}
+			}
+
+			/**
+			 *
+			 * @param sPartialsRef
+			 * @param tid
+			 * @param extraParams
+			 */
+			__device__ virtual void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+				// start the shared memory loop on the next power of 2 less
+				// than the block size.  If block size is not a power of 2,
+				// accumulate the intermediate sums in the remainder range.
+				int floorPow2 = numItems;
+
+				if (floorPow2 & (floorPow2 - 1)) {
+					while (floorPow2 & (floorPow2 - 1)) {
+						floorPow2 &= floorPow2 - 1;
+					}
+					if (tid >= floorPow2) {
+						sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
+					}
+					__syncthreads();
+				}
+				__syncthreads();
 
 #pragma unroll
-                for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
-                    if (tid < activeThreads && tid + activeThreads < numItems) {
-                        sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
-                    }
-                    __syncthreads();
-                }
+				for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+					if (tid < activeThreads && tid + activeThreads < numItems) {
+						sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
+					}
+					__syncthreads();
+				}
 
-            }
+			}
 #endif
 
-            virtual
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            ~ReduceFunction() {
-            }
-
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-
-            ReduceFunction() {
-            }
-
-			T execScalar(const int op, T *x, int *xShapeInfo, T *extraParams) {
+			static T execScalar(const int op, T *x, int *xShapeInfo, T *extraParams) {
 				if (op == 0)
 					return execScalar<simdOps::Mean>(x, xShapeInfo, extraParams);
 				else if (op == 1)
@@ -369,7 +356,7 @@ namespace functions {
 				}
 			}
 
-			void exec(const int op, 
+			static void exec(const int op,
 				T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -401,173 +388,175 @@ namespace functions {
 					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
 			}
 
-            /**
-             * Reduce down to 1 number
-             * @param x the input
-             * @param xShapeInfo the shape information
-             * for the input
-             * @param extraParams the extra params
-             * @return
-             */
+			/**
+			 * Reduce down to 1 number
+			 * @param x the input
+			 * @param xShapeInfo the shape information
+			 * for the input
+			 * @param extraParams the extra params
+			 * @return
+			 */
 #ifdef __CUDACC__
-            __host__
+			__host__
 #endif
-			template<template <typename> typename OpType>
-			T execScalar(T *x, int *xShapeInfo, T *extraParams) {
-                const Nd4jIndex length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                if (xElementWiseStride >= 1) {
-                    return execScalar<OpType>(x, xElementWiseStride, length, extraParams);
-                }
-                else {
-                    int shapeIter[MAX_RANK];
-                    int coord[MAX_RANK];
-                    int dim;
-                    int xStridesIter[MAX_RANK];
+				template<template <typename> typename OpType>
+			static T execScalar(T *x, int *xShapeInfo, T *extraParams) {
+				const Nd4jIndex length = shape::length(xShapeInfo);
+				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+				if (xElementWiseStride >= 1) {
+					return execScalar<OpType>(x, xElementWiseStride, length, extraParams);
+				}
+				else {
+					int shapeIter[MAX_RANK];
+					int coord[MAX_RANK];
+					int dim;
+					int xStridesIter[MAX_RANK];
 
-                    int *xShape = shape::shapeOf(xShapeInfo);
-                    int *xStride = shape::stride(xShapeInfo);
-                    T start = OpType<T>::startingValue(x);
-                    int rank = shape::rank(xShapeInfo);
+					int *xShape = shape::shapeOf(xShapeInfo);
+					int *xStride = shape::stride(xShapeInfo);
+					T start = OpType<T>::startingValue(x);
+					int rank = shape::rank(xShapeInfo);
 
-                    if (PrepareOneRawArrayIter<T>(rank,
-                                                  xShape,
-                                                  x,
-                                                  xStride,
-                                                  &rank,
-                                                  shapeIter,
-                                                  &x,
-                                                  xStridesIter) >= 0) {
+					if (PrepareOneRawArrayIter<T>(rank,
+						xShape,
+						x,
+						xStride,
+						&rank,
+						shapeIter,
+						&x,
+						xStridesIter) >= 0) {
 
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                /* Process the innermost dimension */
-                                const T *xIter = x;
-                                start = OpType<T>::update(start, OpType<T>::op(xIter[0], extraParams), extraParams);
-                            }
-                        ND4J_RAW_ITER_ONE_NEXT(dim,
-                                               rank,
-                                               coord,
-                                               shapeIter,
-                                               x,
-                                               xStridesIter);
-                        start = OpType<T>::postProcess(start, shape::length(xShapeInfo), extraParams);
-                    }
-                    else {
-                        printf("Unable to prepare array\n");
-                    }
+						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+							/* Process the innermost dimension */
+							const T *xIter = x;
+							start = OpType<T>::update(start, OpType<T>::op(xIter[0], extraParams), extraParams);
+						}
+						ND4J_RAW_ITER_ONE_NEXT(dim,
+							rank,
+							coord,
+							shapeIter,
+							x,
+							xStridesIter);
+						start = OpType<T>::postProcess(start, shape::length(xShapeInfo), extraParams);
+					}
+					else {
+						printf("Unable to prepare array\n");
+					}
 
-                    return start;
+					return start;
 
 
-                }
+				}
 
-            }
+			}
 
-            /**
-             * Execute on the cpu
-             * @param x the input data
-             * @param xShapeInfo the shape information for x
-             * @param extraParams the extra parameters
-             * @param result the result buffer
-             * @param resultShapeInfoBuffer the shape information
-             * @param dimension the dimension to perform
-             * the reduce along long
-             * @param dimensionLength the length of the dimension buffer
-             */
+			/**
+			 * Execute on the cpu
+			 * @param x the input data
+			 * @param xShapeInfo the shape information for x
+			 * @param extraParams the extra parameters
+			 * @param result the result buffer
+			 * @param resultShapeInfoBuffer the shape information
+			 * @param dimension the dimension to perform
+			 * the reduce along long
+			 * @param dimensionLength the length of the dimension buffer
+			 */
 #ifdef __CUDACC__
-            __host__
+			__host__
 #endif
-			template<template <typename> typename OpType>
-            void exec(T *x,
-                      int *xShapeInfo,
-                      T *extraParams,
-                      T *result,
-                      int *resultShapeInfoBuffer,
-                      int *dimension,
-                      int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+				template<template <typename> typename OpType>
+			static void exec(T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfoBuffer,
+				int *dimension,
+				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 
-                int resultLength = shape::length(resultShapeInfoBuffer);
+				int resultLength = shape::length(resultShapeInfoBuffer);
 
-                //pre squeezed: this is for keeping the pointer to the original
-                //shape information for tad offset
-                //the squeezed information doesn't render the right strides for
-                //tad offset
-                // || tad.wholeThing
-                if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo) ) {
-                    result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
-                    return;
-                }
+				//pre squeezed: this is for keeping the pointer to the original
+				//shape information for tad offset
+				//the squeezed information doesn't render the right strides for
+				//tad offset
+				// || tad.wholeThing
+				if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
+					result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+					return;
+				}
 
-                int *tadOnlyShapeInfo = tadShapeInfo;
-                int *tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
+				int *tadOnlyShapeInfo = tadShapeInfo;
+				int *tadOffsets = tadOffset;
+				shape::TAD *tad = nullptr;
 
-                if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
+				if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
+					tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+					tad->createTadOnlyShapeInfo();
+					tad->createOffsets();
 
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
-                        return;
-                    }
+					if (tad->dimensionLength < 1) {
+						delete tad;
+						return;
+					}
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
-                }
+					tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
+					tadOffsets = tad->tadOffsets;
+				}
 
 
-                int tadRank = shape::rank(tadOnlyShapeInfo);
-                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                int numTads = shape::length(xShapeInfo) / tadLength;
-                int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+				int tadRank = shape::rank(tadOnlyShapeInfo);
+				const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+				int numTads = shape::length(xShapeInfo) / tadLength;
+				int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
-                if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
+				if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
 #pragma omp parallel for if (resultLength > 16 && tadLength > 16)
-                    for(int i = 0; i < resultLength; i++) {
-                        T *iter = x + tadOffsets[i];
-                        T start = OpType<T>::startingValue(iter);
-                        if(tadEWS == 1) {
+					for (int i = 0; i < resultLength; i++) {
+						T *iter = x + tadOffsets[i];
+						T start = OpType<T>::startingValue(iter);
+						if (tadEWS == 1) {
 
 #pragma omp simd
-                            for(int j = 0; j < tadLength; j++) {
-                                start = OpType<T>::update(start, OpType<T>::op(iter[j], extraParams), extraParams);
+							for (int j = 0; j < tadLength; j++) {
+								start = OpType<T>::update(start, OpType<T>::op(iter[j], extraParams), extraParams);
 
-                            }
-                        } else {
+							}
+						}
+						else {
 #pragma omp simd
-                            for(int j = 0; j < tadLength; j++) {
-                                start = OpType<T>::update(start, OpType<T>::op(iter[j * tadEWS], extraParams), extraParams);
-                            }
-                        }
-                        result[i] = OpType<T>::postProcess(start, tadLength, extraParams);
-                    }
-                } else {
-                    int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                    int *tadStride = shape::stride(tadOnlyShapeInfo);
+							for (int j = 0; j < tadLength; j++) {
+								start = OpType<T>::update(start, OpType<T>::op(iter[j * tadEWS], extraParams), extraParams);
+							}
+						}
+						result[i] = OpType<T>::postProcess(start, tadLength, extraParams);
+					}
+				}
+				else {
+					int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
+					int *tadStride = shape::stride(tadOnlyShapeInfo);
 
 #pragma omp  parallel for schedule(guided) if (resultLength > 16 && tadLength > 16)
-                    for (int i = 0; i <  resultLength; i++) {
-                        int offset = tadOffsets[i];
-                        int xCoord[MAX_RANK];
+					for (int i = 0; i < resultLength; i++) {
+						int offset = tadOffsets[i];
+						int xCoord[MAX_RANK];
 
-                        T start = OpType<T>::startingValue(x + offset);
+						T start = OpType<T>::startingValue(x + offset);
 
-                        for(int j = 0; j < tadLength; j++) {
-                            shape::ind2subC(tadRank, tadShape, j, xCoord);
-                            int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
+						for (int j = 0; j < tadLength; j++) {
+							shape::ind2subC(tadRank, tadShape, j, xCoord);
+							int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
-                            start = OpType<T>::update(start, OpType<T>::op(x[xOffset], extraParams), extraParams);
-                        }
+							start = OpType<T>::update(start, OpType<T>::op(x[xOffset], extraParams), extraParams);
+						}
 
-                        result[i] = OpType<T>::postProcess(start, tadLength, extraParams);;
-                    }
-                }
+						result[i] = OpType<T>::postProcess(start, tadLength, extraParams);;
+					}
+				}
 
-                if (tad != nullptr)
-                    delete tad;
-            }
+				if (tad != nullptr)
+					delete tad;
+			}
 
 
 
@@ -586,11 +575,11 @@ namespace functions {
 			__host__ __device__
 #endif
 				template<template <typename> typename OpType>
-				void exec(T *x,
-					int *xShapeInfo,
-					T *extraParams,
-					T *result,
-					int *resultShapeInfo) {
+			static void exec(T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo) {
 				return execScalar<OpType>(x, xShapeInfo, extraParams);
 			}
 
@@ -608,7 +597,7 @@ namespace functions {
 			__host__
 #endif
 				template<template <typename> typename OpType>
-				T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
+			static T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
 				T startingVal = OpType<T>::startingValue(x);
 				if (xElementWiseStride == 1) {
 					if (length < 8000) {
@@ -722,15 +711,7 @@ namespace functions {
 				}
 
 			}
-
-			virtual inline
-#ifdef __CUDACC__
-				__host__ __device__
-#endif
-				void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
-				//no extra params aggregation needs to happen
-			}
-        };
+		};
 
 #ifdef __CUDACC__
         /**

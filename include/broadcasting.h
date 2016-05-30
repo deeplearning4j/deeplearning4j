@@ -32,7 +32,7 @@ namespace functions {
  * along long a bigger one.
  */
 		template<typename T>
-		class Broadcast: public functions::ops::Op<T> {
+		class Broadcast {
 		public:
 
 #ifdef __CUDACC__
@@ -113,7 +113,7 @@ namespace functions {
 	}
 #endif
 
-			void exec(const int opNum, T *x,
+			static void exec(const int opNum, T *x,
 				int *xShapeInfo,
 				T *y,
 				int *yShapeInfo,
@@ -158,7 +158,7 @@ namespace functions {
              * @param dimensionLength the length of the dimension buffer
              */
 			template<template <typename> typename OpType>
-			void exec(T *x,
+			static void exec(T *x,
 							  int *xShapeInfo,
 							  T *y,
 							  int *yShapeInfo,
@@ -276,29 +276,6 @@ namespace functions {
 				if (tad != nullptr)
 					delete tad;
 			}
-
-			virtual inline
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-				//no extra params aggregation needs to happen
-			}
-#ifdef __CUDACC__
-			inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-			virtual ~Broadcast() {
-			}
-#ifdef __CUDACC__
-			inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-			Broadcast() {
-			}
-
 		};
 	}
 }
