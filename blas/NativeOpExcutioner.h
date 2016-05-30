@@ -20,14 +20,7 @@
  */
 template <typename T>
 class NativeOpExcutioner {
-private:
-    functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
-
 public:
-    ~NativeOpExcutioner() {
-        delete summaryStatsReduceOpFactory;
-    }
-
     /**
      *
      * @param opNum
@@ -239,7 +232,7 @@ public:
                      T *y,
                      int *yShapeInfo,
                      T *result, int *resultShapeInfo) {
-        functions::reduce3::Reduce3<T>::exec(opNum, x,xShapeInfo,extraParamsVals,y,yShapeInfo, result, resultShapeInfo, nullptr, 0);
+        functions::reduce3::Reduce3<T>::exec(opNum, x,xShapeInfo,extraParamsVals,y,yShapeInfo, result, resultShapeInfo, nullptr, 1);
     }
 
 
@@ -389,9 +382,7 @@ public:
                           T *extraParams,
                           T *result,
                           int *resultShapeInfo,bool biasCorrected) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfo);
-        delete op;
+        functions::summarystats::SummaryStatsReduce<T>::exec(opNum, biasCorrected, x,xShapeInfo,extraParams,result,resultShapeInfo, nullptr, 1);
     }
 
     /**
@@ -407,10 +398,7 @@ public:
                              T *x,
                              int *xShapeInfo,
                              T *extraParams,bool biasCorrected) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
-        T ret = op->execScalar(x,xShapeInfo,extraParams);
-        delete op;
-        return ret;
+        return functions::summarystats::SummaryStatsReduce<T>::execScalar(opNum, biasCorrected, x,xShapeInfo,extraParams);
     }
 
     /**
@@ -430,16 +418,13 @@ public:
                           T *result,
                           int *resultShapeInfoBuffer,
                           int *dimension, int dimensionLength, bool biasCorrected) {
-        functions::summarystats::SummaryStatsReduce<T> *op = summaryStatsReduceOpFactory->getOp(opNum,biasCorrected);
-        op->exec(x,
+        functions::summarystats::SummaryStatsReduce<T>::exec(opNum, biasCorrected, x,
                  xShapeInfo,
                  extraParams,
                  result,
                  resultShapeInfoBuffer,
                  dimension,
                  dimensionLength);
-        delete op;
-
     }
 
 
