@@ -21,7 +21,7 @@ layout: default
 
 ## <a name="intro">Word2Vec简介</a>
 
-Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。虽然Word2vec并不是[深度神经网络](./neuralnet-overview.html)，但它可以将文本转换为深度神经网络能够理解的数值形式。[Deeplearning4j](http://deeplearning4j.org/quickstart.html)用Java和[Scala](./scala.html)语言实现分布式的Word2vec，通过Spark在GPU上运行。 
+Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。虽然Word2vec并不是[深度神经网络](./zh-neuralnet-overview.html)，但它可以将文本转换为深度神经网络能够理解的数值形式。[Deeplearning4j](http://deeplearning4j.org/zh-quickstart.html)用Java和[Scala](./scala.html)语言实现分布式的Word2vec，通过Spark在GPU上运行。 
 
 Word2vec的应用不止于解析自然语句。它还可以用于<a href="#sequence"><a href="#sequence">基因组、代码、[点赞](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit#slide=id.g11a4ba0c5c_0_6)、播放列表、社交媒体图像等其他语言或符号序列</a>，同样能够有效识别其中存在的模式。 
 
@@ -51,7 +51,7 @@ Word2vec衡量词的[余弦相似性](./glossary.html#cosine)，无相似性表�
 
 所以神经词向量用数字来表示词。这是一种简单而又不可思议的“翻译”。 
 
-Word2vec与自动编码器相似，它将每个词编码为向量，但Word2vec不会像[受限玻尔兹曼机](./restrictedboltzmannmachine.html)那样通过[重构](./restrictedboltzmannmachine.html#reconstruct)输入的词语来定型，而是根据输入语料中相邻的其他词来进行每个词的定型。 
+Word2vec与自动编码器相似，它将每个词编码为向量，但Word2vec不会像[受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)那样通过[重构](./zh-restrictedboltzmannmachine.html#reconstruct)输入的词语来定型，而是根据输入语料中相邻的其他词来进行每个词的定型。 
 
 具体的方式有两种，一种是用上下文预测目标词（连续词袋法，简称CBOW），另一种则是用一个词来预测一段目标上下文，称为skip-gram方法。我们使用后一种方法，因为它处理大规模数据集的结果更为准确。
 
@@ -489,12 +489,12 @@ Deeplearning4j有一个叫做[SequenceVectors](https://github.com/deeplearning4j
 * [词袋与词频－逆文档频率（TF-IDF）](./bagofwords-tf-idf.html)
 
 ### <a name="beginner">其他Deeplearning4j教程</a>
-* [神经网络简介](./neuralnet-overview)
-* [受限玻尔兹曼机](./restrictedboltzmannmachine)
-* [本征向量、协方差、PCA和熵](./eigenvector)
-* [LSTM和递归网络](./lstm)
+* [神经网络简介](./zh-neuralnet-overview)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./zh-eigenvector)
+* [LSTM和递归网络](./zh-lstm)
 * [神经网络与回归分析](./linear-regression)
-* [卷积网络](./convolutionalnets)
+* [卷积网络](./zh-convolutionalnets)
 
 ### <a name="doctorow">文学中的Word2Vec</a>
 
