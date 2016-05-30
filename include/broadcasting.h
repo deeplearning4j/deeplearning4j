@@ -40,14 +40,11 @@ namespace functions {
              * @param d2
              * @return
              */
-#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
-
 #elif defined(__GNUC__)
 			inline
-
 #endif
 			T op(T d1, T d2) = 0;
 			/**
@@ -55,13 +52,10 @@ namespace functions {
              * @param d1
              * @return
              */
-#pragma omp declare simd
 			virtual
 #ifdef __CUDACC__
 			inline __device__  __host__
-
 #elif defined(__GNUC__)
-
 			inline
 #endif
 			T op(T d1) = 0;
@@ -100,35 +94,22 @@ namespace functions {
       }
       __syncthreads();
 
-/*	  __shared__ int rank;
-      __shared__ int tadEWS;
-  	  __shared__ int yStride;
-        if (threadIdx.x == 0) {
-            tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-            tad->setExternalBuffers((void *) manager);
-            tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
-            //tad->init(xShapeInfo,dimension,dimensionLength);
-            //tad->createTadOnlyShapeInfo();
-
-
-			rank = shape::rank(tad->tadOnlyShapeInfo);
-			tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-		    yStride = shape::elementWiseStride(yShapeInfo);
-        }
-       __syncthreads();
-*/
-
-        //int *xCoord = shape::cuMalloc(manager->getSharedCoordBuffer(), rank);
-
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
 			int tadOffsetForBlock = tadOffsets[r];
-           
+            T *rR = result + tadOffsetForBlock;
+            T *rX = x + tadOffsetForBlock;
+
+
             if(tadEWS > 0) {
-                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    // now we need coords for both X, Y. Z is uses the same coord as X in this case
-                    // Y is always vector, however it might be stided
-                    result[tadOffsetForBlock + i * tadEWS] = this->op(x[tadOffsetForBlock + i * tadEWS], y[i * yStride]);
+            	if (tadEWS == 1 && yStride == 1) {
+                	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                    	rR[i] = rX[i] + y[i];//this->op(rX[i], y[i]);
+                	}
+                } else {
+					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                    //	rR[i * tadEWS] = this->op(rX[i * tadEWS], y[i * yStride]);
+                	}
                 }
             }
             else {
@@ -139,7 +120,6 @@ namespace functions {
                     result[xOffset] = this->op(x[xOffset], y[i * yStride]);
                 }
             }
-            __syncthreads();
 		}
 	}
 #endif
