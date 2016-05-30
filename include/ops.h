@@ -5,6 +5,8 @@
 
 #define no_op_exec_special 	static constexpr const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #define MIN 1e-12
+#define MAX_FLOAT 1e37
+#define MIN_FLOAT 1e-37
 
 #ifdef __CUDACC__
 #define op_def inline __host__  __device__
@@ -14,6 +16,16 @@
 #define no_op_exec_special_cuda
 #endif
 
+
+namespace functions {
+	namespace indexreduce {
+		template<typename T>
+		struct IndexValue {
+			T value;
+			int index;
+		};
+	}
+}
 
 namespace simdOps {
 	template<typename T>
@@ -1349,7 +1361,111 @@ namespace simdOps {
 		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
+	};
 
 
+	template<typename T>
+	class IndexMax  {
+	public:
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			return val;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> update(
+				functions::indexreduce::IndexValue<T> old,
+				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			if (opOutput.value > old.value)
+				return opOutput;
+#ifdef __CUDACC__
+			// workaround for cuda race condition at merge phase
+			else if (opOutput.value == old.value && opOutput.index < old.index)
+				return opOutput;
+#elif defined(__GNUC__)
+
+#endif
+			return old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> merge(
+				functions::indexreduce::IndexValue<T> f1,
+				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			if (f1.value > f2.value)
+				return f2;
+			return f1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> postProcess(
+				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+				T *dx, int incx, T *extraParams, T *result) {
+			return reduction;
+		}
+
+		op_def static T startingValue(T *input) {
+			return MIN_FLOAT;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			return d1;
+		}
+	};
+
+
+	template<typename T>
+	class IndexMin {
+	public:
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> op(
+				functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			return val;
+		}
+
+		op_def static T startingValue(T *input) {
+			return MAX_FLOAT;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> update(
+				functions::indexreduce::IndexValue<T> old,
+				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			if (opOutput.value < old.value)
+				return opOutput;
+
+#ifdef __CUDACC__
+			// workaround for cuda race condition at merge phase
+			else if (opOutput.value == old.value && opOutput.index < old.index)
+				return opOutput;
+#elif defined(__GNUC__)
+
+#endif
+			return old;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> merge(
+				functions::indexreduce::IndexValue<T> f1,
+				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			if (f1.value < f2.value)
+				return f2;
+			return f1;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> postProcess(
+				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+				T *dx, int incx, T *extraParams, T *result) {
+			return reduction;
+		}
+
+#pragma omp declare simd uniform(extraParams)
+		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			return d1;
+		}
 	};
 }

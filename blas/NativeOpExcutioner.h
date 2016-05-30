@@ -21,12 +21,10 @@
 template <typename T>
 class NativeOpExcutioner {
 private:
-    functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
     functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
 
 public:
     ~NativeOpExcutioner() {
-        delete indexReduceOpFactory;
         delete summaryStatsReduceOpFactory;
     }
 
@@ -43,11 +41,7 @@ public:
                             T *x,
                             int *xShapeInfo,
                             T *extraParams) {
-        functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        T ret = op->execScalar(x,xShapeInfo,extraParams);
-        delete op;
-        return ret;
-
+        return functions::indexreduce::IndexReduce<T>::execScalar(opNum, x,xShapeInfo,extraParams);
     }
 
     /**
@@ -68,9 +62,7 @@ public:
                          T *result,
                          int *resultShapeInfoBuffer,
                          int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
-        functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength, tadShapeInfo, tadOffsets);
-        delete op;
+        functions::indexreduce::IndexReduce<T>::exec(opNum, x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength, tadShapeInfo, tadOffsets);
     }
 
     /**
