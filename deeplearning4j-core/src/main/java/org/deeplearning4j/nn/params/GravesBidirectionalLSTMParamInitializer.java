@@ -96,8 +96,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         INDArray rwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset));
         INDArray bR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
-        bF.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
-        bR.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
+        bF.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
+        bR.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
         /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
          * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
