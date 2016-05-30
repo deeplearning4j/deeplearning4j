@@ -5,6 +5,8 @@
 #include <reduce.h>
 
 #define no_op_exec_special 	static constexpr const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
+#define MIN 1e-12
+
 #ifdef __CUDACC__
 #define op_def inline __host__  __device__
 #define no_op_exec_special_cuda 	static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
@@ -34,6 +36,11 @@ namespace simdOps {
 			return d1 + d2;
 		}
 
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 + d2;
+		}
+
 #pragma omp declare simd
 		op_def static T op(T d1) {
 			return d1;
@@ -46,6 +53,11 @@ namespace simdOps {
 
 #pragma omp declare simd
 		op_def static T op(T d1, T d2) {
+			return d1 - d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
 			return d1 - d2;
 		}
 
@@ -63,6 +75,10 @@ namespace simdOps {
 			return d2 - d1;
 		}
 		
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d2 - d1;
+		}
 #pragma omp declare simd		
 		op_def static T op(T d1) {
 			return d1;
@@ -77,6 +93,11 @@ namespace simdOps {
 			return d1 * d2;
 		}
 
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 * d2;
+		}
+
 #pragma omp declare simd
 		op_def static T op(T d1) {
 			return d1;
@@ -88,6 +109,11 @@ namespace simdOps {
 	public:
 #pragma omp declare simd
 		op_def static T op(T d1, T d2) {
+			return d1 / d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
 			return d1 / d2;
 		}
 		
@@ -105,6 +131,11 @@ namespace simdOps {
 			return d2 / d1;
 		}
 
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d2 / d1;
+		}
+
 #pragma omp declare simd
 		op_def static T op(T d1) {
 			return d1;
@@ -119,12 +150,166 @@ namespace simdOps {
 			return d2;
 		}
 
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d2;
+		}
+
 #pragma omp declare simd
 		op_def static T op(T d1) {
 			return d1;
 		}
 	};
 
+	/**
+	* Whether 2 elements in an array
+	* are epsilion equal
+	*/
+	template<typename T>
+	class Epsilon {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			T diff = d1 - d2;
+			T absDiff = nd4j::math::nd4j_abs(diff);
+			if (absDiff < MIN)
+				return 1;
+			return 0;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+	};
+
+
+	template<typename T>
+	class EqualTo {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 == d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+	};
+
+
+	template<typename T>
+	class NotEqualTo {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 != d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+	};
+
+
+
+	template<typename T>
+	class GreaterThanOrEqual {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 >= d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+	};
+
+
+	template<typename T>
+	class GreaterThan {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 > d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+	};
+
+
+	template<typename T>
+	class LessThan {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 < d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+	};
+
+
+	template<typename T>
+	class LessThanOrEqual {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return d1 <= d2;
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+	};
+
+
+
+
+	template<typename T>
+	class Max {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_max<T>(d1, d2);
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+	};
+
+
+	template<typename T>
+	class Min {
+	public:
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_min(d1, d2);
+		}
+
+#pragma omp declare simd uniform(params)
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+	};
 
 	template<typename T>
 	class Abs {
@@ -626,7 +811,7 @@ namespace simdOps {
 		}
 	};
 
-
+	
 	template<typename T>
 	class Im2col {
 	public:

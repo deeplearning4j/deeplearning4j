@@ -22,22 +22,18 @@ template <typename T>
 class NativeOpExcutioner {
 private:
     functions::indexreduce::IndexReduceOpFactory<T> *indexReduceOpFactory = new functions::indexreduce::IndexReduceOpFactory<T>();
-    functions::pairwise_transforms::PairWiseTransformOpFactory<T> *pairWiseTransformOpFactory = new functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
     functions::reduce::ReduceOpFactory<T> *reduceOpFactory = new functions::reduce::ReduceOpFactory<T>();
     functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory = new functions::reduce3::Reduce3OpFactory<T>();
     functions::scalar::ScalarOpFactory<T> *scalarOpFactory = new functions::scalar::ScalarOpFactory<T>();
     functions::summarystats::SummaryStatsReduceOpFactory<T> *summaryStatsReduceOpFactory = new functions::summarystats::SummaryStatsReduceOpFactory<T>();
-    functions::transform::TransformOpFactory<T> *transformOpFactory = new functions::transform::TransformOpFactory<T>();
 
 public:
     ~NativeOpExcutioner() {
         delete indexReduceOpFactory;
-        delete pairWiseTransformOpFactory;
         delete reduceOpFactory;
         delete reduce3OpFactory;
         delete scalarOpFactory;
         delete summaryStatsReduceOpFactory;
-        delete transformOpFactory;
     }
 
     /**
@@ -128,8 +124,8 @@ public:
                                T *result,
                                int resultStride,
                                T *extraParams, Nd4jIndex n) {
-        functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
-        op->exec(
+		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;;
+		pairwiseTransform.exec(opNum,
                 dx,
                 xStride,
                 y,
@@ -138,7 +134,6 @@ public:
                 resultStride,
                 extraParams,
                 n);
-        delete op;
     }
 
     /**
@@ -161,15 +156,15 @@ public:
                                T *result,
                                int *resultShapeInfo,
                                T *extraParams) {
-        functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
-        op->exec(dx,
+		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;
+		pairwiseTransform.exec(opNum,
+			     dx,
                  xShapeInfo,
                  y,
                  yShapeInfo,
                  result,
                  resultShapeInfo,
                  extraParams);
-        delete op;
     }
 
     /**
@@ -195,8 +190,9 @@ public:
                                int *xIndexes,
                                int *yIndexes,
                                int *resultIndexes) {
-        functions::pairwise_transforms::PairWiseTransform<T> *op = pairWiseTransformOpFactory->getOp(opNum);
-        op->exec(dx,
+		functions::pairwise_transforms::PairWiseTransform<T> pairwiseTransform;
+		pairwiseTransform.exec(opNum,
+			    dx,
                  xShapeInfo,
                  y,
                  yShapeInfo,
@@ -206,7 +202,6 @@ public:
                  xIndexes,
                  yIndexes,
                  resultIndexes);
-        delete op;
     }
 
 
