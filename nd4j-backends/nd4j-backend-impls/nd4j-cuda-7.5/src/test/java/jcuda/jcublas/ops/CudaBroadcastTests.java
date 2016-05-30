@@ -27,7 +27,7 @@ public class CudaBroadcastTests {
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(128)
                 .setMaximumGridSize(128)
-                .enableDebug(true);
+                .enableDebug(false);
 
         System.out.println("Init called");
     }
@@ -206,6 +206,27 @@ public class CudaBroadcastTests {
         System.out.println("Array2: " + array2);
 
         assertEquals(0.5f, array1.getRow(0).getFloat(0), 0.01);
+    }
+
+    @Test
+    public void execBroadcastOp() throws Exception {
+        INDArray array = Nd4j.ones(1024, 1024);
+        INDArray arrayRow = Nd4j.linspace(1, 1024, 1024);
+
+        float sum = (float) array.sumNumber().doubleValue();
+
+        array.addiRowVector(arrayRow);
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 1000; x++) {
+            array.addiRowVector(arrayRow);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time: " + ((time2 - time1) / 1000));
+
+        assertEquals(1002, array.getFloat(0), 0.1f);
+        assertEquals(2003, array.getFloat(1), 0.1f);
     }
 }
 
