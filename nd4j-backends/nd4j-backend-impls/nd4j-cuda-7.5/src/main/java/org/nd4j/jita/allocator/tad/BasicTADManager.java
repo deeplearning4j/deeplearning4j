@@ -2,11 +2,9 @@ package org.nd4j.jita.allocator.tad;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.conf.Configuration;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.nativeblas.NativeOps;

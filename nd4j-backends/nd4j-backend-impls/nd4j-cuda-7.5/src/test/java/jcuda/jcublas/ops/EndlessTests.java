@@ -2,6 +2,7 @@ package jcuda.jcublas.ops;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.conf.Configuration;
@@ -19,6 +20,7 @@ import static org.junit.Assert.assertEquals;
  * @author AlexDBlack
  * @author raver119@gmail.com
  */
+@Ignore
 public class EndlessTests {
     private static final int RUN_LIMIT = 1000000;
 

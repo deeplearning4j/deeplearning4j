@@ -902,14 +902,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
-        if (1 > 0)
-            throw new RuntimeException("setOrder() called");
-
-        Shape.setOrder(shapeInfo(),order);
+        //Shape.setOrder(shapeInfo(),order);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(),0, elementWiseStride(), order);
     }
 
     @Override
     public void setShape(int... shape) {
+        /*
         if (1 > 0)
             throw new RuntimeException("setShape() called");
 
@@ -917,7 +916,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for(int i = 0; i < shape.length; i++) {
             shapeView.put(i,shape[i]);
         }
+        */
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride(),0, elementWiseStride(), ordering());
+    }
 
+    @Override
+    public void setStride(int[] stride) {
+/*        if (1 > 0)
+            throw new RuntimeException("setStride() called");
+
+        DataBuffer strideView = Shape.stride(shapeInformation);
+        for(int i = 0; i < stride.length; i++)
+            strideView.put(i,stride[i]);
+*/
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride,0, elementWiseStride(), ordering());
     }
 
 
@@ -1918,17 +1930,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return this;
     }
 
-
-
-    @Override
-    public void setStride(int[] stride) {
-        if (1 > 0)
-            throw new RuntimeException("setStride() called");
-
-        DataBuffer strideView = Shape.stride(shapeInformation);
-        for(int i = 0; i < stride.length; i++)
-            strideView.put(i,stride[i]);
-    }
 
     protected void init(int[] shape,int[] stride) {
         if (shape.length == 1) {

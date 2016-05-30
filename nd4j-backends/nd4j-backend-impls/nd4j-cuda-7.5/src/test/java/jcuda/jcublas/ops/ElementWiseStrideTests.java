@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by raver on 08.05.2016.
  */
+@Ignore
 public class ElementWiseStrideTests {
 
     @Before
