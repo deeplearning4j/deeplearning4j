@@ -1698,7 +1698,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             truncatedBPTTGradient();
         }
         else {
-            feedForward(true);
+            //First: do a feed-forward through the network
+            //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
+            // need the input to the output layer to be set (such that backprop can be done)
+            List<INDArray> activations = feedForwardToLayer(layers.length-2,true);
+            INDArray actSecondLastLayer = activations.get(activations.size()-1);
+            if(layerWiseConfigurations.getInputPreProcess(layers.length-1) != null)
+                actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length-1).preProcess(actSecondLastLayer,getInputMiniBatchSize());
+            getOutputLayer().setInput(actSecondLastLayer);
+            //Then: compute gradients
             backprop();
         }
         score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
