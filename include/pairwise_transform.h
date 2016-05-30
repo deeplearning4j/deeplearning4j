@@ -552,46 +552,19 @@ namespace functions {
                               T *extraParams,
                               Nd4jIndex n) {
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-                    if(n < 8000) {
 
-#pragma omp simd
+#pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             result[i] = op(dx[i], y[i], extraParams);
                         }
-
-
-                    }
-                    else {
-#pragma omp parallel for simd schedule(guided)
-                        for (Nd4jIndex i = 0; i < n; i++) {
-                            result[i] = op(dx[i], y[i], extraParams);
-                        }
-                    }
-
-
-
                 }
-
                 else {
-                    if(n < 8000) {
-#pragma omp simd
+#pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             result[i * resultStride] = op(dx[i * xStride],
                                                           y[i * yStride], extraParams);
                         }
-                    }
-                    else {
-#pragma omp parallel for simd schedule(guided)
-                        for (Nd4jIndex i = 0; i < n; i++) {
-                            result[i * resultStride] = op(dx[i * xStride],
-                                                          y[i * yStride], extraParams);
-                        }
-                    }
-
-
-
                 }
-
             }
 
             virtual inline

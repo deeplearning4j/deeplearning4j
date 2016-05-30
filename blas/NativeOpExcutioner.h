@@ -79,9 +79,9 @@ public:
                          T *extraParams,
                          T *result,
                          int *resultShapeInfoBuffer,
-                         int *dimension, int dimensionLength) {
+                         int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
         functions::indexreduce::IndexReduce<T> *op = indexReduceOpFactory->getOp(opNum);
-        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength);
+        op->exec(x,xShapeInfo,extraParams,result,resultShapeInfoBuffer,dimension,dimensionLength, tadShapeInfo, tadOffsets);
         delete op;
     }
 
@@ -103,10 +103,10 @@ public:
                        T *y,
                        int *yShapeInfo,
                        T *result,
-                       int *dimension, int dimensionLength) {
+                       int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
         functions::broadcast::Broadcast<T> *broadcast = broadcastOpFactory->getOp(opNum);
-        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength);
+        broadcast->exec(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets);
         delete broadcast;
     }
 
@@ -230,9 +230,9 @@ public:
                     T *result,
                     int *resultShapeInfo,
                     int *dimension,
-                    int dimensionLength) {
+                    int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
         functions::reduce::ReduceFunction<T> *reduceFunction = reduceOpFactory->create(opNum);
-        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength);
+        reduceFunction->exec(x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
         delete reduceFunction;
     }
 
