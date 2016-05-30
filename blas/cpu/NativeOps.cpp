@@ -22,7 +22,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-	NativeOpExcutioner<double>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+	return NativeOpExcutioner<double>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 
 }
 
@@ -515,7 +515,7 @@ double   NativeOps::execSummaryStatsScalarDouble(Nd4jPointer *extraPointers, int
     double *xPointer = reinterpret_cast<double *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     double *extraParamsPointer = reinterpret_cast<double *>(extraParams);
-	NativeOpExcutioner<double>::execSummaryStatsScalar(
+	return NativeOpExcutioner<double>::execSummaryStatsScalar(
             opNum,
             xPointer,
             xShapeInfoPointer,
@@ -691,7 +691,7 @@ float   NativeOps::execIndexReduceScalarFloat(Nd4jPointer *extraPointers, int op
     float *xPointer = reinterpret_cast<float *>(x);
     int *xShapeInfoPointer = reinterpret_cast<int *>(xShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParams);
-	NativeOpExcutioner<float>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
+	return NativeOpExcutioner<float>::execIndexReduceScalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer);
 }
 
 /**
@@ -1030,7 +1030,7 @@ float   NativeOps::execReduce3ScalarFloat(Nd4jPointer *extraPointers,int opNum,
     float *yPointer = reinterpret_cast<float *>(y);
     int *yShapeInfoPointer = reinterpret_cast<int *>(yShapeInfo);
     float *extraParamsPointer = reinterpret_cast<float *>(extraParamsVals);
-	NativeOpExcutioner<float>::execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
+	return NativeOpExcutioner<float>::execReduce3Scalar(opNum,xPointer,xShapeInfoPointer,extraParamsPointer,yPointer,yShapeInfoPointer);
 }
 /**
  *
