@@ -24,8 +24,8 @@
 
 #include <ops.h>
 
-#define VARIANCE 1
-#define STANDARD_DEVIATION 2
+#define VARIANCE 0
+#define STANDARD_DEVIATION 1
 
 
 namespace functions {
