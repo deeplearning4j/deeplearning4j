@@ -35,7 +35,9 @@ namespace functions {
 		public:
 
 #ifdef __CUDACC__
-			__inline__ __device__ void transformCuda(
+
+template<typename OpType>
+			static __inline__ __device__ void transformCuda(
 			T *x,
 			int *xShapeInfo,
 			T *y,
@@ -78,11 +80,11 @@ namespace functions {
             if(tadEWS > 0) {
             	if (tadEWS == 1 && yStride == 1) {
                 	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i] = this->op(rX[i], y[i]);
+                    	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
 					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i * tadEWS] = this->op(rX[i * tadEWS], y[i * yStride]);
+                    	rR[i * tadEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
             }
@@ -91,11 +93,40 @@ namespace functions {
                 for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-                    result[xOffset] = this->op(x[xOffset], y[i * yStride]);
+                    result[xOffset] = OpType::op(x[xOffset], y[i * yStride]);
                 }
             }
 		}
 	}
+
+
+		static inline __device__ void transformCuda(const int opNum,
+				T *x,
+				int *xShapeInfo,
+				T *y,
+				int *yShapeInfo,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset) {
+
+				if (opNum == 0)
+					transformCuda<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 1)
+					transformCuda<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 2)
+					transformCuda<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 3)
+					transformCuda<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 4)
+					transformCuda<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 5)
+					transformCuda<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 6)
+					transformCuda<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
+			}
 #endif
 
 			static void exec(const int opNum, T *x,
@@ -297,45 +328,17 @@ __device__ void broadcastGeneric(
 		int *dimension,
 		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-	__shared__ functions::broadcast::Broadcast<T> *op;
-	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (yShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
-		newOpFactory =  new(manager->getFactorySpace()) functions::broadcast::BroadcastOpFactory<T>();
-		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-
-	op->transformCuda(
+	functions::broadcast::Broadcast<T>::transformCuda(
+			opNum,
 			x,
 			xShapeInfo,
 			y,
@@ -343,7 +346,10 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength, manager, tadOnlyShapeInfo, tadOffsets);
+			dimensionLength,
+			manager,
+			tadOnlyShapeInfo,
+			tadOffsets);
 }
 
 /**

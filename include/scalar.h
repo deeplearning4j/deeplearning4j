@@ -42,13 +42,16 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transform(
+template<typename OpType>
+	static inline __device__ void transform(
 			Nd4jIndex n,
 			T scalar,
 			T *dy,
 			T *params,
 			T *result,
-			int *indexes, int *allocationBuffer, UnifiedSharedMemory *manager) {
+			int *indexes,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = threadIdx.x;
 		Nd4jIndex i = blockIdx.x * blockDim.x + tid;
@@ -56,7 +59,7 @@ namespace functions {
 		/* equal, positive, non-unit increments. */
 #pragma unroll
 		for (; i < n; i+= totalThreads) {
-			result[indexes[i]] = op(dy[indexes[i]],scalar, params);
+			result[indexes[i]] = OpType::op(dy[indexes[i]],scalar, params);
 		}
 	}
 
@@ -70,12 +73,17 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transformCuda(
+template<typename OpType>
+	static inline __device__ void transformCuda(
 			T scalar,
 			T *dy,
 			int *shapeInfo,
 			T *params,
-			T *result, int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager) {
+			T *result,
+			int *resultShapeInfo,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
+
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
 		char xOrder = shape::order(shapeInfo);
@@ -97,7 +105,7 @@ namespace functions {
 
 
 		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == shape::order(resultShapeInfo)) {
-			transformCuda(
+			transformCuda<OpType>(
 					length,
 					scalar,
 					dy,
@@ -106,11 +114,6 @@ namespace functions {
 					result,resultElementWiseStride, allocationBuffer, manager);
 		}
 		else {
-			/* equal, positive, non-unit increments. */
-			/*
-			long allocSize = sizeof(int) * xRank;
-			int *xIdx = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
-            */
             int xIdx[MAX_RANK];
 
 #pragma unroll
@@ -118,12 +121,9 @@ namespace functions {
 				shape::ind2sub(xRank, xShape, i,xIdx);
 				int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 				int resultOffset = shape::getOffset(0, zShape, zStride, xIdx, zRank);
-				result[resultOffset] = op(dy[xOffset2],scalar, params);
+				result[resultOffset] = OpType::op(dy[xOffset2],scalar, params);
 			}
 		}
-
-
-
 	}
 
 
@@ -138,32 +138,188 @@ namespace functions {
 	 * @param result
 	 * @param blockSize
 	 */
-	virtual
-	__inline__ __device__ void transformCuda(
+template<typename OpType>
+	static inline __device__ void transformCuda(
 			Nd4jIndex n,
 			T dx,
 			T *dy,
 			int incy,
 			T *params,
-			T *result,int resultStride, int *allocationBuffer, UnifiedSharedMemory *manager) {
+			T *result,
+			int resultStride,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
+
 		int totalThreads = gridDim.x * blockDim.x;
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
 		Nd4jIndex i = tid;
-		if(incy == 1) {
+		if(incy == 1 && resultStride == 1) {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i] = op(dy[i],dx, params);
+				result[i] = OpType::op(dy[i],dx, params);
 			}
 		}
 		else {
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i * resultStride] = op(dy[i * incy],dx, params);
+				result[i * resultStride] = OpType::op(dy[i * incy],dx, params);
 			}
+		}
+	}
+
+		static inline __device__ void transformCuda(
+			const int op,
+			T scalar,
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result,
+			int *resultShapeInfo,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
+
+			if (op == 0)
+				transformCuda<simdOps::Add<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 1)
+				transformCuda<simdOps::Subtract<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 2)
+				transformCuda<simdOps::Multiply<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 3)
+				transformCuda<simdOps::Divide<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 4)
+				transformCuda<simdOps::ReverseDivide<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 5)
+				transformCuda<simdOps::ReverseSubtract<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 6)
+				transformCuda<simdOps::Max<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 7)
+				transformCuda<simdOps::LessThan<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 8)
+				transformCuda<simdOps::GreaterThan<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 9)
+				transformCuda<simdOps::EqualTo<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 10)
+				transformCuda<simdOps::LessThanOrEqual<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 11)
+				transformCuda<simdOps::NotEqualTo<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 12)
+				transformCuda<simdOps::Min<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 13)
+				transformCuda<simdOps::Copy<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 14)
+				transformCuda<simdOps::Mod<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 15)
+				transformCuda<simdOps::ReverseMod<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else if (op == 16)
+				transformCuda<simdOps::GreaterThanOrEqual<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
+			else
+				printf("[ERROR] Unknown opNum=%d for scalar", op);
+			}
+
+
+		static inline __device__ void transform(
+			const int op,
+			Nd4jIndex n,
+			T scalar,
+			T *dy,
+			T *params,
+			T *result,
+			int *indexes,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
+
+			if (op == 0)
+				transform<simdOps::Add<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 1)
+				transform<simdOps::Subtract<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 2)
+				transform<simdOps::Multiply<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 3)
+				transform<simdOps::Divide<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 4)
+				transform<simdOps::ReverseDivide<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 5)
+				transform<simdOps::ReverseSubtract<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 6)
+				transform<simdOps::Max<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 7)
+				transform<simdOps::LessThan<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 8)
+				transform<simdOps::GreaterThan<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 9)
+				transform<simdOps::EqualTo<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 10)
+				transform<simdOps::LessThanOrEqual<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 11)
+				transform<simdOps::NotEqualTo<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 12)
+				transform<simdOps::Min<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 13)
+				transform<simdOps::Copy<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 14)
+				transform<simdOps::Mod<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 15)
+				transform<simdOps::ReverseMod<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else if (op == 16)
+				transform<simdOps::GreaterThanOrEqual<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
+			else
+				printf("[ERROR] Unknown opNum=%d for scalar", op);
+
+
 		}
 
 
-	}
+		static inline __device__ void transformCuda(
+			const int op,
+			Nd4jIndex n,
+			T dx,
+			T *dy,
+			int incy,
+			T *params,
+			T *result,
+			int resultStride,
+			int *allocationBuffer,
+			UnifiedSharedMemory *manager) {
+
+			if (op == 0)
+				transformCuda<simdOps::Add<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 1)
+				transformCuda<simdOps::Subtract<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 2)
+				transformCuda<simdOps::Multiply<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 3)
+				transformCuda<simdOps::Divide<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 4)
+				transformCuda<simdOps::ReverseDivide<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 5)
+				transformCuda<simdOps::ReverseSubtract<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 6)
+				transformCuda<simdOps::Max<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 7)
+				transformCuda<simdOps::LessThan<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 8)
+				transformCuda<simdOps::GreaterThan<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 9)
+				transformCuda<simdOps::EqualTo<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 10)
+				transformCuda<simdOps::LessThanOrEqual<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 11)
+				transformCuda<simdOps::NotEqualTo<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 12)
+				transformCuda<simdOps::Min<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 13)
+				transformCuda<simdOps::Copy<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 14)
+				transformCuda<simdOps::Mod<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 15)
+				transformCuda<simdOps::ReverseMod<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else if (op == 16)
+				transformCuda<simdOps::GreaterThanOrEqual<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
+			else
+				printf("[ERROR] Unknown opNum=%d for scalar", op);
+
+		}
 #endif
 
 		static void transform(const int op,
@@ -474,23 +630,27 @@ __device__ void scalarGeneric(
 		int incy, T *params,
 		T *result,int resultStride, int *allocationBuffer) {
 
-	__shared__ functions::scalar::ScalarTransform<T> *op;
-	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
-
-		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
 	}
 	__syncthreads();
 
 
-	op->transformCuda(n,dx,dy,incy,params,result,resultStride,allocationBuffer, manager);
+	functions::scalar::ScalarTransform<T>::transformCuda(
+		opNum,
+		n,
+		dx,
+		dy,
+		incy,
+		params,
+		result,
+		resultStride,
+		allocationBuffer,
+		manager);
 }
 
 __global__ void scalarDouble(
@@ -532,22 +692,25 @@ __device__ void scalarGenericIndexes(
         T *params,
         T *result,int *indexes, int *allocationBuffer) {
 
-    __shared__ functions::scalar::ScalarTransform<T> *op;
-    __shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
-
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
-
-        scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
-        op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
     }
     __syncthreads();
 
-    op->transform(n,dx,dy,params,result,indexes, allocationBuffer, manager);
+    functions::scalar::ScalarTransform<T>::transform(
+    	opNum,
+    	n,
+    	dx,
+    	dy,
+    	params,
+    	result,
+    	indexes,
+    	allocationBuffer,
+    	manager);
 }
 
  __global__ void scalarDoubleIndexes(
@@ -596,27 +759,23 @@ __device__ void scalarGeneric(
 		int opNum,
 		T dx,
 		T *dy,
-		int *xShapeInfo,int xRank,
+		int *xShapeInfo, int xRank,
 		T *params,
-		T *result,int *resultShapeInfo, int zRank, int *allocationBuffer) {
-
-	__shared__ functions::scalar::ScalarTransform<T> *op;
-	__shared__  functions::scalar::ScalarOpFactory<T> *scalarDoubleOpFactory;
+		T *result,
+		int *resultShapeInfo, int zRank,
+		int *allocationBuffer) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::scalar::ScalarOpFactory<T>), sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
-
-		scalarDoubleOpFactory = new(manager->getFactorySpace()) functions::scalar::ScalarOpFactory<T>();
-		op = scalarDoubleOpFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
 	}
 	__syncthreads();
 
-
-	op->transformCuda(
+	functions::scalar::ScalarTransform<T>::transformCuda(
+	    opNum,
 	    dx,
 	    dy,
 	    xShapeInfo,
