@@ -1135,7 +1135,7 @@ namespace simdOps {
 	template<typename T>
 	class CosineSimilarity {
 	public:
-		constexpr static const int extraParamsLen = 2;
+		static const int extraParamsLen = 2;
 
 		op_def static T * generateExtraParams() {
 			T *extraParams = new T[2];
@@ -1205,7 +1205,7 @@ namespace simdOps {
 	template<typename T>
 	class Dot {
 	public:
-		constexpr static const int extraParamsLen = 0;
+		static const int extraParamsLen = 0;
 
 		op_def static T * generateExtraParams() {
 			return nullptr;
@@ -1260,7 +1260,7 @@ namespace simdOps {
 	template<typename T>
 	class EuclideanDistance {
 	public:
-		constexpr static const int extraParamsLen = 0;
+		static const int extraParamsLen = 0;
 
 		op_def static T * generateExtraParams() {
 			return nullptr;
@@ -1315,7 +1315,7 @@ namespace simdOps {
 	template<typename T>
 	class ManhattanDistance  {
 	public:
-		constexpr static const int extraParamsLen = 0;
+		static const int extraParamsLen = 0;
 
 		op_def static T * generateExtraParams() {
 			return nullptr;

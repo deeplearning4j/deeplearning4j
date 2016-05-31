@@ -266,8 +266,9 @@ namespace functions {
                      @param extraParams extra parameters used for calculations
                      @param result where to store the result of the reduction
              */
-            template<template <typename> typename OpType>
-			static inline __device__ void transform(
+template<typename OpType>
+			__device__
+			static inline void transform(
 					T *dx,
 					int *xShapeInfo,
 					T *dy,
@@ -278,7 +279,10 @@ namespace functions {
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
-					int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+					int *allocationPointer,
+					UnifiedSharedMemory *manager,
+					int *tadOnlyShapeInfo,
+					int *tadOffsets) {
 				/**
                  * Gpu information for the problem
                  */
@@ -291,7 +295,7 @@ namespace functions {
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
-				T init = OpType<T>::startingValue(dx);
+				T init = OpType::startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
 
@@ -300,7 +304,7 @@ namespace functions {
 				__shared__ Nd4jIndex resultLength;
 
 
-				T reduction = OpType<T>::startingValue(dx);
+				T reduction = OpType::startingValue(dx);
 				if (threadIdx.x == 0) {
 					if (resultShapeInfo != nullptr)
 						resultLength = shape::length(resultShapeInfo);
@@ -357,8 +361,8 @@ namespace functions {
 							int offset = tadOffsets[i];
 							int dim;
 							T *xPointer = dx + offset;
-							T start = this->startingValue(xPointer);
-							T startingVal = this->startingValue(dx);
+							T start = OpType::startingValue(xPointer);
+							T startingVal = OpType::startingValue(dx);
 							if(PrepareTwoRawArrayIter<T>(rank,
 														 xShape,
 														 dx,
@@ -375,7 +379,7 @@ namespace functions {
 										/* Process the innermost dimension */
 										T *xIter = dx;
 										T *yIter = dy;
-										startingVal = OpType<T>::update(startingVal, OpType<T>::op(xIter[0],yIter[0],&extraParams),&extraParams);
+										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraParams),&extraParams);
 									} ND4J_RAW_ITER_TWO_NEXT(dim,
 															 rank,
 															 coord,
@@ -385,7 +389,7 @@ namespace functions {
 															 dy,
 															 yStridesIter);
 
-								result[i] = postProcess(startingVal,n,&extraParams);
+								result[i] = OpType::postProcess(startingVal,n,&extraParams);
 							}
 							else {
 								printf("Unable to prepare array\n");
@@ -396,10 +400,7 @@ namespace functions {
 						__syncthreads();
 					}
 					else {
-				//		Nd4jIndex xLength = shape::length(xShapeInfo);
-
 /*
-
 						// DO NOT REMOVE THIS COMMENTED BLOCK PLEASE
 
 						for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
@@ -438,12 +439,12 @@ namespace functions {
 							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
 
-							sPartials[threadIdx.x] = op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
+							sPartials[threadIdx.x] = OpType::op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
 							for(int j = 1; j < tadLength; j++) {
-								sPartials[threadIdx.x] =  OpType<T>::update(sPartials[threadIdx.x], OpType<T>::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
+								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
 							}
 
-							result[i] = postProcess(sPartials[threadIdx.x],tadLength,&extraParams);
+							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength,&extraParams);
 						}
 
 					}
@@ -454,6 +455,38 @@ namespace functions {
 
 
 
+#endif
+
+#ifdef __CUDACC__
+			__device__
+			static inline void exec(
+				const int op,
+				T *dx,
+				int *xShapeInfo,
+				T *dy,
+				int *yShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				int postProcessOrNot,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo,
+				int *tadOffsets) {
+
+				if (op == 0)
+					transform<simdOps::ManhattanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 1)
+					transform<simdOps::EuclideanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 2)
+					transform<simdOps::CosineSimilarity<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 3)
+					transform<simdOps::Dot<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else
+					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+			}
 #endif
 
 
@@ -483,39 +516,6 @@ namespace functions {
 				return 0;
 			}
 
-#ifdef __CUDACC__
-			__host__ __device__
-
-			static void transform(
-				const int op,
-				T *dx,
-				int *xShapeInfo,
-				T *dy,
-				int *yShapeInfo,
-				T *extraParams,
-				T *result,
-				int *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
-				int postProcessOrNot,
-				int *allocationPointer,
-				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo,
-				int *tadOffsets) {
-
-				if (op == 0)
-					transform<simdOps::ManhattanDistance>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 1)
-					transform<simdOps::EuclideanDistance>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 2)
-					transform<simdOps::CosineSimilarity>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 3)
-					transform<simdOps::Dot>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else
-					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
-			}
-#endif
-
 			static void exec( const int op,
 				T *x, int *xShapeInfo,
 				T *extraParamsVals,
@@ -538,7 +538,10 @@ namespace functions {
 			}
 			
 
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
+
 #ifdef __CUDACC__
 			__host__
 #endif
@@ -633,8 +636,9 @@ namespace functions {
 
 			}
 
-
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 			static void exec(T *x, int *xShapeInfo,
 					  T *extraParamsVals,
 					  T *y,
@@ -801,7 +805,7 @@ __device__ void reduce3Generic(
 	}
 	__syncthreads();
 
-	functions::reduce3::Reduce3<T>::transform(
+	functions::reduce3::Reduce3<T>::exec(
 			opNum,
 			dx,
 			xShapeInfo,
