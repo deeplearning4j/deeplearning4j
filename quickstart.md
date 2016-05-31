@@ -160,9 +160,10 @@ Additional links:
 
 ## Troubleshooting
 
-### I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
+#### I'm using a 64-Bit Java on Windows and still get the `no jnind4j in java.library.path` error
 
 It may be that you have incompatible DLLs on your PATH. In order to tell DL4J to ignore those you have to add the following as a VM parameter (Run -> Edit Configurations -> VM Options in IntelliJ):
+
 ```
 -Djava.library.path=""
 ```
