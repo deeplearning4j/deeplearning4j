@@ -3638,7 +3638,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray getColumn(int c) {
         if(isColumnVector() && c == 0)
             return this;
-        else if(isRowVector() && c > 0)
+        else if(isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for row");
         return get(NDArrayIndex.all(),NDArrayIndex.point(c));
     }
