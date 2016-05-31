@@ -23,7 +23,7 @@ namespace functions {
 		template<typename T>
 		struct IndexValue {
 			T value;
-			int index;
+			unsigned int index;
 		};
 	}
 }

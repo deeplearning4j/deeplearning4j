@@ -34,6 +34,163 @@ namespace functions {
         public:
 
 #ifdef __CUDACC__
+
+
+		static inline __device__ void transformCuda(
+				const int op,
+				Nd4jIndex n,
+				T *dx,
+				T *y,
+				int incx,
+				int incy,
+				T *extraParams,
+				T *result,
+				int incz,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo) {
+				if (op == 0)
+					transformCuda<simdOps::Add<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 1)
+					transformCuda<simdOps::Copy<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 2)
+					transformCuda<simdOps::Divide<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 3)
+					transformCuda<simdOps::EqualTo<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 4)
+					transformCuda<simdOps::GreaterThan<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 5)
+					transformCuda<simdOps::LessThan<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 6)
+					transformCuda<simdOps::Multiply<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 7)
+					transformCuda<simdOps::ReverseDivide<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 8)
+					transformCuda<simdOps::ReverseSubtract<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 9)
+					transformCuda<simdOps::Subtract<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 10)
+					transformCuda<simdOps::Epsilon<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 11)
+					transformCuda<simdOps::GreaterThanOrEqual<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 12)
+					transformCuda<simdOps::LessThanOrEqual<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 13)
+					transformCuda<simdOps::Max<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 14)
+					transformCuda<simdOps::Min<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 15)
+					transformCuda<simdOps::NotEqualTo<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 16)
+					transformCuda<simdOps::Copy<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+				else
+					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+			}
+
+
+			static inline __device__ void transformCuda(
+				const int op,
+				T *dx,
+				int *xShapeBuffer,
+				T *y,
+				int *yShapeBuffer,
+				T *result,
+				int *resultShapeBuffer,
+				T *extraParams,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo) {
+				if (op == 0)
+					transformCuda<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 1)
+					transformCuda<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 2)
+					transformCuda<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 3)
+					transformCuda<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 4)
+					transformCuda<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 5)
+					transformCuda<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 6)
+					transformCuda<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 7)
+					transformCuda<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 8)
+					transformCuda<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 9)
+					transformCuda<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 10)
+					transformCuda<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 11)
+					transformCuda<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 12)
+					transformCuda<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 13)
+					transformCuda<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 14)
+					transformCuda<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 15)
+					transformCuda<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 16)
+					transformCuda<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
+				else
+					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+			}
+
+
+			static inline __device__ void transformCuda(
+				const int op,
+				T *dx,
+				int *xShapeBuffer,
+				T *y,
+				int *yShapeBuffer,
+				T *result,
+				int *resultShapeBuffer,
+				T *extraParams,
+				int *indexes,
+				int *yIndexes,
+				int *resultIndexes,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo) {
+				if (op == 0)
+					transform<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 1)
+					transform<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 2)
+					transform<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 3)
+					transform<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 4)
+					transform<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 5)
+					transform<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 6)
+					transform<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 7)
+					transform<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 8)
+					transform<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 9)
+					transform<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 10)
+					transform<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 11)
+					transform<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 12)
+					transform<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 13)
+					transform<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 14)
+					transform<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 15)
+					transform<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 16)
+					transform<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+				else
+					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+			}
             /**
 	 *
 	 */
@@ -46,7 +203,10 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			Nd4jIndex n,
-			int *indexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+			int *indexes,
+			int *allocationPointer,
+			UnifiedSharedMemory *manager,
+			int *tadOnlyShapeInfo) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -62,7 +222,8 @@ namespace functions {
 	/**
 	 *
 	 */
-	virtual __inline__ __device__ void transform(
+template<typename OpType>
+	static inline __device__ void transform(
 			T *dx,
 			int *xShapeBuffer,
 			T *y,
@@ -72,11 +233,15 @@ namespace functions {
 			T *extraParams,
 			int *indexes,
 			int *yIndexes,
-			int *resultIndexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+			int *resultIndexes,
+			int *allocationPointer,
+			UnifiedSharedMemory *manager,
+			int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		Nd4jIndex n = shape::length(xShapeBuffer);
+
 		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
-			result[resultIndexes[i]] = op(dx[indexes[i]],y[yIndexes[i]], extraParams);
+			result[resultIndexes[i]] = OpType::op(dx[indexes[i]],y[yIndexes[i]], extraParams);
 		}
 	}
 
@@ -93,7 +258,10 @@ namespace functions {
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *indexes,
-			int *yIndexes,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+			int *yIndexes,
+			int *allocationPointer,
+			UnifiedSharedMemory *manager,
+			int *tadOnlyShapeInfo) {
 		transform(dx,
 				xShapeBuffer,
 				y,
@@ -109,7 +277,8 @@ namespace functions {
 	/**
 	 *
 	 */
-	virtual __inline__ __device__ void transformCuda(
+template<typename OpType>
+	static inline __device__ void transformCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *y,
@@ -127,6 +296,8 @@ namespace functions {
 		if(shape::elementWiseStride(xShapeBuffer) >= 1 && shape::elementWiseStride(yShapeBuffer) >= 1 && shape::elementWiseStride(resultShapeBuffer) >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
 
 			// TODO: this is wrong, and should be moved to host side
+			printf("Misplaced pairWiseTransformStrided called!\n");
+			/*
 			transformCuda(
 					n,
 					dx,
@@ -136,17 +307,10 @@ namespace functions {
 					extraParams,
 					result,
 					shape::elementWiseStride(resultShapeBuffer), allocationPointer, manager, tadOnlyShapeInfo);
+					*/
 		}
 
 		else {
-            /*
-			long allocSize = sizeof(int) * (xRank + yRank + resultRank);
-			int *tB = shape::cuMalloc(manager->getT1ShapeBuffer(), allocSize);
-
-			int *xCoord = tB;
-			int *yCoord = tB + xRank;
-			int *resultCoord = yCoord + yRank;
-			*/
 
 			int xCoord[MAX_RANK];
 			int yCoord[MAX_RANK];
@@ -158,7 +322,7 @@ namespace functions {
 
 					Nd4jIndex xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
-					result[xOffset] = op(dx[xOffset], y[yOffset], extraParams);
+					result[xOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 				}
 			} else {
     			int resultCoord[MAX_RANK];
@@ -171,7 +335,7 @@ namespace functions {
 					Nd4jIndex xOffset = shape::getOffset(0, shape::shapeOf(xShapeBuffer), shape::stride(xShapeBuffer), xCoord, xRank);
 					Nd4jIndex yOffset = shape::getOffset(0, shape::shapeOf(yShapeBuffer), shape::stride(yShapeBuffer), yCoord, yRank);
 					Nd4jIndex resultOffset = shape::getOffset(0, shape::shapeOf(resultShapeBuffer), shape::stride(resultShapeBuffer), resultCoord, resultRank);
-					result[resultOffset] = op(dx[xOffset], y[yOffset], extraParams);
+					result[resultOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 				}
 			}
 		}
@@ -192,7 +356,8 @@ namespace functions {
 	 * @param incz
 	 * @param blockSize
 	 */
-	virtual __inline__ __device__ void transformCuda(
+template<typename OpType>
+	static inline __device__ void transformCuda(
 			Nd4jIndex n,
 			T *dx,
 			T *dy,
@@ -200,11 +365,19 @@ namespace functions {
 			int incy,
 			T *params,
 			T *result,
-			int incz,int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+			int incz,int *allocationPointer,
+			UnifiedSharedMemory *manager,
+			int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-		for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
-			result[i * incz] = op(dx[i * incx], dy[i * incy], params);
+		if (incx == incy && incy == incz && incx == 1) {
+			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				result[i] = OpType::op(dx[i], dy[i], params);
+			}
+		} else {
+			for (int i = tid; i < n; i += gridDim.x * blockDim.x) {
+				result[i * incz] = OpType::op(dx[i * incx], dy[i * incy], params);
+			}
 		}
 	}
 
@@ -586,44 +759,17 @@ __device__ void pairWiseTransformGeneric(
 		int *yShapeInfo, int yRank,
 		int *resultShapeInfo, int zRank, int *allocationPointer, int *tadOnlyShapeInfo) {
 
-	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (yShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
-		newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-	op->transformCuda(
+	functions::pairwise_transforms::PairWiseTransform<T>::transformCuda(
+		opNum,
 	    dx,
 	    xShapeInfo,
 	    dy,
@@ -744,44 +890,17 @@ __device__ void pairWiseTransformGeneric(
 		int *yIndexes,
 		int *resultIndexes, int *allocationPointer, int *tadOnlyShapeInfo) {
 
-	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-	__shared__ functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (yShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
-		newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-	op->transform(
+	functions::pairwise_transforms::PairWiseTransform<T>::transformCuda(
+			opNum,
 			dx,
 			xShapeInfo,
 			dy,
@@ -791,7 +910,10 @@ __device__ void pairWiseTransformGeneric(
 			params,
 			xIndexes,
 			yIndexes,
-			resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
+			resultIndexes,
+			allocationPointer,
+			manager,
+			tadOnlyShapeInfo);
 
 }
 
@@ -901,7 +1023,7 @@ __global__ void pairWiseTransformFloatIndex(
  */
 template<typename T>
 __device__ void pairWiseTransformStridedGeneric(
-		int opNum,
+		const int opNum,
 		Nd4jIndex n,
 		T *dx,
 		T *dy,
@@ -911,21 +1033,28 @@ __device__ void pairWiseTransformStridedGeneric(
 		T *result,
 		int incz, int *allocationPointer, int *tadOnlyShapeInfo) {
 
-	__shared__ functions::pairwise_transforms::PairWiseTransform<T> *op;
-
 	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::pairwise_transforms::PairWiseTransformOpFactory<T>), sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
-
-    	functions::pairwise_transforms::PairWiseTransformOpFactory<T> *newOpFactory = new(manager->getFactorySpace()) functions::pairwise_transforms::PairWiseTransformOpFactory<T>();
-		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::pairwise_transforms::PairWiseTransform<T>), sizeof(shape::TAD), 0);
 	}
 	__syncthreads();
 
-	op->transformCuda(n, dx, dy, incx, incy, params, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
+	functions::pairwise_transforms::PairWiseTransform<T>::transformCuda(
+		opNum,
+		n,
+		dx,
+		dy,
+		incx,
+		incy,
+		params,
+		result,
+		incz,
+		allocationPointer,
+		manager,
+		tadOnlyShapeInfo);
 
 }
 

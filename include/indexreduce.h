@@ -69,13 +69,41 @@ struct SharedIndexValue<double> {
 
 		public:
 #ifdef __CUDACC__
+
+		static void transform(
+			const int op,
+			T *x,
+			int *xShapeInfo,
+			T *extraParams,
+			T *result,
+			int *resultShapeInfo,
+			int *dimension,
+			int dimensionLength,
+			int postProcessOrNot,
+			int *allocationBuffer,
+			T *reductionBuffer,
+			UnifiedSharedMemory *manager,
+			int *tadShapeInfo,
+			int *tadOffset) {
+			if (op == 0) {
+				transform<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset);
+			}
+			else if (op == 1) {
+				transform<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset);
+			}
+			else {
+				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
+			}
+		}
+
 			/**
 	 *
 	 * @param sPartialsRef
 	 * @param tid
 	 * @param extraParams
 	 */
-	virtual __device__ void aggregatePartials(IndexValue<T> **sPartialsRef,int tid,int numElements,T *extraParams) {
+template<typename OpType>
+	static inline __device__ void aggregatePartials(IndexValue<T> **sPartialsRef,int tid,int numElements,T *extraParams) {
 		// start the shared memory loop on the next power of 2 less
 		// than the block size.  If block size is not a power of 2,
 		// accumulate the intermediate sums in the remainder range.
@@ -90,7 +118,7 @@ struct SharedIndexValue<double> {
 			if (tid >= floorPow2) {
 				IndexValue<T> prev = sPartials[tid - floorPow2];
 				IndexValue<T> curr = sPartials[tid];
-				sPartials[tid - floorPow2] = update(prev,curr,extraParams);
+				sPartials[tid - floorPow2] = OpType::update(prev,curr,extraParams);
 			}
 			__syncthreads();
 		}
@@ -100,7 +128,7 @@ struct SharedIndexValue<double> {
 			if (tid < activeThreads && tid + activeThreads < numElements) {
 				IndexValue<T> curr = sPartials[tid];
 				IndexValue<T> next = sPartials[tid + activeThreads];
-				sPartials[tid] = update(curr,next,extraParams);
+				sPartials[tid] = OpType::update(curr,next,extraParams);
 			}
 			__syncthreads();
 		}
@@ -125,7 +153,8 @@ struct SharedIndexValue<double> {
 	 *                          0 is the number of elements per vector
 	 *                          1 is the number of vectors
 	 */
-	virtual __inline__ __device__ void transform(
+template<typename OpType>
+	static inline __device__ void transform(
 			T *dx,
 			int *xShapeInfo,
 			T *extraParams,
@@ -133,29 +162,28 @@ struct SharedIndexValue<double> {
 			int *resultShapeInfo,
 			int *dimension,
 			int dimensionLength,
-			int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+			int postProcessOrNot,
+			int *allocationBuffer,
+			T *reductionBuffer,
+			UnifiedSharedMemory *manager,
+			int *tadOnlyShapeInfo,
+			int *tadOffsets) {
 		/**
 		 * Gpu information for the problem
 		 */
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 		__shared__ volatile int resultScalar;
 
-	//	__shared__ int xElementWiseStride;
-
-		int numElements = blockDim.x;
 		//shared memory space for storing intermediate results
 		IndexValue<T> *sPartials;
-		//functions::indexreduce::SharedIndexValue<T> holder;
+
 
 		sPartials = (IndexValue<T> *)manager->getSharedReductionBuffer(); //holder.getPointer();
-		T startingVal = this->startingValue(dx);
+		T startingVal = OpType::startingValue(dx);
 
-#pragma unroll
-		for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
-			IndexValue <T> val = {startingVal, i};
-			sPartials[i] = val;
-		}
-		__syncthreads();
+
+		IndexValue <T> val = {startingVal, threadIdx.x};
+		sPartials[threadIdx.x] = val;
 
 		//length for the tad
 		__shared__ volatile int xLength;
@@ -210,36 +238,27 @@ struct SharedIndexValue<double> {
             __syncthreads();
 
 			if (dimensionLength > 1) {
-				/*
-                long allocSize = sizeof(int) * rank;
-                int *xCoord = shape::cuMalloc(allocationBuffer, allocSize, manager);
-                */
                 int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
 
-                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                    for(unsigned int i = threadIdx.x;i < tadLength; i += blockDim.x) {
                         shape::ind2subC(tadRank,tadShape, i, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 						IndexValue<T> comp {dx[xOffset], i};
 
-                    	sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],this->op(sPartials[threadIdx.x], comp,extraParams),extraParams);
+                    	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x],OpType::op(sPartials[threadIdx.x], comp,extraParams),extraParams);
                     }
 
                     __syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+					aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
 						result[r] = sPartials[threadIdx.x].index;
 					}
 				}
-				/*
-				if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-                	free(xCoord);
-                }
-                */
 			} else {
 
 #pragma unroll
@@ -248,13 +267,13 @@ struct SharedIndexValue<double> {
 
 					sPartials[threadIdx.x] = {dx[tadOffsetForBlock], 0};
 #pragma unroll
-					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+					for (unsigned int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
 						IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
-						sPartials[threadIdx.x] =  update(sPartials[threadIdx.x], comp, extraParams);
+						sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], comp, extraParams);
 					}
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+					aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
@@ -271,20 +290,19 @@ struct SharedIndexValue<double> {
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
-				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+				for(unsigned int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
 					IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
-					reduction = update(reduction, indexVal, extraParams);
+					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
 			} else {
 				int rank = shape::rank(xShapeInfo);
 				int ind2sub[MAX_RANK];
 #pragma unroll
-				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+				for(unsigned int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 					int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
-					int currIdx = i;
-					IndexValue <T> indexVal = {dx[offset], currIdx};
-					reduction = update(reduction, indexVal, extraParams);
+					IndexValue <T> indexVal = {dx[offset], i};
+					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
 			}
 
@@ -292,7 +310,7 @@ struct SharedIndexValue<double> {
 			sPartials[threadIdx.x] = reduction;
 			__syncthreads();
 
-			aggregatePartials(&sPartials, threadIdx.x, blockDim.x,extraParams);
+			aggregatePartials<OpType>(&sPartials, threadIdx.x, blockDim.x,extraParams);
 			__syncthreads();
 
 			if (gridDim.x > 1) {
@@ -322,13 +340,13 @@ struct SharedIndexValue<double> {
 					sPartials[threadIdx.x] = {0, 0};
 
 					for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-                        sPartials[threadIdx.x] = update(sPartials[threadIdx.x], pBuffer[i], extraParams);
+                        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], pBuffer[i], extraParams);
                     }
 
 
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
+					aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
 
 					__syncthreads();
 					if (tid == 0) {
@@ -385,12 +403,12 @@ struct SharedIndexValue<double> {
 
 			template<template <typename> typename OpType>
 #ifdef __CUDACC__
-			inline __host__
+			__host__
 
 #elif defined(__GNUC__)
 
 #endif
-			static T execScalar(T *x,
+			static inline T execScalar(T *x,
 						 int *xShapeInfo,
 						 T *extraParams) {
 
@@ -526,12 +544,12 @@ struct SharedIndexValue<double> {
 			
 			template<template <typename> typename OpType>
 #ifdef __CUDACC__
-			inline __host__
+			__host__
 
 #elif defined(__GNUC__)
 
 #endif
-			static void exec(T *x,
+			static inline void exec(T *x,
 					  int *xShapeInfo,
 					  T *extraParams,
 					  T *result,
@@ -682,7 +700,7 @@ struct SharedIndexValue<double> {
  */
 template <typename T>
 __device__ void indexReduceGeneric(
-		int op,
+		const int op,
 		T *dx,
 		int *xShapeInfo, int xRank,
 		T *extraParams,
@@ -692,25 +710,17 @@ __device__ void indexReduceGeneric(
 		int dimensionLength,
 		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-	__shared__ functions::indexreduce::IndexReduce<T> *indexReduce;
-	__shared__ functions::indexreduce::IndexReduceOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::indexreduce::IndexReduceOpFactory<T>), sizeof(functions::indexreduce::ops::IMax<T>), sizeof(shape::TAD), xRank);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::indexreduce::IndexReduce<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
 
-	if(threadIdx.x == 0) {
-		newOpFactory = new(manager->getFactorySpace()) functions::indexreduce::IndexReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-	indexReduce->transform(
+	functions::indexreduce::IndexReduce<T>::transform(
+			op,
 			dx,
 			xShapeInfo,
 			extraParams,
@@ -721,7 +731,9 @@ __device__ void indexReduceGeneric(
 			postProcessOrNot,
 			allocationBuffer,
 			reductionBuffer,
-			manager, tadOnlyShapeInfo, tadOffsets);
+			manager,
+			tadOnlyShapeInfo,
+			tadOffsets);
 }
 
 /**
