@@ -266,7 +266,8 @@ namespace functions {
                      @param extraParams extra parameters used for calculations
                      @param result where to store the result of the reduction
              */
-			virtual __inline__ __device__ void transform(
+            template<template <typename> typename OpType>
+			static inline __device__ void transform(
 					T *dx,
 					int *xShapeInfo,
 					T *dy,
@@ -290,7 +291,7 @@ namespace functions {
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
-				T init = this->startingValue(dx);
+				T init = OpType<T>::startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
 
@@ -299,7 +300,7 @@ namespace functions {
 				__shared__ Nd4jIndex resultLength;
 
 
-				T reduction = this->startingValue(dx);
+				T reduction = OpType<T>::startingValue(dx);
 				if (threadIdx.x == 0) {
 					if (resultShapeInfo != nullptr)
 						resultLength = shape::length(resultShapeInfo);
@@ -316,25 +317,12 @@ namespace functions {
 
 					if (resultLength == 1)
 						resultScalar = 1;
-					/**
-                     * The element wise stride belong longs to a reduction index.
-                     * When used out of order, we can get rid of the data
-                     * dependencies and rely on using the max dimension
-                     * specified for stride instead.
-                     * Say we take the sum(0,1) along long arr
-                     * we can use arr.stride(1) as a representation
-                     * along long which to iterate.
-                     */
-
 
 					int *xStride = shape::stride(xShapeInfo);
 					char xOrder = shape::order(xShapeInfo);
 
 					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 					yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-
-
-					//printf("Order is: [%c], stride is: xElementStride: [%i], passed strides are: [%i], dimension: [%i], dimensionLength: [%i]\n", xOrder, xElementWiseStride, xStride[0], dimension[0], dimensionLength);
 				}
 				__syncthreads();
 
@@ -353,29 +341,7 @@ namespace functions {
                 	}
                 	__syncthreads();
 
-					/*__shared__ shape::TAD *tad;
-                    if (threadIdx.x == 0) {
-                        tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-                        tad->setExternalBuffers((void *) manager);
-                        tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
-                        //tad->init(xShapeInfo,dimension,dimensionLength);
-                        //tad->createTadOnlyShapeInfo();
-                    }
-                    __syncthreads();*/
-
-
 					if(dimensionLength > 1) {
-						//decompose in to several sub tads after
-						//moving all dimensions (in sorted order)
-						//to the back.
-						//permuted version of the x shape info for setting up the tad problem
-
-
-						//decompose in to several sub tads after
-						//moving all dimensions (in sorted order)
-						//to the back.
-						//permuted version of the x shape info for setting up the tad problem
-
 						int *xShape = shape::shapeOf(tadOnlyShapeInfo);
 						int *xStride = shape::stride(tadOnlyShapeInfo);
 						int *yStride = shape::stride(yShapeInfo);
@@ -409,7 +375,7 @@ namespace functions {
 										/* Process the innermost dimension */
 										T *xIter = dx;
 										T *yIter = dy;
-										startingVal = update(startingVal, op(xIter[0],yIter[0],&extraParams),&extraParams);
+										startingVal = OpType<T>::update(startingVal, OpType<T>::op(xIter[0],yIter[0],&extraParams),&extraParams);
 									} ND4J_RAW_ITER_TWO_NEXT(dim,
 															 rank,
 															 coord,
@@ -472,13 +438,12 @@ namespace functions {
 							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
 
-							sPartials[tid] = op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
+							sPartials[threadIdx.x] = op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
 							for(int j = 1; j < tadLength; j++) {
-								sPartials[i] =  update(sPartials[i],op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
+								sPartials[threadIdx.x] =  OpType<T>::update(sPartials[threadIdx.x], OpType<T>::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
 							}
 
-//							printf("Updating result: [%i] -> [%f]\n", i, sPartials[i]);
-							result[i] = postProcess(sPartials[i],tadLength,&extraParams);
+							result[i] = postProcess(sPartials[threadIdx.x],tadLength,&extraParams);
 						}
 
 					}
@@ -487,6 +452,13 @@ namespace functions {
 
 
 
+
+
+#endif
+
+
+#ifdef __CUDACC__
+	__host__ __device__
 
 
 #endif
@@ -510,6 +482,39 @@ namespace functions {
 					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
 				return 0;
 			}
+
+#ifdef __CUDACC__
+			__host__ __device__
+
+			static void transform(
+				const int op,
+				T *dx,
+				int *xShapeInfo,
+				T *dy,
+				int *yShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				int postProcessOrNot,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo,
+				int *tadOffsets) {
+
+				if (op == 0)
+					transform<simdOps::ManhattanDistance>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 1)
+					transform<simdOps::EuclideanDistance>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 2)
+					transform<simdOps::CosineSimilarity>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else if (op == 3)
+					transform<simdOps::Dot>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else
+					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+			}
+#endif
 
 			static void exec( const int op,
 				T *x, int *xShapeInfo,
@@ -756,92 +761,6 @@ namespace functions {
 }
 
 #ifdef __CUDACC__
-template <typename T>
-__inline__ __device__ void reduce3NoElementWiseStrideGeneric(
-		int opNum,
-		T *dx,
-		int *xShapeInfo,
-		T *dy,
-		int *yShapeInfo,
-		T *extraParams,
-		T *result,
-		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
-
-	__shared__ functions::reduce3::Reduce3<T> * op;
-	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-
-		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
-		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-	op->transformNoElementWiseStride(
-			dx,
-			xShapeInfo,
-			dy,
-			yShapeInfo,
-			extraParams,
-			result,
-			resultShapeInfo,
-			postProcessOrNot,
-			allocationPointer,
-			manager, tadOnlyShapeInfo);
-}
-
-
-__global__ void reduce3NoElementWiseStrideDouble(
-		int opNum,
-		double *dx,
-		int *xShapeInfo,
-		double *dy,
-		int *yShapeInfo,
-		double *extraParams,
-		double *result,
-		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
-	reduce3NoElementWiseStrideGeneric<double>(
-			opNum,
-			dx,
-			xShapeInfo,
-			dy,
-			yShapeInfo,
-			extraParams,
-			result,
-			resultShapeInfo,
-			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
-}
-
-
-__global__ void reduce3NoElementWiseStrideFloat(
-		int opNum,
-		float *dx,
-		int *xShapeInfo,
-		float *dy,
-		int *yShapeInfo,
-		float *extraParams,
-		float *result,
-		int *resultShapeInfo,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo) {
-	reduce3NoElementWiseStrideGeneric<float>(
-			opNum,
-			dx,
-			xShapeInfo,
-			dy,
-			yShapeInfo,
-			extraParams,
-			result,
-			resultShapeInfo,
-			postProcessOrNot, allocationPointer, tadOnlyShapeInfo);
-}
-
 /**
  * The driver api
  * @param opNum the number
@@ -860,7 +779,7 @@ __global__ void reduce3NoElementWiseStrideFloat(
  */
 template <typename T>
 __device__ void reduce3Generic(
-		int opNum,
+		const int opNum,
 		T *dx,
 		int *xShapeInfo,
 		T *dy,
@@ -872,23 +791,18 @@ __device__ void reduce3Generic(
 		int dimensionLength,
 		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-
-	__shared__ functions::reduce3::Reduce3<T> * op;
-	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
-		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
-		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
 	}
 	__syncthreads();
 
-	op->transform(
+	functions::reduce3::Reduce3<T>::transform(
+			opNum,
 			dx,
 			xShapeInfo,
 			dy,
@@ -898,7 +812,11 @@ __device__ void reduce3Generic(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+			postProcessOrNot,
+			allocationPointer,
+			manager,
+			tadOnlyShapeInfo,
+			tadOffsets);
 }
 
 template <typename T>

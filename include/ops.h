@@ -3,14 +3,15 @@
 #include <shape.h>
 #include <vector>
 
-#define no_op_exec_special 	static constexpr const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
+#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #define MIN 1e-12
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
 
 #ifdef __CUDACC__
+#include <sharedmem.h>
 #define op_def inline __host__  __device__
-#define no_op_exec_special_cuda 	static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+#define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #else
 #define op_def inline
 #define no_op_exec_special_cuda
@@ -765,8 +766,8 @@ namespace simdOps {
 	template<typename T>
 	class Stabilize {
 	public:
-		static const constexpr double realMin = 1.1755e-38f;
-		static const constexpr double cutOff = nd4j::math::nd4j_log(realMin);
+		static const double realMin = 1.1755e-38f;
+		static const double cutOff = nd4j::math::nd4j_log(realMin);
 		no_op_exec_special
 		no_op_exec_special_cuda
 

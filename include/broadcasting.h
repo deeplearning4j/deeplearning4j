@@ -13,6 +13,7 @@
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <pairwise_util.h>
+#include <ops.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

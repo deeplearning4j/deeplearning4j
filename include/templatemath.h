@@ -378,24 +378,30 @@ namespace nd4j {
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
+#else
+		constexpr
 #endif
-		constexpr inline float nd4j_log<float>(float val) {
+		inline float nd4j_log<float>(float val) {
 			return logf(val);
 		}
 
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
+#else
+		constexpr
 #endif
-		constexpr inline double nd4j_log<double>(double val) {
+		inline double nd4j_log<double>(double val) {
 			return log(val);
 		}
 
 		template<>
 #ifdef __CUDACC__
 		__host__ __device__
+#else
+		constexpr
 #endif
-		constexpr inline int nd4j_log<int>(int val) {
+		inline int nd4j_log<int>(int val) {
 			return logf((int) val);
 		}
 
