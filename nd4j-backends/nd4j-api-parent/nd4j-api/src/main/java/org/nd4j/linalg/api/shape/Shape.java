@@ -1696,6 +1696,7 @@ public class Shape {
      * @param buffer the buffer
      * @return
      */
+    @Deprecated
     public static void setOrder(IntBuffer buffer,char order) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         buffer.put(length - 1,(int) order);

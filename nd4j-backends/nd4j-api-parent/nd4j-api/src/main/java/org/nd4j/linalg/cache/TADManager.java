@@ -1,4 +1,4 @@
-package org.nd4j.jita.allocator.tad;
+package org.nd4j.linalg.cache;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;

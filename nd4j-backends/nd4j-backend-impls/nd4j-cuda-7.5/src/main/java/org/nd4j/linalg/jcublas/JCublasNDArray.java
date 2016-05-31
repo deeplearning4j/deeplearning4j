@@ -358,7 +358,7 @@ public class JCublasNDArray extends BaseNDArray {
         */
         if (!isView() && ordering() == Nd4j.order() && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.create(shape(), stride(), ordering());
+            INDArray array = Nd4j.createUninitialized(shape(), ordering());
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
 
@@ -374,7 +374,7 @@ public class JCublasNDArray extends BaseNDArray {
 
         if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
             AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.create(shape(), stride(), order);
+            INDArray array = Nd4j.createUninitialized(shape(), order);
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
 
