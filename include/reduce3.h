@@ -52,7 +52,8 @@ namespace functions {
      * @param tid
      * @param extraParams
      */
-			virtual __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T **extraParamsRef) {
+template<typename OpType>
+			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T **extraParamsRef) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
@@ -64,14 +65,14 @@ namespace functions {
 						floorPow2 &= floorPow2 - 1;
 					}
 					if (tid >= floorPow2) {
-						sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParamsRef);
+						sPartials[tid - floorPow2] = OpType::update(sPartials[tid - floorPow2], sPartials[tid], extraParamsRef);
 					}
 					__syncthreads();
 				}
 
 				for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 					if (tid < activeThreads) {
-						sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParamsRef);
+						sPartials[tid] = OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParamsRef);
 					}
 					__syncthreads();
 				}
@@ -146,7 +147,8 @@ namespace functions {
 			/**
              *
              */
-			virtual __inline__ __device__ void execScalarCuda(
+template<typename OpType>
+			static inline __device__ void execScalarCuda(
 					T *dx,
 					int *xShapeInfo,
 					T *dy,
@@ -159,7 +161,7 @@ namespace functions {
 //		SharedMemory <T> val;
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
-				T startingVal = this->startingValue(dx);
+				T startingVal = OpType::startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
@@ -169,12 +171,12 @@ namespace functions {
 				if(xOrder == yOrder) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = update(startingVal, this->opAtomic(dx[i], dy[i], &extraParams), &extraParams);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], &extraParams), &extraParams);
 						}
 					}
 					else {
 						for(int i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = update(startingVal, this->opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
 						}
 					}
 
@@ -183,17 +185,11 @@ namespace functions {
 
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
+					aggregatePartials<OpType>(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
 
-					/**
-                     * Look at something that uses the extra params
-                     * and aggregates the extra values properly.
-                     *This will be used in summary stats too.
-                     */
-					// write result for this block to global mem
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = postProcess(sPartials[0], length,&extraParams);
+						result[0] = OpType::postProcess(sPartials[0], length,&extraParams);
 					}
 				}
 
@@ -201,7 +197,7 @@ namespace functions {
 					int *xShape = shape::shapeOf(xShapeInfo);
 					int *xStride = shape::stride(xShapeInfo);
 					int *yStride = shape::stride(yShapeInfo);
-					T startingVal = this->startingValue(dx);
+					T startingVal = OpType::startingValue(dx);
 					int n = shape::length(xShapeInfo);
 
 					//SharedMemory <T> val;
@@ -232,7 +228,7 @@ namespace functions {
 						shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
 						Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 						Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
 					}
 
 /*
@@ -242,7 +238,7 @@ namespace functions {
 */
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
+					aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
 					/**
                      * Look at something that uses the extra params
                      * and aggregates the extra values propelry.
@@ -251,7 +247,7 @@ namespace functions {
 					// write result for this block to global mem
 					__syncthreads();
 					if (tid == 0) {
-						result[tid] = postProcess(sPartials[0], n,&extraParams);
+						result[tid] = OpType::postProcess(sPartials[0], n, &extraParams);
 					}
 				}
 
@@ -333,15 +329,9 @@ template<typename OpType>
 
 				if (!resultScalar) {
 					__shared__ int tadLength;
-        	        __shared__ int tadEWS;
-    	            __shared__ int tadRank;
-	                __shared__ int numTads;
 
                 	if (threadIdx.x == 0) {
             		    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-        	            tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-    	                tadRank = shape::rank(tadOnlyShapeInfo);
-	                    numTads = shape::length(xShapeInfo) / tadLength;
                 	}
                 	__syncthreads();
 
@@ -484,6 +474,32 @@ template<typename OpType>
 					transform<simdOps::CosineSimilarity<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
 				else if (op == 3)
 					transform<simdOps::Dot<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
+				else
+					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+			}
+
+			__device__
+			static inline void execScalarCuda(
+				const int op,
+				T *dx,
+				int *xShapeInfo,
+				T *dy,
+				int *yShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *allocationPointer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo) {
+
+				if (op == 0)
+					execScalarCuda<simdOps::ManhattanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 1)
+					execScalarCuda<simdOps::EuclideanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 2)
+					execScalarCuda<simdOps::CosineSimilarity<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
+				else if (op == 3)
+					execScalarCuda<simdOps::Dot<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
 				else
 					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
 			}
@@ -835,23 +851,17 @@ __device__ void reduce3ScalarGeneric(
 		int *resultShapeInfo,
 		 int *allocationPointer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-
-	__shared__ functions::reduce3::Reduce3<T> * op;
-	__shared__ functions::reduce3::Reduce3OpFactory<T> *reduce3OpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce3::Reduce3OpFactory<T>), sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-
-		reduce3OpFactory = new(manager->getFactorySpace()) functions::reduce3::Reduce3OpFactory<T>();
-		op = reduce3OpFactory->getOp(opNum, manager->getFunctionSpace());
+		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 	}
 	__syncthreads();
 
-	op->execScalarCuda(
+	functions::reduce3::Reduce3<T>::execScalarCuda(
+			opNum,
 			dx,
 			xShapeInfo,
 			dy,
@@ -859,7 +869,9 @@ __device__ void reduce3ScalarGeneric(
 			extraParams,
 			result,
 			resultShapeInfo,
-			allocationPointer, manager, tadOnlyShapeInfo);
+			allocationPointer,
+			manager,
+			tadOnlyShapeInfo);
 }
 
 /**
