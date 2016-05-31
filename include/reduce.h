@@ -34,7 +34,8 @@ namespace functions {
 		class ReduceFunction {
 		public:
 #ifdef __CUDACC__
-			__inline__ __device__ virtual void transformCuda1D(T *dx,
+template<typename OpType>
+			static inline __device__ void transformCuda1D(T *dx,
 				int *xShapeInfo,
 				T *extraParams,
 				T *result,
@@ -46,16 +47,14 @@ namespace functions {
 				//shared memory space for storing intermediate results
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
-				sPartials[threadIdx.x] = this->startingValue(dx);
+				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				__shared__ int tadLength;
 				__shared__ int tadEWS;
-				__shared__ int tadRank;
 				__shared__ int numTads;
 				if (threadIdx.x == 0) {
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 				}
 				__syncthreads();
@@ -63,26 +62,26 @@ namespace functions {
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
 
-					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[tadOffsetForBlock + i * tadEWS], extraParams), extraParams);
 					}
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
 					__syncthreads();
 					if (threadIdx.x == 0) {
-						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 					}
 				}
 			}
 
-
-			__inline__ __device__ void execScalarCuda(
+template<typename OpType>
+			static inline __device__ void execScalarCuda(
 				T *dx,
 				int *xShapeInfo,
 				T *extraParams,
@@ -100,11 +99,11 @@ namespace functions {
 				//shared memory space for storing intermediate results
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
-				sPartials[threadIdx.x] = this->startingValue(dx);
+				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				if (elementWiseStride >= 1) {
 					for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
-						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[i * elementWiseStride], extraParams), extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[i * elementWiseStride], extraParams), extraParams);
 					}
 				}
 				else {
@@ -114,13 +113,13 @@ namespace functions {
 					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
 						int offset = shape::getOffset(0, shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), ind2sub, rank);
-						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[offset], extraParams), extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
 						__syncthreads();
 					}
 				}
 
 				__syncthreads();
-				aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraParams);
+				aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraParams);
 
 
 				__syncthreads();
@@ -146,18 +145,18 @@ namespace functions {
 					if (amLast) {
 						tc[4096] = 0;
 
-						sPartials[threadIdx.x] = this->startingValue(dx);
+						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 						for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-							sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
+							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 						}
 						__syncthreads();
 
-						aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+						aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
 
 						__syncthreads();
 						if (threadIdx.x == 0) {
-							result[0] = this->postProcess(sPartials[0], n, extraParams);
+							result[0] = OpType::postProcess(sPartials[0], n, extraParams);
 						}
 					}
 				}
@@ -165,7 +164,7 @@ namespace functions {
 					if (threadIdx.x == 0) {
 						unsigned int *tc = (unsigned *)reductionBuffer;
 						tc[4096] = 0;
-						result[0] = this->postProcess(sPartials[0], n, extraParams);
+						result[0] = OpType::postProcess(sPartials[0], n, extraParams);
 					}
 				}
 			}
@@ -182,7 +181,8 @@ namespace functions {
 			 * @param dimensionLength the length of the dimension buffer
 			 * @param postProcessOrNot whether to reduce or not
 			 */
-			__inline__ __device__ virtual void transformCuda6D(
+template<typename OpType>
+			static inline __device__ void transformCuda6D(
 				T *dx,
 				int *xShapeInfo,
 				T *extraParams,
@@ -196,21 +196,18 @@ namespace functions {
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
 				__shared__ int tadLength;
-				__shared__ int tadEWS;
 				__shared__ int tadRank;
 				__shared__ int numTads;
 				__shared__ int *tadShape;
 				__shared__ int *tadStride;
 				if (threadIdx.x == 0) {
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 
 					tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					tadStride = shape::stride(tadOnlyShapeInfo);
 				}
-				sPartials[threadIdx.x] = this->startingValue(dx);
 				__syncthreads();
 
 				int xCoord[3];
@@ -218,26 +215,27 @@ namespace functions {
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
 
-					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
 						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
-						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[xOffset], extraParams), extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0)
-						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 				}
 			}
 
-			__inline__ __device__ virtual void transformCudaXD(
+template<typename OpType>
+			static inline __device__ void transformCudaXD(
 				T *dx,
 				int *xShapeInfo,
 				T *extraParams,
@@ -245,28 +243,28 @@ namespace functions {
 				int *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo,
+				int *tadOffsets) {
 
 				//shared memory space for storing intermediate results
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ int tadLength;
-				__shared__ int tadEWS;
 				__shared__ int tadRank;
 				__shared__ int numTads;
 				__shared__ int *tadShape;
 				__shared__ int *tadStride;
 				if (threadIdx.x == 0) {
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 
 					tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					tadStride = shape::stride(tadOnlyShapeInfo);
 				}
-				sPartials[threadIdx.x] = this->startingValue(dx);
 				__syncthreads();
 
 				int xCoord[MAX_RANK];
@@ -274,23 +272,23 @@ namespace functions {
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
 
-					sPartials[threadIdx.x] = this->startingValue(dx + tadOffsetForBlock);
+					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
 						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
-						sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], this->op(dx[xOffset], extraParams), extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
 					__syncthreads();
 					if (threadIdx.x == 0)
-						result[r] = this->postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 				}
 			}
 
@@ -300,7 +298,8 @@ namespace functions {
 			 * @param tid
 			 * @param extraParams
 			 */
-			__device__ virtual void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+template<typename OpType>
+			__device__ static inline void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
@@ -311,7 +310,7 @@ namespace functions {
 						floorPow2 &= floorPow2 - 1;
 					}
 					if (tid >= floorPow2) {
-						sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
+						sPartials[tid - floorPow2] = OpType::update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
 					}
 					__syncthreads();
 				}
@@ -320,11 +319,162 @@ namespace functions {
 #pragma unroll
 				for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 					if (tid < activeThreads && tid + activeThreads < numItems) {
-						sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
+						sPartials[tid] = OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
 					}
 					__syncthreads();
 				}
 
+			}
+
+			static inline void execScalarCuda(
+			const int op,
+			T *x,
+			int *xShapeInfo,
+			T *extraParams,
+			T *result,
+			int *resultShapeInfo,
+			T *reductionBuffer,
+			UnifiedSharedMemory *manager,
+			int *tadShapeInfo) {
+				if (op == 0)
+					execScalarCuda<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 1)
+					execScalarCuda<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 3)
+					execScalarCuda<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 4)
+					execScalarCuda<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 5)
+					execScalarCuda<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 6)
+					execScalarCuda<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 7)
+					execScalarCuda<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 8)
+					execScalarCuda<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 9)
+					execScalarCuda<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else if (op == 10)
+					execScalarCuda<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
+				else
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+			}
+
+
+
+			static inline void transformCudaXD(
+				const int op,
+				T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadShapeInfo,
+				int *tadOffset) {
+
+				if (op == 0)
+					transformCudaXD<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 1)
+					transformCudaXD<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 3)
+					transformCudaXD<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 4)
+					transformCudaXD<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 5)
+					transformCudaXD<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 6)
+					transformCudaXD<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 7)
+					transformCudaXD<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 8)
+					transformCudaXD<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 9)
+					transformCudaXD<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 10)
+					transformCudaXD<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+			}
+
+
+			static inline void transformCuda6D(
+				const int op,
+				T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadShapeInfo,
+				int *tadOffset) {
+
+				if (op == 0)
+					transformCuda6D<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 1)
+					transformCuda6D<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 3)
+					transformCuda6D<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 4)
+					transformCuda6D<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 5)
+					transformCuda6D<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 6)
+					transformCuda6D<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 7)
+					transformCuda6D<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 8)
+					transformCuda6D<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 9)
+					transformCuda6D<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 10)
+					transformCuda6D<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+			}
+
+			static inline void transformCuda1D(
+				const int op,
+				T *x,
+				int *xShapeInfo,
+				T *extraParams,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength,
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadShapeInfo,
+				int *tadOffset) {
+
+				if (op == 0)
+					transformCuda1D<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 1)
+					transformCuda1D<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 3)
+					transformCuda1D<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 4)
+					transformCuda1D<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 5)
+					transformCuda1D<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 6)
+					transformCuda1D<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 7)
+					transformCuda1D<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 8)
+					transformCuda1D<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 9)
+					transformCuda1D<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else if (op == 10)
+					transformCuda1D<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
 			}
 #endif
 
@@ -460,10 +610,11 @@ namespace functions {
 			 * the reduce along long
 			 * @param dimensionLength the length of the dimension buffer
 			 */
+
+template<template <typename> typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
-				template<template <typename> typename OpType>
 			static void exec(T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -753,7 +904,7 @@ namespace functions {
  */
 template <typename T>
 __device__ void reduceGeneric(
-        int op,
+        const int op,
         T *dx,
         int *xShapeInfo,
         T *extraParams,
@@ -763,23 +914,18 @@ __device__ void reduceGeneric(
         int dimensionLength,
         T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
-
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }
     __syncthreads();
 
-    if(threadIdx.x == 0) {
-        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
-    }
-    __syncthreads();
-    reduceFunctionToInvoke->transformCudaXD(
+
+    functions::reduce::ReduceFunction<T>::transformCudaXD(
+    		op,
             dx,
             xShapeInfo,
             extraParams,
@@ -787,12 +933,15 @@ __device__ void reduceGeneric(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            manager,
+            tadOnlyShapeInfo,
+            tadOffsets);
 }
 
 template <typename T>
 __device__ void reduceGeneric1D(
-        int op,
+        const int op,
         T *dx,
         int *xShapeInfo,
         T *extraParams,
@@ -800,22 +949,21 @@ __device__ void reduceGeneric1D(
         int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
-
-    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+        T *reductionBuffer,
+        int *tadOnlyShapeInfo,
+        int *tadOffsets) {
 
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-
-        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }
+
     __syncthreads();
-    reduceFunctionToInvoke->transformCuda1D(
+    functions::reduce::ReduceFunction<T>::transformCuda1D(
+    		op,
             dx,
             xShapeInfo,
             extraParams,
@@ -828,7 +976,7 @@ __device__ void reduceGeneric1D(
 
 template <typename T>
 __device__ void reduceGeneric6D(
-        int op,
+        const int op,
         T *dx,
         int *xShapeInfo,
         T *extraParams,
@@ -836,26 +984,22 @@ __device__ void reduceGeneric6D(
         int *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
-
-    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
-
+        T *reductionBuffer,
+        int *tadOnlyShapeInfo,
+        int *tadOffsets) {
 
     extern __shared__ unsigned char shmem[];
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), 16, shape::rank(xShapeInfo));
-
-        //
-        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), 16, shape::rank(xShapeInfo));
     }
     __syncthreads();
 
 
-    reduceFunctionToInvoke->transformCuda6D(
+    functions::reduce::ReduceFunction<T>::transformCuda6D(
+    		op,
             dx,
             xShapeInfo,
             extraParams,
@@ -863,8 +1007,10 @@ __device__ void reduceGeneric6D(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
-
+            reductionBuffer,
+            manager,
+            tadOnlyShapeInfo,
+            tadOffsets);
 }
 
 /**
@@ -900,7 +1046,9 @@ extern "C" __global__ void reduceDouble(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 
 }
 
@@ -923,7 +1071,9 @@ extern "C" __global__ void reduceDouble1D(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 
 }
 
@@ -946,7 +1096,9 @@ extern "C" __global__ void reduceDouble6D(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 
 }
 
@@ -983,7 +1135,9 @@ extern "C" __global__ void reduceFloat(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 }
 
 extern "C" __global__ void reduceFloat1D(
@@ -1005,7 +1159,9 @@ extern "C" __global__ void reduceFloat1D(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 }
 
 
@@ -1028,7 +1184,9 @@ extern "C" __global__ void reduceFloat6D(
             resultShapeInfo,
             dimension,
             dimensionLength,
-            reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            reductionBuffer,
+            tadOnlyShapeInfo,
+            tadOffsets);
 }
 
 template <typename T>
@@ -1042,25 +1200,26 @@ __device__ void reduceScalarGeneric(
         int *dimension,
         int dimensionLength,
         T *reductionBuffer, int *tadOnlyShapeInfo) {
-    __shared__ functions::reduce::ReduceFunction<T> *reduceFunctionToInvoke;
+
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::reduce::ReduceOpFactory<T>), sizeof(functions::reduce::ops::Max<T>), sizeof(shape::TAD), 0);
-
-        functions::reduce::ReduceOpFactory<T> *newOpFactory =  new(manager->getFactorySpace()) functions::reduce::ReduceOpFactory<T>();
-        reduceFunctionToInvoke = newOpFactory->create(op, manager->getFunctionSpace());
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), sizeof(shape::TAD), 0);
     }
     __syncthreads();
-    reduceFunctionToInvoke->execScalarCuda(
+
+    functions::reduce::ReduceFunction<T>::execScalarCuda(
+    		op,
             dx,
             xShapeInfo,
             extraParams,
             result,
             resultShapeInfo,
-            reductionBuffer, manager, tadOnlyShapeInfo);
+            reductionBuffer,
+            manager,
+            tadOnlyShapeInfo);
 };
 
 extern "C" __global__ void reduceScalarFloat(
