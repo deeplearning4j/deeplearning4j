@@ -158,7 +158,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     }
 
- 
+
 
     @Override
     protected DataBuffer create(long length) {
