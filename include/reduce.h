@@ -545,10 +545,12 @@ template<typename OpType>
 			 * @param extraParams the extra params
 			 * @return
 			 */
+#ifndef  __CUDACC__
+template<template <typename> typename OpType>
+#endif
 #ifdef __CUDACC__
 			__host__
 #endif
-				template<template <typename> typename OpType>
 			static T execScalar(T *x, int *xShapeInfo, T *extraParams) {
 				const Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -594,7 +596,6 @@ template<typename OpType>
 
 					return start;
 
-
 				}
 
 			}
@@ -611,7 +612,9 @@ template<typename OpType>
 			 * @param dimensionLength the length of the dimension buffer
 			 */
 
+#ifndef __CUDACC__
 template<template <typename> typename OpType>
+#endif
 #ifdef __CUDACC__
 			__host__
 #endif
@@ -721,10 +724,13 @@ template<template <typename> typename OpType>
 			* @param result the result buffer
 			* @param resultShapeInfo the shape information
 			*/
-#ifdef __CUDACC__
-			__host__ __device__
+
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
 #endif
-				template<template <typename> typename OpType>
+#ifdef __CUDACC__
+			__host__
+#endif
 			static void exec(T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -743,10 +749,14 @@ template<template <typename> typename OpType>
 			* @param extraParams the extra params
 			* @return
 			*/
+
+#ifndef __CUDACC__
+	template<template <typename> typename OpType>
+#endif
 #ifdef __CUDACC__
 			__host__
 #endif
-				template<template <typename> typename OpType>
+
 			static T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
 				T startingVal = OpType<T>::startingValue(x);
 				if (xElementWiseStride == 1) {

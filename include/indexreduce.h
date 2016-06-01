@@ -400,11 +400,11 @@ template<typename OpType>
 				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
 			}
 		}
-
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 #ifdef __CUDACC__
 			__host__
-
 #elif defined(__GNUC__)
 
 #endif

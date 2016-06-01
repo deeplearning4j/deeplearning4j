@@ -527,8 +527,9 @@ template<typename OpType>
 				else
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
-
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 			static void exec(
                     T *dx,
                     int *xShapeBuffer,
@@ -548,8 +549,9 @@ template<typename OpType>
 
                 }
             }
-
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 			static void exec(
                     T *dx,
                     int *xShapeBuffer,

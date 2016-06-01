@@ -465,7 +465,9 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
-		 template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 		 static void transform(T *x,
                            int *xShapeInfo,
                            T *result,
@@ -494,7 +496,9 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
-		  template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 		  static  void transform(T *x,
                            int *xShapeInfo,
                            T *result,
@@ -596,7 +600,9 @@ template<typename OpType>
              * neccssary
              * @param n the number of elements to loop over
              */
-			template<template <typename> typename OpType>
+#ifndef __CUDACC__
+template<template <typename> typename OpType>
+#endif
 			static void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
