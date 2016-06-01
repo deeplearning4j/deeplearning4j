@@ -326,7 +326,7 @@ template<typename OpType>
 
 			}
 
-			static inline void execScalarCuda(
+			static inline __device__  void execScalarCuda(
 			const int op,
 			T *x,
 			int *xShapeInfo,
@@ -362,7 +362,7 @@ template<typename OpType>
 
 
 
-			static inline void transformCudaXD(
+			static inline __device__ void transformCudaXD(
 				const int op,
 				T *x,
 				int *xShapeInfo,
@@ -401,7 +401,7 @@ template<typename OpType>
 			}
 
 
-			static inline void transformCuda6D(
+			static inline __device__ void transformCuda6D(
 				const int op,
 				T *x,
 				int *xShapeInfo,
@@ -439,7 +439,7 @@ template<typename OpType>
 					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
 			}
 
-			static inline void transformCuda1D(
+			static inline __device__ void transformCuda1D(
 				const int op,
 				T *x,
 				int *xShapeInfo,

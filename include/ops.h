@@ -1481,6 +1481,10 @@ namespace simdOps {
 			}
 			return val.variance();
 		}
+
+		op_def static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+			return d1;
+		}
 	};
 
 	template<typename T>
@@ -1495,6 +1499,10 @@ namespace simdOps {
 					return nd4j::math::nd4j_sqrt(ret);
 			}
 			return  nd4j::math::nd4j_sqrt(val.variance());
+		}
+
+		op_def static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+			return d1;
 		}
 	};
 }

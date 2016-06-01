@@ -70,7 +70,7 @@ struct SharedIndexValue<double> {
 		public:
 #ifdef __CUDACC__
 
-		static void transform(
+		static inline __device__ void transform(
 			const int op,
 			T *x,
 			int *xShapeInfo,

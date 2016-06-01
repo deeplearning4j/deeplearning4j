@@ -259,7 +259,12 @@ namespace functions {
 
 
 #ifdef __CUDACC__
-				/**
+
+            static inline __device__ T startingValue(T *input) {
+                return 0;
+            }
+
+		/**
 		 *
 		 * @param sPartialsRef
 		 * @param tid
@@ -282,7 +287,7 @@ template<typename OpType>
 					if (tid >= floorPow2) {
 						SummaryStatsData<T> prev = sPartials[tid - floorPow2];
 						SummaryStatsData<T> curr = sPartials[tid];
-						sPartials[tid - floorPow2] = OpType::update(prev, curr, extraParams);
+						sPartials[tid - floorPow2] = update(prev, curr, extraParams);
 					}
 					__syncthreads();
 				}
@@ -292,7 +297,7 @@ template<typename OpType>
 					if (tid < activeThreads && tid + activeThreads < numElements) {
 						SummaryStatsData<T> curr = sPartials[tid];
 						SummaryStatsData<T> next = sPartials[tid + activeThreads];
-						sPartials[tid] = OpType::update(curr, next, extraParams);
+						sPartials[tid] = update(curr, next, extraParams);
 					}
 					__syncthreads();
 				}
@@ -317,8 +322,8 @@ template<typename OpType>
 			 *                          0 is the number of elements per vector
 			 *                          1 is the number of vectors
 			 */
+template<typename OpType>
 	static __inline__ __device__ void transform(
-				const int op,
 				T *dx,
 				int *xShapeInfo,
 				T *extraParams,
@@ -326,7 +331,12 @@ template<typename OpType>
 				int *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets) {
+				int postProcessOrNot,
+				int *allocationBuffer,
+				T *reductionBuffer,
+				UnifiedSharedMemory *manager,
+				int *tadOnlyShapeInfo,
+				int *tadOffsets) {
 
 
 				/**
@@ -343,7 +353,7 @@ template<typename OpType>
 				//functions::summarystats::SharedSummaryStatsData<T> holder;
 
 				sPartials = (SummaryStatsData<T> *) manager->getSharedReductionBuffer(); //holder.getPointer();
-				T startingVal = this->startingValue(dx);
+				T startingVal = startingValue(dx);
 #pragma unroll
 				for (int i = threadIdx.x; i < numElements; i += blockDim.x) {
 					SummaryStatsData<T> val;
@@ -431,11 +441,11 @@ template<typename OpType>
 								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
 							}
 							__syncthreads();
-							aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+							aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 							__syncthreads();
 							if (threadIdx.x == 0) {
-								result[r] = getValue(sPartials[threadIdx.x]);
+								result[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
 							}
 
 						}
@@ -452,22 +462,22 @@ template<typename OpType>
 							if (threadIdx.x < tadLength) {
 								SummaryStatsData <T> indexVal;
 								indexVal.initWithValue(dx[indexX]);
-								sPartials[threadIdx.x] = op(indexVal, extraParams);
+								sPartials[threadIdx.x] = OpType::op(indexVal, extraParams);
 							}
 #pragma unroll
 							for (int x = threadIdx.x + blockDim.x; x < tadLength; x += blockDim.x) {
 								indexX = tadOffsetForBlock + x * tadEWS;
 								SummaryStatsData <T> indexVal2;
 								indexVal2.initWithValue(dx[indexX]);
-								sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
+								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
 							}
 
 							__syncthreads();
-							aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+							aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 							__syncthreads();
 							if (threadIdx.x == 0) {
-								result[i] = OpType::getValue(sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
+								result[i] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
 							}
 						}
 					}
@@ -484,7 +494,7 @@ template<typename OpType>
 						for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[i * xElementWiseStride]);
-							reduction = OpType::update(reduction, indexVal2, extraParams);
+							reduction = update(reduction, indexVal2, extraParams);
 						}
 					}
 					else {
@@ -504,7 +514,7 @@ template<typename OpType>
 							int offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[offset]);
-							reduction = OpType::update(reduction, indexVal2, extraParams);
+							reduction = update(reduction, indexVal2, extraParams);
 						}
 					}
 
@@ -539,7 +549,7 @@ template<typename OpType>
 							tc[4096] = 0;
 							SummaryStatsData<T> *pBuffer = (SummaryStatsData<T> *) reductionBuffer;
 
-							T startingVal = this->startingValue(dx);
+							T startingVal = startingValue(dx);
 
 							SummaryStatsData<T> val;
 							val.initWithValue(startingVal);
@@ -547,7 +557,7 @@ template<typename OpType>
 							sPartials[threadIdx.x] = val;
 
 							for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-								sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], pBuffer[i], extraParams);
+								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], pBuffer[i], extraParams);
 							}
 
 
@@ -556,7 +566,7 @@ template<typename OpType>
 
 							__syncthreads();
 							if (tid == 0) {
-								result[0] = OpType::getValue(sPartials[0]);
+								result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
 							}
 						}
 					}
@@ -564,14 +574,36 @@ template<typename OpType>
 						if (tid == 0) {
 							unsigned int *tc = (unsigned *)reductionBuffer;
 							tc[4096] = 0;
-							result[0] = result[0] = OpType::getValue(sPartials[0]);
+							result[0] = result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
 						}
 					}
 				}
 			}
 
 
+	static inline __device__ void transform(
+		const int op,
+		T *dx,
+		int *xShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfo,
+		int *dimension,
+		int dimensionLength,
+		int postProcessOrNot,
+		int *allocationBuffer,
+		T *reductionBuffer,
+		UnifiedSharedMemory *manager,
+		int *tadOnlyShapeInfo,
+		int *tadOffsets) {
 
+		if (op == 0)
+			transform<simdOps::SummaryStatsVariance<T>>(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+		else if (op == 1)
+			transform<simdOps::SummaryStatsStandardDeviation<T>>(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+		else
+			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
+	}
 #endif
 
 
