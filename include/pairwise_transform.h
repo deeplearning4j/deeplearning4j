@@ -296,9 +296,7 @@ template<typename OpType>
 		if(shape::elementWiseStride(xShapeBuffer) >= 1 && shape::elementWiseStride(yShapeBuffer) >= 1 && shape::elementWiseStride(resultShapeBuffer) >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
 
 			// TODO: this is wrong, and should be moved to host side
-			printf("Misplaced pairWiseTransformStrided called!\n");
-			/*
-			transformCuda(
+			transformCuda<OpType>(
 					n,
 					dx,
 					y,
@@ -307,7 +305,7 @@ template<typename OpType>
 					extraParams,
 					result,
 					shape::elementWiseStride(resultShapeBuffer), allocationPointer, manager, tadOnlyShapeInfo);
-					*/
+
 		}
 
 		else {
