@@ -507,9 +507,7 @@ template<typename OpType>
 
 
 #ifdef __CUDACC__
-	__host__ __device__
-
-
+	__host__
 #endif
 
 			static T execScalar(
@@ -554,10 +552,7 @@ template<typename OpType>
 			}
 			
 
-#ifndef __CUDACC__
 template<typename OpType>
-#endif
-
 #ifdef __CUDACC__
 			__host__
 #endif
@@ -652,9 +647,7 @@ template<typename OpType>
 
 			}
 
-#ifndef __CUDACC__
 template<typename OpType>
-#endif
 			static void exec(T *x, int *xShapeInfo,
 					  T *extraParamsVals,
 					  T *y,

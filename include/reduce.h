@@ -721,7 +721,7 @@ template<typename OpType>
 			* @param result the result buffer
 			* @param resultShapeInfo the shape information
 			*/
-			template<typename OpType>
+template<typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
