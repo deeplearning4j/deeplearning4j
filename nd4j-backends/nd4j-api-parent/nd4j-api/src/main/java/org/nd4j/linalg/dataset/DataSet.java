@@ -783,8 +783,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
             throw new IllegalArgumentException("Unable to split on size equal or larger than the number of rows (# numExamples=" + numExamples + ", numHoldout=" + numHoldout + ")");
-        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout)),getLabels().get(NDArrayIndex.interval(0,numHoldout)));
-        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples())),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples)));
+        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(0,numHoldout),NDArrayIndex.all()));
+        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples()), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
         return new SplitTestAndTrain(first, second);
     }
 
