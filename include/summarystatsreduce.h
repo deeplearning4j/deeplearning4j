@@ -517,8 +517,6 @@ template<typename OpType>
 							reduction = update(reduction, indexVal2, extraParams);
 						}
 					}
-
-					__syncthreads();
 					sPartials[threadIdx.x] = reduction;
 
 					__syncthreads();
@@ -853,7 +851,7 @@ __device__ void summaryStatsReduceGeneric(
 	    resultShapeInfo,
 	    dimension,
 	    dimensionLength,
-	    postProcessOrNot,
+	    biasCorrected,
 	    allocationBuffer,
 	    reductionBuffer,
 	    manager,
