@@ -902,10 +902,17 @@ template<typename OpType>
                               T *extraParams,
                               const int n) {
                 if (xStride == 1 && resultStride == 1) {
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
-                        for (int i = 0; i < n; i++) {
-                            result[i] = OpType::op(dx[i], extraParams);
-                        }
+					if (n > 2048) {
+#pragma omp parallel for simd schedule(guided)
+						for (int i = 0; i < n; i++) {
+							result[i] = OpType::op(dx[i], extraParams);
+						}
+					} else {
+#pragma omp simd
+						for (int i = 0; i < n; i++) {
+							result[i] = OpType::op(dx[i], extraParams);
+						}
+					}
                 } else {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (int i = 0; i < n; i++) {

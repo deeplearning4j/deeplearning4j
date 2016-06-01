@@ -604,19 +604,31 @@ template<typename OpType>
 			static void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
-#pragma omp parallel for simd schedule(guided) if (n > 2048)
-                    for (Nd4jIndex i = 0; i < n; i++) {
-                        result[i] = OpType::op(x[i], scalar, extraParams);
-                    }
+					if (n > 2048000) {
+#pragma omp parallel for simd schedule(guided)
+						for (Nd4jIndex i = 0; i < n; i++) {
+							result[i] = OpType::op(x[i], scalar, extraParams);
+						}
+					} else {
+#pragma omp simd
+						for (Nd4jIndex i = 0; i < n; i++) {
+							result[i] = OpType::op(x[i], scalar, extraParams);
+						}
+					}
                 }
 
                 else {
-#pragma omp parallel for schedule(guided) if (n > 2048)
-                    for (Nd4jIndex i = 0; i < n; i++) {
-                        result[i * resultStride] = OpType::op(x[i * xStride], scalar,
-                                                      extraParams);
-
-                    }
+					if (n > 2048000) {
+#pragma omp parallel for simd schedule(guided)
+						for (Nd4jIndex i = 0; i < n; i++) {
+							result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
+						}
+					} else {
+#pragma omp simd
+						for (Nd4jIndex i = 0; i < n; i++) {
+							result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
+						}
+					}
                 }
 
             }
