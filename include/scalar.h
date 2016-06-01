@@ -465,6 +465,8 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
+
+
 		 template<typename OpType>
 		 static void transform(T *x,
                            int *xShapeInfo,
@@ -494,6 +496,7 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
+
 		  template<typename OpType>
 		  static  void transform(T *x,
                            int *xShapeInfo,
@@ -596,6 +599,7 @@ template<typename OpType>
              * neccssary
              * @param n the number of elements to loop over
              */
+
 			template<typename OpType>
 			static void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const Nd4jIndex n) {

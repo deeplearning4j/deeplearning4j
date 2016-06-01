@@ -401,10 +401,10 @@ template<typename OpType>
 			}
 		}
 
+
 			template<typename OpType>
 #ifdef __CUDACC__
 			__host__
-
 #elif defined(__GNUC__)
 
 #endif
