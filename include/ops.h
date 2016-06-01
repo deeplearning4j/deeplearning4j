@@ -771,13 +771,15 @@ namespace simdOps {
 	template<typename T>
 	class Stabilize {
 	public:
-		static const double realMin = 1.1755e-38f;
-		static const double cutOff = nd4j::math::nd4j_log(realMin);
+	
 		no_op_exec_special
 		no_op_exec_special_cuda
 
 #pragma omp declare simd uniform(params)
 		op_def static T op(T d1, T *params) {
+			const double realMin = 1.1755e-38f;
+			const double cutOff = nd4j::math::nd4j_log(realMin);
+
 			T k = params[0];
 			if (d1 * k > -cutOff)
 				return (T)(-cutOff / k);
