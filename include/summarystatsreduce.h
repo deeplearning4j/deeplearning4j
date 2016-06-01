@@ -582,10 +582,10 @@ template<typename OpType>
 		T *extraParams) {
 
 		if (op == 0){
-			return execScalar<simdOps::SummaryStatsVariance>(biasCorrected, x, xShapeInfo, extraParams);
+			return execScalar<simdOps::SummaryStatsVariance<T>>(biasCorrected, x, xShapeInfo, extraParams);
 		}
 		else if (op == 1){
-			return execScalar<simdOps::SummaryStatsStandardDeviation>(biasCorrected, x, xShapeInfo, extraParams);
+			return execScalar<simdOps::SummaryStatsStandardDeviation<T>>(biasCorrected, x, xShapeInfo, extraParams);
 		}
 		else{
 			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
@@ -604,17 +604,17 @@ template<typename OpType>
 		int *resultShapeInfoBuffer,
 		int *dimension, int dimensionLength) {
 		if (op == 0){
-			exec<simdOps::SummaryStatsVariance>(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength);
+			exec<simdOps::SummaryStatsVariance<T>>(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength);
 		}
 		else if (op == 1){
-			exec<simdOps::SummaryStatsStandardDeviation>(biasCorrected, x, xShapeInfo, extraParams,result, resultShapeInfoBuffer, dimension, dimensionLength);
+			exec<simdOps::SummaryStatsStandardDeviation<T>>(biasCorrected, x, xShapeInfo, extraParams,result, resultShapeInfoBuffer, dimension, dimensionLength);
 		}
 		else{
 			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
 		}
 	}
 
-	template<template <typename> typename OpType>
+	template<typename OpType>
 #ifdef __CUDACC__
 			inline __host__
 
@@ -638,7 +638,7 @@ template<typename OpType>
 							extraParams);
 					}
 
-					T finalVal = OpType<T>::getValue(biasCorrected, startingIndex);
+					T finalVal = OpType::getValue(biasCorrected, startingIndex);
 					return finalVal;
 				}
 				else {
@@ -649,14 +649,14 @@ template<typename OpType>
 							extraParams);
 					}
 
-					T finalVal = OpType<T>::getValue(biasCorrected, startingIndex);
+					T finalVal = OpType::getValue(biasCorrected, startingIndex);
 					return finalVal;
 				}
 
 
 			}
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 #ifdef __CUDACC__
 			inline __host__
 
@@ -749,7 +749,7 @@ template<typename OpType>
 							printf("Unable to prepare array\n");
 						}
 
-						result[i] = OpType<T>::getValue(biasCorrected, comp);
+						result[i] = OpType::getValue(biasCorrected, comp);
 					}
 				}
 				else {
@@ -767,7 +767,7 @@ template<typename OpType>
 							comp = update(comp, comp2, extraParams);
 						}
 
-						result[i] = OpType<T>::getValue(biasCorrected, comp);
+						result[i] = OpType::getValue(biasCorrected, comp);
 					}
 
 				}

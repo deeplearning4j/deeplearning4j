@@ -371,10 +371,10 @@ template<typename OpType>
 			int *xShapeInfo,
 			T *extraParams) {
 			if (op == 0) {
-				return execScalar<simdOps::IndexMax>(x, xShapeInfo, extraParams);
+				return execScalar<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams);
 			}
 			else if (op == 1) {
-				return execScalar<simdOps::IndexMin>(x, xShapeInfo, extraParams);
+				return execScalar<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams);
 			}
 			else {
 				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
@@ -391,17 +391,17 @@ template<typename OpType>
 			int *dimension,
 			int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 			if (op == 0) {
-				exec<simdOps::IndexMax>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				exec<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 			}
 			else if (op == 1) {
-				exec<simdOps::IndexMin>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				exec<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 			}
 			else {
 				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
 			}
 		}
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 #ifdef __CUDACC__
 			__host__
 
@@ -412,7 +412,7 @@ template<typename OpType>
 						 int *xShapeInfo,
 						 T *extraParams) {
 
-				T startingVal = OpType<T>::startingValue(x);
+				T startingVal = OpType::startingValue(x);
 				IndexValue<T> startingIndex;
 				startingIndex.value = startingVal;
 				startingIndex.index = 0;
@@ -442,7 +442,7 @@ template<typename OpType>
 							IndexValue<T> curr;
 							curr.value = x[i];
 							curr.index = i;
-							startingIndex = OpType<T>::update(startingIndex, curr,
+							startingIndex = OpType::update(startingIndex, curr,
 												   extraParams);
 						} ND4J_RAW_ITER_ONE_NEXT(dim,
 												 rank,
@@ -466,7 +466,7 @@ template<typename OpType>
 								IndexValue<T> curr;
 								curr.value = x[i];
 								curr.index = i;
-								startingIndex = OpType<T>::update(startingIndex, curr,
+								startingIndex = OpType::update(startingIndex, curr,
 													   extraParams);
 
 
@@ -481,7 +481,7 @@ template<typename OpType>
 
 							{
 								IndexValue<T> local;
-								local.value = OpType<T>::startingValue(x);
+								local.value = OpType::startingValue(x);
 								local.index = 0;
 
 								for (int i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
@@ -501,13 +501,13 @@ template<typename OpType>
 										IndexValue<T> curr;
 										curr.value = chunk[j];
 										curr.index = j;
-										local = OpType<T>::update(local, curr, extraParams);
+										local = OpType::update(local, curr, extraParams);
 									}
 
 
 #pragma omp critical
 									{
-										startingIndex = OpType<T>::update(startingIndex, local,
+										startingIndex = OpType::update(startingIndex, local,
 															   extraParams);
 									}
 
@@ -525,7 +525,7 @@ template<typename OpType>
 							IndexValue<T> curr;
 							curr.value = x[i * xElementWiseStride];
 							curr.index = i;
-							startingIndex = OpType<T>::update(startingIndex, curr,
+							startingIndex = OpType::update(startingIndex, curr,
 												   extraParams);
 
 						}
@@ -542,7 +542,7 @@ template<typename OpType>
 			}
 
 			
-			template<template <typename> typename OpType>
+			template<typename OpType>
 #ifdef __CUDACC__
 			__host__
 
@@ -568,7 +568,7 @@ template<typename OpType>
 #pragma omp parallel for schedule(guided) if (resultLength > 32)
 				for (int i = 0; i < resultLength; i++) {
 					IndexValue<T> val;
-					val.value = OpType<T>::startingValue(x);
+					val.value = OpType::startingValue(x);
 					val.index = 0;
 					startingIndex[i] = val;
 				}
@@ -636,7 +636,7 @@ template<typename OpType>
 								IndexValue<T> comp;
 								comp.index = shape::sub2Ind(rank,xShape,coord);
 								comp.value = xPointer[0];
-								indexValue = OpType<T>::update(indexValue,comp,extraParams);
+								indexValue = OpType::update(indexValue,comp,extraParams);
 							} ND4J_RAW_ITER_ONE_NEXT(dim,
 													 rank,
 													 coord,
@@ -666,7 +666,7 @@ template<typename OpType>
 							IndexValue<T> comp;
 							comp.index = j;
 							comp.value = x[baseOffset + tadElementWiseStride * j];
-							indexValue = OpType<T>::update(indexValue,comp,extraParams);
+							indexValue = OpType::update(indexValue,comp,extraParams);
 						}
 						result[i] = indexValue.index;
 					}

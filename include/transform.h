@@ -391,134 +391,134 @@ template<typename OpType>
 				T *extraParams,
 				const int n) {
 				if (op == 0) {
-					exec<simdOps::Abs>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Abs<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 1) {
-					exec<simdOps::Ceiling>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Ceiling<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 2) {
-					exec<simdOps::Cosine>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Cosine<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 3) {
-					exec<simdOps::Exp>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Exp<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 4) {
-					exec<simdOps::Floor>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Floor<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 5) {
-					exec<simdOps::Log>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Log<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 6) {
-					exec<simdOps::Neg>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Neg<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 7) {
-					exec<simdOps::Pow>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Pow<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 8) {
-					exec<simdOps::Round>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Round<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 9) {
-					exec<simdOps::SetRange>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SetRange<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 10) {
-					exec<simdOps::Sigmoid>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Sigmoid<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 11) {
-					exec<simdOps::Sign>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Sign<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 12) {
-					exec<simdOps::Sin>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Sin<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 13) {
-					exec<simdOps::SoftPlus>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SoftPlus<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 14) {
-					exec<simdOps::Sqrt>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Sqrt<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 15) {
-					exec<simdOps::Tanh>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Tanh<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 16) {
-					exec<simdOps::ACos>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::ACos<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 17) {
-					exec<simdOps::ASin>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::ASin<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 18) {
-					exec<simdOps::ATan>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::ATan<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 19) {
-					exec<simdOps::HardTanh>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::HardTanh<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 20) {
-					exec<simdOps::SoftSign>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SoftSign<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 21) {
-					exec<simdOps::ELU>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::ELU<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 22) {
-					exec<simdOps::ELUDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::ELUDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 23) {
-					exec<simdOps::TanhDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::TanhDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 24) {
-					exec<simdOps::TimesOneMinus>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::TimesOneMinus<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::HardTanhDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 26) {
-					exec<simdOps::Ones>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Ones<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 27) {
-					exec<simdOps::Identity>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Identity<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 28) {
-					exec<simdOps::Stabilize>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Stabilize<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SigmoidDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SoftSignDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 31) {
-					exec<simdOps::LeakyRELU>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::LeakyRELU<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::LeakyRELUDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 33) {
-					exec<simdOps::RELU>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::RELU<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 34) {
-					exec<simdOps::Step>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Step<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 35) {
-					exec<simdOps::OneMinus>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::OneMinus<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 36) {
-					exec<simdOps::Col2Im>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Col2Im<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 37) {
-					exec<simdOps::Im2col>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::Im2col<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 38) {
-					exec<simdOps::SoftMax>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SoftMax<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SoftMaxDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 40) {
-					exec<simdOps::LogSoftMax>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::LogSoftMax<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 41) {
-					exec<simdOps::IsMax>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::IsMax<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else if (op == 42) {
 					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative>(dx, xStride, result, resultStride, extraParams, n);
+					exec<simdOps::SpecialDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
 				}
 				else {
 					printf("[ERROR] Unknow opNum %d for transform\n", op);
@@ -535,134 +535,134 @@ template<typename OpType>
 				Nd4jIndex *indexes,
 				Nd4jIndex *resultIndexes) {
 				if (op == 0) {
-					exec<simdOps::Abs>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Abs<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 1) {
-					exec<simdOps::Ceiling>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Ceiling<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 2) {
-					exec<simdOps::Cosine>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Cosine<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 3) {
-					exec<simdOps::Exp>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Exp<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 4) {
-					exec<simdOps::Floor>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Floor<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 5) {
-					exec<simdOps::Log>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Log<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 6) {
-					exec<simdOps::Neg>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Neg<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 7) {
-					exec<simdOps::Pow>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Pow<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 8) {
-					exec<simdOps::Round>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Round<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 9) {
-					exec<simdOps::SetRange>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SetRange<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 10) {
-					exec<simdOps::Sigmoid>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Sigmoid<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 11) {
-					exec<simdOps::Sign>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Sign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 12) {
-					exec<simdOps::Sin>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Sin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 13) {
-					exec<simdOps::SoftPlus>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SoftPlus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 14) {
-					exec<simdOps::Sqrt>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Sqrt<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 15) {
-					exec<simdOps::Tanh>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Tanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 16) {
-					exec<simdOps::ACos>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::ACos<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 17) {
-					exec<simdOps::ASin>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::ASin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 18) {
-					exec<simdOps::ATan>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::ATan<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 19) {
-					exec<simdOps::HardTanh>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::HardTanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 20) {
-					exec<simdOps::SoftSign>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SoftSign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 21) {
-					exec<simdOps::ELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::ELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 22) {
-					exec<simdOps::ELUDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::ELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 23) {
-					exec<simdOps::TanhDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::TanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 24) {
-					exec<simdOps::TimesOneMinus>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::TimesOneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::HardTanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 26) {
-					exec<simdOps::Ones>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Ones<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 27) {
-					exec<simdOps::Identity>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Identity<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 28) {
-					exec<simdOps::Stabilize>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Stabilize<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SigmoidDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SoftSignDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 31) {
-					exec<simdOps::LeakyRELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::LeakyRELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::LeakyRELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 33) {
-					exec<simdOps::RELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::RELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 34) {
-					exec<simdOps::Step>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Step<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 35) {
-					exec<simdOps::OneMinus>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::OneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 36) {
-					exec<simdOps::Col2Im>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Col2Im<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 37) {
-					exec<simdOps::Im2col>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::Im2col<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 38) {
-					exec<simdOps::SoftMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SoftMaxDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 40) {
-					exec<simdOps::LogSoftMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::LogSoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 41) {
-					exec<simdOps::IsMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::IsMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else if (op == 42) {
 					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
+					exec<simdOps::SpecialDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
 				}
 				else {
 					printf("[ERROR] Unknow opNum %d for transform\n", op);
@@ -678,134 +678,134 @@ template<typename OpType>
 				int *resultShapeInfo,
 				T *extraParams) {
 				if (op == 0) {
-					exec<simdOps::Abs>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Abs<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 1) {
-					exec<simdOps::Ceiling>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Ceiling<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 2) {
-					exec<simdOps::Cosine>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Cosine<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 3) {
-					exec<simdOps::Exp>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Exp<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 4) {
-					exec<simdOps::Floor>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Floor<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 5) {
-					exec<simdOps::Log>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Log<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 6) {
-					exec<simdOps::Neg>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Neg<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 7) {
-					exec<simdOps::Pow>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Pow<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 8) {
-					exec<simdOps::Round>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Round<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 9) {
-					exec<simdOps::SetRange>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SetRange<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 10) {
-					exec<simdOps::Sigmoid>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Sigmoid<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 11) {
-					exec<simdOps::Sign>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Sign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 12) {
-					exec<simdOps::Sin>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Sin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 13) {
-					exec<simdOps::SoftPlus>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SoftPlus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 14) {
-					exec<simdOps::Sqrt>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Sqrt<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 15) {
-					exec<simdOps::Tanh>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Tanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 16) {
-					exec<simdOps::ACos>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::ACos<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 17) {
-					exec<simdOps::ASin>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::ASin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 18) {
-					exec<simdOps::ATan>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::ATan<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 19) {
-					exec<simdOps::HardTanh>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::HardTanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 20) {
-					exec<simdOps::SoftSign>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SoftSign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 21) {
-					exec<simdOps::ELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::ELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 22) {
-					exec<simdOps::ELUDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::ELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 23) {
-					exec<simdOps::TanhDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::TanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 24) {
-					exec<simdOps::TimesOneMinus>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::TimesOneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::HardTanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 26) {
-					exec<simdOps::Ones>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Ones<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 27) {
-					exec<simdOps::Identity>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Identity<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 28) {
-					exec<simdOps::Stabilize>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Stabilize<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SigmoidDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SoftSignDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 31) {
-					exec<simdOps::LeakyRELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::LeakyRELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::LeakyRELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 33) {
-					exec<simdOps::RELU>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::RELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 34) {
-					exec<simdOps::Step>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Step<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 35) {
-					exec<simdOps::OneMinus>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::OneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 36) {
-					exec<simdOps::Col2Im>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Col2Im<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 37) {
-					exec<simdOps::Im2col>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::Im2col<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 38) {
-					exec<simdOps::SoftMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SoftMaxDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 40) {
-					exec<simdOps::LogSoftMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::LogSoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 41) {
-					exec<simdOps::IsMax>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::IsMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else if (op == 42) {
 					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
+					exec<simdOps::SpecialDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
 				}
 				else {
 					printf("[ERROR] Unknow opNum %d for transform\n", op);
@@ -813,7 +813,7 @@ template<typename OpType>
 			}
 
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(
                     T *dx,
                     int *xShapeInfo,
@@ -821,8 +821,8 @@ template<typename OpType>
                     int *resultShapeInfo,
                     T *extraParams) {
 
-                if(OpType<T>::requiresSpecial) {
-                    OpType<T>::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
+                if(OpType::requiresSpecial) {
+                    OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams);
                     return;
                 }
 
@@ -859,7 +859,7 @@ template<typename OpType>
                             /* Process the innermost dimension */
                             T *xIter = dx;
                             T *resultIter = result;
-                            resultIter[0] = OpType<T>::op(xIter[0], extraParams);
+                            resultIter[0] = OpType::op(xIter[0], extraParams);
                         }
                         ND4J_RAW_ITER_TWO_NEXT(dim,
                                                rank,
@@ -877,7 +877,7 @@ template<typename OpType>
             }
 
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(
 				T *dx,
 				int *xShapeInfo,
@@ -890,11 +890,11 @@ template<typename OpType>
 				int n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided)
 				for (int i = 0; i < n; i++) {
-					result[resultIndexes[i]] = OpType<T>::op(dx[indexes[i]], extraParams);
+					result[resultIndexes[i]] = OpType::op(dx[indexes[i]], extraParams);
 				}
 			}
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(T *dx,
                               int xStride,
                               T *result,
@@ -904,12 +904,12 @@ template<typename OpType>
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (int i = 0; i < n; i++) {
-                            result[i] = OpType<T>::op(dx[i], extraParams);
+                            result[i] = OpType::op(dx[i], extraParams);
                         }
                 } else {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (int i = 0; i < n; i++) {
-                            result[i * resultStride] = OpType<T>::op(dx[i * xStride], extraParams);
+                            result[i * resultStride] = OpType::op(dx[i * xStride], extraParams);
                         }
                 }
             }

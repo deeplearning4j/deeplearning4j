@@ -332,39 +332,39 @@ template<typename OpType>
 			int *indexes,
 			int *resultIndexes) {
 			if (op == 0)
-				transform<simdOps::Add>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Add<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 1)
-				transform<simdOps::Subtract>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Subtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 2)
-				transform<simdOps::Multiply>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Multiply<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 3)
-				transform<simdOps::Divide>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Divide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 4)
-				transform<simdOps::ReverseDivide>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::ReverseDivide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 5)
-				transform<simdOps::ReverseSubtract>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::ReverseSubtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 6)
-				transform<simdOps::Max>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Max<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 7)
-				transform<simdOps::LessThan>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::LessThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 8)
-				transform<simdOps::GreaterThan>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::GreaterThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 9)
-				transform<simdOps::EqualTo>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::EqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 10)
-				transform<simdOps::LessThanOrEqual>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::LessThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 11)
-				transform<simdOps::NotEqualTo>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::NotEqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 12)
-				transform<simdOps::Min>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Min<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 13)
-				transform<simdOps::Copy>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Copy<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 14)
-				transform<simdOps::Mod>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::Mod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 15)
-				transform<simdOps::ReverseMod>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::ReverseMod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
+				transform<simdOps::GreaterThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
 			else
 				printf("[ERROR] Unknown opNum=%d for scalar", op);
 
@@ -373,39 +373,39 @@ template<typename OpType>
 		static void transform(const int op, T *x, int xStride, T *result, int resultStride,
 			T scalar, T *extraParams, const Nd4jIndex n) {
 			if (op == 0)
-				transform<simdOps::Add>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Add<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 1)
-				transform<simdOps::Subtract>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Subtract<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 2)
-				transform<simdOps::Multiply>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Multiply<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 3)
-				transform<simdOps::Divide>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Divide<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 4)
-				transform<simdOps::ReverseDivide>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::ReverseDivide<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 5)
-				transform<simdOps::ReverseSubtract>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::ReverseSubtract<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 6)
-				transform<simdOps::Max>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Max<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 7)
-				transform<simdOps::LessThan>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::LessThan<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 8)
-				transform<simdOps::GreaterThan>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::GreaterThan<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 9)
-				transform<simdOps::EqualTo>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::EqualTo<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 10)
-				transform<simdOps::LessThanOrEqual>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::LessThanOrEqual<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 11)
-				transform<simdOps::NotEqualTo>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::NotEqualTo<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 12)
-				transform<simdOps::Min>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Min<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 13)
-				transform<simdOps::Copy>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Copy<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 14)
-				transform<simdOps::Mod>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::Mod<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 15)
-				transform<simdOps::ReverseMod>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::ReverseMod<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual>(x, xStride, result, resultStride, scalar, extraParams, n);
+				transform<simdOps::GreaterThanOrEqual<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
 			else
 				printf("[ERROR] Unknown opNum=%d for scalar", op);
 		}
@@ -417,39 +417,39 @@ template<typename OpType>
 			int *resultShapeInfo,
 			T scalar, T *extraParams) {
 			if (op == 0)
-				transform<simdOps::Add>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Add<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 1)
-				transform<simdOps::Subtract>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Subtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 2)
-				transform<simdOps::Multiply>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Multiply<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 3)
-				transform<simdOps::Divide>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Divide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 4)
-				transform<simdOps::ReverseDivide>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::ReverseDivide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 5)
-				transform<simdOps::ReverseSubtract>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::ReverseSubtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 6)
-				transform<simdOps::Max>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Max<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 7)
-				transform<simdOps::LessThan>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::LessThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 8)
-				transform<simdOps::GreaterThan>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::GreaterThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 9)
-				transform<simdOps::EqualTo>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::EqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 10)
-				transform<simdOps::LessThanOrEqual>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::LessThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 11)
-				transform<simdOps::NotEqualTo>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::NotEqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 12)
-				transform<simdOps::Min>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Min<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 13)
-				transform<simdOps::Copy>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Copy<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 14)
-				transform<simdOps::Mod>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::Mod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 15)
-				transform<simdOps::ReverseMod>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::ReverseMod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+				transform<simdOps::GreaterThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
 			else
 				printf("[ERROR] Unknown opNum=%d for scalar", op);
 		}
@@ -465,7 +465,7 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
-		 template<template <typename> typename OpType>
+		 template<typename OpType>
 		 static void transform(T *x,
                            int *xShapeInfo,
                            T *result,
@@ -477,7 +477,7 @@ template<typename OpType>
                 const Nd4jIndex n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                 for (Nd4jIndex i = 0; i < n; i++) {
-                    result[resultIndexes[i]] = OpType<T>::op(x[indexes[i]], scalar,extraParams);
+                    result[resultIndexes[i]] = OpType::op(x[indexes[i]], scalar,extraParams);
                 }
             }
 
@@ -494,7 +494,7 @@ template<typename OpType>
          * neccssary
          * @param n the number of elements to loop over
          */
-		  template<template <typename> typename OpType>
+		  template<typename OpType>
 		  static  void transform(T *x,
                            int *xShapeInfo,
                            T *result,
@@ -530,7 +530,7 @@ template<typename OpType>
                                 /* Process the innermost dimension */
                                 T *xIter = x;
                                 T *resultIter = result;
-                                resultIter[0] = OpType<T>::op(xIter[0],scalar,extraParams);
+                                resultIter[0] = OpType::op(xIter[0],scalar,extraParams);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
                                                      rank,
                                                      coord,
@@ -571,7 +571,7 @@ template<typename OpType>
                             int xOffset2 = shape::getOffset(xOffset, xShape, xStride, xIdx, xRank);
                             int resultOffset2 = shape::getOffset(resultOffset, resultShape, resultStride, resultIdx, resultRank);
 
-                            result[resultOffset2] = OpType<T>::op(x[xOffset2], scalar,extraParams);
+                            result[resultOffset2] = OpType::op(x[xOffset2], scalar,extraParams);
 
                             delete[] xIdx;
                             delete[] resultIdx;
@@ -596,20 +596,20 @@ template<typename OpType>
              * neccssary
              * @param n the number of elements to loop over
              */
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void transform(T *x, int xStride, T *result, int resultStride,
                            T scalar, T *extraParams, const Nd4jIndex n) {
                 if (xStride == 1 && resultStride == 1) {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                     for (Nd4jIndex i = 0; i < n; i++) {
-                        result[i] = OpType<T>::op(x[i], scalar, extraParams);
+                        result[i] = OpType::op(x[i], scalar, extraParams);
                     }
                 }
 
                 else {
 #pragma omp parallel for schedule(guided) if (n > 2048)
                     for (Nd4jIndex i = 0; i < n; i++) {
-                        result[i * resultStride] = OpType<T>::op(x[i * xStride], scalar,
+                        result[i * resultStride] = OpType::op(x[i * xStride], scalar,
                                                       extraParams);
 
                     }

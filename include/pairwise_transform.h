@@ -396,39 +396,39 @@ template<typename OpType>
 				int *yIndexes,
 				int *resultIndexes) {
 				if (op == 0)
-					exec<simdOps::Add>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 1)
-					exec<simdOps::Copy>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 2)
-					exec<simdOps::Divide>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 3)
-					exec<simdOps::EqualTo>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 4)
-					exec<simdOps::GreaterThan>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 5)
-					exec<simdOps::LessThan>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 6)
-					exec<simdOps::Multiply>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 7)
-					exec<simdOps::ReverseDivide>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 8)
-					exec<simdOps::ReverseSubtract>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 9)
-					exec<simdOps::Subtract>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 10)
-					exec<simdOps::Epsilon>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 12)
-					exec<simdOps::LessThanOrEqual>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 13)
-					exec<simdOps::Max>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 14)
-					exec<simdOps::Min>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 15)
-					exec<simdOps::NotEqualTo>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else if (op == 16)
-					exec<simdOps::Copy>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
+					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
 				else
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
@@ -443,39 +443,39 @@ template<typename OpType>
 				int *resultShapeBuffer,
 				T *extraParams) {
 				if (op == 0)
-					exec<simdOps::Add>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 1)
-					exec<simdOps::Copy>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 2)
-					exec<simdOps::Divide>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 3)
-					exec<simdOps::EqualTo>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 4)
-					exec<simdOps::GreaterThan>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 5)
-					exec<simdOps::LessThan>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 6)
-					exec<simdOps::Multiply>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 7)
-					exec<simdOps::ReverseDivide>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 8)
-					exec<simdOps::ReverseSubtract>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 9)
-					exec<simdOps::Subtract>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 10)
-					exec<simdOps::Epsilon>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 12)
-					exec<simdOps::LessThanOrEqual>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 13)
-					exec<simdOps::Max>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 14)
-					exec<simdOps::Min>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 15)
-					exec<simdOps::NotEqualTo>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else if (op == 16)
-					exec<simdOps::Copy>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
+					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
 				else
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
@@ -491,44 +491,44 @@ template<typename OpType>
 				T *extraParams,
 				Nd4jIndex n) {
 				if (op == 0)
-					exec<simdOps::Add>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Add<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 1)
-					exec<simdOps::Copy>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Copy<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 2)
-					exec<simdOps::Divide>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Divide<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 3)
-					exec<simdOps::EqualTo>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::EqualTo<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 4)
-					exec<simdOps::GreaterThan>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::GreaterThan<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 5)
-					exec<simdOps::LessThan>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::LessThan<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 6)
-					exec<simdOps::Multiply>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Multiply<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 7)
-					exec<simdOps::ReverseDivide>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::ReverseDivide<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 8)
-					exec<simdOps::ReverseSubtract>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::ReverseSubtract<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 9)
-					exec<simdOps::Subtract>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Subtract<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 10)
-					exec<simdOps::Epsilon>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Epsilon<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::GreaterThanOrEqual<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 12)
-					exec<simdOps::LessThanOrEqual>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::LessThanOrEqual<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 13)
-					exec<simdOps::Max>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Max<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 14)
-					exec<simdOps::Min>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Min<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 15)
-					exec<simdOps::NotEqualTo>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::NotEqualTo<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else if (op == 16)
-					exec<simdOps::Copy>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
+					exec<simdOps::Copy<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
 				else
 					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
 			}
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(
                     T *dx,
                     int *xShapeBuffer,
@@ -544,12 +544,12 @@ template<typename OpType>
 
 #pragma omp parallel for simd schedule(guided)
                 for (Nd4jIndex i = 0; i < n; i++) {
-                    result[resultIndexes[i]] = OpType<T>::op(dx[indexes[i]], y[yIndexes[i]], extraParams);
+                    result[resultIndexes[i]] = OpType::op(dx[indexes[i]], y[yIndexes[i]], extraParams);
 
                 }
             }
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(
                     T *dx,
                     int *xShapeBuffer,
@@ -634,7 +634,7 @@ template<typename OpType>
                                 T *xIter = dx;
                                 T *yIter = y;
                                 T *resultIter = result;
-                                resultIter[0] = OpType<T>::op(xIter[0], yIter[0], extraParams);
+                                resultIter[0] = OpType::op(xIter[0], yIter[0], extraParams);
                             }
                         ND4J_RAW_ITER_THREE_NEXT(dim,
                                                  rank,
@@ -677,7 +677,7 @@ template<typename OpType>
 
                             Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-                            result[xOffset] = OpType<T>::op(dx[xOffset], y[yOffset], extraParams);
+                            result[xOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 
                         }
                     }
@@ -690,7 +690,7 @@ template<typename OpType>
                             Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
                             Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
-                            result[resultOffset] = OpType<T>::op(dx[xOffset], y[yOffset], extraParams);
+                            result[resultOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 
                         }
                     }
@@ -702,7 +702,7 @@ template<typename OpType>
                 }
             }
 
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(T *dx,
                               Nd4jIndex xStride,
                               T *y,
@@ -715,13 +715,13 @@ template<typename OpType>
 
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (Nd4jIndex i = 0; i < n; i++) {
-                            result[i] = OpType<T>::op(dx[i], y[i], extraParams);
+                            result[i] = OpType::op(dx[i], y[i], extraParams);
                         }
                 }
                 else {
 #pragma omp parallel for simd schedule(guided) if (n > 2048)
                         for (Nd4jIndex i = 0; i < n; i++) {
-                            result[i * resultStride] = OpType<T>::op(dx[i * xStride],
+                            result[i * resultStride] = OpType::op(dx[i * xStride],
                                                           y[i * yStride], extraParams);
                         }
                 }

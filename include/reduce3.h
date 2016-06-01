@@ -520,13 +520,13 @@ template<typename OpType>
 				T *y,
 				int *yShapeInfo) {
 				if (op == 0)
-					return execScalar<simdOps::ManhattanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+					return execScalar<simdOps::ManhattanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
 				else if (op == 1)
-					return execScalar<simdOps::EuclideanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+					return execScalar<simdOps::EuclideanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
 				else if (op == 2)
-					return execScalar<simdOps::CosineSimilarity>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+					return execScalar<simdOps::CosineSimilarity<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
 				else if (op == 3)
-					return execScalar<simdOps::Dot>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
+					return execScalar<simdOps::Dot<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
 				else
 					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
 				return 0;
@@ -542,20 +542,20 @@ template<typename OpType>
 				int *dimension,
 				int dimensionLength) {
 				if (op == 0)
-					exec<simdOps::ManhattanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+					exec<simdOps::ManhattanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
 				else if (op == 1)
-					exec<simdOps::EuclideanDistance>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+					exec<simdOps::EuclideanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
 				else if (op == 2)
-					exec<simdOps::CosineSimilarity>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+					exec<simdOps::CosineSimilarity<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
 				else if (op == 3)
-					exec<simdOps::Dot>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
+					exec<simdOps::Dot<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
 				else
 					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
 			}
 			
 
 #ifndef __CUDACC__
-template<template <typename> typename OpType>
+template<typename OpType>
 #endif
 
 #ifdef __CUDACC__
@@ -567,12 +567,12 @@ template<template <typename> typename OpType>
 					T *extraParamsVals,
 					T *y,
 					int *yShapeInfo) {
-				T startingVal = OpType<T>::startingValue(x);
+				T startingVal = OpType::startingValue(x);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-				for(int i = 0; i < OpType<T>::extraParamsLen;i++) {
+				for(int i = 0; i < OpType::extraParamsLen;i++) {
 					extraParamsVals[i] = startingVal;
 				}
 
@@ -582,20 +582,20 @@ template<template <typename> typename OpType>
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 						for(int i = 0; i < length; i++) {
-							startingVal = OpType<T>::update(startingVal, OpType<T>::op(x[i],y[i],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i],&extraParamsVals),&extraParamsVals);
 						}
 
-						return  OpType<T>::postProcess(startingVal, length,&(extraParamsVals));
+						return  OpType::postProcess(startingVal, length,&(extraParamsVals));
 
 					}
 
 					else {
 #pragma omp simd
 						for(Nd4jIndex i = 0; i < length; i++) {
-							startingVal = OpType<T>::update(startingVal, OpType<T>::op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
 						}
 
-						return   OpType<T>::postProcess(startingVal, length,&(extraParamsVals));
+						return   OpType::postProcess(startingVal, length,&(extraParamsVals));
 					}
 
 				}
@@ -605,7 +605,7 @@ template<template <typename> typename OpType>
 					int *xShape = shape::shapeOf(xShapeInfo);
 					int *xStride = shape::stride(xShapeInfo);
 					int *yStride = shape::stride(yShapeInfo);
-					T startingVal = OpType<T>::startingValue(x);
+					T startingVal = OpType::startingValue(x);
 					Nd4jIndex n = shape::length(xShapeInfo);
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
@@ -629,7 +629,7 @@ template<template <typename> typename OpType>
 								/* Process the innermost dimension */
 								T *xIter = x;
 								T *yIter = y;
-								startingVal = OpType<T>::update(startingVal, OpType<T>::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -639,7 +639,7 @@ template<template <typename> typename OpType>
 													 y,
 													 yStridesIter);
 
-						return OpType<T>::postProcess(startingVal,n,&extraParamsVals);
+						return OpType::postProcess(startingVal,n,&extraParamsVals);
 					}
 					else {
 						printf("Unable to prepare array\n");
@@ -653,7 +653,7 @@ template<template <typename> typename OpType>
 			}
 
 #ifndef __CUDACC__
-template<template <typename> typename OpType>
+template<typename OpType>
 #endif
 			static void exec(T *x, int *xShapeInfo,
 					  T *extraParamsVals,
@@ -711,7 +711,7 @@ template<template <typename> typename OpType>
 								T *yIter = y;
 								Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
 								int reductionIndex = xOffset / resultLength;
-								result[reductionIndex] = OpType<T>::update(result[reductionIndex], OpType<T>::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -724,7 +724,7 @@ template<template <typename> typename OpType>
 
 #pragma  omp parallel for
 						for(Nd4jIndex i = 0; i < resultLength ;i++) {
-							result[i] = OpType<T>::postProcess(result[i],tadLength,&extraParamsVals);
+							result[i] = OpType::postProcess(result[i],tadLength,&extraParamsVals);
 						}
 					}
 
@@ -733,7 +733,7 @@ template<template <typename> typename OpType>
 					}
 				}
 				else {
-					T startingVal = OpType<T>::startingValue(x);
+					T startingVal = OpType::startingValue(x);
 
 					Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
 					shape::TAD xTad(yShapeInfo,dimension,dimensionLength);
@@ -754,19 +754,19 @@ template<template <typename> typename OpType>
 #pragma omp parallel for
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						T *localExtraParams = nullptr;
-						if(OpType<T>::extraParamsLen > 0)
-							localExtraParams = new T[OpType<T>::extraParamsLen];
-						for(int extraParamsIdx = 0; extraParamsIdx <  OpType<T>::extraParamsLen; extraParamsIdx++) {
+						if(OpType::extraParamsLen > 0)
+							localExtraParams = new T[OpType::extraParamsLen];
+						for(int extraParamsIdx = 0; extraParamsIdx <  OpType::extraParamsLen; extraParamsIdx++) {
 							localExtraParams[extraParamsIdx] = startingVal;
 						}
 
 						Nd4jIndex offset = xTad.tadOffsets[i];
-						result[i] = OpType<T>::op(x[offset], y[offset],&localExtraParams);
+						result[i] = OpType::op(x[offset], y[offset],&localExtraParams);
 						for(int j = 1; j < tadLength; j++) {
-							result[i] = OpType<T>::update(result[i], OpType<T>::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
+							result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
 						}
 
-						result[i] = OpType<T>::postProcess(result[i],tadLength,&localExtraParams);
+						result[i] = OpType::postProcess(result[i],tadLength,&localExtraParams);
 
 						if(localExtraParams != nullptr)
 							delete[] localExtraParams;

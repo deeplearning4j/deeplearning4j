@@ -480,25 +480,25 @@ template<typename OpType>
 
 			static T execScalar(const int op, T *x, int *xShapeInfo, T *extraParams) {
 				if (op == 0)
-					return execScalar<simdOps::Mean>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Mean<T>>(x, xShapeInfo, extraParams);
 				else if (op == 1)
-					return execScalar<simdOps::Sum>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Sum<T>>(x, xShapeInfo, extraParams);
 				else if (op == 3)
-					return execScalar<simdOps::Max>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Max<T>>(x, xShapeInfo, extraParams);
 				else if (op == 4)
-					return execScalar<simdOps::Min>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Min<T>>(x, xShapeInfo, extraParams);
 				else if (op == 5)
-					return execScalar<simdOps::Norm1>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Norm1<T>>(x, xShapeInfo, extraParams);
 				else if (op == 6)
-					return execScalar<simdOps::Norm2>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Norm2<T>>(x, xShapeInfo, extraParams);
 				else if (op == 7)
-					return execScalar<simdOps::NormMax>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::NormMax<T>>(x, xShapeInfo, extraParams);
 				else if (op == 8)
-					return execScalar<simdOps::Prod>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Prod<T>>(x, xShapeInfo, extraParams);
 				else if (op == 9)
-					return execScalar<simdOps::StandardDeviation>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams);
 				else if (op == 10)
-					return execScalar<simdOps::Variance>(x, xShapeInfo, extraParams);
+					return execScalar<simdOps::Variance<T>>(x, xShapeInfo, extraParams);
 				else {
 					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
 					return 0;
@@ -514,25 +514,25 @@ template<typename OpType>
 				int *dimension,
 				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 				if (op == 0)
-					exec<simdOps::Mean>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 1)
-					exec<simdOps::Sum>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 3)
-					exec<simdOps::Max>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 4)
-					exec<simdOps::Min>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 5)
-					exec<simdOps::Norm1>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 6)
-					exec<simdOps::Norm2>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 7)
-					exec<simdOps::NormMax>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 8)
-					exec<simdOps::Prod>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 9)
-					exec<simdOps::StandardDeviation>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else if (op == 10)
-					exec<simdOps::Variance>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				else
 					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
 			}
@@ -548,7 +548,7 @@ template<typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
-				template<template <typename> typename OpType>
+				template<typename OpType>
 			static T execScalar(T *x, int *xShapeInfo, T *extraParams) {
 				const Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -563,7 +563,7 @@ template<typename OpType>
 
 					int *xShape = shape::shapeOf(xShapeInfo);
 					int *xStride = shape::stride(xShapeInfo);
-					T start = OpType<T>::startingValue(x);
+					T start = OpType::startingValue(x);
 					int rank = shape::rank(xShapeInfo);
 
 					if (PrepareOneRawArrayIter<T>(rank,
@@ -578,7 +578,7 @@ template<typename OpType>
 						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
 							/* Process the innermost dimension */
 							const T *xIter = x;
-							start = OpType<T>::update(start, OpType<T>::op(xIter[0], extraParams), extraParams);
+							start = OpType::update(start, OpType::op(xIter[0], extraParams), extraParams);
 						}
 						ND4J_RAW_ITER_ONE_NEXT(dim,
 							rank,
@@ -586,7 +586,7 @@ template<typename OpType>
 							shapeIter,
 							x,
 							xStridesIter);
-						start = OpType<T>::postProcess(start, shape::length(xShapeInfo), extraParams);
+						start = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
 					}
 					else {
 						printf("Unable to prepare array\n");
@@ -611,7 +611,7 @@ template<typename OpType>
 			 * @param dimensionLength the length of the dimension buffer
 			 */
 
-template<template <typename> typename OpType>
+template<typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
@@ -664,22 +664,22 @@ template<template <typename> typename OpType>
 #pragma omp parallel for if (resultLength > 16 && tadLength > 16)
 					for (int i = 0; i < resultLength; i++) {
 						T *iter = x + tadOffsets[i];
-						T start = OpType<T>::startingValue(iter);
+						T start = OpType::startingValue(iter);
 						if (tadEWS == 1) {
 
 #pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
-								start = OpType<T>::update(start, OpType<T>::op(iter[j], extraParams), extraParams);
+								start = OpType::update(start, OpType::op(iter[j], extraParams), extraParams);
 
 							}
 						}
 						else {
 #pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
-								start = OpType<T>::update(start, OpType<T>::op(iter[j * tadEWS], extraParams), extraParams);
+								start = OpType::update(start, OpType::op(iter[j * tadEWS], extraParams), extraParams);
 							}
 						}
-						result[i] = OpType<T>::postProcess(start, tadLength, extraParams);
+						result[i] = OpType::postProcess(start, tadLength, extraParams);
 					}
 				}
 				else {
@@ -691,16 +691,16 @@ template<template <typename> typename OpType>
 						int offset = tadOffsets[i];
 						int xCoord[MAX_RANK];
 
-						T start = OpType<T>::startingValue(x + offset);
+						T start = OpType::startingValue(x + offset);
 
 						for (int j = 0; j < tadLength; j++) {
 							shape::ind2subC(tadRank, tadShape, j, xCoord);
 							int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
-							start = OpType<T>::update(start, OpType<T>::op(x[xOffset], extraParams), extraParams);
+							start = OpType::update(start, OpType::op(x[xOffset], extraParams), extraParams);
 						}
 
-						result[i] = OpType<T>::postProcess(start, tadLength, extraParams);;
+						result[i] = OpType::postProcess(start, tadLength, extraParams);;
 					}
 				}
 
@@ -721,10 +721,10 @@ template<template <typename> typename OpType>
 			* @param result the result buffer
 			* @param resultShapeInfo the shape information
 			*/
+			template<typename OpType>
 #ifdef __CUDACC__
 			__host__ __device__
 #endif
-				template<template <typename> typename OpType>
 			static void exec(T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -746,19 +746,19 @@ template<template <typename> typename OpType>
 #ifdef __CUDACC__
 			__host__
 #endif
-				template<template <typename> typename OpType>
+				template<typename OpType>
 			static T execScalar(const T *x, int xElementWiseStride, Nd4jIndex length, T *extraParams) {
-				T startingVal = OpType<T>::startingValue(x);
+				T startingVal = OpType::startingValue(x);
 				if (xElementWiseStride == 1) {
 					if (length < 8000) {
-						T local = OpType<T>::startingValue(x);
+						T local = OpType::startingValue(x);
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
-							T curr = OpType<T>::op(x[i], extraParams);
-							local = OpType<T>::update(local, curr, extraParams);
+							T curr = OpType::op(x[i], extraParams);
+							local = OpType::update(local, curr, extraParams);
 
 						}
-						local = OpType<T>::postProcess(local, length, extraParams);
+						local = OpType::postProcess(local, length, extraParams);
 
 						return local;
 					}
@@ -769,7 +769,7 @@ template<template <typename> typename OpType>
 						T *blocks = new T[info.chunks];
 #pragma omp parallel
 						{
-							T local = OpType<T>::startingValue(x);
+							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
 								Nd4jIndex newOffset = (i * info.items);
 								const T *chunk = x + newOffset;
@@ -784,8 +784,8 @@ template<template <typename> typename OpType>
 								}
 #pragma omp simd
 								for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
-									T curr = OpType<T>::op(chunk[j], extraParams);
-									local = OpType<T>::update(local, curr, extraParams);
+									T curr = OpType::op(chunk[j], extraParams);
+									local = OpType::update(local, curr, extraParams);
 								}
 
 							}
@@ -795,11 +795,11 @@ template<template <typename> typename OpType>
 
 #pragma omp simd
 						for (int i = 0; i < info.threads; i++) {
-							finalVal = OpType<T>::update(finalVal, blocks[i], extraParams);
+							finalVal = OpType::update(finalVal, blocks[i], extraParams);
 						}
 
 
-						finalVal = OpType<T>::postProcess(finalVal, length, extraParams);
+						finalVal = OpType::postProcess(finalVal, length, extraParams);
 						delete[] blocks;
 						return finalVal;
 
@@ -809,15 +809,15 @@ template<template <typename> typename OpType>
 
 				else {
 					if (length < 8000) {
-						T local = OpType<T>::startingValue(x);
+						T local = OpType::startingValue(x);
 #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
-							T curr = OpType<T>::op(x[i * xElementWiseStride], extraParams);
-							local = OpType<T>::update(local, curr, extraParams);
+							T curr = OpType::op(x[i * xElementWiseStride], extraParams);
+							local = OpType::update(local, curr, extraParams);
 
 						}
 
-						local = OpType<T>::postProcess(local, length, extraParams);
+						local = OpType::postProcess(local, length, extraParams);
 
 						return local;
 					}
@@ -829,7 +829,7 @@ template<template <typename> typename OpType>
 
 #pragma omp parallel
 					{
-						T local = OpType<T>::startingValue(x);
+						T local = OpType::startingValue(x);
 						for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
 							Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
 							const T *chunk = x + newOffset;
@@ -837,8 +837,8 @@ template<template <typename> typename OpType>
 #pragma omp simd
 
 							for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
-								T curr = OpType<T>::op(chunk[i * xElementWiseStride], extraParams);
-								local = OpType<T>::update(local, curr, extraParams);
+								T curr = OpType::op(chunk[i * xElementWiseStride], extraParams);
+								local = OpType::update(local, curr, extraParams);
 							}
 
 
@@ -851,10 +851,10 @@ template<template <typename> typename OpType>
 
 #pragma omp simd
 					for (int i = 0; i < info.threads; i++) {
-						finalVal = OpType<T>::update(finalVal, blocks[i], extraParams);
+						finalVal = OpType::update(finalVal, blocks[i], extraParams);
 					}
 
-					finalVal = OpType<T>::postProcess(finalVal, length, extraParams);
+					finalVal = OpType::postProcess(finalVal, length, extraParams);
 					delete[] blocks;
 					return finalVal;
 

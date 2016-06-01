@@ -137,25 +137,25 @@ template<typename OpType>
 				int *dimension,
 				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
 				if (opNum == 0) {
-					exec<simdOps::Add>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 1) {
-					exec<simdOps::Subtract>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 2) {
-					exec<simdOps::Multiply>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 3) {
-					exec<simdOps::Divide>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 4) {
-					exec<simdOps::ReverseDivide>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 5) {
-					exec<simdOps::ReverseSubtract>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else if (opNum == 6) {
-					exec<simdOps::Copy>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+					exec<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
 				}
 				else {
 					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
@@ -173,7 +173,7 @@ template<typename OpType>
              * @param dimension the dimension to broadcast along long
              * @param dimensionLength the length of the dimension buffer
              */
-			template<template <typename> typename OpType>
+			template<typename OpType>
 			static void exec(T *x,
 							  int *xShapeInfo,
 							  T *y,
@@ -220,12 +220,12 @@ template<typename OpType>
 							if (tadEWS == 1 && yStride == 1) {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f] = OpType<T>::op(oX[f], y[f]);
+									oRes[f] = OpType::op(oX[f], y[f]);
 								}
 							} else {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f * tadEWS] = OpType<T>::op(oX[f * tadEWS], y[f * yStride]);
+									oRes[f * tadEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
 								}
 							}
 						} else {
@@ -234,7 +234,7 @@ template<typename OpType>
 							for (int f = 0; f < tadLength; f++) {
 								shape::ind2subC(tadRank,xShape, f, xCoord);
 								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
-								result[xOffset] = OpType<T>::op(x[xOffset], y[f * yStride]);
+								result[xOffset] = OpType::op(x[xOffset], y[f * yStride]);
 							}
 						}
 					}
@@ -268,7 +268,7 @@ template<typename OpType>
 							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
 							{
 								/* Process the innermost dimension */
-								T val = OpType<T>::op(xIter[0], y[vectorIdx]);
+								T val = OpType::op(xIter[0], y[vectorIdx]);
 								resultIter[0] = val;
 								vectorIdx += shape::elementWiseStride(yShapeInfo);
 							}
