@@ -125,11 +125,6 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
 
-    @Override
-    public DataBuffer.Type dataType() {
-        return DataBuffer.Type.DOUBLE;
-    }
-
 
 
 
@@ -167,10 +162,15 @@ public class DoubleBuffer extends BaseDataBuffer {
     public void flush() {
     }
 
+    /**
+     * Initialize the type of this buffer
+     */
     @Override
-    public int getElementSize() {
-        return 8;
+    protected void initTypeAndSize() {
+        elementSize = 8;
+        type = Type.DOUBLE;
     }
+
 
 
 
