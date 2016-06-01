@@ -38,6 +38,7 @@ public class FloatBuffer extends BaseDataBuffer {
      */
     public FloatBuffer(long length) {
         super(length);
+
     }
 
     public FloatBuffer(long length, boolean initialize){
@@ -50,6 +51,15 @@ public class FloatBuffer extends BaseDataBuffer {
 
     public FloatBuffer(int length, int elementSize, int offset) {
         super(length, elementSize, offset);
+    }
+
+    /**
+     * Initialize the type of this buffer
+     */
+    @Override
+    protected void initTypeAndSize() {
+        type = Type.FLOAT;
+        elementSize = 4;
     }
 
     public FloatBuffer(DataBuffer underlyingBuffer, long length, long offset) {
@@ -128,21 +138,11 @@ public class FloatBuffer extends BaseDataBuffer {
         super(data, copy, offset);
     }
 
-    @Override
-    public int getElementSize() {
-        return 4;
-    }
-
 
 
     @Override
     protected DataBuffer create(long length) {
         return new FloatBuffer(length);
-    }
-
-    @Override
-    public DataBuffer.Type dataType() {
-        return DataBuffer.Type.FLOAT;
     }
 
 

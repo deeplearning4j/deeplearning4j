@@ -146,16 +146,16 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
 
+
+
+    /**
+     * Initialize the type of this buffer
+     */
     @Override
-    public DataBuffer.Type dataType() {
-        return DataBuffer.Type.INT;
+    protected void initTypeAndSize() {
+        elementSize = 4;
+        type = Type.INT;
     }
 
-
-
-    @Override
-    public int getElementSize() {
-        return 4;
-    }
 
 }
