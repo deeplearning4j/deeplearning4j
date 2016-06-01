@@ -26,6 +26,11 @@ namespace functions {
 			unsigned int index;
 		};
 	}
+
+	namespace summarystats {
+		template <typename T>
+		class SummaryStatsData;
+	}
 }
 
 namespace simdOps {
@@ -1459,6 +1464,35 @@ namespace simdOps {
 		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
+		}
+	};
+
+	template<typename T>
+	class SummaryStatsVariance {
+	public:
+		op_def static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+			if (biasCorrected) {
+				T ret = val.varianceBiasCorrected();
+				if (ret < 0)
+					return val.variance();
+				return ret;
+			}
+			return val.variance();
+		}
+	};
+
+	template<typename T>
+	class SummaryStatsStandardDeviation {
+	public:
+		op_def static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+			if (biasCorrected) {
+				T ret = val.varianceBiasCorrected();
+				if (ret < 0)
+					return nd4j::math::nd4j_sqrt(val.variance());
+				else
+					return nd4j::math::nd4j_sqrt(ret);
+			}
+			return  nd4j::math::nd4j_sqrt(val.variance());
 		}
 	};
 }

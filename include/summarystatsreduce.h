@@ -24,10 +24,6 @@
 
 #include <ops.h>
 
-#define VARIANCE 0
-#define STANDARD_DEVIATION 1
-
-
 namespace functions {
 	namespace summarystats {
 
@@ -165,32 +161,6 @@ namespace functions {
 
 			op_def void setN(T n) {
 				this->n = n;
-			}
-
-			op_def T getValue(const int type, const bool biasCorrected) {
-				switch (type)
-				{
-				case VARIANCE:
-					if (biasCorrected) {
-						T ret = varianceBiasCorrected();
-						if (ret < 0)
-							return variance();
-						return ret;
-					}
-					return variance();
-				case STANDARD_DEVIATION:
-					if (biasCorrected) {
-						T ret = varianceBiasCorrected();
-						if (ret < 0)
-							return nd4j::math::nd4j_sqrt(variance());
-						else
-							return nd4j::math::nd4j_sqrt(ret);
-					}
-					return  nd4j::math::nd4j_sqrt(variance());
-				default:
-					printf("[ERROR] Unknown SummaryStats type %d!\n", type);
-					return -1;
-				}
 			}
 		};
 
@@ -605,13 +575,53 @@ template<typename OpType>
 #endif
 
 
+	static T execScalar(const int op,
+		const bool biasCorrected,
+		T *x,
+		int *xShapeInfo,
+		T *extraParams) {
+
+		if (op == 0){
+			return execScalar<simdOps::SummaryStatsVariance>(biasCorrected, x, xShapeInfo, extraParams);
+		}
+		else if (op == 1){
+			return execScalar<simdOps::SummaryStatsStandardDeviation>(biasCorrected, x, xShapeInfo, extraParams);
+		}
+		else{
+			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
+			return -1;
+		}
+	}
+
+
+	static void exec(
+		const int op,
+		const bool biasCorrected,
+		T *x,
+		int *xShapeInfo,
+		T *extraParams,
+		T *result,
+		int *resultShapeInfoBuffer,
+		int *dimension, int dimensionLength) {
+		if (op == 0){
+			exec<simdOps::SummaryStatsVariance>(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength);
+		}
+		else if (op == 1){
+			exec<simdOps::SummaryStatsStandardDeviation>(biasCorrected, x, xShapeInfo, extraParams,result, resultShapeInfoBuffer, dimension, dimensionLength);
+		}
+		else{
+			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
+		}
+	}
+
+	template<template <typename> typename OpType>
 #ifdef __CUDACC__
 			inline __host__
 
 #elif defined(__GNUC__)
 
 #endif
-			static T execScalar(const int op,
+			static T execScalar(
 				const bool biasCorrected,
 				T *x,
 				int *xShapeInfo,
@@ -628,7 +638,7 @@ template<typename OpType>
 							extraParams);
 					}
 
-					T finalVal = startingIndex.getValue(op, biasCorrected);
+					T finalVal = OpType<T>::getValue(biasCorrected, startingIndex);
 					return finalVal;
 				}
 				else {
@@ -639,14 +649,14 @@ template<typename OpType>
 							extraParams);
 					}
 
-					T finalVal = startingIndex.getValue(op, biasCorrected);
+					T finalVal = OpType<T>::getValue(biasCorrected, startingIndex);
 					return finalVal;
 				}
 
 
 			}
 
-
+			template<template <typename> typename OpType>
 #ifdef __CUDACC__
 			inline __host__
 
@@ -654,7 +664,6 @@ template<typename OpType>
 
 #endif
 			static void exec(
-				const int op,
 				const bool biasCorrected,
 				T *x,
 				int *xShapeInfo,
@@ -663,7 +672,7 @@ template<typename OpType>
 				int *resultShapeInfoBuffer,
 				int *dimension, int dimensionLength) {
 				if (shape::isScalar(resultShapeInfoBuffer)) {
-					result[0] = execScalar(op, biasCorrected, x, xShapeInfo, extraParams);
+					result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
 					return;
 				}
 
@@ -683,7 +692,7 @@ template<typename OpType>
 				//the squeezed information doesn't render the right strides for
 				//tad offset
 				if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
-					result[0] = execScalar(op, biasCorrected, x, xShapeInfo, extraParams);
+					result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
 					return;
 				}
 
@@ -740,7 +749,7 @@ template<typename OpType>
 							printf("Unable to prepare array\n");
 						}
 
-						result[i] = comp.getValue(op, biasCorrected);
+						result[i] = OpType<T>::getValue(biasCorrected, comp);
 					}
 				}
 				else {
@@ -758,7 +767,7 @@ template<typename OpType>
 							comp = update(comp, comp2, extraParams);
 						}
 
-						result[i] = comp.getValue(op, biasCorrected);
+						result[i] = OpType<T>::getValue(biasCorrected, comp);
 					}
 
 				}
