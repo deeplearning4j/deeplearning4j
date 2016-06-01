@@ -81,7 +81,8 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual __inline__ __device__ void transformCuda(
+template<typename OpType>
+static __inline__ __device__ void transformCuda(
 			T *dy,
 			int *shapeInfo,
 			T *params,
@@ -89,10 +90,10 @@ namespace functions {
 			int *resultShapeInfo,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
-		if(this->requiresSpecial) {
-			this->execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
+		if(OpType::requiresSpecial) {
+			OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
 			return;
-		}
+		} else {
 
 		int *xShape = shape::shapeOf(shapeInfo);
 		int *xStride = shape::stride(shapeInfo);
@@ -112,7 +113,7 @@ namespace functions {
 		__syncthreads();
 
 		if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
-			transformCuda(
+			transformCuda<OpType>(
 					length,
 					dy,
 					xElementWiseStride,
@@ -132,9 +133,10 @@ namespace functions {
 				shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
 				Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
 				Nd4jIndex resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
-				result[resultOffset2] = op(dy[xOffset2], params);
+				result[resultOffset2] = OpType::op(dy[xOffset2], params);
 			}
 		}
+	  }
 	}
 
 	/**
@@ -146,7 +148,8 @@ namespace functions {
 	 * @param extraParams
 	 * @param n
 	 */
-	virtual  __inline__ __device__ void transformCuda(
+template<typename OpType>
+	static  __inline__ __device__ void transformCuda(
 			Nd4jIndex n,
 			T *dy,
 			int incy,
@@ -161,18 +164,220 @@ namespace functions {
 			/* equal, positive, non-unit increments. */
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i] = op(dy[i], params);
+				result[i] = OpType::op(dy[i], params);
 			}
 		}
 		else {
 			/* equal, positive, non-unit increments. */
 #pragma unroll
 			for (; i < n; i += totalThreads) {
-				result[i * resultStride] = op(dy[i * incy], params);
+				result[i * resultStride] = OpType::op(dy[i * incy], params);
 			}
 		}
 
 
+	}
+
+	static  __inline__ __device__ void transformCuda(
+			const int op,
+			T *dy,
+			int *shapeInfo,
+			T *params,
+			T *result,
+			int *resultShapeInfo,
+			int *allocationPointer,
+			T *reductionPointer,
+			UnifiedSharedMemory *manager) {
+
+				if (op == 0)
+					transformCuda<simdOps::Abs<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 1)
+					transformCuda<simdOps::Ceiling<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 2)
+					transformCuda<simdOps::Cosine<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 3)
+					transformCuda<simdOps::Exp<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 4)
+					transformCuda<simdOps::Floor<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 5)
+					transformCuda<simdOps::Log<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 6)
+					transformCuda<simdOps::Neg<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 7)
+					transformCuda<simdOps::Pow<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 8)
+					transformCuda<simdOps::Round<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 9)
+					transformCuda<simdOps::SetRange<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 10)
+					transformCuda<simdOps::Sigmoid<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 11)
+					transformCuda<simdOps::Sign<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 12)
+					transformCuda<simdOps::Sin<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 13)
+					transformCuda<simdOps::SoftPlus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 14)
+					transformCuda<simdOps::Sqrt<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 15)
+					transformCuda<simdOps::Tanh<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 16)
+					transformCuda<simdOps::ACos<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 17)
+					transformCuda<simdOps::ASin<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 18)
+					transformCuda<simdOps::ATan<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 19)
+					transformCuda<simdOps::HardTanh<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 20)
+					transformCuda<simdOps::SoftSign<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 21)
+					transformCuda<simdOps::ELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 22)
+					transformCuda<simdOps::ELUDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 23)
+					transformCuda<simdOps::TanhDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 24)
+					transformCuda<simdOps::TimesOneMinus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 25)
+					transformCuda<simdOps::HardTanhDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 26)
+					transformCuda<simdOps::Ones<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 27)
+					transformCuda<simdOps::Identity<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 28)
+					transformCuda<simdOps::Stabilize<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 29)
+					transformCuda<simdOps::SigmoidDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 30)
+					transformCuda<simdOps::SoftSignDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 31)
+					transformCuda<simdOps::LeakyRELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 32)
+					transformCuda<simdOps::LeakyRELUDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 33)
+					transformCuda<simdOps::RELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 34)
+					transformCuda<simdOps::Step<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 35)
+					transformCuda<simdOps::OneMinus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 36)
+					transformCuda<simdOps::Col2Im<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 37)
+					transformCuda<simdOps::Im2col<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 38)
+					transformCuda<simdOps::SoftMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 39)
+					transformCuda<simdOps::SoftMaxDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 40)
+					transformCuda<simdOps::LogSoftMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 41)
+					transformCuda<simdOps::IsMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else if (op == 42)
+					transformCuda<simdOps::SpecialDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
+				else printf("[ERROR] Unknow opNum %d for transform\n", op);
+	}
+
+
+	static  __inline__ __device__ void transformCuda(
+			const int op,
+			Nd4jIndex n,
+			T *dy,
+			int incy,
+			T *params,
+			T *result,
+			int resultStride,
+			int *allocationPointer,
+			T *reductionPointer,
+			UnifiedSharedMemory *manager) {
+
+				if (op == 0)
+					transformCuda<simdOps::Abs<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 1)
+					transformCuda<simdOps::Ceiling<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 2)
+					transformCuda<simdOps::Cosine<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 3)
+					transformCuda<simdOps::Exp<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 4)
+					transformCuda<simdOps::Floor<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 5)
+					transformCuda<simdOps::Log<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 6)
+					transformCuda<simdOps::Neg<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 7)
+					transformCuda<simdOps::Pow<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 8)
+					transformCuda<simdOps::Round<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 9)
+					transformCuda<simdOps::SetRange<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 10)
+					transformCuda<simdOps::Sigmoid<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 11)
+					transformCuda<simdOps::Sign<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 12)
+					transformCuda<simdOps::Sin<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 13)
+					transformCuda<simdOps::SoftPlus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 14)
+					transformCuda<simdOps::Sqrt<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 15)
+					transformCuda<simdOps::Tanh<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 16)
+					transformCuda<simdOps::ACos<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 17)
+					transformCuda<simdOps::ASin<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 18)
+					transformCuda<simdOps::ATan<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 19)
+					transformCuda<simdOps::HardTanh<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 20)
+					transformCuda<simdOps::SoftSign<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 21)
+					transformCuda<simdOps::ELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 22)
+					transformCuda<simdOps::ELUDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 23)
+					transformCuda<simdOps::TanhDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 24)
+					transformCuda<simdOps::TimesOneMinus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 25)
+					transformCuda<simdOps::HardTanhDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 26)
+					transformCuda<simdOps::Ones<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 27)
+					transformCuda<simdOps::Identity<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 28)
+					transformCuda<simdOps::Stabilize<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 29)
+					transformCuda<simdOps::SigmoidDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 30)
+					transformCuda<simdOps::SoftSignDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 31)
+					transformCuda<simdOps::LeakyRELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 32)
+					transformCuda<simdOps::LeakyRELUDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 33)
+					transformCuda<simdOps::RELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 34)
+					transformCuda<simdOps::Step<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 35)
+					transformCuda<simdOps::OneMinus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 36)
+					transformCuda<simdOps::Col2Im<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 37)
+					transformCuda<simdOps::Im2col<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 38)
+					transformCuda<simdOps::SoftMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 39)
+					transformCuda<simdOps::SoftMaxDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 40)
+					transformCuda<simdOps::LogSoftMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 41)
+					transformCuda<simdOps::IsMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else if (op == 42)
+					transformCuda<simdOps::SpecialDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
+				else printf("[ERROR] Unknow opNum %d for transform\n", op);
 	}
 #endif
 
@@ -749,22 +954,26 @@ __device__ void transformGeneric(
 		T *result,
 		int resultStride, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
 	if(threadIdx.x == 0) {
 	    extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), 0);
-
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
-        op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), 0);
 	}
 	__syncthreads();
 
-	op->transformCuda(n,dy,incy,params,result,resultStride,allocationPointer, reductionPointer, manager);
+	functions::transform::Transform<T>::transformCuda(
+		opNum,
+		n,
+		dy,
+		incy,
+		params,
+		result,
+		resultStride,
+		allocationPointer,
+		reductionPointer,
+		manager);
 }
 
 /**
@@ -850,25 +1059,18 @@ __device__ void transformGeneric(
 		T *params,
 		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
-
-
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
-
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), xRank);
 	}
 	__syncthreads();
 
 
-	op->transformCuda(
+	functions::transform::Transform<T>::transformCuda(
+	    opNum,
 	    dy,
 	    xShapeInfo,
 	    params,
@@ -962,23 +1164,18 @@ __device__ void transformGenericIndexes(
 		T *params,
 		T *result,int *indexes, int *allocationPointer, T *reductionPointer) {
 
-	__shared__ functions::transform::Transform<T> *op;
-	__shared__ functions::transform::TransformOpFactory<T> *doubleTransformFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::transform::TransformOpFactory<T>), sizeof(functions::transform::ops::SoftMaxDerivative<T>), sizeof(shape::TAD), xRank);
-
-		doubleTransformFactory = new(manager->getFactorySpace()) functions::transform::TransformOpFactory<T>();
-		op = doubleTransformFactory->getOp(opNum, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), xRank);
 	}
 	__syncthreads();
 
 
-	op->transformCuda(
+	functions::transform::Transform<T>::transformCuda(
+	        opNum,
 	        dy,
 	        xShapeInfo,
 	        params,
@@ -1168,7 +1365,6 @@ __device__ void concatKernelGeneric(int dimension,
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
 	__shared__ UnifiedSharedMemory *manager;
-	//__shared__ UnifiedSharedMemory *managerInput;
 
 	int zRank = shape::rank(resultShapeInfo);
 
@@ -1176,9 +1372,6 @@ __device__ void concatKernelGeneric(int dimension,
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
 		manager->init(sizeof(UnifiedSharedMemory), 0, 0, sizeof(shape::TAD), zRank + 2);
-
-	//	managerInput = new((unsigned char *) manager->getSharedReductionBuffer()) UnifiedSharedMemory((int *) manager->getSharedReductionBuffer());
-	//	managerInput->init(sizeof(UnifiedSharedMemory), 0, 0, sizeof(shape::TAD), zRank + 2);
 	}
 	__syncthreads();
 
@@ -1192,7 +1385,6 @@ __device__ void concatKernelGeneric(int dimension,
     __shared__ int baseIdx;
 
 		__shared__ shape::TAD *tad;
-//		__shared__ shape::TAD *inputTAD;
 		__shared__ int yLength;
 		__shared__ char yOrder;
 		__shared__ int yEWS;

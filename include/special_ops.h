@@ -22,7 +22,7 @@ namespace simdOps {
 	template<typename T>
 	class Im2col {
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 #ifdef __CUDACC__
 		inline __host__ __device__
 #elif defined(__GNUC__)
@@ -40,7 +40,7 @@ namespace simdOps {
 		* Based on:  https://github.com/pjreddie/darknet/blob/master/src/im2col_kernels.cu
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -333,13 +333,13 @@ namespace simdOps {
 	class Col2Im {
 
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 #ifdef __CUDACC__
 		/**
 		* https://github.com/pjreddie/darknet/blob/master/src/col2im_kernels.cu
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -619,14 +619,14 @@ namespace simdOps {
 	template<typename T>
 	class SoftMax {
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
 		/**
 		*
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -637,30 +637,15 @@ namespace simdOps {
 			int *shape = shape::shapeOf(xShapeBuffer);
 			__shared__ T maxResult;
 			__shared__ int *maxResultShapeBuffer;
-			__shared__ functions::reduce::ops::Max<T> *max;
-			__shared__ functions::transform::ops::Exp<T> *exp;
-			__shared__ functions::broadcast::ops::Subtract<T> *sub;
-			__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-			__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-			__shared__ functions::broadcast::ops::Divide<T> *div;
-			__shared__ functions::reduce::ops::Sum<T> *sum;
-			__shared__ int isVector;
 
 			int length = shape::length(xShapeBuffer);
 
 			if (threadIdx.x == 0) {
-				isVector = shape::isVector(xShapeBuffer);
-				//maxResult = (T *) allocationPointer + 8; // new T[shape[0]];
-				//printf("Launching special SoftMax, shape[0]: [%i]\n", shape[0]);
 				maxResult = (T) 0.0;
 			}
 			__syncthreads();
 
-			int tid = blockIdx.x * blockDim.x + threadIdx.x;
 			int *stride = shape::stride(xShapeBuffer);
-			//iterate along rows
-			int dimension[1] = { 0 };
-			int maxDimension[1] = { 1 };
 			//compute the row wise maxes
 
 			int maxShape[2] = { shape[0], 1 };
@@ -671,44 +656,23 @@ namespace simdOps {
 			if (threadIdx.x == 0)
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-			if (threadIdx.x == 0)
-				max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-			__syncthreads();
-
-			max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			if (threadIdx.x == 0)
-				scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-			__syncthreads();
-
-			scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-
-
-			if (threadIdx.x == 0)
-				exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Subtract<T>>(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			exp->transformCuda(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+			functions::transform::Transform<T>::transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 			__syncthreads();
 
 			//take the sum for the exponential
-			sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			if (threadIdx.x == 0)
-				scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-			__syncthreads();
-
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Divide<T>>(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 		}
 #endif
 
@@ -819,13 +783,13 @@ namespace simdOps {
 	template<typename T>
 	class LogSoftMax {
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 #ifdef __CUDACC__
 		/**
 		*
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -835,19 +799,10 @@ namespace simdOps {
 			int *shape = shape::shapeOf(xShapeBuffer);
 			int *stride = shape::stride(xShapeBuffer);
 			//iterate along rows
-			int dimension[1] = { 0 };
-			int maxDimension[1] = { 1 };
-			__shared__ functions::reduce::ops::Max<T> *max;
-			__shared__ functions::transform::ops::Exp<T> *exp;
-			__shared__ functions::transform::ops::Log<T> *log;
-			__shared__ functions::reduce::ops::Sum<T> *sum;
-			__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-			__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
+
 			__shared__ T maxResult;
-			__shared__ int isVector;
 			__shared__ int *maxResultShapeBuffer;
 			if (threadIdx.x == 0) {
-				isVector = shape::isVector(xShapeBuffer);
 
 				maxResult = (T) 0.0;
 			}
@@ -860,50 +815,26 @@ namespace simdOps {
 			if (threadIdx.x == 0)
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-			if (threadIdx.x == 0)
-				max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-			__syncthreads();
-
-			max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			if (threadIdx.x == 0)
-				scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-			__syncthreads();
-
-			scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Subtract<T>>(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			exp->transformCuda(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+			functions::transform::Transform<T>::transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 			__syncthreads();
 
 			//take the sum for the exponential
-			sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			if (threadIdx.x == 0)
-				scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Divide<T>>(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				log = new functions::transform::ops::Log<T>();
-			__syncthreads();
-
-			log->transformCuda(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+			functions::transform::Transform<T>::transformCuda<simdOps::Log<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 		}
 #endif
 
@@ -1010,14 +941,14 @@ namespace simdOps {
 	template<typename T>
 	class SoftMaxDerivative {
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
 		/**
 		*
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -1030,17 +961,10 @@ namespace simdOps {
 			__shared__ T maxResult;
 			__shared__ int *maxResultShapeBuffer;
 			__shared__ int resultEWS;
-			__shared__ functions::reduce::ops::Max<T> *max;
-			__shared__ functions::transform::ops::Exp<T> *exp;
-			__shared__ functions::scalar::ops::Subtract<T> *scalarSub;
-			__shared__ functions::scalar::ops::Divide<T> *scalarDiv;
-			__shared__ functions::reduce::ops::Sum<T> *sum;
-			__shared__ int isVector;
 
 			int length = shape::length(xShapeBuffer);
 
 			if (threadIdx.x == 0) {
-				isVector = shape::isVector(xShapeBuffer);
 				resultEWS = shape::elementWiseStride(resultShapeBuffer);
 
 				maxResult = (T) 0.0;
@@ -1048,11 +972,6 @@ namespace simdOps {
 			__syncthreads();
 
 			int *stride = shape::stride(xShapeBuffer);
-			//iterate along rows
-			int dimension[1] = { 0 };
-			int maxDimension[1] = { 1 };
-			//compute the row wise maxes
-
 			int maxShape[2] = { shape[0], 1 };
 
 			__shared__ int tempBuffer[8];
@@ -1060,47 +979,23 @@ namespace simdOps {
 			if (threadIdx.x == 0)
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 
-			if (threadIdx.x == 0)
-				max = new(manager->getFactorySpace()) functions::reduce::ops::Max<T>();
-			__syncthreads();
-
-
-			max->execScalarCuda(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
-			__syncthreads();
-
-			if (threadIdx.x == 0) delete max;
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			if (threadIdx.x == 0)
-				scalarSub = new(manager->getFactorySpace()) functions::scalar::ops::Subtract<T>();
-			__syncthreads();
-
-			scalarSub->transformCuda(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				exp = new(manager->getFactorySpace())functions::transform::ops::Exp<T>();
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Subtract<T>>(maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			exp->transformCuda(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
-			__syncthreads();
-
-			if (threadIdx.x == 0)
-				sum = new(manager->getFactorySpace())functions::reduce::ops::Sum<T>();
+			functions::transform::Transform<T>::transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
 			__syncthreads();
 
 			//take the sum for the exponential
-			sum->execScalarCuda(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFunction<T>::execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			if (threadIdx.x == 0)
-				scalarDiv = new(manager->getFactorySpace())functions::scalar::ops::Divide<T>();
-			__syncthreads();
-
-			scalarDiv->transformCuda(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarTransform<T>::transformCuda<simdOps::Divide<T>>(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			if (resultEWS >= 1) {
@@ -1238,12 +1133,12 @@ namespace simdOps {
 	template<typename T>
 	class IsMax {
 	public:
-		static constexpr const bool requiresSpecial = true;
+		static const bool requiresSpecial = true;
 
 
 #ifdef __CUDACC__
 
-		inline  __device__ void doAllCuda(
+		static inline  __device__ void doAllCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
@@ -1251,16 +1146,14 @@ namespace simdOps {
 			T *extraParams,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
-			__shared__ functions::indexreduce::ops::IMax<T> *max;
 			__shared__ int maxIdx;
 			__shared__ int length;
 			if (threadIdx.x == 0) {
-				max = new functions::indexreduce::ops::IMax<T>();
 				length = shape::length(resultShapeBuffer);
 			}
 			__syncthreads();
 
-			max->transform(
+			functions::indexreduce::IndexReduce<T>::transform<simdOps::IndexMax<T>>(
 				dx,
 				xShapeBuffer,
 				extraParams,
@@ -1281,8 +1174,6 @@ namespace simdOps {
 
 			if (threadIdx.x == 0) {
 				result[maxIdx] = 1.0;
-
-				delete max;
 			}
 
 		}
@@ -1444,63 +1335,14 @@ namespace simdOps {
 		*
 		*/
 
-		virtual __device__ void execSpecialCuda(
+		static inline __device__ void execSpecialCuda(
 			T *dx,
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 			if (extraParams == nullptr || extraParams[0] == MAX_DIMENSION) {
-				this->doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);
-			}
-			else {
-				__shared__ functions::indexreduce::ops::IMax<T> *max;
-				__shared__ int maxIdx;
-				__shared__ int length;
-				if (threadIdx.x == 0) {
-					max = new functions::indexreduce::ops::IMax<T>();
-					length = shape::length(resultShapeBuffer);
-				}
-
-				__syncthreads();
-
-				int dimensionLength = (int)extraParams[0];
-				__shared__ int *dimension;
-				if (threadIdx.x == 0) {
-					dimension = (int *)malloc(sizeof(int) * dimensionLength);
-					for (int i = 0; i < dimensionLength; i++) {
-						dimension[i] = (int)extraParams[i + 1];
-					}
-				}
-
-				__syncthreads();
-
-				max->transform(
-					dx,
-					xShapeBuffer,
-					extraParams,
-					result,
-					resultShapeBuffer,
-					dimension,
-					dimensionLength,
-					1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
-
-				__syncthreads();
-				if (threadIdx.x == 0) {
-					maxIdx = (int)result[0];
-				}
-				__syncthreads();
-
-				for (int i = threadIdx.x; i < length; i += blockDim.x)
-					result[i] = 0;
-				__syncthreads();
-
-				if (threadIdx.x == 0) {
-					result[maxIdx] = 1.0;
-
-					delete[] dimension;
-					delete max;
-				}
+				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);
 			}
 		}
 #endif

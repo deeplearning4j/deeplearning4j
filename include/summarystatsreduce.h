@@ -295,7 +295,8 @@ namespace functions {
 		 * @param tid
 		 * @param extraParams
 		 */
-				virtual __device__ void aggregatePartials(SummaryStatsData<T> **sPartialsRef, int tid, int numElements, T *extraParams) {
+template<typename OpType>
+				static __device__ void aggregatePartials(SummaryStatsData<T> **sPartialsRef, int tid, int numElements, T *extraParams) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
@@ -311,7 +312,7 @@ namespace functions {
 					if (tid >= floorPow2) {
 						SummaryStatsData<T> prev = sPartials[tid - floorPow2];
 						SummaryStatsData<T> curr = sPartials[tid];
-						sPartials[tid - floorPow2] = update(prev, curr, extraParams);
+						sPartials[tid - floorPow2] = OpType::update(prev, curr, extraParams);
 					}
 					__syncthreads();
 				}
@@ -321,7 +322,7 @@ namespace functions {
 					if (tid < activeThreads && tid + activeThreads < numElements) {
 						SummaryStatsData<T> curr = sPartials[tid];
 						SummaryStatsData<T> next = sPartials[tid + activeThreads];
-						sPartials[tid] = update(curr, next, extraParams);
+						sPartials[tid] = OpType::update(curr, next, extraParams);
 					}
 					__syncthreads();
 				}
@@ -346,7 +347,8 @@ namespace functions {
 			 *                          0 is the number of elements per vector
 			 *                          1 is the number of vectors
 			 */
-			__inline__ __device__ void transform(
+	static __inline__ __device__ void transform(
+				const int op,
 				T *dx,
 				int *xShapeInfo,
 				T *extraParams,
@@ -433,12 +435,6 @@ namespace functions {
 					__shared__ int *tadStride;
 
 					if (threadIdx.x == 0) {
-						//    tad = new(manager->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-						//    tad->setExternalBuffers((void *) manager);
-						//    tad->initWithExternalTAD(tadOnlyShapeInfo, xShapeInfo, dimension, dimensionLength);
-							//tad->init(xShapeInfo,dimension,dimensionLength);
-							//tad->createTadOnlyShapeInfo();
-
 						tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 						tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 						tadRank = shape::rank(tadOnlyShapeInfo);
@@ -462,7 +458,7 @@ namespace functions {
 								SummaryStatsData <T> indexVal2;
 								indexVal2.initWithValue(dx[xOffset]);
 
-								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
+								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
 							}
 							__syncthreads();
 							aggregatePartials(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
@@ -493,7 +489,7 @@ namespace functions {
 								indexX = tadOffsetForBlock + x * tadEWS;
 								SummaryStatsData <T> indexVal2;
 								indexVal2.initWithValue(dx[indexX]);
-								sPartials[threadIdx.x] = update(sPartials[threadIdx.x], op(indexVal2, extraParams), extraParams);
+								sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
 							}
 
 							__syncthreads();
@@ -501,7 +497,7 @@ namespace functions {
 
 							__syncthreads();
 							if (threadIdx.x == 0) {
-								result[i] = getValue(sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
+								result[i] = OpType::getValue(sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
 							}
 						}
 					}
@@ -518,7 +514,7 @@ namespace functions {
 						for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[i * xElementWiseStride]);
-							reduction = update(reduction, indexVal2, extraParams);
+							reduction = OpType::update(reduction, indexVal2, extraParams);
 						}
 					}
 					else {
@@ -538,7 +534,7 @@ namespace functions {
 							int offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[offset]);
-							reduction = update(reduction, indexVal2, extraParams);
+							reduction = OpType::update(reduction, indexVal2, extraParams);
 						}
 					}
 
@@ -546,7 +542,7 @@ namespace functions {
 					sPartials[threadIdx.x] = reduction;
 
 					__syncthreads();
-					aggregatePartials(&sPartials, threadIdx.x, blockDim.x, extraParams);
+					aggregatePartials<OpType>(&sPartials, threadIdx.x, blockDim.x, extraParams);
 
 
 					__syncthreads();
@@ -581,16 +577,16 @@ namespace functions {
 							sPartials[threadIdx.x] = val;
 
 							for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-								sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x], pBuffer[i], extraParams);
+								sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], pBuffer[i], extraParams);
 							}
 
 
 							__syncthreads();
-							aggregatePartials(&sPartials, threadIdx.x, gridDim.x, extraParams);
+							aggregatePartials<OpType>(&sPartials, threadIdx.x, gridDim.x, extraParams);
 
 							__syncthreads();
 							if (tid == 0) {
-								result[0] = getValue(sPartials[0]);
+								result[0] = OpType::getValue(sPartials[0]);
 							}
 						}
 					}
@@ -598,7 +594,7 @@ namespace functions {
 						if (tid == 0) {
 							unsigned int *tc = (unsigned *)reductionBuffer;
 							tc[4096] = 0;
-							result[0] = result[0] = getValue(sPartials[0]);
+							result[0] = result[0] = OpType::getValue(sPartials[0]);
 						}
 					}
 				}
@@ -789,7 +785,7 @@ namespace functions {
  */
 template <typename T>
 __device__ void summaryStatsReduceGeneric(
-		int op,
+		const int op,
 		T *dx,
 		int *xShapeInfo, int xRank,
 		T *extraParams,
@@ -798,22 +794,17 @@ __device__ void summaryStatsReduceGeneric(
 		int *dimension,
 		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-	__shared__ functions::summarystats::SummaryStatsReduce<T> *indexReduce;
-	__shared__ functions::summarystats::SummaryStatsReduceOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::summarystats::SummaryStatsReduceOpFactory<T>), sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD), xRank);
-
-		newOpFactory = new(manager->getFactorySpace()) functions::summarystats::SummaryStatsReduceOpFactory<T>();
-		indexReduce = newOpFactory->getOp(op,biasCorrected, manager->getFunctionSpace());
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::summarystats::SummaryStatsReduce<T>), sizeof(shape::TAD), xRank);
 	}
 	__syncthreads();
 
-	indexReduce->transform(
+	functions::summarystats::SummaryStatsReduce<T>::transform(
+		op,
 	    dx,
 	    xShapeInfo,
 	    extraParams,
@@ -824,7 +815,9 @@ __device__ void summaryStatsReduceGeneric(
 	    postProcessOrNot,
 	    allocationBuffer,
 	    reductionBuffer,
-	    manager, tadOnlyShapeInfo, tadOffsets);
+	    manager,
+	    tadOnlyShapeInfo,
+	    tadOffsets);
 }
 
 /**
