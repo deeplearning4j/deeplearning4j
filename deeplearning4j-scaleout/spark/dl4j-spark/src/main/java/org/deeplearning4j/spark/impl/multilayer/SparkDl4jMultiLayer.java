@@ -363,6 +363,10 @@ public class SparkDl4jMultiLayer implements Serializable {
 
 
     protected void runIteration(JavaRDD<DataSet> rdd) {
+        if(rdd.isEmpty()) {
+            log.warn("Empty data set on rdd. Returning");
+            return;
+        }
         int maxRep = 0;
         long maxSm = 0;
         int paramsLength = network.numParams(false);
@@ -383,6 +387,10 @@ public class SparkDl4jMultiLayer implements Serializable {
         if(accumGrad) {
             //Learning via averaging gradients
             JavaRDD<Tuple3<Gradient,Updater, ScoreReport>> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params, this.updater),true).cache();
+            if(results.isEmpty()) {
+                log.info("RDD is empty...returning");
+                return;
+            }
 
             JavaRDD<Gradient> resultsGradient = results.map(new GradientFromTupleFunction());
             log.info("Ran iterative reduce... averaging results now.");
@@ -423,6 +431,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             JavaRDD<Tuple3<INDArray,Updater,ScoreReport>> results = rdd.mapPartitions(new IterativeReduceFlatMap(
                     conf.toJson(), this.params, this.updater, this.bestScoreAcc),true).cache();
 
+            if(results.isEmpty()) {
+                log.info("RDD is empty...returning");
+                return;
+            }
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Running iterative reduce and averaging parameters");
 
