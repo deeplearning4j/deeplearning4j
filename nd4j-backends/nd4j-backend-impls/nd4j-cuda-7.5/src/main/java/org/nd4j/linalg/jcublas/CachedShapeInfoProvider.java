@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,7 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
 //            logger.info("Cache miss");
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
 
-            AtomicAllocator.getInstance().moveToConstant(buffer);
+            Nd4j.getConstantHandler().moveToConstantSpace(buffer);
 
             deviceCache.get(deviceId).put(descriptor, buffer);
 

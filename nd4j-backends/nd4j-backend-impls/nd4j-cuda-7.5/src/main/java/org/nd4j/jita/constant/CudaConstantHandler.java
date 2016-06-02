@@ -9,6 +9,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.cache.ArrayDescriptor;
+import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
-public class CudaConstantHandler implements ConstantHandler {
+public class CudaConstantHandler extends BasicConstantHandler {
     private static Logger logger = LoggerFactory.getLogger(CudaConstantHandler.class);
     protected Map<Integer, AtomicLong> constantOffsets = new HashMap<>();
     protected Map<Integer, Semaphore> deviceLocks = new ConcurrentHashMap<>();

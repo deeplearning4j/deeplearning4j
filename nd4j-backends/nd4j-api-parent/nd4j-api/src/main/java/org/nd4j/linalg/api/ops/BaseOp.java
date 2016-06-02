@@ -48,6 +48,21 @@ public abstract class BaseOp implements Op {
         return false;
     }
 
+/*
+    op instanceof Variance
+    op instanceof CosineSimilarity
+    op instanceof Im2col
+    op instanceof Col2Im
+    op instanceof Pow
+    op instanceof LeakyReLU
+    op instanceof RectifedLinear
+    op instanceof LeakyReLUDerivative
+    op instanceof Stabilize
+    op instanceof Step
+    op instanceof SetRange
+    op instanceof IsMax
+*/
+
     @Override
     public DataBuffer extraArgsDataBuff() {
         if(extraArgs != null) {
@@ -59,7 +74,7 @@ public abstract class BaseOp implements Op {
                     float val = arg.floatValue();
                     extraz[i] = val;
                 }
-                retBuff = Nd4j.createBuffer(extraz);
+                retBuff = Nd4j.getConstantHandler().getConstantBuffer(extraz);
                 return retBuff;
             }
             else {
@@ -69,7 +84,7 @@ public abstract class BaseOp implements Op {
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                retBuff = Nd4j.createBuffer(extraz);
+                retBuff = Nd4j.getConstantHandler().getConstantBuffer(extraz);
                 return retBuff;
             }
         }
