@@ -281,7 +281,9 @@ namespace simdOps {
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -568,7 +570,9 @@ namespace simdOps {
 			delete[] inIndices;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -772,7 +776,9 @@ namespace simdOps {
 			}
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::softplus<T>(d1);
 		}
@@ -928,7 +934,9 @@ namespace simdOps {
 			}
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::softplus<T>(d1);
 		}
@@ -1123,7 +1131,9 @@ namespace simdOps {
 			}
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::softplus<T>(d1);
 		}
@@ -1515,7 +1525,9 @@ namespace simdOps {
 			}
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::softplus<T>(d1);
 		}

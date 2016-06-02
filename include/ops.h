@@ -37,17 +37,23 @@ namespace simdOps {
 	template<typename T>
 	class Add {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d1 + d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 + d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -57,17 +63,23 @@ namespace simdOps {
 	class Subtract {
 	public:
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d1 - d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 - d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -76,16 +88,22 @@ namespace simdOps {
 	template<typename T>
 	class ReverseSubtract {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d2 - d1;
 		}
 		
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d2 - d1;
 		}
+#ifndef __clang__
 #pragma omp declare simd		
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -94,17 +112,23 @@ namespace simdOps {
 	template<typename T>
 	class Multiply {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d1 * d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 * d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -113,17 +137,23 @@ namespace simdOps {
 	template<typename T>
 	class Divide {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d1 / d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 / d2;
 		}
 		
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -132,17 +162,23 @@ namespace simdOps {
 	template<typename T>
 	class ReverseDivide {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d2 / d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d2 / d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -151,17 +187,23 @@ namespace simdOps {
 	template<typename T>
 	class Copy {
 	public:
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2) {
 			return d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1) {
 			return d1;
 		}
@@ -170,7 +212,9 @@ namespace simdOps {
 	template<typename T>
 	class SetValOrLess {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			if (d2 < d1) {
 				return d1;
@@ -182,7 +226,9 @@ namespace simdOps {
 	template<typename T>
 	class Mod {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}
@@ -191,7 +237,9 @@ namespace simdOps {
 	template<typename T>
 	class ReverseMod {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d2 % (int)d1;
 		}
@@ -204,7 +252,9 @@ namespace simdOps {
 	template<typename T>
 	class Epsilon {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			T diff = d1 - d2;
 			T absDiff = nd4j::math::nd4j_abs(diff);
@@ -213,7 +263,9 @@ namespace simdOps {
 			return 0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -223,12 +275,16 @@ namespace simdOps {
 	template<typename T>
 	class EqualTo {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 == d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -239,12 +295,16 @@ namespace simdOps {
 	template<typename T>
 	class NotEqualTo {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 != d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -255,12 +315,16 @@ namespace simdOps {
 	template<typename T>
 	class GreaterThanOrEqual {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 >= d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -270,12 +334,16 @@ namespace simdOps {
 	template<typename T>
 	class GreaterThan {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 > d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -286,12 +354,16 @@ namespace simdOps {
 	template<typename T>
 	class LessThan {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 < d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -302,12 +374,16 @@ namespace simdOps {
 	template<typename T>
 	class LessThanOrEqual {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 <= d2;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -321,7 +397,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 		
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_abs<T>(d1);
 		}
@@ -334,7 +412,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_ceil<T>(d1);
 		}
@@ -347,7 +427,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_cos<T>(d1);
 		}
@@ -360,7 +442,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_exp<T>(d1);
 		}
@@ -373,7 +457,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return ((d1 >= -1.0 && d1 <= 1.0) ? 1.0 : 0.0);
 		}
@@ -386,7 +472,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1 < -1.0 ? -1.0 : d1 > 1.0 ? 1.0 : d1;
 		}
@@ -399,7 +487,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_floor<T>(d1);
 		}
@@ -412,7 +502,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_log<T>(d1);
 		}
@@ -424,7 +516,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1 * (1.0 - d1);
 		}
@@ -437,7 +531,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return -d1;
 		}
@@ -450,7 +546,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_pow<T>(d1, params[0]);
 		}
@@ -463,7 +561,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_round<T>(d1);
 		}
@@ -476,7 +576,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_sigmoid<T>(d1);
 		}
@@ -490,7 +592,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_sigmoidderivative<T>(d1);
 		}
@@ -506,7 +610,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			T min = params[0];
 			T max = params[1];
@@ -529,7 +635,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_sin<T>(d1);
 		}
@@ -542,7 +650,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_sqrt<T>(d1);
 		}
@@ -555,7 +665,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::softplus<T>(d1);
 		}
@@ -568,7 +680,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return (d1 > 0) - (d1 < 0);
 		}
@@ -581,7 +695,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1 * (1 - d1);
 		}
@@ -594,7 +710,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_tanh<T>(d1);
 		}
@@ -607,7 +725,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_tanhderivative<T>(d1);
 		}
@@ -619,7 +739,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_acos<T>(d1);
 		}
@@ -632,7 +754,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return 1;
 		}
@@ -646,7 +770,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_softsign<T>(d1);
 		}
@@ -659,7 +785,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_softsignderivative<T>(d1);
 		}
@@ -671,7 +799,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_elu<T>(d1);
 		}
@@ -684,7 +814,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_eluderivative<T>(d1);
 		}
@@ -697,7 +829,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1 < params[0] ? params[0] : d1;
 		}
@@ -710,7 +844,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_leakyrelu<T>(d1, params[0]);
 		}
@@ -722,7 +858,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return (d1 >= 0 ? 1.0 : params[0]);
 		}
@@ -735,7 +873,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_asin<T>(d1);
 		}
@@ -748,7 +888,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_atan(d1);
 		}
@@ -761,7 +903,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return d1;
 		}
@@ -775,7 +919,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			const double realMin = 1.1755e-38f;
 			const double cutOff = nd4j::math::nd4j_log(realMin);
@@ -797,7 +943,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return (d1 > params[0] ? 1.0 : 0.0);
 		}
@@ -811,7 +959,9 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T *params) {
 			return 1.0 - d1;
 		}
@@ -820,27 +970,37 @@ namespace simdOps {
 	template<typename T>
 	class Sum {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 		
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams, n)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction;
 		}
@@ -850,26 +1010,36 @@ namespace simdOps {
 	template<typename T>
 	class Prod {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return (T) 1.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput * old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput * old;
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction;
 		}
@@ -878,28 +1048,38 @@ namespace simdOps {
 	template<typename T>
 	class Mean {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			(void)input;
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction / (T)n;
 		}
@@ -909,32 +1089,44 @@ namespace simdOps {
 	template<typename T>
 	class Max { 
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return input[0];
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return nd4j::math::nd4j_max<T>(old, opOutput);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return nd4j::math::nd4j_max<T>(opOutput, old);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return nd4j::math::nd4j_max<T>(d1, d2);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction;
 		}
@@ -944,32 +1136,44 @@ namespace simdOps {
 	template<typename T>
 	class Min {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return input[0];
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return nd4j::math::nd4j_min<T>(old, opOutput);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return nd4j::math::nd4j_min<T>(opOutput, old);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(params)
+#endif
 		op_def static T op(T d1, T d2, T *params) {
 			return nd4j::math::nd4j_min(d1, d2);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction;
 		}
@@ -979,28 +1183,38 @@ namespace simdOps {
 	template<typename T>
 	class Norm1 {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 			op_def static T startingValue(const T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return nd4j::math::nd4j_abs<T>(d1);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams, n)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction;
 		}
@@ -1010,27 +1224,37 @@ namespace simdOps {
 	template<typename T>
 	class Norm2 {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1 * d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams, n)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return nd4j::math::nd4j_sqrt<T>(reduction);
 		}
@@ -1040,30 +1264,40 @@ namespace simdOps {
 	template<typename T>
 	class NormMax {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return opOutput + old;
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old),
 				nd4j::math::nd4j_abs<T>(opOutput));
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 			op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(reduction),
 				nd4j::math::nd4j_abs<T>(reduction));
@@ -1073,29 +1307,39 @@ namespace simdOps {
 	template<typename T>
 	class Variance {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return 0.0;
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return old + opOutput;
 
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return old + opOutput;
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			T mean = extraParams[0];
 			T ret = d1 - mean;
 			return ret * ret;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			T bias = extraParams[1];
 			return (reduction - (nd4j::math::nd4j_pow<T>(bias, 2.0) / (T)n))
@@ -1109,29 +1353,39 @@ namespace simdOps {
 	template<typename T>
 	class StandardDeviation {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(const T *input) {
 			return 0.0;
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T merge(T old, T opOutput, T *extraParams) {
 			return old + opOutput;
 
 		}
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T update(T old, T opOutput, T *extraParams) {
 			return old + opOutput;
 
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T op(T d1, T *extraParams) {
 			T mean = extraParams[0];
 			T ret = d1 - mean;
 			return ret * ret;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			T ret = Variance<T>::postProcess(reduction, n, extraParams);
 			T sqrtRet = nd4j::math::nd4j_sqrt<T>(ret);
@@ -1153,18 +1407,24 @@ namespace simdOps {
 			delete[] * extraParams;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(n, extraParamsRef)
+#endif
 		op_def static  T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
 			T *extraParams = *extraParamsRef;
 			return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
 		}
 
+#ifndef __clang__
 #pragma omp declare simd
+#endif
 		op_def static T op(T d1, T d2, T **extraParamsRef) {
 			T *extraParams = *extraParamsRef;
 			extraParams[0] += d1 * d1;
@@ -1193,13 +1453,17 @@ namespace simdOps {
 		}
 #endif
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
 			return old + opOutput;
 		}
 
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
@@ -1223,17 +1487,23 @@ namespace simdOps {
 			delete[] * extraParamsRef;
 		}
 		
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(n, extraParamsRef)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
 			return reduction;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T op(T d1, T d2, T **extraParamsRef) {
 			return d1 * d2;
 		}
@@ -1246,12 +1516,16 @@ namespace simdOps {
 		}
 #endif
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T update(T old, T opOutput, T **extraParamsRef) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
@@ -1275,17 +1549,23 @@ namespace simdOps {
 			delete[] * extraParamsRef;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(n, extraParamsRef)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
 			return nd4j::math::nd4j_sqrt<T>(reduction);
 		}
 		
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T op(T d1, T d2, T **extraParamsRef) {
 			T ret = d1 - d2;
 			return ret * ret;
@@ -1299,12 +1579,16 @@ namespace simdOps {
 		}
 #endif
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T update(T old, T opOutput, T **extraParamsRef) {
 			return opOutput + old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
@@ -1327,22 +1611,30 @@ namespace simdOps {
 			delete[] * extraParamsRef;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(input)
+#endif
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(n, extraParamsRef)
+#endif
 		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
 			return reduction;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T op(T d1, T d2, T **extraParamsRef) {
 			return nd4j::math::nd4j_abs<T>(d1 - d2);
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
 			return old + opOutput;
 		}
@@ -1357,7 +1649,9 @@ namespace simdOps {
 		}
 #endif
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
+#endif
 		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
@@ -1367,12 +1661,16 @@ namespace simdOps {
 	template<typename T>
 	class IndexMax  {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
@@ -1388,7 +1686,9 @@ namespace simdOps {
 			return old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
@@ -1397,7 +1697,9 @@ namespace simdOps {
 			return f1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
@@ -1408,7 +1710,9 @@ namespace simdOps {
 			return MIN_FLOAT;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
@@ -1419,7 +1723,9 @@ namespace simdOps {
 	template<typename T>
 	class IndexMin {
 	public:
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> op(
 				functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
@@ -1429,7 +1735,9 @@ namespace simdOps {
 			return MAX_FLOAT;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
@@ -1446,7 +1754,9 @@ namespace simdOps {
 			return old;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
@@ -1455,14 +1765,18 @@ namespace simdOps {
 			return f1;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
+#ifndef __clang__
 #pragma omp declare simd uniform(extraParams)
+#endif
 		op_def static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
