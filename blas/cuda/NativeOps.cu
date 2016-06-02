@@ -4277,7 +4277,6 @@ Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, lon
 		return 0L;
 	}
 	else return 1;
-	return 0L;
 }
 
 Nd4jPointer NativeOps::getConstantSpace() {

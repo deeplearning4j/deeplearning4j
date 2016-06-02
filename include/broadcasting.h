@@ -10,10 +10,10 @@
 #include <dll.h>
 #include <sharedmem.h>
 #include <shape.h>
-#include <op.h>
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <pairwise_util.h>
+#include <ops.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -31,37 +31,13 @@ namespace functions {
  * along long a bigger one.
  */
 		template<typename T>
-		class Broadcast: public functions::ops::Op<T> {
+		class Broadcast {
 		public:
 
-			/**
-             *
-             * @param d1
-             * @param d2
-             * @return
-             */
-			virtual
 #ifdef __CUDACC__
-			inline __device__  __host__
-#elif defined(__GNUC__)
-			inline
-#endif
-			T op(T d1, T d2) = 0;
-			/**
-             *
-             * @param d1
-             * @return
-             */
-			virtual
-#ifdef __CUDACC__
-			inline __device__  __host__
-#elif defined(__GNUC__)
-			inline
-#endif
-			T op(T d1) = 0;
 
-#ifdef __CUDACC__
-			__inline__ __device__ void transformCuda(
+template<typename OpType>
+			static __inline__ __device__ void transformCuda(
 			T *x,
 			int *xShapeInfo,
 			T *y,
@@ -104,11 +80,11 @@ namespace functions {
             if(tadEWS > 0) {
             	if (tadEWS == 1 && yStride == 1) {
                 	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i] = rX[i] + y[i];//this->op(rX[i], y[i]);
+                    	rR[i] = OpType::op(rX[i], y[i]);
                 	}
                 } else {
 					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    //	rR[i * tadEWS] = this->op(rX[i * tadEWS], y[i * yStride]);
+                    	rR[i * tadEWS] = OpType::op(rX[i * tadEWS], y[i * yStride]);
                 	}
                 }
             }
@@ -117,12 +93,74 @@ namespace functions {
                 for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-                    result[xOffset] = this->op(x[xOffset], y[i * yStride]);
+                    result[xOffset] = OpType::op(x[xOffset], y[i * yStride]);
                 }
             }
 		}
 	}
+
+
+		static inline __device__ void transformCuda(const int opNum,
+				T *x,
+				int *xShapeInfo,
+				T *y,
+				int *yShapeInfo,
+				T *result,
+				int *resultShapeInfo,
+				int *dimension,
+				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset) {
+
+				if (opNum == 0)
+					transformCuda<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 1)
+					transformCuda<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 2)
+					transformCuda<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 3)
+					transformCuda<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 4)
+					transformCuda<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 5)
+					transformCuda<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else if (opNum == 6)
+					transformCuda<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
+				else
+					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
+			}
 #endif
+
+			static void exec(const int opNum, T *x,
+				int *xShapeInfo,
+				T *y,
+				int *yShapeInfo,
+				T *result,
+				int *dimension,
+				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+				if (opNum == 0) {
+					exec<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 1) {
+					exec<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 2) {
+					exec<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 3) {
+					exec<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 4) {
+					exec<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 5) {
+					exec<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else if (opNum == 6) {
+					exec<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
+				}
+				else {
+					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
+				}
+			}
 
 			/**
              * CPU execution
@@ -135,7 +173,8 @@ namespace functions {
              * @param dimension the dimension to broadcast along long
              * @param dimensionLength the length of the dimension buffer
              */
-			virtual void exec(T *x,
+			template<typename OpType>
+			static void exec(T *x,
 							  int *xShapeInfo,
 							  T *y,
 							  int *yShapeInfo,
@@ -181,12 +220,12 @@ namespace functions {
 							if (tadEWS == 1 && yStride == 1) {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f] = this->op(oX[f], y[f]);
+									oRes[f] = OpType::op(oX[f], y[f]);
 								}
 							} else {
 #pragma omp simd
 								for (int f = 0; f < tadLength; f++) {
-									oRes[f * tadEWS] = this->op(oX[f * tadEWS], y[f * yStride]);
+									oRes[f * tadEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
 								}
 							}
 						} else {
@@ -195,7 +234,7 @@ namespace functions {
 							for (int f = 0; f < tadLength; f++) {
 								shape::ind2subC(tadRank,xShape, f, xCoord);
 								Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
-								result[xOffset] = this->op(x[xOffset], y[f * yStride]);
+								result[xOffset] = OpType::op(x[xOffset], y[f * yStride]);
 							}
 						}
 					}
@@ -229,7 +268,7 @@ namespace functions {
 							ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
 							{
 								/* Process the innermost dimension */
-								T val = this->op(xIter[0], y[vectorIdx]);
+								T val = OpType::op(xIter[0], y[vectorIdx]);
 								resultIter[0] = val;
 								vectorIdx += shape::elementWiseStride(yShapeInfo);
 							}
@@ -253,438 +292,7 @@ namespace functions {
 				if (tad != nullptr)
 					delete tad;
 			}
-
-			virtual inline
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			void aggregateExtraParams(T **extraParamsTotal,T **extraParamsLocal) {
-				//no extra params aggregation needs to happen
-			}
-#ifdef __CUDACC__
-			inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-			virtual ~Broadcast() {
-			}
-#ifdef __CUDACC__
-			inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-			Broadcast() {
-			}
-
 		};
-
-		namespace ops {
-			template<typename T>
-			class Add: public  functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d1 + d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~Add() {
-				}
-			};
-
-			template<typename T>
-			class Copy: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~Copy() {
-				}
-
-			};
-
-			template<typename T>
-			class Divide: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d1 / d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~Divide() {
-				}
-
-			};
-
-			template<typename T>
-			class Multiply: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d1 * d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~Multiply() {
-				}
-
-			};
-
-			template<typename T>
-			class ReverseDivide: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d2 / d1;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~ReverseDivide() {
-				}
-
-			};
-
-			template<typename T>
-			class ReverseSubtract: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d2 - d1;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~ReverseSubtract() {
-				}
-
-			};
-
-			template<typename T>
-			class Subtract: public virtual functions::broadcast::Broadcast<T> {
-			public:
-
-				/**
-                 *
-                 * @param d1
-                 * @param d2
-                 * @return
-                 */
-#pragma omp declare simd
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-#elif defined(__GNUC__)
-				inline
-#endif
-				T op(T d1, T d2) {
-					return d1 - d2;
-				}
-				/**
-                 *
-                 * @param d1
-                 * @return
-                 */
-				virtual
-#ifdef __CUDACC__
-				inline __host__  __device__
-
-#elif defined(__GNUC__)
-
-
-#endif
-				T op(T d1) {
-					return d1;
-				}
-#ifdef __CUDACC__
-				inline __host__ __device__
-#elif defined(__GNUC__)
-
-#endif
-				virtual ~Subtract() {
-				}
-
-			};
-		}
-
-		template<typename T>
-		class BroadcastOpFactory {
-		public:
-
-#ifdef __CUDACC__
-			__host__ __device__
-#endif
-			BroadcastOpFactory() {
-			}
-
-
-			/**
-             * creates an operation
-             * @param op the op number to create:
-             * 0: Add
-             * 1: Subtract
-             * 2: Multiply
-             * 3: Divide
-             * 4: ReverseDivide
-             * 5: Reverse Subtract
-             * 6: Copy
-             * @return the broadcast operation
-             */
-#ifdef __CUDACC__
-			__inline__ __device__
-            Broadcast<T> * getOp(int op, unsigned char *buffer) {
-#else
-			Broadcast<T> * getOp(int op) {
-#endif
-				if (op == 0) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::Add<T>();
-#else
-					return new functions::broadcast::ops::Add<T>();
-#endif
-				} else if (op == 1) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::Subtract<T>();
-#else
-					return new functions::broadcast::ops::Subtract<T>();
-#endif
-				} else if (op == 2) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::Multiply<T>();
-#else
-					return new  functions::broadcast::ops::Multiply<T>();
-#endif
-				} else if (op == 3) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::Divide<T>();
-#else
-					return new functions::broadcast::ops::Divide<T>();
-#endif
-				} else if (op == 4) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::ReverseDivide<T>();
-#else
-					return new functions::broadcast::ops::ReverseDivide<T>();
-#endif
-				} else if (op == 5) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::ReverseSubtract<T>();
-#else
-					return new functions::broadcast::ops::ReverseSubtract<T>();
-#endif
-				} else if (op == 6) {
-#ifdef __CUDACC__
-					return new(buffer) functions::broadcast::ops::Copy<T>();
-#else
-					return new functions::broadcast::ops::Copy<T>();
-#endif
-				}
-
-				return nullptr;
-
-			}
-
-		};
-
 	}
 }
 
@@ -720,45 +328,17 @@ __device__ void broadcastGeneric(
 		int *dimension,
 		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets) {
 
-	__shared__ functions::broadcast::Broadcast<T> *op;
-	__shared__ functions::broadcast::BroadcastOpFactory<T> *newOpFactory;
-
 	__shared__ UnifiedSharedMemory *manager;
 
      if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-	    manager->init(sizeof(UnifiedSharedMemory), sizeof(functions::broadcast::BroadcastOpFactory<T>), sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
+	    manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::broadcast::Broadcast<T>), sizeof(shape::TAD), xRank);
     }
     __syncthreads();
-/*
-	__shared__ int *ptrSharedXShapeInfo;
-	__shared__ int *ptrSharedYShapeInfo;
-    __shared__ int *ptrSharedZShapeInfo;
 
-	if (xShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(xShapeInfo, manager->getXShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedXShapeInfo = manager->getXShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedXShapeInfo = nullptr;
-
-    if (yShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(yShapeInfo, manager->getYShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedYShapeInfo = manager->getYShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedYShapeInfo = nullptr;
-
-    if (resultShapeInfo != nullptr) {
-    	shape::sweepShapeInfoBuffer(resultShapeInfo, manager->getZShapeBuffer());
-    	if (threadIdx.x == 0) ptrSharedZShapeInfo = manager->getZShapeBuffer();
-    } else if (threadIdx.x == 0) ptrSharedZShapeInfo = nullptr;
-*/
-	if(threadIdx.x == 0) {
-		newOpFactory =  new(manager->getFactorySpace()) functions::broadcast::BroadcastOpFactory<T>();
-		op = newOpFactory->getOp(opNum, manager->getFunctionSpace());
-	}
-	__syncthreads();
-
-
-	op->transformCuda(
+	functions::broadcast::Broadcast<T>::transformCuda(
+			opNum,
 			x,
 			xShapeInfo,
 			y,
@@ -766,7 +346,10 @@ __device__ void broadcastGeneric(
 			result,
 			resultShapeInfo,
 			dimension,
-			dimensionLength, manager, tadOnlyShapeInfo, tadOffsets);
+			dimensionLength,
+			manager,
+			tadOnlyShapeInfo,
+			tadOffsets);
 }
 
 /**
