@@ -81,6 +81,77 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testRevert() {
+        double tolerancePerc = 1; // 1% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.randn(nSamples,nFeatures);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler();
+        DataSet transformed = sampleDataSet.copy();
+
+        myNormalizer.fit(sampleDataSet);
+        myNormalizer.transform(transformed);
+        myNormalizer.revert(transformed);
+        INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
+        double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        assertTrue(maxdeltaPerc < tolerancePerc);
+
+    }
+
+    @Test
+    public void testGivenMaxMin() {
+        double tolerancePerc = 1; // 1% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.randn(nSamples,nFeatures);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        double givenMin = -1;
+        double givenMax = 1;
+        NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler(givenMin,givenMax);
+        DataSet transformed = sampleDataSet.copy();
+
+        myNormalizer.fit(sampleDataSet);
+        myNormalizer.transform(transformed);
+
+        myNormalizer.revert(transformed);
+        INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
+        double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        assertTrue(maxdeltaPerc < tolerancePerc);
+    }
+
+    @Test
+    public void testGivenMaxMinConstant() {
+        double tolerancePerc = 1; // 1% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.rand(nSamples,nFeatures).mul(0.1).add(10);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        double givenMin = -1000;
+        double givenMax = 1000;
+        NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler(givenMin,givenMax);
+        DataSet transformed = sampleDataSet.copy();
+
+        myNormalizer.fit(sampleDataSet);
+        myNormalizer.transform(transformed);
+
+        //feature set is basically all 10s -> should transform to the min
+        INDArray expected = Nd4j.ones(nSamples,nFeatures).mul(givenMin);
+        INDArray delta = Transforms.abs(transformed.getFeatures().sub(expected)).div(expected);
+        double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        assertTrue(maxdeltaPerc < tolerancePerc);
+    }
+
     @Override
     public char ordering() {
         return 'c';

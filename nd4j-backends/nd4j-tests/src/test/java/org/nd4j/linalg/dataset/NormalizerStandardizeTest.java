@@ -173,6 +173,29 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         myNormalizer.transform(sampleDataSet);
     }
 
+    @Test
+    public void testRevert() {
+        double tolerancePerc = 0.01; // 0.01% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.randn(nSamples,nFeatures);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        NormalizerStandardize myNormalizer = new NormalizerStandardize();
+        myNormalizer.fit(sampleDataSet);
+        DataSet transformed = sampleDataSet.copy();
+        myNormalizer.transform(transformed);
+        System.out.println(transformed.getFeatures());
+        myNormalizer.revert(transformed);
+        System.out.println(transformed.getFeatures());
+        INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
+        double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
+        assertTrue(maxdeltaPerc < tolerancePerc);
+
+    }
+
     public class genRandomDataSet {
         /* generate random dataset from normally distributed mean 0, std 1
         based on given seed and scaling constants
