@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.layers;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
@@ -339,6 +341,22 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         int[] ret = new int[input.rows()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
+        return ret;
+    }
+
+    /**
+     * Return predicted label names
+     *
+     * @param dataSet to predict
+     * @return the predicted labels for the dataSet
+     */
+    @Override
+    public List<String> predict(DataSet dataSet) {
+        int[] intRet = predict(dataSet.getFeatureMatrix());
+        List<String> ret = new ArrayList<>();
+        for(int i: intRet) {
+            ret.add(i,dataSet.getLabelName(i));
+        }
         return ret;
     }
 
