@@ -191,6 +191,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
         last = ret;
         if (preProcessor != null) preProcessor.preProcess(ret);
+        //Add label name values to dataset
+        if (recordReader.getLabels() != null) ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
 

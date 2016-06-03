@@ -1322,7 +1322,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int[] predict(INDArray d) {
-        INDArray output = output(d);
+        INDArray output = output(d, Layer.TrainingMode.TEST);
         int[] ret = new int[d.size(0)];
         if (d.isRowVector()) ret[0] = Nd4j.getBlasWrapper().iamax(output);
         else {
@@ -1331,6 +1331,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         return ret;
     }
+
+    /**
+     * Return predicted label names
+     *
+     * @param dataSet to predict
+     * @return the predicted labels for the dataSet
+     */
+    @Override
+    public List<String> predict(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        int[] intRet = predict(dataSet.getFeatureMatrix());
+        List<String> ret = new ArrayList<>();
+        for(int i=0; i < intRet.length; i++) {
+            ret.add(i,dataSet.getLabelName(intRet[i]));
+        }
+        return ret;
+    }
+
+
 
     /**
      * Returns the probabilities for each label

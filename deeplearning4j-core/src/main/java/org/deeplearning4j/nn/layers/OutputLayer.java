@@ -21,6 +21,9 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+
+import java.util.List;
 
 
 /**
@@ -39,4 +42,5 @@ public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.laye
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
+
 }
