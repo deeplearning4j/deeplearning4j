@@ -50,17 +50,17 @@ namespace functions {
 			T M4;
 			T bias;
 
-			op_def SummaryStatsData() {
+			inline SummaryStatsData() {
 				initialize();
 			}
 
 			// initialize to the identity element
 
-			op_def void initialize() {
+			inline void initialize() {
 				n = mean = M2 = M3 = M4 = bias = 0;
 			}
 
-			op_def void initWithValue(T val) {
+			inline void initWithValue(T val) {
 				n = 1;
 				min = val;
 				max = val;
@@ -71,7 +71,7 @@ namespace functions {
 				bias = 0;
 			}
 
-			op_def void setValues(SummaryStatsData<T> *target) {
+			inline void setValues(SummaryStatsData<T> *target) {
 				n = target->n;
 				min = target->min;
 				max = target->max;
@@ -82,13 +82,13 @@ namespace functions {
 				bias = target->bias;
 			}
 
-			op_def T variance() {
+			inline T variance() {
 				if (n <= 1)
 					return 0.0;
 				return M2 / (n);
 			}
 
-			op_def T varianceBiasCorrected() {
+			inline T varianceBiasCorrected() {
 				if (this->n <= 1) {
 					return 0.0;
 				}
@@ -97,69 +97,69 @@ namespace functions {
 			}
 
 
-			op_def T variance_n() {
+			inline T variance_n() {
 				if (n <= 1)
 					return 0.0;
 				return M2 / n;
 			}
 
-			op_def T skewness() { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
+			inline T skewness() { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
 
-			op_def T kurtosis() { return n * M4 / (M2 * M2); }
+			inline T kurtosis() { return n * M4 / (M2 * M2); }
 
-			op_def T getM2() {
+			inline T getM2() {
 				return M2;
 			}
 
-			op_def void setM2(T m2) {
+			inline void setM2(T m2) {
 				M2 = m2;
 			}
 
-			op_def T getM3() {
+			inline T getM3() {
 				return M3;
 			}
 
-			op_def void setM3(T m3) {
+			inline void setM3(T m3) {
 				M3 = m3;
 			}
 
-			op_def T getM4() {
+			inline T getM4() {
 				return M4;
 			}
 
-			op_def void setM4(T m4) {
+			inline void setM4(T m4) {
 				M4 = m4;
 			}
 
-			op_def T getMax() {
+			inline T getMax() {
 				return max;
 			}
 
-			op_def void setMax(T max) {
+			inline void setMax(T max) {
 				this->max = max;
 			}
 
-			op_def T getMean() {
+			inline T getMean() {
 				return mean;
 			}
 
-			op_def void setMean(T mean) {
+			inline void setMean(T mean) {
 				this->mean = mean;
 			}
 
-			op_def T getMin() {
+			inline T getMin() {
 				return min;
 			}
 
-			op_def void setMin(T min) {
+			inline void setMin(T min) {
 				this->min = min;
 			}
 
-			op_def T getN() {
+			inline T getN() {
 				return n;
 			}
 
-			op_def void setN(T n) {
+			inline void setN(T n) {
 				this->n = n;
 			}
 		};
