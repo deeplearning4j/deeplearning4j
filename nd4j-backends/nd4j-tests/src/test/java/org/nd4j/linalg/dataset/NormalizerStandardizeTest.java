@@ -187,9 +187,9 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         myNormalizer.fit(sampleDataSet);
         DataSet transformed = sampleDataSet.copy();
         myNormalizer.transform(transformed);
-        System.out.println(transformed.getFeatures());
+        //System.out.println(transformed.getFeatures());
         myNormalizer.revert(transformed);
-        System.out.println(transformed.getFeatures());
+        //System.out.println(transformed.getFeatures());
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
         assertTrue(maxdeltaPerc < tolerancePerc);
