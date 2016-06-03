@@ -1,7 +1,6 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Ceil;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +42,7 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
      * @param iterator for the data to iterate over
      */
     public void fit(DataSetIterator iterator) {
-        INDArray maxN, nextMax, nextMaxN, nextMin;
+        INDArray nextMax, nextMin;
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
             if(min == null) {
@@ -51,16 +50,13 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
             }
             else {
                 nextMin =  next.getFeatureMatrix().min(0);;
-                Nd4j.getExecutioner().exec(new Ceil(nextMin,min));
+                min = Nd4j.vstack(nextMin,min).min(0);
 
                 nextMax =  next.getFeatureMatrix().max(0);
-                maxN = max.mul(-1.0);
-                nextMaxN = nextMax.mul(-1.0);
-                Nd4j.getExecutioner().exec(new Ceil(nextMaxN,maxN));
-                max = maxN.mul(-1.0);
+                max = Nd4j.vstack(nextMax,max).max(0);
             }
         }
-        maxMinusMin = max.sub(min);
+        maxMinusMin = max.sub(min).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         iterator.reset();
     }
 
@@ -73,7 +69,7 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
         // scale by dataset range
         toPreProcess.setFeatures(toPreProcess.getFeatures().divRowVector(maxMinusMin));
         // scale by given or default feature range
-        toPreProcess.setFeatures(toPreProcess.getFeatures().div(maxRange - minRange));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().div(maxRange - minRange + Nd4j.EPS_THRESHOLD));
         // offset by given min feature value
         toPreProcess.setFeatures(toPreProcess.getFeatures().add(minRange));
     }
@@ -89,6 +85,28 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
     public void transform(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
             this.preProcess(toPreProcessIter.next());
+        }
+        toPreProcessIter.reset();
+    }
+
+    public void revertPreProcess(DataSet toPreProcess) {
+        if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+
+        toPreProcess.setFeatures(toPreProcess.getFeatures().sub(minRange));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().mul(maxRange - minRange + Nd4j.EPS_THRESHOLD));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().mulRowVector(maxMinusMin));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().addRowVector(min));
+    }
+
+    /**
+     *  Revert the data to what it was before transform
+     * @param toPreProcess the dataset to revert back
+     */
+    public void revert(DataSet toPreProcess) {this.revertPreProcess(toPreProcess);}
+
+    public void revert(DataSetIterator toPreProcessIter) {
+        while (toPreProcessIter.hasNext()) {
+            this.revertPreProcess(toPreProcessIter.next());
         }
         toPreProcessIter.reset();
     }
