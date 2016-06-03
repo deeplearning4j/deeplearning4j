@@ -17,6 +17,11 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     private INDArray mean,std;
     private int runningTotal = 0;
 
+    /**
+     * Fit the given model with dataset
+     * to calculate mean and std dev with
+     * @param dataset
+     */
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);
         std = dataSet.getFeatureMatrix().std(0);
@@ -24,8 +29,9 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     }
 
     /**
-     * Fit the given model
-     * @param iterator the data to iterate over
+     * Fit the given model with a given iterator
+     * to calculate mean and std dev with
+     * @param iterator
      */
     public void fit(DataSetIterator iterator) {
         while(iterator.hasNext()) {
@@ -73,13 +79,18 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     }
 
     /**
-     * Transform the data
-     * @param toPreProcess the dataset to transform
+     * Transform the given dataset
+     * @param toPreProcess 
      */
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
     }
 
+    /**
+     * Transform the dataset from given iterator
+     * Need not set preprocessor on the iterator in this case
+     * @param toPreProcess the dataset to transform
+     */
     public void transform(DataSetIterator toPreProcessIter) {
         while (toPreProcessIter.hasNext()) {
             this.preProcess(toPreProcessIter.next());
@@ -94,7 +105,7 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
     }
 
     /**
-     *  Revert the data to what it was before transform
+     * Revert the data to what it was before transform
      * @param toPreProcess the dataset to revert back
      */
     public void revert(DataSet toPreProcess) {this.revertPreProcess(toPreProcess);}

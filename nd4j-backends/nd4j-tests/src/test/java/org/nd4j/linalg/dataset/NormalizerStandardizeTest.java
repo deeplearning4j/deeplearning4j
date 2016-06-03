@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.iterator.BasicDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -66,7 +66,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         // SAME TEST WITH THE ITERATOR
         int bSize = 10;
         tolerancePerc = 1; // 1% of correct value
-        DataSetIterator sampleIter = new BasicDataSetIterator(sampleDataSet,bSize);
+        DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet,bSize);
         myNormalizer.fit(sampleIter);
 
         meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
@@ -157,7 +157,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         INDArray featureSet = Nd4j.concat(1,featureX,featureY,featureZ);
         INDArray labelSet = Nd4j.zeros(nSamples, 1);
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
-        DataSetIterator sampleIter = new BasicDataSetIterator(sampleDataSet,bSize);
+        DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet,bSize);
 
         INDArray theoreticalMean = Nd4j.create(new double[] {x,y,z});
 
@@ -203,7 +203,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             this.theoreticalSEM = this.theoreticalStd.div(Math.sqrt(nSamples));
         }
         public DataSetIterator getIter(int bsize) {
-            return new BasicDataSetIterator(sampleDataSet,bsize);
+            return new TestDataSetIterator(sampleDataSet,bsize);
         }
     }
     @Override

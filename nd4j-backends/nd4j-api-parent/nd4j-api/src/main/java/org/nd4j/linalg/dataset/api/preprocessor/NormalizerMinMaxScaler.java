@@ -1,6 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,11 +11,20 @@ import java.io.IOException;
 
 /**
  * Created by susaneraly on 5/25/16.
+ * A preprocessor that applies min max scaling
+ * Can take a range 
+ * X -> (X - min/(max-min)) * (given_max - given_min) + given_min
+ * default given_min,given_max is 0,1
  */
 public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataSetPreProcessor{
     private INDArray min,max,maxMinusMin;
     private double minRange,maxRange;
 
+    /**
+    * Preprocessor can take a range as minRange and maxRange
+    * @param minRange 
+    * @param maxRange 
+    */
     public NormalizerMinMaxScaler (double minRange, double maxRange) {
         setMinRange(minRange);
         setMaxRange(maxRange);
@@ -50,10 +61,10 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
             }
             else {
                 nextMin =  next.getFeatureMatrix().min(0);;
-                min = Nd4j.vstack(nextMin,min).min(0);
+                min = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,min,min,min.length()));
 
                 nextMax =  next.getFeatureMatrix().max(0);
-                max = Nd4j.vstack(nextMax,max).max(0);
+                max = Nd4j.getExecutioner().execAndReturn(new Max(nextMax,max,max,max.length()));
             }
         }
         maxMinusMin = max.sub(min).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));

@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2016 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 /**
 * Created by susaneraly on 5/26/16.
 */
-public class BasicDataSetIterator implements DataSetIterator {
+public class TestDataSetIterator implements DataSetIterator {
 
 	private static final long serialVersionUID = -7569201667767185411L;
 	private int curr = 0;
@@ -35,17 +35,20 @@ public class BasicDataSetIterator implements DataSetIterator {
 	private List<DataSet> list;
 	private DataSetPreProcessor preProcessor;
 
-	public BasicDataSetIterator(DataSet dataset,int batch) {
+	public TestDataSetIterator(DataSet dataset,int batch) {
 		Collection<DataSet> coll = dataset.asList();
 		list = new ArrayList<>(coll);
 		this.batch = batch;
 	}
 
 	/**
-	 * Initializes with a batch of 5
-	 * @param coll the collection to iterate over
+     * This makes an iterator from the given dataset and batchsize
+     * ONLY for use in tests in nd4j
+	 * Initializes with a default batch of 5
+	 * @param dataset the dataset to make the iterator from
+	 * @param batch the batchsize for the iterator 
 	 */ 
-	public BasicDataSetIterator(DataSet dataset) {
+	public TestDataSetIterator(DataSet dataset) {
 		this(dataset,5);
 
 	}
