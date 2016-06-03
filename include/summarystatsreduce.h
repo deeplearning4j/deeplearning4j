@@ -14,15 +14,19 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-#ifdef __CUDACC__
 #include <helper_cuda.h>
+
+#define host_and_device inline __host__  __device__
+#else
+#define host_and_device inline
 #endif
+
 #ifdef __JNI__
 #include <jni.h>
 #endif
 
 #include <ops.h>
+
 
 namespace functions {
 	namespace summarystats {
@@ -50,17 +54,17 @@ namespace functions {
 			T M4;
 			T bias;
 
-			inline SummaryStatsData() {
+			host_and_device SummaryStatsData() {
 				initialize();
 			}
 
 			// initialize to the identity element
 
-			inline void initialize() {
+			host_and_device void initialize() {
 				n = mean = M2 = M3 = M4 = bias = 0;
 			}
 
-			inline void initWithValue(T val) {
+			host_and_device void initWithValue(T val) {
 				n = 1;
 				min = val;
 				max = val;
@@ -71,7 +75,7 @@ namespace functions {
 				bias = 0;
 			}
 
-			inline void setValues(SummaryStatsData<T> *target) {
+			host_and_device void setValues(SummaryStatsData<T> *target) {
 				n = target->n;
 				min = target->min;
 				max = target->max;
@@ -82,13 +86,13 @@ namespace functions {
 				bias = target->bias;
 			}
 
-			inline T variance() {
+			host_and_device T variance() {
 				if (n <= 1)
 					return 0.0;
 				return M2 / (n);
 			}
 
-			inline T varianceBiasCorrected() {
+			host_and_device T varianceBiasCorrected() {
 				if (this->n <= 1) {
 					return 0.0;
 				}
@@ -97,69 +101,69 @@ namespace functions {
 			}
 
 
-			inline T variance_n() {
+			host_and_device T variance_n() {
 				if (n <= 1)
 					return 0.0;
 				return M2 / n;
 			}
 
-			inline T skewness() { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
+			host_and_device T skewness() { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
 
-			inline T kurtosis() { return n * M4 / (M2 * M2); }
+			host_and_device T kurtosis() { return n * M4 / (M2 * M2); }
 
-			inline T getM2() {
+			host_and_device T getM2() {
 				return M2;
 			}
 
-			inline void setM2(T m2) {
+			host_and_device void setM2(T m2) {
 				M2 = m2;
 			}
 
-			inline T getM3() {
+			host_and_device T getM3() {
 				return M3;
 			}
 
-			inline void setM3(T m3) {
+			host_and_device void setM3(T m3) {
 				M3 = m3;
 			}
 
-			inline T getM4() {
+			host_and_device T getM4() {
 				return M4;
 			}
 
-			inline void setM4(T m4) {
+			host_and_device void setM4(T m4) {
 				M4 = m4;
 			}
 
-			inline T getMax() {
+			host_and_device T getMax() {
 				return max;
 			}
 
-			inline void setMax(T max) {
+			host_and_device void setMax(T max) {
 				this->max = max;
 			}
 
-			inline T getMean() {
+			host_and_device T getMean() {
 				return mean;
 			}
 
-			inline void setMean(T mean) {
+			host_and_device void setMean(T mean) {
 				this->mean = mean;
 			}
 
-			inline T getMin() {
+			host_and_device T getMin() {
 				return min;
 			}
 
-			inline void setMin(T min) {
+			host_and_device void setMin(T min) {
 				this->min = min;
 			}
 
-			inline T getN() {
+			host_and_device T getN() {
 				return n;
 			}
 
-			inline void setN(T n) {
+			host_and_device void setN(T n) {
 				this->n = n;
 			}
 		};
@@ -213,11 +217,7 @@ namespace functions {
 		class SummaryStatsReduce {
 		public:
 			//calculate an update of the reduce operation
-#ifdef __CUDACC__
-			inline __host__  __device__
-#elif defined(__GNUC__)
-#endif
-			static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
+			host_and_device static SummaryStatsData<T> update(SummaryStatsData<T> x, SummaryStatsData<T> y,
 				T *extraParams) {
 				if (x.n == 0 && y.n > 0)
 					return y;
