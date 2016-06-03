@@ -19,10 +19,10 @@
 #define op_def inline __host__  __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
-#elif __GNUC__
-#define op_def _Pragma("omp declare simd") inline
 #elif __clang__
 #define op_def inline
+#elif __GNUC__
+#define op_def _Pragma("omp declare simd") inline
 #endif
 
 
