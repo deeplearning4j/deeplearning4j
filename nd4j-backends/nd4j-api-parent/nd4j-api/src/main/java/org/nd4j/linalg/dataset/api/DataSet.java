@@ -151,7 +151,14 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     int numExamples();
 
+    @Deprecated
     List<String> getLabelNames();
+
+    List<String> getLabelNamesList();
+
+    String getLabelName(int idx);
+
+    List<String> getLabelNames(INDArray idxs);
 
     void setLabelNames(List<String> labelNames);
 
