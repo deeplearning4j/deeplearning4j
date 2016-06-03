@@ -1,14 +1,11 @@
-package org.nd4j.linalg.dataset.api.iterator;
+package org.nd4j.linalg.dataset.api.preprocessor;
 
-
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
@@ -16,19 +13,25 @@ import java.io.IOException;
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
  */
-public class StandardScaler {
+public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSetPreProcessor {
     private INDArray mean,std;
     private int runningTotal = 0;
 
-
+    /**
+     * Fit the given model with dataset
+     * to calculate mean and std dev with
+     * @param dataset
+     */
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);
         std = dataSet.getFeatureMatrix().std(0);
+        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
     }
 
     /**
-     * Fit the given model
-     * @param iterator the data to iterate oer
+     * Fit the given model with a given iterator
+     * to calculate mean and std dev with
+     * @param iterator
      */
     public void fit(DataSetIterator iterator) {
         while(iterator.hasNext()) {
@@ -43,7 +46,6 @@ public class StandardScaler {
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
-                // This only works if batch size is 1, m_newS = m_oldS + (x - m_oldM)*(x - m_newM);
                 INDArray xMinusMean = next.getFeatureMatrix().subRowVector(mean);
                 INDArray newMean = mean.add(xMinusMean.sum(0).divi(runningTotal));
                 // Using http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
@@ -65,9 +67,65 @@ public class StandardScaler {
         }
         std.divi(runningTotal);
         std = Transforms.sqrt(std);
+        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         iterator.reset();
     }
 
+    @Override
+    public void preProcess(DataSet toPreProcess) {
+        if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        toPreProcess.setFeatures(toPreProcess.getFeatures().subRowVector(mean));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().divRowVector(std));
+    }
+
+    /**
+     * Transform the given dataset
+     * @param toPreProcess 
+     */
+    public void transform(DataSet toPreProcess) {
+        this.preProcess(toPreProcess);
+    }
+
+    /**
+     * Transform the dataset from given iterator
+     * Need not set preprocessor on the iterator in this case
+     * @param toPreProcess the dataset to transform
+     */
+    public void transform(DataSetIterator toPreProcessIter) {
+        while (toPreProcessIter.hasNext()) {
+            this.preProcess(toPreProcessIter.next());
+        }
+        toPreProcessIter.reset();
+    }
+
+    public void revertPreProcess(DataSet toPreProcess) {
+        if (mean == null || std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        toPreProcess.setFeatures(toPreProcess.getFeatures().mulRowVector(std));
+        toPreProcess.setFeatures(toPreProcess.getFeatures().addRowVector(mean));
+    }
+
+    /**
+     * Revert the data to what it was before transform
+     * @param toPreProcess the dataset to revert back
+     */
+    public void revert(DataSet toPreProcess) {this.revertPreProcess(toPreProcess);}
+
+    public void revert(DataSetIterator toPreProcessIter) {
+        while (toPreProcessIter.hasNext()) {
+            this.revertPreProcess(toPreProcessIter.next());
+        }
+        toPreProcessIter.reset();
+    }
+
+    public INDArray getMean() {
+        if (mean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return mean;
+    }
+
+    public INDArray getStd() {
+        if (std == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        return std;
+    }
 
     /**
      * Load the given mean and std
@@ -89,23 +147,5 @@ public class StandardScaler {
     public void save(File mean,File std) throws IOException {
         Nd4j.saveBinary(this.mean,mean);
         Nd4j.saveBinary(this.std,std);
-    }
-
-    /**
-     * Transform the data
-     * @param dataSet the dataset to transform
-     */
-    public void transform(DataSet dataSet) {
-        dataSet.setFeatures(dataSet.getFeatures().subRowVector(mean));
-        dataSet.setFeatures(dataSet.getFeatures().divRowVector(std));
-    }
-
-
-    public INDArray getMean() {
-        return mean;
-    }
-
-    public INDArray getStd() {
-        return std;
     }
 }
