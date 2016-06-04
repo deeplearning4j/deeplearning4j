@@ -18,7 +18,7 @@ public class LocalUnstructuredDataFormatterTest {
     @Test
     public void testRearrange() throws Exception {
         //ensure exists
-        new LFWDataSetIterator(10,28,28).next();
+        new LFWDataSetIterator(new int[] {10,28,28}).next();
         File destinationDir = new File(System.getProperty("user.home"),"rearrangedlfw");
         if(destinationDir.exists())
             FileUtils.deleteDirectory(destinationDir);
