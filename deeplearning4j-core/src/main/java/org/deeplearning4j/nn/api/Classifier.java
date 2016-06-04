@@ -22,6 +22,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.util.List;
+
 
 /**
  * A classifier (this is for supervised learning)
@@ -72,6 +74,13 @@ public interface Classifier extends Model {
      */
     int[] predict(INDArray examples);
 
+    /**
+     * Takes in a DataSet of examples
+     * For each row, returns a label
+     * @param dataSet the examples to classify
+     * @return the labels for each example
+     */
+    List<String> predict(DataSet dataSet);
 
     /**
      * Returns the probabilities for each label
