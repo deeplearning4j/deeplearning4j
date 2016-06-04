@@ -158,10 +158,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public Type dataType() {
-        return Type.INT;
-    }
+
 
     @Override
     protected DataBuffer create(long length) {
@@ -205,10 +202,16 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         }
     }
 
+    /**
+     * Initialize the type of this buffer
+     */
     @Override
-    public int getElementSize() {
-        return 4;
+    protected void initTypeAndSize() {
+        elementSize = 4;
+        type = Type.INT;
     }
+
+
 
     private void readObject(java.io.ObjectInputStream stream)
             throws java.io.IOException, ClassNotFoundException {

@@ -67,6 +67,12 @@ public interface DataBuffer extends Serializable {
     Pointer pointer();
 
     /**
+     * Returns the address of the pointer wrapped in a Pointer
+     * @return the address of the pointer wrapped in a Pointer
+     */
+    Pointer addressPointer();
+
+    /**
      * Returns the address of the pointer
      * @return the address of the pointer
      */

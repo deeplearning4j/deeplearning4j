@@ -55,6 +55,15 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize, offset);
     }
 
+    /**
+     * Initialize the type of this buffer
+     */
+    @Override
+    protected void initTypeAndSize() {
+        type = Type.DOUBLE;
+        elementSize = 8;
+    }
+
     public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
@@ -179,10 +188,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
 
 
-    @Override
-    public Type dataType() {
-        return Type.DOUBLE;
-    }
 
 
 

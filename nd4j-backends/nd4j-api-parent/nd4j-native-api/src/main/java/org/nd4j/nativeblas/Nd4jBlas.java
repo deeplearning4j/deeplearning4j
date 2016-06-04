@@ -4,6 +4,7 @@ package org.nd4j.nativeblas;
 import java.util.Properties;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.annotation.Platform;
 
 /**
@@ -44,21 +45,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native float sdsdot(long[] extraPointers,int N, float alpha,
-                                      long X, int incX,
-                                      long Y, int incY);
+    public native float sdsdot(PointerPointer extraPointers,int N, float alpha,
+                                      Pointer X, int incX,
+                                      Pointer Y, int incY);
 
-    public native double dsdot(long[] extraPointers,int N,
-                                      long X, int incX,
-                                      long Y, int incY);
+    public native double dsdot(PointerPointer extraPointers,int N,
+                                      Pointer X, int incX,
+                                      Pointer Y, int incY);
 
-    public native double ddot(long[] extraPointers,int N,
-                                     long X, int incX,
-                                     long Y, int incY);
+    public native double ddot(PointerPointer extraPointers,int N,
+                                     Pointer X, int incX,
+                                     Pointer Y, int incY);
 
-    public native float sdot(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native float sdot(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -66,9 +67,9 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native float snrm2(long[] extraPointers,int N, long X, int incX);
+    public native float snrm2(PointerPointer extraPointers,int N, Pointer X, int incX);
 
-    public native double dnrm2(long[] extraPointers,int N, long X, int incX);
+    public native double dnrm2(PointerPointer extraPointers,int N, Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -76,9 +77,9 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native float sasum(long[] extraPointers,int N, long X, int incX);
+    public native float sasum(PointerPointer extraPointers,int N, Pointer X, int incX);
 
-    public native double dasum(long[] extraPointers,int N, long X, int incX);
+    public native double dasum(PointerPointer extraPointers,int N, Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -86,9 +87,9 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native int isamax(long[] extraPointers,int N, long X, int incX);
+    public native int isamax(PointerPointer extraPointers,int N, Pointer X, int incX);
 
-    public native int idamax(long[] extraPointers,int N, long X, int incX);
+    public native int idamax(PointerPointer extraPointers,int N, Pointer X, int incX);
 
     /*
      * ======================================================
@@ -102,14 +103,14 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void srot(long[] extraPointers,int N,
-                                   long X, int incX,
-                                   long Y, int incY,
+    public native void srot(PointerPointer extraPointers,int N,
+                                   Pointer X, int incX,
+                                   Pointer Y, int incY,
                                    float c, float s);
 
-    public native void drot(long[] extraPointers,int N,
-                                   long X, int incX,
-                                   long Y, int incY,
+    public native void drot(PointerPointer extraPointers,int N,
+                                   Pointer X, int incX,
+                                   Pointer Y, int incY,
                                    double c, double s);
 
     /*
@@ -118,9 +119,9 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void srotg(long[] extraPointers,long args);
+    public native void srotg(PointerPointer extraPointers,Pointer args);
 
-    public native void drotg(long[] extraPointers,long args);
+    public native void drotg(PointerPointer extraPointers,Pointer args);
 
     /*
      * ------------------------------------------------------
@@ -128,11 +129,11 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void srotmg(long[] extraPointers,long args,
-                                     long P);
+    public native void srotmg(PointerPointer extraPointers,Pointer args,
+                                     Pointer P);
 
-    public native void drotmg(long[] extraPointers,long args,
-                                     long P);
+    public native void drotmg(PointerPointer extraPointers,Pointer args,
+                                     Pointer P);
 
     /*
      * ------------------------------------------------------
@@ -140,15 +141,15 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void srotm(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long P);
+    public native void srotm(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer P);
 
-    public native void drotm(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long P);
+    public native void drotm(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer P);
 
     /*
      * ------------------------------------------------------
@@ -156,13 +157,13 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sswap(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void sswap(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
-    public native void dswap(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void dswap(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -170,11 +171,11 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sscal(long[] extraPointers,int N, float alpha,
-                                    long X, int incX);
+    public native void sscal(PointerPointer extraPointers,int N, float alpha,
+                                    Pointer X, int incX);
 
-    public native void dscal(long[] extraPointers,int N, double alpha,
-                                    long X, int incX);
+    public native void dscal(PointerPointer extraPointers,int N, double alpha,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -182,13 +183,13 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void scopy(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void scopy(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
-    public native void dcopy(long[] extraPointers,int N,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void dcopy(PointerPointer extraPointers,int N,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -196,13 +197,13 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void saxpy(long[] extraPointers,int N, float alpha,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void saxpy(PointerPointer extraPointers,int N, float alpha,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
-    public native void daxpy(long[] extraPointers,int N, double alpha,
-                                    long X, int incX,
-                                    long Y, int incY);
+    public native void daxpy(PointerPointer extraPointers,int N, double alpha,
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY);
 
     /*
      * ======================================================
@@ -217,21 +218,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sgemv(long[] extraPointers,int Order, int TransA,
+    public native void sgemv(PointerPointer extraPointers,int Order, int TransA,
                                     int M, int N,
                                     float alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     float beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
-    public native void dgemv(long[] extraPointers,int Order, int TransA,
+    public native void dgemv(PointerPointer extraPointers,int Order, int TransA,
                                     int M, int N,
                                     double alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     double beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -239,23 +240,23 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sgbmv(long[] extraPointers,int Order, int TransA,
+    public native void sgbmv(PointerPointer extraPointers,int Order, int TransA,
                                     int M, int N,
                                     int KL, int KU,
                                     float alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     float beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
-    public native void dgbmv(long[] extraPointers,int Order, int TransA,
+    public native void dgbmv(PointerPointer extraPointers,int Order, int TransA,
                                     int M, int N,
                                     int KL, int KU,
                                     double alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     double beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -263,21 +264,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssymv(long[] extraPointers,int Order, int Uplo,
+    public native void ssymv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     float alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     float beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
-    public native void dsymv(long[] extraPointers,int Order, int Uplo,
+    public native void dsymv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     double alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     double beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -285,21 +286,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssbmv(long[] extraPointers,int Order, int Uplo,
+    public native void ssbmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N, int K,
                                     float alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     float beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
-    public native void dsbmv(long[] extraPointers,int Order, int Uplo,
+    public native void dsbmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N, int K,
                                     double alpha,
-                                    long A, int lda,
-                                    long X, int incX,
+                                    Pointer A, int lda,
+                                    Pointer X, int incX,
                                     double beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -307,21 +308,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sspmv(long[] extraPointers,int Order, int Uplo,
+    public native void sspmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     float alpha,
-                                    long Ap,
-                                    long X, int incX,
+                                    Pointer Ap,
+                                    Pointer X, int incX,
                                     float beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
-    public native void dspmv(long[] extraPointers,int Order, int Uplo,
+    public native void dspmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     double alpha,
-                                    long Ap,
-                                    long X, int incX,
+                                    Pointer Ap,
+                                    Pointer X, int incX,
                                     double beta,
-                                    long Y, int incY);
+                                    Pointer Y, int incY);
 
     /*
      * ------------------------------------------------------
@@ -329,17 +330,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void strmv(long[] extraPointers,int Order, int Uplo, int TransA,
+    public native void strmv(PointerPointer extraPointers,int Order, int Uplo, int TransA,
                              int Diag,
                                     int N, float alpha,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
-    public native void dtrmv(long[] extraPointers,int Order, int Uplo, int TransA,
+    public native void dtrmv(PointerPointer extraPointers,int Order, int Uplo, int TransA,
                              int Diag,
                                     int N, double alpha,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -347,17 +348,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void stbmv(long[] extraPointers,int Order, int Uplo,
+    public native void stbmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N, int K,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
-    public native void dtbmv(long[] extraPointers,int Order, int Uplo,
+    public native void dtbmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N, int K,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -365,17 +366,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void stpmv(long[] extraPointers,int Order, int Uplo,
+    public native void stpmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long Ap,
-                                    long X, int incX);
+                                    Pointer Ap,
+                                    Pointer X, int incX);
 
-    public native void dtpmv(long[] extraPointers,int Order, int Uplo,
+    public native void dtpmv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long Ap,
-                                    long X, int incX);
+                                    Pointer Ap,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -383,17 +384,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void strsv(long[] extraPointers,int Order, int Uplo,
+    public native void strsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
-    public native void dtrsv(long[] extraPointers,int Order, int Uplo,
+    public native void dtrsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -401,17 +402,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void stbsv(long[] extraPointers,int Order, int Uplo,
+    public native void stbsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N, int K,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
-    public native void dtbsv(long[] extraPointers,int Order, int Uplo,
+    public native void dtbsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N, int K,
-                                    long A, int lda,
-                                    long X, int incX);
+                                    Pointer A, int lda,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -419,17 +420,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void stpsv(long[] extraPointers,int Order, int Uplo,
+    public native void stpsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long Ap,
-                                    long X, int incX);
+                                    Pointer Ap,
+                                    Pointer X, int incX);
 
-    public native void dtpsv(long[] extraPointers,int Order, int Uplo,
+    public native void dtpsv(PointerPointer extraPointers,int Order, int Uplo,
                                     int TransA, int Diag,
                                     int N,
-                                    long Ap,
-                                    long X, int incX);
+                                    Pointer Ap,
+                                    Pointer X, int incX);
 
     /*
      * ------------------------------------------------------
@@ -437,19 +438,19 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sger(long[] extraPointers,int Order,
+    public native void sger(PointerPointer extraPointers,int Order,
                                    int M, int N,
                                    float alpha,
-                                   long X, int incX,
-                                   long Y, int incY,
-                                   long A, int lda);
+                                   Pointer X, int incX,
+                                   Pointer Y, int incY,
+                                   Pointer A, int lda);
 
-    public native void dger(long[] extraPointers,int Order,
+    public native void dger(PointerPointer extraPointers,int Order,
                                    int M, int N,
                                    double alpha,
-                                   long X, int incX,
-                                   long Y, int incY,
-                                   long A, int lda);
+                                   Pointer X, int incX,
+                                   Pointer Y, int incY,
+                                   Pointer A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -457,17 +458,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssyr(long[] extraPointers,int Order, int Uplo,
+    public native void ssyr(PointerPointer extraPointers,int Order, int Uplo,
                                    int N,
                                    float alpha,
-                                   long X, int incX,
-                                   long A, int lda);
+                                   Pointer X, int incX,
+                                   Pointer A, int lda);
 
-    public native void dsyr(long[] extraPointers,int Order, int Uplo,
+    public native void dsyr(PointerPointer extraPointers,int Order, int Uplo,
                                    int N,
                                    double alpha,
-                                   long X, int incX,
-                                   long A, int lda);
+                                   Pointer X, int incX,
+                                   Pointer A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -475,17 +476,17 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sspr(long[] extraPointers,int Order, int Uplo,
+    public native void sspr(PointerPointer extraPointers,int Order, int Uplo,
                                    int N,
                                    float alpha,
-                                   long X, int incX,
-                                   long Ap);
+                                   Pointer X, int incX,
+                                   Pointer Ap);
 
-    public native void dspr(long[] extraPointers,int Order, int Uplo,
+    public native void dspr(PointerPointer extraPointers,int Order, int Uplo,
                                    int N,
                                    double alpha,
-                                   long X, int incX,
-                                   long Ap);
+                                   Pointer X, int incX,
+                                   Pointer Ap);
 
     /*
      * ------------------------------------------------------
@@ -493,19 +494,19 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssyr2(long[] extraPointers,int Order, int Uplo,
+    public native void ssyr2(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     float alpha,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long A, int lda);
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer A, int lda);
 
-    public native void dsyr2(long[] extraPointers,int Order, int Uplo,
+    public native void dsyr2(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     double alpha,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long A, int lda);
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer A, int lda);
 
     /*
      * ------------------------------------------------------
@@ -513,19 +514,19 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sspr2(long[] extraPointers,int Order, int Uplo,
+    public native void sspr2(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     float alpha,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long Ap);
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer Ap);
 
-    public native void dspr2(long[] extraPointers,int Order, int Uplo,
+    public native void dspr2(PointerPointer extraPointers,int Order, int Uplo,
                                     int N,
                                     double alpha,
-                                    long X, int incX,
-                                    long Y, int incY,
-                                    long Ap);
+                                    Pointer X, int incX,
+                                    Pointer Y, int incY,
+                                    Pointer Ap);
 
     /*
      * ======================================================
@@ -540,21 +541,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void sgemm(long[] extraPointers,int Order, int TransA, int TransB,
+    public native void sgemm(PointerPointer extraPointers,int Order, int TransA, int TransB,
                                     int M, int N, int K,
                                     float alpha,
-                                    long A, int lda,
-                                    long B, int ldb,
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb,
                                     float beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
-    public native void dgemm(long[] extraPointers,int Order, int TransA, int TransB,
+    public native void dgemm(PointerPointer extraPointers,int Order, int TransA, int TransB,
                                     int M, int N, int K,
                                     double alpha,
-                                    long A, int lda,
-                                    long B, int ldb,
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb,
                                     double beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -562,21 +563,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssymm(long[] extraPointers,int Order, int Side, int Uplo,
+    public native void ssymm(PointerPointer extraPointers,int Order, int Side, int Uplo,
                                     int M, int N,
                                     float alpha,
-                                    long A, int lda,
-                                    long B, int ldb,
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb,
                                     float beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
-    public native void dsymm(long[] extraPointers,int Order, int Side, int Uplo,
+    public native void dsymm(PointerPointer extraPointers,int Order, int Side, int Uplo,
                                     int M, int N,
                                     double alpha,
-                                    long A, int lda,
-                                    long B, int ldb,
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb,
                                     double beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -584,19 +585,19 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssyrk(long[] extraPointers,int Order, int Uplo, int Trans,
+    public native void ssyrk(PointerPointer extraPointers,int Order, int Uplo, int Trans,
                                     int N, int K,
                                     float alpha,
-                                    long A, int lda,
+                                    Pointer A, int lda,
                                     float beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
-    public native void dsyrk(long[] extraPointers,int Order, int Uplo, int Trans,
+    public native void dsyrk(PointerPointer extraPointers,int Order, int Uplo, int Trans,
                                     int N, int K,
                                     double alpha,
-                                    long A, int lda,
+                                    Pointer A, int lda,
                                     double beta,
-                                    long C, int ldc);
+                                    Pointer C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -604,21 +605,21 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void ssyr2k(long[] extraPointers,int Order, int Uplo, int Trans,
+    public native void ssyr2k(PointerPointer extraPointers,int Order, int Uplo, int Trans,
                                      int N, int K,
                                      float alpha,
-                                     long A, int lda,
-                                     long B, int ldb,
+                                     Pointer A, int lda,
+                                     Pointer B, int ldb,
                                      float beta,
-                                     long C, int ldc);
+                                     Pointer C, int ldc);
 
-    public native void dsyr2k(long[] extraPointers,int Order, int Uplo, int Trans,
+    public native void dsyr2k(PointerPointer extraPointers,int Order, int Uplo, int Trans,
                                      int N, int K,
                                      double alpha,
-                                     long A, int lda,
-                                     long B, int ldb,
+                                     Pointer A, int lda,
+                                     Pointer B, int ldb,
                                      double beta,
-                                     long C, int ldc);
+                                     Pointer C, int ldc);
 
     /*
      * ------------------------------------------------------
@@ -626,19 +627,19 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void strmm(long[] extraPointers,int Order, int Side,
+    public native void strmm(PointerPointer extraPointers,int Order, int Side,
                                     int Uplo, int TransA, int Diag,
                                     int M, int N,
                                     float alpha,
-                                    long A, int lda,
-                                    long B, int ldb);
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb);
 
-    public native void dtrmm(long[] extraPointers,int Order, int Side,
+    public native void dtrmm(PointerPointer extraPointers,int Order, int Side,
                                     int Uplo, int TransA, int Diag,
                                     int M, int N,
                                     double alpha,
-                                    long A, int lda,
-                                    long B, int ldb);
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb);
 
     /*
      * ------------------------------------------------------
@@ -646,18 +647,18 @@ public class Nd4jBlas extends Pointer {
      * ------------------------------------------------------
      */
 
-    public native void strsm(long[] extraPointers,int Order, int Side,
+    public native void strsm(PointerPointer extraPointers,int Order, int Side,
                                     int Uplo, int TransA, int Diag,
                                     int M, int N,
                                     float alpha,
-                                    long A, int lda,
-                                    long B, int ldb);
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb);
 
-    public native void dtrsm(long[] extraPointers,int Order, int Side,
+    public native void dtrsm(PointerPointer extraPointers,int Order, int Side,
                                     int Uplo, int TransA, int Diag,
                                     int M, int N,
                                     double alpha,
-                                    long A, int lda,
-                                    long B, int ldb);
+                                    Pointer A, int lda,
+                                    Pointer B, int ldb);
 
 }

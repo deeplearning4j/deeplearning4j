@@ -29,11 +29,6 @@ import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.annotation.Platform;
-import org.nd4j.context.Nd4jContext;
-import org.nd4j.linalg.api.buffer.pointer.JavaCppDoublePointer;
-import org.nd4j.linalg.api.buffer.pointer.JavaCppFloatPointer;
-import org.nd4j.linalg.api.buffer.pointer.JavaCppIntPointer;
 import org.nd4j.linalg.api.buffer.unsafe.UnsafeHolder;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -60,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class BaseDataBuffer implements DataBuffer {
 
+    protected Type type;
     protected long length;
     protected long underlyingLength;
     protected long offset;
@@ -87,6 +83,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     /**
+     * Initialize the type of this buffer
+     */
+    protected abstract void initTypeAndSize();
+
+    @Override
+    public int getElementSize() {
+        return elementSize;
+    }
+
+
+    /**
+     *
      * Meant for creating another view of a buffer
      * @param underlyingBuffer the underlying buffer to create a view from
      * @param length the length of the view
@@ -95,6 +103,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(DataBuffer underlyingBuffer,long length,long offset) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
         this.length = length;
         this.offset = offset;
         this.allocationMode = underlyingBuffer.allocationMode();
@@ -200,6 +209,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(ByteBuf buf,int length) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
         pointer = new Pointer(buf.nioBuffer());
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.wrappedBuffer = buf.nioBuffer();
@@ -226,6 +236,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(float[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
+        initTypeAndSize();
+
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 floatData = ArrayUtil.copy(data);
@@ -273,6 +285,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(double[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
+        initTypeAndSize();
         if(allocationMode == AllocationMode.HEAP) {
             if(copy) {
                 doubleData = ArrayUtil.copy(data);
@@ -324,6 +337,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(int[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
+        initTypeAndSize();
         if(allocationMode == AllocationMode.HEAP) {
             if(copy)
                 intData = ArrayUtil.copy(data);
@@ -397,6 +411,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(int length, int elementSize) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
         allocationMode = AllocUtil.getAllocationModeFromContext();
         this.length = length;
         this.underlyingLength = length;
@@ -439,6 +454,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(ByteBuffer buffer,int length) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
+
         this.pointer = new Pointer(buffer.order(ByteOrder.nativeOrder()));
         this.length = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
@@ -514,6 +531,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(long length, boolean initialize){
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
         this.length = length;
         this.underlyingLength = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
@@ -577,6 +595,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public Collection<String> references() {
         return referencing;
+    }
+
+    @Override
+    public Pointer addressPointer() {
+        if (offset() > 0) {
+            if(dataType() == Type.DOUBLE) {
+                return new DoublePointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+            else if(dataType() == Type.FLOAT) {
+                return new FloatPointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+            else if(dataType() == Type.INT) {
+                return new IntPointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+        }
+        return pointer;
     }
 
     @Override
@@ -1306,6 +1340,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    /**
+     * The data type of the buffer
+     *
+     * @return the data type of the buffer
+     */
+    @Override
+    public Type dataType() {
+        return type;
+    }
+
     @Override
     public boolean equals(Object o) {
         // FIXME: this is BAD. it takes too long to work, and it breaks general equals contract
@@ -1354,8 +1398,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             dirty = new AtomicBoolean(false);
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
-            Type t = Type.valueOf(s.readUTF());
-            if(t == Type.DOUBLE) {
+            type = Type.valueOf(s.readUTF());
+            if(type == Type.DOUBLE)
+                elementSize = 8;
+            else if(type == Type.FLOAT || type == Type.INT)
+                elementSize = 4;
+
+            if(type == Type.DOUBLE) {
                 if(allocationMode == AllocationMode.HEAP) {
                     doubleData = new double[(int)length()];
                     for(int i = 0; i < length(); i++) {
@@ -1380,7 +1429,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
             }
-            else if(t == Type.FLOAT) {
+            else if(type == Type.FLOAT) {
                 if(allocationMode == AllocationMode.HEAP) {
                     floatData = new float[(int)length()];
                     for(int i = 0; i < length(); i++) {

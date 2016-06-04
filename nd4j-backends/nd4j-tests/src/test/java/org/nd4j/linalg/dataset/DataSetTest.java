@@ -490,6 +490,21 @@ public class DataSetTest extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testLabelNames(){
+        List<String> names = Arrays.asList(
+                "label1",
+                "label2",
+                "label3",
+                "label0");
+        INDArray features = Nd4j.ones(10);
+        INDArray labels = Nd4j.linspace(0,3,4);
+        org.nd4j.linalg.dataset.api.DataSet ds = new DataSet(features, labels);
+        ds.setLabelNames(names);
+        assertEquals("label1", ds.getLabelName(0));
+        assertEquals(4, ds.getLabelNamesList().size());
+        assertEquals(names, ds.getLabelNames(labels));
+    }
 
 
 

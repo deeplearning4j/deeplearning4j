@@ -91,11 +91,11 @@ public class AsynchronousFlowController implements FlowController{
                 CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
                 if (nativeOps.memcpyAsync(
-                        point.getHostPointer().address(),
-                        point.getDevicePointer().address(),
+                        point.getHostPointer(),
+                        point.getDevicePointer(),
                         AllocationUtils.getRequiredMemory(point.getShape()),
                         CudaConstants.cudaMemcpyDeviceToHost,
-                        context.getSpecialStream().address()) == 0)
+                        context.getSpecialStream()) == 0)
                     throw new IllegalStateException("MemcpyAsync D2H failed: [" + point.getDevicePointer().address() + "] -> [" + point.getHostPointer().address() + "]");
 
                 commitTransfer(context.getSpecialStream());
@@ -141,7 +141,7 @@ public class AsynchronousFlowController implements FlowController{
 
         cudaEvent_t event = new cudaEvent_t(nativeOps.createEvent());
         event.setLaneId(context.getLaneId());
-        nativeOps.registerEvent(event.address(), context.getOldStream().address());
+        nativeOps.registerEvent(event, context.getOldStream());
 
         if (result != null) {
             setWriteLane(result, event);
@@ -258,7 +258,7 @@ public class AsynchronousFlowController implements FlowController{
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
         cudaEvent_t event = new cudaEvent_t(nativeOps.createEvent());
         event.setLaneId(context.getLaneId());
-        nativeOps.registerEvent(event.address(), context.getOldStream().address());
+        nativeOps.registerEvent(event, context.getOldStream());
 
         result.setWriteLane(event);
 

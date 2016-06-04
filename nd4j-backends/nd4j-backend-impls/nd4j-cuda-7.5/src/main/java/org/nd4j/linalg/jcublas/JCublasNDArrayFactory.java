@@ -20,7 +20,9 @@
 package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.LongPointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.cache.TADManager;
@@ -476,38 +478,38 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 allocator.memcpyAsync(ret.data(),new CudaPointer(allocator.getHostPointer(m).address()), AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)), linearIndex * (m.data().dataType() == DataBuffer.Type.DOUBLE ? 8 : 4));
                 linearIndex += m.length();
             } else {
-                long hostYShapeInfo = AddressRetriever.retrieveHostAddress(m.shapeInfoDataBuffer());
+                Pointer hostYShapeInfo = AddressRetriever.retrieveHostPointer(m.shapeInfoDataBuffer());
 
-                long[] extras = new long[]{
-                        AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
-                        context.getOldStream().getNativePointer(),
-                        allocator.getDeviceId(),
+                PointerPointer extras = new PointerPointer(
+                        AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
+                        context.getOldStream(),
+                        allocator.getDeviceIdPointer(),
                         context.getBufferAllocation(),
                         context.getBufferReduction(),
                         context.getBufferScalar(),
                         context.getBufferSpecial(),
                         hostYShapeInfo,
-                        AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer())
-                };
+                        AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer())
+                );
 
                 if (m.data().dataType() == DataBuffer.Type.DOUBLE) {
                     nativeOps.flattenDouble(
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret, context).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
-                            allocator.getPointer(m, context).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
+                            allocator.getPointer(ret, context),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context),
+                            allocator.getPointer(m, context),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context));
                 } else if (m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
                             extras,
                             linearIndex,
                             order,
-                            allocator.getPointer(ret, context).address(),
-                            allocator.getPointer(ret.shapeInfoDataBuffer(), context).address(),
-                            allocator.getPointer(m, context).address(),
-                            allocator.getPointer(m.shapeInfoDataBuffer(), context).address());
+                            allocator.getPointer(ret, context),
+                            allocator.getPointer(ret.shapeInfoDataBuffer(), context),
+                            allocator.getPointer(m, context),
+                            allocator.getPointer(m.shapeInfoDataBuffer(), context));
 
                 } else {
                     throw new UnsupportedOperationException("Illegal data type for copy");
@@ -584,8 +586,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
 
-        long dZ = AtomicAllocator.getInstance().getPointer(ret, context).address();
-        long dZShapeInfo = AddressRetriever.retrieveDeviceAddress(ret.shapeInfoDataBuffer(), context);
+        Pointer dZ = AtomicAllocator.getInstance().getPointer(ret, context);
+        Pointer dZShapeInfo = AddressRetriever.retrieveDevicePointer(ret.shapeInfoDataBuffer(), context);
 
 
 
@@ -599,50 +601,50 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
         AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
 
-        long dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context).address();
-        long shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context).address();
-        long tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context).address();
-        long offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context).address();
+        Pointer dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context);
+        Pointer shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context);
+        Pointer tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
+        Pointer offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
 
 
        // System.out.println("ShapesPointer after conversion: " + shapesPointer);
 
-        long[] extras = new long[]{
-                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
-                context.getOldStream().getNativePointer(),
-                allocator.getDeviceId(),
+        PointerPointer extras = new PointerPointer(
+                AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
+                context.getOldStream(),
+                allocator.getDeviceIdPointer(),
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
                 context.getBufferSpecial(),
-                AddressRetriever.retrieveHostAddress(toConcat[0].shapeInfoDataBuffer()),
-                AddressRetriever.retrieveHostAddress(ret.shapeInfoDataBuffer()),
-                new LongPointer(hostShapeInfoPointers).address()
-        };
+                AddressRetriever.retrieveHostPointer(toConcat[0].shapeInfoDataBuffer()),
+                AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
+                new LongPointer(hostShapeInfoPointers)
+        );
 
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(
                     extras,
                     dimension,
                     toConcat.length,
-                    new long[] {dataPointer},
-                    new long[] {shapesPointer},
+                    new PointerPointer(new Pointer[] {dataPointer}),
+                    new PointerPointer(new Pointer[] {shapesPointer}),
                     dZ,
                     dZShapeInfo,
-                    new long[] {tadPointer},
-                    new long[] {offsetPointer});
+                    new PointerPointer(new Pointer[] {tadPointer}),
+                    new PointerPointer(new Pointer[] {offsetPointer}));
         }
         else {
             nativeOps.concatFloat(
                     extras,
                     dimension,
                     toConcat.length,
-                    new long[] {dataPointer},
-                    new long[] {shapesPointer},
+                    new PointerPointer(new Pointer[] {dataPointer}),
+                    new PointerPointer(new Pointer[] {shapesPointer}),
                     dZ,
                     dZShapeInfo,
-                    new long[] {tadPointer},
-                    new long[] {offsetPointer});
+                    new PointerPointer(new Pointer[] {tadPointer}),
+                    new PointerPointer(new Pointer[] {offsetPointer}));
 
         }
 

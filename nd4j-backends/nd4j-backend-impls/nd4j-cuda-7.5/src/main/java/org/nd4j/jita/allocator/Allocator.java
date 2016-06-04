@@ -108,6 +108,9 @@ public interface Allocator {
      */
      Integer getDeviceId();
 
+    /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
+    Pointer getDeviceIdPointer();
+
     /**
      *  This method allocates required chunk of memory
      *

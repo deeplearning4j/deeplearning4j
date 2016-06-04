@@ -804,6 +804,29 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return labels;
     }
 
+    /**
+     * @param idx the index to pull the string label value out of the list if it exists
+     * @return the label name
+     */
+    @Override
+    public String getLabelName(int idx) {
+        return labelNames.get(idx);
+    }
+
+    /**
+     * @param idxs list of index to pull the string label value out of the list if it exists
+     * @return the label name
+     */
+    @Override
+    public List<String> getLabelNames(INDArray idxs) {
+        List<String> ret = new ArrayList<>();
+        for(int i = 0; i < idxs.length(); i++) {
+            ret.add(i, getLabelName(i));
+        }
+        return ret;
+
+    }
+
     @Override
     public void setLabels(INDArray labels) {
         this.labels = labels;
@@ -1014,8 +1037,20 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *
      * @return
      */
+    @Deprecated
     @Override
     public List<String> getLabelNames() {
+        return labelNames;
+    }
+
+
+    /**
+     * Gets the optional label names
+     *
+     * @return
+     */
+    @Override
+    public List<String> getLabelNamesList() {
         return labelNames;
     }
 

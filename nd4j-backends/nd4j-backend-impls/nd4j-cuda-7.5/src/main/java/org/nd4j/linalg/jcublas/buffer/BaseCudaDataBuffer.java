@@ -131,7 +131,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
         this.allocationMode = AllocationMode.JAVACPP;
-
+        initTypeAndSize();
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
@@ -177,7 +177,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, long length, long offset) {
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.allocationMode = AllocationMode.JAVACPP;
-
+        initTypeAndSize();
         this.wrappedDataBuffer = underlyingBuffer;
         this.originalBuffer = underlyingBuffer.originalDataBuffer() == null ? underlyingBuffer : underlyingBuffer.originalDataBuffer();
         this.length = length;
@@ -223,7 +223,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(double[] data) {
-       // super(data);
+        // super(data);
         this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : 4, false);
         set(data, data.length, 0, 0);
     }
@@ -284,7 +284,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
         }
-     //   allocator.synchronizeHostData(this);
+        //   allocator.synchronizeHostData(this);
     }
 
     /**
@@ -622,7 +622,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean sameUnderlyingData(DataBuffer buffer) {
-            return buffer.getTrackingPoint() == getTrackingPoint();
+        return buffer.getTrackingPoint() == getTrackingPoint();
     }
 
     /**
@@ -648,7 +648,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             allocationMode = AllocationMode.JAVACPP;
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
-    //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
+            //        log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if(t == Type.DOUBLE) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize), false);
@@ -703,7 +703,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.wrappedBuffer = this.pointer .asByteBuffer();
             this.wrappedBuffer.order(ByteOrder.nativeOrder());
 
-      //      log.info("wrappedBuffer: length: ["+ wrappedBuffer.capacity()+"]");
+            //      log.info("wrappedBuffer: length: ["+ wrappedBuffer.capacity()+"]");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

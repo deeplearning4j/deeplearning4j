@@ -20,6 +20,8 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -493,7 +495,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             length += m.length();
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
-        long[] dummy = new long[1];
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
         for(INDArray m : matrices) {
             if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
                     && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
@@ -518,20 +520,20 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                             dummy,
                             linearIndex,
                             order,
-                            ret.data().address(),
-                            ret.shapeInfoDataBuffer().address(),
-                            m.data().address(),
-                            m.shapeInfoDataBuffer().address());
+                            ret.data().addressPointer(),
+                            ret.shapeInfoDataBuffer().addressPointer(),
+                            m.data().addressPointer(),
+                            m.shapeInfoDataBuffer().addressPointer());
                 }
                 else if(m.data().dataType() == DataBuffer.Type.FLOAT) {
                     nativeOps.flattenFloat(
                             dummy,
                             linearIndex,
                             order,
-                            ret.data().address(),
-                            ret.shapeInfoDataBuffer().address(),
-                            m.data().address(),
-                            m.shapeInfoDataBuffer().address());
+                            ret.data().addressPointer(),
+                            ret.shapeInfoDataBuffer().addressPointer(),
+                            m.data().addressPointer(),
+                            m.shapeInfoDataBuffer().addressPointer());
 
                 }
                 else {
@@ -562,8 +564,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-        long[] shapeInfoPointers = new long[toConcat.length];
-        long[] dataPointers = new long[toConcat.length];
+        PointerPointer shapeInfoPointers = new PointerPointer(toConcat.length);
+        PointerPointer dataPointers = new PointerPointer(toConcat.length);
 
         int sumAlongDim = 0;
 
@@ -571,8 +573,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
 
         for(int i = 0; i < toConcat.length; i++) {
-            shapeInfoPointers[i] = toConcat[i].shapeInfoDataBuffer().address();
-            dataPointers[i] = toConcat[i].data().address();
+            shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
+            dataPointers.put(i, toConcat[i].data().addressPointer());
             sumAlongDim += toConcat[i].size(dimension);
             for(int j = 0; j < toConcat[i].rank(); j++)
                 if(j != dimension) {
@@ -584,7 +586,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         outputShape[dimension] = sumAlongDim;
 
-        long dummy[] = new long[1];
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
         INDArray ret = Nd4j.createUninitialized(outputShape,Nd4j.order());
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -594,10 +596,10 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     toConcat.length,
                     dataPointers,
                     shapeInfoPointers,
-                    ret.data().address(),
-                    ret.shapeInfoDataBuffer().address(),
-                    new long[] {0},
-                    new long[] {0}
+                    ret.data().addressPointer(),
+                    ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[] {null}),
+                    new PointerPointer(new Pointer[] {null})
             );
         }
         else {
@@ -607,10 +609,10 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     toConcat.length,
                     dataPointers,
                     shapeInfoPointers,
-                    ret.data().address(),
-                    ret.shapeInfoDataBuffer().address(),
-                    new long[] {0},
-                    new long[] {0}
+                    ret.data().addressPointer(),
+                    ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[] {null}),
+                    new PointerPointer(new Pointer[] {null})
             );
 
         }

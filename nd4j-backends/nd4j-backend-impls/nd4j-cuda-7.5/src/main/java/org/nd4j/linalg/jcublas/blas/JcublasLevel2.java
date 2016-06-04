@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
@@ -33,14 +35,14 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
 
-            nd4jBlas.sgemv(new long[]{ctx.getHandle().address()},
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
-                    lda, cBPointer.getDevicePointer().address(),
+            nd4jBlas.sgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer(),
+                    lda, cBPointer.getDevicePointer(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer().address(),
+                    cCPointer.getDevicePointer(),
                     incY);
         }
 
@@ -98,14 +100,14 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            nativeOps.setBlasStream(handle.address(), ctx.getOldStream().address());
+            nativeOps.setBlasStream(handle, ctx.getOldStream());
 
-            nd4jBlas.dgemv(new long[]{ctx.getHandle().address()},
-                    order, TransA, M, N, alpha, cAPointer.getDevicePointer().address(),
-                    lda, cBPointer.getDevicePointer().address(),
+            nd4jBlas.dgemv(new PointerPointer(new Pointer[] {ctx.getHandle()}),
+                    order, TransA, M, N, alpha, cAPointer.getDevicePointer(),
+                    lda, cBPointer.getDevicePointer(),
                     incX,
                     beta,
-                    cCPointer.getDevicePointer().address(),
+                    cCPointer.getDevicePointer(),
                     incY);
         }
 

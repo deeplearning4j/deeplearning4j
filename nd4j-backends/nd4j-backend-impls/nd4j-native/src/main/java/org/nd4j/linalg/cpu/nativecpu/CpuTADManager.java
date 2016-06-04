@@ -2,6 +2,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,11 +58,11 @@ public class CpuTADManager implements TADManager {
                 DataBuffer offsetsBuffer = new IntBuffer(offsetLength);
 
                 DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension);
-                long dimensionPointer = dimensionBuffer.address();
+                Pointer dimensionPointer = dimensionBuffer.addressPointer();
 
-                long xShapeInfo = array.shapeInfoDataBuffer().address();
-                long targetPointer = outputBuffer.address();
-                long offsetsPointer = offsetsBuffer.address();
+                Pointer xShapeInfo = array.shapeInfoDataBuffer().addressPointer();
+                Pointer targetPointer = outputBuffer.addressPointer();
+                Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
                 nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimension.length, targetPointer, offsetsPointer);
 

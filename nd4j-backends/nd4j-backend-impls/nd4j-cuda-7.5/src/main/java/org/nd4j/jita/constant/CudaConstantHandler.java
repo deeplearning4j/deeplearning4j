@@ -1,5 +1,6 @@
 package org.nd4j.jita.constant;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -35,7 +36,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
     protected Map<Integer, Semaphore> deviceLocks = new ConcurrentHashMap<>();
 
     protected Map<Integer, Map<ArrayDescriptor, DataBuffer>> buffersCache = new HashMap<>();
-    protected Map<Integer, Long> deviceAddresses = new HashMap<>();
+    protected Map<Integer, Pointer> deviceAddresses = new HashMap<>();
     private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     protected FlowController flowController;
@@ -62,7 +63,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         if (currentOffset + requiredMemoryBytes >= 49152 || requiredMemoryBytes > 272)  {
-            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
             point.setConstant(true);
@@ -73,7 +74,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
         if (currentOffset >= 49152)  {
-            nativeOps.memcpyAsync(point.getPointers().getDevicePointer().address(), point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+            nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
             point.setConstant(true);
@@ -83,10 +84,10 @@ public class CudaConstantHandler extends BasicConstantHandler {
         }
 
 
-        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer().address(), requiredMemoryBytes, 1, context.getSpecialStream().getNativePointer());
+        nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
         flowController.commitTransfer(context.getSpecialStream());
 
-        long cAddr = deviceAddresses.get(deviceId).longValue()  + currentOffset;
+        long cAddr = deviceAddresses.get(deviceId).address() + currentOffset;
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);
         point.tickDeviceWrite();
@@ -109,7 +110,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
                     constantOffsets.put(deviceId, new AtomicLong(0));
                     deviceLocks.put(deviceId, new Semaphore(1));
 
-                    long cAddr = nativeOps.getConstantSpace();
+                    Pointer cAddr = nativeOps.getConstantSpace();
          //           logger.info("Got constant address: [{}]", cAddr);
 
                     deviceAddresses.put(deviceId, cAddr);
