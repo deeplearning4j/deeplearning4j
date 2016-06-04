@@ -16,6 +16,8 @@
 
 package org.arbiter.optimize.candidategenerator;
 
+import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.arbiter.optimize.api.CandidateGenerator;
 import org.arbiter.optimize.api.OptimizationResult;
 import org.arbiter.optimize.api.ParameterSpace;
@@ -32,6 +34,7 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
 
     protected ParameterSpace<T> parameterSpace;
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
+    protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
 
     public BaseCandidateGenerator(ParameterSpace<T> parameterSpace){
         this.parameterSpace = parameterSpace;

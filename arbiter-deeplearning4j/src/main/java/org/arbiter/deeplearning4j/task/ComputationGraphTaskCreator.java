@@ -18,7 +18,7 @@
 package org.arbiter.deeplearning4j.task;
 
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.arbiter.deeplearning4j.GraphConfiguration;
 import org.arbiter.deeplearning4j.listener.UIGraphStatusReportingListener;
 import org.arbiter.optimize.api.Candidate;
@@ -95,7 +95,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                 } catch(Exception e){
                     dl4jListener.postReport(Status.Failed, null,
                             new RenderableComponentString("Unexpected exception during model training\n"),
-                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
                     throw e;
                 }
 
@@ -127,7 +127,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                 } catch (Exception e) {
                     dl4jListener.postReport(Status.Failed, esResult,
                             new RenderableComponentString("Failed during additional evaluation stage\n"),
-                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
                 }
             }
 
@@ -141,7 +141,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                 } catch (Exception e) {
                     dl4jListener.postReport(Status.Failed, esResult,
                             new RenderableComponentString("Failed during score calculation stage\n"),
-                            new RenderableComponentString(ExceptionUtils.getFullStackTrace(e)));
+                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
                 }
             }
 

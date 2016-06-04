@@ -20,9 +20,9 @@ package org.arbiter.optimize.api;
 /**A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
  * This abstraction allows for different ways of generating the next configuration to test; for example,
  * random search, grid search, Bayesian optimization methods, etc.
- * @param <T> Type of candidate to generate
+ * @param <C> Type of candidate to generate
  */
-public interface CandidateGenerator<T> {
+public interface CandidateGenerator<C> {
 
     /** Is this candidate generator able to generate more candidates? This will always return true in some
      * cases, but some search strategies have a limit (grid search, for example)
@@ -30,10 +30,10 @@ public interface CandidateGenerator<T> {
     boolean hasMoreCandidates();
 
     /** Generate a candidate hyperparameter configuration */
-    Candidate<T> getCandidate();
+    Candidate<C> getCandidate();
 
-    void reportResults(OptimizationResult<T,?,?> result);
+    void reportResults(OptimizationResult<C,?,?> result);
 
-    ParameterSpace<T> getParameterSpace();
+    ParameterSpace<C> getParameterSpace();
 
 }

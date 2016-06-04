@@ -19,7 +19,6 @@ package org.arbiter.optimize.candidategenerator;
 
 import org.arbiter.optimize.api.Candidate;
 import org.arbiter.optimize.api.ParameterSpace;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**RandomSearchGenerator: generates candidates at random.<br>
  * Note: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
@@ -44,7 +43,9 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public Candidate<T> getCandidate() {
-        double[] randomValues = Nd4j.rand(1,parameterSpace.numParameters()).data().asDouble();
+
+        double[] randomValues = new double[parameterSpace.numParameters()];
+        for( int i=0; i<randomValues.length; i++ ) randomValues[i] = rng.nextDouble();
 
         return new Candidate<T>(parameterSpace.getValue(randomValues),candidateCounter.getAndIncrement(),randomValues);
     }

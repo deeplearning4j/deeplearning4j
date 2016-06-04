@@ -17,13 +17,11 @@
  */
 package org.arbiter.deeplearning4j.multilayernetwork;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.arbiter.deeplearning4j.layers.DenseLayerSpace;
-import org.arbiter.optimize.parameter.FixedValue;
 import org.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.junit.Test;
 
 import java.util.List;
