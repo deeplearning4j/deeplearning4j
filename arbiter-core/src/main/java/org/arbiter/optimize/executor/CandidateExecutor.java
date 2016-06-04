@@ -24,13 +24,12 @@ import org.arbiter.optimize.api.data.DataProvider;
 import org.arbiter.optimize.api.score.ScoreFunction;
 
 import java.util.List;
-import java.util.concurrent.Future;
 
-public interface CandidateExecutor<T,M,D,A> {
+public interface CandidateExecutor<C,M,D,A> {
 
-    ListenableFuture<OptimizationResult<T,M,A>> execute(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    ListenableFuture<OptimizationResult<C,M,A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
 
-    List<ListenableFuture<OptimizationResult<T,M,A>>> execute(List<Candidate<T>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    List<ListenableFuture<OptimizationResult<C,M,A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
 
     int maxConcurrentTasks();
 
