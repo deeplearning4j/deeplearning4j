@@ -102,7 +102,13 @@ template<typename OpType>
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T startingVal = this->startingValue(dx);
 
-				__shared__ T extraZ[2];
+				// FIXME: this ugly fast fix.
+				__shared__ T extras[2];
+				T *extraZ = (T *) &extras;
+				if (threadIdx.x == 0) {
+					extraZ[0] = (T) 0.0;
+					extraZ[1] = (T) 0.0;
+				}
 
 				sPartials[threadIdx.x] = startingVal;
 
@@ -154,7 +160,13 @@ template<typename OpType>
 //		SharedMemory <T> val;
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
-				__shared__ T extraZ[2];
+				// FIXME: this ugly fast fix.
+				__shared__ T extras[2];
+				T *extraZ = (T *) &extras;
+				if (threadIdx.x == 0) {
+					extraZ[0] = (T) 0.0;
+					extraZ[1] = (T) 0.0;
+				}
 
 				T startingVal = OpType::startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
@@ -289,7 +301,13 @@ template<typename OpType>
 				T init = OpType::startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
-
+				// FIXME: this ugly fast fix.
+				__shared__ T extras[2];
+				T *extraZ = (T *) &extras;
+				if (threadIdx.x == 0) {
+					extraZ[0] = (T) 0.0;
+					extraZ[1] = (T) 0.0;
+				}
 				//length for the tad
 
 				__shared__ Nd4jIndex resultLength;
@@ -364,7 +382,7 @@ template<typename OpType>
 										/* Process the innermost dimension */
 										T *xIter = dx;
 										T *yIter = dy;
-										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraParams),&extraParams);
+										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraZ),&extraZ);
 									} ND4J_RAW_ITER_TWO_NEXT(dim,
 															 rank,
 															 coord,
@@ -374,7 +392,7 @@ template<typename OpType>
 															 dy,
 															 yStridesIter);
 
-								result[i] = OpType::postProcess(startingVal,n,&extraParams);
+								result[i] = OpType::postProcess(startingVal,n,&extraZ);
 							}
 							else {
 								printf("Unable to prepare array\n");
@@ -426,10 +444,10 @@ template<typename OpType>
 
 							sPartials[threadIdx.x] = OpType::op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
 							for(int j = 1; j < tadLength; j++) {
-								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraParams), &extraParams);
+								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraZ), &extraZ);
 							}
 
-							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength,&extraParams);
+							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength,&extraZ);
 						}
 
 					}
@@ -554,13 +572,16 @@ template<typename OpType>
 			static T execScalar(
 					T *x,
 					int *xShapeInfo,
-					T *extraParamsVals,
+					T *extraParams,
 					T *y,
 					int *yShapeInfo) {
 				T startingVal = OpType::startingValue(x);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+
+				T extraParamz[2];
+				T *extraParamsVals = (T *) &extraParamz;
 
 				for(int i = 0; i < OpType::extraParamsLen;i++) {
 					extraParamsVals[i] = startingVal;
@@ -644,13 +665,17 @@ template<typename OpType>
 
 template<typename OpType>
 			static void exec(T *x, int *xShapeInfo,
-					  T *extraParamsVals,
+					  T *extraParams,
 					  T *y,
 					  int *yShapeInfo,
 					  T *result,
 					  int *resultShapeInfoBuffer,
 					  int *dimension,
 					  int dimensionLength) {
+
+				T extraParamz[2];
+				T *extraParamsVals = (T *) &extraParamz;
+
 				if(shape::isScalar(resultShapeInfoBuffer)) {
 					result[0] = execScalar<OpType>(
 							x,
