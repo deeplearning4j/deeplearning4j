@@ -1,8 +1,10 @@
 package org.nd4j.jita.allocator.context.impl;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.context.ContextPool;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -123,7 +125,7 @@ public class BasicContextPool implements ContextPool {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
                     logger.debug("Reusing context: " + rand);
 
-                    nativeOps.setDevice(deviceId);
+                    nativeOps.setDevice(new CudaPointer(deviceId));
 
                     CudaContext context = contextsForDevices.get(deviceId).get(rand);
 
@@ -144,7 +146,7 @@ public class BasicContextPool implements ContextPool {
     protected CudaContext createNewStream(Integer deviceId) {
         logger.debug("Creating new stream for device ["+deviceId+"]...");
         //JCuda.cudaSetDevice(deviceId);
-        nativeOps.setDevice(deviceId);
+        nativeOps.setDevice(new CudaPointer(deviceId));
 
         CudaContext context = new CudaContext();
         context.initOldStream();
@@ -160,7 +162,7 @@ public class BasicContextPool implements ContextPool {
         cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
         //JCublas2.cublasCreate(handle);
         //JCublas2.cublasSetStream(handle,stream);
-        //nativeOps.setBlasStream(handle.address(), stream.address());
+        //nativeOps.setBlasStream(handle, stream));
 
         return handle;
     }
@@ -225,20 +227,20 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        long  reductionPointer = nativeOps.mallocDevice(2049 * sizeOf * 2, deviceId, 0);
-        if (reductionPointer == 0)
+        Pointer  reductionPointer = nativeOps.mallocDevice(2049 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream().address());
+        nativeOps.memsetAsync(reductionPointer, 0, 2049 * sizeOf * 2, 0, context.getOldStream());
 
         context.syncOldStream();
 
-        long  allocationPointer = nativeOps.mallocDevice(1024 * 1024, deviceId, 0);
-        if (allocationPointer == 0)
+        Pointer  allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
+        if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        long  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
-        if (scalarPointer == 0)
+        Pointer  scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
+        if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
    //     Pointer dPtr = new Pointer();
@@ -254,8 +256,8 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        long  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, deviceId, 0);
-        if (specialPointer == 0)
+        Pointer  specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
+        if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 /*
         dPtr = new Pointer();
@@ -267,7 +269,7 @@ public class BasicContextPool implements ContextPool {
                 0);
 */
 //        JCuda.cudaMemsetAsync(dPtr,0,65536 * sizeOf, context.getOldStream());
-        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream().address());
+        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream());
 
         context.setBufferSpecial(specialPointer);
     }

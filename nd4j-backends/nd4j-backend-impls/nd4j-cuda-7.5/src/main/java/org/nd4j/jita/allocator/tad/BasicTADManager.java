@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator.tad;
 
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,11 +49,11 @@ public class BasicTADManager implements TADManager {
             DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);
 
             DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
-            long dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer).address();
+            Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
 
-            long xShapeInfo = AddressRetriever.retrieveHostAddress(array.shapeInfoDataBuffer());
-            long targetPointer = AddressRetriever.retrieveHostAddress(outputBuffer);
-            long offsetsPointer = AddressRetriever.retrieveHostAddress(offsetsBuffer);
+            Pointer xShapeInfo = AddressRetriever.retrieveHostPointer(array.shapeInfoDataBuffer());
+            Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
+            Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
 
             nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimensionLength, targetPointer, offsetsPointer);
 
