@@ -135,8 +135,8 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public void clear(){
-        for( int i=0; i<inputs.length; i++ ) inputs[i] = null;
-        for( int i=0; i< epsilons.length; i++ ) epsilons[i] = null;
+        for (int i = 0; i < inputs.length; i++) inputs[i] = null;
+        for (int i = 0; i < epsilons.length; i++) epsilons[i] = null;
     }
 
     @Override
