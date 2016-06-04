@@ -148,6 +148,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public boolean canDoBackward(){
         for (INDArray input : inputs) if (input == null) return false;
+        for (INDArray epsilon : epsilons) if (epsilon == null) return false;
         return true;
     }
 
