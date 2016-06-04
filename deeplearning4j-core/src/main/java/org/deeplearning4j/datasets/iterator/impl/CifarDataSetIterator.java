@@ -181,6 +181,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
         DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
         last = ret;
         if(preProcessor != null) preProcessor.preProcess(ret);
+        if ( loader.getLabels() != null) ret.setLabelNames(loader.getLabels());
         return ret;
     }
 
