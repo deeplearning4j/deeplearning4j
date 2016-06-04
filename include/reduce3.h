@@ -42,7 +42,7 @@ namespace functions {
 #ifdef __CUDACC__
 			virtual __device__
 
-			inline T opAtomic(T d1, T d2, T **extraParamsRef) = 0;
+			inline T opAtomic(T d1, T d2, T *extraParamsRef) = 0;
 #endif
 
 #ifdef __CUDACC__
@@ -53,7 +53,7 @@ namespace functions {
      * @param extraParams
      */
 template<typename OpType>
-			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T **extraParamsRef) {
+			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T *extraParamsRef) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
@@ -103,14 +103,13 @@ template<typename OpType>
 				T startingVal = this->startingValue(dx);
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extras[2];
-				T *extraZ = (T *) &extras;
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
 				}
-
 				sPartials[threadIdx.x] = startingVal;
+				__syncthreads();
 
                 int idx[MAX_RANK];
 #pragma unroll
@@ -118,12 +117,12 @@ template<typename OpType>
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraZ), &extraZ);
+					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 
 				}
 
 				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), &extraZ);
+				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraZ);
 				/**
                  * Look at something that uses the extra params
                  * and aggregates the extra values propelry.
@@ -132,7 +131,7 @@ template<typename OpType>
 				// write result for this block to global mem
 				if (threadIdx.x == 0) {
 					if (postProcessOrNot) {
-						result[blockIdx.x] = postProcess(sPartials[0], n,&extraZ);
+						result[blockIdx.x] = postProcess(sPartials[0], n, extraZ);
 					}
 					else {
 						result[blockIdx.x] = sPartials[0];
@@ -161,12 +160,12 @@ template<typename OpType>
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extras[2];
-				T *extraZ = (T *) &extras;
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
 				}
+				__syncthreads();
 
 				T startingVal = OpType::startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
@@ -178,12 +177,12 @@ template<typename OpType>
 				if(xOrder == yOrder) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], &extraZ), &extraZ);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], extraZ), extraZ);
 						}
 					}
 					else {
 						for(int i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraZ), &extraZ);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], extraZ), extraZ);
 						}
 					}
 
@@ -192,11 +191,11 @@ template<typename OpType>
 
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials<OpType>(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraZ);
+					aggregatePartials<OpType>(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
 
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = OpType::postProcess(sPartials[0], length,&extraZ);
+						result[0] = OpType::postProcess(sPartials[0], length, extraZ);
 					}
 				}
 
@@ -235,7 +234,7 @@ template<typename OpType>
 						shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
 						Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 						Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], &extraZ),&extraZ);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 					}
 
 /*
@@ -245,7 +244,7 @@ template<typename OpType>
 */
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraZ);
+					aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
 					/**
                      * Look at something that uses the extra params
                      * and aggregates the extra values propelry.
@@ -254,7 +253,7 @@ template<typename OpType>
 					// write result for this block to global mem
 					__syncthreads();
 					if (tid == 0) {
-						result[tid] = OpType::postProcess(sPartials[0], n, &extraZ);
+						result[tid] = OpType::postProcess(sPartials[0], n, extraZ);
 					}
 				}
 
@@ -302,12 +301,12 @@ template<typename OpType>
 				sPartials[threadIdx.x] = init;
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extras[2];
-				T *extraZ = (T *) &extras;
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
 				}
+				__syncthreads();
 				//length for the tad
 
 				__shared__ Nd4jIndex resultLength;
@@ -382,7 +381,7 @@ template<typename OpType>
 										/* Process the innermost dimension */
 										T *xIter = dx;
 										T *yIter = dy;
-										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraZ),&extraZ);
+										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0], extraZ), extraZ);
 									} ND4J_RAW_ITER_TWO_NEXT(dim,
 															 rank,
 															 coord,
@@ -392,7 +391,7 @@ template<typename OpType>
 															 dy,
 															 yStridesIter);
 
-								result[i] = OpType::postProcess(startingVal,n,&extraZ);
+								result[i] = OpType::postProcess(startingVal, n, extraZ);
 							}
 							else {
 								printf("Unable to prepare array\n");
@@ -442,12 +441,12 @@ template<typename OpType>
 							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
 							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
 
-							sPartials[threadIdx.x] = OpType::op(dx[xOffsetForTad],dy[yOffsetForTad], &extraParams);
+							sPartials[threadIdx.x] = OpType::op(dx[xOffsetForTad],dy[yOffsetForTad], extraZ);
 							for(int j = 1; j < tadLength; j++) {
-								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], &extraZ), &extraZ);
+								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], extraZ), extraZ);
 							}
 
-							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength,&extraZ);
+							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
 						}
 
 					}
@@ -580,12 +579,8 @@ template<typename OpType>
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-				T extraParamz[2];
-				T *extraParamsVals = (T *) &extraParamz;
+				T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
 
-				for(int i = 0; i < OpType::extraParamsLen;i++) {
-					extraParamsVals[i] = startingVal;
-				}
 
 				char xOrder = shape::order(xShapeInfo);
 				char yOrder = shape::order(yShapeInfo);
@@ -593,20 +588,20 @@ template<typename OpType>
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 #pragma omp simd
 						for(int i = 0; i < length; i++) {
-							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i], extraParamsVals), extraParamsVals);
 						}
 
-						return  OpType::postProcess(startingVal, length,&(extraParamsVals));
+						return  OpType::postProcess(startingVal, length, extraParamsVals);
 
 					}
 
 					else {
 #pragma omp simd
 						for(Nd4jIndex i = 0; i < length; i++) {
-							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride],&extraParamsVals),&extraParamsVals);
+							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
 						}
 
-						return   OpType::postProcess(startingVal, length,&(extraParamsVals));
+						return  OpType::postProcess(startingVal, length, extraParamsVals);
 					}
 
 				}
@@ -640,7 +635,7 @@ template<typename OpType>
 								/* Process the innermost dimension */
 								T *xIter = x;
 								T *yIter = y;
-								startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0], extraParamsVals), extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -650,7 +645,7 @@ template<typename OpType>
 													 y,
 													 yStridesIter);
 
-						return OpType::postProcess(startingVal,n,&extraParamsVals);
+						return OpType::postProcess(startingVal, n, extraParamsVals);
 					}
 					else {
 						printf("Unable to prepare array\n");
@@ -673,8 +668,8 @@ template<typename OpType>
 					  int *dimension,
 					  int dimensionLength) {
 
-				T extraParamz[2];
-				T *extraParamsVals = (T *) &extraParamz;
+				T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
+
 
 				if(shape::isScalar(resultShapeInfoBuffer)) {
 					result[0] = execScalar<OpType>(
@@ -724,7 +719,7 @@ template<typename OpType>
 								T *yIter = y;
 								Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
 								int reductionIndex = xOffset / resultLength;
-								result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(xIter[0],yIter[0],&extraParamsVals),&extraParamsVals);
+								result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(xIter[0],yIter[0], extraParamsVals), extraParamsVals);
 							} ND4J_RAW_ITER_TWO_NEXT(dim,
 													 rank,
 													 coord,
@@ -737,7 +732,7 @@ template<typename OpType>
 
 #pragma  omp parallel for
 						for(Nd4jIndex i = 0; i < resultLength ;i++) {
-							result[i] = OpType::postProcess(result[i],tadLength,&extraParamsVals);
+							result[i] = OpType::postProcess(result[i],tadLength, extraParamsVals);
 						}
 					}
 
@@ -774,12 +769,12 @@ template<typename OpType>
 						}
 
 						Nd4jIndex offset = xTad.tadOffsets[i];
-						result[i] = OpType::op(x[offset], y[offset],&localExtraParams);
+						result[i] = OpType::op(x[offset], y[offset], localExtraParams);
 						for(int j = 1; j < tadLength; j++) {
-							result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], &localExtraParams), &localExtraParams);
+							result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], localExtraParams), localExtraParams);
 						}
 
-						result[i] = OpType::postProcess(result[i],tadLength,&localExtraParams);
+						result[i] = OpType::postProcess(result[i],tadLength, localExtraParams);
 
 						if(localExtraParams != nullptr)
 							delete[] localExtraParams;
