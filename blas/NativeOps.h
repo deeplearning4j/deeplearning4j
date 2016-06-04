@@ -893,7 +893,7 @@ public:
      * @param memorySize memory size, in bytes
      * @param flags optional parameter
      */
-    Nd4jPointer mallocHost(long memorySize, int flags);
+    Nd4jPointer mallocHost(Nd4jIndex memorySize, int flags);
 
     /**
      * This method acquires memory chunk of requested size on specified device
@@ -903,14 +903,14 @@ public:
      * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
      * @param flags optional parameter
      */
-    Nd4jPointer mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags);
+    Nd4jPointer mallocDevice(Nd4jIndex memorySize, Nd4jPointer ptrToDeviceId, int flags);
 
     /**
      * This method releases previously allocated host memory space
      *
      * @param pointer pointer that'll be freed
      */
-    Nd4jPointer freeHost(Nd4jPointer pointer);
+    int freeHost(Nd4jPointer pointer);
 
     /**
      * This method releases previously allocated memory space on device
@@ -918,7 +918,7 @@ public:
      * @param pointer pointer that'll be freed
      * @param ptrToDeviceId pointer to deviceId.
      */
-    Nd4jPointer freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
+    int freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
 
     int ompGetNumThreads();
 
@@ -934,35 +934,35 @@ public:
 
     Nd4jPointer createBlasHandle();
 
-    Nd4jPointer registerEvent(Nd4jPointer event, Nd4jPointer stream);
+    int registerEvent(Nd4jPointer event, Nd4jPointer stream);
 
-    Nd4jPointer destroyEvent(Nd4jPointer event);
+    int destroyEvent(Nd4jPointer event);
 
-    Nd4jPointer setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
+    int setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
 
-    Nd4jPointer setDevice(Nd4jPointer ptrToDeviceId);
+    int setDevice(Nd4jPointer ptrToDeviceId);
 
-    Nd4jPointer streamSynchronize(Nd4jPointer stream);
+    int streamSynchronize(Nd4jPointer stream);
 
-    Nd4jPointer eventSynchronize(Nd4jPointer event);
+    int eventSynchronize(Nd4jPointer event);
 
-    long getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jIndex getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
 
-    long getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jIndex getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
 
-    Nd4jPointer memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+    int memcpy(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+    int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
+    int memset(Nd4jPointer dst, int value, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memsetAsync(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved);
+    int memsetAsync(Nd4jPointer dst, int value, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
-    Nd4jPointer memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved);
+    int memcpyConstantAsync(Nd4jIndex dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved);
 
     Nd4jPointer getConstantSpace();
 
-    Nd4jPointer getAvailableDevices();
+    int getAvailableDevices();
 
     void enableDebugMode(bool reallyEnable);
 
