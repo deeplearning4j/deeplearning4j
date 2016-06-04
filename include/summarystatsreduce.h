@@ -26,6 +26,11 @@
 #endif
 
 #include <ops.h>
+#include <op_boilerplate.h>
+
+#define SUMMARY_STATS_OPS \
+        (0, simdOps::SummaryStatsVariance), \
+        (1, simdOps::SummaryStatsStandardDeviation)
 
 
 namespace functions {
@@ -580,7 +585,7 @@ template<typename OpType>
 
 
 	static inline __device__ void transform(
-		const int op,
+		const int opNum,
 		T *dx,
 		int *xShapeInfo,
 		T *extraParams,
@@ -594,38 +599,22 @@ template<typename OpType>
 		UnifiedSharedMemory *manager,
 		int *tadOnlyShapeInfo,
 		int *tadOffsets) {
-
-		if (op == 0)
-			transform<simdOps::SummaryStatsVariance<T>>(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
-		else if (op == 1)
-			transform<simdOps::SummaryStatsStandardDeviation<T>>(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
-		else
-			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
+            DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
 	}
 #endif
 
 
-	static T execScalar(const int op,
+	static T execScalar(const int opNum,
 		const bool biasCorrected,
 		T *x,
 		int *xShapeInfo,
 		T *extraParams) {
-
-		if (op == 0){
-			return execScalar<simdOps::SummaryStatsVariance<T>>(biasCorrected, x, xShapeInfo, extraParams);
-		}
-		else if (op == 1){
-			return execScalar<simdOps::SummaryStatsStandardDeviation<T>>(biasCorrected, x, xShapeInfo, extraParams);
-		}
-		else{
-			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
-			return -1;
-		}
+            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
 	}
 
 
 	static void exec(
-		const int op,
+		const int opNum,
 		const bool biasCorrected,
 		T *x,
 		int *xShapeInfo,
@@ -633,15 +622,7 @@ template<typename OpType>
 		T *result,
 		int *resultShapeInfoBuffer,
 		int *dimension, int dimensionLength) {
-		if (op == 0){
-			exec<simdOps::SummaryStatsVariance<T>>(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength);
-		}
-		else if (op == 1){
-			exec<simdOps::SummaryStatsStandardDeviation<T>>(biasCorrected, x, xShapeInfo, extraParams,result, resultShapeInfoBuffer, dimension, dimensionLength);
-		}
-		else{
-			printf("[ERROR] Unknow opNum=%d for SummaryStatsReduce!\n", op);
-		}
+            DISPATCH_BY_OPNUM(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
 	}
 
 	template<typename OpType>

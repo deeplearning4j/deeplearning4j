@@ -9,6 +9,7 @@
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #pragma once
 #ifdef __CUDACC__
@@ -19,6 +20,20 @@
 #include <jni.h>
 #endif
 
+
+#define REDUCE_OPS \
+        (0, simdOps::Mean), \
+        (1, simdOps::Sum), \
+        (3, simdOps::Max), \
+        (4, simdOps::Min), \
+        (5, simdOps::Norm1), \
+        (6, simdOps::Norm2), \
+        (7, simdOps::NormMax), \
+        (8, simdOps::Prod), \
+        (9, simdOps::StandardDeviation), \
+        (10,simdOps::Variance)
+
+        
 //an op for the kernel
 namespace functions {
     namespace reduce {
@@ -327,7 +342,7 @@ template<typename OpType>
 			}
 
 			static inline __device__  void execScalarCuda(
-			const int op,
+			const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *extraParams,
@@ -336,34 +351,13 @@ template<typename OpType>
 			T *reductionBuffer,
 			UnifiedSharedMemory *manager,
 			int *tadShapeInfo) {
-				if (op == 0)
-					execScalarCuda<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 1)
-					execScalarCuda<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 3)
-					execScalarCuda<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 4)
-					execScalarCuda<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 5)
-					execScalarCuda<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 6)
-					execScalarCuda<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 7)
-					execScalarCuda<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 8)
-					execScalarCuda<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 9)
-					execScalarCuda<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else if (op == 10)
-					execScalarCuda<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo);
-				else
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+                            DISPATCH_BY_OPNUM(execScalarCuda, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, reductionBuffer, manager, tadShapeInfo), REDUCE_OPS);
 			}
 
 
 
 			static inline __device__ void transformCudaXD(
-				const int op,
+				const int opNum,
 				T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -375,34 +369,12 @@ template<typename OpType>
 				UnifiedSharedMemory *manager,
 				int *tadShapeInfo,
 				int *tadOffset) {
-
-				if (op == 0)
-					transformCudaXD<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 1)
-					transformCudaXD<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 3)
-					transformCudaXD<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 4)
-					transformCudaXD<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 5)
-					transformCudaXD<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 6)
-					transformCudaXD<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 7)
-					transformCudaXD<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 8)
-					transformCudaXD<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 9)
-					transformCudaXD<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 10)
-					transformCudaXD<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+                            DISPATCH_BY_OPNUM(transformCudaXD, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset), REDUCE_OPS);
 			}
 
 
 			static inline __device__ void transformCuda6D(
-				const int op,
+				const int opNum,
 				T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -414,33 +386,11 @@ template<typename OpType>
 				UnifiedSharedMemory *manager,
 				int *tadShapeInfo,
 				int *tadOffset) {
-
-				if (op == 0)
-					transformCuda6D<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 1)
-					transformCuda6D<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 3)
-					transformCuda6D<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 4)
-					transformCuda6D<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 5)
-					transformCuda6D<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 6)
-					transformCuda6D<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 7)
-					transformCuda6D<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 8)
-					transformCuda6D<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 9)
-					transformCuda6D<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 10)
-					transformCuda6D<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+                            DISPATCH_BY_OPNUM(transformCuda6D, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset), REDUCE_OPS);
 			}
 
 			static inline __device__ void transformCuda1D(
-				const int op,
+				const int opNum,
 				T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -452,60 +402,15 @@ template<typename OpType>
 				UnifiedSharedMemory *manager,
 				int *tadShapeInfo,
 				int *tadOffset) {
-
-				if (op == 0)
-					transformCuda1D<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 1)
-					transformCuda1D<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 3)
-					transformCuda1D<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 4)
-					transformCuda1D<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 5)
-					transformCuda1D<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 6)
-					transformCuda1D<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 7)
-					transformCuda1D<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 8)
-					transformCuda1D<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 9)
-					transformCuda1D<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else if (op == 10)
-					transformCuda1D<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset);
-				else
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+                            DISPATCH_BY_OPNUM(transformCuda1D, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadShapeInfo, tadOffset), REDUCE_OPS);
 			}
 #endif
 
-			static T execScalar(const int op, T *x, int *xShapeInfo, T *extraParams) {
-				if (op == 0)
-					return execScalar<simdOps::Mean<T>>(x, xShapeInfo, extraParams);
-				else if (op == 1)
-					return execScalar<simdOps::Sum<T>>(x, xShapeInfo, extraParams);
-				else if (op == 3)
-					return execScalar<simdOps::Max<T>>(x, xShapeInfo, extraParams);
-				else if (op == 4)
-					return execScalar<simdOps::Min<T>>(x, xShapeInfo, extraParams);
-				else if (op == 5)
-					return execScalar<simdOps::Norm1<T>>(x, xShapeInfo, extraParams);
-				else if (op == 6)
-					return execScalar<simdOps::Norm2<T>>(x, xShapeInfo, extraParams);
-				else if (op == 7)
-					return execScalar<simdOps::NormMax<T>>(x, xShapeInfo, extraParams);
-				else if (op == 8)
-					return execScalar<simdOps::Prod<T>>(x, xShapeInfo, extraParams);
-				else if (op == 9)
-					return execScalar<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams);
-				else if (op == 10)
-					return execScalar<simdOps::Variance<T>>(x, xShapeInfo, extraParams);
-				else {
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
-					return 0;
-				}
+			static T execScalar(const int opNum, T *x, int *xShapeInfo, T *extraParams) {
+                            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
 			}
 
-			static void exec(const int op,
+			static void exec(const int opNum,
 				T *x,
 				int *xShapeInfo,
 				T *extraParams,
@@ -513,28 +418,7 @@ template<typename OpType>
 				int *resultShapeInfoBuffer,
 				int *dimension,
 				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
-				if (op == 0)
-					exec<simdOps::Mean<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 1)
-					exec<simdOps::Sum<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 3)
-					exec<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 4)
-					exec<simdOps::Min<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 5)
-					exec<simdOps::Norm1<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 6)
-					exec<simdOps::Norm2<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 7)
-					exec<simdOps::NormMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 8)
-					exec<simdOps::Prod<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 9)
-					exec<simdOps::StandardDeviation<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else if (op == 10)
-					exec<simdOps::Variance<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				else
-					printf("[ERROR] Can not use unknown Op with opNum=%d in Reduce!\n", op);
+                            DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_OPS);
 			}
 
 			/**

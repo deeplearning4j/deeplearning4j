@@ -14,6 +14,7 @@
 #include <helper_cuda.h>
 #include <pairwise_util.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -22,6 +23,17 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
+
+#define BROADCAST_OPS \
+       (0, simdOps::Add), \
+       (1, simdOps::Subtract), \
+       (2, simdOps::Multiply), \
+       (3, simdOps::Divide), \
+       (4, simdOps::ReverseDivide), \
+       (5, simdOps::ReverseSubtract), \
+       (6, simdOps::Copy)
+
+  
 namespace functions {
 	namespace broadcast {
 
@@ -100,6 +112,7 @@ template<typename OpType>
 	}
 
 
+            
 		static inline __device__ void transformCuda(const int opNum,
 				T *x,
 				int *xShapeInfo,
@@ -110,22 +123,7 @@ template<typename OpType>
 				int *dimension,
 				int dimensionLength, UnifiedSharedMemory *manager, int *tadShapeInfo, int *tadOffset) {
 
-				if (opNum == 0)
-					transformCuda<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 1)
-					transformCuda<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 2)
-					transformCuda<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 3)
-					transformCuda<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 4)
-					transformCuda<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 5)
-					transformCuda<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else if (opNum == 6)
-					transformCuda<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, manager, tadShapeInfo, tadOffset);
-				else
-					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
+                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension,  dimensionLength, manager, tadShapeInfo, tadOffset), BROADCAST_OPS);
 			}
 #endif
 
@@ -136,30 +134,7 @@ template<typename OpType>
 				T *result,
 				int *dimension,
 				int dimensionLength, int *tadShapeInfo, int *tadOffset) {
-				if (opNum == 0) {
-					exec<simdOps::Add<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 1) {
-					exec<simdOps::Subtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 2) {
-					exec<simdOps::Multiply<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 3) {
-					exec<simdOps::Divide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 4) {
-					exec<simdOps::ReverseDivide<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 5) {
-					exec<simdOps::ReverseSubtract<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else if (opNum == 6) {
-					exec<simdOps::Copy<T>>(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset);
-				}
-				else {
-					printf("[ERROR] Can not Broadcast->exec unknown Op with opNum=%d!\n", opNum);
-				}
+                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset), BROADCAST_OPS);
 			}
 
 			/**
