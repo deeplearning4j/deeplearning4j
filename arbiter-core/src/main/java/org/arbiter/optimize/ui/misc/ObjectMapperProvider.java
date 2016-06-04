@@ -19,7 +19,6 @@ package org.arbiter.optimize.ui.misc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import javax.ws.rs.ext.ContextResolver;
 

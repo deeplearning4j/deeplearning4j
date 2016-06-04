@@ -19,7 +19,6 @@ package org.arbiter.optimize.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 import java.util.Map;
