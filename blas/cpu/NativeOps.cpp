@@ -1912,7 +1912,7 @@ void NativeOps::initializeDevicesAndFunctions() {
        * @param memorySize memory size, in bytes
        * @param flags optional parameter
        */
-Nd4jPointer NativeOps::mallocHost(long memorySize, int flags) {
+Nd4jPointer NativeOps::mallocHost(Nd4jIndex memorySize, int flags) {
     Nd4jPointer pointer = (Nd4jPointer) malloc(memorySize);
     if (pointer == 0)
         return 0L;
@@ -1929,7 +1929,7 @@ Nd4jPointer NativeOps::mallocHost(long memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jIndex memorySize, Nd4jPointer ptrToDeviceId, int flags) {
     // not supported
     return 0L;
 }
@@ -1939,7 +1939,7 @@ Nd4jPointer NativeOps::mallocDevice(long memorySize, Nd4jPointer ptrToDeviceId, 
  *
  * @param pointer pointer that'll be freed
  */
-Nd4jPointer NativeOps::freeHost(Nd4jPointer pointer) {
+int NativeOps::freeHost(Nd4jPointer pointer) {
     free((void *) pointer);
     return 1L;
 }
@@ -1952,7 +1952,7 @@ Nd4jPointer NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-Nd4jPointer NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
     // not supported
     return 0L;
 }
@@ -1989,55 +1989,55 @@ Nd4jPointer NativeOps::createBlasHandle() {
     return 0L;
 }
 
-Nd4jPointer NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
+int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
+int NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
+int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
-long NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jIndex NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
-long NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jIndex NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+int NativeOps::memcpy(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+int NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memset(Nd4jPointer dst, int value, long size, int flags, Nd4jPointer reserved) {
+int NativeOps::memset(Nd4jPointer dst, int value, Nd4jIndex size, int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::memsetAsync(Nd4jPointer dst, int value, long size,  int flags, Nd4jPointer reserved) {
+int NativeOps::memsetAsync(Nd4jPointer dst, int value, Nd4jIndex size,  int flags, Nd4jPointer reserved) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::destroyEvent(Nd4jPointer event) {
+int NativeOps::destroyEvent(Nd4jPointer event) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::streamSynchronize(Nd4jPointer stream) {
+int NativeOps::streamSynchronize(Nd4jPointer stream) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::eventSynchronize(Nd4jPointer event) {
+int NativeOps::eventSynchronize(Nd4jPointer event) {
     return 0L;
 }
 
-Nd4jPointer NativeOps::getAvailableDevices() {
+int NativeOps::getAvailableDevices() {
     return 0L;
 }
 
@@ -2073,7 +2073,7 @@ void NativeOps::tadOnlyShapeInfo(Nd4jPointer xShapeInfo, Nd4jPointer dimension, 
     delete tad;
 }
 
-Nd4jPointer NativeOps::memcpyConstantAsync(Nd4jPointer dst, Nd4jPointer src, long size, int flags, Nd4jPointer reserved) {
+int NativeOps::memcpyConstantAsync(Nd4jIndex dst, Nd4jPointer src, Nd4jIndex size, int flags, Nd4jPointer reserved) {
     // no-op
     return 0L;
 }
