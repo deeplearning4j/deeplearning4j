@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.pointers.cuda;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -9,13 +10,13 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 public class cudaStream_t extends CudaPointer {
 
-    public cudaStream_t( long address) {
-        super(address);
+    public cudaStream_t( Pointer pointer) {
+        super(pointer);
     }
 
     public void synchronize() {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        nativeOps.streamSynchronize(this.getNativePointer());
+        nativeOps.streamSynchronize(this);
     }
 }

@@ -12,7 +12,6 @@
     <name>nd4j-cuda-7.5</name>
     <build>
         <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
-        <testOutputDirectory>../../nd4j-tests/target</testOutputDirectory>
         <plugins>
 
             <plugin>

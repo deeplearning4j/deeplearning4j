@@ -49,8 +49,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-               long pointer = nativeOps.mallocHost(reqMem, 0);
-                if (pointer == 0)
+               Pointer pointer = nativeOps.mallocHost(reqMem, 0);
+                if (pointer == null)
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem);
 
                 Pointer hostPointer = new CudaPointer(pointer);
@@ -74,8 +74,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-                long pointer = nativeOps.mallocDevice(reqMem, 0, 0);
-                if (pointer == 0)
+                Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                if (pointer == null)
                     return null;
                     //throw new RuntimeException("Can't allocate [DEVICE] memory!");
 
@@ -112,8 +112,8 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-                long result = nativeOps.freeHost(point.getPointers().getHostPointer().address());
-                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer().address()));
+                long result = nativeOps.freeHost(point.getPointers().getHostPointer());
+                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer()));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
             }
@@ -129,7 +129,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-                long result = nativeOps.freeDevice(point.getPointers().getDevicePointer().address(), 0);
+                long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
             }
@@ -168,7 +168,7 @@ public class CudaDirectProvider implements MemoryProvider {
             return true;
         else return false;
         */
-        long freeMem = nativeOps.getDeviceFreeMemory(-1);
+        long freeMem = nativeOps.getDeviceFreeMemory(new CudaPointer(-1));
         if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
             return false;
         else return true;

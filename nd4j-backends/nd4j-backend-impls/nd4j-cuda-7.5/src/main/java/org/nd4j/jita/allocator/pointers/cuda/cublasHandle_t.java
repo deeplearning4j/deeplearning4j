@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.pointers.cuda;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 
 /**
@@ -7,7 +8,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
  */
 public class cublasHandle_t extends CudaPointer {
 
-    public cublasHandle_t(long address) {
-        super(address);
+    public cublasHandle_t(Pointer pointer) {
+        super(pointer);
     }
 }

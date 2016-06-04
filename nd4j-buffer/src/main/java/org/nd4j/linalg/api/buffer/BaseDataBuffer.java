@@ -598,6 +598,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public Pointer addressPointer() {
+        if (offset() > 0) {
+            if(dataType() == Type.DOUBLE) {
+                return new DoublePointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+            else if(dataType() == Type.FLOAT) {
+                return new FloatPointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+            else if(dataType() == Type.INT) {
+                return new IntPointer(pointer) { { address = pointer.address() + getElementSize() * offset(); } };
+            }
+        }
+        return pointer;
+    }
+
+    @Override
     public long address() {
         switch(allocationMode) {
             case JAVACPP: {

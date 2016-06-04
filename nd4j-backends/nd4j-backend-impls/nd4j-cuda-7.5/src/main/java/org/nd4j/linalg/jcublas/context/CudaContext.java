@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.context;
 
 import lombok.Data;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
@@ -46,10 +47,10 @@ public class CudaContext {
     private boolean oldEventDestroyed = true;
     private boolean eventDestroyed = true;
 
-    private long bufferReduction;
-    private long bufferAllocation;
-    private long bufferScalar;
-    private long bufferSpecial;
+    private Pointer bufferReduction;
+    private Pointer bufferAllocation;
+    private Pointer bufferScalar;
+    private Pointer bufferSpecial;
 
     private int laneId = 0;
 
@@ -84,19 +85,19 @@ public class CudaContext {
     }
 
     public void syncSpecialStream() {
-        nativeOps.streamSynchronize(specialStream.address());
+        nativeOps.streamSynchronize(specialStream);
     }
 
     public void syncOldStream(boolean syncCuBlas) {
 //        ContextHolder.getInstance().setContext();
-        nativeOps.streamSynchronize(oldStream.address());
+        nativeOps.streamSynchronize(oldStream);
 
         if (syncCuBlas) syncCublasStream();
     }
 
     public void syncCublasStream() {
         if (cublasStream != null) {
-            nativeOps.streamSynchronize(cublasStream.address());
+            nativeOps.streamSynchronize(cublasStream);
         } else throw new IllegalStateException("cuBLAS stream isnt set");
     }
 

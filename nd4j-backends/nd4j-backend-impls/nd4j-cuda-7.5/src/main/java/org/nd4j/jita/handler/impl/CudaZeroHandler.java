@@ -375,11 +375,11 @@ public class CudaZeroHandler implements MemoryHandler {
                  context.getOldStream()
              );*/
             if (nativeOps.memcpyAsync(
-                            point.getPointers().getDevicePointer().address(),
-                            point.getPointers().getHostPointer().address(),
+                            point.getPointers().getDevicePointer(),
+                            point.getPointers().getHostPointer(),
                             AllocationUtils.getRequiredMemory(shape),
                             CudaConstants.cudaMemcpyHostToDevice,
-                            context.getSpecialStream().address()) == 0)
+                            context.getSpecialStream()) == 0)
                 throw new IllegalStateException("MemcpyAsync relocate H2D failed: [" + point.getHostPointer().address() + "] -> [" + point.getDevicePointer().address() + "]");
 
             flowController.commitTransfer(context.getSpecialStream());
@@ -521,7 +521,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
             CudaContext context = flowController.prepareAction(point);
             tContext = context;
-            if (nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream().address()) == 0)
+            if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream()) == 0)
                 throw new IllegalStateException("MemcpyAsync H2H failed: [" + srcPointer.address() + "] -> [" + dP.address() + "]");
 
                 flowController.commitTransfer(tContext.getSpecialStream());
@@ -541,11 +541,11 @@ public class CudaZeroHandler implements MemoryHandler {
 
             if (
                     nativeOps.memcpyAsync(
-                        rDP.address(),
-                        dP.address(),
+                        rDP,
+                        dP,
                         length,
                         CudaConstants.cudaMemcpyHostToDevice,
-                        tContext.getSpecialStream().address()) == 0)
+                        tContext.getSpecialStream()) == 0)
                 throw new IllegalStateException("MemcpyAsync H2D failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
 
             flowController.commitTransfer(tContext.getSpecialStream());
@@ -564,7 +564,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Pointer dP = new CudaPointer((point.getPointers().getDevicePointer().address()) + dstOffset);
 
-        nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream().address());
+        nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
 
         point.tickDeviceWrite();
     }
@@ -596,7 +596,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 context.getOldStream()
         );*/
 
-        nativeOps.memcpyAsync(dP.address(), srcPointer.address(), length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream().address());
+        nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
 
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
@@ -612,7 +612,7 @@ public class CudaZeroHandler implements MemoryHandler {
             );
             */
 
-            nativeOps.memcpyAsync(rDP.address(), dP.address(), length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
 
             context.syncOldStream();
         }
@@ -672,7 +672,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(dP.address(), sP.address(), srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
         } else {
             sP = new CudaPointer(srcPoint.getPointers().getHostPointer().address());
 /*
@@ -683,7 +683,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(dP.address(), sP.address(), srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
         }
 
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
@@ -697,7 +697,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(rDP.address(), dP.address(), srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream().address());
+            nativeOps.memcpyAsync(rDP, dP, srcBuffer.length() * srcBuffer.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
         }
 
         dstPoint.tickDeviceWrite();
@@ -1030,6 +1030,12 @@ public class CudaZeroHandler implements MemoryHandler {
         return devicesAffinity.get(threadId);
     }
 
+    /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
+    @Override
+    public Pointer getDeviceIdPointer() {
+        return new CudaPointer(getDeviceId());
+    }
+
     /**
      * This method returns set of available devices
      * @return
@@ -1069,7 +1075,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // we set device to be used prior to stream creation
 
-        nativeOps.setDevice(getDeviceId());
+        nativeOps.setDevice(getDeviceIdPointer());
 
         CudaContext context = new CudaContext();
         context.initHandle();

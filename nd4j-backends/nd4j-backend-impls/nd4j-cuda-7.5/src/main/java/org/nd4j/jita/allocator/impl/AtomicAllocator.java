@@ -10,6 +10,7 @@ import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.garbage.GarbageReference;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
 import org.nd4j.jita.allocator.time.rings.LockedRing;
@@ -806,6 +807,12 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Integer getDeviceId() {
         return memoryHandler.getDeviceId();
+    }
+
+    /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
+    @Override
+    public Pointer getDeviceIdPointer() {
+        return new CudaPointer(getDeviceId());
     }
 
     @Override

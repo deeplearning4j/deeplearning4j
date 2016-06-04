@@ -259,6 +259,9 @@ public interface MemoryHandler {
      */
     Integer getDeviceId();
 
+    /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
+    Pointer getDeviceIdPointer();
+
     /**
      * This method returns ExternalContext wrapper (if applicable)
      * @return

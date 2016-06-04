@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.pointers.cuda;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -19,8 +20,8 @@ public class cudaEvent_t extends CudaPointer{
 
     @Getter @Setter private int laneId;
 
-    public cudaEvent_t( long address) {
-        super(address);
+    public cudaEvent_t(Pointer pointer) {
+        super(pointer);
     }
 
     public boolean isDestroyed() {
@@ -33,14 +34,14 @@ public class cudaEvent_t extends CudaPointer{
 
     public synchronized void destroy() {
         if (!isDestroyed()) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(this.address());
+            NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(this);
             markDestoryed();
         }
     }
 
     public synchronized void synchronize() {
         if (!isDestroyed()) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this.address());
+            NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this);
         }
     }
 }
