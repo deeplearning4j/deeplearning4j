@@ -6,6 +6,7 @@
 #define MIN 1e-12
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
+#define MIN_CUTFOFF -3.79297773665f
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
@@ -712,14 +713,14 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			const double realMin = 1.1755e-38f;
-			const double cutOff = nd4j::math::nd4j_log(realMin);
+			//const double realMin = 1.1755e-38f;
+			//const double cutOff = nd4j::math::nd4j_log(realMin);
 
 			T k = params[0];
-			if (d1 * k > -cutOff)
-				return (T)(-cutOff / k);
-			else if (d1 * k < cutOff)
-				return (T)(cutOff / k);
+			if (d1 * k > - MIN_CUTFOFF)
+				return (T)(- MIN_CUTFOFF / k);
+			else if (d1 * k < MIN_CUTFOFF)
+				return (T)(MIN_CUTFOFF / k);
 			return d1;
 		}
 	};
@@ -1059,7 +1060,6 @@ namespace simdOps {
 			T *extraParamsLocalRef = *extraParamsLocal;
 			extraParamsTotalRef[0] += extraParamsLocalRef[0];
 			extraParamsTotalRef[1] += extraParamsLocalRef[1];
-
 		}
 
 #ifdef __CUDACC__

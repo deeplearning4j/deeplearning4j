@@ -98,11 +98,11 @@ template<typename OpType>
 					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 				Nd4jIndex n = shape::length(xShapeInfo);
 				int rank = shape::rank(xShapeInfo);
-				//shared memory space for storing intermediate results
-				//SharedMemory <T> val;
+
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
 				T startingVal = this->startingValue(dx);
 
+				__shared__ T extraZ[2];
 
 				sPartials[threadIdx.x] = startingVal;
 
@@ -112,12 +112,12 @@ template<typename OpType>
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
+					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], &extraZ), &extraZ);
 
 				}
 
 				T **sPartialsRef = (T **) &sPartials;
-				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), &extraParams);
+				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), &extraZ);
 				/**
                  * Look at something that uses the extra params
                  * and aggregates the extra values propelry.
@@ -126,7 +126,7 @@ template<typename OpType>
 				// write result for this block to global mem
 				if (threadIdx.x == 0) {
 					if (postProcessOrNot) {
-						result[blockIdx.x] = postProcess(sPartials[0], n,&extraParams);
+						result[blockIdx.x] = postProcess(sPartials[0], n,&extraZ);
 					}
 					else {
 						result[blockIdx.x] = sPartials[0];
@@ -134,13 +134,6 @@ template<typename OpType>
 
 
 				}
-
-
-				if(threadIdx.x == 0 && this->extraParamsLength() > 0)
-					this->finalizeExtraParams(&extraParams);
-
-
-
 			}
 
 
@@ -161,6 +154,8 @@ template<typename OpType>
 //		SharedMemory <T> val;
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
+				__shared__ T extraZ[2];
+
 				T startingVal = OpType::startingValue(dx);
 				Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -171,12 +166,12 @@ template<typename OpType>
 				if(xOrder == yOrder) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 						for(Nd4jIndex i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], &extraParams), &extraParams);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], &extraZ), &extraZ);
 						}
 					}
 					else {
 						for(int i = threadIdx.x; i < length; i+= gridDim.x * blockDim.x) {
-							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraParams), &extraParams);
+							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], &extraZ), &extraZ);
 						}
 					}
 
@@ -185,11 +180,11 @@ template<typename OpType>
 
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials<OpType>(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
+					aggregatePartials<OpType>(sPartialsRef, tid, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraZ);
 
 					__syncthreads();
 					if (tid == 0) {
-						result[0] = OpType::postProcess(sPartials[0], length,&extraParams);
+						result[0] = OpType::postProcess(sPartials[0], length,&extraZ);
 					}
 				}
 
@@ -228,7 +223,7 @@ template<typename OpType>
 						shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
 						Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 						Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], &extraParams),&extraParams);
+						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], &extraZ),&extraZ);
 					}
 
 /*
@@ -238,7 +233,7 @@ template<typename OpType>
 */
 
 					T **sPartialsRef = (T **) &sPartials;
-					aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraParams);
+					aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), &extraZ);
 					/**
                      * Look at something that uses the extra params
                      * and aggregates the extra values propelry.
@@ -247,7 +242,7 @@ template<typename OpType>
 					// write result for this block to global mem
 					__syncthreads();
 					if (tid == 0) {
-						result[tid] = OpType::postProcess(sPartials[0], n, &extraParams);
+						result[tid] = OpType::postProcess(sPartials[0], n, &extraZ);
 					}
 				}
 
