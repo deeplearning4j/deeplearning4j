@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -48,7 +47,7 @@ public class DataSetIteratorTest {
 			DataSet ds = iris.next();
 			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
 		}
-		assertTrue(irisC==5);
+		assertEquals(5, irisC);
 		
 		
 		//MNIST:
@@ -59,7 +58,7 @@ public class DataSetIteratorTest {
 			DataSet ds = mnist.next();
 			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
 		}
-		assertTrue(mnistC==5);
+		assertEquals(5, mnistC);
 		
 		//LFW:
 		DataSetIterator lfw = new LFWDataSetIterator(1, 5);
@@ -69,7 +68,7 @@ public class DataSetIteratorTest {
 			DataSet ds = lfw.next();
 			assertTrue(ds.getLabels().sum(Integer.MAX_VALUE).getDouble(0)==1.0);
 		}
-		assertTrue(lfwC==5);
+		assertEquals(5, lfwC);
 	}
 
 	@Test
@@ -104,7 +103,7 @@ public class DataSetIteratorTest {
 		int row = 28;
 		int col = 28;
 		int channels = 1;
-		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, numExamples, new int[] {row,col,channels});
+		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, numExamples, new int[] {row,col,channels}, true);
 		assertTrue(iter.hasNext());
 		DataSet data = iter.next();
 		assertEquals(numExamples, data.getLabels().size(0));
@@ -123,7 +122,7 @@ public class DataSetIteratorTest {
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, new Random(seed));
+		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, true, new Random(seed));
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
