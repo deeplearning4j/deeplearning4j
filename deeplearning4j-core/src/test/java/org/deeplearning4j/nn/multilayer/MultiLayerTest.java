@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.multilayer;
 import com.google.common.collect.Lists;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -650,6 +651,35 @@ public class MultiLayerTest {
         }
 
         double score = net.score(new DataSet(input,labels));
+    }
+
+    @Test
+    public void testPredict() throws Exception{
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(false)
+                .learningRate(1.0)
+                .weightInit(WeightInit.XAVIER)
+                .seed(12345L)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSetIterator ds = new CifarDataSetIterator(10,10, new int[]{20,20,1});
+        net.fit(ds);
+
+        DataSetIterator testDs = new CifarDataSetIterator(1,1, new int[]{20,20,1});
+        DataSet testData = testDs.next();
+        String actualLables = testData.getLabelName(0);
+        List<String> prediction = net.predict(testData);
+        assertTrue(actualLables != null);
+        assertTrue(prediction.get(0) != null);
     }
 
     @Test
