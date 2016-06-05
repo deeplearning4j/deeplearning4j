@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.BaseUIStatusReportingListener;
@@ -39,7 +40,7 @@ import org.deeplearning4j.ui.components.text.ComponentText;
 
 import java.util.concurrent.Callable;
 
-@AllArgsConstructor
+@AllArgsConstructor @NoArgsConstructor
 public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,A>{
 
     private ModelEvaluator<MultiLayerNetwork,DataSetIterator,A> modelEvaluator;

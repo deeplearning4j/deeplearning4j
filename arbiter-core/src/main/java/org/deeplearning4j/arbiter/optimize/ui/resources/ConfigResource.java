@@ -25,7 +25,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
-import java.util.List;
 
 @Path("/config")
 @Produces(MediaType.APPLICATION_JSON)
@@ -36,7 +35,7 @@ public class ConfigResource {
 
     @GET
     public Response getConfig(){
-        log.info("GET for config with current config: {}");
+        log.trace("GET for config with current component: {}",component);
         return Response.ok(component).build();
     }
 
@@ -45,7 +44,7 @@ public class ConfigResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(Component component){
-        log.info("POST for config with new elements: {}",component);
+        log.trace("POST for config with component: {}",component);
         this.component = component;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }

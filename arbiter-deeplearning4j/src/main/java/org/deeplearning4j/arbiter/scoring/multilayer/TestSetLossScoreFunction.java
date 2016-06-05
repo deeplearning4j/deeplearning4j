@@ -58,6 +58,11 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
     }
 
     @Override
+    public boolean minimize() {
+        return true;
+    }
+
+    @Override
     public String toString(){
         return "TestSetLossScoreFunction()";
     }

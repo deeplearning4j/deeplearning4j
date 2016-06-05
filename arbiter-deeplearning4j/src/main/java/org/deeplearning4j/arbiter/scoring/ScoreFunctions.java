@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.scoring;
 
 import org.deeplearning4j.arbiter.scoring.graph.GraphTestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.scoring.graph.GraphTestSetLossScoreFunctionDataSet;
+import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -33,6 +34,10 @@ public class ScoreFunctions {
 
     public static ScoreFunction<MultiLayerNetwork,DataSetIterator> testSetLoss(boolean average){
         return new TestSetLossScoreFunction(average);
+    }
+
+    public static ScoreFunction<MultiLayerNetwork,DataSetIterator> testSetAccuracy(){
+        return new TestSetAccuracyScoreFunction();
     }
 
     public static ScoreFunction<ComputationGraph,DataSetIterator> testSetLossGraphDataSet(boolean average){

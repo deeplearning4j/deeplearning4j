@@ -39,17 +39,19 @@ import java.nio.file.Files;
 public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration,MultiLayerNetwork,A> {
     private static Logger log = LoggerFactory.getLogger(LocalMultiLayerNetworkSaver.class);
     private String path;
+    private File fPath;
 
     public LocalMultiLayerNetworkSaver(String path){
         if(path==null) throw new NullPointerException();
         this.path = path;
+        this.fPath = new File(path);
 
         File baseDirectory = new File(path);
         if(!baseDirectory.isDirectory() ){
             throw new IllegalArgumentException("Invalid path: is not directory. " + path);
         }
 
-        log.info("LocalComputationGraphSaver saving networks to local directory: {}",path);
+        log.info("LocalMultiLayerNetworkSaver saving networks to local directory: {}",path);
     }
 
     @Override
@@ -113,6 +115,6 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
 
     @Override
     public String toString(){
-        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
+        return "LocalMultiLayerNetworkScoreSaver(path=" + fPath.getAbsolutePath() + ")";
     }
 }

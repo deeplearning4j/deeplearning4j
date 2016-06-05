@@ -39,10 +39,12 @@ import java.nio.file.Files;
 public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfiguration,ComputationGraph,A> {
     private static Logger log = LoggerFactory.getLogger(LocalComputationGraphSaver.class);
     private String path;
+    private File fPath;
 
     public LocalComputationGraphSaver(String path){
         if(path==null) throw new NullPointerException();
         this.path = path;
+        this.fPath = new File(path);
 
         File baseDirectory = new File(path);
         if(!baseDirectory.isDirectory() ){
@@ -111,6 +113,6 @@ public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfigura
 
     @Override
     public String toString(){
-        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
+        return "LocalMultiLayerNetworkScoreSaver(path=" + fPath.getAbsolutePath() + ")";
     }
 }
