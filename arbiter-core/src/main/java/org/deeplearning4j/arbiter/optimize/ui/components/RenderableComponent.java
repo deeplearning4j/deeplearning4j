@@ -30,6 +30,7 @@ import lombok.Data;
         @JsonSubTypes.Type(value = RenderableComponentAccordionDecorator.class, name = "RenderableComponentAccordionDecorator")
 })
 @Data
+@Deprecated
 public abstract class RenderableComponent {
 
     /** Component type: used by the Arbiter UI to determine how to decode and render the object which is

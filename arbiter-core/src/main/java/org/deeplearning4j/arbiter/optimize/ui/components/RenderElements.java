@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui.components;
 
+@Deprecated
 public class RenderElements {
 
     //Required for jackson

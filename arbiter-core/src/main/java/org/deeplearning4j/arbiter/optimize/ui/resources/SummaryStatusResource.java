@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
+import org.deeplearning4j.ui.api.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,21 +34,21 @@ import java.util.Collections;
 public class SummaryStatusResource {
     public static Logger log = LoggerFactory.getLogger(SummaryStatusResource.class);
 
-    private RenderElements renderElements = new RenderElements();
+    private Component component = null;
 
     @GET
     public Response getStatus(){
-        log.info("Get with elements: {}",renderElements);
-        return Response.ok(renderElements).build();
+        log.info("Get with elements: {}",component);
+        return Response.ok(component).build();
     }
 
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(RenderElements renderElements){
-        log.info("Post with new elements: {}",renderElements);
-        this.renderElements = renderElements;
+    public Response update(Component component){
+        log.info("Post with new elements: {}",component);
+        this.component = component;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 

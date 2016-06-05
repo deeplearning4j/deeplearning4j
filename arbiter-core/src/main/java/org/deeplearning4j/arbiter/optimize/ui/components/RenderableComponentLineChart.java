@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Deprecated
 public class RenderableComponentLineChart extends RenderableComponent {
     public static final String COMPONENT_TYPE = "linechart";
 

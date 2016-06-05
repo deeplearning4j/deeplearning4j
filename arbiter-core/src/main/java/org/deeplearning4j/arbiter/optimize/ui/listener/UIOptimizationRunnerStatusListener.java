@@ -29,8 +29,19 @@ import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.components.*;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.components.chart.ChartLine;
+import org.deeplearning4j.ui.components.chart.ChartScatter;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.deeplearning4j.ui.components.component.ComponentDiv;
+import org.deeplearning4j.ui.components.component.style.StyleDiv;
+import org.deeplearning4j.ui.components.table.ComponentTable;
+import org.deeplearning4j.ui.components.table.style.StyleTable;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class UIOptimizationRunnerStatusListener implements OptimizationRunnerStatusListener {
 
@@ -41,6 +52,25 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
     private double lastBestScore;
     private long lastBestScoreTime = 0;
 
+    private StyleTable st = new StyleTable.Builder()
+            .columnWidths(LengthUnit.Percent, 40, 60)
+            .backgroundColor(Color.WHITE)
+            .headerColor(Color.LIGHT_GRAY)
+            .borderWidth(1)
+            .build();
+
+    private StyleChart sc = new StyleChart.Builder()
+            .backgroundColor(Color.WHITE)
+            .width(650,LengthUnit.Px)
+            .height(350,LengthUnit.Px)
+            .margin(LengthUnit.Px,50,50,50,10)
+            .build();
+
+    private StyleDiv sd = new StyleDiv.Builder()
+            .margin(LengthUnit.Px,10,10,10,10)
+            .width(100,LengthUnit.Percent)
+            .build();
+
     public UIOptimizationRunnerStatusListener(ArbiterUIServer server) {
         this.server = server;
     }
@@ -50,13 +80,6 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         startTime = System.currentTimeMillis();
 
         OptimizationConfiguration conf = runner.getConfiguration();
-
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("Candidate generator: ").append(conf.getCandidateGenerator()).append("\n")
-//            .append("Data Provider: ").append(conf.getDataProvider()).append("\n")
-//            .append("Score Function: ").append(conf.getScoreFunction()).append("\n")
-//            .append("Result saver: ").append(conf.getResultSaver()).append("\n")
-//            .append("Model hyperparameter space: ").append(conf.getCandidateGenerator().getParameterSpace());
 
         DataProvider<?> dataProvider = conf.getDataProvider();
         ScoreFunction<?,?> scoreFunction = conf.getScoreFunction();
@@ -71,10 +94,14 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Model Hyperparameter Space:", (space == null ? "" : space.toString())}
         };
         RenderElements elements = new RenderElements(new RenderableComponentTable(null,table));
-        server.updateOptimizationSettings(elements);
+
+        ComponentTable ct = new ComponentTable.Builder(st)
+                .content(table)
+                .build();
+
+        server.updateOptimizationSettings(ct);
 
 //        server.updateOptimizationSettings(sb.toString());
-        server.updateOptimizationSettings(elements);
     }
 
     @Override
@@ -87,7 +114,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         doSummaryStatusUpdate(runner);
     }
 
-    private void doSummaryStatusUpdate(IOptimizationRunner runner){
+    private void doSummaryStatusUpdate(IOptimizationRunner<?,?,?> runner){
         long currentTime = System.currentTimeMillis();
         double bestScore = runner.bestScore();
         int bestScoreIdx = runner.bestScoreCandidateIndex();
@@ -114,8 +141,15 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Termination Conditions:",runner.getConfiguration().getTerminationConditions().toString()}
         };
 
-        List<RenderableComponent> components = new ArrayList<>();
-        components.add(new RenderableComponentTable(null,table));
+        List<Component> components = new ArrayList<>();
+
+        Component tableC = new ComponentTable.Builder(st)
+                .content(table)
+                .build();
+        components.add(tableC);
+
+
+
 
         if(bestScoreIdx >= 0){
             //Actually have at least one candidate with a score...
@@ -145,9 +179,8 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
             scores[2*nScores-1] = lastBestScore;
             times[2*nScores-1] = (currentTime-startTime) / 60000.0;
 
-            RenderableComponentLineChart chart = new RenderableComponentLineChart.Builder()
+            ChartLine chart = new ChartLine.Builder("Best Model Score vs. Time (mins)", sc)
                     .addSeries("Score vs. Time (mins)",times,scores)
-                    .title("Best model score vs. time")
                     .build();
 
             components.add(chart);
@@ -173,16 +206,14 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
             time[i] = (cs.getEndTime() - startTime) / 60000.0;  //minutes since start
             score[i] = cs.getScore();
         }
-        RenderableComponent allCandidateScores = new RenderableComponentScatterPlot.Builder()
+
+        ChartScatter allCandidateScores = new ChartScatter.Builder("All Candidate Scores",sc)
                 .addSeries("Score vs. Time (mins)",time,score)
-                .title("All Candidate Scores")
                 .build();
         components.add(allCandidateScores);
 
-
-
-        RenderElements elements = new RenderElements(components.toArray(new RenderableComponent[components.size()]));
-        server.updateStatus(elements);
+        ComponentDiv cd = new ComponentDiv(sd, components.toArray(new Component[components.size()]));
+        server.updateStatus(cd);
 
         server.updateResults(runner.getCandidateStatus());
     }

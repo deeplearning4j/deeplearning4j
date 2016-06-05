@@ -10,17 +10,20 @@
 
         */
 
+        .hd {
+            background-color: #000000;
+            font-size: 18px;
+            color: #FFFFFF;
+        }
+
         html, body {
             width: 100%;
             height: 100%;
-            padding-top: 20px;
-            padding-left: 20px;
-            padding-right: 20px;
-            padding-bottom: 20px;
+            padding: 0;
         }
 
         .bgcolor {
-            background-color: #D1C5B7; /* OLD: #D2E4EF;*/
+            background-color: #EFEFEF;
         }
 
         h1 {
@@ -173,6 +176,7 @@
 <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="/assets/dl4j-ui.js"></script>
 
 <script>
     //Store last update times:
@@ -202,18 +206,12 @@
             if(lastStatusUpdateTime != statusTime){
                 //Get JSON: address set by SummaryStatusResource
                 $.get("/summary",function(data){
-                    var jsonObj = JSON.parse(JSON.stringify(data));
-
                     var summaryStatusDiv = $('#statusdiv');
-                    var components = jsonObj['renderableComponents'];
-                    if(!components) summaryStatusDiv.html('');
                     summaryStatusDiv.html('');
 
-                    var len = (!components ? 0 : components.length);
-                    for(var i=0; i<len; i++){
-                        var c = components[i];
-                        createAndAddComponent(c,summaryStatusDiv);
-                    }
+                    var str = JSON.stringify(data);
+                    var component = Component.getComponent(str);
+                    component.render(summaryStatusDiv);
                 });
 
                 lastStatusUpdateTime = statusTime;
@@ -223,18 +221,13 @@
             if(lastSettingsUpdateTime != settingsTime){
                 //Get JSON: address set by ConfigResource
                 $.get("/config",function(data){
-                    var jsonObj = JSON.parse(JSON.stringify(data));
-
-                    var components = jsonObj['renderableComponents'];
+                    var str = JSON.stringify(data);
 
                     var configDiv = $('#settingsdiv');
                     configDiv.html('');
 
-                    var len = (!components ? 0 : components.length);
-                    for(var i=0; i<len; i++){
-                        var c = components[i];
-                        createAndAddComponent(c,configDiv);
-                    }
+                    var component = Component.getComponent(str);
+                    component.render(configDiv);
                 });
 
                 lastSettingsUpdateTime = settingsTime;
@@ -764,40 +757,54 @@
 
 </script>
 
+<table style="width: 100%; padding: 5px;" class="hd">
+    <tbody>
+    <tr style="height:40px">
+        <td> Arbiter UI </td>
+    </tr>
+    </tbody>
+</table>
+
+<div style="width:1400px; margin-left:auto; margin-right:auto;">
+    <div class="outerelements" id="heading">
+        <h1>Arbiter</h1>
+    </div>
 
 
-
-<div class="outerelements" id="heading">
-    <h1>Arbiter</h1>
-</div>
-
-
-<div class="outerelements" id="status">
-    <div id="accordion" class="hcol2">
-        <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>
-        <div class="statusdiv" id="statusdiv">
+    <div class="outerelements" id="status">
+        <div id="accordion" class="hcol2">
+            <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>
+            <div class="statusdiv" id="statusdiv">
+            </div>
         </div>
     </div>
-</div>
 
-<div class="outerelements" id="settings">
-    <div id="accordion2">
-        <h3 class="ui-accordion-header headingcolor">Optimization Settings</h3>
-        <div class="settingsdiv" id="settingsdiv">
+    <div class="outerelements" id="settings">
+        <div id="accordion2">
+            <h3 class="ui-accordion-header headingcolor">Optimization Settings</h3>
+            <div class="settingsdiv" id="settingsdiv">
+            </div>
         </div>
     </div>
-</div>
 
 
-<div class="outerelements" id="results">
-    <div class="resultsHeadingDiv">Results</div>
-    <div class="resultsdiv" id="resultsdiv">
-        <table style="width:100%" id="resultsTable" class="resultsTable">
-            <thead id="resultsTableHeader"></thead>
-            <tbody id="resultsTableBody"></tbody>
-        </table>
+    <div class="outerelements" id="results">
+        <div class="resultsHeadingDiv">Results</div>
+        <div class="resultsdiv" id="resultsdiv">
+            <table style="width:100%" id="resultsTable" class="resultsTable">
+                <col width="33%">
+                <col width="33%">
+                <col width="34%">
+                <thead id="resultsTableHeader"></thead>
+                <tbody id="resultsTableBody"></tbody>
+            </table>
+        </div>
     </div>
+
 </div>
+
+
+
 
 
 </body>

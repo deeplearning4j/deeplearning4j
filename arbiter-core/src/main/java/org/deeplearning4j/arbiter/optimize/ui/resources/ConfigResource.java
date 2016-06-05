@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
+import org.deeplearning4j.ui.api.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,27 +26,28 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.List;
 
 @Path("/config")
 @Produces(MediaType.APPLICATION_JSON)
 public class ConfigResource {
 
     public static final Logger log = LoggerFactory.getLogger(ConfigResource.class);
-    private RenderElements renderElements = new RenderElements();
+    private Component component = null;
 
     @GET
     public Response getConfig(){
         log.info("GET for config with current config: {}");
-        return Response.ok(renderElements).build();
+        return Response.ok(component).build();
     }
 
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(RenderElements renderElements){
-        log.info("POST for config with new elements: {}",renderElements);
-        this.renderElements = renderElements;
+    public Response update(Component component){
+        log.info("POST for config with new elements: {}",component);
+        this.component = component;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 

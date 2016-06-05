@@ -26,6 +26,7 @@ import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
 import org.deeplearning4j.arbiter.optimize.ui.resources.*;
 import org.deeplearning4j.arbiter.util.WebUtils;
+import org.deeplearning4j.ui.api.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,11 +149,11 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         environment.jersey().register(new CandidateResultsResource());
     }
 
-    public void updateStatus(RenderElements elements){
+    public void updateStatus(Component component){
         Response response = targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
+                .post(Entity.entity(component, MediaType.APPLICATION_JSON));
         log.info("Status update response: {}", response);
-        log.info("Posted summary status update: {}", elements);
+        log.info("Posted summary status update: {}", component);
         lastSummaryUpdateTime.set(System.currentTimeMillis());
 
         updateStatusTimes();
@@ -166,10 +167,10 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
 
-    public void updateOptimizationSettings(RenderElements elements){
+    public void updateOptimizationSettings(Component component){
         targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .post(Entity.entity(elements, MediaType.APPLICATION_JSON));
-        log.info("Posted optimization settings update: {}", elements);
+                .post(Entity.entity(component, MediaType.APPLICATION_JSON));
+        log.info("Posted optimization settings update: {}", component);
 
         lastConfigUpdateTime.set(System.currentTimeMillis());
 

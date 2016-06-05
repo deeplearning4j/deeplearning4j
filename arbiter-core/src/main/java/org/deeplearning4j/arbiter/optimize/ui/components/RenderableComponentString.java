@@ -20,6 +20,7 @@ package org.deeplearning4j.arbiter.optimize.ui.components;
 import lombok.Data;
 
 @Data
+@Deprecated
 public class RenderableComponentString extends RenderableComponent {
     public static final String COMPONENT_TYPE = "string";
     private String string;
