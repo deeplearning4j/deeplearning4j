@@ -38,7 +38,7 @@ public class SummaryResultsResource {
 
     @GET
     public Response getCandidateStatus(){
-        log.info("GET for candidate status with current status: {}",statusList);
+        log.trace("GET for candidate status with current status: {}",statusList);
 
         return Response.ok(statusList).build();
     }
@@ -48,7 +48,7 @@ public class SummaryResultsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(List<CandidateStatus> statusList){
-        log.info("POST for results with new status: {}",statusList);
+        log.trace("POST for results with new status: {}",statusList);
         this.statusList = statusList;
         return Response.ok(Collections.singletonMap("status","ok")).build();
     }

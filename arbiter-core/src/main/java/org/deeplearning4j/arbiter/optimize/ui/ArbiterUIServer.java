@@ -148,8 +148,8 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     public void updateStatus(Component component){
         Response response = targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(component, MediaType.APPLICATION_JSON));
-        log.info("Status update response: {}", response);
-        log.info("Posted summary status update: {}", component);
+        log.trace("Status update response: {}", response);
+        log.trace("Posted summary status update: {}", component);
         lastSummaryUpdateTime.set(System.currentTimeMillis());
 
         updateStatusTimes();
@@ -159,14 +159,14 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         UpdateStatus updateStatus = new UpdateStatus(lastSummaryUpdateTime.get(),lastConfigUpdateTime.get(),lastResultsUpdateTime.get());
         targetLastUpdateStatus.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(updateStatus, MediaType.APPLICATION_JSON));
-        log.info("Posted new update times: {}", updateStatus);
+        log.trace("Posted new update times: {}", updateStatus);
     }
 
 
     public void updateOptimizationSettings(Component component){
         targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(component, MediaType.APPLICATION_JSON));
-        log.info("Posted optimization settings update: {}", component);
+        log.trace("Posted optimization settings update: {}", component);
 
         lastConfigUpdateTime.set(System.currentTimeMillis());
 
@@ -185,7 +185,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         //Post update:
         targetResultsUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(list, MediaType.APPLICATION_JSON));
-        log.info("Posted new results: {}", list);
+        log.trace("Posted new results: {}", list);
         lastResultsUpdateTime.set(System.currentTimeMillis());
 
         updateStatusTimes();

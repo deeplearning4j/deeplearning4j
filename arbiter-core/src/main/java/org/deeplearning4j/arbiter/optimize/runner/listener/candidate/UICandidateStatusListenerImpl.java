@@ -53,6 +53,6 @@ public class UICandidateStatusListenerImpl implements UICandidateStatusListener 
         target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(
                         new ComponentDiv(styleDiv, uiElements), MediaType.APPLICATION_JSON));
-        log.info("Update posted for candidate {}",candidateNumber);
+        log.trace("Update posted for candidate {}",candidateNumber);
     }
 }

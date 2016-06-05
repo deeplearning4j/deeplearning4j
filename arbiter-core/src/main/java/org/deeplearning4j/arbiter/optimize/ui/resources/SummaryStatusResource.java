@@ -37,7 +37,7 @@ public class SummaryStatusResource {
 
     @GET
     public Response getStatus(){
-        log.info("Get with elements: {}",component);
+        log.trace("Get with elements: {}",component);
         return Response.ok(component).build();
     }
 
@@ -46,7 +46,7 @@ public class SummaryStatusResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(Component component){
-        log.info("Post with new elements: {}",component);
+        log.trace("Post with new elements: {}",component);
         this.component = component;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }

@@ -35,7 +35,7 @@ public class LastUpdateResource {
 
     @GET
     public Response getStatus(){
-        log.info("GET with update status: {}", status);
+        log.trace("GET with update status: {}", status);
         return Response.ok(status).build();
     }
 
@@ -44,7 +44,7 @@ public class LastUpdateResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(UpdateStatus updateStatus){
-        log.info("POST with last update status: {}", updateStatus);
+        log.trace("POST with last update status: {}", updateStatus);
         this.status = updateStatus;
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
