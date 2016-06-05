@@ -63,7 +63,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
             .backgroundColor(Color.WHITE)
             .width(650,LengthUnit.Px)
             .height(350,LengthUnit.Px)
-            .margin(LengthUnit.Px,50,50,50,10)
+            .margin(LengthUnit.Px,65,50,50,10)
             .build();
 
     private StyleDiv sd = new StyleDiv.Builder()

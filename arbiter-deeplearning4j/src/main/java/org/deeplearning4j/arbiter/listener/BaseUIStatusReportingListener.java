@@ -178,9 +178,6 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
     }
 
     protected abstract void createConfigComponent(T network);
-//    {
-//        config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
-//    }
 
     public void postReport(Status status, EarlyStoppingResult<T> esResult, Component... additionalComponents){
 
