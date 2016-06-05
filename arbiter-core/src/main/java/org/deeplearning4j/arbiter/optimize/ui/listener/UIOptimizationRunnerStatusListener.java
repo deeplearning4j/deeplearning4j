@@ -129,10 +129,10 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         long totalRuntime = currentTime - startTime;
 
         String[][] table = new String[][]{
-                {"Completed:",String.valueOf(completed)},
-                {"Queued/Running:",String.valueOf(queued)},
-                {"Failed:", String.valueOf(failed)},
-                {"Total:", String.valueOf(total)},
+                {"Configurations Completed:",String.valueOf(completed)},
+                {"Configurations Queued/Running:",String.valueOf(queued)},
+                {"Configurations Failed:", String.valueOf(failed)},
+                {"Configuratios Total:", String.valueOf(total)},
                 {"Best Score:", (bestScoreIdx == -1 ? "-" : String.valueOf(bestScore)) },
                 {"Best Score Model Index:", (bestScoreIdx == -1 ? "-" : String.valueOf(bestScoreIdx)) },
                 {"Best Score Model Found At:",

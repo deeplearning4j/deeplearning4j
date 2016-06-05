@@ -84,7 +84,7 @@
 
         /** CSS for result table rows */
         .resultTableRow {
-            background-color: #E1E8EA; /*#D7E9EF;*/
+            background-color: #FFFFFF;
             cursor: pointer;
         }
 
@@ -675,13 +675,17 @@
     //Do a HTTP request on the specified path, parse and insert into the provided element
     function loadCandidateDetails(path, elementToAppendTo){
         $.get(path, function (data) {
-            var jsonObj = JSON.parse(JSON.stringify(data));
-            var components = jsonObj['renderableComponents'];
-            var len = (!components ? 0 : components.length);
-            for (var i = 0; i < len; i++) {
-                var c = components[i];
-                var temp = createAndAddComponent(c,elementToAppendTo);
-            }
+//            var jsonObj = JSON.parse(JSON.stringify(data));
+//            var components = jsonObj['renderableComponents'];
+//            var len = (!components ? 0 : components.length);
+//            for (var i = 0; i < len; i++) {
+//                var c = components[i];
+//                var temp = createAndAddComponent(c,elementToAppendTo);
+//            }
+
+            var str = JSON.stringify(data);
+            var component = Component.getComponent(str);
+            component.render(elementToAppendTo);
         });
     }
 
@@ -760,17 +764,12 @@
 <table style="width: 100%; padding: 5px;" class="hd">
     <tbody>
     <tr style="height:40px">
-        <td> Arbiter UI </td>
+        <td> <div style="width:40px; height:40px; float:left"></div><div style="height:40px; float:left; margin-top: 12px">Arbiter UI</div></td>
     </tr>
     </tbody>
 </table>
 
 <div style="width:1400px; margin-left:auto; margin-right:auto;">
-    <div class="outerelements" id="heading">
-        <h1>Arbiter</h1>
-    </div>
-
-
     <div class="outerelements" id="status">
         <div id="accordion" class="hcol2">
             <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>

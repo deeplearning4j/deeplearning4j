@@ -36,6 +36,7 @@ import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatu
 import org.deeplearning4j.arbiter.util.ClassPathResource;
 import org.deeplearning4j.arbiter.util.WebUtils;
 import org.deeplearning4j.arbiter.optimize.api.*;
+import org.deeplearning4j.ui.components.text.ComponentText;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -148,7 +149,7 @@ public class TestRandomSearch {
                                                                                     final UICandidateStatusListener statusListener) {
 
             if(statusListener != null){
-                statusListener.reportStatus(Status.Created,new RenderableComponentString("Config: " + candidate.toString()));
+                statusListener.reportStatus(Status.Created,new ComponentText("Config: " + candidate.toString(), null));
             }
 
             return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
@@ -157,7 +158,7 @@ public class TestRandomSearch {
 
                     if(statusListener != null) {
                         statusListener.reportStatus(Status.Running,
-                                new RenderableComponentString("Config: " + candidate.toString())
+                                new ComponentText("Config: " + candidate.toString(), null)
                         );
                     }
 
@@ -167,8 +168,8 @@ public class TestRandomSearch {
                     Thread.sleep(500);
                     if(statusListener != null) {
                         statusListener.reportStatus(Status.Complete,
-                                new RenderableComponentString("Config: " + candidate.toString()),
-                                new RenderableComponentString("Score: " + score)
+                                new ComponentText("Config: " + candidate.toString(), null),
+                                new ComponentText("Score: " + score, null)
                         );
                     }
 

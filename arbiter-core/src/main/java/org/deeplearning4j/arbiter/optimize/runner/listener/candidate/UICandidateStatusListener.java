@@ -19,11 +19,12 @@ package org.deeplearning4j.arbiter.optimize.runner.listener.candidate;
 
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponent;
+import org.deeplearning4j.ui.api.Component;
 
 /**Listener for reporting candidate status
  */
 public interface UICandidateStatusListener {
 
-    void reportStatus(Status status, RenderableComponent... uiComponents);
+    void reportStatus(Status status, Component... uiComponents);
 
 }

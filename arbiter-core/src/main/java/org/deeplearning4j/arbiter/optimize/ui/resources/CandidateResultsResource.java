@@ -19,6 +19,8 @@ package org.deeplearning4j.arbiter.optimize.ui.resources;
 
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentString;
 import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.components.text.ComponentText;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +41,8 @@ public class CandidateResultsResource {
 
     private static final Logger log = LoggerFactory.getLogger(CandidateResultsResource.class);
 
-    private Map<Integer,RenderElements> map = new ConcurrentHashMap<>();
-    private static final RenderElements NOT_FOUND = new RenderElements(new RenderableComponentString("(Candidate results: Not found)"));
+    private Map<Integer,Component> map = new ConcurrentHashMap<>();
+    private static final Component NOT_FOUND = new ComponentText("(Candidate results: Not found)",null);
     private final Map<Integer,Long> lastUpdateTimeMap = new ConcurrentHashMap<>();
 
     @GET
@@ -56,7 +58,6 @@ public class CandidateResultsResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getLastUpdateTimes(@QueryParam("id")List<String> modelIDs){
         //Here: requests are of the form /modelResults/lastUpdate?id=0&id=1&id=2
-        //System.out.println("***** Recieved request with IDs: "+modelIDs + " with " + modelIDs.size() + " elements");
         Map<Integer,Long> outMap = new HashMap<>();
         for( String id : modelIDs ){
             if(!lastUpdateTimeMap.containsKey(id)) outMap.put(Integer.valueOf(id),0L);
@@ -69,9 +70,8 @@ public class CandidateResultsResource {
     @Path("/update/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@PathParam("id")int candidateID, RenderElements renderElements){
-//        log.info("Candidate status updated: {}, {}",candidateID,renderElements);
-        map.put(candidateID,renderElements);
+    public Response update(@PathParam("id")int candidateID, Component component){
+        map.put(candidateID,component);
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 

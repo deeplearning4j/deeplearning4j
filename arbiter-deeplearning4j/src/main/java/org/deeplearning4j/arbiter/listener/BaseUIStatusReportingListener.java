@@ -19,23 +19,45 @@ package org.deeplearning4j.arbiter.listener;
 
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponent;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentAccordionDecorator;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentLineChart;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentTable;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.components.chart.ChartLine;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.deeplearning4j.ui.components.decorator.DecoratorAccordion;
+import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
+import org.deeplearning4j.ui.components.table.ComponentTable;
+import org.deeplearning4j.ui.components.table.style.StyleTable;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**Listener designed to report status to Arbiter UI
  * Combines listener functionality for both early stopping AND iteration listeners
  */
 public abstract class BaseUIStatusReportingListener<T extends Model> implements EarlyStoppingListener<T>, IterationListener {
+
+    private static final StyleChart styleChart = new StyleChart.Builder()
+            .width(650, LengthUnit.Px)
+            .height(350, LengthUnit.Px)
+            .backgroundColor(Color.WHITE)
+            .build();
+
+    private static final StyleAccordion styleAccordion = new StyleAccordion.Builder()
+            .backgroundColor(Color.WHITE)
+            .build();
+
+    private static final StyleTable styleTable = new StyleTable.Builder()
+            .backgroundColor(Color.WHITE)
+            .borderWidth(1)
+            .columnWidths(LengthUnit.Percent,33,33,34)
+            .build();
 
     /** How frequently (maximum delay between reporting, in MS) should results be reported? This is necessary to keep
      * network traffic to a reasonable level.
@@ -60,7 +82,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
     protected List<Long> iterationList = new ArrayList<>(MAX_SCORE_COMPONENTS);
     protected List<Pair<Integer,Double>> scoreVsEpochEarlyStopping = new ArrayList<>();
 
-    protected RenderableComponent config;
+    protected Component config;
 
 
     public BaseUIStatusReportingListener(UICandidateStatusListener listener){
@@ -87,7 +109,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
         if(config == null) createConfigComponent(esResult.getBestModel());
     }
 
-    private RenderableComponent createEarlyStoppingScoreVsEpochChart(){
+    private Component createEarlyStoppingScoreVsEpochChart(){
         double[] x = new double[scoreVsEpochEarlyStopping.size()];
         double[] y = new double[scoreVsEpochEarlyStopping.size()];
         int i=0;
@@ -97,9 +119,8 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
             i++;
         }
 
-        return new RenderableComponentLineChart.Builder()
+        return new ChartLine.Builder("Early Stopping: Score vs. Epoch",styleChart)
                 .addSeries("Score vs. Epoch",x,y)
-                .title("Early Stopping: Score vs. Epoch")
                 .build();
     }
 
@@ -161,7 +182,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
 //        config = new RenderableComponentString(network.getLayerWiseConfigurations().toString());
 //    }
 
-    public void postReport(Status status, EarlyStoppingResult<T> esResult, RenderableComponent... additionalComponents){
+    public void postReport(Status status, EarlyStoppingResult<T> esResult, Component... additionalComponents){
 
         //Create score vs. iteration graph:
         double[] x = new double[scoreList.size()];
@@ -175,12 +196,14 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
             i++;
         }
 
-        List<RenderableComponent> components = new ArrayList<>();
-        components.add(new RenderableComponentAccordionDecorator("Network Configuration",true,config));
+        List<Component> components = new ArrayList<>();
+        components.add(new DecoratorAccordion.Builder("Network Configuration",styleAccordion)
+                .addComponents(config)
+                .build());
 
-        RenderableComponent scoreVsIterGraph = new RenderableComponentLineChart.Builder()
+        ChartLine scoreVsIterGraph = new ChartLine.Builder("Score vs. Iteration",styleChart)
                 .addSeries("Minibatch Score vs. Iteration",x,y)
-                .title("Score vs. Iteration").build();
+                .build();
         components.add(scoreVsIterGraph);
 
         if(esResult != null){
@@ -195,7 +218,9 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
                     {"Best model score:", (bestEpoch < 0 ? "n/a" : String.valueOf(esResult.getBestModelScore())) },
                     {"Total epochs:", String.valueOf(esResult.getTotalEpochs())}
             };
-            RenderableComponent rcTable = new RenderableComponentTable("Early Stopping",null,table);
+            ComponentTable rcTable = new ComponentTable.Builder(styleTable)
+                    .content(table)
+                    .build();
             components.add(rcTable);
         }
 
@@ -203,7 +228,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
             Collections.addAll(components, additionalComponents);
         }
 
-        uiListener.reportStatus(status,components.toArray(new RenderableComponent[components.size()]));
+        uiListener.reportStatus(status,components.toArray(new Component[components.size()]));
 
         lastReportTime = System.currentTimeMillis();
     }

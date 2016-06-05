@@ -35,6 +35,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.ui.components.text.ComponentText;
 
 import java.util.concurrent.Callable;
 
@@ -94,8 +95,8 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                     net = esResult.getBestModel();  //Can return null if failed OR if
                 } catch(Exception e){
                     dl4jListener.postReport(Status.Failed, null,
-                            new RenderableComponentString("Unexpected exception during model training\n"),
-                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
+                            new ComponentText("Unexpected exception during model training\n", null),
+                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     throw e;
                 }
 
@@ -126,22 +127,22 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                     additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
                 } catch (Exception e) {
                     dl4jListener.postReport(Status.Failed, esResult,
-                            new RenderableComponentString("Failed during additional evaluation stage\n"),
-                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
+                            new ComponentText("Failed during additional evaluation stage\n", null),
+                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                 }
             }
 
             Double score = null;
             if(net == null){
                 dl4jListener.postReport(Status.Complete, esResult,
-                        new RenderableComponentString("No best model available; cannot calculate model score"));
+                        new ComponentText("No best model available; cannot calculate model score", null));
             } else {
                 try {
                     score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 } catch (Exception e) {
                     dl4jListener.postReport(Status.Failed, esResult,
-                            new RenderableComponentString("Failed during score calculation stage\n"),
-                            new RenderableComponentString(ExceptionUtils.getStackTrace(e)));
+                            new ComponentText("Failed during score calculation stage\n", null),
+                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                 }
             }
 
