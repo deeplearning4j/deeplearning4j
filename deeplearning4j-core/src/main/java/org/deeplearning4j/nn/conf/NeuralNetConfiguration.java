@@ -805,8 +805,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     if (!Double.isNaN(l2) && Double.isNaN(layer.getL2()))
                         layer.setL2(l2);
                 } else if (!useRegularization &&
-                        (!Double.isNaN(l1) || !Double.isNaN(layer.getL1()) || !Double.isNaN(l2) || !Double.isNaN(layer.getL2()) ||
-                        layer.getL1() != 0.0 || layer.getL2() != 0.0))
+                        ((!Double.isNaN(l1) && l1 > 0.0) ||
+                        (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
+                        (!Double.isNaN(l2) && l2 > 0.0) ||
+                        (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
                     log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
                 if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
                     layer.setL2(0.0);
