@@ -22,6 +22,8 @@ import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
@@ -31,13 +33,10 @@ import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesConditio
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.executor.CandidateExecutor;
-import org.deeplearning4j.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
-import org.deeplearning4j.arbiter.optimize.runner.OptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.util.WebUtils;
@@ -108,11 +107,8 @@ public class TestDL4JLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),true,1);
-
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
+                = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
@@ -166,11 +162,8 @@ public class TestDL4JLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),true,1);
-
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
+                = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
@@ -233,11 +226,8 @@ public class TestDL4JLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()),true,1);
-
-        OptimizationRunner<DL4JConfiguration,MultiLayerNetwork,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
+                = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
        /* ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};

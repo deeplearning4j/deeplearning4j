@@ -38,7 +38,7 @@ public class LoggingOptimizationRunnerStatusListener implements OptimizationRunn
 
     @Override
     public void onStatusChange(IOptimizationRunner runner) {
-        log.info("OptimizationRunner - status change"); //TODO
+        log.info("BaseOptimizationRunner - status change"); //TODO
     }
 
     @Override

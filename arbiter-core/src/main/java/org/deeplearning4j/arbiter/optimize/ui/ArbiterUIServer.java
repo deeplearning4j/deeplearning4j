@@ -62,7 +62,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
            candidate: its configuration, plus model-specific information (such as score vs. epoch for DL4J).
            Clicking again collapses the row.
 
-    - OptimizationRunner has a UIOptimizationRunnerStatusListener object. Called whenever something happens (task completion, etc)
+    - BaseOptimizationRunner has a UIOptimizationRunnerStatusListener object. Called whenever something happens (task completion, etc)
         Creates a status update object, and passes this to UI server for async processing???
 
     - Information to be displayed is posted to the folowing addresses, in JSON format

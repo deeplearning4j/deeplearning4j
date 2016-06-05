@@ -23,6 +23,8 @@ import org.deeplearning4j.arbiter.evaluator.graph.GraphClassificationDataSetEval
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
@@ -31,13 +33,10 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.executor.CandidateExecutor;
-import org.deeplearning4j.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
-import org.deeplearning4j.arbiter.optimize.runner.OptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.util.WebUtils;
@@ -111,11 +110,11 @@ public class TestGraphLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
+//        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
+//                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
 
-        OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
+                = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};
@@ -180,11 +179,8 @@ public class TestGraphLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
-                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
-
-        OptimizationRunner<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
+                = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
         ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};

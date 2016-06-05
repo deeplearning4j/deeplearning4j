@@ -22,11 +22,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
+import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.executor.CandidateExecutor;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +48,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <D> Type of data used to train model
  * @param <A> Type of additional results
  */
-public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
+public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
 
     private static final int POLLING_FREQUENCY = 1;
     private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
-    private static Logger log = LoggerFactory.getLogger(OptimizationRunner.class);
+    private static Logger log = LoggerFactory.getLogger(BaseOptimizationRunner.class);
 
     private OptimizationConfiguration<C, M, D, A> config;
-    private CandidateExecutor<C, M, D, A> executor;
+//    private CandidateExecutor<C, M, D, A> executor;
     private Queue<Future<OptimizationResult<C, M, A>>> queuedFutures = new ConcurrentLinkedQueue<>();
     private BlockingQueue<Future<OptimizationResult<C, M, A>>> completedFutures = new LinkedBlockingQueue<>();
     private int totalCandidateCount = 0;
@@ -73,16 +74,18 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
 
 
-    public OptimizationRunner(OptimizationConfiguration<C, M, D, A> config, CandidateExecutor<C, M, D, A> executor) {
+    public BaseOptimizationRunner(OptimizationConfiguration<C, M, D, A> config) {
         this.config = config;
-        this.executor = executor;
 
         if (config.getTerminationConditions() == null || config.getTerminationConditions().size() == 0) {
-            throw new IllegalArgumentException("Cannot create OptimizationRunner without TerminationConditions (" +
+            throw new IllegalArgumentException("Cannot create BaseOptimizationRunner without TerminationConditions (" +
                     "termination conditions are null or empty)");
         }
 
-        futureListenerExecutor = Executors.newFixedThreadPool(executor.maxConcurrentTasks(),
+    }
+
+    protected void init(){
+        futureListenerExecutor = Executors.newFixedThreadPool(maxConcurrentTasks(),
                 new ThreadFactory() {
                     private AtomicLong counter = new AtomicLong(0);
 
@@ -98,7 +101,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
     public void execute() {
 
-        log.info("OptimizationRunner: execution started");
+        log.info("BaseOptimizationRunner: execution started");
         for(OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
 
         //Initialize termination conditions (start timers, etc)
@@ -134,14 +137,14 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
 
             //Check termination conditions:
             if (terminate()) {
-                executor.shutdown();
+                shutdown();
                 break;
             }
 
             //Add additional tasks
-            while (config.getCandidateGenerator().hasMoreCandidates() && queuedFutures.size() < executor.maxConcurrentTasks()) {
+            while (config.getCandidateGenerator().hasMoreCandidates() && queuedFutures.size() < maxConcurrentTasks()) {
                 Candidate<C> candidate = config.getCandidateGenerator().getCandidate();
-                ListenableFuture<OptimizationResult<C, M, A>> f = executor.execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                ListenableFuture<OptimizationResult<C, M, A>> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
                 f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                 queuedFutures.add(f);
                 totalCandidateCount++;
@@ -319,7 +322,7 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
     private boolean terminate() {
         for (TerminationCondition c : config.getTerminationConditions()) {
             if (c.terminate(this)) {
-                log.info("OptimizationRunner global termination condition hit: {}", c);
+                log.info("BaseOptimizationRunner global termination condition hit: {}", c);
                 return true;
             }
         }
@@ -344,4 +347,14 @@ public class OptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M,
         }
     }
 
+
+
+
+    protected abstract int maxConcurrentTasks();
+
+    protected abstract ListenableFuture<OptimizationResult<C,M,A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+
+    protected abstract List<ListenableFuture<OptimizationResult<C,M,A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+
+    protected abstract void shutdown();
 }

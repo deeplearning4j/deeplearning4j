@@ -23,11 +23,10 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.executor.CandidateExecutor;
-import org.deeplearning4j.arbiter.optimize.executor.local.LocalCandidateExecutor;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
-import org.deeplearning4j.arbiter.optimize.runner.OptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
@@ -64,11 +63,8 @@ public class TestRandomSearch {
                         .terminationConditions(new MaxCandidatesCondition(50))
                         .build();
 
-        CandidateExecutor<BraninConfig, BraninConfig, Void, Void> executor =
-                new LocalCandidateExecutor<>(new BraninTaskCreator(),true);
-
-        OptimizationRunner<BraninConfig, BraninConfig, Void, Void> runner
-                = new OptimizationRunner<>(configuration, executor);
+        IOptimizationRunner<BraninConfig, BraninConfig, Void> runner
+                = new LocalOptimizationRunner<>(configuration, new BraninTaskCreator());
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
         ArbiterUIServer server = new ArbiterUIServer();
