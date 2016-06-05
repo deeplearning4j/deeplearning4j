@@ -22,6 +22,8 @@ public class StyleTable extends Style {
     private Integer borderWidthPx;
     private String headerColor;
     private String backgroundColor;
+    private String whitespaceMode;
+
 
     private StyleTable(Builder builder) {
         super(builder);
@@ -30,6 +32,7 @@ public class StyleTable extends Style {
         this.borderWidthPx = builder.borderWidthPx;
         this.headerColor = builder.headerColor;
         this.backgroundColor = builder.backgroundColor;
+        this.whitespaceMode = builder.whitespaceMode;
     }
 
     //No arg constructor for Jackson
@@ -45,6 +48,7 @@ public class StyleTable extends Style {
         private Integer borderWidthPx;
         private String headerColor;
         private String backgroundColor;
+        private String whitespaceMode;
 
         /**
          * Specify the widths for the columns
@@ -99,6 +103,17 @@ public class StyleTable extends Style {
             if (!color.toLowerCase().matches("#[a-f0-9]{6}"))
                 throw new IllegalArgumentException("Invalid color: must be hex format. Got: " + color);
             this.backgroundColor = color;
+            return this;
+        }
+
+        /**
+         * Set the whitespace mode (CSS style tag). For example, "pre" to maintain current formatting with no wrapping,
+         * "pre-wrap" to wrap (but otherwise take into account new line characters in text, etc)
+         *
+         * @param whitespaceMode    CSS whitespace mode
+         */
+        public Builder whitespaceMode(String whitespaceMode){
+            this.whitespaceMode = whitespaceMode;
             return this;
         }
 
