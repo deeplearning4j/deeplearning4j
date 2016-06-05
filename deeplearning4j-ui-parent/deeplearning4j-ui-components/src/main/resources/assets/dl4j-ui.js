@@ -880,6 +880,8 @@ var ComponentTable = (function (_super) {
                 tbl.setAttribute('border', String(s.getBorderWidthPx()));
             if (s && s.getBackgroundColor())
                 tbl.style.backgroundColor = s.getBackgroundColor();
+            if (s && s.getWhitespaceMode())
+                tbl.style.whiteSpace = s.getWhitespaceMode();
             if (s && s.getColumnWidths()) {
                 var colWidths = s.getColumnWidths();
                 var unit = TSUtils.normalizeLengthUnit(s.getColumnWidthUnit());
@@ -941,12 +943,14 @@ var StyleTable = (function (_super) {
         this.getColumnWidthUnit = function () { return _this.columnWidthUnit; };
         this.getBorderWidthPx = function () { return _this.borderWidthPx; };
         this.getHeaderColor = function () { return _this.headerColor; };
+        this.getWhitespaceMode = function () { return _this.whitespaceMode; };
         var style = jsonObj['StyleTable'];
         if (style) {
             this.columnWidths = jsonObj['StyleTable']['columnWidths'];
             this.borderWidthPx = jsonObj['StyleTable']['borderWidthPx'];
             this.headerColor = jsonObj['StyleTable']['headerColor'];
             this.columnWidthUnit = jsonObj['StyleTable']['columnWidthUnit'];
+            this.whitespaceMode = jsonObj['StyleTable']['whitespaceMode'];
         }
     }
     return StyleTable;
