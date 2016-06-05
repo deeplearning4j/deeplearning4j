@@ -17,8 +17,6 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentString;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.slf4j.Logger;

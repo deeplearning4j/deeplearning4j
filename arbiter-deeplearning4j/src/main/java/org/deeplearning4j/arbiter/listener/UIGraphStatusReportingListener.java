@@ -18,7 +18,6 @@
 package org.deeplearning4j.arbiter.listener;
 
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentString;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.ui.components.text.ComponentText;
 

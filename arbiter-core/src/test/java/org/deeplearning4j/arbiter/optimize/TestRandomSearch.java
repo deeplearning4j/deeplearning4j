@@ -31,7 +31,6 @@ import org.deeplearning4j.arbiter.optimize.runner.OptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentString;
 import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.util.ClassPathResource;
 import org.deeplearning4j.arbiter.util.WebUtils;

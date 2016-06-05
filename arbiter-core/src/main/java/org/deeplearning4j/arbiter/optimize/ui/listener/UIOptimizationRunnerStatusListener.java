@@ -28,7 +28,6 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.components.*;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -53,10 +52,11 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
     private long lastBestScoreTime = 0;
 
     private StyleTable st = new StyleTable.Builder()
-            .columnWidths(LengthUnit.Percent, 40, 60)
+            .columnWidths(LengthUnit.Percent, 25, 75)
             .backgroundColor(Color.WHITE)
             .headerColor(Color.LIGHT_GRAY)
             .borderWidth(1)
+            .whitespaceMode("pre-wrap")
             .build();
 
     private StyleChart sc = new StyleChart.Builder()
@@ -93,15 +93,12 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Result Saver:", (resultSaver == null ? "" : resultSaver.toString())},
                 {"Model Hyperparameter Space:", (space == null ? "" : space.toString())}
         };
-        RenderElements elements = new RenderElements(new RenderableComponentTable(null,table));
 
         ComponentTable ct = new ComponentTable.Builder(st)
                 .content(table)
                 .build();
 
         server.updateOptimizationSettings(ct);
-
-//        server.updateOptimizationSettings(sb.toString());
     }
 
     @Override

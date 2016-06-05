@@ -23,7 +23,6 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderElements;
 import org.deeplearning4j.arbiter.optimize.ui.resources.*;
 import org.deeplearning4j.arbiter.util.WebUtils;
 import org.deeplearning4j.ui.api.Component;
@@ -87,17 +86,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         These paths are set via the LastUpdateResource, SummaryStatusResource, ConfigResource
         An instance of each of these resources classes must be registered with Jersey
 
-    - Elements to be rendered in the various sections of the webpage: this is customizable.
-        This is what the RenderableComponent classes are for: they define a set of things we want to render in the page.
-        For example, text, line charts, tables etc. The idea is that for any platform using Arbiter, we might want to
-        display a set of arbitrary objects as the status of each model/candidate.
-        A set of commonly used elements (text, tables, line charts, histograms etc) are (or will be) provided here.
-        TODO: Make this fully extensible/generic (i.e., able to render arbitrary objects via user-provided Javascript code)
-
-      TODO: Work out how exactly to do full details (when accordian row is expanded)
-        Maybe: Just do a request given the ID of the model? UI server then extracts/generates the required JSON
       TODO: Work out how to support cancelling of tasks from UI
-
      */
 
     private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);

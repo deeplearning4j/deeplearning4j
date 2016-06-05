@@ -30,7 +30,6 @@ import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.deeplearning4j.arbiter.optimize.ui.components.RenderableComponentString;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;

@@ -18,16 +18,12 @@
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
-import org.deeplearning4j.ui.api.LengthUnit;
-import org.deeplearning4j.ui.components.table.ComponentTable;
-import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
