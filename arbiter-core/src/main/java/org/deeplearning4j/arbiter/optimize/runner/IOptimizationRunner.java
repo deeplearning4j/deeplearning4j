@@ -38,10 +38,10 @@ public interface IOptimizationRunner<C,M,A> {
     int numCandidatesQueued();
 
     /** Best score found so far */
-    double bestScore();
+    Double bestScore();
 
     /** Time that the best score was found at, or 0 if no jobs have completed successfully */
-    long bestScoreTime();
+    Long bestScoreTime();
 
     /** Index of the best scoring candidate, or -1 if no candidate has scored yet*/
     int bestScoreCandidateIndex();

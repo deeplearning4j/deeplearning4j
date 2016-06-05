@@ -113,10 +113,10 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
 
     private void doSummaryStatusUpdate(IOptimizationRunner<?,?,?> runner){
         long currentTime = System.currentTimeMillis();
-        double bestScore = runner.bestScore();
+        Double bestScore = runner.bestScore();
         int bestScoreIdx = runner.bestScoreCandidateIndex();
-        long scoreTime = runner.bestScoreTime();
-        long durationSinceBest = currentTime - scoreTime;
+        Long scoreTime = runner.bestScoreTime();
+        long durationSinceBest = (scoreTime == null ? 0 : currentTime - scoreTime);
 
         int completed = runner.numCandidatesCompleted();
         int queued = runner.numCandidatesQueued();
@@ -216,7 +216,8 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
     }
 
     /** Convert timestamp to String */
-    private String formatTimeMS(long time){
+    private String formatTimeMS(Long time){
+        if(time == null) return "null";
         Calendar c = Calendar.getInstance(TimeZone.getDefault());
         c.setTimeInMillis(time);
         int min = c.get(Calendar.MINUTE);

@@ -61,8 +61,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     private int totalCandidateCount = 0;
     private int numCandidatesCompleted = 0;
     private int numCandidatesFailed = 0;
-    private double bestScore = Double.MAX_VALUE;
-    private long bestScoreTime = 0;
+    private Double bestScore = null;
+    private Long bestScoreTime = null;
     private int bestScoreCandidateIndex = -1;
     private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
 
@@ -221,8 +221,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
         //TODO handle minimization vs. maximization
         boolean minimize = config.getScoreFunction().minimize();
-        if (score != null && ( (minimize && score < bestScore) || (!minimize && score > bestScore))) {
-            if (bestScore == Double.MAX_VALUE) {
+        if (score != null && (bestScore == null || ( (minimize && score < bestScore) || (!minimize && score > bestScore)))) {
+            if (bestScore == null) {
                 log.info("New best score: {} (first completed model)", score);
             } else {
                 log.info("New best score: {} (prev={})", score, bestScore);
@@ -269,12 +269,12 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     }
 
     @Override
-    public double bestScore() {
+    public Double bestScore() {
         return bestScore;
     }
 
     @Override
-    public long bestScoreTime() {
+    public Long bestScoreTime() {
         return bestScoreTime;
     }
 
