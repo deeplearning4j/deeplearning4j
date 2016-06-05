@@ -201,7 +201,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
                 .addComponents(config)
                 .build());
 
-        ChartLine scoreVsIterGraph = new ChartLine.Builder("Score vs. Iteration",styleChart)
+        ChartLine scoreVsIterGraph = new ChartLine.Builder("Score vs. Iteration (Loss Function Value for Current Minibatch)",styleChart)
                 .addSeries("Minibatch Score vs. Iteration",x,y)
                 .build();
         components.add(scoreVsIterGraph);

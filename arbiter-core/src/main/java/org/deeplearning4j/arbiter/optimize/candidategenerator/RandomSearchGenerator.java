@@ -52,6 +52,6 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @Override
     public String toString(){
-        return "RandomSearchGenerator()";
+        return "RandomSearchGenerator";
     }
 }

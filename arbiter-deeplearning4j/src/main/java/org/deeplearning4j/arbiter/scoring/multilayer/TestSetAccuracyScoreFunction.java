@@ -27,4 +27,9 @@ public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNet
     public boolean minimize() {
         return false;   //false -> maximize
     }
+
+    @Override
+    public String toString(){
+        return "TestSecAccuracyScoreFunction";
+    }
 }

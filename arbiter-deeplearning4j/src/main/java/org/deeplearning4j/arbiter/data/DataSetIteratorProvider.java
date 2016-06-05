@@ -35,4 +35,9 @@ public class DataSetIteratorProvider implements DataProvider<DataSetIterator> {
         if(resetBeforeReturn) testData.reset();
         return testData;
     }
+
+    @Override
+    public String toString(){
+        return "DataSetIteratorProvider(trainData=" + trainData.toString() + ", testData=" + testData.toString() + ", resetBeforeReturn=" + resetBeforeReturn + ")";
+    }
 }
