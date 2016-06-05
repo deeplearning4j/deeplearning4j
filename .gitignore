@@ -19,4 +19,5 @@ model-saver-*
 *.log
 .project
 .classpath
+.idea
 
