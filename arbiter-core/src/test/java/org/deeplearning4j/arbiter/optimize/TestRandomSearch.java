@@ -135,6 +135,11 @@ public class TestRandomSearch {
 
             return a*Math.pow(x2 - b*x1*x1 + c*x1 - r,2.0) + s*(1-t)*Math.cos(x1) + s;
         }
+
+        @Override
+        public boolean minimize() {
+            return true;
+        }
     }
 
     public static class BraninTaskCreator implements TaskCreator<BraninConfig,BraninConfig,Void,Void> {

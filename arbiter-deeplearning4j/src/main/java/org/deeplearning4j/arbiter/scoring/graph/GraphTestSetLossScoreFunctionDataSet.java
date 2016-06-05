@@ -58,6 +58,11 @@ public class GraphTestSetLossScoreFunctionDataSet implements ScoreFunction<Compu
     }
 
     @Override
+    public boolean minimize() {
+        return true;
+    }
+
+    @Override
     public String toString(){
         return "GraphTestSetLossScoreFunctionDataSet()";
     }

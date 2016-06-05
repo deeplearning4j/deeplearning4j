@@ -220,7 +220,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
 
         //TODO handle minimization vs. maximization
-        if (score != null && score < bestScore) {
+        boolean minimize = config.getScoreFunction().minimize();
+        if (score != null && ( (minimize && score < bestScore) || (!minimize && score > bestScore))) {
             if (bestScore == Double.MAX_VALUE) {
                 log.info("New best score: {} (first completed model)", score);
             } else {
