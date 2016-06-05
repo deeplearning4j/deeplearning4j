@@ -49,7 +49,7 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
             throw new IllegalArgumentException("Invalid path: is not directory. " + path);
         }
 
-        log.info("LocalComputationGraphSaver saving networks to local directory: {}",path);
+        log.info("LocalMultiLayerNetworkSaver saving networks to local directory: {}",path);
     }
 
     @Override

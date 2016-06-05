@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui;
 
+import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -121,7 +122,13 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     @Override
     public void initialize(Bootstrap<ArbiterUIConfig> bootstrap) {
-        bootstrap.addBundle(new ViewBundle<ArbiterUIConfig>());
+        bootstrap.addBundle(new ViewBundle<ArbiterUIConfig>() {
+            @Override
+            public ImmutableMap<String, ImmutableMap<String, String>> getViewConfiguration(
+                    ArbiterUIConfig arg0) {
+                return ImmutableMap.of();
+            }
+        });
         bootstrap.addBundle(new AssetsBundle());
     }
 
