@@ -21,7 +21,6 @@ import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

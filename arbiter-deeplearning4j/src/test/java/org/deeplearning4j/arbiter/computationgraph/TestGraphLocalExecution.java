@@ -59,8 +59,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.fail;
-
 public class TestGraphLocalExecution {
 
     private static Logger log = LoggerFactory.getLogger(TestGraphLocalExecution.class);

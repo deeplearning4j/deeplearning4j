@@ -19,11 +19,9 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
-import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
-import org.deeplearning4j.arbiter.optimize.runner.BaseOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;

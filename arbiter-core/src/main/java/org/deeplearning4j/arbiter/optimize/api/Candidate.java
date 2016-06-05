@@ -17,7 +17,6 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;
