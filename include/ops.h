@@ -1212,9 +1212,10 @@ namespace simdOps {
 			return old + opOutput;
 		}
 
-		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
-		
+		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
 
+		}
+		
 #ifdef __CUDACC__
 		__device__
 		static inline T opAtomic(T d1, T d2, T **extraParamsRef) {
