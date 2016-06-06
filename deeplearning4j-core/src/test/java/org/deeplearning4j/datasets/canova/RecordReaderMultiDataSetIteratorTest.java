@@ -59,9 +59,9 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         //Load time series from CSV sequence files; compare to SequenceRecordReaderDataSetIterator
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -164,9 +164,9 @@ public class RecordReaderMultiDataSetIteratorTest {
         // as standard one-hot output
 
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabels_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -261,9 +261,9 @@ public class RecordReaderMultiDataSetIteratorTest {
 
         //Set up SequenceRecordReaderDataSetIterators for comparison
         ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = resource.getFile().getPath().replaceAll("0", "%d");
         resource = new ClassPathResource("csvsequencelabelsShort_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = resource.getFile().getPath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
