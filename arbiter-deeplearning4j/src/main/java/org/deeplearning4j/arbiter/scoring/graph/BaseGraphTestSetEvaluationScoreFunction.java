@@ -58,6 +58,8 @@ public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFu
                 } else {
                     evaluation.evalTimeSeries(next.getLabels(0),out);
                 }
+
+                model.clearLayerMaskArrays();
             } else {
                 INDArray out = model.output(false, next.getFeatures())[0];
                 if(next.getLabels(0).rank() == 3 ) evaluation.evalTimeSeries(next.getLabels(0),out);

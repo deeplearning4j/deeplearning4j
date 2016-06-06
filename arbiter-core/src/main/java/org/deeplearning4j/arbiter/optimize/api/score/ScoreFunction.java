@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.api.score;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -26,7 +27,7 @@ import java.util.Map;
  * @param <M>    Type of model
  * @param <D>    Type of data used
  */
-public interface ScoreFunction<M,D> {
+public interface ScoreFunction<M,D> extends Serializable {
 
     /**
      * Calculate and return the score, for the given model and data provider

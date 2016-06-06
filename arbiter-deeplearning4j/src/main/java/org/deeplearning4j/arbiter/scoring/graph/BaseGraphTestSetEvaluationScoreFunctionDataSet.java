@@ -62,6 +62,8 @@ public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements 
                 } else {
                     evaluation.evalTimeSeries(next.getLabels(),out);
                 }
+
+                model.clearLayerMaskArrays();
             } else {
                 INDArray out = model.output(false, next.getFeatures())[0];
                 if(next.getLabels().rank() == 3 ) evaluation.evalTimeSeries(next.getLabels(),out);
