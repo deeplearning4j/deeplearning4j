@@ -14,11 +14,32 @@
 #endif
 #include <templatemath.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+
+#define SCALAR_OPS \
+        (0, simdOps::Add),\
+        (1, simdOps::Subtract),\
+        (2, simdOps::Multiply),\
+        (3, simdOps::Divide),\
+        (4, simdOps::ReverseDivide),\
+        (5, simdOps::ReverseSubtract),\
+        (6, simdOps::Max),\
+        (7, simdOps::LessThan),\
+        (8, simdOps::GreaterThan),\
+        (9, simdOps::EqualTo),\
+        (10,simdOps::LessThanOrEqual),\
+        (11,simdOps::NotEqualTo),\
+        (12,simdOps::Min),\
+        (13,simdOps::Copy),\
+        (14,simdOps::Mod),\
+        (15,simdOps::ReverseMod),\
+        (16,simdOps::GreaterThanOrEqual)
+
 namespace functions {
     namespace scalar {
 /**
@@ -169,7 +190,7 @@ template<typename OpType>
 	}
 
 		static inline __device__ void transformCuda(
-			const int op,
+			const int opNum,
 			T scalar,
 			T *dy,
 			int *shapeInfo,
@@ -178,48 +199,12 @@ template<typename OpType>
 			int *resultShapeInfo,
 			int *allocationBuffer,
 			UnifiedSharedMemory *manager) {
-
-			if (op == 0)
-				transformCuda<simdOps::Add<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 1)
-				transformCuda<simdOps::Subtract<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 2)
-				transformCuda<simdOps::Multiply<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 3)
-				transformCuda<simdOps::Divide<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 4)
-				transformCuda<simdOps::ReverseDivide<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 5)
-				transformCuda<simdOps::ReverseSubtract<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 6)
-				transformCuda<simdOps::Max<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 7)
-				transformCuda<simdOps::LessThan<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 8)
-				transformCuda<simdOps::GreaterThan<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 9)
-				transformCuda<simdOps::EqualTo<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 10)
-				transformCuda<simdOps::LessThanOrEqual<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 11)
-				transformCuda<simdOps::NotEqualTo<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 12)
-				transformCuda<simdOps::Min<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 13)
-				transformCuda<simdOps::Copy<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 14)
-				transformCuda<simdOps::Mod<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 15)
-				transformCuda<simdOps::ReverseMod<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else if (op == 16)
-				transformCuda<simdOps::GreaterThanOrEqual<T>>(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
-			}
+                    DISPATCH_BY_OPNUM(transformCuda, PARAMS(scalar, dy, shapeInfo, params, result, resultShapeInfo, allocationBuffer, manager), SCALAR_OPS);
+                    }
 
 
 		static inline __device__ void transform(
-			const int op,
+			const int opNum,
 			Nd4jIndex n,
 			T scalar,
 			T *dy,
@@ -228,50 +213,12 @@ template<typename OpType>
 			int *indexes,
 			int *allocationBuffer,
 			UnifiedSharedMemory *manager) {
-
-			if (op == 0)
-				transform<simdOps::Add<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 1)
-				transform<simdOps::Subtract<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 2)
-				transform<simdOps::Multiply<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 3)
-				transform<simdOps::Divide<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 4)
-				transform<simdOps::ReverseDivide<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 5)
-				transform<simdOps::ReverseSubtract<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 6)
-				transform<simdOps::Max<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 7)
-				transform<simdOps::LessThan<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 8)
-				transform<simdOps::GreaterThan<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 9)
-				transform<simdOps::EqualTo<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 10)
-				transform<simdOps::LessThanOrEqual<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 11)
-				transform<simdOps::NotEqualTo<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 12)
-				transform<simdOps::Min<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 13)
-				transform<simdOps::Copy<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 14)
-				transform<simdOps::Mod<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 15)
-				transform<simdOps::ReverseMod<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual<T>>(n, scalar, dy, params, result, indexes, allocationBuffer, manager);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
-
-
+                    DISPATCH_BY_OPNUM(transform, PARAMS(n, scalar, dy, params, result, indexes, allocationBuffer, manager), SCALAR_OPS);
 		}
 
 
 		static inline __device__ void transformCuda(
-			const int op,
+			const int opNum,
 			Nd4jIndex n,
 			T dx,
 			T *dy,
@@ -281,48 +228,11 @@ template<typename OpType>
 			int resultStride,
 			int *allocationBuffer,
 			UnifiedSharedMemory *manager) {
-
-			if (op == 0)
-				transformCuda<simdOps::Add<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 1)
-				transformCuda<simdOps::Subtract<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 2)
-				transformCuda<simdOps::Multiply<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 3)
-				transformCuda<simdOps::Divide<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 4)
-				transformCuda<simdOps::ReverseDivide<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 5)
-				transformCuda<simdOps::ReverseSubtract<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 6)
-				transformCuda<simdOps::Max<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 7)
-				transformCuda<simdOps::LessThan<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 8)
-				transformCuda<simdOps::GreaterThan<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 9)
-				transformCuda<simdOps::EqualTo<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 10)
-				transformCuda<simdOps::LessThanOrEqual<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 11)
-				transformCuda<simdOps::NotEqualTo<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 12)
-				transformCuda<simdOps::Min<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 13)
-				transformCuda<simdOps::Copy<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 14)
-				transformCuda<simdOps::Mod<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 15)
-				transformCuda<simdOps::ReverseMod<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else if (op == 16)
-				transformCuda<simdOps::GreaterThanOrEqual<T>>(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
-
+                    DISPATCH_BY_OPNUM(transformCuda, PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager), SCALAR_OPS);
 		}
 #endif
 
-		static void transform(const int op,
+		static void transform(const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *result,
@@ -331,127 +241,21 @@ template<typename OpType>
 			T *extraParams,
 			int *indexes,
 			int *resultIndexes) {
-			if (op == 0)
-				transform<simdOps::Add<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 1)
-				transform<simdOps::Subtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 2)
-				transform<simdOps::Multiply<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 3)
-				transform<simdOps::Divide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 4)
-				transform<simdOps::ReverseDivide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 5)
-				transform<simdOps::ReverseSubtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 6)
-				transform<simdOps::Max<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 7)
-				transform<simdOps::LessThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 8)
-				transform<simdOps::GreaterThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 9)
-				transform<simdOps::EqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 10)
-				transform<simdOps::LessThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 11)
-				transform<simdOps::NotEqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 12)
-				transform<simdOps::Min<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 13)
-				transform<simdOps::Copy<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 14)
-				transform<simdOps::Mod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 15)
-				transform<simdOps::ReverseMod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
-
+                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes), SCALAR_OPS);
 		}
 
-		static void transform(const int op, T *x, int xStride, T *result, int resultStride,
+		static void transform(const int opNum, T *x, int xStride, T *result, int resultStride,
 			T scalar, T *extraParams, const Nd4jIndex n) {
-			if (op == 0)
-				transform<simdOps::Add<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 1)
-				transform<simdOps::Subtract<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 2)
-				transform<simdOps::Multiply<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 3)
-				transform<simdOps::Divide<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 4)
-				transform<simdOps::ReverseDivide<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 5)
-				transform<simdOps::ReverseSubtract<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 6)
-				transform<simdOps::Max<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 7)
-				transform<simdOps::LessThan<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 8)
-				transform<simdOps::GreaterThan<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 9)
-				transform<simdOps::EqualTo<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 10)
-				transform<simdOps::LessThanOrEqual<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 11)
-				transform<simdOps::NotEqualTo<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 12)
-				transform<simdOps::Min<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 13)
-				transform<simdOps::Copy<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 14)
-				transform<simdOps::Mod<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 15)
-				transform<simdOps::ReverseMod<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual<T>>(x, xStride, result, resultStride, scalar, extraParams, n);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
+                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xStride, result, resultStride, scalar, extraParams, n), SCALAR_OPS);
 		}
 
-		static void transform(const int op,
+		static void transform(const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *result,
 			int *resultShapeInfo,
 			T scalar, T *extraParams) {
-			if (op == 0)
-				transform<simdOps::Add<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 1)
-				transform<simdOps::Subtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 2)
-				transform<simdOps::Multiply<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 3)
-				transform<simdOps::Divide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 4)
-				transform<simdOps::ReverseDivide<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 5)
-				transform<simdOps::ReverseSubtract<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 6)
-				transform<simdOps::Max<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 7)
-				transform<simdOps::LessThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 8)
-				transform<simdOps::GreaterThan<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 9)
-				transform<simdOps::EqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 10)
-				transform<simdOps::LessThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 11)
-				transform<simdOps::NotEqualTo<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 12)
-				transform<simdOps::Min<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 13)
-				transform<simdOps::Copy<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 14)
-				transform<simdOps::Mod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 15)
-				transform<simdOps::ReverseMod<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else if (op == 16)
-				transform<simdOps::GreaterThanOrEqual<T>>(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
-			else
-				printf("[ERROR] Unknown opNum=%d for scalar", op);
+                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
 		}
 
             /**

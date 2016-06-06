@@ -21,6 +21,7 @@
 #include <shape.h>
 #include <ops.h>
 #include <special_ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
@@ -33,6 +34,52 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+
+
+#define TRANSFORM_OPS \
+	(0, simdOps::Abs), \
+        (1, simdOps::Ceiling), \
+        (2, simdOps::Cosine), \
+        (3, simdOps::Exp), \
+        (4, simdOps::Floor), \
+        (5, simdOps::Log), \
+        (6, simdOps::Neg), \
+        (7, simdOps::Pow), \
+        (8, simdOps::Round), \
+        (9, simdOps::SetRange), \
+        (10,simdOps::Sigmoid), \
+        (11,simdOps::Sign), \
+        (12,simdOps::Sin), \
+        (13,simdOps::SoftPlus), \
+        (14,simdOps::Sqrt), \
+        (15,simdOps::Tanh), \
+        (16,simdOps::ACos), \
+        (17,simdOps::ASin), \
+        (18,simdOps::ATan), \
+        (19,simdOps::HardTanh), \
+        (20,simdOps::SoftSign), \
+        (21,simdOps::ELU), \
+        (22,simdOps::ELUDerivative), \
+        (23,simdOps::TanhDerivative), \
+        (24,simdOps::TimesOneMinus), \
+        (25,simdOps::HardTanhDerivative), \
+        (26,simdOps::Ones), \
+        (27,simdOps::Identity), \
+        (28,simdOps::Stabilize), \
+        (29,simdOps::SigmoidDerivative), \
+        (30,simdOps::SoftSignDerivative), \
+        (31,simdOps::LeakyRELU), \
+        (32,simdOps::LeakyRELUDerivative), \
+        (33,simdOps::RELU), \
+        (34,simdOps::Step), \
+        (35,simdOps::OneMinus), \
+        (36,simdOps::Col2Im), \
+        (37,simdOps::Im2col), \
+        (38,simdOps::SoftMax), \
+        (39,simdOps::SoftMaxDerivative), \
+        (40,simdOps::LogSoftMax), \
+        (41,simdOps::IsMax), \
+        (42,simdOps::SpecialDerivative)
 
 
 namespace functions {
@@ -179,7 +226,7 @@ template<typename OpType>
 	}
 
 	static  __inline__ __device__ void transformCuda(
-			const int op,
+			const int opNum,
 			T *dy,
 			int *shapeInfo,
 			T *params,
@@ -188,99 +235,12 @@ template<typename OpType>
 			int *allocationPointer,
 			T *reductionPointer,
 			UnifiedSharedMemory *manager) {
-
-				if (op == 0)
-					transformCuda<simdOps::Abs<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 1)
-					transformCuda<simdOps::Ceiling<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 2)
-					transformCuda<simdOps::Cosine<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 3)
-					transformCuda<simdOps::Exp<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 4)
-					transformCuda<simdOps::Floor<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 5)
-					transformCuda<simdOps::Log<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 6)
-					transformCuda<simdOps::Neg<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 7)
-					transformCuda<simdOps::Pow<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 8)
-					transformCuda<simdOps::Round<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 9)
-					transformCuda<simdOps::SetRange<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 10)
-					transformCuda<simdOps::Sigmoid<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 11)
-					transformCuda<simdOps::Sign<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 12)
-					transformCuda<simdOps::Sin<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 13)
-					transformCuda<simdOps::SoftPlus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 14)
-					transformCuda<simdOps::Sqrt<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 15)
-					transformCuda<simdOps::Tanh<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 16)
-					transformCuda<simdOps::ACos<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 17)
-					transformCuda<simdOps::ASin<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 18)
-					transformCuda<simdOps::ATan<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 19)
-					transformCuda<simdOps::HardTanh<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 20)
-					transformCuda<simdOps::SoftSign<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 21)
-					transformCuda<simdOps::ELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 22)
-					transformCuda<simdOps::ELUDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 23)
-					transformCuda<simdOps::TanhDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 24)
-					transformCuda<simdOps::TimesOneMinus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 25)
-					transformCuda<simdOps::HardTanhDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 26)
-					transformCuda<simdOps::Ones<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 27)
-					transformCuda<simdOps::Identity<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 28)
-					transformCuda<simdOps::Stabilize<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 29)
-					transformCuda<simdOps::SigmoidDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 30)
-					transformCuda<simdOps::SoftSignDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 31)
-					transformCuda<simdOps::LeakyRELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 32)
-					transformCuda<simdOps::LeakyRELUDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 33)
-					transformCuda<simdOps::RELU<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 34)
-					transformCuda<simdOps::Step<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 35)
-					transformCuda<simdOps::OneMinus<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 36)
-					transformCuda<simdOps::Col2Im<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 37)
-					transformCuda<simdOps::Im2col<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 38)
-					transformCuda<simdOps::SoftMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 39)
-					transformCuda<simdOps::SoftMaxDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 40)
-					transformCuda<simdOps::LogSoftMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 41)
-					transformCuda<simdOps::IsMax<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else if (op == 42)
-					transformCuda<simdOps::SpecialDerivative<T>>(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager);
-				else printf("[ERROR] Unknow opNum %d for transform\n", op);
+                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager), TRANSFORM_OPS);
 	}
 
 
 	static  __inline__ __device__ void transformCuda(
-			const int op,
+			const int opNum,
 			Nd4jIndex n,
 			T *dy,
 			int incy,
@@ -290,243 +250,17 @@ template<typename OpType>
 			int *allocationPointer,
 			T *reductionPointer,
 			UnifiedSharedMemory *manager) {
-
-				if (op == 0)
-					transformCuda<simdOps::Abs<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 1)
-					transformCuda<simdOps::Ceiling<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 2)
-					transformCuda<simdOps::Cosine<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 3)
-					transformCuda<simdOps::Exp<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 4)
-					transformCuda<simdOps::Floor<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 5)
-					transformCuda<simdOps::Log<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 6)
-					transformCuda<simdOps::Neg<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 7)
-					transformCuda<simdOps::Pow<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 8)
-					transformCuda<simdOps::Round<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 9)
-					transformCuda<simdOps::SetRange<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 10)
-					transformCuda<simdOps::Sigmoid<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 11)
-					transformCuda<simdOps::Sign<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 12)
-					transformCuda<simdOps::Sin<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 13)
-					transformCuda<simdOps::SoftPlus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 14)
-					transformCuda<simdOps::Sqrt<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 15)
-					transformCuda<simdOps::Tanh<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 16)
-					transformCuda<simdOps::ACos<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 17)
-					transformCuda<simdOps::ASin<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 18)
-					transformCuda<simdOps::ATan<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 19)
-					transformCuda<simdOps::HardTanh<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 20)
-					transformCuda<simdOps::SoftSign<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 21)
-					transformCuda<simdOps::ELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 22)
-					transformCuda<simdOps::ELUDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 23)
-					transformCuda<simdOps::TanhDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 24)
-					transformCuda<simdOps::TimesOneMinus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 25)
-					transformCuda<simdOps::HardTanhDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 26)
-					transformCuda<simdOps::Ones<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 27)
-					transformCuda<simdOps::Identity<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 28)
-					transformCuda<simdOps::Stabilize<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 29)
-					transformCuda<simdOps::SigmoidDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 30)
-					transformCuda<simdOps::SoftSignDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 31)
-					transformCuda<simdOps::LeakyRELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 32)
-					transformCuda<simdOps::LeakyRELUDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 33)
-					transformCuda<simdOps::RELU<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 34)
-					transformCuda<simdOps::Step<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 35)
-					transformCuda<simdOps::OneMinus<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 36)
-					transformCuda<simdOps::Col2Im<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 37)
-					transformCuda<simdOps::Im2col<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 38)
-					transformCuda<simdOps::SoftMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 39)
-					transformCuda<simdOps::SoftMaxDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 40)
-					transformCuda<simdOps::LogSoftMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 41)
-					transformCuda<simdOps::IsMax<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else if (op == 42)
-					transformCuda<simdOps::SpecialDerivative<T>>(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager);
-				else printf("[ERROR] Unknow opNum %d for transform\n", op);
+                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager), TRANSFORM_OPS);
 	}
 #endif
 
 
-			static void exec(
-				int op,
-				T *dx,
-				int xStride,
-				T *result,
-				int resultStride,
-				T *extraParams,
-				const int n) {
-				if (op == 0) {
-					exec<simdOps::Abs<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 1) {
-					exec<simdOps::Ceiling<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 2) {
-					exec<simdOps::Cosine<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 3) {
-					exec<simdOps::Exp<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 4) {
-					exec<simdOps::Floor<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 5) {
-					exec<simdOps::Log<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 6) {
-					exec<simdOps::Neg<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 7) {
-					exec<simdOps::Pow<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 8) {
-					exec<simdOps::Round<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 9) {
-					exec<simdOps::SetRange<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 10) {
-					exec<simdOps::Sigmoid<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 11) {
-					exec<simdOps::Sign<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 12) {
-					exec<simdOps::Sin<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 13) {
-					exec<simdOps::SoftPlus<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 14) {
-					exec<simdOps::Sqrt<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 15) {
-					exec<simdOps::Tanh<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 16) {
-					exec<simdOps::ACos<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 17) {
-					exec<simdOps::ASin<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 18) {
-					exec<simdOps::ATan<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 19) {
-					exec<simdOps::HardTanh<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 20) {
-					exec<simdOps::SoftSign<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 21) {
-					exec<simdOps::ELU<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 22) {
-					exec<simdOps::ELUDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 23) {
-					exec<simdOps::TanhDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 24) {
-					exec<simdOps::TimesOneMinus<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 26) {
-					exec<simdOps::Ones<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 27) {
-					exec<simdOps::Identity<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 28) {
-					exec<simdOps::Stabilize<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 31) {
-					exec<simdOps::LeakyRELU<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 33) {
-					exec<simdOps::RELU<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 34) {
-					exec<simdOps::Step<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 35) {
-					exec<simdOps::OneMinus<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 36) {
-					exec<simdOps::Col2Im<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 37) {
-					exec<simdOps::Im2col<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 38) {
-					exec<simdOps::SoftMax<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 40) {
-					exec<simdOps::LogSoftMax<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 41) {
-					exec<simdOps::IsMax<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else if (op == 42) {
-					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative<T>>(dx, xStride, result, resultStride, extraParams, n);
-				}
-				else {
-					printf("[ERROR] Unknow opNum %d for transform\n", op);
-				}
+			static void exec(int opNum, T *dx, int xStride, T *result, int resultStride, T *extraParams, const int n) {
+                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
 			}
 
 			static void exec(
-				int op,
+				int opNum,
 				T *dx,
 				int *xShapeInfo,
 				T *result,
@@ -534,282 +268,18 @@ template<typename OpType>
 				T *extraParams,
 				Nd4jIndex *indexes,
 				Nd4jIndex *resultIndexes) {
-				if (op == 0) {
-					exec<simdOps::Abs<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 1) {
-					exec<simdOps::Ceiling<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 2) {
-					exec<simdOps::Cosine<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 3) {
-					exec<simdOps::Exp<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 4) {
-					exec<simdOps::Floor<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 5) {
-					exec<simdOps::Log<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 6) {
-					exec<simdOps::Neg<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 7) {
-					exec<simdOps::Pow<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 8) {
-					exec<simdOps::Round<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 9) {
-					exec<simdOps::SetRange<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 10) {
-					exec<simdOps::Sigmoid<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 11) {
-					exec<simdOps::Sign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 12) {
-					exec<simdOps::Sin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 13) {
-					exec<simdOps::SoftPlus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 14) {
-					exec<simdOps::Sqrt<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 15) {
-					exec<simdOps::Tanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 16) {
-					exec<simdOps::ACos<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 17) {
-					exec<simdOps::ASin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 18) {
-					exec<simdOps::ATan<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 19) {
-					exec<simdOps::HardTanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 20) {
-					exec<simdOps::SoftSign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 21) {
-					exec<simdOps::ELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 22) {
-					exec<simdOps::ELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 23) {
-					exec<simdOps::TanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 24) {
-					exec<simdOps::TimesOneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 26) {
-					exec<simdOps::Ones<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 27) {
-					exec<simdOps::Identity<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 28) {
-					exec<simdOps::Stabilize<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 31) {
-					exec<simdOps::LeakyRELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 33) {
-					exec<simdOps::RELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 34) {
-					exec<simdOps::Step<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 35) {
-					exec<simdOps::OneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 36) {
-					exec<simdOps::Col2Im<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 37) {
-					exec<simdOps::Im2col<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 38) {
-					exec<simdOps::SoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 40) {
-					exec<simdOps::LogSoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 41) {
-					exec<simdOps::IsMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else if (op == 42) {
-					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes);
-				}
-				else {
-					printf("[ERROR] Unknow opNum %d for transform\n", op);
-				}
+                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, indexes, resultIndexes), TRANSFORM_OPS);
 			}
 
 
 			static void exec(
-				int op,
+				int opNum,
 				T *dx,
 				int *xShapeInfo,
 				T *result,
 				int *resultShapeInfo,
 				T *extraParams) {
-				if (op == 0) {
-					exec<simdOps::Abs<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 1) {
-					exec<simdOps::Ceiling<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 2) {
-					exec<simdOps::Cosine<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 3) {
-					exec<simdOps::Exp<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 4) {
-					exec<simdOps::Floor<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 5) {
-					exec<simdOps::Log<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 6) {
-					exec<simdOps::Neg<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 7) {
-					exec<simdOps::Pow<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 8) {
-					exec<simdOps::Round<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 9) {
-					exec<simdOps::SetRange<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 10) {
-					exec<simdOps::Sigmoid<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 11) {
-					exec<simdOps::Sign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 12) {
-					exec<simdOps::Sin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 13) {
-					exec<simdOps::SoftPlus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 14) {
-					exec<simdOps::Sqrt<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 15) {
-					exec<simdOps::Tanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 16) {
-					exec<simdOps::ACos<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 17) {
-					exec<simdOps::ASin<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 18) {
-					exec<simdOps::ATan<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 19) {
-					exec<simdOps::HardTanh<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 20) {
-					exec<simdOps::SoftSign<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 21) {
-					exec<simdOps::ELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 22) {
-					exec<simdOps::ELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 23) {
-					exec<simdOps::TanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 24) {
-					exec<simdOps::TimesOneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 25) {
-					exec<simdOps::HardTanhDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 26) {
-					exec<simdOps::Ones<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 27) {
-					exec<simdOps::Identity<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 28) {
-					exec<simdOps::Stabilize<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 29) {
-					exec<simdOps::SigmoidDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 30) {
-					exec<simdOps::SoftSignDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 31) {
-					exec<simdOps::LeakyRELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 32) {
-					exec<simdOps::LeakyRELUDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 33) {
-					exec<simdOps::RELU<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 34) {
-					exec<simdOps::Step<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 35) {
-					exec<simdOps::OneMinus<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 36) {
-					exec<simdOps::Col2Im<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 37) {
-					exec<simdOps::Im2col<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 38) {
-					exec<simdOps::SoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 39) {
-					exec<simdOps::SoftMaxDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 40) {
-					exec<simdOps::LogSoftMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 41) {
-					exec<simdOps::IsMax<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else if (op == 42) {
-					// temporary special op for blockwise SoftMax Derivative
-					exec<simdOps::SpecialDerivative<T>>(dx, xShapeInfo, result, resultShapeInfo, extraParams);
-				}
-				else {
-					printf("[ERROR] Unknow opNum %d for transform\n", op);
-				}
+                                DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams), TRANSFORM_OPS);
 			}
 
 

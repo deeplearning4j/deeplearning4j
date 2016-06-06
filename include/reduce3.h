@@ -18,6 +18,7 @@
 #include <dll.h>
 #include <shape.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __JNI__
 #include <jni.h>
@@ -28,6 +29,14 @@
 #include <cuda_runtime.h>
 #endif
 
+
+#define REDUCE3_OPS \
+        (0, simdOps::ManhattanDistance), \
+        (1, simdOps::EuclideanDistance), \
+        (2, simdOps::CosineSimilarity), \
+        (3, simdOps::Dot)
+
+        
 namespace functions {
 	namespace reduce3 {
 
@@ -450,7 +459,7 @@ template<typename OpType>
 #ifdef __CUDACC__
 			__device__
 			static inline void exec(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeInfo,
 				T *dy,
@@ -465,22 +474,12 @@ template<typename OpType>
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo,
 				int *tadOffsets) {
-
-				if (op == 0)
-					transform<simdOps::ManhattanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 1)
-					transform<simdOps::EuclideanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 2)
-					transform<simdOps::CosineSimilarity<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else if (op == 3)
-					transform<simdOps::Dot<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets);
-				else
-					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+                            DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets), REDUCE3_OPS);
 			}
 
 			__device__
 			static inline void execScalarCuda(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeInfo,
 				T *dy,
@@ -491,17 +490,7 @@ template<typename OpType>
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo) {
-
-				if (op == 0)
-					execScalarCuda<simdOps::ManhattanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 1)
-					execScalarCuda<simdOps::EuclideanDistance<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 2)
-					execScalarCuda<simdOps::CosineSimilarity<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 3)
-					execScalarCuda<simdOps::Dot<T>>(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo);
-				else
-					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+                            DISPATCH_BY_OPNUM(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
 			}
 #endif
 
@@ -511,26 +500,16 @@ template<typename OpType>
 #endif
 
 			static T execScalar(
-				const int op,
+				const int opNum,
 				T *x,
 				int *xShapeInfo,
 				T *extraParamsVals,
 				T *y,
 				int *yShapeInfo) {
-				if (op == 0)
-					return execScalar<simdOps::ManhattanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
-				else if (op == 1)
-					return execScalar<simdOps::EuclideanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
-				else if (op == 2)
-					return execScalar<simdOps::CosineSimilarity<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
-				else if (op == 3)
-					return execScalar<simdOps::Dot<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo);
-				else
-					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
-				return 0;
+                            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParamsVals, y, yShapeInfo), REDUCE3_OPS);
 			}
 
-			static void exec( const int op,
+			static void exec( const int opNum,
 				T *x, int *xShapeInfo,
 				T *extraParamsVals,
 				T *y,
@@ -539,16 +518,7 @@ template<typename OpType>
 				int *resultShapeInfoBuffer,
 				int *dimension,
 				int dimensionLength) {
-				if (op == 0)
-					exec<simdOps::ManhattanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
-				else if (op == 1)
-					exec<simdOps::EuclideanDistance<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
-				else if (op == 2)
-					exec<simdOps::CosineSimilarity<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
-				else if (op == 3)
-					exec<simdOps::Dot<T>>(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
-				else
-					printf("[ERROR] Unknown opNum=%d for reduce3!\n", op);
+                            DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength), REDUCE3_OPS);
 			}
 			
 
