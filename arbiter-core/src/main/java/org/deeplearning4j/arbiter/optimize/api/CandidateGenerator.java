@@ -36,4 +36,6 @@ public interface CandidateGenerator<C> {
 
     ParameterSpace<C> getParameterSpace();
 
+    void setRngSeed(long rngSeed);
+
 }

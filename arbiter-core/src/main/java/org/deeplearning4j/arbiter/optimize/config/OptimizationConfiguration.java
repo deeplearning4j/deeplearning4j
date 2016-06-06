@@ -42,6 +42,7 @@ public class OptimizationConfiguration<T,M,D,A> {
     private ResultSaver<T,M,A> resultSaver;
     private ScoreFunction<M,D> scoreFunction;
     private List<TerminationCondition> terminationConditions;
+    private Long rngSeed;
 
     private OptimizationConfiguration(Builder<T,M,D,A> builder ){
         this.dataProvider = builder.dataProvider;
@@ -49,6 +50,9 @@ public class OptimizationConfiguration<T,M,D,A> {
         this.resultSaver = builder.resultSaver;
         this.scoreFunction = builder.scoreFunction;
         this.terminationConditions = builder.terminationConditions;
+        this.rngSeed = builder.rngSeed;
+
+        if(rngSeed != null) candidateGenerator.setRngSeed(rngSeed);
     }
 
     public static class Builder<T,M,D,A> {
@@ -58,6 +62,7 @@ public class OptimizationConfiguration<T,M,D,A> {
         private ResultSaver<T,M,A> resultSaver;
         private ScoreFunction<M,D> scoreFunction;
         private List<TerminationCondition> terminationConditions;
+        private Long rngSeed;
 
         public Builder<T,M,D,A> dataProvider(DataProvider<D> dataProvider){
             this.dataProvider = dataProvider;
@@ -89,11 +94,13 @@ public class OptimizationConfiguration<T,M,D,A> {
             return this;
         }
 
+        public Builder<T,M,D,A> rngSeed(long rngSeed){
+            this.rngSeed = rngSeed;
+            return this;
+        }
+
         public OptimizationConfiguration<T,M,D,A> build(){
             return new OptimizationConfiguration<T,M,D,A>(this);
         }
-
-
     }
-
 }

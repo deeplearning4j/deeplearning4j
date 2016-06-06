@@ -67,4 +67,9 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     public void reportResults(OptimizationResult<T,?,?> result) {
         //No op
     }
+
+    @Override
+    public void setRngSeed(long rngSeed){
+        rng.setSeed(rngSeed);
+    }
 }

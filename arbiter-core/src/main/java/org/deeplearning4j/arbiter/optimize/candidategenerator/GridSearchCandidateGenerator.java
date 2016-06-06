@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.candidategenerator;
 
+import org.apache.commons.math3.random.RandomAdaptor;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -57,8 +58,6 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
     private int totalNumCandidates;
     private Queue<Integer> order;
 
-    private Random rng;
-
     /**
      * @param parameterSpace ParameterSpace from which to generate candidates
      * @param discretizationCount For continuous parameters: into how many values should we discretize them into?
@@ -68,23 +67,9 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
      *             in which candidates should be generated.
      */
     public GridSearchCandidateGenerator(ParameterSpace<T> parameterSpace, int discretizationCount, Mode mode){
-        this(parameterSpace,discretizationCount,mode,new Random().nextLong());
-    }
-
-    /**
-     * @param parameterSpace ParameterSpace from which to generate candidates
-     * @param discretizationCount For continuous parameters: into how many values should we discretize them into?
-     *                           For example, suppose continuous parameter is in range [0,1] with 3 bins:
-     *                           do [0.0, 0.5, 1.0]
-     * @param mode {@link GridSearchCandidateGenerator.Mode} specifies the order
-     *             in which candidates should be generated.
-     * @param seed RNG seed, for repeatability
-     */
-    public GridSearchCandidateGenerator(ParameterSpace<T> parameterSpace, int discretizationCount, Mode mode, long seed){
         super(parameterSpace);
         this.discretizationCount = discretizationCount;
         this.mode = mode;
-        this.rng = new Random(seed);
 
         initialize();
     }
@@ -136,7 +121,8 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
                 for( int i=0; i<totalNumCandidates; i++ ){
                     tempList.add(i);
                 }
-                Collections.shuffle(tempList, rng);
+
+                Collections.shuffle(tempList, new RandomAdaptor(rng));
                 order.addAll(tempList);
                 break;
             default:

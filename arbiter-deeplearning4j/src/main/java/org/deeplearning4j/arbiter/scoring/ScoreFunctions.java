@@ -22,6 +22,7 @@ import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunctio
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetF1ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.scoring.multilayer.TestSetRegressionScoreFunction;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -104,6 +105,27 @@ public class ScoreFunctions {
      */
     public static ScoreFunction<ComputationGraph,DataSetIterator> testSetF1GraphDataSet(){
         return new GraphTestSetF1ScoreFunctionDataSet();
+    }
+
+    /**
+     * Calculate a regression value (MSE, MAE etc) on a test set (DataSetIterator) for a MultiLayerNetwork
+     */
+    public static ScoreFunction<MultiLayerNetwork,DataSetIterator> testSetRegression(RegressionValue regressionValue){
+        return new TestSetRegressionScoreFunction(regressionValue);
+    }
+
+    /**
+     * Calculate a regression value (MSE, MAE etc) on a test set (MultiDataSetIterator) for a ComputationGraph
+     */
+    public static ScoreFunction<ComputationGraph,MultiDataSetIterator> testSetRegressionGraph(RegressionValue regressionValue){
+        return new GraphTestSetRegressionScoreFunction(regressionValue);
+    }
+
+    /**
+     * Calculate a regression value (MSE, MAE etc) on a test set (DataSetIterator) for a MultiLayerNetwork
+     */
+    public static ScoreFunction<ComputationGraph,DataSetIterator> testSetRegressionGraphDataSet(RegressionValue regressionValue){
+        return new GraphTestSetRegressionScoreFunctionDataSet(regressionValue);
     }
 
 }
