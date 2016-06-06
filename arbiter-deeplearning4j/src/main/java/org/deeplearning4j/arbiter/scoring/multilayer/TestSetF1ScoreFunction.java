@@ -9,18 +9,18 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import java.util.Map;
 
 /**
- * Score function that calculates the accuracy on a test set for a MultiLayerNetwork
+ * Score function that calculates the F1 score on a test set for a MultiLayerNetwork
  *
  * @author Alex Black
  */
-public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
+public class TestSetF1ScoreFunction implements ScoreFunction<MultiLayerNetwork, DataSetIterator> {
     @Override
     public double score(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
         DataSetIterator testData = dataProvider.testData(dataParameters);
 
         Evaluation evaluation = model.evaluate(testData);
 
-        return evaluation.accuracy();
+        return evaluation.f1();
     }
 
     @Override
@@ -30,6 +30,6 @@ public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNet
 
     @Override
     public String toString(){
-        return "TestSetAccuracyScoreFunction";
+        return "TestSetF1ScoreFunction";
     }
 }
