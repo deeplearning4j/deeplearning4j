@@ -23,82 +23,13 @@ After following the steps in the [Quick Start Guide](http://deeplearning4j.org/q
 6. <a href="#results">Reproducible Results</a>
 7. <a href="#next">Next Steps</a>
 
-## Accelerating CPU Training Performance: Installing Native BLAS Libraries
+##  Native BLAS Libraries
 
-Neural network training is computationally expensive. In order to obtain high computational performance, ND4J makes use of native (c/fortran) basic linear algebra subpgropgams (BLAS) libraries, such as [OpenBLAS](http://www.openblas.net/). Though ND4J will operate correctly without it, training performance in DL4J will suffer.
+See the [libnd4j readme](https://github.com/deeplearning4j/libnd4j)
 
+for detailed OS specific instructions.
 
-### <a name="linux">Linux</a>
-
-* Due to our reliance on various forms of Blas for CPUs, native bindings for Blas are required.
-
-        Fedora/RHEL
-        yum -y install blas
-
-        Ubuntu
-        apt-get install libblas* (credit to @sujitpal)
-
-Please see [this section](#open) for more information on OpenBlas.
-
-* If GPUs are broken, you'll need to enter an extra command. First, find out where Cuda installs itself. It will look something like this
-
-         /usr/local/cuda/lib64
-
-Then enter *ldconfig* in the terminal, followed by the file path to link Cuda. Your command will look similar to this
-
-         ldconfig /usr/local/cuda/lib64
-
-If you're still unable to load Jcublas, you will need to add the parameter -D to your code (it's a JVM argument):
-
-         java.library.path (settable via -Djava.librarypath=...) 
-         // ^ for a writable directory, then 
-         -D appended directly to "<OTHER ARGS>" 
-
-If you're using IntelliJ as your IDE, this should work already. 
-
-### <a name="osx">OSX</a>
-
-* OSX ships with a fast native BLAS library, [vecLib](https://developer.apple.com/library/mac/documentation/Performance/Conceptual/vecLib/). In most cases, this is sufficient for users, and is quite fast.
-
-### <a name="windows">Windows</a>
-
-To install native binaries (OpenBLAS) on Windows, you have two options.
-
-- Option 1: Use a pre-compiled version of OpenBLAS, as described below (recommended)
-- Option 2: Compile OpenBLAS from source. This may result in faster execution due to machine-specific optimizations possible during compilation, but is *considerably* more complicated than using the precompiled binaries.
-
-For the *precompiled* version of OpenBlas (see below) on **Windows**, download [this file](https://www.dropbox.com/s/6p8yn3fcf230rxy/ND4J_Win64_OpenBLAS-v0.2.14.zip?dl=1). Extract to somewhere such as `C:/BLAS`. Add that directory to your system's `PATH` environment variable, and then restart your IDE (and, ideally your computer too). If that doesn't work, please refer to this [Github issue](https://github.com/deeplearning4j/deeplearning4j/issues/1168).
-
-To build OpenBLAS from source on Windows, see [this link](https://gist.github.com/AlexDBlack/c34e95fd08c0e9b3891b).
-
-### <a id="open"> OpenBlas </a>
-
-To make sure the native libs on the x86 backend work, you need `/opt/OpenBLAS/lib` on the system path. After that, enter these commands in the prompt
-
-			sudo cp libopenblas.so liblapack.so.3
-			sudo cp libopenblas.so libblas.so.3
-
-We added this so that [Spark](http://deeplearning4j.org/spark) would work with OpenBlas.
-
-If OpenBlas is not working correctly, follow these steps:
-
-* Remove Openblas if you installed it.
-* Run `sudo apt-get remove libopenblas-base`
-* Download the development version of OpenBLAS
-* `git clone git://github.com/xianyi/OpenBLAS`
-* `cd OpenBLAS`
-* `make FC=gfortran`
-* `sudo make PREFIX=/usr/local/ install`
-* With **Linux**, double check if the symlinks for `libblas.so.3` and `liblapack.so.3` are present anywhere in your `LD_LIBRARY_PATH`. If they aren't, add the links to `/usr/lib`. A symlink is a "symbolic link." You can set it up like this (the -s makes the link symbolic):
-
-		ln -s TARGET LINK_NAME
-		// interpretation: ln -s "to-here" <- "from-here"
-
-* The "from-here" is the symbolic link that does not exist yet, and which you are creating. Here's StackOverflow on [how to create a symlink](https://stackoverflow.com/questions/1951742/how-to-symlink-a-file-in-linux). And here's the [Linux man page](http://linux.die.net/man/1/ln).
-* As a last step, restart your IDE. 
-* For complete instructions on how to get native Blas running with **Centos 6**, [see this page](https://gist.github.com/jarutis/912e2a4693accee42a94) or [this](https://gist.github.com/sato-cloudian/a42892c4235e82c27d0d).
-
-For OpenBlas on **Ubuntu** (15.10), please see [these instructions](http://pastebin.com/F0Rv2uEk).
+You shouldn't need to do any setup unless you are installing cuda however.
 
 ## <a name="walk">DL4J Examples: A Detailed Walkthrough</a>
 
