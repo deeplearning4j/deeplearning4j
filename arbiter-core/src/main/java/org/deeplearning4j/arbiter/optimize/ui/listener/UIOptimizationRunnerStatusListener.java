@@ -42,6 +42,11 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
+/**
+ * A listener for the optimization runner that reports results to the UI
+ *
+ * @author Alex Black
+ */
 public class UIOptimizationRunnerStatusListener implements OptimizationRunnerStatusListener {
 
     private ArbiterUIServer server;

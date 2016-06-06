@@ -17,22 +17,28 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
-/**A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
+/**
+ * A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.
  * This abstraction allows for different ways of generating the next configuration to test; for example,
  * random search, grid search, Bayesian optimization methods, etc.
+ *
  * @param <C> Type of candidate to generate
+ * @author Alex Black
  */
 public interface CandidateGenerator<C> {
 
-    /** Is this candidate generator able to generate more candidates? This will always return true in some
+    /**
+     * Is this candidate generator able to generate more candidates? This will always return true in some
      * cases, but some search strategies have a limit (grid search, for example)
      */
     boolean hasMoreCandidates();
 
-    /** Generate a candidate hyperparameter configuration */
+    /**
+     * Generate a candidate hyperparameter configuration
+     */
     Candidate<C> getCandidate();
 
-    void reportResults(OptimizationResult<C,?,?> result);
+    void reportResults(OptimizationResult<C, ?, ?> result);
 
     ParameterSpace<C> getParameterSpace();
 

@@ -20,6 +20,9 @@ package org.deeplearning4j.arbiter.optimize.api.termination;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 
+/**
+ * Terminate hyperparameter search when the total number of candidates exceeds a specified value
+ */
 @AllArgsConstructor
 public class MaxCandidatesCondition implements TerminationCondition {
 
@@ -36,7 +39,7 @@ public class MaxCandidatesCondition implements TerminationCondition {
     }
 
     @Override
-    public String toString(){
-        return "MaxCandidatesCondition("+maxCandidates+")";
+    public String toString() {
+        return "MaxCandidatesCondition(" + maxCandidates + ")";
     }
 }

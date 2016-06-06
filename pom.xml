@@ -68,8 +68,8 @@
         <guava.version>19.0</guava.version>
         <jackson.version>2.5.1</jackson.version>
         <dropwizard.version>0.8.0</dropwizard.version>
+        <jodatime.version>2.9.2</jodatime.version>
     </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>

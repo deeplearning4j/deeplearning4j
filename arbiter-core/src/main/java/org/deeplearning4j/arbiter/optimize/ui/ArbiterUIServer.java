@@ -38,6 +38,9 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Main class for the Arbiter UI
+ */
 public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     /* Design details: How the UI System and server actually works.
     UI system is web-based, running via a HTTP server. Java code posts information to server; Javascript (UI code in browser)

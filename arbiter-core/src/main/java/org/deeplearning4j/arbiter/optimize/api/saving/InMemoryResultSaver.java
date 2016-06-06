@@ -21,17 +21,19 @@ import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
 
-/**A simple class to store optimization results in-memory
+/**
+ * A simple class to store optimization results in-memory.
+ * Not recommended for large (or a large number of) models.
  */
-public class InMemoryResultSaver<T,M,A> implements ResultSaver<T,M,A> {
+public class InMemoryResultSaver<T, M, A> implements ResultSaver<T, M, A> {
     @Override
     public ResultReference<T, M, A> saveModel(OptimizationResult<T, M, A> result) throws IOException {
         return new InMemoryResult<>(result);
     }
 
     @AllArgsConstructor
-    private static class InMemoryResult<T,M,A> implements ResultReference<T,M,A>{
-        private OptimizationResult<T,M,A> result;
+    private static class InMemoryResult<T, M, A> implements ResultReference<T, M, A> {
+        private OptimizationResult<T, M, A> result;
 
         @Override
         public OptimizationResult<T, M, A> getResult() throws IOException {

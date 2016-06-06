@@ -24,34 +24,47 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * IntegerParameterSpace is a {@code ParameterSpace<Integer>}; i.e., defines an ordered space of integers between
+ * some minimum and maximum value
+ *
+ * @author Alex Black
+ */
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     private IntegerDistribution distribution;
     private int index = -1;
 
     /**
+     * Create an IntegerParameterSpace with a uniform distribution between the specified min/max (inclusive)
+     *
      * @param min Min value, inclusive
      * @param max Max value, inclusive
      */
-    public IntegerParameterSpace(int min, int max){
-        this(new UniformIntegerDistribution(min,max));
+    public IntegerParameterSpace(int min, int max) {
+        this(new UniformIntegerDistribution(min, max));
     }
 
-    public IntegerParameterSpace(IntegerDistribution distribution){
+    /**
+     * Crate an IntegerParametSpace from the given IntegerDistribution
+     *
+     * @param distribution Distribution to use
+     */
+    public IntegerParameterSpace(IntegerDistribution distribution) {
         this.distribution = distribution;
     }
 
-    public int getMin(){
+    public int getMin() {
         return distribution.getSupportLowerBound();
     }
 
-    public int getMax(){
+    public int getMax() {
         return distribution.getSupportUpperBound();
     }
 
     @Override
     public Integer getValue(double[] input) {
-        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        if (index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         return distribution.inverseCumulativeProbability(input[index]);
     }
 
@@ -72,16 +85,16 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @Override
     public void setIndices(int... indices) {
-        if(indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        if (indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
         this.index = indices[0];
     }
 
     @Override
     public String toString() {
         if (distribution instanceof UniformIntegerDistribution) {
-            return "IntegerParameterSpace(min="+distribution.getSupportLowerBound() + ",max="+distribution.getSupportUpperBound()+")";
+            return "IntegerParameterSpace(min=" + distribution.getSupportLowerBound() + ",max=" + distribution.getSupportUpperBound() + ")";
         } else {
-            return "IntegerParameterSpace("+distribution+")";
+            return "IntegerParameterSpace(" + distribution + ")";
         }
     }
 

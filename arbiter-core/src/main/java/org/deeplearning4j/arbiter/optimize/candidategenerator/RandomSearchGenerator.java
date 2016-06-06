@@ -20,16 +20,18 @@ package org.deeplearning4j.arbiter.optimize.candidategenerator;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 
-/**RandomSearchGenerator: generates candidates at random.<br>
+/**
+ * RandomSearchGenerator: generates candidates at random.<br>
  * Note: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
  * when generating candidates. This allows the search to be weighted more towards certain values according to a probability
  * density. For example: generate samples for learning rate according to log uniform distribution
+ *
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
-    public RandomSearchGenerator( ParameterSpace<T> parameterSpace ){
+    public RandomSearchGenerator(ParameterSpace<T> parameterSpace) {
         super(parameterSpace);
 
         initialize();
@@ -45,13 +47,13 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
     public Candidate<T> getCandidate() {
 
         double[] randomValues = new double[parameterSpace.numParameters()];
-        for( int i=0; i<randomValues.length; i++ ) randomValues[i] = rng.nextDouble();
+        for (int i = 0; i < randomValues.length; i++) randomValues[i] = rng.nextDouble();
 
-        return new Candidate<T>(parameterSpace.getValue(randomValues),candidateCounter.getAndIncrement(),randomValues);
+        return new Candidate<T>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "RandomSearchGenerator";
     }
 }

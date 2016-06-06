@@ -20,11 +20,23 @@ package org.deeplearning4j.arbiter.optimize.api.termination;
 
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 
-/** Global termination condition */
+/**
+ * Global termination condition for conducting hyperparameter optimization.
+ * Termination conditions are used to determine if/when the optimization should stop.
+ */
 public interface TerminationCondition {
 
+    /**
+     * Initialize the termination condition (such as starting timers, etc).
+     */
     void initialize(IOptimizationRunner optimizationRunner);
 
+    /**
+     * Determine whether optimization should be terminated
+     *
+     * @param optimizationRunner Optimization runner
+     * @return true if learning should be terminated, false otherwise
+     */
     boolean terminate(IOptimizationRunner optimizationRunner);
 
 }

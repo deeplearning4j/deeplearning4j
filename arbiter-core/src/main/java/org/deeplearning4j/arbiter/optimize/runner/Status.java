@@ -17,6 +17,9 @@
  */
 package org.deeplearning4j.arbiter.optimize.runner;
 
+/**
+ * Status for candidates
+ */
 public enum Status {
-    Created,Running,Complete,Failed,Cancelled
+    Created, Running, Complete, Failed, Cancelled
 }
