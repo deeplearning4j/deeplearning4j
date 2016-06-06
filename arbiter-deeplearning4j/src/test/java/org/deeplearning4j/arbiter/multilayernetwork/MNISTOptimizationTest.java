@@ -61,8 +61,6 @@ import java.util.concurrent.TimeUnit;
 /** Not strictly a unit test. Rather: part example, part debugging on MNIST */
 public class MNISTOptimizationTest {
 
-    private static Logger log = LoggerFactory.getLogger(MNISTOptimizationTest.class);
-
     public static void main(String[] args) throws Exception {
 
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
@@ -124,10 +122,7 @@ public class MNISTOptimizationTest {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();

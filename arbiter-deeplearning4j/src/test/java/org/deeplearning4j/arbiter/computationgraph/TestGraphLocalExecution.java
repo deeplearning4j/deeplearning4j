@@ -88,8 +88,6 @@ public class TestGraphLocalExecution {
         CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls);
         DataProvider<DataSetIterator> dataProvider = new TestDL4JLocalExecution.IrisDataSetProvider();
 
-
-//        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest\\").getAbsolutePath();
 
         File f = new File(modelSavePath);
@@ -108,20 +106,13 @@ public class TestGraphLocalExecution {
                         new MaxCandidatesCondition(100))
                 .build();
 
-//        CandidateExecutor<GraphConfiguration,ComputationGraph,DataSetIterator,Evaluation> executor =
-//                new LocalCandidateExecutor<>(new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()),true,1);
-
         IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
-
 
         System.out.println("----- COMPLETE -----");
     }
@@ -180,10 +171,7 @@ public class TestGraphLocalExecution {
         IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
