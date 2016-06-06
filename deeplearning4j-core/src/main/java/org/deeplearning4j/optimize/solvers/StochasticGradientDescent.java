@@ -19,7 +19,6 @@
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,7 +28,6 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Stochastic Gradient Descent
