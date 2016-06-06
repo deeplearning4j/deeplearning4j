@@ -32,9 +32,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected int window;
     protected boolean useAdaGrad;
     protected double negative;
-    protected INDArray syn0, syn1, syn1Neg, table;
-
     protected double sampling;
+
+    protected INDArray syn0, syn1, syn1Neg, table;
 
     /**
      * Dummy construction is required for reflection
@@ -85,7 +85,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      */
     @Override
     public void pretrain(SequenceIterator<T> iterator) {
-
+        // no-op
     }
 
     protected Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
