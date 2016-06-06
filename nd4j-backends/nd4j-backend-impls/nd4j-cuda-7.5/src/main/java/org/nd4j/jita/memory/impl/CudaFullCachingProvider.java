@@ -31,6 +31,16 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
     private static Logger log = LoggerFactory.getLogger(CudaFullCachingProvider.class);
 
+    /**
+     * This method provides PointersPair to memory chunk specified by AllocationShape
+     *
+     * PLEASE NOTE: This method can actually ignore malloc request, and give out previously cached free memory chunk with equal shape.
+     *
+     * @param shape shape of desired memory chunk
+     * @param point target AllocationPoint structure
+     * @param location either HOST or DEVICE
+     * @return
+     */
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
@@ -60,6 +70,13 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         return super.malloc(shape, point, location);
     }
 
+    /**
+     * This method frees specific chunk of memory, described by AllocationPoint passed in
+     *
+     * PLEASE NOTE: This method can actually ignore free, and keep released memory chunk for future reuse.
+     *
+     * @param point
+     */
     @Override
     public void free(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
@@ -99,6 +116,12 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         super.free(point);
     }
 
+    /**
+     * This method checks, if storage contains holder for specified shape
+     *
+     * @param deviceId
+     * @param shape
+     */
     protected  void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
         if (!deviceCache.containsKey(deviceId)) {
             try {

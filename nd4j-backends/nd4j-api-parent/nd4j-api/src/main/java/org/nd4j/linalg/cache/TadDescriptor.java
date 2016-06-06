@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 /**
+ * This is utility class, made to compare TADs for caching purposes.
+ *
+ * Idea: for any given INDArray with any specific shape, TAD for specific dimension will always be the same. So it can be reused as much as we want.
+ *
  * @author raver119@gmail.com
  */
 public class TadDescriptor {

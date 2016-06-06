@@ -28,6 +28,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * ConstantHandler implementation for CUDA backend.
+ *
  * @author raver119@gmail.com
  */
 public class CudaConstantHandler extends BasicConstantHandler {
@@ -42,6 +44,8 @@ public class CudaConstantHandler extends BasicConstantHandler {
     protected FlowController flowController;
 
     protected List<DataBuffer> protector = new CopyOnWriteArrayList<>();
+    private static final int MAX_CONSTANT_LENGTH = 49152;
+    private static final int MAX_BUFFER_LENGTH = 272;
 
     protected Semaphore lock = new Semaphore(1);
 
@@ -49,6 +53,14 @@ public class CudaConstantHandler extends BasicConstantHandler {
 
     }
 
+    /**
+     * This method moves specified dataBuffer to CUDA constant memory space.
+     *
+     * PLEASE NOTE: CUDA constant memory is limited to 48KB per device.
+     *
+     * @param dataBuffer
+     * @return
+     */
     @Override
     public long moveToConstantSpace(DataBuffer dataBuffer) {
         // now, we move things to constant memory
@@ -62,7 +74,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
 
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        if (currentOffset + requiredMemoryBytes >= 49152 || requiredMemoryBytes > 272)  {
+        if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH)  {
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
@@ -73,7 +85,7 @@ public class CudaConstantHandler extends BasicConstantHandler {
         }
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
-        if (currentOffset >= 49152)  {
+        if (currentOffset >= MAX_CONSTANT_LENGTH)  {
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
@@ -123,6 +135,14 @@ public class CudaConstantHandler extends BasicConstantHandler {
         }
     }
 
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
       //  logger.info("getConstantBuffer(int[]) called");
@@ -147,6 +167,14 @@ public class CudaConstantHandler extends BasicConstantHandler {
         return buffersCache.get(deviceId).get(descriptor);
     }
 
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
      //   logger.info("getConstantBuffer(float[]) called");
@@ -171,6 +199,14 @@ public class CudaConstantHandler extends BasicConstantHandler {
         return buffersCache.get(deviceId).get(descriptor);
     }
 
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
 //        logger.info("getConstantBuffer(double[]) called");
