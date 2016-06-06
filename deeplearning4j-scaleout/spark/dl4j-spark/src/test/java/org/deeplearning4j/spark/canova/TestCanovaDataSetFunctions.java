@@ -42,11 +42,10 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
     public void testCanovaDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
-
-        ClassPathResource cpr = new ClassPathResource("/imagetest/0/a.bmp");
+        File f = new File("src/test/resources/imagetest/0/a.bmp");
         List<String> labelsList = Arrays.asList("0", "1");   //Need this for Spark: can't infer without init call
 
-        String path = cpr.getFile().getAbsolutePath();
+        String path = f.getPath();
         String folder = path.substring(0, path.length() - 7);
         path = folder + "*";
 
@@ -101,8 +100,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
 
-        ClassPathResource cpr = new ClassPathResource("/csvsequence/csvsequence_0.txt");
-        String path = cpr.getFile().getAbsolutePath();
+        String path = "src/test/resources/csvsequence/csvsequence_0.txt";
         String folder = path.substring(0, path.length() - 17);
         path = folder + "*";
 
@@ -158,8 +156,7 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         JavaSparkContext sc = getContext();
 
         //Convert data to a SequenceFile:
-        ClassPathResource cpr = new ClassPathResource("/csvsequence/csvsequence_0.txt");
-        String path = cpr.getFile().getAbsolutePath();
+        String path = "src/test/resources/csvsequence/csvsequence_0.txt";
         String folder = path.substring(0, path.length() - 17);
         path = folder + "*";
 
@@ -251,13 +248,11 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
         //Same sort of test as testCanovaSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
 
         //Convert data to a SequenceFile:
-        ClassPathResource cpr = new ClassPathResource("/csvsequence/csvsequence_0.txt");
-        String pathFeatures = cpr.getFile().getAbsolutePath();
+        String pathFeatures = "src/test/resources/csvsequence/csvsequence_0.txt";
         String folderFeatures = pathFeatures.substring(0, pathFeatures.length() - 17);
         pathFeatures = folderFeatures + "*";
 
-        cpr = new ClassPathResource("/csvsequencelabels/csvsequencelabelsShort_0.txt");
-        String pathLabels = cpr.getFile().getAbsolutePath();
+        String pathLabels = "src/test/resources/csvsequencelabels/csvsequencelabelsShort_0.txt";
         String folderLabels = pathLabels.substring(0, pathLabels.length() - 28);
         pathLabels = folderLabels + "*";
 
@@ -286,10 +281,8 @@ public class TestCanovaDataSetFunctions extends BaseSparkTest {
 
 
         //Now: do the same thing locally (SequenceRecordReaderDataSetIterator) and compare
-        ClassPathResource resource = new ClassPathResource("/csvsequence/csvsequence_0.txt");
-        String featuresPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
-        resource = new ClassPathResource("/csvsequencelabels/csvsequencelabelsShort_0.txt");
-        String labelsPath = resource.getFile().getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = "src/test/resources/csvsequence/csvsequence_0.txt".replaceAll("0", "%d");
+        String labelsPath = "src/test/resources/csvsequencelabels/csvsequencelabelsShort_0.txt".replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
