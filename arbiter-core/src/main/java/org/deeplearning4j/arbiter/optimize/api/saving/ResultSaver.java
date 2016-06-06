@@ -21,8 +21,24 @@ import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
 
-public interface ResultSaver<C,M,A> {
+/**
+ * The ResultSaver interface provides a means of saving models in such a way that they can be loaded back into memory later,
+ * regardless of where/how they are saved.
+ *
+ * @param <C> The type of candidate/configuration
+ * @param <M> The trained model type
+ * @param <A> Additional evaluation
+ * @author Alex Black
+ */
+public interface ResultSaver<C, M, A> {
 
-    ResultReference<C,M,A> saveModel(OptimizationResult<C, M, A> result) throws IOException;
+    /**
+     * Save the model (including configuration and any additional evaluation/results)
+     *
+     * @param result Results to save
+     * @return ResultReference, such that the result can be loadde back into memory
+     * @throws IOException If IO error occurs during model saving
+     */
+    ResultReference<C, M, A> saveModel(OptimizationResult<C, M, A> result) throws IOException;
 
 }

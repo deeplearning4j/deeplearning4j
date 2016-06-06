@@ -23,8 +23,27 @@ import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidate
 
 import java.util.concurrent.Callable;
 
-public interface TaskCreator<T,M,D,A> {
+/**
+ * The TaskCreator is used to take a candidate configuration, data provider and score function, and create something
+ * that can be executed as a Callable
+ *
+ * @param <C> Type of the candidate configuration
+ * @param <M> Type of the learned models
+ * @param <D> Type of data used to train models
+ * @param <A> Type of any additional evaluation
+ * @author Alex Black
+ */
+public interface TaskCreator<C, M, D, A> {
 
-    Callable<OptimizationResult<T,M,A>> create(Candidate<T> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction,
-                                               UICandidateStatusListener statusListener);
+    /**
+     * Generate a callable that can be executed to conduct the training of this model (given the model configuration)
+     *
+     * @param candidate      Candidate (model) configuration to be trained
+     * @param dataProvider   DataProvider, for the data
+     * @param scoreFunction  Score function to be used to evaluate the model
+     * @param statusListener Status listener, that can be used to provide status updates to the UI, as the task executes
+     * @return A callable that returns an OptimizationResult, once optimization is complete
+     */
+    Callable<OptimizationResult<C, M, A>> create(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction,
+                                                 UICandidateStatusListener statusListener);
 }

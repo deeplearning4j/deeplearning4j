@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.runner.listener.candidate;
 
 import org.deeplearning4j.arbiter.optimize.runner.Status;
+import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.ClientProvider;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
@@ -43,8 +44,7 @@ public class UICandidateStatusListenerImpl implements UICandidateStatusListener 
 
     public UICandidateStatusListenerImpl(int candidateNumber){
         this.candidateNumber = candidateNumber;
-        //TODO don't hardcode
-        target = ClientProvider.getClient().target("http://localhost:8080/modelResults/update/" + candidateNumber);
+        target = ClientProvider.getClient().target("http://localhost:" + ArbiterUIServer.getInstance().getPort() + "/modelResults/update/" + candidateNumber);
     }
 
 

@@ -23,12 +23,15 @@ import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 
 import java.util.List;
 
+/**
+ * Layer space for autoencoder layers
+ */
 public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEncoder> {
 
     private ParameterSpace<Double> corruptionLevel;
     private ParameterSpace<Double> sparsity;
 
-    private AutoEncoderLayerSpace(Builder builder){
+    private AutoEncoderLayerSpace(Builder builder) {
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
@@ -37,62 +40,62 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
     @Override
     public AutoEncoder getValue(double[] values) {
         AutoEncoder.Builder b = new AutoEncoder.Builder();
-        setLayerOptionsBuilder(b,values);
+        setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves(){
+    public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
-        if(corruptionLevel != null) list.addAll(corruptionLevel.collectLeaves());
-        if(sparsity != null) list.addAll(sparsity.collectLeaves());
+        if (corruptionLevel != null) list.addAll(corruptionLevel.collectLeaves());
+        if (sparsity != null) list.addAll(sparsity.collectLeaves());
         return list;
     }
 
-    protected void setLayerOptionsBuilder(AutoEncoder.Builder builder, double[] values){
-        super.setLayerOptionsBuilder(builder,values);
-        if(corruptionLevel != null) builder.corruptionLevel(corruptionLevel.getValue(values));
-        if(sparsity != null) builder.sparsity(sparsity.getValue(values));
+    protected void setLayerOptionsBuilder(AutoEncoder.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
+        if (corruptionLevel != null) builder.corruptionLevel(corruptionLevel.getValue(values));
+        if (sparsity != null) builder.sparsity(sparsity.getValue(values));
     }
 
     @Override
-    public String  toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    public String toString(String delim){
+    public String toString(String delim) {
         StringBuilder sb = new StringBuilder("AutoEncoderLayerSpace(");
-        if(corruptionLevel != null) sb.append("corruptionLevel: ").append(corruptionLevel).append(delim);
-        if(sparsity != null) sb.append("sparsity: ").append(sparsity).append(delim);
+        if (corruptionLevel != null) sb.append("corruptionLevel: ").append(corruptionLevel).append(delim);
+        if (sparsity != null) sb.append("sparsity: ").append(sparsity).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }
 
-    public class Builder extends BasePretrainNetworkLayerSpace.Builder{
+    public class Builder extends BasePretrainNetworkLayerSpace.Builder {
 
         private ParameterSpace<Double> corruptionLevel;
         private ParameterSpace<Double> sparsity;
 
-        public Builder corruptionLevel(double corruptionLevel){
+        public Builder corruptionLevel(double corruptionLevel) {
             return corruptionLevel(new FixedValue<>(corruptionLevel));
         }
 
-        public Builder corruptionLevel(ParameterSpace<Double> corruptionLevel){
+        public Builder corruptionLevel(ParameterSpace<Double> corruptionLevel) {
             this.corruptionLevel = corruptionLevel;
             return this;
         }
 
-        public Builder sparsity(double sparsity){
+        public Builder sparsity(double sparsity) {
             return sparsity(new FixedValue<>(sparsity));
         }
 
-        public Builder sparsity(ParameterSpace<Double> sparsity){
+        public Builder sparsity(ParameterSpace<Double> sparsity) {
             this.sparsity = sparsity;
             return this;
         }
 
-        public AutoEncoderLayerSpace build(){
+        public AutoEncoderLayerSpace build() {
             return new AutoEncoderLayerSpace(this);
         }
 

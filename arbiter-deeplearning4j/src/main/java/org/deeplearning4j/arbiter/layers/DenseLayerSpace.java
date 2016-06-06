@@ -19,9 +19,14 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 
+/**
+ * layer hyperparameter configuration space for dense layers (i.e., multi-layer perceptron layers)
+ *
+ * @author Alex Black
+ */
 public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
 
-    private DenseLayerSpace(Builder builder){
+    private DenseLayerSpace(Builder builder) {
         super(builder);
     }
 
@@ -29,30 +34,30 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
     public DenseLayer getValue(double[] values) {
         //Using the builder here, to get default options
         DenseLayer.Builder b = new DenseLayer.Builder();
-        setLayerOptionsBuilder(b,values);
+        setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values){
-        super.setLayerOptionsBuilder(builder,values);
+    protected void setLayerOptionsBuilder(DenseLayer.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
     }
 
-    public static class Builder extends FeedForwardLayerSpace.Builder<Builder>{
+    public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public DenseLayerSpace build(){
+        public DenseLayerSpace build() {
             return new DenseLayerSpace(this);
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    public String toString(String delim){
+    public String toString(String delim) {
         return "DenseLayerSpace(" + super.toString(delim) + ")";
     }
 

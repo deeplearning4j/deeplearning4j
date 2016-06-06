@@ -21,8 +21,17 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+/**
+ * An optimization result represents the results of an optimization run, including the canditate configuration, the
+ * trained model, the score for that model, and index of the model
+ *
+ * @param <C> Type for the model configuration
+ * @param <M> Type of the trained model
+ * @param <A> Type for any additional evaluation
+ * @author Alex Black
+ */
 @Data
-public class OptimizationResult<C,M,A> implements Serializable {
+public class OptimizationResult<C, M, A> implements Serializable {
 
     private Candidate<C> candidate;
     private M result;
@@ -30,7 +39,7 @@ public class OptimizationResult<C,M,A> implements Serializable {
     private int index;
     private A modelSpecificResults;
 
-    public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults){
+    public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults) {
         this.candidate = candidate;
         this.result = result;
         this.score = score;

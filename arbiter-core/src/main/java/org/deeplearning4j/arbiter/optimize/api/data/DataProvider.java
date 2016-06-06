@@ -17,19 +17,29 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.data;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public interface DataProvider<D> {
+/**
+ * DataProvider interface abstracts out the providing of data
+ *
+ * @param <D> Type of the data to be used when learning
+ */
+public interface DataProvider<D> extends Serializable {
 
-    /** Get training data given some parameters for the data. Data parameters map is used to specify things like batch
+    /**
+     * Get training data given some parameters for the data. Data parameters map is used to specify things like batch
      * size data preprocessing
+     *
      * @param dataParameters Parameters for data. May be null or empty for default data
      * @return training data
      */
     D trainData(Map<String, Object> dataParameters);
 
-    /** Get training data given some parameters for the data. Data parameters map is used to specify things like batch
+    /**
+     * Get training data given some parameters for the data. Data parameters map is used to specify things like batch
      * size data preprocessing
+     *
      * @param dataParameters Parameters for data. May be null or empty for default data
      * @return training data
      */

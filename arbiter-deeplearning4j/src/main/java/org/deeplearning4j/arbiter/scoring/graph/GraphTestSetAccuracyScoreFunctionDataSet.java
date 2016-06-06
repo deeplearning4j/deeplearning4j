@@ -20,50 +20,29 @@ package org.deeplearning4j.arbiter.scoring.graph;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
 
-public class GraphTestSetLossScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIterator> {
-
-    private final boolean average;
-
-    public GraphTestSetLossScoreFunctionDataSet() {
-        this(false);
-    }
-
-    public GraphTestSetLossScoreFunctionDataSet(boolean average) {
-        this.average = average;
-    }
+/**
+ * Calculate the test set accuracy on a DataSetIterator, for a ComputationGraph with one output
+ *
+ * @author Alex Black
+ */
+public class GraphTestSetAccuracyScoreFunctionDataSet extends BaseGraphTestSetEvaluationScoreFunctionDataSet {
 
     @Override
     public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
-
-        DataSetIterator testData = dataProvider.testData(dataParameters);
-
-        //TODO: do this properly taking into account division by N, L1/L2 etc
-        double sumScore = 0.0;
-        int totalExamples = 0;
-        while (testData.hasNext()) {
-            DataSet ds = testData.next();
-            int numExamples = testData.numExamples();
-
-            sumScore += numExamples * model.score(ds);
-            totalExamples += numExamples;
-        }
-
-        if (!average) return sumScore;
-        return sumScore / totalExamples;
-    }
-
-    @Override
-    public boolean minimize() {
-        return true;
+        return getEvaluation(model, dataProvider, dataParameters).accuracy();
     }
 
     @Override
     public String toString() {
-        return "GraphTestSetLossScoreFunctionDataSet()";
+        return "GraphTestSetAccuracyScoreFunctionDataSet";
     }
 }

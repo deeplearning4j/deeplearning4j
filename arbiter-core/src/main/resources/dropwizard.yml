@@ -14,10 +14,12 @@ server:
 #  hardNofileLimit: 1000
   applicationConnectors:
     - type: http
-      port: 8080
+      port: 0
   adminConnectors:
     - type: http
-      port: 8081
+      port: 0
+  requestLog:
+      appenders: []
 
 # Logging settings.
 logging:

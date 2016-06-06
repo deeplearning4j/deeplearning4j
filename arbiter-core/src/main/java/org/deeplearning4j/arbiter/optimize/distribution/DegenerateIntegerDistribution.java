@@ -21,12 +21,13 @@ import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
-/** Degenerate distribution: i.e., integer "distribution" that is just a fixed value
+/**
+ * Degenerate distribution: i.e., integer "distribution" that is just a fixed value
  */
 public class DegenerateIntegerDistribution implements IntegerDistribution {
     private int value;
 
-    public DegenerateIntegerDistribution(int value){
+    public DegenerateIntegerDistribution(int value) {
         this.value = value;
     }
 
@@ -89,7 +90,7 @@ public class DegenerateIntegerDistribution implements IntegerDistribution {
     @Override
     public int[] sample(int sampleSize) {
         int[] out = new int[sampleSize];
-        for( int i=0; i<out.length; i++ ) out[i] = value;
+        for (int i = 0; i < out.length; i++) out[i] = value;
         return out;
     }
 }

@@ -110,10 +110,7 @@ public class TestDL4JLocalExecution {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
@@ -165,10 +162,7 @@ public class TestDL4JLocalExecution {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();

@@ -19,30 +19,45 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import java.util.List;
 
-/**ParameterSpace: defines the acceptable ranges of values a given parameter may take
+/**
+ * ParameterSpace: defines the acceptable ranges of values a given parameter may take.
+ * Note that parameter spaces can be simple (like {@code ParameterSpace<Double>}) or complicated, including
+ * multiple nested ParameterSpaces
+ *
+ * @author Alex Black
  */
 public interface ParameterSpace<P> {
 
-    /** Generate a candidate given a set of values. These values are then mapped to a specific candidate, using some
+    /**
+     * Generate a candidate given a set of values. These values are then mapped to a specific candidate, using some
      * mapping function (such as the prior probability distribution)
+     *
      * @param parameterValues A set of values, each in the range [0,1], of length {@link #numParameters()}
      */
     P getValue(double[] parameterValues);
 
-    /** Get the total number of parameters (hyperparameters) to be optimized. This includes optional parameters from
+    /**
+     * Get the total number of parameters (hyperparameters) to be optimized. This includes optional parameters from
      * different parameter subpaces. (Thus, not every parameter may be used in every candidate)
+     *
      * @return Number of hyperparameters to be optimized
      */
     int numParameters();
 
-    /** Collect a list of parameters, recursively. */
+    /**
+     * Collect a list of parameters, recursively.
+     */
     List<ParameterSpace> collectLeaves();
 
-    /** Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpace values?) */
+    /**
+     * Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpace values?)
+     */
     boolean isLeaf();
 
-    /** For leaf ParameterSpaces: set the indices of the leaf ParameterSpace.
+    /**
+     * For leaf ParameterSpaces: set the indices of the leaf ParameterSpace.
      * Expects input of length {@link #numParameters()}. Throws exception if {@link #isLeaf()} is false.
+     *
      * @param indices
      */
     void setIndices(int... indices);

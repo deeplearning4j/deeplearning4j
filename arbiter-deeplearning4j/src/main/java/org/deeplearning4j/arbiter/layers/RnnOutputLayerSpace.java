@@ -19,38 +19,41 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 
+/**
+ * Layer hyperparametor configuration space for RnnOutputLayer
+ */
 public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
 
-    private RnnOutputLayerSpace(Builder builder){
+    private RnnOutputLayerSpace(Builder builder) {
         super(builder);
     }
 
     @Override
     public RnnOutputLayer getValue(double[] values) {
         RnnOutputLayer.Builder b = new RnnOutputLayer.Builder();
-        setLayerOptionsBuilder(b,values);
+        setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(RnnOutputLayer.Builder builder, double[] values){
-        super.setLayerOptionsBuilder(builder,values);
+    protected void setLayerOptionsBuilder(RnnOutputLayer.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    public String toString(String delim){
+    public String toString(String delim) {
         return "RnnOutputLayerSpace(" + super.toString(delim) + ")";
     }
 
-    public static class Builder extends BaseOutputLayerSpace.Builder<RnnOutputLayer>{
+    public static class Builder extends BaseOutputLayerSpace.Builder<RnnOutputLayer> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public RnnOutputLayerSpace build(){
+        public RnnOutputLayerSpace build() {
             return new RnnOutputLayerSpace(this);
         }
     }

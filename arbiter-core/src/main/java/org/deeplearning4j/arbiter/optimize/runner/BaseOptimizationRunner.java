@@ -41,12 +41,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Optimization runner: responsible for scheduling tasks on executor, saving results, etc.
+ * BaseOptimization runner: responsible for scheduling tasks, saving results using the result saver, etc.
  *
  * @param <C> Type of configuration
  * @param <M> Type of model learned
  * @param <D> Type of data used to train model
  * @param <A> Type of additional results
+ * @author Alex Black
  */
 public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
 
@@ -55,7 +56,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     private static Logger log = LoggerFactory.getLogger(BaseOptimizationRunner.class);
 
     private OptimizationConfiguration<C, M, D, A> config;
-//    private CandidateExecutor<C, M, D, A> executor;
+    //    private CandidateExecutor<C, M, D, A> executor;
     private Queue<Future<OptimizationResult<C, M, A>>> queuedFutures = new ConcurrentLinkedQueue<>();
     private BlockingQueue<Future<OptimizationResult<C, M, A>>> completedFutures = new LinkedBlockingQueue<>();
     private int totalCandidateCount = 0;
@@ -66,15 +67,14 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     private int bestScoreCandidateIndex = -1;
     private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
 
-    private Map<Integer,CandidateStatus> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
+    private Map<Integer, CandidateStatus> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
 
     private ExecutorService futureListenerExecutor;
 
     private List<OptimizationRunnerStatusListener> statusListeners = new ArrayList<>();
 
 
-
-    public BaseOptimizationRunner(OptimizationConfiguration<C, M, D, A> config) {
+    protected BaseOptimizationRunner(OptimizationConfiguration<C, M, D, A> config) {
         this.config = config;
 
         if (config.getTerminationConditions() == null || config.getTerminationConditions().size() == 0) {
@@ -84,7 +84,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
     }
 
-    protected void init(){
+    protected void init() {
         futureListenerExecutor = Executors.newFixedThreadPool(maxConcurrentTasks(),
                 new ThreadFactory() {
                     private AtomicLong counter = new AtomicLong(0);
@@ -102,7 +102,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     public void execute() {
 
         log.info("BaseOptimizationRunner: execution started");
-        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
+        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {
@@ -157,11 +157,11 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                         System.currentTimeMillis(),
                         null,
                         null);
-                currentStatus.put(candidate.getIndex(),status);
+                currentStatus.put(candidate.getIndex(), status);
             }
 
-            if(statusChange) {
-                for (OptimizationRunnerStatusListener listener : statusListeners){
+            if (statusChange) {
+                for (OptimizationRunnerStatusListener listener : statusListeners) {
                     listener.onStatusChange(this);
                 }
             }
@@ -176,7 +176,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         tempList.clear();
 
         log.info("Optimization runner: execution complete");
-        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onShutdown(this);
+        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onShutdown(this);
     }
 
     /**
@@ -208,10 +208,10 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                 status.getCreatedTime(),
                 null,       //TODO: how to know when execution actually started?
                 currentTime);
-        currentStatus.put(result.getIndex(),newStatus);
+        currentStatus.put(result.getIndex(), newStatus);
 
         //Listeners:
-        for(OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
+        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
 
         //Report completion to candidate generator
         config.getCandidateGenerator().reportResults(result);
@@ -221,7 +221,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
         //TODO handle minimization vs. maximization
         boolean minimize = config.getScoreFunction().minimize();
-        if (score != null && (bestScore == null || ( (minimize && score < bestScore) || (!minimize && score > bestScore)))) {
+        if (score != null && (bestScore == null || ((minimize && score < bestScore) || (!minimize && score > bestScore)))) {
             if (bestScore == null) {
                 log.info("New best score: {} (first completed model)", score);
             } else {
@@ -296,15 +296,15 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
     @Override
     public void addListeners(OptimizationRunnerStatusListener... listeners) {
-        for(OptimizationRunnerStatusListener l : listeners){
-            if(!statusListeners.contains(l)) statusListeners.add(l);
+        for (OptimizationRunnerStatusListener l : listeners) {
+            if (!statusListeners.contains(l)) statusListeners.add(l);
         }
     }
 
     @Override
     public void removeListeners(OptimizationRunnerStatusListener... listeners) {
-        for(OptimizationRunnerStatusListener l : listeners){
-            if(statusListeners.contains(l)) statusListeners.remove(l);
+        for (OptimizationRunnerStatusListener l : listeners) {
+            if (statusListeners.contains(l)) statusListeners.remove(l);
         }
     }
 
@@ -349,13 +349,11 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     }
 
 
-
-
     protected abstract int maxConcurrentTasks();
 
-    protected abstract ListenableFuture<OptimizationResult<C,M,A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    protected abstract ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
 
-    protected abstract List<ListenableFuture<OptimizationResult<C,M,A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    protected abstract List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
 
     protected abstract void shutdown();
 }

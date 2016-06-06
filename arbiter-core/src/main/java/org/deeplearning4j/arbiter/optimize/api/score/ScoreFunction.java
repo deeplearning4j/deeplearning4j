@@ -19,22 +19,26 @@ package org.deeplearning4j.arbiter.optimize.api.score;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * ScoreFunction defines the objective of hyperparameter optimization.
+ * Specifically, it is used to calculate a score for a given model, relative to the data set provided
+ * in the configuration.
  *
- * @param <M>    Type of model
- * @param <D>    Type of data used
+ * @param <M> Type of model
+ * @param <D> Type of data used
  */
-public interface ScoreFunction<M,D> {
+public interface ScoreFunction<M, D> extends Serializable {
 
     /**
      * Calculate and return the score, for the given model and data provider
      *
-     * @param model             Model to score
-     * @param dataProvider      Data provider - data to use
-     * @param dataParameters    Parameters for data
-     * @return
+     * @param model          Model to score
+     * @param dataProvider   Data provider - data to use
+     * @param dataParameters Parameters for data
+     * @return Calculated score
      */
     double score(M model, DataProvider<D> dataProvider, Map<String, Object> dataParameters);
 

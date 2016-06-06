@@ -24,7 +24,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
 
-
+/**
+ * @param <L>    Type of the (concrete) output layer
+ */
 public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L>{
 
     protected ParameterSpace<LossFunction> lossFunction;

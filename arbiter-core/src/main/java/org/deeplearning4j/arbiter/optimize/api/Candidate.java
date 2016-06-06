@@ -22,22 +22,23 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Map;
 
-/**Candidate: a proposed hyperparameter configuration.
+/**
+ * Candidate: a proposed hyperparameter configuration.
  * Also includes a map for data parameters, to configure things like data preprocessing, etc.
- *  */
+ */
 @Data
-public class Candidate<T> implements Serializable {
+public class Candidate<C> implements Serializable {
 
-    private T value;
+    private C value;
     private int index;
     private double[] flatParameters;
-    private Map<String,Object> dataParameters;
+    private Map<String, Object> dataParameters;
 
-    public Candidate( T value, int index, double[] flatParameters ) {
+    public Candidate(C value, int index, double[] flatParameters) {
         this(value, index, flatParameters, null);
     }
 
-    public Candidate(T value, int index, double[] flatParameters, Map<String,Object> dataParameters){
+    public Candidate(C value, int index, double[] flatParameters, Map<String, Object> dataParameters) {
         this.value = value;
         this.index = index;
         this.flatParameters = flatParameters;

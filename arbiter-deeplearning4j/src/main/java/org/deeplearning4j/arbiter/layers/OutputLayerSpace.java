@@ -19,39 +19,44 @@ package org.deeplearning4j.arbiter.layers;
 
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 
+/**
+ * Layer hyperparameter configuration space for output layers
+ *
+ * @author Alex Black
+ */
 public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
 
-    private OutputLayerSpace(Builder builder){
+    private OutputLayerSpace(Builder builder) {
         super(builder);
     }
 
     @Override
     public OutputLayer getValue(double[] values) {
         OutputLayer.Builder o = new OutputLayer.Builder();
-        setLayerOptionsBuilder(o,values);
+        setLayerOptionsBuilder(o, values);
         return o.build();
     }
 
-    protected void setLayerOptionsBuilder(OutputLayer.Builder builder, double[] values){
-        super.setLayerOptionsBuilder(builder,values);
+    protected void setLayerOptionsBuilder(OutputLayer.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
     }
 
-    public static class Builder extends BaseOutputLayerSpace.Builder<Builder>{
+    public static class Builder extends BaseOutputLayerSpace.Builder<Builder> {
 
         @Override
         @SuppressWarnings("unchecked")
-        public OutputLayerSpace build(){
+        public OutputLayerSpace build() {
             return new OutputLayerSpace(this);
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    public String toString(String delim){
+    public String toString(String delim) {
         return "OutputLayerSpace(" + super.toString(delim) + ")";
     }
 }

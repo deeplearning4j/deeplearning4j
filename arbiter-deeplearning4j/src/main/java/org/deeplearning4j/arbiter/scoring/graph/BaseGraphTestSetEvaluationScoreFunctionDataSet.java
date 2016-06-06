@@ -15,60 +15,71 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.evaluator.graph;
+package org.deeplearning4j.arbiter.scoring.graph;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
-import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.Map;
+
 /**
- * A model evaluator for doing additional evaluation (classification evaluation) for a ComputationGraph given a DataSetIterator
+ * Base class for accuracy/f1 calculations on a ComputationGraph with a DataSetIterator
  *
  * @author Alex Black
  */
-public class GraphClassificationDataSetEvaluator implements ModelEvaluator<ComputationGraph, DataSetIterator, Evaluation> {
-    @Override
-    public Evaluation evaluateModel(ComputationGraph model, DataProvider<DataSetIterator> dataProvider) {
+public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIterator> {
 
-        DataSetIterator iterator = dataProvider.testData(null);
-        Evaluation eval = new Evaluation();
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
-            INDArray features = next.getFeatures();
-            INDArray labels = next.getLabels();
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
 
+        if (model.getNumOutputArrays() != 1)
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
+                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
+
+        DataSetIterator testData = dataProvider.testData(dataParameters);
+
+        Evaluation evaluation = new Evaluation();
+
+        while (testData.hasNext()) {
+            DataSet next = testData.next();
             if (next.hasMaskArrays()) {
                 INDArray fMask = next.getFeaturesMaskArray();
                 INDArray lMask = next.getLabelsMaskArray();
 
                 INDArray[] fMasks = (fMask == null ? null : new INDArray[]{fMask});
                 INDArray[] lMasks = (lMask == null ? null : new INDArray[]{lMask});
+
                 model.setLayerMaskArrays(fMasks, lMasks);
 
                 INDArray out = model.output(next.getFeatures())[0];
 
                 //Assume this is time series data. Not much point having a mask array for non TS data
                 if (lMask != null) {
-                    eval.evalTimeSeries(next.getLabels(), out, lMask);
+                    evaluation.evalTimeSeries(next.getLabels(), out, lMask);
                 } else {
-                    eval.evalTimeSeries(next.getLabels(), out);
+                    evaluation.evalTimeSeries(next.getLabels(), out);
                 }
 
                 model.clearLayerMaskArrays();
             } else {
-                INDArray out = model.output(features)[0];
-                if (out.rank() == 3) {
-                    eval.evalTimeSeries(labels, out);
-                } else {
-                    eval.eval(labels, out);
-                }
+                INDArray out = model.output(false, next.getFeatures())[0];
+                if (next.getLabels().rank() == 3) evaluation.evalTimeSeries(next.getLabels(), out);
+                else evaluation.eval(next.getLabels(), out);
             }
         }
 
-        return eval;
+        return evaluation;
     }
+
+    @Override
+    public boolean minimize() {
+        return false;
+    }
+
+    @Override
+    public abstract String toString();
 }

@@ -29,71 +29,81 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * OptimizationConfiguration ties together all of the various components (such as data, score functions, result saving etc)
+ * required to execute hyperparameter optimization.
  *
- * @param <T>    Type of candidates
- * @param <M>    Type of model returned
- * @param <D>    Type of data
+ * @param <T> Type of candidates
+ * @param <M> Type of model returned
+ * @param <D> Type of data
+ * @author Alex Black
  */
 @Data
-public class OptimizationConfiguration<T,M,D,A> {
+public class OptimizationConfiguration<T, M, D, A> {
 
     private DataProvider<D> dataProvider;
     private CandidateGenerator<T> candidateGenerator;
-    private ResultSaver<T,M,A> resultSaver;
-    private ScoreFunction<M,D> scoreFunction;
+    private ResultSaver<T, M, A> resultSaver;
+    private ScoreFunction<M, D> scoreFunction;
     private List<TerminationCondition> terminationConditions;
+    private Long rngSeed;
 
-    private OptimizationConfiguration(Builder<T,M,D,A> builder ){
+    private OptimizationConfiguration(Builder<T, M, D, A> builder) {
         this.dataProvider = builder.dataProvider;
         this.candidateGenerator = builder.candidateGenerator;
         this.resultSaver = builder.resultSaver;
         this.scoreFunction = builder.scoreFunction;
         this.terminationConditions = builder.terminationConditions;
+        this.rngSeed = builder.rngSeed;
+
+        if (rngSeed != null) candidateGenerator.setRngSeed(rngSeed);
     }
 
-    public static class Builder<T,M,D,A> {
+    public static class Builder<T, M, D, A> {
 
         private DataProvider<D> dataProvider;
         private CandidateGenerator<T> candidateGenerator;
-        private ResultSaver<T,M,A> resultSaver;
-        private ScoreFunction<M,D> scoreFunction;
+        private ResultSaver<T, M, A> resultSaver;
+        private ScoreFunction<M, D> scoreFunction;
         private List<TerminationCondition> terminationConditions;
+        private Long rngSeed;
 
-        public Builder<T,M,D,A> dataProvider(DataProvider<D> dataProvider){
+        public Builder<T, M, D, A> dataProvider(DataProvider<D> dataProvider) {
             this.dataProvider = dataProvider;
             return this;
         }
 
-        public Builder<T,M,D,A> candidateGenerator(CandidateGenerator<T> candidateGenerator){
+        public Builder<T, M, D, A> candidateGenerator(CandidateGenerator<T> candidateGenerator) {
             this.candidateGenerator = candidateGenerator;
             return this;
         }
 
-        public Builder<T,M,D,A> modelSaver(ResultSaver<T,M,A> resultSaver){
+        public Builder<T, M, D, A> modelSaver(ResultSaver<T, M, A> resultSaver) {
             this.resultSaver = resultSaver;
             return this;
         }
 
-        public Builder<T,M,D,A> scoreFunction(ScoreFunction<M,D> scoreFunction){
+        public Builder<T, M, D, A> scoreFunction(ScoreFunction<M, D> scoreFunction) {
             this.scoreFunction = scoreFunction;
             return this;
         }
 
-        public Builder<T,M,D,A> terminationConditions(TerminationCondition... conditions){
+        public Builder<T, M, D, A> terminationConditions(TerminationCondition... conditions) {
             terminationConditions = Arrays.asList(conditions);
             return this;
         }
 
-        public Builder<T,M,D,A> terminationConditions(List<TerminationCondition> terminationConditions ){
+        public Builder<T, M, D, A> terminationConditions(List<TerminationCondition> terminationConditions) {
             this.terminationConditions = terminationConditions;
             return this;
         }
 
-        public OptimizationConfiguration<T,M,D,A> build(){
-            return new OptimizationConfiguration<T,M,D,A>(this);
+        public Builder<T, M, D, A> rngSeed(long rngSeed) {
+            this.rngSeed = rngSeed;
+            return this;
         }
 
-
+        public OptimizationConfiguration<T, M, D, A> build() {
+            return new OptimizationConfiguration<T, M, D, A>(this);
+        }
     }
-
 }

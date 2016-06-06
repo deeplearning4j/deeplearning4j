@@ -67,10 +67,7 @@ public class TestRandomSearch {
                 = new LocalOptimizationRunner<>(configuration, new BraninTaskCreator());
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
-        ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+        ArbiterUIServer server = ArbiterUIServer.getInstance();
         runner.addListeners(new UIOptimizationRunnerStatusListener(server));
         runner.execute();
 

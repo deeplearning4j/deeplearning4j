@@ -15,25 +15,28 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.listener;
+package org.deeplearning4j.arbiter.scoring.graph;
 
-import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.ui.components.text.ComponentText;
+
+import java.util.Map;
 
 /**
- * Listener designed to report status to Arbiter UI - used for ComputationGraphs
- * Combines listener functionality for both early stopping AND iteration listeners
+ * Calculate the F1 score on a DataSetIterator test set for a ComputationGraph
+ *
+ * @author Alex Black
  */
-public class UIGraphStatusReportingListener extends BaseUIStatusReportingListener<ComputationGraph> {
+public class GraphTestSetF1ScoreFunctionDataSet extends BaseGraphTestSetEvaluationScoreFunctionDataSet {
 
-
-    public UIGraphStatusReportingListener(UICandidateStatusListener listener) {
-        super(listener);
+    @Override
+    public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
+        return getEvaluation(model, dataProvider, dataParameters).f1();
     }
 
     @Override
-    protected void createConfigComponent(ComputationGraph network) {
-        config = new ComponentText(network.getConfiguration().toString(), null);
+    public String toString() {
+        return "GraphTestSetF1ScoreFunctionDataSet";
     }
 }

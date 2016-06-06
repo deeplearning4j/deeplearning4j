@@ -25,19 +25,43 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork,DataSetIterator,Evaluation> {
+/**
+ * A model evaluator for doing additional evaluation (classification evaluation) for a MultiLayerNetwork given a DataSetIterator
+ *
+ * @author Alex Black
+ */
+public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, DataSetIterator, Evaluation> {
     @Override
     public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<DataSetIterator> dataProvider) {
 
         DataSetIterator iterator = dataProvider.testData(null);
         Evaluation eval = new Evaluation();
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             DataSet ds = iterator.next();
             INDArray features = ds.getFeatures();
             INDArray labels = ds.getLabels();
-            INDArray out = model.output(features);
-            //TODO: This won't work for time series (RNNs) + for masking
-            eval.eval(labels,out);
+
+            if (ds.hasMaskArrays()) {
+                INDArray fMask = ds.getFeaturesMaskArray();
+                INDArray lMask = ds.getLabelsMaskArray();
+
+                INDArray out = model.output(ds.getFeatures(), false, fMask, lMask);
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                if (lMask != null) {
+                    eval.evalTimeSeries(labels, out, lMask);
+                } else {
+                    eval.evalTimeSeries(labels, out);
+                }
+
+            } else {
+                INDArray out = model.output(features);
+                if (out.rank() == 3) {
+                    eval.evalTimeSeries(labels, out);
+                } else {
+                    eval.eval(labels, out);
+                }
+            }
         }
 
         return eval;

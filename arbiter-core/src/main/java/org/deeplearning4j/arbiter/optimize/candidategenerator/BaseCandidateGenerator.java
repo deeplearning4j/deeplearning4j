@@ -26,8 +26,10 @@ import org.deeplearning4j.arbiter.util.CollectionUtils;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator} and {@link GridSearchCandidateGenerator}
+/**
+ * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator} and {@link GridSearchCandidateGenerator}
  * are built.
+ *
  * @param <T> Type of candidates to generate
  */
 public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T> {
@@ -36,23 +38,23 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
     protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
 
-    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace){
+    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace) {
         this.parameterSpace = parameterSpace;
     }
 
-    protected void initialize(){
+    protected void initialize() {
         //First: collect leaf parameter spaces objects and remove duplicates
         List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(parameterSpace.collectLeaves());
 
         //Second: assign each a number
-        int i=0;
-        for( ParameterSpace ps : noDuplicatesList){
+        int i = 0;
+        for (ParameterSpace ps : noDuplicatesList) {
             int np = ps.numParameters();
-            if(np == 1){
+            if (np == 1) {
                 ps.setIndices(i++);
             } else {
                 int[] values = new int[np];
-                for( int j=0; j<np; j++ ) values[i++] = j;
+                for (int j = 0; j < np; j++) values[i++] = j;
                 ps.setIndices(values);
             }
         }
@@ -64,7 +66,12 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     }
 
     @Override
-    public void reportResults(OptimizationResult<T,?,?> result) {
+    public void reportResults(OptimizationResult<T, ?, ?> result) {
         //No op
+    }
+
+    @Override
+    public void setRngSeed(long rngSeed) {
+        rng.setSeed(rngSeed);
     }
 }

@@ -38,27 +38,33 @@ import org.deeplearning4j.ui.components.text.ComponentText;
 
 import java.util.concurrent.Callable;
 
+/**
+ * Task creator for ComputationGraph
+ *
+ * @param <A> Additional evaluation type
+ * @author Alex Black
+ */
 @AllArgsConstructor
-public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration,ComputationGraph,DataSetIterator,A>{
+public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration, ComputationGraph, DataSetIterator, A> {
 
-    private ModelEvaluator<ComputationGraph,DataSetIterator,A> modelEvaluator;
+    private ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator;
 
     @Override
     public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
-                Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
-                   ScoreFunction<ComputationGraph,DataSetIterator> scoreFunction,
-                   UICandidateStatusListener statusListener) {
+            Candidate<GraphConfiguration> candidate, DataProvider<DataSetIterator> dataProvider,
+            ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction,
+            UICandidateStatusListener statusListener) {
 
-        return new GraphLearningTask<>(candidate,dataProvider,scoreFunction,modelEvaluator,statusListener);
+        return new GraphLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
     }
 
 
-    private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration,ComputationGraph,A>> {
+    private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
 
         private Candidate<GraphConfiguration> candidate;
         private DataProvider<DataSetIterator> dataProvider;
-        private ScoreFunction<ComputationGraph,DataSetIterator> scoreFunction;
-        private ModelEvaluator<ComputationGraph,DataSetIterator,A> modelEvaluator;
+        private ScoreFunction<ComputationGraph, DataSetIterator> scoreFunction;
+        private ModelEvaluator<ComputationGraph, DataSetIterator, A> modelEvaluator;
 
         private UIGraphStatusReportingListener dl4jListener;
 
@@ -75,7 +81,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
 
 
         @Override
-        public OptimizationResult<GraphConfiguration,ComputationGraph,A> call() throws Exception {
+        public OptimizationResult<GraphConfiguration, ComputationGraph, A> call() throws Exception {
             //Create network
             ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
             net.init();
@@ -87,19 +93,19 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
-            if(esConfig != null){
-                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig,net,dataSetIterator,dl4jListener);
-                try{
+            if (esConfig != null) {
+                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, dl4jListener);
+                try {
                     esResult = trainer.fit();
                     net = esResult.getBestModel();  //Can return null if failed OR if
-                } catch(Exception e){
+                } catch (Exception e) {
                     dl4jListener.postReport(Status.Failed, null,
                             new ComponentText("Unexpected exception during model training\n", null),
                             new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     throw e;
                 }
 
-                switch(esResult.getTerminationReason()){
+                switch (esResult.getTerminationReason()) {
                     case Error:
                         dl4jListener.postReport(Status.Failed, esResult);
                         break;
@@ -112,16 +118,16 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             } else {
                 //Fixed number of epochs
                 int nEpochs = candidate.getValue().getNumEpochs();
-                for( int i=0; i<nEpochs; i++){
+                for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
                     dataSetIterator.reset();
                 }
                 //Do a final status update
-                dl4jListener.postReport(Status.Complete,null);
+                dl4jListener.postReport(Status.Complete, null);
             }
 
             A additionalEvaluation = null;
-            if( esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error ) {
+            if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 try {
                     additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
                 } catch (Exception e) {
@@ -132,7 +138,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             }
 
             Double score = null;
-            if(net == null){
+            if (net == null) {
                 dl4jListener.postReport(Status.Complete, esResult,
                         new ComponentText("No best model available; cannot calculate model score", null));
             } else {

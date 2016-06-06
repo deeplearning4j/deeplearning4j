@@ -25,13 +25,17 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 
 import java.io.Serializable;
 
-@AllArgsConstructor @Data
+/**
+ * Analogous to {@link DL4JConfiguration}, GraphConfiguration includes a configuration for ComputationGraphs, as well
+ * as early stopping (or, optionally numEpochs) fields.
+ */
+@AllArgsConstructor
+@Data
 public class GraphConfiguration implements Serializable {
 
     private ComputationGraphConfiguration configuration;
     private EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
     private Integer numEpochs;
-
 
 
 }

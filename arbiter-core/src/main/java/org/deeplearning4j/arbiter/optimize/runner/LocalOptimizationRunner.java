@@ -21,9 +21,15 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by Alex on 5/06/2016.
+ * LocalOptimizationRunner: execute hyperparameter optimization locally (on current machine, in current JVM).
+ *
+ * @param <C> Type for candidate configurations
+ * @param <M> Type of trained model
+ * @param <D> Type of data used for hyperparameter optimization
+ * @param <A> Type of any additional evaluation/results
+ * @author Alex Black
  */
-public class LocalOptimizationRunner<C,M,D,A> extends BaseOptimizationRunner<C,M,D,A> {
+public class LocalOptimizationRunner<C, M, D, A> extends BaseOptimizationRunner<C, M, D, A> {
 
     public static final int DEFAULT_MAX_CONCURRENT_TASKS = 1;
 
@@ -33,13 +39,14 @@ public class LocalOptimizationRunner<C,M,D,A> extends BaseOptimizationRunner<C,M
     private ListeningExecutorService executor;
     private final boolean reportResults = true; //TODO
 
-    public LocalOptimizationRunner(OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator){
+    public LocalOptimizationRunner(OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator) {
         this(DEFAULT_MAX_CONCURRENT_TASKS, config, taskCreator);
     }
 
-    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator){
+    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator) {
         super(config);
-        if(maxConcurrentTasks <= 0) throw new IllegalArgumentException("maxConcurrentTasks must be > 0 (got: " + maxConcurrentTasks + ")");
+        if (maxConcurrentTasks <= 0)
+            throw new IllegalArgumentException("maxConcurrentTasks must be > 0 (got: " + maxConcurrentTasks + ")");
         this.maxConcurrentTasks = maxConcurrentTasks;
         this.taskCreator = taskCreator;
 
@@ -66,7 +73,7 @@ public class LocalOptimizationRunner<C,M,D,A> extends BaseOptimizationRunner<C,M
 
     @Override
     protected ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
-        return execute(Collections.singletonList(candidate),dataProvider,scoreFunction).get(0);
+        return execute(Collections.singletonList(candidate), dataProvider, scoreFunction).get(0);
     }
 
     @Override

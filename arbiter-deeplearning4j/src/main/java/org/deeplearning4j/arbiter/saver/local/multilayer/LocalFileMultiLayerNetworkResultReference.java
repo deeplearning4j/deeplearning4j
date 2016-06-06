@@ -31,8 +31,13 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
+/**
+ * Result reference for MultiLayerNetworks saved to local file system
+ *
+ * @param <A> Additional evaluation type
+ */
 @AllArgsConstructor
-public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<DL4JConfiguration,MultiLayerNetwork,A> {
+public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<DL4JConfiguration, MultiLayerNetwork, A> {
 
     private int index;
     private String dir;
@@ -45,10 +50,10 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
     private Candidate<DL4JConfiguration> candidate;
 
     @Override
-    public OptimizationResult<DL4JConfiguration, MultiLayerNetwork,A> getResult() throws IOException {
+    public OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> getResult() throws IOException {
         String jsonConfig = FileUtils.readFileToString(configFile);
         INDArray params;
-        try( DataInputStream dis = new DataInputStream(new FileInputStream(networkParamsFile)) ){
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(networkParamsFile))) {
             params = Nd4j.read(dis);
         }
 
@@ -62,39 +67,38 @@ public class LocalFileMultiLayerNetworkResultReference<A> implements ResultRefer
         double d = Double.parseDouble(scoreStr);
 
         EarlyStoppingConfiguration earlyStoppingConfiguration = null;
-        if(esConfigFile != null && esConfigFile.exists()){
-            try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(esConfigFile))){
-                earlyStoppingConfiguration = (EarlyStoppingConfiguration)ois.readObject();
-            } catch( ClassNotFoundException e){
-                throw new RuntimeException("Error loading early stopping configuration",e);
+        if (esConfigFile != null && esConfigFile.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(esConfigFile))) {
+                earlyStoppingConfiguration = (EarlyStoppingConfiguration) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Error loading early stopping configuration", e);
             }
         }
         int nEpochs = 1;
-        if(numEpochsFile != null && numEpochsFile.exists()){
+        if (numEpochsFile != null && numEpochsFile.exists()) {
             String numEpochs = FileUtils.readFileToString(numEpochsFile);
             nEpochs = Integer.parseInt(numEpochs);
         }
 
-        DL4JConfiguration dl4JConfiguration = new DL4JConfiguration(conf,earlyStoppingConfiguration,nEpochs);
-
+        DL4JConfiguration dl4JConfiguration = new DL4JConfiguration(conf, earlyStoppingConfiguration, nEpochs);
 
 
         A additionalResults;
-        if(additionalResultsFile.exists()) {
+        if (additionalResultsFile.exists()) {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(additionalResultsFile))) {
                 additionalResults = (A) ois.readObject();
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Error loading additional results",e);
+                throw new RuntimeException("Error loading additional results", e);
             }
         } else {
             additionalResults = null;
         }
 
-        return new OptimizationResult<>(candidate,net,d,index,additionalResults);
+        return new OptimizationResult<>(candidate, net, d, index, additionalResults);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LocalFileGraphResultReference(" + dir + ")";
     }
 }

@@ -21,34 +21,38 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 
 import java.util.*;
 
+/**
+ * A DiscreteParameterSpace is used for a set of un-ordered values
+ *
+ * @param <P> Parameter type
+ * @author Alex Black
+ */
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
-
-    //TODO add distribution
     private List<P> values;
     private int index = -1;
 
-    public DiscreteParameterSpace(P... values){
+    public DiscreteParameterSpace(P... values) {
         this.values = Arrays.asList(values);
     }
 
-    public DiscreteParameterSpace(Collection<P> values){
+    public DiscreteParameterSpace(Collection<P> values) {
         this.values = new ArrayList<>(values);
     }
 
-    public int numValues(){
+    public int numValues() {
         return values.size();
     }
 
     @Override
-    public P getValue(double[] input){
-        if(index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+    public P getValue(double[] input) {
+        if (index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         //Map a value in range [0,1] to one of the list of values
         //First value: [0,width], second: (width,2*width], third: (3*width,4*width] etc
         int size = values.size();
-        if(size == 1) return values.get(0);
+        if (size == 1) return values.get(0);
         double width = 1.0 / size;
-        int val = (int)(input[index] / width);
-        return values.get(Math.min(val,size-1));
+        int val = (int) (input[index] / width);
+        return values.get(Math.min(val, size - 1));
     }
 
     @Override
@@ -68,18 +72,18 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 
     @Override
     public void setIndices(int... indices) {
-        if(indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        if (indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
         this.index = indices[0];
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("DiscreteParameterSpace(");
         int n = values.size();
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             sb.append(values.get(i));
-            sb.append( (i == n-1 ? ")" : ","));
+            sb.append((i == n - 1 ? ")" : ","));
         }
         return sb.toString();
     }

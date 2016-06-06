@@ -18,16 +18,28 @@
 package org.deeplearning4j.arbiter.optimize.api.termination;
 
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Terminate hyperparameter optimization after a fixed amount of time has passed
+ */
 public class MaxTimeCondition implements TerminationCondition {
+
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
 
     private long duration;
     private TimeUnit timeUnit;
     private long startTime;
     private long endTime;
 
+    /**
+     * @param duration Duration of time
+     * @param timeUnit Unit that the duration is specified in
+     */
     public MaxTimeCondition(long duration, TimeUnit timeUnit) {
         this.duration = duration;
         this.timeUnit = timeUnit;
@@ -45,7 +57,7 @@ public class MaxTimeCondition implements TerminationCondition {
     }
 
     @Override
-    public String toString(){
-        return "MaxTimeCondition("+duration+","+timeUnit+",start="+startTime+",end="+endTime+")";
+    public String toString() {
+        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\"" + formatter.print(endTime) + "\")";
     }
 }

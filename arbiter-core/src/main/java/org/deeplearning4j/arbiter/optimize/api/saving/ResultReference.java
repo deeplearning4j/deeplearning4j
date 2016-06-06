@@ -21,13 +21,14 @@ import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
 
-/**Idea: We can't store all results in memory in general (might have thousands of candidates with millions of
+/**
+ * Idea: We can't store all results in memory in general (might have thousands of candidates with millions of
  * parameters each)
  * So instead: return a reference to the saved result. Idea is that the result may be saved to disk or a database,
- * and we can easily load it back into memory (if required) using the methods here
+ * and we can easily load it back into memory (if/when required) using the getResult() method
  */
-public interface ResultReference<T,M,A> {
+public interface ResultReference<T, M, A> {
 
-    OptimizationResult<T,M,A> getResult() throws IOException;
+    OptimizationResult<T, M, A> getResult() throws IOException;
 
 }

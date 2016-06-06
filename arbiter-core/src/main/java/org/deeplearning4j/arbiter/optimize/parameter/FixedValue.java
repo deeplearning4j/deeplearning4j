@@ -22,6 +22,11 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * FixedValue is a ParameterSpace that defines only a single fixed value
+ *
+ * @param <T> Type of (fixed) value
+ */
 public class FixedValue<T> implements ParameterSpace<T> {
     private T value;
     private int index;
@@ -31,8 +36,8 @@ public class FixedValue<T> implements ParameterSpace<T> {
     }
 
     @Override
-    public String toString(){
-        return "FixedValue("+value+")";
+    public String toString() {
+        return "FixedValue(" + value + ")";
     }
 
     @Override
@@ -57,7 +62,8 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public void setIndices(int... indices) {
-        if(indices != null && indices.length != 0) throw new IllegalArgumentException("Invaild: FixedValue ParameterSpace "
-            + "should not be given an index");
+        if (indices != null && indices.length != 0)
+            throw new IllegalArgumentException("Invaild: FixedValue ParameterSpace "
+                    + "should not be given an index");
     }
 }
