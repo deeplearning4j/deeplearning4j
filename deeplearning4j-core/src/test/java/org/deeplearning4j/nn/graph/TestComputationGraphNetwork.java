@@ -30,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -219,7 +220,8 @@ public class TestComputationGraphNetwork {
     public void testIrisFitMultiDataSetIterator() throws Exception {
 
         RecordReader rr = new CSVRecordReader(0,",");
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        File f = new File("../dl4j-test-resources/src/main/resources/iris.txt");
+        rr.initialize(new FileSplit(f));
 
         MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(10)
                 .addReader("iris",rr)
