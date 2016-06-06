@@ -35,7 +35,7 @@ import java.util.Map;
 public class GraphTestSetAccuracyScoreFunction extends BaseGraphTestSetEvaluationScoreFunction {
 
     @Override
-    public String toString(){
+    public String toString() {
         return "GraphTestSetAccuracyScoreFunction";
     }
 

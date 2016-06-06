@@ -29,7 +29,7 @@ public class TestSetF1ScoreFunction implements ScoreFunction<MultiLayerNetwork, 
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "TestSetF1ScoreFunction";
     }
 }

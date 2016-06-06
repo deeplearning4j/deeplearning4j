@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.scoring;
 
 /**
+ * Enumeration used to select the type of regression statistics to optimize on, with the various regression score functions
  * - MSE: mean squared error<br>
  * - MAE: mean absolute error<br>
  * - RMSE: root mean squared error<br>

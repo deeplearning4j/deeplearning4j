@@ -25,19 +25,48 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-public class GraphClassificationDataSetEvaluator implements ModelEvaluator<ComputationGraph,DataSetIterator,Evaluation> {
+/**
+ * A model evaluator for doing additional evaluation (classification evaluation) for a ComputationGraph given a DataSetIterator
+ *
+ * @author Alex Black
+ */
+public class GraphClassificationDataSetEvaluator implements ModelEvaluator<ComputationGraph, DataSetIterator, Evaluation> {
     @Override
     public Evaluation evaluateModel(ComputationGraph model, DataProvider<DataSetIterator> dataProvider) {
 
         DataSetIterator iterator = dataProvider.testData(null);
         Evaluation eval = new Evaluation();
-        while(iterator.hasNext()){
-            DataSet ds = iterator.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
-            INDArray out = model.output(features)[0];
-            //TODO: This won't work for time series (RNNs) + for masking
-            eval.eval(labels,out);
+        while (iterator.hasNext()) {
+            DataSet next = iterator.next();
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
+
+            if (next.hasMaskArrays()) {
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
+
+                INDArray[] fMasks = (fMask == null ? null : new INDArray[]{fMask});
+                INDArray[] lMasks = (lMask == null ? null : new INDArray[]{lMask});
+                model.setLayerMaskArrays(fMasks, lMasks);
+
+                INDArray out = model.output(next.getFeatures())[0];
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                if (lMask != null) {
+                    eval.evalTimeSeries(next.getLabels(), out, lMask);
+                } else {
+                    eval.evalTimeSeries(next.getLabels(), out);
+                }
+
+                model.clearLayerMaskArrays();
+            } else {
+                INDArray out = model.output(features)[0];
+                if (out.rank() == 3) {
+                    eval.evalTimeSeries(labels, out);
+                } else {
+                    eval.eval(labels, out);
+                }
+            }
         }
 
         return eval;

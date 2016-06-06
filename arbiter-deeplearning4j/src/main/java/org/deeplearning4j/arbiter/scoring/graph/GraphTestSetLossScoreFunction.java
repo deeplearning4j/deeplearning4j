@@ -25,35 +25,35 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Map;
 
-public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph,MultiDataSetIterator> {
+public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationGraph, MultiDataSetIterator> {
 
     private final boolean average;
 
-    public GraphTestSetLossScoreFunction(){
+    public GraphTestSetLossScoreFunction() {
         this(false);
     }
 
-    public GraphTestSetLossScoreFunction(boolean average){
+    public GraphTestSetLossScoreFunction(boolean average) {
         this.average = average;
     }
 
     @Override
-    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String,Object> dataParameters) {
+    public double score(ComputationGraph model, DataProvider<MultiDataSetIterator> dataProvider, Map<String, Object> dataParameters) {
 
         MultiDataSetIterator testData = dataProvider.testData(dataParameters);
 
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;
         int totalExamples = 0;
-        while(testData.hasNext()){
+        while (testData.hasNext()) {
             MultiDataSet ds = testData.next();
             int numExamples = ds.getFeatures(0).size(0);
 
-            sumScore += numExamples*model.score(ds);
+            sumScore += numExamples * model.score(ds);
             totalExamples += numExamples;
         }
 
-        if(!average) return sumScore;
+        if (!average) return sumScore;
         return sumScore / totalExamples;
     }
 
@@ -63,7 +63,7 @@ public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationG
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "GraphTestSetLossScoreFunctionDataSet()";
     }
 }

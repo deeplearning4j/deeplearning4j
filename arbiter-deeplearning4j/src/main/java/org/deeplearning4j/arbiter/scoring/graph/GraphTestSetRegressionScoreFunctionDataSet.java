@@ -18,14 +18,14 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction<ComputationGraph,DataSetIterator> {
+public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction<ComputationGraph, DataSetIterator> {
 
     private final RegressionValue regressionValue;
 
     /**
-     * @param regressionValue    The type of evaluation to do: MSE, MAE, RMSE, etc
+     * @param regressionValue The type of evaluation to do: MSE, MAE, RMSE, etc
      */
-    public GraphTestSetRegressionScoreFunctionDataSet(RegressionValue regressionValue){
+    public GraphTestSetRegressionScoreFunctionDataSet(RegressionValue regressionValue) {
         this.regressionValue = regressionValue;
     }
 
@@ -36,11 +36,11 @@ public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction
 
         RegressionEvaluation evaluation = new RegressionEvaluation();
 
-        while(testSet.hasNext()){
+        while (testSet.hasNext()) {
             DataSet next = testSet.next();
             INDArray labels = next.getLabels();
 
-            if(next.hasMaskArrays()){
+            if (next.hasMaskArrays()) {
                 INDArray fMask = next.getFeaturesMaskArray();
                 INDArray lMask = next.getLabelsMaskArray();
 
@@ -50,7 +50,7 @@ public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction
                 model.setLayerMaskArrays(fMasks, lMasks);
 
                 INDArray[] outputs = model.output(false, next.getFeatures());
-                if(lMasks != null && lMasks[0] != null){
+                if (lMasks != null && lMasks[0] != null) {
                     evaluation.evalTimeSeries(labels, outputs[0], lMasks[0]);
                 } else {
                     evaluation.evalTimeSeries(labels, outputs[0]);
@@ -59,31 +59,31 @@ public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction
                 model.clearLayerMaskArrays();
             } else {
                 INDArray[] outputs = model.output(false, next.getFeatures());
-                if(labels.rank() == 3){
+                if (labels.rank() == 3) {
                     evaluation.evalTimeSeries(labels, outputs[0]);
                 } else {
-                    evaluation.eval(labels,outputs[0]);
+                    evaluation.eval(labels, outputs[0]);
                 }
             }
         }
 
         double sum = 0.0;
         int nColumns = evaluation.numColumns();
-        switch(regressionValue){
+        switch (regressionValue) {
             case MSE:
-                for( int j=0; j<nColumns; j++ ) sum += evaluation.meanSquaredError(j);
+                for (int j = 0; j < nColumns; j++) sum += evaluation.meanSquaredError(j);
                 break;
             case MAE:
-                for( int j=0; j<nColumns; j++ ) sum += evaluation.meanAbsoluteError(j);
+                for (int j = 0; j < nColumns; j++) sum += evaluation.meanAbsoluteError(j);
                 break;
             case RMSE:
-                for( int j=0; j<nColumns; j++ ) sum += evaluation.rootMeanSquaredError(j);
+                for (int j = 0; j < nColumns; j++) sum += evaluation.rootMeanSquaredError(j);
                 break;
             case RSE:
-                for( int j=0; j<nColumns; j++ ) sum += evaluation.relativeSquaredError(j);
+                for (int j = 0; j < nColumns; j++) sum += evaluation.relativeSquaredError(j);
                 break;
             case CorrCoeff:
-                for( int j=0; j<nColumns; j++ ) sum += evaluation.correlationR2(j);
+                for (int j = 0; j < nColumns; j++) sum += evaluation.correlationR2(j);
                 sum /= nColumns;
                 break;
         }
@@ -97,7 +97,7 @@ public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "GraphTestSetRegressionScoreFunctionDataSet(type=" + regressionValue + ")";
     }
 }

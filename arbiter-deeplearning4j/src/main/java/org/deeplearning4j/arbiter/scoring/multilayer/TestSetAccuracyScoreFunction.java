@@ -29,7 +29,7 @@ public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNet
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "TestSetAccuracyScoreFunction";
     }
 }

@@ -20,9 +20,9 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
     private final RegressionValue regressionValue;
 
     /**
-     * @param regressionValue    The type of evaluation to do: MSE, MAE, RMSE, etc
+     * @param regressionValue The type of evaluation to do: MSE, MAE, RMSE, etc
      */
-    public TestSetRegressionScoreFunction(RegressionValue regressionValue){
+    public TestSetRegressionScoreFunction(RegressionValue regressionValue) {
         this.regressionValue = regressionValue;
     }
 
@@ -32,19 +32,19 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
         DataSetIterator testSet = dataProvider.testData(dataParameters);
 
         RegressionEvaluation eval = new RegressionEvaluation();
-        while(testSet.hasNext()){
+        while (testSet.hasNext()) {
             DataSet next = testSet.next();
 
             INDArray out;
-            if(next.hasMaskArrays()){
-                out = model.output(next.getFeatures(),false, next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+            if (next.hasMaskArrays()) {
+                out = model.output(next.getFeatures(), false, next.getFeaturesMaskArray(), next.getLabelsMaskArray());
 
             } else {
                 out = model.output(next.getFeatures(), false);
             }
 
-            if(out.rank() == 3){
-                if(next.getLabelsMaskArray() != null){
+            if (out.rank() == 3) {
+                if (next.getLabelsMaskArray() != null) {
                     eval.evalTimeSeries(next.getLabels(), out, next.getLabelsMaskArray());
                 } else {
                     eval.evalTimeSeries(next.getLabels(), out);
@@ -56,21 +56,21 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
 
         double sum = 0.0;
         int nColumns = eval.numColumns();
-        switch(regressionValue){
+        switch (regressionValue) {
             case MSE:
-                for( int i=0; i<nColumns; i++ ) sum += eval.meanSquaredError(i);
+                for (int i = 0; i < nColumns; i++) sum += eval.meanSquaredError(i);
                 break;
             case MAE:
-                for( int i=0; i<nColumns; i++ ) sum += eval.meanAbsoluteError(i);
+                for (int i = 0; i < nColumns; i++) sum += eval.meanAbsoluteError(i);
                 break;
             case RMSE:
-                for( int i=0; i<nColumns; i++ ) sum += eval.rootMeanSquaredError(i);
+                for (int i = 0; i < nColumns; i++) sum += eval.rootMeanSquaredError(i);
                 break;
             case RSE:
-                for( int i=0; i<nColumns; i++ ) sum += eval.relativeSquaredError(i);
+                for (int i = 0; i < nColumns; i++) sum += eval.relativeSquaredError(i);
                 break;
             case CorrCoeff:
-                for( int i=0; i<nColumns; i++ ) sum += eval.correlationR2(i);
+                for (int i = 0; i < nColumns; i++) sum += eval.correlationR2(i);
                 sum /= nColumns;
                 break;
         }
@@ -84,7 +84,7 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "TestSetRegressionScoreFunction(type=" + regressionValue + ")";
     }
 }

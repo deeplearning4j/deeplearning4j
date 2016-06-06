@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.api.data;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -24,7 +25,7 @@ import java.util.Map;
  *
  * @param <D> Type of the data to be used when learning
  */
-public interface DataProvider<D> {
+public interface DataProvider<D> extends Serializable {
 
     /**
      * Get training data given some parameters for the data. Data parameters map is used to specify things like batch

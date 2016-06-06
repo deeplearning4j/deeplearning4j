@@ -23,11 +23,16 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 
 import java.util.List;
 
+/**
+ * Layer space for LSTM layers
+ *
+ * @author Alex Black
+ */
 public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
     private ParameterSpace<Double> forgetGateBiasInit;
 
-    private GravesLSTMLayerSpace(Builder builder){
+    private GravesLSTMLayerSpace(Builder builder) {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
     }
@@ -36,51 +41,51 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
     @Override
     public GravesLSTM getValue(double[] values) {
         GravesLSTM.Builder b = new GravesLSTM.Builder();
-        setLayerOptionsBuilder(b,values);
+        setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values){
+    protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if(forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
+        if (forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves(){
+    public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
-        if(forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
+        if (forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
         return list;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    public String toString(String delim){
+    public String toString(String delim) {
         StringBuilder sb = new StringBuilder("GravesLSTMLayerSpace(");
-        if(forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
+        if (forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }
 
-    public static class Builder extends FeedForwardLayerSpace.Builder<Builder>{
+    public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
 
         private ParameterSpace<Double> forgetGateBiasInit;
 
-        public Builder forgetGateBiasInit(double forgetGateBiasInit){
+        public Builder forgetGateBiasInit(double forgetGateBiasInit) {
             return forgetGateBiasInit(new FixedValue<>(forgetGateBiasInit));
         }
 
-        public Builder forgetGateBiasInit( ParameterSpace<Double> forgetGateBiasInit){
+        public Builder forgetGateBiasInit(ParameterSpace<Double> forgetGateBiasInit) {
             this.forgetGateBiasInit = forgetGateBiasInit;
             return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public GravesLSTMLayerSpace build(){
+        public GravesLSTMLayerSpace build() {
             return new GravesLSTMLayerSpace(this);
         }
     }

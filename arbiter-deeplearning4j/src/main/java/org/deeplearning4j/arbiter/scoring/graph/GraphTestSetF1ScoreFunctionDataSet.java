@@ -31,12 +31,12 @@ import java.util.Map;
 public class GraphTestSetF1ScoreFunctionDataSet extends BaseGraphTestSetEvaluationScoreFunctionDataSet {
 
     @Override
-    public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String,Object> dataParameters) {
+    public double score(ComputationGraph model, DataProvider<DataSetIterator> dataProvider, Map<String, Object> dataParameters) {
         return getEvaluation(model, dataProvider, dataParameters).f1();
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "GraphTestSetF1ScoreFunctionDataSet";
     }
 }

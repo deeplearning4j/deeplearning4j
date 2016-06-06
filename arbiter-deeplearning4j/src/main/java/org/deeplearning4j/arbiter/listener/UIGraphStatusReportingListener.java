@@ -21,10 +21,11 @@ import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidate
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.ui.components.text.ComponentText;
 
-/**Listener designed to report status to Arbiter UI
+/**
+ * Listener designed to report status to Arbiter UI - used for ComputationGraphs
  * Combines listener functionality for both early stopping AND iteration listeners
  */
-public class UIGraphStatusReportingListener extends BaseUIStatusReportingListener<ComputationGraph>{
+public class UIGraphStatusReportingListener extends BaseUIStatusReportingListener<ComputationGraph> {
 
 
     public UIGraphStatusReportingListener(UICandidateStatusListener listener) {
@@ -32,7 +33,7 @@ public class UIGraphStatusReportingListener extends BaseUIStatusReportingListene
     }
 
     @Override
-    protected void createConfigComponent(ComputationGraph network){
+    protected void createConfigComponent(ComputationGraph network) {
         config = new ComponentText(network.getConfiguration().toString(), null);
     }
 }
