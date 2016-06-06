@@ -134,7 +134,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 {"Configurations Completed:",String.valueOf(completed)},
                 {"Configurations Queued/Running:",String.valueOf(queued)},
                 {"Configurations Failed:", String.valueOf(failed)},
-                {"Configuratios Total:", String.valueOf(total)},
+                {"Configurations Total:", String.valueOf(total)},
                 {"Best Score:", (bestScoreIdx == -1 ? "-" : String.valueOf(bestScore)) },
                 {"Best Score Model Index:", (bestScoreIdx == -1 ? "-" : String.valueOf(bestScoreIdx)) },
                 {"Best Score Model Found At:",

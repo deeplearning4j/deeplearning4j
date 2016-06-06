@@ -20,13 +20,21 @@ package org.deeplearning4j.arbiter.optimize.ui;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
+import io.dropwizard.jetty.HttpConnectorFactory;
+import io.dropwizard.lifecycle.ServerLifecycleListener;
+import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.ui.resources.*;
+import org.deeplearning4j.arbiter.util.ClassPathResource;
 import org.deeplearning4j.arbiter.util.WebUtils;
 import org.deeplearning4j.ui.api.Component;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +43,10 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -94,26 +106,47 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
      */
 
     private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
-    private static final ArbiterUIServer instance = new ArbiterUIServer();
+    private static ArbiterUIServer instance;
     private Client client = ClientProvider.getClient();
 
     private AtomicLong lastSummaryUpdateTime = new AtomicLong(0);
     private AtomicLong lastConfigUpdateTime = new AtomicLong(0);
     private AtomicLong lastResultsUpdateTime = new AtomicLong(0);
 
-    private WebTarget targetLastUpdateStatus = client.target("http://localhost:8080/lastUpdate/update");
-    private WebTarget targetSummaryStatusUpdate = client.target("http://localhost:8080/summary/update");
-    private WebTarget targetConfigUpdate = client.target("http://localhost:8080/config/update");
-    private WebTarget targetResultsUpdate = client.target("http://localhost:8080/results/update");
+    private int port;
 
+    private WebTarget targetLastUpdateStatus; //= client.target("http://localhost:8080/lastUpdate/update");
+    private WebTarget targetSummaryStatusUpdate; // = client.target("http://localhost:8080/summary/update");
+    private WebTarget targetConfigUpdate; // = client.target("http://localhost:8080/config/update");
+    private WebTarget targetResultsUpdate; // = client.target("http://localhost:8080/results/update");
 
-    public static void main(String[] args) throws Exception {
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        new ArbiterUIServer().run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
+    public int getPort(){
+        return port;
     }
 
-    public ArbiterUIServer(){
+    public static synchronized ArbiterUIServer getInstance(){
+        if(instance == null){
+            File f;
+            try{
+                f = new ClassPathResource("dropwizard.yml").getFile();
+            }catch(IOException e){
+                throw new RuntimeException("Could not find dropwizard.yml on classpath");
+            }
+
+            instance = new ArbiterUIServer();
+            String[] str = new String[]{"server", f.getAbsolutePath()};
+            try{
+                instance.run(str);
+            }catch(Exception e){
+                instance = null;
+                throw new RuntimeException(e);
+            }
+            WebUtils.tryOpenBrowser("http://localhost:" + instance.port + "/arbiter", log);
+        }
+        return instance;
+    }
+
+    protected ArbiterUIServer(){
         super();
         log.info("Arbiter UI Server: Starting");
     }
@@ -137,6 +170,36 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     @Override
     public void run(ArbiterUIConfig configuration, Environment environment) {
+        //Workaround to dropwizard sometimes ignoring ports specified in dropwizard.yml
+        int[] portsFromYml = getApplicationPortFromYml();
+        if(portsFromYml[0] != -1 ) {
+            ((HttpConnectorFactory) ((DefaultServerFactory) configuration.getServerFactory())
+                    .getApplicationConnectors().get(0)).setPort(portsFromYml[0]);
+        }
+        if(portsFromYml[1] != -1 ) {
+            ((HttpConnectorFactory) ((DefaultServerFactory) configuration.getServerFactory())
+                    .getAdminConnectors().get(0)).setPort(portsFromYml[1]);
+        }
+
+        //Read the port that actually got assigned (needed for random ports i.e. port: 0 setting in yml)
+        environment.lifecycle().addServerLifecycleListener(new ServerLifecycleListener() {
+            @Override
+            public void serverStarted(Server server) {
+                for (Connector connector : server.getConnectors()) {
+                    if (connector instanceof ServerConnector) {
+                        ServerConnector serverConnector = (ServerConnector) connector;
+                        if(!serverConnector.getName().toLowerCase().contains("application")) continue;
+                        int port = serverConnector.getLocalPort();
+                        try{
+                            ArbiterUIServer.getInstance().port = port;
+                        }catch( Exception e ){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+
         final ArbiterUIResource resource = new ArbiterUIResource();
         environment.jersey().register(resource);
 
@@ -149,6 +212,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     public void updateStatus(Component component){
+        if(targetSummaryStatusUpdate == null) targetSummaryStatusUpdate = client.target("http://localhost:" + port + "/summary/update");
         Response response = targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(component, MediaType.APPLICATION_JSON));
         log.trace("Status update response: {}", response);
@@ -159,6 +223,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     private void updateStatusTimes(){
+        if(targetLastUpdateStatus == null) targetLastUpdateStatus = client.target("http://localhost:" + port + "/lastUpdate/update");
         UpdateStatus updateStatus = new UpdateStatus(lastSummaryUpdateTime.get(),lastConfigUpdateTime.get(),lastResultsUpdateTime.get());
         targetLastUpdateStatus.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(updateStatus, MediaType.APPLICATION_JSON));
@@ -167,6 +232,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
 
     public void updateOptimizationSettings(Component component){
+        if(targetConfigUpdate == null) targetConfigUpdate = client.target("http://localhost:" + port + "/config/update");
         targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(component, MediaType.APPLICATION_JSON));
         log.trace("Posted optimization settings update: {}", component);
@@ -186,12 +252,49 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         });
 
         //Post update:
+        if(targetResultsUpdate == null) targetResultsUpdate = client.target("http://localhost:" + port + "/results/update");
         targetResultsUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(list, MediaType.APPLICATION_JSON));
         log.trace("Posted new results: {}", list);
         lastResultsUpdateTime.set(System.currentTimeMillis());
 
         updateStatusTimes();
+    }
+
+    //Parse dropwizard.yml (if present on classpath) and parse the port specifications
+    private int[] getApplicationPortFromYml(){
+        int[] toReturn = {-1,-1};
+        ClassPathResource resource = new ClassPathResource("dropwizard.yml");
+        InputStream in;
+        try {
+            in = resource.getInputStream();
+            if (in == null) return toReturn;   //Not found
+        } catch (FileNotFoundException e) {
+            return toReturn;
+        }
+        String s;
+        try {
+            s = IOUtils.toString(in);
+        } catch(IOException e ){
+            return toReturn;
+        }
+
+        String[] split = s.split("\n");
+        int count = 0;
+        for( String str : split ){
+            if(str.matches("^\\s*#(.|\n|\r)*")) continue;    //Ignore comment lines
+            if(!str.contains("port")) continue;
+            String[] line = str.split("\\s+");
+            for( String token : line ){
+                try{
+                    toReturn[count] = Integer.parseInt(token);
+                    count++;
+                }catch(NumberFormatException e ){ }
+            }
+            if(count == 2 ) return toReturn;
+        }
+
+        return toReturn;  //No port configuration?
     }
 
 }

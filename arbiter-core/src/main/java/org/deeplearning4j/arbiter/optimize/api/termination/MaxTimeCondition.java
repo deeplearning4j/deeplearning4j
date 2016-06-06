@@ -58,6 +58,6 @@ public class MaxTimeCondition implements TerminationCondition {
 
     @Override
     public String toString() {
-        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\"" + formatter.print(endTime) + ")";
+        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\"" + formatter.print(endTime) + "\")";
     }
 }
