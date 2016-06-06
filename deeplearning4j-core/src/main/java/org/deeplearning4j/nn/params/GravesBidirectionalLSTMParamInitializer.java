@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.params;
 
-import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
