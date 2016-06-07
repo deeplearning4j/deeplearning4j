@@ -84,11 +84,10 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
 
         //final T word = sequence.getElements().get(i);
-        List<T> sentence = sequence.getElements();
+        List<T> sentence = skipGram.applySubsampling(sequence,nextRandom).getElements();
 
-        List<T> labels = new ArrayList<>(); //(List<T>) sequence.getSequenceLabel();
+        List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
-        //    final VocabWord word = labels.get(0);
 
         if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
