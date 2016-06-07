@@ -88,7 +88,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         // no-op
     }
 
-    protected Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
+    public Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
         Sequence<T> result = new Sequence<>();
 
         // subsampling implementation, if subsampling threshold met, just continue to next element
