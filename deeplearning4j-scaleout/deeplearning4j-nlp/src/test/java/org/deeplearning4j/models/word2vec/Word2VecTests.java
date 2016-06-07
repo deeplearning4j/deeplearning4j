@@ -165,7 +165,7 @@ public class Word2VecTests {
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .useAdaGrad(true)
                 .iterate(iter)
-                .workers(10)
+                .workers(8)
                 .tokenizerFactory(t)
                 .elementsLearningAlgorithm(new CBOW<VocabWord>())
                 .build();
