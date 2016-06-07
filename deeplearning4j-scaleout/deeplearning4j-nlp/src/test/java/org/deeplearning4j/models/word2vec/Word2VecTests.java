@@ -154,10 +154,10 @@ public class Word2VecTests {
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(5)
-                .iterations(5)
+                .minWordFrequency(1)
+                .iterations(2)
                 .learningRate(0.025)
-                .layerSize(100)
+                .layerSize(150)
                 .seed(42)
                 .sampling(0)
                 .negativeSample(5)
@@ -183,6 +183,7 @@ public class Word2VecTests {
         assertTrue(lst.contains("week"));
         assertTrue(lst.contains("night"));
         assertTrue(lst.contains("year"));
+        assertTrue(sim > 0.65f);
     }
 
 

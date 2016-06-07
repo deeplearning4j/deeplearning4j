@@ -135,7 +135,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             //score
             f =  expTable[idx];
 
-            double g = (1 - code - f) * alpha;
+            double g = useAdaGrad ?  currentWord.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, syn1row, neu1e);
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
@@ -198,7 +198,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
     }
 
-    protected Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
+    public Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
         Sequence<T> result = new Sequence<>();
 
         // subsampling implementation, if subsampling threshold met, just continue to next element
