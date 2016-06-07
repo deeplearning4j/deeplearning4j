@@ -651,7 +651,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testEpsOps() {
         INDArray ones = Nd4j.ones(6);
-        double tiny = 1.000000000000000000000000000001;
+        double tiny = 1.000000000000001;
         assertTrue(ones.eps(tiny).sumNumber().doubleValue() == 6);
         INDArray consec = Nd4j.linspace(1,6,6);
         assertTrue(consec.eps(5).sumNumber().doubleValue() == 1);
