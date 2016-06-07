@@ -648,6 +648,17 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(exp,var,1e-7f);
     }
 
+    @Test
+    public void testEpsOps() {
+        INDArray ones = Nd4j.ones(6);
+        double tiny = 1.000000000000000000000000000001;
+        assertTrue(ones.eps(tiny).sumNumber().doubleValue() == 6);
+        INDArray consec = Nd4j.linspace(1,6,6);
+        assertTrue(consec.eps(5).sumNumber().doubleValue() == 1);
+        assertTrue(consec.sub(1).eps(5).sumNumber().doubleValue() == 1);
+        assertTrue(consec.sub(1).eps(5).getDouble(0,5) == 1);
+    }
+
     @Override
     public char ordering() {
         return 'c';
