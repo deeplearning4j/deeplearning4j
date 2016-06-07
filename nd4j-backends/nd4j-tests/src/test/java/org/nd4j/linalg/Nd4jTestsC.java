@@ -3115,27 +3115,30 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertFalse(Double.isNaN(x.var(1).sumNumber().doubleValue()));
         System.out.println(x.var(1));
 
+        System.out.println("=================================");
         // 2d array - all elements are the same
         INDArray a = Nd4j.ones(10,10).mul(10);
         System.out.println(a);
-        //assertFalse(Double.isNaN(a.var(0).sumNumber().doubleValue()));
+        assertFalse(Double.isNaN(a.var(0).sumNumber().doubleValue()));
         System.out.println(a.var(0));
-        //assertFalse(Double.isNaN(a.var(1).sumNumber().doubleValue()));
+        assertFalse(Double.isNaN(a.var(1).sumNumber().doubleValue()));
         System.out.println(a.var(1));
 
         // 2d array - constant in one dimension
+        System.out.println("=================================");
         INDArray nums = Nd4j.linspace(1,10,10);
         INDArray b = Nd4j.ones(10,10).mulRowVector(nums);
         System.out.println(b);
-        //assertFalse(Double.isNaN((Double) b.var(0).sumNumber()));
+        assertFalse(Double.isNaN((Double) b.var(0).sumNumber()));
         System.out.println(b.var(0));
-        //assertFalse(Double.isNaN((Double) b.var(1).sumNumber()));
+        assertFalse(Double.isNaN((Double) b.var(1).sumNumber()));
         System.out.println(b.var(1));
 
+        System.out.println("=================================");
         System.out.println(b.transpose());
-        //assertFalse(Double.isNaN((Double) b.transpose().var(0).sumNumber()));
+        assertFalse(Double.isNaN((Double) b.transpose().var(0).sumNumber()));
         System.out.println(b.transpose().var(0));
-        //assertFalse(Double.isNaN((Double) b.transpose().var(1).sumNumber()));
+        assertFalse(Double.isNaN((Double) b.transpose().var(1).sumNumber()));
         System.out.println(b.transpose().var(1));
     }
 
