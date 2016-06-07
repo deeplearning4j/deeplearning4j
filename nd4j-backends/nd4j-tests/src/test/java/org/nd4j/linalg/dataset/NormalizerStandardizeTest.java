@@ -196,6 +196,27 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testConstant() {
+        double tolerancePerc = 0.01; // 0.01% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.zeros(nSamples,nFeatures).add(100);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        NormalizerStandardize myNormalizer = new NormalizerStandardize();
+        myNormalizer.fit(sampleDataSet);
+        assertFalse (Double.isNaN(myNormalizer.getStd().getDouble(0)));
+        myNormalizer.transform(sampleDataSet);
+        assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
+        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),0,0.00001);
+        myNormalizer.revert(sampleDataSet);
+        assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
+        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),100*nFeatures*nSamples,0.00001);
+    }
+
     public class genRandomDataSet {
         /* generate random dataset from normally distributed mean 0, std 1
         based on given seed and scaling constants

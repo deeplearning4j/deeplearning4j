@@ -11,12 +11,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Standard scaler calculates a moving column wise
  * variance and mean
  * http://www.johndcook.com/blog/standard_deviation/
  */
 public class StandardScaler {
+    private static Logger logger = LoggerFactory.getLogger(StandardScaler.class);
     private INDArray mean,std;
     private int runningTotal = 0;
 
@@ -24,6 +28,9 @@ public class StandardScaler {
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);
         std = dataSet.getFeatureMatrix().std(0);
+        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+            logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
     }
 
     /**
@@ -65,6 +72,9 @@ public class StandardScaler {
         }
         std.divi(runningTotal);
         std = Transforms.sqrt(std);
+        std.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+            logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
         iterator.reset();
     }
 

@@ -152,6 +152,26 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
+    @Test
+    public void testConstant() {
+        double tolerancePerc = 0.01; // 0.01% of correct value
+        int nSamples = 500;
+        int nFeatures = 3;
+
+        INDArray featureSet = Nd4j.zeros(nSamples,nFeatures).add(100);
+        INDArray labelSet = Nd4j.zeros(nSamples, 1);
+        DataSet sampleDataSet = new DataSet(featureSet, labelSet);
+
+        NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler();
+        myNormalizer.fit(sampleDataSet);
+        myNormalizer.transform(sampleDataSet);
+        assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
+        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),0,0.00001);
+        myNormalizer.revert(sampleDataSet);
+        assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
+        assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),100*nFeatures*nSamples,0.00001);
+    }
+
     @Override
     public char ordering() {
         return 'c';
