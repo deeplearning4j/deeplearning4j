@@ -9,6 +9,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         this.syn1 = ((InMemoryLookupTable<T>) lookupTable).getSyn1();
         this.syn1Neg = ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg();
         this.expTable = ((InMemoryLookupTable<T>) lookupTable).getExpTable();
+        this.table = ((InMemoryLookupTable<T>) lookupTable).getTable();
     }
 
     /**
@@ -88,9 +90,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-    public void iterateSample(int c, T word, AtomicLong nextRandom, double alpha ) {
-        INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
-    }
 
     public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
         int end =  window * 2 + 1 - b;
@@ -110,8 +109,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     cw++;
                 }
             }
-
         }
+
+        if (cw == 0)
+            return;
 
         neu1.divi(cw);
 
@@ -140,6 +141,50 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
         }
 
+        if (negative > 0) {
+            int target = currentWord.getIndex();
+            int label;
+
+            for (int d = 0; d < negative + 1; d++) {
+                if (d == 0)
+                    label = 1;
+                else {
+                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+                    int idx = Math.abs((int) (nextRandom.get() >> 16) % table.length());
+
+                    target = table.getInt(idx);
+                    if (target <= 0)
+                        target = (int) nextRandom.get() % (vocabCache.numWords() - 1) + 1;
+
+                    if (target == currentWord.getIndex())
+                        continue;
+                    label = 0;
+                }
+
+
+                if(target >= syn1Neg.rows() || target < 0)
+                    continue;
+
+                double f = Nd4j.getBlasWrapper().dot(neu1,syn1Neg.slice(target));
+                double g;
+                if (f > MAX_EXP)
+                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                else if (f < -MAX_EXP)
+                    g = label * (useAdaGrad ?  lookupTable.getGradient(target, alpha) : alpha);
+                else {
+                    int idx = (int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2));
+                    if (idx >= expTable.length)
+                        continue;
+
+                    g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[idx]) : (label - expTable[idx]) * alpha;
+                }
+
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target),neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, neu1,syn1Neg.slice(target));
+            }
+            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, neu1);
+        }
+
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
@@ -151,9 +196,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 }
             }
         }
-
-      //  logger.info("neu1: " + neu1);
-      //  throw new RuntimeException();
     }
 
     protected Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
