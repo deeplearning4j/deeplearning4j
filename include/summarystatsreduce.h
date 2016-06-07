@@ -112,9 +112,9 @@ namespace functions {
 				return M2 / n;
 			}
 
-			host_and_device T skewness() { return nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5); }
+			host_and_device T skewness() { return M2 > 0 ? nd4j::math::nd4j_sqrt<int>(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : 0; }
 
-			host_and_device T kurtosis() { return n * M4 / (M2 * M2); }
+			host_and_device T kurtosis() { return M2 > 0 ? n * M4 / (M2 * M2) : 0; }
 
 			host_and_device T getM2() {
 				return M2;
