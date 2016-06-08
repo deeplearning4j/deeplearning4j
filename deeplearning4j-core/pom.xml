@@ -85,11 +85,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>${netty.buffer.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-api</artifactId>
         </dependency>
