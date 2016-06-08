@@ -11,6 +11,7 @@
 #include <omp.h>
 #include <dll.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
@@ -23,6 +24,12 @@
 #include <jni.h>
 #endif
 #include <pairwise_util.h>
+
+
+#define INDEX_REDUCE_OPS \
+        (0, simdOps::IndexMax), \
+        (1, simdOps::IndexMin)
+        
 
 namespace functions {
 	namespace indexreduce {
@@ -71,7 +78,7 @@ struct SharedIndexValue<double> {
 #ifdef __CUDACC__
 
 		static inline __device__ void transform(
-			const int op,
+			const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *extraParams,
@@ -85,15 +92,7 @@ struct SharedIndexValue<double> {
 			UnifiedSharedMemory *manager,
 			int *tadShapeInfo,
 			int *tadOffset) {
-			if (op == 0) {
-				transform<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset);
-			}
-			else if (op == 1) {
-				transform<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset);
-			}
-			else {
-				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
-			}
+                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
 			/**
@@ -366,23 +365,14 @@ template<typename OpType>
 
 #endif
 		static T execScalar(
-			const int op,
+			const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *extraParams) {
-			if (op == 0) {
-				return execScalar<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams);
-			}
-			else if (op == 1) {
-				return execScalar<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams);
-			}
-			else {
-				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
-				return 0;
-			}
+                    RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
 		}
 
-		static void exec(const int op,
+		static void exec(const int opNum,
 			T *x,
 			int *xShapeInfo,
 			T *extraParams,
@@ -390,15 +380,7 @@ template<typename OpType>
 			int *resultShapeInfoBuffer,
 			int *dimension,
 			int dimensionLength, int *tadShapeInfo, int *tadOffset) {
-			if (op == 0) {
-				exec<simdOps::IndexMax<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-			}
-			else if (op == 1) {
-				exec<simdOps::IndexMin<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-			}
-			else {
-				printf("[ERROR] Can not execute opNum=%d for indexreduce!\n", op);
-			}
+                    DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
 

@@ -18,11 +18,33 @@
 #include <dll.h>
 #include <stdio.h>
 #include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+
+#define PAIRWISE_TRANSFORM_OPS \
+        (0, simdOps::Add),\
+        (1, simdOps::Copy),\
+        (2, simdOps::Divide),\
+        (3, simdOps::EqualTo),\
+        (4, simdOps::GreaterThan),\
+        (5, simdOps::LessThan),\
+        (6, simdOps::Multiply),\
+        (7, simdOps::ReverseDivide),\
+        (8, simdOps::ReverseSubtract),\
+        (9, simdOps::Subtract),\
+        (10,simdOps::Epsilon),\
+        (11,simdOps::GreaterThanOrEqual),\
+        (12,simdOps::LessThanOrEqual),\
+        (13,simdOps::Max),\
+        (14,simdOps::Min),\
+        (15,simdOps::NotEqualTo),\
+        (16,simdOps::Copy)
+
+
 namespace functions {
     namespace pairwise_transforms {
 
@@ -37,7 +59,7 @@ namespace functions {
 
 
 		static inline __device__ void transformCuda(
-				const int op,
+				const int opNum,
 				Nd4jIndex n,
 				T *dx,
 				T *y,
@@ -49,47 +71,13 @@ namespace functions {
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo) {
-				if (op == 0)
-					transformCuda<simdOps::Add<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 1)
-					transformCuda<simdOps::Copy<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 2)
-					transformCuda<simdOps::Divide<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 3)
-					transformCuda<simdOps::EqualTo<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 4)
-					transformCuda<simdOps::GreaterThan<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 5)
-					transformCuda<simdOps::LessThan<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 6)
-					transformCuda<simdOps::Multiply<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 7)
-					transformCuda<simdOps::ReverseDivide<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 8)
-					transformCuda<simdOps::ReverseSubtract<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 9)
-					transformCuda<simdOps::Subtract<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 10)
-					transformCuda<simdOps::Epsilon<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 11)
-					transformCuda<simdOps::GreaterThanOrEqual<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 12)
-					transformCuda<simdOps::LessThanOrEqual<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 13)
-					transformCuda<simdOps::Max<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 14)
-					transformCuda<simdOps::Min<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 15)
-					transformCuda<simdOps::NotEqualTo<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 16)
-					transformCuda<simdOps::Copy<T>>(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+                    DISPATCH_BY_OPNUM(transformCuda, PARAMS(n, dx, y, incx, incy, extraParams, result, incz, allocationPointer, manager, tadOnlyShapeInfo), PAIRWISE_TRANSFORM_OPS);
+				
 			}
 
 
 			static inline __device__ void transformCuda(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeBuffer,
 				T *y,
@@ -100,47 +88,12 @@ namespace functions {
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo) {
-				if (op == 0)
-					transformCuda<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 1)
-					transformCuda<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 2)
-					transformCuda<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 3)
-					transformCuda<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 4)
-					transformCuda<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 5)
-					transformCuda<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 6)
-					transformCuda<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 7)
-					transformCuda<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 8)
-					transformCuda<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 9)
-					transformCuda<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 10)
-					transformCuda<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 11)
-					transformCuda<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 12)
-					transformCuda<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 13)
-					transformCuda<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 14)
-					transformCuda<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 15)
-					transformCuda<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 16)
-					transformCuda<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+                            DISPATCH_BY_OPNUM(transformCuda, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, manager, tadOnlyShapeInfo), PAIRWISE_TRANSFORM_OPS);
 			}
 
 
 			static inline __device__ void transformCuda(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeBuffer,
 				T *y,
@@ -154,42 +107,7 @@ namespace functions {
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo) {
-				if (op == 0)
-					transform<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 1)
-					transform<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 2)
-					transform<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 3)
-					transform<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 4)
-					transform<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 5)
-					transform<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 6)
-					transform<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 7)
-					transform<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 8)
-					transform<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 9)
-					transform<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 10)
-					transform<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 11)
-					transform<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 12)
-					transform<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 13)
-					transform<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 14)
-					transform<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 15)
-					transform<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else if (op == 16)
-					transform<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+                            DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes, allocationPointer, manager, tadOnlyShapeInfo), PAIRWISE_TRANSFORM_OPS);
 			}
             /**
 	 *
@@ -382,7 +300,7 @@ template<typename OpType>
 #endif
         public:
 			static void exec(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeBuffer,
 				T *y,
@@ -393,46 +311,11 @@ template<typename OpType>
 				int *indexes,
 				int *yIndexes,
 				int *resultIndexes) {
-				if (op == 0)
-					exec<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 1)
-					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 2)
-					exec<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 3)
-					exec<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 4)
-					exec<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 5)
-					exec<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 6)
-					exec<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 7)
-					exec<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 8)
-					exec<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 9)
-					exec<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 10)
-					exec<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 12)
-					exec<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 13)
-					exec<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 14)
-					exec<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 15)
-					exec<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else if (op == 16)
-					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes), PAIRWISE_TRANSFORM_OPS);
 			}
 
 			static void exec(
-				const int op,
+				const int opNum,
 				T *dx,
 				int *xShapeBuffer,
 				T *y,
@@ -440,46 +323,11 @@ template<typename OpType>
 				T *result,
 				int *resultShapeBuffer,
 				T *extraParams) {
-				if (op == 0)
-					exec<simdOps::Add<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 1)
-					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 2)
-					exec<simdOps::Divide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 3)
-					exec<simdOps::EqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 4)
-					exec<simdOps::GreaterThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 5)
-					exec<simdOps::LessThan<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 6)
-					exec<simdOps::Multiply<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 7)
-					exec<simdOps::ReverseDivide<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 8)
-					exec<simdOps::ReverseSubtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 9)
-					exec<simdOps::Subtract<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 10)
-					exec<simdOps::Epsilon<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 12)
-					exec<simdOps::LessThanOrEqual<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 13)
-					exec<simdOps::Max<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 14)
-					exec<simdOps::Min<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 15)
-					exec<simdOps::NotEqualTo<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else if (op == 16)
-					exec<simdOps::Copy<T>>(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+				DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams), PAIRWISE_TRANSFORM_OPS);
 			}
 			
 			static void exec(
-				const int op,
+				const int opNum,
 				T *dx,
 				Nd4jIndex xStride,
 				T *y,
@@ -488,42 +336,7 @@ template<typename OpType>
 				Nd4jIndex resultStride,
 				T *extraParams,
 				Nd4jIndex n) {
-				if (op == 0)
-					exec<simdOps::Add<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 1)
-					exec<simdOps::Copy<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 2)
-					exec<simdOps::Divide<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 3)
-					exec<simdOps::EqualTo<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 4)
-					exec<simdOps::GreaterThan<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 5)
-					exec<simdOps::LessThan<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 6)
-					exec<simdOps::Multiply<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 7)
-					exec<simdOps::ReverseDivide<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 8)
-					exec<simdOps::ReverseSubtract<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 9)
-					exec<simdOps::Subtract<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 10)
-					exec<simdOps::Epsilon<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 11)
-					exec<simdOps::GreaterThanOrEqual<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 12)
-					exec<simdOps::LessThanOrEqual<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 13)
-					exec<simdOps::Max<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 14)
-					exec<simdOps::Min<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 15)
-					exec<simdOps::NotEqualTo<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else if (op == 16)
-					exec<simdOps::Copy<T>>(dx, xStride, y, yStride, result, resultStride, extraParams, n);
-				else
-					printf("[ERROR] Unknow opNum %d for pairwise transform\n", op);
+				DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, y, yStride, result, resultStride, extraParams, n), PAIRWISE_TRANSFORM_OPS);
 			}
 
 			template<typename OpType>
