@@ -122,7 +122,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         INDArray neu1e = cbow.iterateSample(currentWord, neu1, nextRandom, alpha);
 
         for (T label: sequence.getSequenceLabels()) {
-
+            INDArray syn0row = syn0.getRow(label.getIndex());
+            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, syn0row);
         }
     }
 
