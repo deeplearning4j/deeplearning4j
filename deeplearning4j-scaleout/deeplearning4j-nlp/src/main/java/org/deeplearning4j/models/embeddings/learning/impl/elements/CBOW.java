@@ -90,31 +90,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-
-    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
-        int end =  window * 2 + 1 - b;
-        int cw = 0;
-        INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
+    public INDArray iterateSample(T currentWord, INDArray neu1, AtomicLong nextRandom, double alpha) {
         INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
-
-        T currentWord = sentence.get(i);
-
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    T lastWord = sentence.get(c);
-
-                    neu1.addiRowVector(syn0.getRow(lastWord.getIndex()));
-                    cw++;
-                }
-            }
-        }
-
-        if (cw == 0)
-            return;
-
-        neu1.divi(cw);
 
         for (int p = 0; p < currentWord.getCodeLength(); p++) {
             double f = 0;
@@ -135,7 +112,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             //score
             f =  expTable[idx];
 
-            double g = useAdaGrad ?  currentWord.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
+            double g = useAdaGrad ?  currentWord.getGradient(p, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, syn1row, neu1e);
             Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
@@ -185,14 +162,42 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, neu1);
         }
 
+        return neu1e;
+    }
+
+    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha) {
+        int end =  window * 2 + 1 - b;
+        int cw = 0;
+        INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
+
+
+        T currentWord = sentence.get(i);
+
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
 
-                    syn0.getRow(lastWord.getIndex()).addiRowVector(neu1e);
+                    neu1.addiRowVector(syn0.getRow(lastWord.getIndex()));
                     cw++;
+                }
+            }
+        }
+
+        if (cw == 0)
+            return;
+
+        neu1.divi(cw);
+
+        INDArray neu1e = iterateSample(currentWord, neu1, nextRandom, alpha);
+
+        for(int a = b; a < end; a++) {
+            if(a != window) {
+                int c = i - window + a;
+                if(c >= 0 && c < sentence.size()) {
+                    T lastWord = sentence.get(c);
+                    syn0.getRow(lastWord.getIndex()).addiRowVector(neu1e);
                 }
             }
         }
