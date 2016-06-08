@@ -17,6 +17,7 @@ import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.constant.ConstantProtector;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
@@ -111,12 +112,15 @@ public class AtomicAllocator implements Allocator {
         return INSTANCE;
     }
 
+    protected static ConstantProtector protector;
+
     protected AtomicAllocator() {
         this.memoryHandler = new CudaZeroHandler();
         this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
+        this.protector = ConstantProtector.getInstance();
     }
 
     /**
@@ -350,12 +354,12 @@ public class AtomicAllocator implements Allocator {
         //point.attachBuffer(buffer);
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
-
+/*
         if (buffer instanceof CudaIntDataBuffer) {
             buffer.setConstant(true);
             point.setConstant(true);
         }
-
+*/
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
@@ -869,12 +873,12 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
-        return constantHandler.getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array);
     }
 
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        return constantHandler.getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array);
     }
 
     @Override

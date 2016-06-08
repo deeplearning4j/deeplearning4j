@@ -745,4 +745,20 @@ public class CudaTransformsTests {
         assertArrayEquals(assertion1.data().asFloat(), output1T.data().asFloat(), 0.01f);
 
     }
+
+    @Test
+    public void testSoftmax2D_T() {
+        INDArray input1 = Nd4j.create(1000).transpose();
+        INDArray input2 = Nd4j.zerosLike(input1);
+        Nd4j.copy(input1, input2);
+        INDArray output1 = Nd4j.create(1, 1000);
+        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
+        System.out.println("Softmax = " + output1);
+        INDArray output2 = Nd4j.create(1,1000);
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(input2, output2));
+        System.out.println("Softmax Derivative = " + output2);
+
+        assertEquals(1.0f, output1.sumNumber().floatValue(), 0.01f);
+        assertEquals(1.0f, output2.sumNumber().floatValue(), 0.01f);
+    }
 }
