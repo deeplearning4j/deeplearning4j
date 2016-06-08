@@ -29,7 +29,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
     @Override
     public String getCodeName() {
-        return "DistributedMemory";
+        return "PV-DM";
     }
 
     @Override
@@ -43,7 +43,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
     @Override
     public void pretrain(SequenceIterator<T> iterator) {
-
+        // no-op
     }
 
     @Override

@@ -94,8 +94,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if(sentence.isEmpty() || labels.isEmpty())
             return;
 
-        //   log.info("Training word: " + word.getLabel() +  " against label: " + labels.get(0).getLabel());
-
         for (T lastWord: labels) {
             for (T word:  sentence) {
                 if (word == null) continue;
@@ -103,18 +101,5 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 skipGram.iterateSample(word, lastWord,nextRandom,alpha);
             }
         }
-
-        /*
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < labels.size()) {
-                    T lastWord = labels.get(c);
-                    skipGram.iterateSample(word, lastWord,nextRandom,alpha);
-                }
-            }
-        }
-        */
     }
 }
