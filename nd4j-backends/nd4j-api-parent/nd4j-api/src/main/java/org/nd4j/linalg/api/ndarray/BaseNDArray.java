@@ -1201,7 +1201,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray epsi(Number other) {
-        return Nd4j.getExecutioner().execAndReturn(new Eps(this));
+        INDArray otherArr = Nd4j.valueArrayOf(shape(),other.doubleValue());
+        return eps(otherArr);
     }
 
     /**

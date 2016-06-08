@@ -9,6 +9,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by susaneraly on 5/25/16.
  * A preprocessor that applies min max scaling
@@ -17,6 +20,7 @@ import java.io.IOException;
  * default given_min,given_max is 0,1
  */
 public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataSetPreProcessor{
+    private static Logger logger = LoggerFactory.getLogger(NormalizerMinMaxScaler.class);
     private INDArray min,max,maxMinusMin;
     private double minRange,maxRange;
 
@@ -46,6 +50,9 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
         min = dataSet.getFeatureMatrix().min(0);
         max = dataSet.getFeatureMatrix().max(0);
         maxMinusMin = max.sub(min);
+        maxMinusMin.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+            logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
     }
 
     /**
@@ -68,13 +75,15 @@ public class NormalizerMinMaxScaler implements org.nd4j.linalg.dataset.api.DataS
             }
         }
         maxMinusMin = max.sub(min).add(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
+        if (maxMinusMin.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) 
+            logger.info("API_INFO: max val minus min val found to be zero. Transform will round upto epsilon to avoid nans.");
         iterator.reset();
     }
 
     @Override
     public void preProcess(DataSet toPreProcess) {
         if (min == null || max == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
-
+        if (maxRange - minRange < 0) throw new RuntimeException("API_USE_ERROR: The given max value minus min value has to be greater than 0");
         // subtract by dataset min
         toPreProcess.setFeatures(toPreProcess.getFeatures().subRowVector(min));
         // scale by dataset range
