@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 @Path("/nearestneighbors")
 @Produces(MediaType.TEXT_HTML)
 public class NearestNeighborsResource {
