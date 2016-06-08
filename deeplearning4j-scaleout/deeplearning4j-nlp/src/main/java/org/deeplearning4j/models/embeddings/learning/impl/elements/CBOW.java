@@ -159,8 +159,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target),neu1e);
                 Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, neu1,syn1Neg.slice(target));
             }
-            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, neu1);
         }
+
+     //   Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, neu1);
 
         return neu1e;
     }
@@ -197,7 +198,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
-                    syn0.getRow(lastWord.getIndex()).addiRowVector(neu1e);
+                    INDArray syn0row = syn0.getRow(lastWord.getIndex());
+                    Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, syn0row);
                 }
             }
         }
