@@ -193,17 +193,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
-            if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
-
-            }
-
-            else {
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, syn1, neu1e);
-                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, l1, syn1);
-
-            }
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
         }
 
 
@@ -227,7 +218,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     label = 0;
                 }
 
-
                 if(target >= syn1Neg.rows() || target < 0)
                     continue;
 
@@ -244,21 +234,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
                     g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[idx]) : (label - expTable[idx]) * alpha;
                 }
-                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg.slice(target),neu1e);
-                else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg.slice(target),neu1e);
 
-                if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,l1,syn1Neg.slice(target));
-                else
-                    Nd4j.getBlasWrapper().axpy((float) g,l1,syn1Neg.slice(target));
+               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,syn1Neg.slice(target),neu1e);
+               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,l1,syn1Neg.slice(target));
             }
 
-        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
-
-        else
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0,neu1e,l1);
     }
 }
