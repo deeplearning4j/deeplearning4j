@@ -28,7 +28,9 @@ import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
@@ -80,6 +82,8 @@ public class CudaZeroHandler implements MemoryHandler {
     private final FlowController flowController;
 
     private final AllocationStatus INITIAL_LOCATION;
+
+    public final AffinityManager affinityManager = Nd4j.getAffinityManager();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
