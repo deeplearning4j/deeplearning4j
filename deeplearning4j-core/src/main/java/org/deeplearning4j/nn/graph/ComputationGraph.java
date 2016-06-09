@@ -22,6 +22,7 @@ import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -595,7 +596,13 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Fit the ComputationGraph using a MultiDataSetIterator */
-    public void fit(MultiDataSetIterator multiDataSetIterator){
+    public void fit(MultiDataSetIterator multic){
+
+        MultiDataSetIterator multiDataSetIterator;
+        if (!(multic instanceof AsyncMultiDataSetIterator)) {
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 8);
+        } else multiDataSetIterator = multic;
+
         if(configuration.isPretrain()){
             pretrain(multiDataSetIterator);
         }

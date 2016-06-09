@@ -1,56 +1,39 @@
 package org.deeplearning4j.datasets.iterator;
 
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ConcurrentModificationException;
-import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
- * AsyncDataSetIterator takes an existing DataSetIterator and loads one or more DataSet objects
- * from it using a separate thread.
- * For data sets where DataSetIterator.next() is long running (limited by disk read or processing time
- * for example) this may improve performance by loading the next DataSet asynchronously (i.e., while
- * training is continuing on the previous DataSet). Obviously this may use additional memory.<br>
- * Note however that due to asynchronous loading of data, next(int) is not supported.
- *
- * PLEASE NOTE: If used together with CUDA backend, this iterator should NOT be used directly in multi-gpu environments.
+ * Async prefetching iterator wrapper for MultiDataSetIterator implementations
  *
  * @author Alex Black
+ * @author raver119@gmail.com
  */
-public class AsyncDataSetIterator implements DataSetIterator {
-    private final DataSetIterator baseIterator;
-    private final BlockingQueue<DataSet> blockingQueue;
+public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
+
+    private final MultiDataSetIterator iterator;
+    private final LinkedBlockingQueue<MultiDataSet> queue;
+    private AsyncMultiDataSetIterator.IteratorRunnable runnable;
     private Thread thread;
-    private IteratorRunnable runnable;
 
-    /**
-     *
-     * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
-     * single additional DataSet)
-     * @param baseIterator The DataSetIterator to load data from asynchronously
-     */
-    public AsyncDataSetIterator(DataSetIterator baseIterator){
-        this(baseIterator,1);
-    }
-
-    /** Create an AsyncDataSetIterator with a specified queue size.
-     * @param baseIterator The DataSetIterator to load data from asynchronously
-     * @param queueSize size of the queue (max number of elements to load into queue)
-     */
-    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
-        if(queueSize <= 0)
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
+        if(queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
-        this.baseIterator = baseIterator;
-        blockingQueue = new LinkedBlockingDeque<>(queueSize);
-        runnable = new IteratorRunnable();
+
+        this.iterator = iterator;
+        this.queue = new LinkedBlockingQueue<>(queueLength);
+
+        runnable = new AsyncMultiDataSetIterator.IteratorRunnable();
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -60,30 +43,19 @@ public class AsyncDataSetIterator implements DataSetIterator {
         thread.start();
     }
 
-
     @Override
-    public DataSet next(int num) {
+    public MultiDataSet next(int num) {
         // TODO: why isn't supported? We could just check queue size
         throw new UnsupportedOperationException("Next(int) not supported for AsyncDataSetIterator");
     }
 
     @Override
-    public int totalExamples() {
-        return baseIterator.totalExamples();
+    public void setPreProcessor(MultiDataSetPreProcessor preProcessor) {
+        iterator.setPreProcessor(preProcessor);
     }
 
     @Override
-    public int inputColumns() {
-        return baseIterator.inputColumns();
-    }
-
-    @Override
-    public int totalOutcomes() {
-        return baseIterator.totalOutcomes();
-    }
-
-    @Override
-    public synchronized void reset() {
+    public void reset() {
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if(runnable.isAlive) thread.interrupt();
@@ -94,9 +66,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
         } catch( InterruptedException e ){ }
 
         //Clear the queue, reset the base iterator, set up a new thread
-        blockingQueue.clear();
-        baseIterator.reset();
-        runnable = new IteratorRunnable();
+        queue.clear();
+        iterator.reset();
+        runnable = new AsyncMultiDataSetIterator.IteratorRunnable();
         thread = new Thread(runnable);
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -107,33 +79,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int batch() {
-        return baseIterator.batch();
-    }
-
-    @Override
-    public int cursor() {
-        return baseIterator.cursor();
-    }
-
-    @Override
-    public int numExamples() {
-        return baseIterator.numExamples();
-    }
-
-    @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        baseIterator.setPreProcessor(preProcessor);
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return baseIterator.getLabels();
-    }
-
-    @Override
-    public synchronized  boolean hasNext() {
-        if(!blockingQueue.isEmpty())
+    public boolean hasNext() {
+        if(!queue.isEmpty())
             return true;
 
         if(runnable.isAlive) {
@@ -145,18 +92,18 @@ public class AsyncDataSetIterator implements DataSetIterator {
         } else {
             if(!runnable.killRunnable && runnable.exception != null ) throw runnable.exception;   //Something went wrong
             //Runnable has exited, presumably because it has fetched all elements
-            return !blockingQueue.isEmpty();
+            return !queue.isEmpty();
         }
     }
 
     @Override
-    public synchronized DataSet next() {
+    public MultiDataSet next() {
         if(!hasNext()) throw new NoSuchElementException();
-        //If base iterator threw an unchecked exception: rethrow it now
+
         if(runnable.exception != null) throw runnable.exception;
 
-        if(!blockingQueue.isEmpty()){
-            return blockingQueue.poll();    //non-blocking, but returns null if empty
+        if(!queue.isEmpty()){
+            return queue.poll();    //non-blocking, but returns null if empty
         }
 
         //Blocking queue is empty, but more to come
@@ -168,7 +115,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             //Reason: what if baseIterator.next() throws an exception after
             // blockingQueue.take() is called? In this case, next() will never return
             while(runnable.exception == null ){
-                DataSet ds = blockingQueue.poll(5,TimeUnit.SECONDS);
+                MultiDataSet ds = queue.poll(5, TimeUnit.SECONDS);
                 if(ds != null) return ds;
                 if(runnable.killRunnable){
                     //should never happen
@@ -182,18 +129,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
         }
     }
 
-    /**
-     *
-     * Shut down the async data set iterator thread
-     * This is not typically necessary if using a single AsyncDataSetIterator
-     * (thread is a daemon thread and so shouldn't block the JVM from exiting)
-     * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
-     */
-    public void shutdown() {
-        if(thread.isAlive()) {
-            runnable.killRunnable = true;
-            thread.interrupt();
-        }
+    @Override
+    public void remove() {
+        // no-op
     }
 
     private class IteratorRunnable implements Runnable {
@@ -204,8 +142,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
         @Override
         public void run() {
             try {
-                while (!killRunnable && baseIterator.hasNext()) {
-                    blockingQueue.put(baseIterator.next());
+                while (!killRunnable && iterator.hasNext()) {
+                    queue.put(iterator.next());
                 }
             } catch( InterruptedException e ){
                 //thread.interrupt() while put(DataSet) was blocking
@@ -219,9 +157,4 @@ public class AsyncDataSetIterator implements DataSetIterator {
             }
         }
     }
-
-    @Override
-    public void remove() {
-    }
-
 }
