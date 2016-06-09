@@ -46,7 +46,7 @@ import org.deeplearning4j.util.MultiLayerUtil;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -987,7 +987,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         DataSetIterator iter;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
         if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
-            iter = new AsyncDataSetIterator((org.deeplearning4j.datasets.iterator.DataSetIterator) iterator, 10);
+            iter = new AsyncDataSetIterator(iterator, 10);
         } else iter = iterator;
 
         if (layerWiseConfigurations.isPretrain()) {
