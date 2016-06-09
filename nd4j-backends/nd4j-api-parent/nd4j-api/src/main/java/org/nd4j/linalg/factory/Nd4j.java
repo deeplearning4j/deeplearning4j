@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
@@ -93,6 +95,7 @@ public class Nd4j {
     public final static String EXECUTION_MODE = "opexec.mode";
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
     public final static String CONSTANT_PROVIDER = "constantsprovider";
+    public final static String AFFINITY_MANAGER = "affinitymanager";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -127,6 +130,7 @@ public class Nd4j {
     protected static Class<? extends Instrumentation> instrumentationClazz;
     protected static Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz;
     protected static Class<? extends BasicConstantHandler> constantProviderClazz;
+    protected static Class<? extends BasicAffinityManager> affinityManagerClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -140,6 +144,7 @@ public class Nd4j {
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
     protected static ConstantHandler constantHandler;
+    protected static AffinityManager affinityManager;
 
 
     protected static Properties props = new Properties();
@@ -4816,6 +4821,7 @@ public class Nd4j {
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class.forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class.forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
+            affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
@@ -4834,6 +4840,7 @@ public class Nd4j {
 
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+            affinityManager = affinityManagerClazz.newInstance();
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
@@ -4865,5 +4872,9 @@ public class Nd4j {
 
     public static ConstantHandler getConstantHandler() {
         return constantHandler;
+    }
+
+    public static AffinityManager getAffinityManager() {
+        return affinityManager;
     }
 }
