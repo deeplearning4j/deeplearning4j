@@ -62,7 +62,7 @@ public class NormalizerStandardize implements org.nd4j.linalg.dataset.api.DataSe
                 // M2 = M2_A + M2_B + delta^2 * nA * nB/(nA+nB)
                 INDArray meanB = next.getFeatureMatrix().mean(0);
                 INDArray deltaSq = Transforms.pow(meanB.subRowVector(mean),2);
-                INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-iterator.batch())*iterator.batch()/iterator.totalExamples());
+                INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-iterator.batch())*iterator.batch()/(float)runningTotal);
                 INDArray mtwoB = Transforms.pow(next.getFeatureMatrix().std(0),2);
                 mtwoB.muli(iterator.batch());
                 std = std.add(mtwoB);
