@@ -4838,9 +4838,10 @@ public class Nd4j {
 
 
 
+            affinityManager = affinityManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            affinityManager = affinityManagerClazz.newInstance();
+
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();

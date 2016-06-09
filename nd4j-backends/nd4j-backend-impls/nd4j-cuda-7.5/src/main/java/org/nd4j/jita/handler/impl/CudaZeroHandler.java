@@ -83,7 +83,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AllocationStatus INITIAL_LOCATION;
 
-    public final AffinityManager affinityManager = Nd4j.getAffinityManager();
+    private final AffinityManager affinityManager = Nd4j.getAffinityManager();
 
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
@@ -991,6 +991,7 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     public Integer getDeviceId() {
+        /*
         Long threadId = Thread.currentThread().getId();
 
         if (!devicesAffinity.containsKey(threadId)) {
@@ -999,13 +1000,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 if (!devicesAffinity.containsKey(threadId)) {
                     wasInitialised.compareAndSet(false, true);
-
-                    /*
-                    // Random-based device selection
-                    List<Integer> devices = new ArrayList<>(environment.getAvailableDevices().keySet());
-                    Random rnd = new Random();
-                    Integer device = devices.get(rnd.nextInt(devices.size()));
-                    */
 
                     // sequental device selection for better balance
                     List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
@@ -1032,6 +1026,14 @@ public class CudaZeroHandler implements MemoryHandler {
         };
 
         return devicesAffinity.get(threadId);
+        */
+        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        if (!deviceAllocations.containsKey(deviceId)) {
+            deviceAllocations.put(deviceId, new ConcurrentHashMap<Long, Long>());
+        }
+
+        return deviceId;
     }
 
     /** Returns {@link #getDeviceId()} wrapped as a {@link Pointer}. */
