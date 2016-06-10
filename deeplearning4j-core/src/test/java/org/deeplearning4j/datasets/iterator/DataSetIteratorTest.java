@@ -6,6 +6,7 @@ import java.util.*;
 
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.split.FileSplit;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.canova.image.loader.CifarLoader;
 import org.canova.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
