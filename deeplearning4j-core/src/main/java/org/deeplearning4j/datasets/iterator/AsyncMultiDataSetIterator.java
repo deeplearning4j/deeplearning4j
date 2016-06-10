@@ -135,9 +135,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     private class IteratorRunnable implements Runnable {
-        private boolean killRunnable = false;
-        private boolean isAlive = true;
-        private RuntimeException exception;
+        private volatile boolean killRunnable = false;
+        private volatile boolean isAlive = true;
+        private volatile RuntimeException exception;
         private Semaphore runCompletedSemaphore = new Semaphore(0);
         @Override
         public void run() {
