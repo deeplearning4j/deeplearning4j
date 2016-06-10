@@ -54,9 +54,19 @@ public class CudaAffinityManagerTest {
 
         assertEquals(0, deviceId.intValue());
 
-        manager.attachThreadToDevice(17L, 0);
+        System.out.println("Current threadId: " + Thread.currentThread().getId());
 
-        assertEquals(0, manager.getDeviceForThread(17L).intValue());
+        Thread thread = new Thread();
+
+        long threadIdPrior = thread.getId();
+
+        System.out.println("Next threadId: " + thread.getId());
+        assertNotEquals(Thread.currentThread().getId(), thread.getId());
+
+        thread.start();
+        System.out.println("Current threadId: " + thread.getId());
+
+        assertEquals(threadIdPrior, thread.getId());
     }
 
 }
