@@ -31,7 +31,7 @@ import org.canova.api.split.NumberedFileInputSplit;
 import org.canova.api.writable.ArrayWritable;
 import org.canova.api.writable.Writable;
 import org.canova.common.data.NDArrayWritable;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
