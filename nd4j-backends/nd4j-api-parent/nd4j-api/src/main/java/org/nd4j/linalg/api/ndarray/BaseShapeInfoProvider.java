@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.shape.Shape;
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
-        return Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+        DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+        buffer.setConstant(true);
+        return buffer;
     }
 }

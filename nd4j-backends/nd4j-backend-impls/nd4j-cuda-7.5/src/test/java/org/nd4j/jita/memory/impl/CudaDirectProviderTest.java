@@ -86,16 +86,27 @@ public class CudaDirectProviderTest {
 
         PointersPair pair = pointer.getPointers();
 
+        // pointers should be equal, device memory wasn't allocated yet
         assertEquals(pair.getDevicePointer(), pair.getHostPointer());
 
         //////////////
 
         AllocationPoint shapePointer = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
 
-   //     assertEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
+        // pointers should be equal, device memory wasn't allocated yet
+        assertEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
+
+        assertEquals(pointer.getAllocationStatus(), AllocationStatus.HOST);
+        assertEquals(shapePointer.getAllocationStatus(), AllocationStatus.HOST);
 
         float sum = array.sumNumber().floatValue();
 
         assertEquals(15.0f, sum, 0.0001f);
+
+        assertEquals(AllocationStatus.CONSTANT, shapePointer.getAllocationStatus());
+        assertEquals(AllocationStatus.DEVICE, pointer.getAllocationStatus());
+
+        // at this point all pointers show be different, since we've used OP (sumNumber)
+        assertNotEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
     }
 }

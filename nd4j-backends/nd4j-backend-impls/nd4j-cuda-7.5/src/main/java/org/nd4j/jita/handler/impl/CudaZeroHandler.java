@@ -691,6 +691,24 @@ public class CudaZeroHandler implements MemoryHandler {
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         //log.info("getDevicePointer called");
+        if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED && dstPoint.getAllocationStatus() == AllocationStatus.HOST) {
+
+
+
+            // if we have constant buffer (aka shapeInfo or other constant stuff)
+            if (buffer.isConstant()) {
+                log.info("Calling moveToConstantSpace()");
+                Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+            } else {
+                PointersPair pair = provider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
+
+                if (pair != null) {
+                    dstPoint.getPointers().setDevicePointer(pair.getDevicePointer());
+                    dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
+                    dstPoint.tickHostWrite();
+                }
+            }
+        }
 
         // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
         if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 && 1 < 0 ) {
@@ -704,16 +722,11 @@ public class CudaZeroHandler implements MemoryHandler {
             }
         }
 
+
         // if that's device state, we probably might want to update device memory state
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
-                //if (buffer.isConstant()) {
-                    //log.info("RELOCATING CONSTANT: {}, {}, L: {}", dstPoint.getObjectId(), buffer, buffer.length());
-                    //throw new IllegalStateException("Constant buffer can't be expired on device side");
-                //}
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
-
-                //copyforward(dstPoint, dstPoint.getShape());
             } else {
               //  log.info("Buffer is actual on device side: " + dstPoint.getShape());
             }
@@ -722,7 +735,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
         //  we update memory use counter, to announce that it's somehow used on device
         dstPoint.tickDeviceRead();
-
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes
         return new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),  (buffer.offset() * buffer.getElementSize()));

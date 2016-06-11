@@ -50,8 +50,11 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
 //            logger.info("Cache miss");
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+            buffer.setConstant(true);
 
-            Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+                Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+            }
 
             //deviceCache.get(deviceId).put(descriptor, buffer);
             protector.persistDataBuffer(deviceId, descriptor, buffer);

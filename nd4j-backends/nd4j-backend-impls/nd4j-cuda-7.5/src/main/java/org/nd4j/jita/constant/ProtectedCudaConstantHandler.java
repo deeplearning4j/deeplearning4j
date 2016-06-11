@@ -1,6 +1,7 @@
 package org.nd4j.jita.constant;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -105,10 +106,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         flowController.commitTransfer(context.getSpecialStream());
 
         long cAddr = deviceAddresses.get(deviceId).address() + currentOffset;
+        point.setAllocationStatus(AllocationStatus.CONSTANT);
         point.getPointers().setDevicePointer(new CudaPointer(cAddr));
         point.setConstant(true);
         point.tickDeviceWrite();
         point.tickHostRead();
+
 
         protector.persistDataBuffer(dataBuffer);
 
@@ -160,6 +163,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
             //    logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
+            buffer.setConstant(true);
 
             // now we move data to constant memory, and keep happy
             moveToConstantSpace(buffer);
@@ -192,6 +196,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
             //     logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
+            buffer.setConstant(true);
 
             // now we move data to constant memory, and keep happy
             moveToConstantSpace(buffer);
@@ -224,6 +229,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
+            buffer.setConstant(true);
 
             // now we move data to constant memory, and keep happy
             moveToConstantSpace(buffer);
