@@ -90,8 +90,6 @@ public class AtomicAllocator implements Allocator {
         here we have handles for garbage collector threads
         ThreadId, GarbageCollector
      */
-    private Map<Long, ZeroGarbageCollectorThread> collectorsZero = new ConcurrentHashMap<>();
-    private Map<Integer, DeviceGarbageCollectorThread> collectorsDevice = new ConcurrentHashMap<>();
     private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
@@ -109,18 +107,21 @@ public class AtomicAllocator implements Allocator {
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
 
     public static AtomicAllocator getInstance() {
+        if (INSTANCE == null)
+            throw new RuntimeException("AtomicAllocator is NULL");
         return INSTANCE;
     }
 
     protected static ConstantProtector protector;
 
-    protected AtomicAllocator() {
+    private AtomicAllocator() {
         this.memoryHandler = new CudaZeroHandler();
         this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
         this.protector = ConstantProtector.getInstance();
+
     }
 
     /**

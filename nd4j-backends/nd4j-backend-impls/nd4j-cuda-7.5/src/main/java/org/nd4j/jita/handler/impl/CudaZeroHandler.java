@@ -56,7 +56,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class CudaZeroHandler implements MemoryHandler {
     private static Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-    private static Allocator allocator = AtomicAllocator.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(CudaZeroHandler.class);
 
@@ -108,7 +107,6 @@ public class CudaZeroHandler implements MemoryHandler {
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public CudaZeroHandler() {
-        allocator = AtomicAllocator.getInstance();
 
         configuration.setInitialized();
 
@@ -154,11 +152,9 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void init(@NonNull Configuration configuration, @NonNull Allocator allocator) {
         this.configuration = configuration;
-        this.allocator = allocator;
 
         this.deviceMemoryTracker = new DeviceAllocationsTracker(this.configuration);
         this.flowController.init(allocator);
-        //initCudaContextForThread(Thread.currentThread().getId());
     }
 
     private void pickupHostAllocation(AllocationPoint point) {

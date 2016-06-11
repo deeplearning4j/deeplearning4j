@@ -92,8 +92,10 @@ public class CudaDirectProviderTest {
 
         AllocationPoint shapePointer = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
 
-        assertEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
+   //     assertEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
 
+        float sum = array.sumNumber().floatValue();
 
+        assertEquals(15.0f, sum, 0.0001f);
     }
 }

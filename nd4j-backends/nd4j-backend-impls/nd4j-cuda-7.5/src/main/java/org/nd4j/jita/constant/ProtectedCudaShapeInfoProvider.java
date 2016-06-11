@@ -43,14 +43,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
         offset = 0;
 
-        if (allocator == null) {
-            synchronized (this) {
-                if (allocator == null)
-                    allocator = AtomicAllocator.getInstance();
-            }
-        }
-
-        Integer deviceId = allocator.getDeviceId();
+        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 

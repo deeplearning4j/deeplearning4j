@@ -20,7 +20,6 @@ import java.util.Arrays;
  */
 public class BasicTADManager implements TADManager {
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-    protected AtomicAllocator allocator = AtomicAllocator.getInstance();
     private static Logger logger = LoggerFactory.getLogger(BasicTADManager.class);
 
     @Override
