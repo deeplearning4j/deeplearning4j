@@ -112,7 +112,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         configuration.setInitialized();
 
-        this.INITIAL_LOCATION = configuration.getMemoryModel();
+        this.INITIAL_LOCATION = configuration.getFirstMemory();
 
         switch (configuration.getExecutionModel()) {
             case OPTIMIZED:
@@ -296,27 +296,6 @@ public class CudaZeroHandler implements MemoryHandler {
                     } catch (Exception e ) {
 
                     }
-                }
-
-                return returnPair;
-            }
-            case DELAYED: {
-                /**
-                 * For [DELAYED] memory model:
-                 * 1) allocate HOST memory only, device pointer kept as NULL
-                 * 2) actual DEVICE allocation will happen only on prepareAction call
-                 */
-
-                PointersPair returnPair = new PointersPair();
-                PointersPair tmpPair = new PointersPair();
-
-                if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
-                    tmpPair = alloc(AllocationStatus.HOST, point, point.getShape(), initialize);
-
-                    returnPair.setDevicePointer(tmpPair.getHostPointer());
-                    returnPair.setHostPointer(tmpPair.getHostPointer());
-
-                    point.setAllocationStatus(AllocationStatus.HOST);
                 }
 
                 return returnPair;

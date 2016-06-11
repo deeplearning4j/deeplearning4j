@@ -32,13 +32,20 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
+    public enum MemoryModel {
+        IMMEDIATE,
+        DELAYED
+    }
+
     @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus memoryModel = AllocationStatus.DEVICE;
+    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private boolean debug = true;
+    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
+
+    @Getter private boolean debug = false;
 
     @Getter private boolean verbose = false;
 
@@ -370,11 +377,11 @@ public class Configuration implements Serializable {
      * @param initialMemory
      * @return
      */
-    public Configuration setMemoryModel(@NonNull AllocationStatus initialMemory) {
+    public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
         if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST && initialMemory != AllocationStatus.DELAYED)
             throw new IllegalStateException("First memory should be either [HOST], [DEVICE] or [DELAYED]");
 
-        this.memoryModel = initialMemory;
+        this.firstMemory = initialMemory;
 
         return this;
     }
@@ -513,6 +520,11 @@ public class Configuration implements Serializable {
      */
     public Configuration allowMultiGPU(boolean reallyAllow) {
         forceSingleGPU = reallyAllow;
+        return this;
+    }
+
+    public Configuration setMemoryModel(@NonNull MemoryModel model) {
+        memoryModel = model;
         return this;
     }
 }

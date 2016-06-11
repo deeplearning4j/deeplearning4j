@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
-    private AtomicAllocator allocator = AtomicAllocator.getInstance();
+    private AtomicAllocator allocator;
 
     private AtomicLong cacheHit = new AtomicLong(1);
     private AtomicLong cacheMiss = new AtomicLong(1);
@@ -42,6 +42,13 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
         offset = 0;
+
+        if (allocator == null) {
+            synchronized (this) {
+                if (allocator == null)
+                    allocator = AtomicAllocator.getInstance();
+            }
+        }
 
         Integer deviceId = allocator.getDeviceId();
 

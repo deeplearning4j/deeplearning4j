@@ -331,8 +331,13 @@ public class AtomicAllocator implements Allocator {
         // by default we allocate on initial location
         AllocationPoint point = null;
 
-        // TODO: size limitation should be rised in final release to something more sensible
-        point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
+        if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+            point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
+        } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
+            // for DELAYED memory model we allocate only host memory, regardless of firstMemory configuration value
+
+            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST, initialize);
+        }
 
         return point;
     }
