@@ -36,7 +36,7 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
-    @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
+    @Getter private AllocationStatus memoryModel = AllocationStatus.DEVICE;
 
     @Getter private boolean debug = true;
 
@@ -362,6 +362,7 @@ public class Configuration implements Serializable {
      * This method allows to specify initial memory to be used within system.
      * HOST: all data is located on host memory initially, and gets into DEVICE, if used frequent enough
      * DEVICE: all memory is located on device.
+     * DELAYED: memory allocated on HOST first, and on first use gets moved to DEVICE
      *
      * PLEASE NOTE: For device memory all data still retains on host side as well.
      *
@@ -369,11 +370,11 @@ public class Configuration implements Serializable {
      * @param initialMemory
      * @return
      */
-    public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
-        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST)
-            throw new IllegalStateException("First memory should be either [HOST] or [DEVICE]");
+    public Configuration setMemoryModel(@NonNull AllocationStatus initialMemory) {
+        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST && initialMemory != AllocationStatus.DELAYED)
+            throw new IllegalStateException("First memory should be either [HOST], [DEVICE] or [DELAYED]");
 
-        this.firstMemory = initialMemory;
+        this.memoryModel = initialMemory;
 
         return this;
     }

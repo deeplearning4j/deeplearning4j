@@ -9,9 +9,7 @@ public enum AllocationStatus {
     UNDEFINED,
     HOST,
     DEVICE,
-//    ZERO,
+    DELAYED,
     DEALLOCATED,
-//    PARTIAL,
-//    NESTED
     CONSTANT,
 }
