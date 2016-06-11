@@ -97,9 +97,9 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
 
     @Override
     public MultiLayerNetwork getLatestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory,bestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory,bestFileNameUpdater);
+        String confOut = FilenameUtils.concat(directory,latestFileNameConf);
+        String paramOut = FilenameUtils.concat(directory,latestFileNameParam);
+        String updaterOut = FilenameUtils.concat(directory,latestFileNameUpdater);
         return load(confOut,paramOut,updaterOut);
     }
 
