@@ -10,13 +10,14 @@ public class KernelValidationUtil {
 
     public static void validateShapes(int inHeight, int inWidth, int kernelHeight, int kernelWidth, int strideHeight,
                                int strideWidth, int padHeight, int padWidth) {
-
-        // Check filter >= size + padding
-        if (kernelHeight >= (inHeight + 2*padHeight))
+        
+        
+        // Check filter > size + padding
+        if (kernelHeight > (inHeight + 2*padHeight))
             throw new InvalidInputTypeException("Invalid input: activations into layer are h=" + inHeight
                     + " but kernel size is " + kernelHeight + " with padding " + padHeight);
 
-        if (kernelWidth >= (inWidth + 2*padWidth))
+        if (kernelWidth > (inWidth + 2*padWidth))
             throw new InvalidInputTypeException("Invalid input: activations into layer are w=" + inWidth +
                     " but kernel size is " + kernelWidth + " with padding " + padWidth);
 
