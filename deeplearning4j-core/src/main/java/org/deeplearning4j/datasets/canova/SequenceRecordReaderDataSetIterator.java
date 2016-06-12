@@ -10,7 +10,6 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.io.CollectionUtils;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.ArrayList;
