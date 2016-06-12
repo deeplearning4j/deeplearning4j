@@ -79,6 +79,7 @@ public class GradientAccumFlatMap implements FlatMapFunction<Iterator<DataSet>, 
         if(log.isDebugEnabled()) {
             log.debug("Training on {} examples with data {}",data.numExamples(), data.labelCounts());
         }
+
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
         //Clone/dup as params and updater are mutable (but: getValue() object from broadcast will be shared by all executors on same machine)
