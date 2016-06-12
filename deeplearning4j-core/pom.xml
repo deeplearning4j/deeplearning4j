@@ -66,6 +66,11 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
+                <artifactId>canova-nd4j-common</artifactId>
+                <version>${canova.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>
                 <version>${canova.version}</version>
             </dependency>
@@ -78,6 +83,10 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>canova-nd4j-common</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-test-resources</artifactId>
