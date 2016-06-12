@@ -158,7 +158,8 @@ public class SparkComputationGraph implements Serializable {
         this.network = network;
     }
 
-    /**Fit the data, splitting into smaller data subsets if necessary. This allows large {@code JavaRDD<DataSet>}s)
+    /**
+     * Fit the data, splitting into smaller data subsets if necessary. This allows large {@code JavaRDD<DataSet>}s)
      * to be trained as a set of smaller steps instead of all together.<br>
      * Using this method, training progresses as follows:<br>
      * train on {@code examplesPerFit} examples -> average parameters -> train on {@code examplesPerFit} -> average
@@ -176,7 +177,7 @@ public class SparkComputationGraph implements Serializable {
      * @param numPartitions number of partitions to divide the data in to
      * @return Trained network
      */
-    public ComputationGraph fitMultiDataSet(JavaRDD<MultiDataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions ){
+    public ComputationGraph fitMultiDataSet(JavaRDD<MultiDataSet> rdd, int examplesPerFit, int totalExamples, int numPartitions) {
         int nSplits;
         if(examplesPerFit == Integer.MAX_VALUE || examplesPerFit >= totalExamples ) nSplits = 1;
         else {
@@ -187,13 +188,13 @@ public class SparkComputationGraph implements Serializable {
             }
         }
 
-        if(nSplits == 1){
+        if(nSplits == 1) {
             fitDataSet(rdd);
         } else {
             double[] splitWeights = new double[nSplits];
-            for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+            for( int i = 0; i < nSplits; i++) splitWeights[i] = 1.0 / nSplits;
             JavaRDD<MultiDataSet>[] subsets = rdd.randomSplit(splitWeights);
-            for( int i=0; i<subsets.length; i++ ){
+            for(int i = 0; i < subsets.length; i++) {
                 log.info("Initiating distributed training of subset {} of {}", (i + 1), subsets.length);
                 JavaRDD<MultiDataSet> next = subsets[i].repartition(numPartitions);
                 fitDataSet(next);
@@ -239,7 +240,7 @@ public class SparkComputationGraph implements Serializable {
             }
 
             //Reset number of iterations in config
-            if(iterations > 1 ){
+            if(iterations > 1) {
                 for(GraphVertex gv : conf.getVertices().values()) {
                     if(gv instanceof LayerVertex){
                         ((LayerVertex)gv).getLayerConf().setNumIterations(iterations);   //TODO - do this more elegantly...
@@ -392,7 +393,8 @@ public class SparkComputationGraph implements Serializable {
         JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(), sc.broadcast(network.params(false))));
         List<Double> scoresList = scores.collect();
         double sum = 0.0;
-        for(Double d : scoresList) sum += d;
+        for(Double d : scoresList)
+            sum += d;
         if(average) return sum / n;
         return sum;
     }
@@ -431,7 +433,9 @@ public class SparkComputationGraph implements Serializable {
         return scoreExamples(data.mapToPair(new PairDataSetToMultiDataSetFn<K>()),includeRegularizationTerms,batchSize);
     }
 
-    /** Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     *
+     * Score the examples individually, using the default batch size {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately. If scoring is needed for specific examples use either
      * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
      * a key for each example.
@@ -444,7 +448,9 @@ public class SparkComputationGraph implements Serializable {
         return scoreExamples(data,includeRegularizationTerms,DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
-    /** Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
+    /**
+     *
+     * Score the examples individually, using a specified batch size. Unlike {@link #calculateScore(JavaRDD, boolean)},
      * this method returns a score for each example separately. If scoring is needed for specific examples use either
      * {@link #scoreExamples(JavaPairRDD, boolean)} or {@link #scoreExamples(JavaPairRDD, boolean, int)} which can have
      * a key for each example.

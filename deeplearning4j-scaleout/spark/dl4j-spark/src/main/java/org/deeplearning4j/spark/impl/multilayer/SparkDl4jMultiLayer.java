@@ -305,7 +305,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         int nSplits;
         if(examplesPerFit == Integer.MAX_VALUE || examplesPerFit >= totalExamples ) nSplits = 1;
         else {
-            if(totalExamples%examplesPerFit==0){
+            if(totalExamples%examplesPerFit == 0) {
                 nSplits = (totalExamples / examplesPerFit);
             } else {
                 nSplits = (totalExamples/ examplesPerFit) + 1;
@@ -316,9 +316,9 @@ public class SparkDl4jMultiLayer implements Serializable {
             fitDataSet(rdd);
         } else {
             double[] splitWeights = new double[nSplits];
-            for( int i=0; i<nSplits; i++ ) splitWeights[i] = 1.0 / nSplits;
+            for( int i=0; i<nSplits; i++) splitWeights[i] = 1.0 / nSplits;
             JavaRDD<DataSet>[] subsets = rdd.randomSplit(splitWeights);
-            for( int i=0; i<subsets.length; i++ ){
+            for( int i = 0; i<subsets.length; i++) {
                 log.info("Initiating distributed training of subset {} of {}", (i + 1), subsets.length);
                 JavaRDD<DataSet> next = subsets[i].repartition(numPartitions);
                 fitDataSet(next);
@@ -335,7 +335,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getConf(0).getNumIterations();
         log.info("Running distributed training:  (averaging each iteration = " + averageEachIteration + "), (iterations = " +
-                iterations + "), (num partions = " + rdd.partitions().size() + ")");
+                iterations + "), (num partitions = " + rdd.partitions().size() + ")");
         if(!averageEachIteration) {
             //Do multiple iterations and average once at the end
             runIteration(rdd);
@@ -351,7 +351,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             }
 
             //Reset number of iterations in config
-            if(iterations > 1 ){
+            if(iterations > 1) {
                 for(NeuralNetConfiguration conf : this.conf.getConfs()) {
                     conf.setNumIterations(iterations);
                 }
@@ -381,6 +381,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             log.warn("Unable to propagate null updater");
             updater = network.getUpdater();
         }
+
         this.updater = sc.broadcast(updater);
 
         boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT, false);
@@ -435,6 +436,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                 log.info("RDD is empty...returning");
                 return;
             }
+
             JavaRDD<INDArray> resultsParams = results.map(new INDArrayFromTupleFunction());
             log.info("Running iterative reduce and averaging parameters");
 
@@ -462,6 +464,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                     new UpdaterElementCombiner(),
                     new UpdaterAggregatorCombiner()
             );
+
             Updater combinedUpdater = aggregator.getUpdater();
             network.setUpdater(combinedUpdater);
 
@@ -485,7 +488,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the fit multi layer network
      */
     public static MultiLayerNetwork train(JavaRDD<LabeledPoint> data,MultiLayerConfiguration conf) {
-
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(data.context(),conf);
         return multiLayer.fit(new JavaSparkContext(data.context()), data);
     }
