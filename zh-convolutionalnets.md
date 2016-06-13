@@ -152,5 +152,11 @@ ND4J和Deeplearning4j对`NDArray`和“张量”同义互换使用。张量的�
 * [此处为我们卷积网络的Github测试](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java)。
 * 欲一睹DL4J卷积网络的运行实况，请根据[快速入门指南](http://deeplearning4j.org/zh-quickstart.html)运行我们的[示例](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution)。
 * [递归网络简介](./recurrentnet.html)
-* [受限玻尔兹曼机指南](./zh-restrictedboltzmannmachine.html)
-* [神经网络简介](./neuralnet-overview.html)
+
+### <a name="beginner">其他Deeplearning4j教程</a>
+* [神经网络简介](./zh-neuralnet-overview)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./zh-eigenvector)
+* [LSTM和递归网络](./zh-lstm)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络](./zh-convolutionalnets)
