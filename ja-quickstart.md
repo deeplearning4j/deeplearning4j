@@ -3,8 +3,7 @@ title: "Deeplearning 4 j のクイックスタートガイド"
 layout: default
 ---
 
-クイック・スタート・ガイド
-=========================================
+# クイック・スタート・ガイド
 
 ## 必要なもの
 
@@ -15,7 +14,7 @@ layout: default
 3.　Maven （自動ビルドツール）
 4.　Github
  
-上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/getstarted.html)をご参照ください。（ND4Jは、ディープラーニングを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
+上記のどれかを新たにインストールする必要があれば、ガイドの[ND4Jを「はじめましょう」](http://nd4j.org/ja-getstarted)をご参照ください。（ND4Jは、ディープラーニングを実行させるために使う科学的計算エンジンで、上記のガイドは、DL4Jにもお使いいただけるものです。）ガイドにリストされたものをインストールすれば、それで十分でそれ以外をインストールする必要はありません。 
 
 
 質問やコメントなどございましたら、弊社の[Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)に是非お問合せください。恥ずかしがる必要は全くありません。いつでも気軽にご連絡ください。また、ディープラーニングの初心者の方には、「ディープラーニング初心者ガイド」も[こちら](./deeplearningforbeginners.html)にご用意いたしました。 
@@ -30,7 +29,7 @@ Deeplearning4jは、プロのJava開発者向けのオープンソースプロ�
 * IntelliJを開き、Mavenを使ってメニューツリーの`File/New/Project from Existing Sources`へ行き、新しいプロジェクトを作成します。上記のexampleのルートディレクトリを指定すると、統合開発環境でexampleが開きます。
 ![Alt text](./img/IntelliJ_New_Project.png) 
 * 以下のコードをPOM.xmlにコピー＆ペーストし、[こちら](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)のようにします。 
-* 追加の[Windowsユーザー向け手引きは、こちらをお読みください](./gettingstarted.html#windows)。 
+* 追加の[Windowsユーザー向け手引きは、こちらをお読みください](./ja-gettingstarted.html#windows)。 
 * 左側のファイルツリーから`DBNIrisExample.java`を選びます。
 * runを押すと、完了です！（ソースファイルを右クリックしたときに表示される緑色のボタンです。)
 
