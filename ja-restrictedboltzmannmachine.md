@@ -1,6 +1,6 @@
 ---
 title: "制限付きボルツマンマシンの初心者向けガイド"
-layout: default
+layout: ja-default
 ---
 
 # 制限付きボルツマンマシンの初心者向けガイド
@@ -243,8 +243,8 @@ RBMの出力数は割合として解釈することができます。復元の�
 
 ### Other Beginner's Guides
 
-* [Recurrent Networks/LSTMs](./lstm)
-* [Neural Networks](./neuralnet-overview)
-* [Eigenvectors, PCA and Entropy](./eigenvector)
+* [Recurrent Networks/LSTMs](./ja-lstm)
+* [Neural Networks](./ja-neuralnet-overview)
+* [Eigenvectors, PCA and Entropy](./ja-eigenvector)
 * [Neural Networks & Regression](./linear-regression)
-* [Convolutional Networks](./convolutionalnets)
+* [Convolutional Networks](./ja-convolutionalnets)
