@@ -1,6 +1,6 @@
 ---
 title: "关于我们"
-layout: default
+layout: zh-default
 ---
 
 # 关于我们
