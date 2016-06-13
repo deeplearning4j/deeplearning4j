@@ -18,7 +18,7 @@ layout: ja-default
 
 ## <a name="define">定義と構造</a>
 
-Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、[回帰](http://deeplearning4j.org/linear-regression.html)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](http://deeplearning4j.org/neuralnet-overview.html)、さらに具体的な例を知りたい方は[ユースケース](http://deeplearning4j.org/use_cases.html)のページをご覧ください。）
+Geoff Hintonによって開発された制限付きボルツマンマシン（RBM）は、次元削減、分類、[回帰](http://deeplearning4j.org/linear-regression.html)、協調フィルタリング、特徴学習、トピックモデルなどに役立ちます。（RBMなどのニューラルネットワークがどの[ように使われるか](http://deeplearning4j.org/ja-neuralnet-overview.html)、さらに具体的な例を知りたい方は[ユースケース](http://deeplearning4j.org/use_cases.html)のページをご覧ください。）
 
 制限付きボルツマンマシンは比較的シンプルなので、ニューラルネットワークを学ぶならまずここから取り組むのがよいでしょう。以下の段落では、図と簡単な文章で、制限付きボルツマンマシンがどのように機能するのかを解説していきます。
 
@@ -243,8 +243,7 @@ RBMの出力数は割合として解釈することができます。復元の�
 
 ### Other Beginner's Guides
 
-* [Recurrent Networks/LSTMs](./ja-lstm)
 * [Neural Networks](./ja-neuralnet-overview)
 * [Eigenvectors, PCA and Entropy](./ja-eigenvector)
 * [Neural Networks & Regression](./linear-regression)
-* [Convolutional Networks](./ja-convolutionalnets)
+* [Convolutional Networks](./convolutionalnets)
