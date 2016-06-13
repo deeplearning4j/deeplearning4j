@@ -39,7 +39,7 @@ Deeplearning4j是开源项目，意在吸引熟悉应用程序部署、IntelliJ�
 * 运行TSNE或其他示例请输入`mvn exec:java -Dexec.mainClass="org.deeplearning4j.examples.tsne.TSNEStandardExample" -Dexec.cleanupDaemonThreads=false`。如果执行失败，或Maven在退出时无法终止守护进程，则可能需要上述参数。
 * 1000次迭代后，`tsne-standard-coords.csv`应被置于`dl4j-0.4-examples/target/archive-tmp/`目录。
 
-您应获得0.66上下、对Iris这类小型数据组来说较好的F1值。示例的逐行解释请见[Iris DBN教程](./iris-flower-dataset-tutorial.html)。
+您应获得0.66上下、对Iris这类小型数据组来说较好的F1值。示例的逐行解释请见[Iris DBN教程](./zh-iris-flower-dataset-tutorial)。
 
 如发生问题，应首先检查POM.xml文件。该文件应与[此文件](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml)一致。
 
