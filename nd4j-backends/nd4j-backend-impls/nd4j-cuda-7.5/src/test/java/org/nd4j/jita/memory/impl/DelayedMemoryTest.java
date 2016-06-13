@@ -1,5 +1,6 @@
 package org.nd4j.jita.memory.impl;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -12,6 +13,12 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -120,5 +127,56 @@ public class DelayedMemoryTest {
             assertTrue("Failed to find device ["+ c +"] in used devices", ArrayUtils.contains(cards, c));
         }
 
+    }
+
+    @Test
+    public void testDelayedAllocation3() throws Exception {
+        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        AllocationPoint pointer = AtomicAllocator.getInstance().getAllocationPoint(array);
+
+        PointersPair pair = pointer.getPointers();
+
+        // pointers should be equal, device memory wasn't allocated yet
+        assertEquals(pair.getDevicePointer(), pair.getHostPointer());
+
+        assertEquals(2.0f, array.getFloat(1), 0.001f);
+
+        assertEquals(pair.getDevicePointer(), pair.getHostPointer());
+    }
+
+    @Test
+    public void testDelayedAllocation4() throws Exception {
+        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+
+        AllocationPoint pointer = AtomicAllocator.getInstance().getAllocationPoint(array);
+
+        PointersPair pair = pointer.getPointers();
+
+        // pointers should be equal, device memory wasn't allocated yet
+        assertEquals(pair.getDevicePointer(), pair.getHostPointer());
+
+        assertEquals(2.0f, array.getFloat(1), 0.001f);
+
+        assertEquals(pair.getDevicePointer(), pair.getHostPointer());
+
+
+        String temp = System.getProperty("java.io.tmpdir");
+
+        String outPath = FilenameUtils.concat(temp,"dl4jtestserialization.bin");
+
+        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(outPath)))){
+            Nd4j.write(array,dos);
+        }
+
+        INDArray in;
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(outPath))){
+            in = Nd4j.read(dis);
+        }
+
+
+        assertEquals(AtomicAllocator.getInstance().getAllocationPoint(in).getPointers().getDevicePointer(), AtomicAllocator.getInstance().getAllocationPoint(in).getPointers().getHostPointer());
+
+        assertEquals(array, in);
     }
 }
