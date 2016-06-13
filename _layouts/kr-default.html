@@ -1,71 +1,26 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+---
+layout: kr-all
+---
 
-  {% include /head.html %}
-  
-  <body>
-        <!--this is the fork me on github ribbon on the upper right-->
-<a href="https://github.com/deeplearning4j/deeplearning4j" onClick="ga('send', 'event', 'dl4jfork', 'click');"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/365986a132ccd6a44c23a9169022c0b5c890c387/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"></a>
-    <div id='wrapper'>
-      <div id='header'>
-        <h1>DL4J</h1>
-        <h2>Java자바를 위한 딥 러닝</h2>
-      </div>
-      <div id='menu'>
-        <ul>
-          <li><a href='../kr-index'>Deeplearning4j</a></li>
-          <li><a style="font-weight: bold; font-style: normal; color: rgb(255, 0, 0);" href='../kr-quickstart'>퀵 스타트 가이드</a></li>
-          <li><a href='../documentation'>Site Map</a></li>
-          <li><a href='../kr-word2vec'>Word2Vec</a></li>
-          <li><a href='../kr-about'>회사 소개</a></li>
-          <li><a href='mailto:help@skymind.io'>문의 사항</a></li>
-          <li><a href='../kr-usingrnns'>DL4J의 순환 신경망</a></li>
-          <li><a href='../kr-restrictedboltzmannmachine'>제한된 볼츠만 머신</a></li>
-          <li><a href='../kr-eigenvector'>Eigenvector</a></li>
-          <li><a href='../kr-convolutionnets'>컨볼루션 네트워크</a></li>
-        </ul>
+<section class="section-lg-small home-alt bg-img" id="home">
+  <div class="bg-overlay-gradient bg-overlay"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <div class="home-wrapper text-center">
+          <h1>{{ page.title }}</h1>
+        </div>
       </div>
     </div>
-    <div class="container content">
-      {{ content }}
+  </div>
+</section>
 
-      <div class="footer">
-        <p>
-        	<!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j" data-icon="octicon-star" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/stargazers" data-count-api="/repos/deeplearning4j/deeplearning4j#stargazers_count" data-count-aria-label="# stargazers on GitHub" aria-label="Star deeplearning4j/deeplearning4j on GitHub">Star</a>
-
-<a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j/fork" onClick="ga('send', 'event', 'dl4jfork', 'click');" data-icon="octicon-repo-forked" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/network" data-count-api="/repos/deeplearning4j/deeplearning4j#forks_count" data-count-aria-label="# forks on GitHub" aria-label="Fork deeplearning4j/deeplearning4j on GitHub">Fork</a>
-
-<a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j/archive/master.zip" data-icon="octicon-cloud-download" data-style="mega" aria-label="Download deeplearning4j/deeplearning4j on GitHub">Download</a>
-
-<!-- Place this tag right after the last button or just before your close body tag. -->
-<script async defer id="github-bjs" src="https://buttons.github.io/buttons.js"></script>
-          &copy; {{ site.time | date: '%Y' }}。DL4J is distributed under an Apache 2.0 License。<br>
-<a href="https://github.com/deeplearning4j/deeplearning4j" onClick="ga('send', 'event', 'dl4jfork', 'click');">Github</a> // <a href="https://groups.google.com/forum/#!forum/deeplearning4j">Google Groups</a> // <a href="http://deeplearning4j.org/">English Version</a>。</p>
-
+<section class="section bg-white page-content" id="content">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12 adjust-img-responsive">
+        {{ content }}
       </div>
     </div>
-    <script>
-  ((window.gitter = {}).chat = {}).options = {
-    room: 'deeplearning4j/deeplearning4j'
-  };
-</script>
-<script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
-
-<!-- Begin HubSpot Subscribe -->
-<!--[if lte IE 8]>
-<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/v2-legacy.js"></script>
-<![endif]-->
-<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/v2.js"></script>
-<script>
-  hbspt.forms.create({ 
-    css: '.hbspt-form{text-align:center; padding-bottom: 20px; margin: auto; width: 26em;} .hs_email{float: left; margin-right: 10px;} .hs-button{font-size: 13px; border: none; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; letter-spacing: .03em; color: #fff; background-color: #aaa; box-sizing: border-box; height: 32px; line-height: 32px; padding: 0 18px; display: inline-block; margin: 0;} .hs-form-required{display:none;} .hs-input {font-size: 15px; border: 1px solid #ABB0B2; -webkit-border-radius: 3px; -moz-border radius: 3px; border-radius: 3px; color: #343434; background-color: #fff; box-sizing: border-box; height: 32px; padding: 0px 0.4em; display: inline-block; margin: 0; width: 350px; vertical-align: top; float:left;} .hs-error-msgs{font-size: 15px; color: #FF0000;}',
-    portalId: '2179705',
-    formId: 'fe8cb1a1-6604-4bea-b578-29ad9c6377e6'
-  });
-</script>
-<!--End HubSpot Subscribe-->
-<script src="//cdn.optimizely.com/js/2296590312.js"></script>
-    
-  </body>
-</html>
+  </div>
+</section>
