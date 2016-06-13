@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: ja-default
 title: "Deeplearning4jのフルインストール"
 ---
 
@@ -157,8 +157,8 @@ Michael Depies氏が、 [EclipseでのDeeplearning4jのインストールガイ�
 
 ### <a name="next">次のステップ:IRISのexampleとニューラルネットワークの構築</a>
 
-ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/ja-neuralnet-overview.html)にて詳細をお読みください。
+ニューラルネットワークの構築を開始するには、[ニューラルネットワークの概要](http://deeplearning4j.org/ja-neuralnet-overview)にて詳細をお読みください。
 
-素早く走らせるには[IRISのチュートリアル](./iris-flower-dataset-tutorial.html)をお読みください。 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](./ja-restrictedboltzmannmachine.html)をお読みください。
+素早く走らせるには[IRISのチュートリアル](./iris-flower-dataset-tutorial.html)をお読みください。 *ディープ・ビリーフ・ネットワーク*の基本的なメカニズムを理解するには、[制限付きボルツマン・マシン](./ja-restrictedboltzmannmachine)をお読みください。
 
-新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/ja-getstarted.html)をお読みください。 
+新しいプロジェクトを開始して必要な[POMの依存関係](http://nd4j.org/dependencies.html)を入れるには、[ND4Jをはじめましょう](http://nd4j.org/ja-getstarted)をお読みください。 
