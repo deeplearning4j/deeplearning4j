@@ -1,6 +1,6 @@
 ---
 title: 通过DL4J使用递归神经网络
-layout: default
+layout: zh-default
 ---
 
 # DL4J中的递归神经网络
