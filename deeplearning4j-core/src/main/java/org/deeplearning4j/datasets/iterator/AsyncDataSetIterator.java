@@ -22,7 +22,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  * training is continuing on the previous DataSet). Obviously this may use additional memory.<br>
  * Note however that due to asynchronous loading of data, next(int) is not supported.
  *
- * PLEASE NOTE: If used together with CUDA backend, this iterator should NOT be used directly in multi-gpu environments.
+ * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
  *
  * @author Alex Black
  */
