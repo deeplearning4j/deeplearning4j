@@ -179,7 +179,46 @@ public class ConvolutionLayerTest {
         model.fit(trainInput);
     }
 
+    @Test (expected = InvalidInputTypeException.class)
+    public void testCNNZeroStride(){
+        int imageHeight= 20;
+        int imageWidth= 23;
+        int nChannels = 1;
+        int classes = 2;
+        int numSamples = 200;
 
+        int kernelHeight = imageHeight;
+        int kernelWidth = imageWidth;
+
+        DataSet trainInput;
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(1)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth)
+                        .stride(1,0)
+                        .nOut(2)
+                        .activation("relu")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .layer(1, new OutputLayer.Builder()
+                        .nOut(classes)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
+                .backprop(true).pretrain(false);
+        new ConvolutionLayerSetup(builder,imageHeight,imageWidth,nChannels);
+
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        INDArray emptyFeatures = Nd4j.zeros(numSamples,imageWidth*imageHeight*nChannels);
+        INDArray emptyLables = Nd4j.zeros(numSamples,classes);
+
+        trainInput = new DataSet(emptyFeatures,emptyLables);
+        model.fit(trainInput);
+    }
     @Test
     public void testCNNBiasInit() {
         ConvolutionLayer cnn = new ConvolutionLayer.Builder()
