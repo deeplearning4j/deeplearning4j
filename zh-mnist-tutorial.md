@@ -1,6 +1,6 @@
 ---
 title: "深信度网络的MNIST"
-layout: default
+layout: zh-default
 ---
 
 # 深信度网络的MNIST
@@ -42,4 +42,4 @@ Windows用户需注意 ,请参考并执行以下操作方法:
 
 当您的网络已被训练后,您会看到一个[F1](https://en.wikipedia.org/wiki/F1_score)分数。在机器学习里,那是一个用来评定分类器性能的指标。F1的分数是一个在零和一之间的数字,它是用来表示在训练过程中您的网络有多好。F1分数类似于一个百分比,1就是表示您的预测结果100%准确。它基本上就是您的网络猜测的正确概率。
 
-[现在,您已经看到MNIST图像的神经网络训练,Iris接下来可以学习如何使用鸢尾花数据集来训练连续数据](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)。
+[现在,您已经看到MNIST图像的神经网络训练,Iris接下来可以学习如何使用鸢尾花数据集来训练连续数据](http://deeplearning4j.org/zh-iris-flower-dataset-tutorial.html)。
