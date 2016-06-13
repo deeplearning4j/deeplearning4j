@@ -193,7 +193,7 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 `RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
 
-For a walkthrough of the other steps associated with moving data from Canova to Deeplearning4j, you can read about [how to build a customized image data pipeline here](./image-data-pipeline.html).
+For a walkthrough of the other steps associated with moving data from Canova to Deeplearning4j, you can read about [how to build a customized image data pipeline here](./simple-image-load-transform.html).
 
 ## Execution
 
