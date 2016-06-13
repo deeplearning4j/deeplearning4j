@@ -185,13 +185,13 @@ title: "ディープニューラルネットワークについて"
 
 ディープラーニングの初心者の方には、以下のチュートリアルやビデオがフィードフォワードニューラルネットワークの基礎を学ぶのに役に立ちます。是非お役立てください。
 
-* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](./restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](./eigenvector.html)
+* [Restricted Boltzmann Machines（制限付きボルツマン・マシン）](./ja-restrictedboltzmannmachine)
+* [Eigenvectors, PCA, Covariance and Entropy（固有ベクトル、PCA、共分散、エントロピー](./ja-eigenvector)
 * [Glossary of Deep-Learning and Neural-Net Terms（ディープラーニングとニューラルネットワーク用語集）](./glossary.html)
 * [Convolutional Networks（畳み込みネットアーク）](./convolutionalnets.html)
-* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](./lstm.html)
-* [Word2vec and Natural-Language Processing（Word2vecと自然言語処理）](./lstm.html)
-* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](./quickstart.html)
+* [Recurrent Networks and LSTMs（リカレントネットワークとLSTM）](./ja-lstm)
+* [Word2vec and Natural-Language Processing（Word2vecと自然言語処理）](./ja-word2vec)
+* [Deeplearning4j Examples via Quickstart（クイックスタートで見るDeeplearning4jの例）](./ja-quickstart)
 * [Neural Networks Demystified（ニューラルネットワークの解明ガイド）](https://www.youtube.com/watch?v=bxe2T-V8XRs)（7本の連続ビデオ）
 * [A Neural Network in 11 Lines of Python（パイソンの11のコマンドラインで実装するニューラルネットワーク）](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example（ステップごとに見る誤差逆伝播法の例）](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
