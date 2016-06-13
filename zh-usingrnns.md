@@ -296,3 +296,11 @@ DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4
 * [字符建模示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文。
 * [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类。
 * [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-0.4-examples/tree/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个RNN将电影评论分为正面和负面两类。
+
+### <a name="beginner">其他Deeplearning4j教程</a>
+* [神经网络简介](./zh-neuralnet-overview)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./zh-eigenvector)
+* [LSTM和递归网络](./zh-lstm)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络](./zh-convolutionalnets)
