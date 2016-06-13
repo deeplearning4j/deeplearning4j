@@ -1,17 +1,17 @@
 ---
 title: Deeplearning4j是什么？
-layout: default
+layout: zh-default
 ---
 
 # Deeplearning4j是什么？
 
-Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和[Spark](./spark)集成，为商业环境（而非研究工具目的）所设计。[Skymind](http://skymind.io)是DL4J的商业支持机构。
+Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和[Spark](./spark)集成，为商业环境（而非研究工具目的）所设计。[Skymind](http://www.skymind.io)是DL4J的商业支持机构。
 
 Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使用，避免太多配置，让非研究人员也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。
 
 您可以根据我们[在快速入门页上的说明](./zh-quickstart)，在几分钟内运行您的首个定型神经网络示例。
 
-### [神经网络使用情景](./use_cases)
+### [神经网络使用情景](./zh-use_cases)
 
 * 人脸／图像识别
 * 语音搜索
