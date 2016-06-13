@@ -66,47 +66,4 @@ public class CudaDirectProviderTest {
         Thread.sleep(1000);
     }
 
-    /**
-     * This test should be run manually
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testDelayedAllocation1() throws  Exception {
-        CudaEnvironment.getInstance().getConfiguration()
-                .setFirstMemory(AllocationStatus.DEVICE)
-                .setMemoryModel(Configuration.MemoryModel.DELAYED);
-
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
-
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
-
-        AllocationPoint pointer = allocator.getAllocationPoint(array);
-
-        PointersPair pair = pointer.getPointers();
-
-        // pointers should be equal, device memory wasn't allocated yet
-        assertEquals(pair.getDevicePointer(), pair.getHostPointer());
-
-        //////////////
-
-        AllocationPoint shapePointer = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
-
-        // pointers should be equal, device memory wasn't allocated yet
-        assertEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
-
-        assertEquals(pointer.getAllocationStatus(), AllocationStatus.HOST);
-        assertEquals(shapePointer.getAllocationStatus(), AllocationStatus.HOST);
-
-        float sum = array.sumNumber().floatValue();
-
-        assertEquals(15.0f, sum, 0.0001f);
-
-        assertEquals(AllocationStatus.CONSTANT, shapePointer.getAllocationStatus());
-        assertEquals(AllocationStatus.DEVICE, pointer.getAllocationStatus());
-
-        // at this point all pointers show be different, since we've used OP (sumNumber)
-        assertNotEquals(shapePointer.getPointers().getDevicePointer(), shapePointer.getPointers().getHostPointer());
-    }
 }

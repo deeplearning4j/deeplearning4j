@@ -697,7 +697,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
             // if we have constant buffer (aka shapeInfo or other constant stuff)
             if (buffer.isConstant()) {
-                log.info("Calling moveToConstantSpace()");
                 Nd4j.getConstantHandler().moveToConstantSpace(buffer);
             } else {
                 PointersPair pair = provider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
