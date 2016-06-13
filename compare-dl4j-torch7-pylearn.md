@@ -5,7 +5,7 @@ layout: default
 
 # DL4J vs. Torch vs. Theano vs. Caffe vs. TensorFlow
 
-Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact/) if anything breaks. 
+Deeplearning4j is not the first open-source deep-learning project, but it is distinguished from its predecessors in both programming language and intent. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** intended to solve problems involving massive amounts of data in a reasonable amount of time. It integrates with Hadoop and Spark using an arbitrary number of GPUs or CPUs, and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
 
 <p align="center">
 <a href="./quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
@@ -156,14 +156,13 @@ The deep-learning frameworks listed above are more specialized than general mach
 
 ### <a name="tutorial">Deeplearning4j Tutorials</a>
 
-* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
-* [Convolutional Networks Tutorial](./convolutionalnets.html)
-* [LSTM and Recurrent Network Tutorial](./lstm.html)
-* [Using Recurrent Nets With DL4J](./usingrnns.html)
-* [Deep-Belief Networks With MNIST](./deepbeliefnetwork.html)
-* [Facial Reconstruction With Labeled Faces in the Wild](./facial-reconstruction-tutorial.html)
-* [Customizing Data Pipelines With Canova](./image-data-pipeline.html)
-* [Restricted Boltzmann machines](./restrictedboltzmannmachine.html)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Convolutional Networks Tutorial](./convolutionalnets)
+* [LSTM and Recurrent Network Tutorial](./lstm)
+* [Using Recurrent Nets With DL4J](./usingrnns)
+* [Deep-Belief Networks With MNIST](./deepbeliefnetwork)
+* [Customizing Data Pipelines With Canova](./image-data-pipeline)
+* [Restricted Boltzmann machines](./restrictedboltzmannmachine)
 * [Eigenvectors, PCA and Entropy](./eigenvector.html)
 * [A Glossary of Deep-Learning Terms](./glossary.html)
 * [Word2vec, Doc2vec & GloVe](./word2vec)
