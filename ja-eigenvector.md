@@ -1,6 +1,6 @@
 ---
 title: "固有ベクトル、主成分分析、共分散、エントロピー入門"
-layout: default
+layout: ja-default
 ---
 
 # 固有ベクトル、主成分分析、共分散、エントロピー入門
@@ -195,7 +195,7 @@ vs.
 
 サイコロに細工されたことを理解することは、データ集合で主成分を見つけることに似ています。根底にあるパターンを探し出せばいいのです。
 
-情報が、「私たちがシステムについて知らないこと」から「知っていること」へと移ることは、エントロピーの変化を示します。知見はシステムへのエントロピーを減らします。情報を得て、エントロピーを減すことが、情報の取得なのです。しかも、このタイプのエントロピーは恣意的であり、システムについて知っていることに左右されます。（あくまでも私的意見ですが、[情報の取得](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)は、カルバック・ライブラー情報量と同じことだと思います。これについては、別の記事[restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html)で少しだけ考察しています。）
+情報が、「私たちがシステムについて知らないこと」から「知っていること」へと移ることは、エントロピーの変化を示します。知見はシステムへのエントロピーを減らします。情報を得て、エントロピーを減すことが、情報の取得なのです。しかも、このタイプのエントロピーは恣意的であり、システムについて知っていることに左右されます。（あくまでも私的意見ですが、[情報の取得](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)は、カルバック・ライブラー情報量と同じことだと思います。これについては、別の記事[restricted Boltzmann machines](http://deeplearning4j.org/ja-restrictedboltzmannmachine)で少しだけ考察しています。）
 
 分布したデータを分析する主成分は、意外性という意味でシステムのエントロピーの減少を示しています。
 
@@ -203,11 +203,11 @@ vs.
 
 ## とにかくコードが欲しい方へ
 
-[ND4J](http://nd4j.org/)はn次元配列を扱うJVM向け数値計算ライブラリで、Numpyに主に触発されています。ND4Jがどのように固有ベクトルを扱っているかをご覧いただけます。ND4Jには、Javaと[Scala](https://github.com/deeplearning4j/nd4s)のAPIがあり、HadoopとSparkで実行し、[Numpy/Cythonの約2倍も速く](http://nd4j.org/benchmarking)大きな行列を処理できます。
+[ND4J](http://nd4j.org/ja-index)はn次元配列を扱うJVM向け数値計算ライブラリで、Numpyに主に触発されています。ND4Jがどのように固有ベクトルを扱っているかをご覧いただけます。ND4Jには、Javaと[Scala](https://github.com/deeplearning4j/nd4s)のAPIがあり、HadoopとSparkで実行し、[Numpy/Cythonの約2倍も速く](http://nd4j.org/benchmarking)大きな行列を処理できます。
 
 ## その他の初心者用手引
 
-* [Word2vec: Extracting Relations From Raw Text](./ja-word2vec)
+* [Word2Vecとは？](./ja-word2vec)
 * [制限付きボルツマンマシンの初心者向けガイド](http://deeplearning4j.org/ja-restrictedboltzmannmachine)
 * [ディープニューラルネットワークについて](./ja-lstm)
 * [Regression & Neural Networks](./linear-regression.html)
