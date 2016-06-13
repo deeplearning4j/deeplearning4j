@@ -202,8 +202,12 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             INDArray syn0 = l.getSyn0();
 
             if (!normalized) {
-                syn0.diviColumnVector(syn0.norm1(1));
-                normalized = true;
+                synchronized (this) {
+                    if (!normalized) {
+                        syn0.diviColumnVector(syn0.norm1(1));
+                        normalized = true;
+                    }
+                }
             }
 
             INDArray similarity = Transforms.unitVec(words).mmul(syn0.transpose());
