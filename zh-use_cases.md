@@ -71,3 +71,12 @@ layout: zh-default
 [现实捕捉和现实计算](http://pando.com/2014/02/16/convergence-what-happens-when-virtual-realities-take-over/)领域的进步令虚拟世界与现实不断交融。就此类全新的数据而言，深度学习网络的应用之一是识别并标识三维环境以及现实中的物体。 
 
 实现这一功能后，就很容易发展出模拟语义，让机器借由各类现实物体的虚拟表示来学习这些物体的本质和限制，随后将这种理解运用到语言的生成和处理当中。我们认为这是神经网络未来众多的发展方向之一。 
+
+### <a name="beginner">其他Deeplearning4j教程</a>
+* [神经网络简介](./zh-neuralnet-overview)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./zh-eigenvector)
+* [LSTM和递归网络](./zh-lstm)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络](./zh-convolutionalnets)
+* [Word2vec：Java中的神经词向量](./zh-word2vec)
