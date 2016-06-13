@@ -1514,6 +1514,42 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return output(input, TrainingMode.TRAIN);
     }
 
+    /**
+     * Label the probabilities of the input
+     *
+     * @param iterator test data to evaluate
+     * @return a vector of probabilities
+     * given each label.
+     * <p>
+     * This is typically of the form:
+     * [0.5, 0.5] or some other probability distribution summing to one
+     */
+    public INDArray output(DataSetIterator iterator, boolean train) {
+        List<INDArray> outList = new ArrayList<>();
+        while(iterator.hasNext()){
+            DataSet next = iterator.next();
+
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
+                outList.add(this.output(features,train,fMask,lMask));
+
+            } else {
+                outList.add(output(features,train));
+            }
+        }
+        return Nd4j.vstack(outList.toArray(new INDArray[0]));
+    }
+
+    public INDArray output(DataSetIterator iterator) {
+        return output(iterator, false);
+    }
+
 
     /**
      * Reconstructs the input.
@@ -2251,6 +2287,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
+        if (labelsList == null)
+            labelsList = iterator.getLabels();
 
         Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
         while(iterator.hasNext()){
