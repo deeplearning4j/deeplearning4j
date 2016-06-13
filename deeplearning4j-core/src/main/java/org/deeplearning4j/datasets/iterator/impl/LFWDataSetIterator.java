@@ -46,8 +46,18 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numExamples the overall number of examples
 	 * */
 	public LFWDataSetIterator(int batchSize, int numExamples) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, true), batchSize, 1, LFWLoader.NUM_LABELS);
+		super(new LFWLoader().getRecordReader(numExamples, batchSize, true, 1), batchSize, 1, LFWLoader.NUM_LABELS);
 	}
+
+	/**
+	 * Create LFW data specific iterator
+	 * @param batchSize the batch size of the examples
+	 * @param numExamples the overall number of examples
+	 * */
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
+		super(new LFWLoader().getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], true, 1, new Random(123)), batchSize, 1, LFWLoader.NUM_LABELS);
+	}
+
 
 	/**
 	 * Create LFW data specific iterator
@@ -55,8 +65,8 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param imgDim an array of height, width and channels
 	 * @param numExamples the overall number of examples
 	 * */
-	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, new Random(123)), batchSize, 1, LFWLoader.NUM_LABELS);
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train, double splitTrainTest) {
+		super(new LFWLoader().getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, splitTrainTest, new Random(123)), batchSize, 1, LFWLoader.NUM_LABELS);
 	}
 
 	/**
@@ -66,8 +76,8 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numCategories the overall number of labels
      * @param train true if use train value
 	 * */
-	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories, boolean train) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, train), batchSize, 1, numCategories);
+	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories, boolean train, double splitTrainTest) {
+		super(new LFWLoader().getRecordReader(numExamples, batchSize, train, splitTrainTest), batchSize, 1, numCategories);
 	}
 
 	/**
@@ -96,8 +106,8 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
      * @param useSubset use a subset of the LFWDataSet
      * @param train true if use train value
      * */
-    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, boolean train, Random rng) {
-        super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, rng), batchSize, 1, numCategories);
+    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, boolean train,  double splitTrainTest,  Random rng) {
+        super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, splitTrainTest, rng), batchSize, 1, numCategories);
     }
 
 	/**
@@ -109,8 +119,8 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
      * @param train true if use train value
      * @param labelGenerator path label generator to use
 	 * */
-	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, PathLabelGenerator labelGenerator, double splitTrainTest, boolean train, Random rng) {
-		super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], numCategories, labelGenerator, splitTrainTest, train, rng), batchSize, 1, numCategories);
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, PathLabelGenerator labelGenerator,boolean train, double splitTrainTest,  Random rng) {
+		super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], numCategories, labelGenerator, train, splitTrainTest, rng), batchSize, 1, numCategories);
 	}
 
 }
