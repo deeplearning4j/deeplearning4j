@@ -19,14 +19,16 @@ In short, images in your dataset have to be organized in directories by class/la
 * Move all images belonging to a given class/label to it's corresponding directory.
 
 Here is the directory structure expected in general.
-                                   parentDir
-                                 /   / | \  \
-                                /   /  |  \  \
-                               /   /   |   \  \
-                              /   /    |    \  \
-                             /   /     |     \  \
-                            /   /      |      \  \
-                      label_0 label_1....label_n-1 label_n
+
+>                                   parentDir
+>                                 /   / | \  \
+>                                /   /  |  \  \
+>                               /   /   |   \  \
+>                              /   /    |    \  \
+>                             /   /     |     \  \
+>                            /   /      |      \  \
+>                      label_0 label_1....label_n-1 label_n
+
 
 In this example the parentDir corresponds to *$PWD/src/main/resources/DataExamples/ImagePipeline/* and the subdirectories labelA,labelB,labelC all have 10 images each. 
 
