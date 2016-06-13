@@ -1,11 +1,11 @@
 ---
 title: "Deeplearning 4 j のクイックスタートガイド"
-layout: default
+layout: ja-default
 ---
 
 # Deeplearning4jとは何か?
 
-Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレードで、オープンソースの分散ディープラーニング・ライブラリです。Hadoopや Sparkと連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。[Skymind](http://skymind.io)は、その商業的サポートを行っています。
+Deeplearning4j（以下DL4J）はJava, Scalaで書かれた世界初商用グレードで、オープンソースの分散ディープラーニング・ライブラリです。Hadoopや Sparkと連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。[Skymind](http://www.skymind.io)は、その商業的サポートを行っています。
 
 DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定よりも非研究者でも手軽にプロトタイピングできるように作られています。DL4Jはスケーラブルでカスタマイズ可能です。Apache 2.0で配布されており、DL4Jの派生物はすべてその著者に帰属します。
 
@@ -23,7 +23,7 @@ DL4Jは最先端のプラグ＆プレイテクノロジーを駆使し、設定�
 
 ### なぜDeeplearning4jなのか? 
 
-* JavaとScalaにとって汎用的な[n次元配列](http://nd4j.org/)クラス
+* JavaとScalaにとって汎用的な[n次元配列](http://nd4j.org/ja-index)クラス
 * [GPU](http://nd4j.org/gpu_native_backends.html)と連携
 * [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)や[Spark](./gpu_aws.html)で動作する[スケーラビリティ](./spark.html) 
 * [Canova](./canova.html): 機械学習に使用する一般的なベクトル化ツール
@@ -35,7 +35,7 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 
 * [制限付きボルツマン・マシン](./ja-restrictedboltzmannmachine.html)
 * [畳込みネットワーク](./convolutionalnets.html) （画像）
-* [回帰ネットワーク](./usingrnns.html)/[LSTMs](./lstm.html) （時系列、センサーデータ）
+* [回帰ネットワーク](./usingrnns.html)/[LSTMs](./ja-lstm.html) （時系列、センサーデータ）
 * [再帰的オートエンコーダー](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [ディープ・ビリーフ・ネットワーク](./deepbeliefnetwork.html)
 * [Deepオートエンコーダー](http://deeplearning4j.org/deepautoencoder.html) （質問-回答/データ圧縮）
@@ -60,7 +60,7 @@ Deeplearning4jは、分散型で、マルチスレッドであるディープラ
 * [固有ベクトル、PCA（主成分分析）、エントリピー](./ja-eigenvector.html)
 * [Word2vec](./ja-word2vec)
 * [畳込みネットワークのチュートリアル](./convolutionalnets.html)
-* [LSTMと回帰ネットワークのチュートリアル](./lstm.html)
+* [LSTMと回帰ネットワークのチュートリアル](./ja-lstm.html)
 * [回帰ネットワークをDL4Jに使用しましょう](./usingrnns.html)
 * [ディープ・ビリーフ・ネットワークとMNIST](./deepbeliefnetwork)
 * [Labeled Faces in the Wildを使った顔再構成](./facial-reconstruction-tutorial.html)
