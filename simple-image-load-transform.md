@@ -11,10 +11,6 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 
 This tutorial will walk through how to load an image dataset and carry out transforms on them. For the sake of simplicity this tutorial uses only 10 images from 3 of the classes in the *Oxford flower dataset*.
 
-## Introductory Video
-
-<iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
-
 ## Setting up your images in the correct directory structure
 In short, images in your dataset have to be organized in directories by class/label and these label/class directories live together in the parent directory.
 * Download your dataset. 
