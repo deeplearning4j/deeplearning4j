@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
  *
+ * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
+ *
  * @author Alex Black
  * @author raver119@gmail.com
  */

@@ -31,7 +31,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     protected volatile VocabCache<T> vocabCache;
     protected volatile WeightLookupTable<T> lookupTable;
 
-    protected boolean normalized  = false;
+    protected volatile boolean normalized  = false;
 
     private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
