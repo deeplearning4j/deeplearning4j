@@ -1,6 +1,6 @@
 ---
 title: 完全安装Deeplearning4j
-layout: default
+layout: zh-default
 ---
 
 # 完全安装
@@ -140,7 +140,7 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
 * 如3.0.4等较早的Maven版本可能会产生NoSuchMethodError等异常情况。解决办法是将Maven升级到最新版本（当前为3.3.x）。请通过输入命令行`mvn -v`检查Maven版本。
 * 在安装Maven之后，您还将收到如下信息：`mvn is not recognised as an internal or external command, operable program or batch file.`（无法识别mvn为任何内部或外部命令、可执行文件或批处理文件。）此时，你需要在[Path变量](https://www.java.com/en/download/help/path.xml)中添加Maven，修改方法同对其他环境变量的修改。  
 * 如果出现`Invalid JDK version in profile 'java8-and-higher':Unbounded range:[1.8, for project com.github.jai-imageio:jai-imageio-corecom.github.jai-imageio:jai-imageio-core:jar:1.3.0`错误信息，则说明Maven出现问题。请升级至3.3.x版本。
-* 欲对部分ND4J依赖项进行编译，请安装C和C++所用的**开发工具**。[请参见我们的ND4J指南](http://nd4j.org/getstarted.html#devtools)
+* 欲对部分ND4J依赖项进行编译，请安装C和C++所用的**开发工具**。[请参见我们的ND4J指南](http://nd4j.org/zh-getstarted.html#devtools)
 * [Java CPP](https://github.com/bytedeco/javacpp)的包含路径可能在**Windows**环境下发生问题。解决办法之一，是将Visual Studio包含目录中的标头文件放入Java运行时环境（JRE）的包含路径中（也即Java的安装路径）。如此将对standardio.h等文件产生影响。更多信息请访问[此页面](http://nd4j.org/getstarted.html#windows)。 
 * 监测GPU的说明请见[此处](http://nd4j.org/getstarted.html#gpu]。
 * 使用Java的重要理由之一是**[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)**中预装的诊断工具。如果已安装Java，在命令行中输入`jvisualvm`，即可获得关于CPU、Heap、PermGen、Classes和Threads的图像信息。有用的视图：点击右上角`Sampler`标签，然后点击CPU或内存按钮以获得相关视图。 
@@ -159,7 +159,7 @@ Michael Depies已为[在Eclipse上安装Deeplearning4j](https://depiesml.wordpre
 
 ### <a name="next">后续步骤IRIS示例及安装神经网络</a>
 
-欲开始创建神经网络，请参见[神经网络简介](http://deeplearning4j.org/neuralnet-overview.html)获得更多信息。
+欲开始创建神经网络，请参见[神经网络简介](http://deeplearning4j.org/zh-neuralnet-overview)获得更多信息。
 
 阅读[IRIS教程](./zh-iris-flower-dataset-tutorial.html)以迅速上手。同时请参阅我们关于[受限玻尔兹曼机](./zh-restrictedboltzmannmachine.html)的说明，以理解*深度置信网络*的基本机制。
 
