@@ -207,9 +207,9 @@ vs.
 
 ## その他の初心者用手引
 
+* [Word2vec: Extracting Relations From Raw Text](./ja-word2vec)
+* [制限付きボルツマンマシンの初心者向けガイド](http://deeplearning4j.org/ja-restrictedboltzmannmachine)
+* [ディープニューラルネットワークについて](./ja-lstm)
 * [Regression & Neural Networks](./linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](http://deeplearning4j.org/restrictedboltzmannmachine.html)
-* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
 
 場合によっては、行列に固有ベクトルがフルセットで存在しないかもしれません。行列には、対応する固有値あるいは次元の数だけの線形従属の固有ベクトルが存在できます。
