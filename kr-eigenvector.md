@@ -1,6 +1,6 @@
 ---
 title: 고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)
-layout: default
+layout: kr-default
 ---
 
 # 고유 벡터(Eigenvectors), PCA, 공분산(Covariance) 및 엔트로피(Entropy)에 대한 기초 강의
@@ -196,7 +196,7 @@ vs.
 
 위의 주사위 굴리기 예제는 데이터 셋에서 주성분을 찾는 것과 비슷합니다. 
 
-우리가 시스템에 대해 알게 될수록 시스템의 엔트로피는 감소합니다. 예를 들어 데이터의 통계를 알게 되면 엔트로피는 감소합니다. 이것을 정보 이득(information gain)이라고 합니다. (참고로, [정보 이득](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)는 저희가 [RBM(Restricted Boltzmann Machines)](./kr-restrictedboltzmannmachine.html) 튜토리알에서 설명한 Kullback-Leibler divergence와 같습니다.) 
+우리가 시스템에 대해 알게 될수록 시스템의 엔트로피는 감소합니다. 예를 들어 데이터의 통계를 알게 되면 엔트로피는 감소합니다. 이것을 정보 이득(information gain)이라고 합니다. (참고로, [정보 이득](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees)는 저희가 [RBM(Restricted Boltzmann Machines)](./kr-restrictedboltzmannmachine) 튜토리알에서 설명한 Kullback-Leibler divergence와 같습니다.) 
 
 데이터의 분포를 주성분으로 나타내면 성분의 차수가 낮아질수록 분산이 감소합니다. 그리고 분산이 낮아진다는 것은 엔트로피가 감소하는 것을 의미합니다. 
 
@@ -220,11 +220,11 @@ vs.
 
 ## <a name="resources">초보자용 다른 가이드들</a>
 
-* [RBMs: Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine.html)
-* [자연어처리: Word2vec](./kr-word2vec.html)
-* [인공 신경망](./kr-neuralnet-overview.html)
-* [컨볼루션 네트워크](./kr-convolutionalnets.html)
-* [RNNs 및 LSTM (Long Short-Term Memory)](./kr-lstm.html)
+* [RBMs: Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine)
+* [자연어처리: Word2vec](./kr-word2vec)
+* [인공 신경망](./kr-neuralnet-overview)
+* [컨볼루션 네트워크](./kr-convolutionalnets)
+* [RNNs 및 LSTM (Long Short-Term Memory)](./kr-lstm)
 * [심층학습(딥러닝) 활용 사례](./kr-use_cases)
 
 
