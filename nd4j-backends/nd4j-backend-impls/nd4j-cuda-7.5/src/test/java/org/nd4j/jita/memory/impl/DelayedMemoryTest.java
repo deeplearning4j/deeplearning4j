@@ -200,4 +200,28 @@ public class DelayedMemoryTest extends TestCase {
         assertEquals(AllocationStatus.CONSTANT, pointTad.getAllocationStatus());
         assertEquals(AllocationStatus.DEVICE, pointOff.getAllocationStatus());
     }
+
+    @Test
+    public void testDelayedDup1() throws Exception {
+        INDArray array = Nd4j.linspace(1,1000, 1000).reshape(10, 10, 10);
+
+        AllocationPoint pointShape = AtomicAllocator.getInstance().getAllocationPoint(array.shapeInfoDataBuffer());
+        AllocationPoint pointArray = AtomicAllocator.getInstance().getAllocationPoint(array);
+
+        assertEquals(AllocationStatus.HOST, pointArray.getAllocationStatus());
+        assertEquals(AllocationStatus.HOST, pointShape.getAllocationStatus());
+
+        float sum = array.sumNumber().floatValue();
+
+        assertEquals(AllocationStatus.DEVICE, pointArray.getAllocationStatus());
+        assertEquals(AllocationStatus.CONSTANT, pointShape.getAllocationStatus());
+
+        INDArray dup = array.dup();
+
+        AllocationPoint dupShape = AtomicAllocator.getInstance().getAllocationPoint(dup.shapeInfoDataBuffer());
+        AllocationPoint dupArray = AtomicAllocator.getInstance().getAllocationPoint(dup);
+
+        assertEquals(AllocationStatus.DEVICE, dupArray.getAllocationStatus());
+        assertEquals(AllocationStatus.CONSTANT, dupShape.getAllocationStatus());
+    }
 }
