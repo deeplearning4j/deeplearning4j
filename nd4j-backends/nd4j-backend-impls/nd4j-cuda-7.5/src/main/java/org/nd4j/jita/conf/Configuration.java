@@ -43,13 +43,13 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private MemoryModel memoryModel = MemoryModel.DELAYED;
+    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
 
     @Getter private boolean debug = false;
 
     @Getter private boolean verbose = false;
 
-    private boolean forceSingleGPU = true;
+    private boolean forceSingleGPU = false;
 
     /**
      * Keep this value between 0.01 and 0.95 please
