@@ -15,8 +15,11 @@ This tutorial will walk through how to load an image dataset and carry out trans
 ## Setting up your images in the correct directory structure
 In short, images in your dataset have to be organized in directories by class/label and these label/class directories live together in the parent directory.
 * Download your dataset. 
+
 * Make a parent directory.
+
 * In your parent directory make subdirectories with names corresponding to the label/class names.
+
 * Move all images belonging to a given class/label to it's corresponding directory.
 
 Here is the directory structure expected in general.
