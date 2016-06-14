@@ -43,7 +43,7 @@ public class Configuration implements Serializable {
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
-    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
+    @Getter private MemoryModel memoryModel = MemoryModel.DELAYED;
 
     @Getter private boolean debug = false;
 

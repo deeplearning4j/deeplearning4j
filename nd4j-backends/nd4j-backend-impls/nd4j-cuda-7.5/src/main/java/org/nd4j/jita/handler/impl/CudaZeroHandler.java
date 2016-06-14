@@ -560,29 +560,12 @@ public class CudaZeroHandler implements MemoryHandler {
       //  context.syncOldStream();
 
         Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
-        /*JCuda.cudaMemcpyAsync(
-                dP,
-                srcPointer,
-                length,
-                cudaMemcpyKind.cudaMemcpyHostToHost,
-                context.getOldStream()
-        );*/
 
         nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
 
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
-
-            /*
-            JCuda.cudaMemcpyAsync(
-                    rDP,
-                    dP,
-                    length,
-                    cudaMemcpyKind.cudaMemcpyHostToDevice,
-                    context.getOldStream()
-            );
-            */
 
             nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
 
