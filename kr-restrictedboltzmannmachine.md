@@ -1,6 +1,6 @@
 ---
 title: 초보자용 RBM(Restricted Boltzmann Machines) 튜토리알
-layout: default
+layout: kr-default
 ---
 
 # 초보자용 RBM(Restricted Boltzmann Machines) 튜토리알
@@ -18,7 +18,7 @@ layout: default
 
 ## <a name="define">RBM의 정의와 구조</a>
 
-RBM(제한된 볼츠만 머신, Restricted Boltzmann machine)은 차원 감소, 분류, [선형 회귀 분석](./linear-regression.html), 협업 필터링(collaborative filtering), 특징값 학습(feature learning) 및 주제 모델링(topic modelling)에 사용할 수 있는 알고리즘으로 Geoff Hinton이 제안한 모델입니다. (RBMs을 포함한 [인공 신경망](./kr-neuralnet-overview.html) 이용 사례는 [이용 사례 페이지](./use_cases.html)를 참고하십시오).
+RBM(제한된 볼츠만 머신, Restricted Boltzmann machine)은 차원 감소, 분류, [선형 회귀 분석](./linear-regression.html), 협업 필터링(collaborative filtering), 특징값 학습(feature learning) 및 주제 모델링(topic modelling)에 사용할 수 있는 알고리즘으로 Geoff Hinton이 제안한 모델입니다. (RBMs을 포함한 [인공 신경망](./kr-neuralnet-overview.html) 이용 사례는 [이용 사례 페이지](./kr-use_cases.html)를 참고하십시오).
 
 RBM의 구조는 상대적으로 단순한 편입니다. RBM은 자체적으로도 사용할 수 있지만 다른 심층 신경망의 학습을 돕기 위해 쓰이기도 합니다. 이제부터 RBM의 작동 원리를 설명드리겠습니다.
 
