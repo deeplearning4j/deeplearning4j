@@ -1,6 +1,6 @@
 ---
 title: "초보자를 위한 RNNs과 LSTM 가이드"
-layout: default
+layout: kr-default
 ---
 
 # 초보자를 위한 RNNs과 LSTM 가이드
