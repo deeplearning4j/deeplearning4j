@@ -682,7 +682,7 @@ public class WordVectorSerializer {
         conf.setVocabSize(vocabCache.numWords());
 
 
-        //printWriter.println(conf.toJson());
+        printWriter.println(conf.toJson());
         //log.info("Word2Vec conf. JSON: " + conf.toJson());
         /*
             We have the following map:
@@ -758,7 +758,7 @@ public class WordVectorSerializer {
                 vw.setHistoricalGradient(ada);
             }
 
-         //   printWriter.println(vw.toJson());
+            printWriter.println(vw.toJson());
         }
 
         // at this moment we have whole vocab serialized
@@ -1101,7 +1101,7 @@ public class WordVectorSerializer {
 
             cache.putVocabWord(word);
 
-            float[] vector = new float[split.length - 2];
+            float[] vector = new float[split.length - 1];
 
             for (int i = 1; i < split.length; i++) {
                 vector[i-1] = Float.parseFloat(split[i]);
@@ -1179,7 +1179,7 @@ public class WordVectorSerializer {
             }
             */
 
-            float[] vector = new float[split.length - 2];
+            float[] vector = new float[split.length - 1];
 
             for (int i = 1; i < split.length; i++) {
                 vector[i-1] = Float.parseFloat(split[i]);
