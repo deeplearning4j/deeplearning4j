@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import com.google.common.collect.Lists;
+import org.canova.image.loader.LFWLoader;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
@@ -696,4 +697,37 @@ public class MultiLayerTest {
 
         Thread.sleep(25000);
     }
+
+    @Test
+    public void testOutput() throws Exception{
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(false)
+                .learningRate(1.0)
+                .weightInit(WeightInit.XAVIER)
+                .seed(12345L)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSetIterator fullData = new CifarDataSetIterator(1,2, new int[] {20,20,1});
+        net.fit(fullData);
+
+
+        fullData.reset();
+        DataSet expectedSet = fullData.next(2);
+        INDArray expectedOut = net.output(expectedSet.getFeatureMatrix(), false);
+
+        fullData.reset();
+
+        INDArray actualOut = net.output(fullData);
+
+        assertEquals(expectedOut, actualOut);
+    }
+
 }
