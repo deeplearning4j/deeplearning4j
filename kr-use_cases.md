@@ -1,6 +1,6 @@
 ---
 title: 심층학습(딥러닝) 활용 사례
-layout: default
+layout: kr-default
 ---
 
 # 심층학습(딥러닝) 활용 사례
