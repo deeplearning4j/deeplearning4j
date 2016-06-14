@@ -14,5 +14,7 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
 
     R processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast);
 
+    R getFinalResult(MultiLayerNetwork network);
+
     WorkerConfiguration getDataConfiguration();
 }
