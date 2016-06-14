@@ -1,6 +1,6 @@
 ---
 title: "회사 소개"
-layout: default
+layout: kr-default
 ---
 
 # 회사 소개
@@ -15,7 +15,7 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소
 
 ## ND4J & ND4S
 
-[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/). ([Github repo](https://github.com/deeplearning4j/nd4j/)를 참조하십시오.) [ND4S](https://github.com/deeplearning4j/nd4s)는 ND4J의 스칼라 래퍼 입니다; [Deeplearing4s](https://github.com/deeplearning4j/deeplearning4s)는 DL4J의 스칼라 래퍼 입니다.
+[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/kr-index). ([Github repo](https://github.com/deeplearning4j/nd4j/)를 참조하십시오.) [ND4S](https://github.com/deeplearning4j/nd4s)는 ND4J의 스칼라 래퍼 입니다; [Deeplearing4s](https://github.com/deeplearning4j/deeplearning4s)는 DL4J의 스칼라 래퍼 입니다.
 
 ## 언론 보도
 
