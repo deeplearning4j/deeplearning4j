@@ -16,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +41,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     protected FlowController flowController;
 
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
+
+    private static Logger logger = LoggerFactory.getLogger(ProtectedCudaConstantHandler.class);
 
     private static final int MAX_CONSTANT_LENGTH = 49152;
     private static final int MAX_BUFFER_LENGTH = 272;
@@ -75,6 +79,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH)  {
+            if (point.getAllocationStatus() == AllocationStatus.HOST && configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
+                AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
+            }
+
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
@@ -89,6 +97,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(requiredMemoryBytes);
         if (currentOffset >= MAX_CONSTANT_LENGTH)  {
+            if (point.getAllocationStatus() == AllocationStatus.HOST && configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
+                AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
+            }
+
             nativeOps.memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
             flowController.commitTransfer(context.getSpecialStream());
 
@@ -100,7 +112,6 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
             return 0;
         }
-
 
         nativeOps.memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), requiredMemoryBytes, 1, context.getSpecialStream());
         flowController.commitTransfer(context.getSpecialStream());

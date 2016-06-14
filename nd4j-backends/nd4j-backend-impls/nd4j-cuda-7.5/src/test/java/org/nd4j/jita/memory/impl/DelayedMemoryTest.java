@@ -3,6 +3,7 @@ package org.nd4j.jita.memory.impl;
 import junit.framework.TestCase;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -10,9 +11,12 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.DataInputStream;
@@ -177,5 +181,23 @@ public class DelayedMemoryTest extends TestCase {
         assertEquals(AtomicAllocator.getInstance().getAllocationPoint(in).getPointers().getDevicePointer(), AtomicAllocator.getInstance().getAllocationPoint(in).getPointers().getHostPointer());
 
         assertEquals(array, in);
+    }
+
+    @Test
+    public void testDelayedTAD1() throws Exception {
+        TADManager tadManager = new DeviceTADManager();
+
+        INDArray array = Nd4j.create(128, 256);
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, new int[]{0});
+
+        DataBuffer tadBuffer = tadBuffers.getFirst();
+        DataBuffer offBuffer = tadBuffers.getSecond();
+
+        AllocationPoint pointTad = AtomicAllocator.getInstance().getAllocationPoint(tadBuffer);
+        AllocationPoint pointOff = AtomicAllocator.getInstance().getAllocationPoint(offBuffer);
+
+        assertEquals(AllocationStatus.CONSTANT, pointTad.getAllocationStatus());
+        assertEquals(AllocationStatus.DEVICE, pointOff.getAllocationStatus());
     }
 }
