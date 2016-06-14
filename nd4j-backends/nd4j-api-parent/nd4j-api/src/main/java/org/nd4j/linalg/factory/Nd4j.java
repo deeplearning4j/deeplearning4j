@@ -1850,7 +1850,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(InputStream reader) throws IOException {
-        read(new DataInputStream(reader));
+        return   read(new DataInputStream(reader));
 
     }
 
