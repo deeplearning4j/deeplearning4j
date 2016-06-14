@@ -27,6 +27,11 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     }
 
     @Override
+    public VanillaTrainingResult getFinalResult(MultiLayerNetwork network) {
+        return null;
+    }
+
+    @Override
     public WorkerConfiguration getDataConfiguration() {
         return null;
     }
