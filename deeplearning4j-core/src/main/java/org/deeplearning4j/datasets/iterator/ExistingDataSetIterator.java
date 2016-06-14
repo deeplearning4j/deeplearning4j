@@ -1,45 +1,86 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.NonNull;
 import org.nd4j.linalg.dataset.api.*;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * @author raver119@gmail.com
  */
 public class ExistingDataSetIterator implements DataSetIterator {
+    private DataSetPreProcessor preProcessor;
 
-    public ExistingDataSetIterator(Iterable<DataSet> iterable) {
+    private Iterable<DataSet> iterable;
+    private Iterator<DataSet> iterator;
+    private int totalExamples = 0;
+    private int numFeatures = 0;
+    private int numLabels = 0;
+    private List<String> labels;
 
+
+    public ExistingDataSetIterator(@NonNull Iterator<DataSet> iterator) {
+        this.iterator = iterator;
+    }
+
+    public ExistingDataSetIterator(@NonNull Iterator<DataSet> iterator, @NonNull List<String> labels) {
+        this(iterator);
+        this.labels = labels;
+    }
+
+    public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable) {
+        this.iterable = iterable;
+        this.iterator = iterable.iterator();
+    }
+
+    public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable, @NonNull List<String> labels) {
+        this(iterable);
+        this.labels = labels;
+    }
+
+
+    public ExistingDataSetIterator(@NonNull Iterable<DataSet> iterable, int totalExamples, int numFeatures, int numLabels) {
+        this(iterable);
+
+        this.totalExamples = totalExamples;
+        this.numFeatures = numFeatures;
+        this.numLabels = numLabels;
     }
 
     @Override
     public DataSet next(int num) {
-        return null;
+        // TODO: this might be changed
+        throw new UnsupportedOperationException("next(int) isn't supported");
     }
 
     @Override
     public int totalExamples() {
-        return 0;
+        return totalExamples;
     }
 
     @Override
     public int inputColumns() {
-        return 0;
+        return numFeatures;
     }
 
     @Override
     public int totalOutcomes() {
-        return 0;
+        if (labels != null)
+            return labels.size();
+
+        return numLabels;
     }
 
     @Override
     public void reset() {
-
+        if (iterable != null)
+            this.iterator = iterable.iterator();
+        else throw new IllegalStateException("To use reset() method you need to provide Iterable<DataSet>, not Iterator");
     }
 
     @Override
@@ -54,27 +95,30 @@ public class ExistingDataSetIterator implements DataSetIterator {
 
     @Override
     public int numExamples() {
-        return 0;
+        return totalExamples;
     }
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-
+        this.preProcessor = preProcessor;
     }
 
     @Override
     public List<String> getLabels() {
-        return null;
+        return labels;
     }
 
     @Override
     public boolean hasNext() {
+        if (iterator != null)
+            return iterator.hasNext();
+
         return false;
     }
 
     @Override
     public DataSet next() {
-        return null;
+        return iterator.next();
     }
 
     @Override
