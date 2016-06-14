@@ -118,7 +118,11 @@ public class ExistingDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        return iterator.next();
+        if (preProcessor != null) {
+            DataSet ds = iterator.next();
+            preProcessor.preProcess(ds);
+            return ds;
+        } else return iterator.next();
     }
 
     @Override
