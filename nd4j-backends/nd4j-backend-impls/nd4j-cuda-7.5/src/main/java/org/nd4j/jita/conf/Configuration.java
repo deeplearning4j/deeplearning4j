@@ -180,18 +180,45 @@ public class Configuration implements Serializable {
 
         nativeOps.setOmpNumThreads(maximumBlockSize);
         nativeOps.setGridLimit(maximumGridSize);
+
+        // if we have multi-gpu system - force DELAYED memory model by default
+        if (cnt > 1)
+            this.memoryModel = MemoryModel.DELAYED;
     }
 
     /**
      * This method allows you to ban specific device.
      *
+     * PLEASE NOTE: This method
+     *
      * @param deviceId
      * @return
      */
     public Configuration banDevice(@NonNull Integer deviceId) {
+        if (!availableDevices.contains(deviceId))
+            return this;
+
         if (!bannedDevices.contains(deviceId)) {
             bannedDevices.add(deviceId);
         }
+
+        availableDevices.remove(deviceId);
+
+        return this;
+    }
+
+    /**
+     * This method forces one specific device to be used. All other devices present in system will be ignored.
+     *
+     * @param deviceId
+     * @return
+     */
+    public Configuration useDevice(@NonNull Integer deviceId) {
+        if (!availableDevices.contains(deviceId))
+            throw new IllegalStateException("Non-existent device request: ["+deviceId+"]");
+
+        availableDevices.clear();
+        availableDevices.add(0, deviceId);
 
         return this;
     }
