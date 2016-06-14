@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -132,14 +131,6 @@ public interface DataBuffer extends Serializable {
      */
     boolean dirty();
 
-
-    /**
-     * Returns a view of this as a
-     * netty byte buffer
-     * @return a reference to this as
-     * a netty byte buffer
-     */
-    ByteBuf asNetty();
 
     /**
      * Underlying buffer:

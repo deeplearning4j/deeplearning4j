@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -102,14 +101,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     public CudaFloatDataBuffer(int[] data, boolean copy, int offset) {
         super(data, copy, offset);
-    }
-
-    public CudaFloatDataBuffer(ByteBuf buf, long length) {
-        super(buf, length);
-    }
-
-    public CudaFloatDataBuffer(ByteBuf buf, long length, int offset) {
-        super(buf, length, offset);
     }
 
     public CudaFloatDataBuffer(byte[] data, long length) {
@@ -235,11 +226,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     public DataBuffer create(int[] data) {
         return new CudaFloatDataBuffer(data);
-    }
-
-    @Override
-    public DataBuffer create(ByteBuf buf, int length) {
-        return new CudaFloatDataBuffer(buf,length);
     }
 
     @Override

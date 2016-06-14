@@ -19,10 +19,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import io.netty.buffer.ByteBuf;
-
-import io.netty.buffer.Unpooled;
-import io.netty.util.internal.SystemPropertyUtil;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bytedeco.javacpp.DoublePointer;
@@ -74,18 +70,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer() {
 
-    }
-
-    public BaseCudaDataBuffer(ByteBuf buf, long length) {
-        throw new UnsupportedOperationException("Not implemented yet");
-        //super(buf, length);
-        // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
-    }
-
-    public BaseCudaDataBuffer(ByteBuf buf, long length, long offset) {
-        throw new UnsupportedOperationException("Not implemented yet");
-        //super(buf, length, offset);
-        // TODO: to be implemented, using ByteBuf.memoryAddress() and memcpy
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy) {
@@ -229,10 +213,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(byte[] data, long length) {
-        this(Unpooled.wrappedBuffer(data),length);
+        this(ByteBuffer.wrap(data),length);
     }
 
-    public BaseCudaDataBuffer(ByteBuffer buffer, int length) {
+    public BaseCudaDataBuffer(ByteBuffer buffer, long length) {
         //super(buffer,length);
         this(buffer, length, 0);
     }
@@ -733,12 +717,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public int[] asInt() {
         allocator.synchronizeHostData(this);
         return super.asInt();
-    }
-
-    @Override
-    public ByteBuf asNetty() {
-        allocator.synchronizeHostData(this);
-        return super.asNetty();
     }
 
     @Override

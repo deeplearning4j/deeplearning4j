@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -78,16 +77,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         this.constant = true;
     }
 
-
-    public CudaIntDataBuffer(ByteBuf buf, int length) {
-        super(buf, length);
-        this.constant = true;
-    }
-
-    public CudaIntDataBuffer(ByteBuf buf, int length, int offset) {
-        super(buf, length, offset);
-        this.constant = true;
-    }
 
     public CudaIntDataBuffer(byte[] data, int length) {
         super(data, length);
@@ -179,12 +168,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     public DataBuffer create(int[] data) {
         return new CudaIntDataBuffer(data);
     }
-
-    @Override
-    public DataBuffer create(ByteBuf buf, int length) {
-        return new CudaIntDataBuffer(buf,length);
-    }
-
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws java.io.IOException {

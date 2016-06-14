@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -111,14 +110,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset);
     }
 
-    public CudaDoubleDataBuffer(ByteBuf buf, long length) {
-        super(buf, length);
-    }
-
-    public CudaDoubleDataBuffer(ByteBuf buf, long length, long offset) {
-        super(buf, length, offset);
-    }
-
     public CudaDoubleDataBuffer(byte[] data, long length) {
         super(data, length);
     }
@@ -204,11 +195,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
     @Override
     public DataBuffer create(int[] data) {
         return new CudaDoubleDataBuffer(data);
-    }
-
-    @Override
-    public DataBuffer create(ByteBuf buf, int length) {
-        return new CudaDoubleDataBuffer(buf,length);
     }
 
     private void writeObject(java.io.ObjectOutputStream stream)

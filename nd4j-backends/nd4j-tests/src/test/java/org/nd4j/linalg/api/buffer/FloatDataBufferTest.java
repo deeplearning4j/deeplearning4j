@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.buffer;
 
 import static org.junit.Assert.*;
 
-import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -100,8 +99,6 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         if(buff.allocationMode() == DataBuffer.AllocationMode.HEAP)
             return;
         ByteBuffer nio = buff.asNio();
-        ByteBuf netty = buff.asNetty();
-        assertEquals(16,netty.capacity());
         assertEquals(16,nio.capacity());
 
     }
