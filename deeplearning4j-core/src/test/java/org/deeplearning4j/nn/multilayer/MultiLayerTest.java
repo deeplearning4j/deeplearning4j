@@ -160,7 +160,7 @@ public class MultiLayerTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.setListeners(Lists.<IterationListener>newArrayList(new ScoreIterationListener(1)));
+        network.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
