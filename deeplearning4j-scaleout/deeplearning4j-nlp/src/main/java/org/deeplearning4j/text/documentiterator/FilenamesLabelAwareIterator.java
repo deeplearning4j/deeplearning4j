@@ -55,6 +55,12 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
             document.setContent(builder.toString());
             document.setLabel(label);
 
+            try {
+                reader.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
             return document;
         } catch (Exception e) {
             throw new RuntimeException(e);
