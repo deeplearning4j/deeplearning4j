@@ -13,6 +13,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -24,6 +26,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,13 +45,11 @@ public class MultipleEpochsIteratorTest {
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
         assertTrue(multiIter.hasNext());
-        int actualEpochs = 0;
         while(multiIter.hasNext()){
             DataSet path = multiIter.next();
             assertFalse(path == null);
-            actualEpochs++;
         }
-        assertEquals(epochs, actualEpochs, 0.0);
+        assertEquals(epochs, multiIter.epochs);
     }
 
     @Test
@@ -62,15 +63,12 @@ public class MultipleEpochsIteratorTest {
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
 
         assertTrue(multiIter.hasNext());
-
-        int actualEpochs = 0;
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next();
             assertEquals(path.numExamples(), 50, 0.0);
             assertFalse(path == null);
-            actualEpochs++;
         }
-        assertEquals(epochs, actualEpochs, 0.0);
+        assertEquals(epochs, multiIter.epochs);
     }
 
     @Test
@@ -83,20 +81,18 @@ public class MultipleEpochsIteratorTest {
         DataSet ds = iter.next(20);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
 
-        int actualTotalPasses = 0;
         while(multiIter.hasNext()){
             DataSet path = multiIter.next(10);
             assertEquals(path.numExamples(), 10, 0.0);
             assertFalse(path == null);
-            actualTotalPasses++;
         }
 
-        assertEquals(epochs*2, actualTotalPasses, 0.0);
+        assertEquals(epochs, multiIter.epochs);
     }
 
     @Test
     public void testCifarDataSetIteratorReset() {
-        int epochs = 3;
+        int epochs = 2;
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .regularization(false)
@@ -111,8 +107,11 @@ public class MultipleEpochsIteratorTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
+        net.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(1)));
 
-        MultipleEpochsIterator ds = new MultipleEpochsIterator(epochs, new CifarDataSetIterator(10,10, new int[]{20,20,1}));
+        MultipleEpochsIterator ds = new MultipleEpochsIterator(epochs, new CifarDataSetIterator(10,20, new int[]{20,20,1}));
         net.fit(ds);
+        assertEquals(epochs, ds.epochs);
+        assertEquals(2, ds.batch);
     }
 }

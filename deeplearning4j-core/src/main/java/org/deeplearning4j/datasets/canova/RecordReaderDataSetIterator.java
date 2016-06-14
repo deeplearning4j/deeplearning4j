@@ -80,10 +80,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
-        this(recordReader, converter, batchSize, -1, -1);
+        this(recordReader, converter, batchSize, -1, 
+        		recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
+    
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
-        this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
+        this(recordReader, new SelfWritableConverter(), batchSize, -1, 
+        		recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
