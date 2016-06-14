@@ -1652,7 +1652,7 @@ public interface INDArray extends Serializable  {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    INDArray getScalar(int[] indices);
+    INDArray getScalar(int...indices);
 
     /**
      *

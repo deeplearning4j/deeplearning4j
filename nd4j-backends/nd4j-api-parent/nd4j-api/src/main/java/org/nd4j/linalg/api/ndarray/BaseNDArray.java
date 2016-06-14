@@ -1101,6 +1101,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public  INDArray putScalar(int i, double value) {
+        if(i < 0)
+            i += rank();
         if(isScalar()) {
             data.put(i,value);
             return this;
@@ -1130,6 +1132,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
+        for(int i = 0; i < indexes.length; i++) {
+            if(indexes[i] < 1)
+                indexes[i] += rank();
+        }
+
         if(indexes.length == 1){
             return putScalar(indexes[0], value);
         }else if(indexes.length == 2){
@@ -1486,6 +1493,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double getDouble(int... indices) {
+        for(int i = 0; i < indices.length; i++) {
+            if(indices[i] < 1)
+                indices[i] += rank();
+        }
         if(indices.length == 1) {
             if(isRowVector())
                 return Shape.getDouble(this,0,indices[0]);
