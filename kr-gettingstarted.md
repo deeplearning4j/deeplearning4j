@@ -1,6 +1,6 @@
 ---
 title: 전체 설치
-layout: default
+layout: kr-default
 ---
 
 # 전체 설치
@@ -158,8 +158,8 @@ Michael Depies가 작성한 [Eclipse에서 Deeplearning4j 설치하기](https://
 
 ### <a name="next">다음 단계: IRIS 예제와 인공 신경망 설계하기</a>
 
-신경망을 설계하기 전에 [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
+신경망을 설계하기 전에 [Neural Nets Overview](http://deeplearning4j.org/kr-neuralnet-overview.html)에서 신경망에 대한 더 자세한 정보를 확인하시기 바랍니다.
 
-속성 안내를 찾으신다면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)를, *Deep-Belief Networks (DBNs)*의 기본 원리를 이해하시려면 [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html) 가이드를 확인하시기 바랍니다.
+속성 안내를 찾으신다면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)를, *Deep-Belief Networks (DBNs)*의 기본 원리를 이해하시려면 [Restricted Boltzmann Machines](./kr-restrictedboltzmannmachine.html) 가이드를 확인하시기 바랍니다.
 
 새로운 프로젝트를 만드는 경우에 설계에 필요한 [POM 디펜던시](http://nd4j.org/kr-dependencies.html)를 include하시려면 [ND4J Getting Started](http://nd4j.org/kr-getstarted.html)의 설명을 참고하십시오.
