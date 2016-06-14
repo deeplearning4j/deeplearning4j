@@ -1,6 +1,6 @@
 ---
 title: "Deeplearning4j란?"
-layout: default
+layout: kr-default
 ---
 
 # Deeplearning4j란?
