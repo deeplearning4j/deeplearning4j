@@ -1850,49 +1850,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(InputStream reader) throws IOException {
-        DataInputStream dis = new DataInputStream(reader);
-        char read =  dis.readChar();
-        int rank = dis.readInt();
-        char ordering =  dis.readChar();
-        int[] shape = new int[rank];
-        int[] stride = new int[rank];
-        for(int i = 0; i < rank; i++) {
-            shape[i] = dis.readInt();
-        }
-        for(int i = 0; i < rank; i++) {
-            stride[i] = dis.readInt();
-        }
-
-        int offset = dis.readInt();
-
-        String line;
-        int count = 0;
-
-        if(read == 'c') {
-            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prodLong(shape) * 2);
-            for(int i = 0; i < ArrayUtil.prod(shape); i+= 2) {
-                String val = dis.readUTF();
-                IComplexNumber num = Nd4j.parseComplexNumber(val);
-                buf.put(i,num);
-                //line
-                dis.readUTF();
-            }
-
-            IComplexNDArray arr = Nd4j.createComplex(buf,shape,stride,offset,ordering);
-            return arr;
-
-        }
-        else {
-            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prodLong(shape));
-            for(int i = 0; i < ArrayUtil.prod(shape); i++) {
-                String val = dis.readUTF();
-                buf.put(i,Double.valueOf(val));
-                //line
-                dis.readUTF();
-            }
-            INDArray arr = Nd4j.create(buf,shape,stride,offset,ordering);
-            return arr;
-        }
+        read(new DataInputStream(reader));
 
     }
 
