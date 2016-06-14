@@ -1,6 +1,6 @@
 ---
 title: 자바와 컨볼루션 네트워크
-layout: default
+layout: kr-default
 ---
 
 # 컨볼루션 네트워크
@@ -152,8 +152,8 @@ ND4J와 Deeplearning4j는 `NDArray`로 텐서를 표현합니다. 말 그대로 
 * [Deeplearning4j의 컨볼루션 테스트 코드](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java)도 참고하십시오.
 * DL4J의 컨볼루션 네트워크를 직접 실행해보려면 [저희의 예제 코드](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution)를 실행해보십시오. 예제 코드를 실행하려면 [퀵 스타트 가이드](./quickstart.html)를 먼저 참고하십시오. 
 * [DL4J의 RNN 소개 자료](./recurrentnet.html),
-* [DL4J의 RBM 소개 자료](./kr-restrictedboltzmannmachine.html),
-* [DL4J의 인공 신경망 소개자료](./kr-neuralnet-overview.html)도 참고하십시오.
+* [DL4J의 RBM 소개 자료](./kr-restrictedboltzmannmachine),
+* [DL4J의 인공 신경망 소개자료](./kr-neuralnet-overview)도 참고하십시오.
 
 ## 다른 초보자 가이드
 
