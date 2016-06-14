@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -65,9 +63,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected boolean isPersist = false;
     protected AllocationMode allocationMode;
-    protected transient  double[] doubleData;
-    protected transient  int[] intData;
-    protected transient float[] floatData;
     protected transient Pointer pointer;
     protected transient Indexer indexer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
@@ -126,57 +121,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
 
         if(underlyingBuffer.dataType() == Type.DOUBLE) {
-            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                double[] underlyingArray = (double[]) underlyingBuffer.array();
-                if(underlyingArray != null)
-                    this.doubleData = underlyingArray;
-                else
-                    this.wrappedBuffer = underlyingBuffer.asNio();
-            }
-            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = underlyingBuffer.pointer();
-                indexer = DoubleIndexer.create((DoublePointer)pointer);
-            }
-            else {
-                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
-                this.wrappedBuffer = underlyingBuff;
-            }
+            pointer = underlyingBuffer.pointer();
+            indexer = DoubleIndexer.create((DoublePointer)pointer);
         }
         else if(underlyingBuffer.dataType() == Type.FLOAT) {
-            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                float[] underlyingArray = (float[]) underlyingBuffer.array();
-                if(underlyingArray != null)
-                    this.floatData = underlyingArray;
-                else
-                    this.wrappedBuffer = underlyingBuffer.asNio();
-            }
-            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = underlyingBuffer.pointer();
-                indexer = FloatIndexer.create((FloatPointer)pointer);
-            }
-            else {
-                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
-                this.wrappedBuffer = underlyingBuff;
-
-            }
+            pointer = underlyingBuffer.pointer();
+            indexer = FloatIndexer.create((FloatPointer)pointer);
         }
         else if(underlyingBuffer.dataType() == Type.INT) {
-            if(underlyingBuffer.allocationMode() == AllocationMode.HEAP) {
-                int[] underlyingArray = (int[]) underlyingBuffer.array();
-                if(underlyingArray != null)
-                    this.intData = underlyingArray;
-                else
-                    this.wrappedBuffer = underlyingBuffer.asNio();
-            }
-            else if(underlyingBuffer.allocationMode() == AllocationMode.JAVACPP) {
-                pointer = underlyingBuffer.pointer();
-                indexer = IntIndexer.create((IntPointer)pointer);
-            }
-            else {
-                ByteBuffer underlyingBuff = underlyingBuffer.asNio();
-                this.wrappedBuffer = underlyingBuff;
-
-            }
+            pointer = underlyingBuffer.pointer();
+            indexer = IntIndexer.create((IntPointer)pointer);
         }
     }
 
@@ -189,33 +143,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return originalBuffer;
     }
 
-    /**
-     *
-     * @param buf
-     * @param length
-     */
-    protected BaseDataBuffer(ByteBuf buf,int length,int offset) {
-        this(buf,length);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.length = length - offset;
-        this.underlyingLength = length;
-    }
-    /**
-     *
-     * @param buf
-     * @param length
-     */
-    protected BaseDataBuffer(ByteBuf buf,int length) {
-        if(length < 1)
-            throw new IllegalArgumentException("Length must be >= 1");
-        initTypeAndSize();
-        pointer = new Pointer(buf.nioBuffer());
-        allocationMode = AllocUtil.getAllocationModeFromContext();
-        this.wrappedBuffer = buf.nioBuffer();
-        this.length = length;
-        this.underlyingLength = length;
-    }
     /**
      *
      * @param data
@@ -238,31 +165,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
 
-        if(allocationMode == AllocationMode.HEAP) {
-            if(copy) {
-                floatData = ArrayUtil.copy(data);
-            }
-            else {
-                this.floatData = data;
-            }
-        }
-        else if(allocationMode == AllocationMode.JAVACPP) {
-            pointer = new FloatPointer(ArrayUtil.copy(data));
-            indexer = FloatIndexer.create((FloatPointer)pointer);
-            wrappedBuffer = pointer.asByteBuffer();
-        }
-        else {
-            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
-            wrappedBuffer.order(ByteOrder.nativeOrder());
-            FloatBuffer buffer = wrappedBuffer.asFloatBuffer();
-            for(int i = 0; i < data.length; i++) {
-                buffer.put(i,data[i]);
-            }
-        }
+        pointer = new FloatPointer(data);
+        indexer = FloatIndexer.create((FloatPointer)pointer);
+        wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
-
     }
 
     /**
@@ -286,32 +194,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(double[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
-        if(allocationMode == AllocationMode.HEAP) {
-            if(copy) {
-                doubleData = ArrayUtil.copy(data);
-            }
-            else {
-                this.doubleData = data;
-            }
-        }
-        else if(allocationMode == AllocationMode.JAVACPP) {
-            if(copy) {
-                pointer = new DoublePointer(ArrayUtil.copy(data));
-            }
-            else {
-                pointer = new DoublePointer(data);
-            }
-            indexer = DoubleIndexer.create((DoublePointer)pointer);
-            wrappedBuffer = pointer.asByteBuffer();
-        }
-        else {
-            wrappedBuffer =  ByteBuffer.allocateDirect(8 * data.length);
-            wrappedBuffer.order(ByteOrder.nativeOrder());
-            DoubleBuffer buffer = wrappedBuffer.asDoubleBuffer();
-            for(int i = 0; i < data.length; i++) {
-                buffer.put(i,data[i]);
-            }
-        }
+
+        pointer = new DoublePointer(data);
+        indexer = DoubleIndexer.create((DoublePointer)pointer);
+        wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -338,30 +224,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public BaseDataBuffer(int[] data, boolean copy) {
         allocationMode = AllocUtil.getAllocationModeFromContext();
         initTypeAndSize();
-        if(allocationMode == AllocationMode.HEAP) {
-            if(copy)
-                intData = ArrayUtil.copy(data);
 
-            else
-                this.intData = data;
-
-        }
-        else if(allocationMode == AllocationMode.JAVACPP) {
-            if(copy) {
-                pointer = new IntPointer(ArrayUtil.copy(data));
-                indexer = IntIndexer.create((IntPointer)pointer);
-                wrappedBuffer = pointer.asByteBuffer();
-            }
-
-        }
-        else {
-            wrappedBuffer =  ByteBuffer.allocateDirect(4 * data.length);
-            wrappedBuffer.order(ByteOrder.nativeOrder());
-            IntBuffer buffer = wrappedBuffer.asIntBuffer();
-            for(int i = 0; i < data.length; i++) {
-                buffer.put(i,data[i]);
-            }
-        }
+        pointer = new IntPointer(data);
+        indexer = IntIndexer.create((IntPointer)pointer);
+        wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -408,7 +274,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      * @param elementSize
      */
-    public BaseDataBuffer(int length, int elementSize) {
+    public BaseDataBuffer(long length, int elementSize) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
         initTypeAndSize();
@@ -416,18 +282,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         this.underlyingLength = length;
         this.elementSize = elementSize;
-        if(allocationMode() == AllocationMode.DIRECT) {
-            //allows for creation of the nio byte buffer to be overridden
-            setNioBuffer();
-        }
-        else if(dataType() == Type.DOUBLE) {
-            doubleData = new double[length];
+
+        if(dataType() == Type.DOUBLE) {
+            pointer = new DoublePointer(length);
+            indexer = DoubleIndexer.create((DoublePointer)pointer);
         }
         else if(dataType() == Type.FLOAT) {
-            floatData = new float[length];
+            pointer = new FloatPointer(length);
+            indexer = FloatIndexer.create((FloatPointer)pointer);
         }
-        else if(dataType() == Type.INT)
-            intData = new int[length];
+        else if(dataType() == Type.INT) {
+            pointer = new IntPointer(length);
+            indexer = IntIndexer.create((IntPointer)pointer);
+        }
     }
     /**
      * Create a data buffer from
@@ -436,7 +303,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param buffer
      * @param length
      */
-    public BaseDataBuffer(ByteBuffer buffer,int length,int offset) {
+    public BaseDataBuffer(ByteBuffer buffer,long length,int offset) {
         this(buffer,length);
         this.offset = offset;
         this.originalOffset = offset;
@@ -451,30 +318,39 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param buffer
      * @param length
      */
-    public BaseDataBuffer(ByteBuffer buffer,int length) {
+    public BaseDataBuffer(ByteBuffer buffer,long length) {
         if(length < 1)
             throw new IllegalArgumentException("Length must be >= 1");
         initTypeAndSize();
 
-        this.pointer = new Pointer(buffer.order(ByteOrder.nativeOrder()));
         this.length = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
 
+        if(dataType() == Type.DOUBLE) {
+            pointer = new DoublePointer(buffer.asDoubleBuffer());
+            indexer = DoubleIndexer.create((DoublePointer)pointer);
+        }
+        else if(dataType() == Type.FLOAT) {
+            pointer = new FloatPointer(buffer.asFloatBuffer());
+            indexer = FloatIndexer.create((FloatPointer)pointer);
+        }
+        else if(dataType() == Type.INT) {
+            pointer = new IntPointer(buffer.asIntBuffer());
+            indexer = IntIndexer.create((IntPointer)pointer);
+        }
     }
 
     //sets the nio wrapped buffer (allows to be overridden for other use cases like cuda)
     protected void setNioBuffer() {
         if(elementSize * length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create buffer of length " + length);
-        indexer = null;
-        wrappedBuffer = ByteBuffer.allocateDirect((int)(elementSize * length));
-        wrappedBuffer.order(ByteOrder.nativeOrder());
+        wrappedBuffer = pointer.asByteBuffer();
 
     }
 
 
-    public BaseDataBuffer(byte[] data, int length) {
-        this(Unpooled.wrappedBuffer(data),length);
+    public BaseDataBuffer(byte[] data, long length) {
+        this(ByteBuffer.wrap(data),length);
     }
 
 
@@ -538,38 +414,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
-        if(allocationMode == AllocationMode.HEAP) {
-            if(length >= Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Length of data buffer can not be > Integer.MAX_VALUE for heap (array based storage) allocation");
-            if(dataType() == Type.DOUBLE)
-                doubleData = new double[(int)length];
-            else if(dataType() == Type.FLOAT)
-                floatData = new float[(int)length];
+        if(dataType() == Type.DOUBLE) {
+            pointer = new DoublePointer(length());
+            indexer = DoubleIndexer.create((DoublePointer)pointer);
+            if(initialize) fillPointerWithZero();
         }
-        else if(allocationMode == AllocationMode.JAVACPP) {
-            if(dataType() == Type.DOUBLE) {
-                pointer = new DoublePointer(length());
-                indexer = DoubleIndexer.create((DoublePointer)pointer);
-                if(initialize) fillPointerWithZero();
-            }
-            else if(dataType() == Type.FLOAT) {
-                pointer = new FloatPointer(length());
-                indexer = FloatIndexer.create((FloatPointer)pointer);
-                if(initialize) fillPointerWithZero();
+        else if(dataType() == Type.FLOAT) {
+            pointer = new FloatPointer(length());
+            indexer = FloatIndexer.create((FloatPointer)pointer);
+            if(initialize) fillPointerWithZero();
 
-            }
-            else if(dataType() == Type.INT) {
-                pointer = new IntPointer(length());
-                indexer = IntIndexer.create((IntPointer)pointer);
-                if(initialize) fillPointerWithZero();
-            }
         }
-        else {
-            if(length * getElementSize() < 0)
-                throw new IllegalArgumentException("Unable to create buffer of length " + length + " due to negative length specified");
-            wrappedBuffer = ByteBuffer.allocateDirect((int)(getElementSize() * length)).order(ByteOrder.nativeOrder());
+        else if(dataType() == Type.INT) {
+            pointer = new IntPointer(length());
+            indexer = IntIndexer.create((IntPointer)pointer);
+            if(initialize) fillPointerWithZero();
         }
-
     }
 
     @Override
@@ -615,60 +475,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long address() {
-        switch(allocationMode) {
-            case JAVACPP: {
-                return pointer.address() + getElementSize() * offset();
-            }
-            case DIRECT:
-                if(wrappedBuffer.isDirect())
-                    try {
-                        Field address = Buffer.class.getDeclaredField("address");
-                        address.setAccessible(true);
-
-                        return address.getLong(wrappedBuffer);
-                        //return  UnsafeHolder.getUnsafe().objectFieldOffset(UnsafeHolder.getAddressField()) + getElementSize() * offset();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                else {
-                    try {
-                        //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
-                        int offset = UnsafeHolder.getUnsafe().arrayBaseOffset(array().getClass());
-                        int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
-                        switch (scale) {
-                            case 4:
-                                long factor = UnsafeHolder.is64Bit() ? 8 : 1;
-                                final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
-                                return i1;
-                            case 8:
-                                throw new AssertionError("Not supported");
-                        }
-                    }catch(Exception e) {
-                        throw new IllegalStateException("Unable to get address", e);
-                    }
-                }
-            case HEAP:
-                //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
-                try {
-                    //http://stackoverflow.com/questions/8820164/is-there-a-way-to-get-a-reference-address
-                    int scale = UnsafeHolder.getUnsafe().arrayIndexScale(array().getClass());
-                    switch (scale) {
-                        case 4:
-                            long factor = UnsafeHolder.is64Bit() ? 8 : 1;
-                            final long i1 = (UnsafeHolder.getUnsafe().getInt(array(), offset) & 0xFFFFFFFFL) * factor;
-                            return i1;
-                        case 8:
-                            long addressOfObject	= UnsafeHolder.getUnsafe().getLong(array(), offset);
-                            return addressOfObject;
-                    }
-                }
-                catch(Exception e) {
-                    throw new IllegalStateException("Unable to detect pointer");
-
-                }
-
-        }
-        throw new IllegalStateException("Illegal pointer");
+        return pointer.address() + getElementSize() * offset();
     }
 
     @Override
@@ -691,36 +498,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void setData(int[] data) {
-        if(intData != null)
-            this.intData = data;
-        else {
-            for (int i = 0; i < data.length; i++) {
-                put(i,data[i]);
-            }
+        for (int i = 0; i < data.length; i++) {
+            put(i,data[i]);
         }
-
     }
 
     @Override
     public void setData(float[] data) {
-        if(floatData != null) {
-            this.floatData = data;
+        for(int i = 0; i < data.length; i++) {
+            put(i,data[i]);
         }
-        else {
-            for(int i = 0; i < data.length; i++)
-                put(i,data[i]);
-        }
-
     }
 
     @Override
     public void setData(double[] data) {
-        if(doubleData != null) {
-            this.doubleData = data;
-        }
-        else {
-            for(int i = 0; i < data.length; i++)
-                put(i, data[i]);
+        for(int i = 0; i < data.length; i++) {
+            put(i, data[i]);
         }
     }
 
@@ -792,16 +585,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public DataBuffer dup() {
-        if(floatData != null) {
-            return create(floatData);
-        }
-        else if(doubleData != null) {
-            return create(doubleData);
-        }
-        else if(intData != null) {
-            return create(intData);
-        }
-
         DataBuffer ret = create(length);
         for(int i = 0; i < ret.length(); i++)
             ret.put(i, getDouble(i));
@@ -840,14 +623,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return the data buffer based on the given buffer
      */
     public abstract DataBuffer create(int[] data);
-
-    /**
-     * Create the data buffer
-     * with respect to the given byte buffer
-     * @param buf the buffer to create
-     * @return the data buffer based on the given buffer
-     */
-    public abstract DataBuffer create(ByteBuf buf,int length);
 
     @Override
     public double[] getDoublesAt(long offset, long inc, int length) {
@@ -894,195 +669,104 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public byte[] asBytes() {
-        if(allocationMode == AllocationMode.HEAP) {
-            if(getElementSize() * length() >= Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Unable to create array of length " + length);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream((int)(getElementSize() * length()));
-            DataOutputStream dos = new DataOutputStream(bos);
-
-            if(dataType() == Type.DOUBLE) {
-                if(doubleData == null)
-                    throw new IllegalStateException("Double array is null!");
-
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        if(dataType() == Type.DOUBLE) {
+            for(int i = 0; i < length(); i++) {
                 try {
-                    for(int i = 0; i < doubleData.length; i++)
-                        dos.writeDouble(doubleData[i]);
+                    dos.writeDouble(getDouble(i));
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
-
             }
-            else {
-                if(floatData == null)
-                    throw new IllegalStateException("Double array is null!");
-
-                try {
-                    for(int i = 0; i < floatData.length; i++)
-                        dos.writeFloat(floatData[i]);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-
-            }
-
-            return bos.toByteArray();
-
         }
-
         else {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(bos);
-            if(dataType() == Type.DOUBLE) {
-                for(int i = 0; i < length(); i++) {
-                    try {
-                        dos.writeDouble(getDouble(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            for(int i = 0; i < length(); i++) {
+                try {
+                    dos.writeFloat(getFloat(i));
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-            else {
-                for(int i = 0; i < length(); i++) {
-                    try {
-                        dos.writeFloat(getFloat(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            return bos.toByteArray();
         }
+        return bos.toByteArray();
     }
 
     @Override
     public float[] asFloat() {
-        if(allocationMode == AllocationMode.HEAP) {
-            if(floatData != null) {
-                return floatData;
-            }
-        }
-
         if(length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create array of length " + length);
         float[] ret = new float[(int)length];
         for(int i = 0; i < length; i++)
             ret[i] = getFloat(i);
         return ret;
-
     }
 
     @Override
     public double[] asDouble() {
-        if(allocationMode == AllocationMode.HEAP) {
-            if(doubleData != null) {
-                return doubleData;
-            }
-        }
-
-
         if(length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create array of length " + length);
         double[] ret = new double[(int)length];
         for(int i = 0; i < length; i++)
             ret[i] = getDouble(i);
         return ret;
-
     }
 
     @Override
     public int[] asInt() {
-        if(allocationMode == AllocationMode.HEAP) {
-            if(intData != null) {
-                return intData;
-            }
-        }
-        return wrappedBuffer.asIntBuffer().array();
+        if(length >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Unable to create array of length " + length);
+        int[] ret = new int[(int)length];
+        for(int i = 0; i < length; i++)
+            ret[i] = getInt(i);
+        return ret;
     }
 
     @Override
     public double getDouble(long i) {
-        if(doubleData != null) {
-            if(offset() + i >= doubleData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return doubleData[(int)(offset() + i)];
-        }
-        else if(floatData != null) {
-            if(offset() + i >= floatData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return (double) floatData[(int)(offset() + i)];
-        }
-        else if(intData != null) {
-            if(offset() + i >= intData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return (double) intData[(int)(offset() + i)];
-        }
-
-
         if(dataType() == Type.FLOAT) {
             dirty.set(false);
-            if (indexer != null) {
-                return ((FloatIndexer)indexer).get(offset() + i);
-            } else {
-                return wrappedBuffer.asFloatBuffer().get((int)(offset() + i));
-            }
+            return ((FloatIndexer)indexer).get(offset() + i);
         }
-
         else if(dataType() == Type.INT) {
             dirty.set(false);
-            if (indexer != null) {
-                return ((IntIndexer)indexer).get(offset() + i);
-            } else {
-                return wrappedBuffer.asIntBuffer().get((int)(offset() + i));
-            }
+            return ((IntIndexer)indexer).get(offset() + i);
         }
         else {
             dirty.set(false);
-            if (indexer != null) {
-                return ((DoubleIndexer)indexer).get(offset() + i);
-            } else {
-                return wrappedBuffer.asDoubleBuffer().get((int)(offset() + i));
-            }
+            return ((DoubleIndexer)indexer).get(offset() + i);
         }
     }
 
     @Override
     public float getFloat(long i) {
-        if(doubleData != null) {
-            if(i >= doubleData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return (float) doubleData[(int)(offset() + i)];
-        } else if(floatData != null) {
-            if(i >= floatData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return floatData[(int)(offset() + i)];
-        }
-        else if(intData != null) {
-            if(i >= intData.length)
-                throw new IllegalStateException("Index out of bounds " + i);
-            dirty.set(false);
-            return (float) intData[(int)(offset() + i)];
-        }
-
         if(dataType() == Type.DOUBLE) {
             dirty.set(false);
-            if (indexer != null) {
-                return (float)((DoubleIndexer)indexer).get(offset() + i);
-            } else {
-                return (float) wrappedBuffer.asDoubleBuffer().get((int)(offset() + i));
-            }
+            return (float)((DoubleIndexer)indexer).get(offset() + i);
         }
-
-        dirty.getAndSet(true);
-        if (indexer != null) {
+        else if(dataType() == Type.INT) {
+            dirty.set(false);
+            return ((IntIndexer)indexer).get(offset() + i);
+        }
+        else {
+            dirty.set(false);
             return ((FloatIndexer)indexer).get(offset() + i);
-        } else {
-            return wrappedBuffer.asFloatBuffer().get((int)(offset() + i));
+        }
+    }
+
+    @Override
+    public int getInt(long i) {
+        if(dataType() == Type.DOUBLE) {
+            dirty.set(false);
+            return (int)((DoubleIndexer)indexer).get(offset() + i);
+        }
+        else if(dataType() == Type.INT) {
+            dirty.set(false);
+            return ((IntIndexer)indexer).get(offset() + i);
+        }
+        else {
+            dirty.set(false);
+            return (int)((FloatIndexer)indexer).get(offset() + i);
         }
     }
 
@@ -1097,42 +781,44 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, float element) {
-        put(i,(double) element);
+        if(dataType() == Type.DOUBLE) {
+            ((DoubleIndexer)indexer).put(offset() + i, element);
+        }
+        else if(dataType() == Type.INT) {
+            ((IntIndexer)indexer).put(offset() + i, (int)element);
+        }
+        else {
+            ((FloatIndexer)indexer).put(offset() + i, element);
+        }
+
+        dirty.set(true);
     }
 
     @Override
     public void put(long i, double element) {
-        if(doubleData != null)
-            doubleData[(int)(offset() + i)] = element;
-
-        else if(floatData != null)
-            floatData[(int)(offset() + i)] = (float) element;
-
-        else if(intData != null)
-            intData[(int)(offset() + i)] = (int) element;
-
+        if(dataType() == Type.DOUBLE) {
+            ((DoubleIndexer)indexer).put(offset() + i, element);
+        }
+        else if(dataType() == Type.INT) {
+            ((IntIndexer)indexer).put(offset() + i, (int)element);
+        }
         else {
-            if(dataType() == Type.DOUBLE) {
-                if (indexer != null) {
-                    ((DoubleIndexer)indexer).put(offset() + i, element);
-                } else {
-                    wrappedBuffer.asDoubleBuffer().put((int)(offset() + i),element);
-                }
-            }
-            else if(dataType() == Type.INT) {
-                if (indexer != null) {
-                    ((IntIndexer)indexer).put(offset() + i, (int)element);
-                } else {
-                    wrappedBuffer.asIntBuffer().put((int)(offset() + i),(int) element);
-                }
-            }
-            else {
-                if (indexer != null) {
-                    ((FloatIndexer)indexer).put(offset() + i, (float)element);
-                } else {
-                    wrappedBuffer.asFloatBuffer().put((int)(offset() + i),(float) element);
-                }
-            }
+            ((FloatIndexer)indexer).put(offset() + i, (float)element);
+        }
+
+        dirty.set(true);
+    }
+
+    @Override
+    public void put(long i, int element) {
+        if(dataType() == Type.DOUBLE) {
+            ((DoubleIndexer)indexer).put(offset() + i, element);
+        }
+        else if(dataType() == Type.INT) {
+            ((IntIndexer)indexer).put(offset() + i, element);
+        }
+        else {
+            ((FloatIndexer)indexer).put(offset() + i, element);
         }
 
         dirty.set(true);
@@ -1145,16 +831,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean sameUnderlyingData(DataBuffer buffer) {
-        if(allocationMode() != buffer.allocationMode())
-            return false;
-        if(allocationMode() == AllocationMode.HEAP) {
-            return array() == buffer.array();
-        }
-        else if(allocationMode() == AllocationMode.JAVACPP)
-            return pointer() == buffer.pointer();
-        else {
-            return buffer.asNio() == asNio();
-        }
+        return pointer() == buffer.pointer();
     }
 
     @Override
@@ -1163,16 +840,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
-            if(pointer != null) {
-                return pointer.asByteBuffer().asIntBuffer();
-            }
-
-            if(offset() > 0)
-                return (IntBuffer) IntBuffer.wrap(intData).position((int)offset());
-            else
-                return IntBuffer.wrap(intData);
+            return pointer.asByteBuffer().asIntBuffer();
         }
-        if(offset() == 0) {
+        else if(offset() == 0) {
             return wrappedBuffer.asIntBuffer();
         }
         else
@@ -1185,24 +855,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
-            if(pointer != null) {
-                return pointer.asByteBuffer().asDoubleBuffer();
-            }
-
-            if(offset() == 0) {
-                return DoubleBuffer.wrap(doubleData);
-            }
-            else
-                return (DoubleBuffer) DoubleBuffer.wrap(doubleData).position((int)offset());
+            return pointer.asByteBuffer().asDoubleBuffer();
         }
-
-        if(offset() == 0) {
+        else if(offset() == 0) {
             return wrappedBuffer.asDoubleBuffer();
         }
         else {
-            ByteBuffer ret = (ByteBuffer) wrappedBuffer.slice().position((int)(offset() * getElementSize()));
-            ByteBuffer convert =  ret.slice();
-            return convert.asDoubleBuffer();
+            return (DoubleBuffer) wrappedBuffer.asDoubleBuffer().position((int)(offset()));
         }
     }
 
@@ -1212,50 +871,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Index out of bounds " + offset());
 
         if(wrappedBuffer == null) {
-            if(pointer != null) {
-                return pointer.asByteBuffer().asFloatBuffer();
-            }
-
-            if(offset() == 0) {
-                return FloatBuffer.wrap(floatData);
-            }
-            else
-                return (FloatBuffer) FloatBuffer.wrap(floatData).position((int)offset());
+            return pointer.asByteBuffer().asFloatBuffer();
         }
-        if(offset() == 0) {
+        else if(offset() == 0) {
             return wrappedBuffer.asFloatBuffer();
         }
         else {
-            ByteBuffer ret = (ByteBuffer) wrappedBuffer.slice().position((int)(offset() * getElementSize()));
-            ByteBuffer convert =  ret.slice();
-            return convert.asFloatBuffer();
+            return (FloatBuffer) wrappedBuffer.asFloatBuffer().position((int)(offset()));
         }
 
     }
 
     @Override
     public ByteBuffer asNio() {
-        if(wrappedBuffer == null && pointer != null) {
+        if(wrappedBuffer == null) {
             return pointer.asByteBuffer();
+        } else {
+            return wrappedBuffer;
         }
-        return wrappedBuffer;
-    }
-
-    @Override
-    public ByteBuf asNetty() {
-        if(wrappedBuffer != null)
-            return Unpooled.wrappedBuffer(wrappedBuffer);
-        else if(floatData != null)
-            return Unpooled.copyFloat(floatData);
-        else if(doubleData != null)
-            return Unpooled.copyDouble(doubleData);
-        throw new IllegalStateException("No data source defined");
-    }
-
-    @Override
-    public void put(long i, int element) {
-        //note here that the final put will take care of the offset
-        put(i,(double) element);
     }
 
     @Override
@@ -1301,11 +934,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void flush() {
 
-    }
-
-    @Override
-    public int getInt(long ix) {
-        return (int) getDouble(ix);
     }
 
     @Override
@@ -1405,78 +1033,28 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 4;
 
             if(type == Type.DOUBLE) {
-                if(allocationMode == AllocationMode.HEAP) {
-                    doubleData = new double[(int)length()];
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readDouble());
-                    }
-
+                pointer = new DoublePointer(length());
+                indexer = DoubleIndexer.create((DoublePointer) pointer);
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readDouble());
                 }
-                else if(allocationMode == AllocationMode.JAVACPP) {
-                    pointer = new DoublePointer(length());
-                    indexer = DoubleIndexer.create((DoublePointer) pointer);
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readDouble());
-                    }
-                    wrappedBuffer = pointer.asByteBuffer();
-                }
-                else {
-                    indexer = null;
-                    wrappedBuffer = ByteBuffer.allocateDirect((int)length() * getElementSize());
-                    wrappedBuffer.order(ByteOrder.nativeOrder());
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readDouble());
-                    }
-                }
+                wrappedBuffer = pointer.asByteBuffer();
             }
             else if(type == Type.FLOAT) {
-                if(allocationMode == AllocationMode.HEAP) {
-                    floatData = new float[(int)length()];
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readFloat());
-                    }
-
+                pointer = new FloatPointer(length());
+                indexer = FloatIndexer.create((FloatPointer) pointer);
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readFloat());
                 }
-                else if(allocationMode == AllocationMode.JAVACPP) {
-                    pointer = new FloatPointer(length());
-                    indexer = FloatIndexer.create((FloatPointer) pointer);
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readFloat());
-                    }
-                    wrappedBuffer = pointer.asByteBuffer();
-                }
-                else {
-                    indexer = null;
-                    wrappedBuffer = ByteBuffer.allocateDirect((int)length() * getElementSize());
-                    wrappedBuffer.order(ByteOrder.nativeOrder());
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readFloat());
-                    }
-                }
+                wrappedBuffer = pointer.asByteBuffer();
             }
             else {
-                if(allocationMode == AllocationMode.HEAP) {
-                    intData = new int[(int)length()];
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readInt());
-                    }
+                pointer = new IntPointer(length());
+                indexer = IntIndexer.create((IntPointer) pointer);
+                for(int i = 0; i < length(); i++) {
+                    put(i,s.readInt());
                 }
-                else if(allocationMode == AllocationMode.JAVACPP) {
-                    pointer = new IntPointer(length());
-                    indexer = IntIndexer.create((IntPointer) pointer);
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readInt());
-                    }
-                    wrappedBuffer = pointer.asByteBuffer();
-                }
-                else {
-                    indexer = null;
-                    wrappedBuffer = ByteBuffer.allocateDirect((int)length() * getElementSize());
-                    wrappedBuffer.order(ByteOrder.nativeOrder());
-                    for(int i = 0; i < length(); i++) {
-                        put(i,s.readInt());
-                    }
-                }
+                wrappedBuffer = pointer.asByteBuffer();
             }
 
         } catch (Exception e) {
@@ -1512,12 +1090,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Object array() {
-        if(floatData != null)
-            return floatData;
-        if(doubleData != null)
-            return doubleData;
-        else if (intData != null)
-            return intData;
         return null;
     }
 

@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
