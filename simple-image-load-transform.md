@@ -36,12 +36,15 @@ In this example the parentDir corresponds to *$PWD/src/main/resources/DataExampl
 
 ## Specifying particulars before image load
 * Specify path to the parent dir where the labeled images live in separate directories.
+
 > File parentDir = new File(System.getProperty("user.dir"), "src/main/resources/DataExamples/ImagePipeline/");
 
 * Specify allowed extensions and a random number generator to use when splitting dataset into test and train 
+
 > FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
 
 * Specifying a label maker so you do not have to manually specify labels. It will simply use the name of the subdirectories as label/class names.
+
 > ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 
 * Specifying a path filter to gives you fine tune control of the min/max cases to load for each class. Below is a bare bones version. Refer to javadocs for details
@@ -57,6 +60,7 @@ In this example the parentDir corresponds to *$PWD/src/main/resources/DataExampl
 > InputSplit testData = filesInDirSplit[1];
 
 ## Specifying particulars for your image pipeline transformation
+
 * Specify an image record reader with height and width you want the entire dataset resized to. 
 
 > ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
