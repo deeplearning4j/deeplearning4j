@@ -149,6 +149,10 @@ public class SparkDl4jMultiLayer implements Serializable {
         this(sc.sc(),conf);
     }
 
+    public JavaSparkContext getSparkContext(){
+        return sc;
+    }
+
     /**Train a multi layer network based on data loaded from a text file + {@link RecordReader}.
      * This method splits the entire data set at once
      * @param path the path to the text file
