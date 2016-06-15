@@ -18,6 +18,7 @@ Content
 * <a href="#torch">Torch</a>
 * <a href="#caffe">Caffe</a>
 * <a href="#cntk">CNTK</a>
+* <a href="#dsstne">DSSTNE</a>
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why Java?</a>
@@ -104,6 +105,10 @@ Pros and Cons:
 ### <a name="cntk">CNTK</a>
 
 [**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. 
+
+### <a name="dsstne">DSSTNE</a>
+
+Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, appears to be fast, although it has not attracted as large a community as the other libraries. 
 
 ### <a name="licensing">Licensing</a>
 
