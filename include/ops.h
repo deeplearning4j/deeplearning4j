@@ -1355,4 +1355,30 @@ namespace simdOps {
 			return d1;
 		}
 	};
+
+template<typename T>
+	class DropOut {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T prob = params[0];
+			T rnd = (T) rand() / (T) RAND_MAX;
+			return rnd <= prob ? (T) 0.0 : d1;
+		}
+	};
+
+template<typename T>
+	class DropOutInverted {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T prob = params[0];
+			T rnd = (T) rand() / (T) RAND_MAX;
+			return rnd >= prob ? 0 : d1 / prob;
+		}
+	};
 }
