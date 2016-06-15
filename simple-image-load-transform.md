@@ -60,6 +60,7 @@ InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, 80, 20);
 InputSplit trainData = filesInDirSplit[0];
 InputSplit testData = filesInDirSplit[1];
 ```
+
 ## Specifying particulars for your image pipeline transformation
 
 * Specify an image record reader with height and width you want the entire dataset resized to. 
@@ -82,6 +83,7 @@ ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTran
 ```java
 recordReader.initialize(trainData,transform);
 ```
+
 ## Handing off to fit
 dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
 ```java
