@@ -55,9 +55,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
         Integer device = null;
         if (!configuration.isForcedSingleGPU()) {
             // simple round-robin here
-            device = devices.get(devPtr.getAndIncrement());
-            if (devPtr.get() >= devices.size())
-                devPtr.set(0);
+            synchronized (this) {
+                device = devices.get(devPtr.getAndIncrement());
+                if (devPtr.get() >= devices.size())
+                    devPtr.set(0);
+            }
         } else device = configuration.getAvailableDevices().get(0);
 
         return device;

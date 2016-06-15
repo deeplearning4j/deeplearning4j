@@ -45,9 +45,9 @@ public class CudaAffinityManagerTest {
 
         assertEquals(0, deviceId.intValue());
 
-        manager.attachThreadToDevice(17L, 0);
+        manager.attachThreadToDevice(1731L, 0);
 
-        assertEquals(0, manager.getDeviceForThread(17L).intValue());
+        assertEquals(0, manager.getDeviceForThread(1731L).intValue());
     }
 
     @Test
