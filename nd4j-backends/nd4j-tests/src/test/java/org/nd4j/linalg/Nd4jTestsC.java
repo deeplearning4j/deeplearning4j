@@ -214,7 +214,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray row = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Nd4j.write(bos, row);
-        String s = new String(bos.toByteArray());
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         INDArray ret = Nd4j.read(bis);
         assertEquals(row, ret);
