@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
 import org.junit.After;
 import org.junit.Before;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -85,8 +86,7 @@ public abstract class BaseSparkTest  implements Serializable
         if(sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"false")
-                .set(SparkDl4jMultiLayer.ACCUM_GRADIENT,"false").set(SparkDl4jMultiLayer.DIVIDE_ACCUM_GRADIENT,"false")
+        SparkConf sparkConf = new SparkConf()
                 .setMaster("local[*]")
                 .setAppName("sparktest");
 
@@ -113,7 +113,8 @@ public abstract class BaseSparkTest  implements Serializable
 
 
     protected SparkDl4jMultiLayer getBasicNetwork(){
-        return new SparkDl4jMultiLayer(sc,getBasicConf());
+        return new SparkDl4jMultiLayer(sc,getBasicConf(),
+                new VanillaTrainingMaster(true,4,10,1,0));
     }
 
     protected MultiLayerConfiguration getBasicConf(){

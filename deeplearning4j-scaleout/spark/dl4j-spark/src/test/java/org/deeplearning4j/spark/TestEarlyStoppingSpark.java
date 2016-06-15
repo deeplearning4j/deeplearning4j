@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.earlystopping.SparkDataSetLossCalculator;
 import org.deeplearning4j.spark.earlystopping.SparkEarlyStoppingTrainer;
+import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -68,7 +69,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),esConf,net,irisData,50,150,5);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
+                new VanillaTrainingMaster(true,4,150/4,1,0),esConf,net,irisData);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
@@ -116,7 +118,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),esConf,net,irisData,50,150,5);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
+                new VanillaTrainingMaster(true,4,150/4,1,0),esConf,net,irisData);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
@@ -153,7 +156,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),esConf,net,irisData,50,150,5);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
+                new VanillaTrainingMaster(true,4,150/15,1,0),esConf,net,irisData);
         long startTime = System.currentTimeMillis();
         EarlyStoppingResult result = trainer.fit();
         long endTime = System.currentTimeMillis();
@@ -196,7 +200,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),esConf,net,irisData,50,150,5);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
+                new VanillaTrainingMaster(true,4,150/10,1,0),esConf,net,irisData);
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
@@ -232,7 +237,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),esConf,net,irisData,50,150,5,listener);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
+                new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0),esConf,net,irisData);
 
         trainer.fit();
 
