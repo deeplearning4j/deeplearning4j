@@ -24,6 +24,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -48,12 +49,8 @@ import java.nio.file.Paths;
  */
 public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationGraph> {
 
-    private static final String bestFileNameConf = "bestGraphConf.json";
-    private static final String bestFileNameParam = "bestGraphParams.bin";
-    private static final String bestFileNameUpdater = "bestGraphUpdater.bin";
-    private static final String latestFileNameConf = "latestGraphConf.json";
-    private static final String latestFileNameParam = "latestGraphParams.bin";
-    private static final String latestFileNameUpdater = "latestGraphUpdater.bin";
+    private static final String bestFileName = "bestGraph.bin";
+    private static final String latestFileName = "latestGraph.bin";
 
     private String directory;
     private Charset encoding;
@@ -76,68 +73,34 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
 
     @Override
     public void saveBestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory,bestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory,bestFileNameUpdater);
-        save(net,confOut,paramOut,updaterOut);
+        String confOut = FilenameUtils.concat(directory,bestFileName);
+        save(net,confOut);
     }
 
     @Override
     public void saveLatestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory,latestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory,latestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory,latestFileNameUpdater);
-        save(net,confOut,paramOut,updaterOut);
+        String confOut = FilenameUtils.concat(directory,latestFileName);
+        save(net,confOut);
     }
 
-    private void save(ComputationGraph net, String confOut, String paramOut, String updaterOut) throws IOException{
-        String confJSON = net.getConfiguration().toJson();
-        INDArray params = net.params();
-        ComputationGraphUpdater updater = net.getUpdater();
-
-        FileUtils.writeStringToFile(new File(confOut), confJSON, encoding);
-        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(paramOut))))){
-            Nd4j.write(params, dos);
-        }
-
-        try(ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(new File(updaterOut))))){
-            oos.writeObject(updater);
-        }
+    private void save(ComputationGraph net, String confOut) throws IOException{
+       ModelSerializer.writeModel(net, confOut, true);
     }
 
     @Override
     public ComputationGraph getBestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory, bestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory, bestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory, bestFileNameUpdater);
-        return load(confOut, paramOut, updaterOut);
+        String confOut = FilenameUtils.concat(directory, bestFileName);
+        return load(confOut);
     }
 
     @Override
     public ComputationGraph getLatestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory,bestFileNameConf);
-        String paramOut = FilenameUtils.concat(directory,bestFileNameParam);
-        String updaterOut = FilenameUtils.concat(directory,bestFileNameUpdater);
-        return load(confOut,paramOut,updaterOut);
+        String confOut = FilenameUtils.concat(directory, latestFileName);
+        return load(confOut);
     }
 
-    private ComputationGraph load(String confOut, String paramOut, String updaterOut) throws IOException {
-        String confJSON = FileUtils.readFileToString(new File(confOut), encoding);
-        INDArray params;
-        ComputationGraphUpdater updater;
-        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(Paths.get(paramOut))))){
-            params = Nd4j.read(dis);
-        }
-        try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(new File(updaterOut))))){
-            updater = (ComputationGraphUpdater)ois.readObject();
-        }catch(ClassNotFoundException e){
-            throw new RuntimeException(e);  //Should never happen
-        }
-        ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(confJSON);
-        ComputationGraph net = new ComputationGraph(conf);
-        net.init();
-        net.setParams(params);
-        net.setUpdater(updater);
+    private ComputationGraph load(String confOut) throws IOException {
+        ComputationGraph net = ModelSerializer.restoreComputationGraph(confOut);
         return net;
     }
 
