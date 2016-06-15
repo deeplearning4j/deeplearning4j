@@ -454,7 +454,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected void applyDropOutIfNecessary(boolean training) {
         if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied ) {
-            dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),null);
+            Dropout.applyDropout(input,conf.getLayer().getDropOut());
             dropoutApplied = true;
         }
     }
