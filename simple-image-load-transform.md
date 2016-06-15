@@ -39,54 +39,71 @@ In this example the parentDir corresponds to `$PWD/src/main/resources/DataExampl
 
 ## Specifying particulars before image load
 * Specify path to the parent dir where the labeled images live in separate directories.
+ 
 ~~~java
 File parentDir = new File(System.getProperty("user.dir"), "src/main/resources/DataExamples/ImagePipeline/");
 ~~~
+
 * Specify allowed extensions and a random number generator to use when splitting dataset into test and train 
-```java
+
+~~~java
 FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
-```
+~~~
+
 * Specifying a label maker so you do not have to manually specify labels. It will simply use the name of the subdirectories as label/class names.
-```java
+
+~~~java
 ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-```
+~~~
+
 * Specifying a path filter to gives you fine tune control of the min/max cases to load for each class. Below is a bare bones version. Refer to javadocs for details
-```java
+
+~~~java
 BalancedPathFilter pathFilter = new BalancedPathFilter(randNumGen, allowedExtensions, labelMaker);
-```
+~~~
+
 * Specify your test train split, specified here as 80%-20%
-```java
+
+~~~java
 InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, 80, 20);
 InputSplit trainData = filesInDirSplit[0];
 InputSplit testData = filesInDirSplit[1];
-```
+~~~
 
 ## Specifying particulars for your image pipeline transformation
 
 * Specify an image record reader with height and width you want the entire dataset resized to. 
-```java
+
+~~~java
 ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
-```
+~~~
 Please *note that the images in your dataset donot have to be the same size*. Canova can do this for you. As you can see in this example images are all of different size and they are all resized to the height and width specified below
 
 * Specify transformations
 
 The advantage of neural nets is that they do not require you to manually feature engineer. However, there can be an advantage to transforming images to artificially increase the size of the dataset like in this winning kaggle entry <http://benanne.github.io/2014/04/05/galaxy-zoo.html>. Or you might want to crop an image down to only the relevant parts. An example would be detect a face and crop it down to size. Canova has all the built in functionality/powerful features from OpenCV. A bare bones example that flips an image and then displays it is shown below:
-```java
+
+~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen,new FlipImageTransform(), new ShowImageTransform("After transform"));
-```
+~~~
+
 You can chain transformations as shown below, write your own classes that will automate whatever features you want.
-```java
+
+~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTransform(10), new FlipImageTransform(),new ScaleImageTransform(10), new WarpImageTransform(10));
-```
+~~~
+
 * Initialize the record reader with the train data and the transform chain
-```java
+
+~~~java
 recordReader.initialize(trainData,transform);
-```
+~~~
 
 ## Handing off to fit
 dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
-```java
+
+~~~java
 DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, outputNum);
-```
+~~~
+
 The DataSetIterator iterates through the input datasets via the recordReader, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with.
