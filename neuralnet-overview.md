@@ -14,6 +14,7 @@ Contents
 * <a href="#regression">Multiple Linear Regression</a>
 * <a href="#logistic">Logistic Regression & Classifiers</a>
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
+* <a href="#enterprise">Enterprise-Scale Deep Learning</a>
 * <a href="#intro">Other Introductory Resources</a>
 
 ## <a name="define">Neural Network Definition</a>
@@ -184,6 +185,10 @@ With this layer, we can set a decision threshold above which an example is label
 In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. 
 
 That said, gradient descent is not recombining every weight with every other to find the best match -- its method of pathfinding shrinks the relevant weight space, and therefore the number of updates and required computation, by many orders of magnitude. 
+
+## <a name="enterprise">Enterprise-Scale Deep Learning</a>
+
+To train complex neural networks on very large datasets, a deep learning cluster using multiple chips, distributed over both [GPUs](http://nd4j.org/gpu_native_backends.html) and CPUs, is necessary if one is to train the network in a reasonable amount of time. Software engineers training those nets may avail themselves of GPUs in the cloud, or choose to depend on proprietary racks. Deeplearning4j scales out equally well on both, using [Spark](./spark) as an access layer to orchestrate multiple host threads over many cores. For support, please contact [Skymind](https://www.skymind.io/contact).
 
 ## <a name="intro">Other Introductory Resources</a>
 
