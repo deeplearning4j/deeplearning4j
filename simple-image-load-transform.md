@@ -39,9 +39,9 @@ In this example the parentDir corresponds to `$PWD/src/main/resources/DataExampl
 
 ## Specifying particulars before image load
 * Specify path to the parent dir where the labeled images live in separate directories.
-```java
+~~~java
 File parentDir = new File(System.getProperty("user.dir"), "src/main/resources/DataExamples/ImagePipeline/");
-```
+~~~
 * Specify allowed extensions and a random number generator to use when splitting dataset into test and train 
 ```java
 FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
