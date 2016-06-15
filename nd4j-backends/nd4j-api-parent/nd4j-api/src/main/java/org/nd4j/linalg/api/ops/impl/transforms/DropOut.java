@@ -33,6 +33,10 @@ public class DropOut extends BaseTransformOp {
 
     private double p;
 
+    public DropOut() {
+
+    }
+
     public DropOut(INDArray x, double p) {
         super(x);
         this.p = p;
@@ -126,6 +130,6 @@ public class DropOut extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x,y,z,n);
-        this.extraArgs = new Object[]{p};
+        this.extraArgs = new Object[]{p, (double) n};
     }
 }
