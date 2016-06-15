@@ -1364,7 +1364,13 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
+			T length = params[1];
+#ifdef __CUDACC__
+            int tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(999 * tid + length * tid));
+#else
 			T rnd = (T) rand() / (T) RAND_MAX;
+#endif
 			return rnd <= prob ? (T) 0.0 : d1;
 		}
 	};
@@ -1377,7 +1383,13 @@ template<typename T>
 
 		op_def static T op(T d1, T *params) {
 			T prob = params[0];
+			T length = params[1];
+#ifdef __CUDACC__
+			int tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(999 * tid + length * tid));
+#else
 			T rnd = (T) rand() / (T) RAND_MAX;
+#endif
 			return rnd >= prob ? 0 : d1 / prob;
 		}
 	};
