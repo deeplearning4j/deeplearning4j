@@ -399,6 +399,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    public boolean isInitCalled(){
+        return initCalled;
+    }
+
     /**
      * This method: initializes the flattened gradients array (used in backprop) and sets the appropriate subset in all layers.
      */

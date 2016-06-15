@@ -58,6 +58,7 @@ import static org.junit.Assert.*;
 
 public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
+
     @Test
     public void testEarlyStoppingIris() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -84,7 +85,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()));
 
         EarlyStoppingResult<ComputationGraph> result = trainer.fit();
         System.out.println(result);
@@ -134,7 +135,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
@@ -173,7 +174,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()));
         long startTime = System.currentTimeMillis();
         EarlyStoppingResult result = trainer.fit();
         long endTime = System.currentTimeMillis();
@@ -218,7 +219,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5);
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()));
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
@@ -256,7 +257,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
-        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()),50,150,5,listener);
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new SparkEarlyStoppingGraphTrainer(getContext().sc(),esConf,net,irisData.map(new DataSetToMultiDataSetFn()));
 
         trainer.fit();
 
