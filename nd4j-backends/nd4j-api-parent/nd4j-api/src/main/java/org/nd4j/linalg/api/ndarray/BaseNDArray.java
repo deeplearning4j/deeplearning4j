@@ -1133,7 +1133,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(int[] indexes, double value) {
         for(int i = 0; i < indexes.length; i++) {
-            if(indexes[i] < 1)
+            if(indexes[i] < 0)
                 indexes[i] += rank();
         }
 
@@ -1494,7 +1494,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double getDouble(int... indices) {
         for(int i = 0; i < indices.length; i++) {
-            if(indices[i] < 1)
+            if(indices[i] < 0)
                 indices[i] += rank();
         }
         if(indices.length == 1) {
