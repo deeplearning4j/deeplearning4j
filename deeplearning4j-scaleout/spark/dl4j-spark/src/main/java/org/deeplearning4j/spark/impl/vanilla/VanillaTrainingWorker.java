@@ -15,24 +15,41 @@ import org.nd4j.linalg.dataset.api.DataSet;
 public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResult> {
 
     private final Broadcast<NetBroadcastTuple> broadcast;
+    private final boolean saveUpdater;
+    private final WorkerConfiguration configuration;
 
     @Override
     public MultiLayerNetwork getInitialModel() {
-        return null;
+        NetBroadcastTuple tuple = broadcast.getValue();
+        MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
+
+        //Can't have shared parameter array across executors for parameter averaging, hence the .dup()
+        net.setParameters(tuple.getParameters().dup());
+
+        if(tuple.getUpdater() != null){
+            net.setUpdater(tuple.getUpdater());
+        }
+
+        return net;
     }
 
     @Override
     public VanillaTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+        network.fit(dataSet);
+
+        if(isLast) return getFinalResult(network);
+
         return null;
     }
 
     @Override
     public VanillaTrainingResult getFinalResult(MultiLayerNetwork network) {
-        return null;
+        //TODO: don't want to use java serialization for updater, in case worker is using cuda and master is using native, etc
+        return new VanillaTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
     }
 
     @Override
     public WorkerConfiguration getDataConfiguration() {
-        return null;
+        return configuration;
     }
 }
