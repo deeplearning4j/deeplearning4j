@@ -11,13 +11,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * This wrapper provides DataSetIterator interface to existing java Iterable<DataSet> and Iterator<DataSet>
+ *
  * @author raver119@gmail.com
  */
 public class ExistingDataSetIterator implements DataSetIterator {
-    private DataSetPreProcessor preProcessor;
+    private transient DataSetPreProcessor preProcessor;
 
-    private Iterable<DataSet> iterable;
-    private Iterator<DataSet> iterator;
+    private transient Iterable<DataSet> iterable;
+    private transient Iterator<DataSet> iterator;
     private int totalExamples = 0;
     private int numFeatures = 0;
     private int numLabels = 0;
