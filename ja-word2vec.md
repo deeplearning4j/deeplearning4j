@@ -1,9 +1,9 @@
 ---
-title: "Word2vec"
+title: "Word2Vecとは？"
 layout: ja-default
 ---
 
-# Word2Vec
+# Word2Vecとは？
 
 目次
 
