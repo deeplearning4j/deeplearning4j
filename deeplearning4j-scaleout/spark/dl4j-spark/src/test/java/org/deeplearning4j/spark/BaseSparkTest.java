@@ -87,7 +87,7 @@ public abstract class BaseSparkTest  implements Serializable
             return sc;
         // set to test mode
         SparkConf sparkConf = new SparkConf()
-                .setMaster("local[*]")
+                .setMaster("local[" + numExecutors() + "]")
                 .setAppName("sparktest");
 
 
@@ -114,7 +114,12 @@ public abstract class BaseSparkTest  implements Serializable
 
     protected SparkDl4jMultiLayer getBasicNetwork(){
         return new SparkDl4jMultiLayer(sc,getBasicConf(),
-                new VanillaTrainingMaster(true,4,10,1,0));
+                new VanillaTrainingMaster(true,numExecutors(),10,1,0));
+    }
+
+    protected int numExecutors(){
+        int numProc = Runtime.getRuntime().availableProcessors();
+        return Math.min(4, numProc);
     }
 
     protected MultiLayerConfiguration getBasicConf(){

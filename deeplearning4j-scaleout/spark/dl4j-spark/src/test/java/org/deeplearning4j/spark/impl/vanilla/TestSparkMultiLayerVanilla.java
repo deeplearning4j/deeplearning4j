@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.spark.impl.multilayer;
+package org.deeplearning4j.spark.impl.vanilla;
 
 
 
@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.junit.Test;
@@ -58,7 +59,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 1/18/15.
  */
-public class TestSparkMultiLayer extends BaseSparkTest {
+public class TestSparkMultiLayerVanilla extends BaseSparkTest {
 
 
     @Test

@@ -14,10 +14,10 @@ public class VanillaElementAddFunction implements Function2<VanillaAggregationTu
     public VanillaAggregationTuple call(VanillaAggregationTuple tuple, VanillaTrainingResult result) throws Exception {
 
         if(tuple == null){
-            return new VanillaAggregationTuple(result.getParameters(), result.getUpdater().getAggregator(true), result.getScore());
+            return new VanillaAggregationTuple(result.getParameters(), result.getUpdater().getAggregator(true), result.getScore(), 1);
         }
 
-        INDArray params = tuple.getParameters().addi(result.getParameters());
+        INDArray params = tuple.getParametersSum().addi(result.getParameters());
         UpdaterAggregator aggregator;
         if(tuple.getUpdaterAggregator() == null){
             if(result.getUpdater() == null) aggregator = null;
@@ -28,6 +28,6 @@ public class VanillaElementAddFunction implements Function2<VanillaAggregationTu
         }
 
         double scoreSum = tuple.getScoreSum() + result.getScore();
-        return new VanillaAggregationTuple(params,aggregator,scoreSum);
+        return new VanillaAggregationTuple(params,aggregator,scoreSum,tuple.getAggregationsCount()+1);
     }
 }

@@ -25,6 +25,8 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
 
     @Override
     public Iterable<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        if(!dataSetIterator.hasNext()) return Collections.emptyList();  //Sometimes: no data
+
         WorkerConfiguration dataConfig = worker.getDataConfiguration();
         int batchSize = dataConfig.getBatchSizePerWorker();
         final int prefetchCount = dataConfig.getPrefetchNumBatches();

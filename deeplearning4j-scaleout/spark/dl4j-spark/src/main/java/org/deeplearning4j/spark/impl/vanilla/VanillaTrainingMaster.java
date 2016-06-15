@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -16,6 +15,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaAggregationTuple;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementAddFunction;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementCombineFunction;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,14 +24,14 @@ import java.lang.reflect.Array;
 import java.util.Iterator;
 
 /**
- * Created by Alex on 14/06/2016.
+ * VanillaTrainingMaster: A {@link TrainingMaster} implementation for spark-only training.
+ * This is standard parameter averaging, using no
  */
 @AllArgsConstructor @Data
 public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResult, VanillaTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaTrainingMaster.class);
 
-    //TODO do this configuration proprely
     private boolean saveUpdater;
     private int numWorkers;
     private int batchSizePerWorker;
@@ -72,7 +72,8 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
         JavaRDD<DataSet>[] splits;
         if(totalCount <= examplesPerSplit){
-            splits = (JavaRDD<DataSet>[])new Object[]{trainingData};
+            splits = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);
+            splits[0] = trainingData;
         } else {
             int numSplits = (int)(totalCount/examplesPerSplit); //Intentional round down
             double[] weights = new double[numSplits];
@@ -82,19 +83,19 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
         int splitNum = 1;
         for(JavaRDD<DataSet> split : splits) {
-            log.info("Starting training of split {} of {}. MiniBatch={}, avgFrequency={}, totalExamples={}", splitNum, splits.length,
-                    batchSizePerWorker, averagingFrequency, totalCount);
+            log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, dataSetTotalExamples={}. Configured for {} executors",
+                    splitNum, splits.length, batchSizePerWorker, averagingFrequency, totalCount, numWorkers);
 
             FlatMapFunction<Iterator<DataSet>, VanillaTrainingResult> function = new ExecuteWorkerFlatMap<>(getWorkerInstance(network));
             JavaRDD<VanillaTrainingResult> result = split.mapPartitions(function);
-            processResults(network, result);
+            processResults(network, result, splitNum, splits.length);
 
             splitNum++;
         }
     }
 
 
-    private void processResults(SparkDl4jMultiLayer network, JavaRDD<VanillaTrainingResult> results) {
+    private void processResults(SparkDl4jMultiLayer network, JavaRDD<VanillaTrainingResult> results, int splitNum, int totalSplits) {
         //Need to do parameter averaging, and where necessary also do averaging of the updaters
 
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
@@ -104,8 +105,12 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
                 new VanillaElementCombineFunction());
 
         MultiLayerNetwork net = network.getNetwork();
-        net.setParameters(tuple.getParameters());
+
+        INDArray params = tuple.getParametersSum().divi(tuple.getAggregationsCount());
+        net.setParameters(params);
         net.setUpdater(tuple.getUpdaterAggregator().getUpdater());
+
+        log.info("Completed training of split {} of {}", splitNum, totalSplits);
     }
 
 
@@ -182,6 +187,5 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         public VanillaTrainingMaster build(){
             return new VanillaTrainingMaster(this);
         }
-
     }
 }
