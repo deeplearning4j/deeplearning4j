@@ -17,7 +17,7 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __host__  __device__
+#define op_def inline __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -1367,7 +1367,7 @@ template<typename T>
 			T length = params[1];
 #ifdef __CUDACC__
             int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(999 * tid + length * tid));
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
@@ -1386,7 +1386,7 @@ template<typename T>
 			T length = params[1];
 #ifdef __CUDACC__
 			int tid = gridDim.x * blockDim.x + threadIdx.x;
-            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(999 * tid + length * tid));
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
