@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.buffer;
 
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 
@@ -66,14 +65,6 @@ public class FloatBuffer extends BaseDataBuffer {
         super(underlyingBuffer, length, offset);
     }
 
-    public FloatBuffer(ByteBuf buf,int length) {
-        super(buf,length);
-    }
-
-    public FloatBuffer(ByteBuf buf, int length, int offset) {
-        super(buf, length, offset);
-    }
-
     public FloatBuffer(float[] data) {
         this(data, true);
     }
@@ -114,11 +105,6 @@ public class FloatBuffer extends BaseDataBuffer {
         super(data, length);
     }
 
-
-    @Override
-    public DataBuffer create(ByteBuf buf,int length) {
-        return new FloatBuffer(buf,length);
-    }
 
     @Override
     public IComplexFloat getComplexFloat(long i) {

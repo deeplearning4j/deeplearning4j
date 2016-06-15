@@ -23,7 +23,7 @@ public class StandardScaler {
     private static Logger logger = LoggerFactory.getLogger(StandardScaler.class);
     private INDArray mean,std;
     private int runningTotal = 0;
-
+    private int batchCount = 0;
 
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);
@@ -41,12 +41,13 @@ public class StandardScaler {
         while(iterator.hasNext()) {
             DataSet next = iterator.next();
             runningTotal += next.numExamples();
+            batchCount = next.getFeatures().size(0);
             if(mean == null) {
                 //start with the mean and std of zero
                 //column wise
                 mean = next.getFeatureMatrix().mean(0);
-                std = (iterator.batch() == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatureMatrix().std(0),2);
-                std.muli(iterator.batch());
+                std = (batchCount == 1) ? Nd4j.zeros(mean.shape()) : Transforms.pow(next.getFeatureMatrix().std(0),2);
+                std.muli(batchCount);
             }
             else {
                 // m_newM = m_oldM + (x - m_oldM)/m_n;
@@ -61,9 +62,9 @@ public class StandardScaler {
                 // M2 = M2_A + M2_B + delta^2 * nA * nB/(nA+nB)
                 INDArray meanB = next.getFeatureMatrix().mean(0);
                 INDArray deltaSq = Transforms.pow(meanB.subRowVector(mean),2);
-                INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-iterator.batch())*iterator.batch()/iterator.totalExamples());
+                INDArray deltaSqScaled = deltaSq.mul(((float)runningTotal-batchCount)*batchCount/(float)runningTotal);
                 INDArray mtwoB = Transforms.pow(next.getFeatureMatrix().std(0),2);
-                mtwoB.muli(iterator.batch());
+                mtwoB.muli(batchCount);
                 std = std.add(mtwoB);
                 std = std.add(deltaSqScaled);
                 mean = newMean;

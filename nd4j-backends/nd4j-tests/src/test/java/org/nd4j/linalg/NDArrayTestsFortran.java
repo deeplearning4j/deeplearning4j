@@ -170,20 +170,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testReadWriteTxt() throws Exception {
-        INDArray write = Nd4j.create(5);
-        File writeTo = new File(UUID.randomUUID().toString());
-        writeTo.deleteOnExit();
-        Nd4j.writeTxt(write, writeTo.getAbsolutePath(), "\t");
-        INDArray read = Nd4j.readTxt(writeTo.getAbsolutePath());
-        assertEquals(write, read);
-    }
-
-
-
-
-
 
     @Test
     public void testReadWriteDouble() throws Exception {

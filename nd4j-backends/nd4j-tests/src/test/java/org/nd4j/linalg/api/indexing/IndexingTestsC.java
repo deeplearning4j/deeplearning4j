@@ -91,6 +91,12 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertEquals(assertion,viewTest);
     }
 
+    @Test
+    public void testNegativeIndices() {
+        INDArray test = Nd4j.create(10,10,10);
+        test.putScalar(new int[]{0,0,-1}, 1.0);
+        assertEquals(1.0,test.getScalar(0,0,-1).sumNumber());
+    }
 
     @Test
     public void testGetIndices2d() throws Exception {

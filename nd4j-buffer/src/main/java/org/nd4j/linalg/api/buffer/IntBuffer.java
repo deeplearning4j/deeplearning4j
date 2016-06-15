@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.buffer;
 
 
-import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 
@@ -39,10 +38,6 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(long length, boolean initialize){
         super(length, initialize);
-    }
-
-    protected IntBuffer(ByteBuf buf, int length, int offset) {
-        super(buf, length, offset);
     }
 
     public IntBuffer(ByteBuffer buffer, int length, int offset) {
@@ -119,15 +114,6 @@ public class IntBuffer extends BaseDataBuffer {
     @Override
     public DataBuffer create(int[] data) {
        return new IntBuffer(data);
-    }
-
-    public IntBuffer(ByteBuf buf,int length) {
-        super(buf,length);
-    }
-
-    @Override
-    public DataBuffer create(ByteBuf buf,int length) {
-        return new IntBuffer(buf,length);
     }
 
     @Override

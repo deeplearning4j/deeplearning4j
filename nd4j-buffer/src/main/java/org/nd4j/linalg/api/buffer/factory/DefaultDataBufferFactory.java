@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
-import io.netty.buffer.Unpooled;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -269,12 +268,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createDouble(byte[] data,int length) {
-        return new DoubleBuffer(Unpooled.wrappedBuffer(data),length);
+        return new DoubleBuffer(ByteBuffer.wrap(data),length);
     }
 
     @Override
     public DataBuffer createFloat(byte[] data,int length) {
-        return new FloatBuffer(Unpooled.wrappedBuffer(data),length);
+        return new FloatBuffer(ByteBuffer.wrap(data),length);
     }
 
     @Override
