@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -94,9 +95,10 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
 
-        MultiLayerNetwork network2 = master.fit(data, 10);
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+
+        MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
         System.out.println(evaluation.stats());
@@ -139,14 +141,12 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
 
-        MultiLayerNetwork network2 = master.fit(data, 10);
+        MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
         System.out.println(evaluation.stats());
-
-
     }
 
 
@@ -177,7 +177,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
+
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
         DataSet d = new IrisDataSetIterator(150,150).next();
         d.normalizeZeroMeanZeroUnitVariance();
         d.shuffle();
@@ -188,7 +189,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
 
 
-        MultiLayerNetwork network2 = master.fitDataSet(data);
+        MultiLayerNetwork network2 = master.fit(data);
 
         INDArray params = network2.params();
         File writeTo = new File(UUID.randomUUID().toString());
@@ -202,57 +203,19 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     }
 
     @Test
-    public void testStaticInvocation() throws Exception {
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(4).nOut(3)
-                        .activation("tanh").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(3)
-                        .activation("softmax")
-                        .build())
-                .build();
-
-        DataSet dataSet = new IrisDataSetIterator(5,5).next();
-        List<DataSet> list = dataSet.asList();
-        JavaRDD<DataSet> data = sc.parallelize(list);
-        JavaRDD<LabeledPoint> mllLibData = MLLibUtil.fromDataSet(sc, data);
-
-        MultiLayerNetwork network = SparkDl4jMultiLayer.train(mllLibData, conf);
-        INDArray params = network.params(true);
-        File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
-        assertEquals(params,load);
-        writeTo.delete();
-
-        String json = network.getLayerWiseConfigurations().toJson();
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
-        assertEquals(conf, conf2);
-
-        MultiLayerNetwork network3 = new MultiLayerNetwork(conf2);
-        network3.init();
-        network3.setParameters(params);
-        INDArray params4 = network3.params(true);
-        assertEquals(params, params4);
-    }
-
-    @Test
     public void testRunIteration() {
 
         DataSet dataSet = new IrisDataSetIterator(5,5).next();
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
 
-        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc, getBasicConf());
-        MultiLayerNetwork networkCopy = sparkNetCopy.fitDataSet(data);
+        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        MultiLayerNetwork networkCopy = sparkNetCopy.fit(data);
 
         INDArray expectedParams = networkCopy.params();
 
         SparkDl4jMultiLayer sparkNet = getBasicNetwork();
-        MultiLayerNetwork network = sparkNet.fitDataSet(data);
+        MultiLayerNetwork network = sparkNet.fit(data);
         INDArray actualParams = network.params();
 
         assertEquals(expectedParams.size(1), actualParams.size(1));
@@ -269,7 +232,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         double expectedMomentum = netCopy.conf().getLayer().getMomentum();
 
         Updater actualUpdater = sparkNet.getNetwork().conf().getLayer().getUpdater();
-        sparkNet.runIteration(sparkData);
+        sparkNet.fit(sparkData);
         double actualLR = sparkNet.getNetwork().conf().getLayer().getLearningRate();
         double actualMomentum = sparkNet.getNetwork().conf().getLayer().getMomentum();
 
@@ -329,7 +292,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                         .build())
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf);
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
 
         Nd4j.getRandom().setSeed(12345);
         DataSet d1 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
@@ -337,7 +300,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         JavaRDD<DataSet> rddData = sc.parallelize(Arrays.asList(d1,d2));
 
-        sparkNet.fitDataSet(rddData);
+        sparkNet.fit(rddData);
 
     }
 
@@ -362,7 +325,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .pretrain(false)
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf);
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         int nRows = 100;
