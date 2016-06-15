@@ -22,6 +22,7 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     public MultiLayerNetwork getInitialModel() {
         NetBroadcastTuple tuple = broadcast.getValue();
         MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
+        net.init(); //TODO: Replace this with net.init(INDArray params) once that is implemented
 
         //Can't have shared parameter array across executors for parameter averaging, hence the .dup()
         net.setParameters(tuple.getParameters().dup());

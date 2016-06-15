@@ -13,7 +13,8 @@ import java.io.Serializable;
  */
 @AllArgsConstructor @Data
 public class VanillaAggregationTuple implements Serializable {
-    private final INDArray parameters;
+    private final INDArray parametersSum;
     private final UpdaterAggregator updaterAggregator;
     private final double scoreSum;
+    private int aggregationsCount;
 }

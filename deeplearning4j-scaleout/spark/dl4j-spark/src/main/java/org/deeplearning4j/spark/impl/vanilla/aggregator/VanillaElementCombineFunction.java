@@ -10,7 +10,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class VanillaElementCombineFunction implements Function2<VanillaAggregationTuple, VanillaAggregationTuple, VanillaAggregationTuple> {
     @Override
     public VanillaAggregationTuple call(VanillaAggregationTuple v1, VanillaAggregationTuple v2) throws Exception {
-        INDArray newParams = v1.getParameters().addi(v2.getParameters());
+        if(v1 == null) return v2;
+        else if(v2 == null) return v1;
+
+        INDArray newParams = v1.getParametersSum().addi(v2.getParametersSum());
 
         UpdaterAggregator updaterAggregator = v1.getUpdaterAggregator();
         UpdaterAggregator updaterAggregator2 = v2.getUpdaterAggregator();
@@ -23,7 +26,8 @@ public class VanillaElementCombineFunction implements Function2<VanillaAggregati
         }
 
         double scoreSum = v1.getScoreSum() + v2.getScoreSum();
+        int aggregationCount = v1.getAggregationsCount() + v2.getAggregationsCount();
 
-        return new VanillaAggregationTuple(newParams, combinedAggregator, scoreSum);
+        return new VanillaAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount);
     }
 }
