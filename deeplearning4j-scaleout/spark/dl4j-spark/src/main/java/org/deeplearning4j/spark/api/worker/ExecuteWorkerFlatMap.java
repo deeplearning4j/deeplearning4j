@@ -36,8 +36,10 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
 
         try {
             MultiLayerNetwork net = worker.getInitialModel();
+            int miniBatchCount = 0;
+            int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
 
-            while (batchedIterator.hasNext()) {
+            while (batchedIterator.hasNext() && miniBatchCount++ < maxMinibatches) {
                 DataSet next = batchedIterator.next();
                 R result = worker.processMinibatch(next, net, batchedIterator.hasNext());
                 if(result != null){
@@ -54,7 +56,5 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                 ((AsyncDataSetIterator)batchedIterator).shutdown();
             }
         }
-
-
     }
 }
