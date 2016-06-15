@@ -1,11 +1,13 @@
 package org.deeplearning4j.spark.impl.vanilla;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
@@ -13,6 +15,7 @@ import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaAggregationTuple;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementAddFunction;
+import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementCombineFunction;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +26,7 @@ import java.util.Iterator;
 /**
  * Created by Alex on 14/06/2016.
  */
-@AllArgsConstructor
+@AllArgsConstructor @Data
 public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResult, VanillaTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaTrainingMaster.class);
@@ -35,6 +38,13 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     private int averagingFrequency;
     private int prefetchNumBatches;
 
+    private VanillaTrainingMaster(Builder builder){
+        this.saveUpdater = builder.saveUpdater;
+        this.numWorkers = builder.numWorkers;
+        this.batchSizePerWorker = builder.batchSizePerWorker;
+        this.averagingFrequency = builder.averagingFrequency;
+        this.prefetchNumBatches = builder.prefetchNumBatches;
+    }
 
     @Override
     public VanillaTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
@@ -81,8 +91,6 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
             splitNum++;
         }
-
-
     }
 
 
@@ -93,8 +101,87 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
         VanillaAggregationTuple tuple = results.aggregate(null,
                 new VanillaElementAddFunction(),
+                new VanillaElementCombineFunction());
 
-                );
+        MultiLayerNetwork net = network.getNetwork();
+        net.setParameters(tuple.getParameters());
+        net.setUpdater(tuple.getUpdaterAggregator().getUpdater());
+    }
+
+
+    public static class Builder {
+
+        private boolean saveUpdater;
+        private int numWorkers;
+        private int batchSizePerWorker = 16;
+        private int averagingFrequency = 5;
+        private int prefetchNumBatches = 0;
+
+        /**
+         * Create a builder, where the following number of workers (Spark executors) are used.
+         * Note: this should match the
+         *
+         * @param numWorkers    Number of Spark executors in the cluster
+         */
+        public Builder(int numWorkers){
+            this.numWorkers = numWorkers;
+        }
+
+        /**
+         * Batch size per worker
+         *
+         * @param batchSizePerWorker    Size of each minibatch to use for each worker
+         * @return
+         */
+        public Builder batchSizePerWorker(int batchSizePerWorker){
+            this.batchSizePerWorker = batchSizePerWorker;
+            return this;
+        }
+
+        /**
+         * Frequency with which to average worker parameters.<br>
+         * <b>Note</b>: Too high or too low can be bad for different reasons.<br>
+         * - Too low (such as 1) can result in a lot of network traffic<br>
+         * - Too high (>> 20 or so) can result in accuracy issues or problems with network convergence
+         *
+         * @param averagingFrequency    Frequency (in number of minibatches of size 'batchSizePerWorker') to average parameters
+         */
+        public Builder averagingFrequency(int averagingFrequency){
+            if(averagingFrequency <= 0) throw new IllegalArgumentException("Ivalid input: averaging frequency must be >= 1");
+            this.averagingFrequency = averagingFrequency;
+            return this;
+        }
+
+        /**
+         * Set the number of minibatches to asynchronously prefetch in the worker.
+         *
+         * Default: 0 (no prefetching)
+         *
+         * @param prefetchNumBatches    Number of minibatches (DataSets of size batchSizePerWorker) to fetch
+         */
+        public Builder workerPrefetchNumBatches(int prefetchNumBatches){
+            this.prefetchNumBatches = prefetchNumBatches;
+            return this;
+        }
+
+        /**
+         * Set whether the updater (i.e., historical state for momentum, adagrad, etc should be saved).
+         * <b>NOTE</b>: This can <b>double</b> (or more) the amount of network traffic in each direction, but might
+         * improve network training performance (and can be more stable for certain updaters such as adagrad).<br>
+         *
+         * This is <b>enabled</b> by default.
+         *
+         * @param saveUpdater    If true: retain the updater state (default). If false, don't retain (updaters will be
+         *                       reinitalized in each worker after averaging).
+         */
+        public Builder saveUpdater(boolean saveUpdater){
+            this.saveUpdater = saveUpdater;
+            return this;
+        }
+
+        public VanillaTrainingMaster build(){
+            return new VanillaTrainingMaster(this);
+        }
 
     }
 }
