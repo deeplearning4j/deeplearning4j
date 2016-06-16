@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import lombok.Getter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -48,7 +49,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     private List<Window> cachedWindow;
     private List<String> labels;
    private int batch = 10;
-    private DataSetPreProcessor preProcessor;
+    @Getter private DataSetPreProcessor preProcessor;
 
     /**
      * Allows for customization of all of the params of the iterator
