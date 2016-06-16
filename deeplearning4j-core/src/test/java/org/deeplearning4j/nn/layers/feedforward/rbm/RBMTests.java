@@ -67,7 +67,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -94,7 +94,7 @@ public class RBMTests {
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
         RBM rbm = LayerFactories.getFactory(conf)
-                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params);
+                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0,params, true);
 
         rbm.fit(d.getFeatureMatrix());
     }
@@ -116,7 +116,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         r.fit(d.getFeatureMatrix());
 
     }
@@ -138,7 +138,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM r = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         r.fit(d.getFeatureMatrix());
 
     }
@@ -168,7 +168,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         rbm.fit(input);
 
         assertEquals(24, rbm.gradient().getGradientFor("W").length());
@@ -203,7 +203,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         rbm.fit(input);
 
     }
@@ -219,7 +219,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
@@ -252,7 +252,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
         double value = rbm.score();
         rbm.fit(input);
         value = rbm.score();
@@ -287,7 +287,7 @@ public class RBMTests {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf,null,0,params,true);
 
         rbm.fit(input);
         double value = rbm.score();

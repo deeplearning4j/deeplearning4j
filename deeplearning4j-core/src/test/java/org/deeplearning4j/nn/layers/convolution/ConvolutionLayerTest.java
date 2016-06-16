@@ -233,7 +233,7 @@ public class ConvolutionLayerTest {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 
         assertEquals(1, layer.getParam("b").size(0));
     }
@@ -304,7 +304,7 @@ public class ConvolutionLayerTest {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        return LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
     }
 
     public Layer getMNISTConfig(){

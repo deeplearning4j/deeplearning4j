@@ -123,7 +123,7 @@ public class LocalResponseTest {
                         .build())
                 .build();
 
-        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, null);
+        layer = LayerFactories.getFactory(new LocalResponseNormalization()).create(conf, null, 0, null, false);
         activationsActual = layer.activate(x);
     }
 
