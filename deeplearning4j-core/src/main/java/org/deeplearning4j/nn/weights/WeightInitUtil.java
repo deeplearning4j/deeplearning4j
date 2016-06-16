@@ -123,8 +123,9 @@ public class WeightInitUtil {
                 throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
 
-        INDArray flat = Nd4j.toFlattened(order,ret);
-        if(flat.length() != paramView.length()) throw new RuntimeException("ParamView length does not match initialized weights length");
+        INDArray flat = Nd4j.toFlattened(order, ret);
+        if (flat.length() != paramView.length())
+            throw new RuntimeException("ParamView length does not match initialized weights length");
 
         paramView.assign(flat);
 
@@ -142,6 +143,30 @@ public class WeightInitUtil {
      */
     public static INDArray initWeights(int nIn, int nOut, WeightInit initScheme, Distribution dist, INDArray paramView) {
         return initWeights(new int[]{nIn, nOut}, initScheme, dist, paramView);
+    }
+
+
+    /**
+     * Reshape the parameters view, without modifying the paramsView array values.
+     * Same reshaping mechanism as {@link #initWeights(int[], WeightInit, Distribution, INDArray)}
+     *
+     * @param shape      Shape to reshape
+     * @param paramsView Parameters array view
+     */
+    public static INDArray reshapeWeights(int[] shape, INDArray paramsView) {
+        return reshapeWeights(shape, paramsView, DEFAULT_WEIGHT_INIT_ORDER);
+    }
+
+    /**
+     * Reshape the parameters view, without modifying the paramsView array values.
+     * Same reshaping mechanism as {@link #initWeights(int[], WeightInit, Distribution, char, INDArray)}
+     *
+     * @param shape           Shape to reshape
+     * @param paramsView      Parameters array view
+     * @param flatteningOrder Order in which parameters are flattened/reshaped
+     */
+    public static INDArray reshapeWeights(int[] shape, INDArray paramsView, char flatteningOrder) {
+        return paramsView.reshape(flatteningOrder, shape);
     }
 
 

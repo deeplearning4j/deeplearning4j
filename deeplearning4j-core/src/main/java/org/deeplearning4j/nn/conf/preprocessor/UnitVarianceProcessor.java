@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adma Gibson
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class UnitVarianceProcessor extends BaseInputPreProcessor {
 
     @Getter(AccessLevel.NONE)

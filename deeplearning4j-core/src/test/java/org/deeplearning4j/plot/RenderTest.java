@@ -67,7 +67,7 @@ public class RenderTest {
         Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1),listener);
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0, params);
+        Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0, params, true);
         da.fit(input);
 
 

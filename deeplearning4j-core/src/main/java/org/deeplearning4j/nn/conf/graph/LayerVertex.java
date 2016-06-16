@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -40,7 +41,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Data  @EqualsAndHashCode(callSuper=false)
 public class LayerVertex extends GraphVertex {
 
     private NeuralNetConfiguration layerConf;
@@ -72,10 +73,11 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+                                                                      INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(
                 graph, name, idx,
-                LayerFactories.getFactory(layerConf).create(layerConf, null, idx, paramsView),
+                LayerFactories.getFactory(layerConf).create(layerConf, null, idx, paramsView, initializeParams),
                 preProcessor);
     }
 

@@ -54,7 +54,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         if (((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length != 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
@@ -68,8 +68,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf,true)));
 
-        params.put(BIAS_KEY, createBias(conf, biasView));
-        params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView));
+        params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
+        params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
@@ -96,16 +96,16 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     }
 
     //1 bias per feature map
-    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView) {
+    protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
         //the bias is a 1D tensor -- one bias per output feature map
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
-        biasView.assign(layerConf.getBiasInit());
+        if(initializeParams) biasView.assign(layerConf.getBiasInit());
         return biasView;
     }
 
 
-    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightView) {
+    protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightView, boolean initializeParams) {
         /*
          Create a 4d weight matrix of:
            (number of kernels, num input channels, kernel height, kernel width)
@@ -115,10 +115,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          */
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
-
-        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
-        int[] kernel = layerConf.getKernelSize();
-        return WeightInitUtil.initWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]},
-                layerConf.getWeightInit(), dist, 'c', weightView);
+        if(initializeParams) {
+            Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
+            int[] kernel = layerConf.getKernelSize();
+            return WeightInitUtil.initWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]},
+                    layerConf.getWeightInit(), dist, 'c', weightView);
+        } else {
+            int[] kernel = layerConf.getKernelSize();
+            return WeightInitUtil.reshapeWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+        }
     }
 }
