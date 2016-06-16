@@ -33,23 +33,25 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
  */
 public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting
-    protected int numPasses;
-    protected int batch = 0;
+    protected int epochs = 0;
+    protected int numEpochs;
+    protected int batch=0;
+    protected int lastBatch = batch;
     protected DataSetIterator iter;
     protected DataSet ds;
     protected List<DataSet> batchedDS = Lists.newArrayList();
-    protected int passes = 0;
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     protected DataSetPreProcessor preProcessor;
+    protected boolean newEpoch = false;
 
-    public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
-        this.numPasses = numPasses;
+    public MultipleEpochsIterator(int numEpochs,DataSetIterator iter) {
+        this.numEpochs = numEpochs;
         this.iter = iter;
     }
 
 
-    public MultipleEpochsIterator(int numPasses,DataSet ds) {
-        this.numPasses = numPasses;
+    public MultipleEpochsIterator(int numEpochs,DataSet ds) {
+        this.numEpochs = numEpochs;
         this.ds = ds;
     }
 
@@ -63,12 +65,13 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         DataSet next;
+        batch++;
         if(iter == null){
             // return full DataSet
             if(num == -1) {
-                if (passes < numPasses)
-                    trackEpoch();
                 next = ds;
+                if (epochs < numEpochs)
+                    trackEpochs();;
             }
             // return DataSet broken into batches
             else {
@@ -76,31 +79,31 @@ public class MultipleEpochsIterator implements DataSetIterator {
                     batchedDS = ds.batchBy(num);
                 next = batchedDS.get(batch);
                 if(batch+1 == batchedDS.size()) {
-                    trackEpoch();
-                    if (passes < numPasses)
+                    trackEpochs();
+                    if (epochs < numEpochs)
                         batch = -1;
                 }
             }
         } else {
+            next = num == -1? iter.next(): iter.next(num);
             if(!iter.hasNext()) {
-                trackEpoch();
-                if (passes < numPasses) {
+                trackEpochs();
+                // track number of epochs and won't reset if it's over
+                if (epochs < numEpochs) {
                     iter.reset();
+                    lastBatch = batch;
                     batch = 0;
                 }
             }
-            next = num == -1? iter.next(): iter.next(num);
-            if(preProcessor != null)
-                preProcessor.preProcess(next);
         }
-        batch++;
+        if(preProcessor != null)
+            preProcessor.preProcess(next);
         return next;
     }
 
-    private void trackEpoch(){
-        passes++;
-        log.info("Epoch " + passes + ", number of batches completed " + batch);
-
+    public void trackEpochs(){
+        epochs++;
+        newEpoch = true;
     }
 
     @Override
@@ -143,7 +146,8 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public void reset() {
-        passes = 0;
+        epochs = 0;
+        lastBatch = batch;
         batch = 0;
         iter.reset();
     }
@@ -198,11 +202,15 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
+        if (newEpoch || (newEpoch && epochs == numEpochs)) {
+            log.info("Epoch " + epochs + ", number of batches completed " + lastBatch);
+            newEpoch = false;
+        }
         if (iter == null)
-            return (passes < numPasses) && ((batchedDS.size() != 0 && batchedDS.size() > batch) || batchedDS.size() == 0);
+            return (epochs < numEpochs) && ((batchedDS.size() != 0 && batchedDS.size() > batch) || batchedDS.size() == 0);
         else
             // either there are still epochs to complete or its the first epoch
-            return (passes+1 < numPasses) || (iter.hasNext() && passes == 0);
+            return (epochs < numEpochs) || (iter.hasNext() && (epochs == 0 || epochs == numEpochs));
     }
 
     /**

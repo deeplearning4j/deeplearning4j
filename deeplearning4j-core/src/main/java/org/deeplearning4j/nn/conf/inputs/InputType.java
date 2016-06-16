@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.nn.conf.inputs;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -85,7 +82,7 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor @Data
+    @AllArgsConstructor @Data  @EqualsAndHashCode(callSuper=false)
     public static class InputTypeConvolutional extends InputType {
         private int height;
         private int width;

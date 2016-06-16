@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -33,7 +34,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class ReshapePreProcessor extends BaseInputPreProcessor {
     private int[] fromShape;	//Epsilons: To this shape in backward pass
     private int[] toShape;		//Activations: To this shape in forward pass

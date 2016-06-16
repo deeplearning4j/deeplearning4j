@@ -104,7 +104,7 @@ public class DataSetIteratorTest {
 		int row = 28;
 		int col = 28;
 		int channels = 1;
-		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, numExamples, new int[] {row,col,channels}, true);
+		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, numExamples, new int[] {row,col,channels}, true, 1.0);
 		assertTrue(iter.hasNext());
 		DataSet data = iter.next();
 		assertEquals(numExamples, data.getLabels().size(0));
@@ -123,7 +123,7 @@ public class DataSetIteratorTest {
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, true, new Random(seed));
+		LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] {numRows,numColumns,numChannels}, outputNum, true, true, 1.0, new Random(seed));
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)

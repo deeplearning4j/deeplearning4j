@@ -62,7 +62,7 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
@@ -96,8 +96,10 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         INDArray rwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset));
         INDArray bR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
-        bF.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
-        bR.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
+        if(initializeParams) {
+            bF.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)}, Nd4j.ones(1, nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
+            bR.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)}, Nd4j.ones(1, nL).muli(forgetGateInit));
+        }
         /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
          * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
@@ -106,13 +108,22 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
          *  gates will create a vanishing gradients problem."
          *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          */
-        
-        params.put(INPUT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwF));
-        params.put(RECURRENT_WEIGHT_KEY_FORWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwF));
-        params.put(BIAS_KEY_FORWARDS, bF);
-        params.put(INPUT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
-        params.put(RECURRENT_WEIGHT_KEY_BACKWARDS,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
-        params.put(BIAS_KEY_BACKWARDS,bR);
+
+        if(initializeParams) {
+            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwF));
+            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwF));
+            params.put(BIAS_KEY_FORWARDS, bF);
+            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
+            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
+            params.put(BIAS_KEY_BACKWARDS, bR);
+        } else {
+            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new int[]{nLast, 4 * nL}, iwF));
+            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new int[]{nL, 4 * nL + 3}, rwF));
+            params.put(BIAS_KEY_FORWARDS, bF);
+            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new int[]{nLast, 4 * nL}, iwR));
+            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new int[]{nL, 4 * nL + 3}, rwR));
+            params.put(BIAS_KEY_BACKWARDS, bR);
+        }
     }
 
 

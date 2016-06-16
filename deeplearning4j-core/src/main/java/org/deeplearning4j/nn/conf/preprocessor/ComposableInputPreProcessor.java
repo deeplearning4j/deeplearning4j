@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -30,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Composable input pre processor
  * @author Adam Gibson
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
 	private InputPreProcessor[] inputPreProcessors;
 

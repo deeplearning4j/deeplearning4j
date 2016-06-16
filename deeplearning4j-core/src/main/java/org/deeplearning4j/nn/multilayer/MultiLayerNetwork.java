@@ -346,6 +346,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
      */
     public void init() {
+        init(null,false);
+    }
+
+    /**
+     * Initialize the MultiLayerNetwork, optionally with an existing parameters array.
+     * If an existing parameters array is specified, it will be used (and the values will not be modified) in the network;
+     * if no parameters array is specified, parameters will be initialized randomly according to the network configuration.
+     *
+     * @param parameters              Network parameter. May be null. If null: randomly initialize.
+     * @param cloneParametersArray    Whether the parameter array (if any) should be cloned, or used directly
+     */
+    public void init(INDArray parameters, boolean cloneParametersArray){
         if (layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
         if (initCalled)
@@ -354,7 +366,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int nLayers = getnLayers();
 
         if (nLayers < 1)
-            throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
+            throw new IllegalStateException("Unable to create network: number of layers is less than 1");
 
         if (this.layers == null || this.layers[0] == null) {
             if (this.layers == null)
@@ -369,8 +381,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 backpropParamLength += nParamsPerLayer[i];
             }
 
-            //Create parameters array:
-            flattenedParams = Nd4j.create(1,backpropParamLength);
+            //Create parameters array, if required
+            boolean initializeParams;
+            if(parameters != null ){
+                if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+                if(parameters.length() != backpropParamLength) throw new IllegalArgumentException("Invalid parameters: expected length " + backpropParamLength + ", got length " + parameters.length());
+
+                if(cloneParametersArray) flattenedParams = parameters.dup();
+                else flattenedParams = parameters;
+
+                initializeParams = false;
+            } else {
+                flattenedParams = Nd4j.create(1, backpropParamLength);
+                initializeParams = true;
+            }
 
             // construct multi-layer
             int paramCountSoFar = 0;
@@ -384,7 +408,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView);
+                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i, paramsView, initializeParams);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -1522,6 +1546,42 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return output(input, TrainingMode.TRAIN);
     }
 
+    /**
+     * Label the probabilities of the input
+     *
+     * @param iterator test data to evaluate
+     * @return a vector of probabilities
+     * given each label.
+     * <p>
+     * This is typically of the form:
+     * [0.5, 0.5] or some other probability distribution summing to one
+     */
+    public INDArray output(DataSetIterator iterator, boolean train) {
+        List<INDArray> outList = new ArrayList<>();
+        while(iterator.hasNext()){
+            DataSet next = iterator.next();
+
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
+                outList.add(this.output(features,train,fMask,lMask));
+
+            } else {
+                outList.add(output(features,train));
+            }
+        }
+        return Nd4j.vstack(outList.toArray(new INDArray[0]));
+    }
+
+    public INDArray output(DataSetIterator iterator) {
+        return output(iterator, false);
+    }
+
 
     /**
      * Reconstructs the input.
@@ -2259,6 +2319,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(layers == null || !(layers[layers.length-1] instanceof BaseOutputLayer)){
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
+        if (labelsList == null)
+            labelsList = iterator.getLabels();
 
         Evaluation e = (labelsList == null)? new Evaluation(): new Evaluation(labelsList);
         while(iterator.hasNext()){

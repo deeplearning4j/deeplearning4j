@@ -615,7 +615,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             }
 
             INDArray paramsView = Nd4j.create(1,w.length() + nOut);
-            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsView);
+            layer = LayerFactories.getFactory(clone).create(clone, iterationListeners, this.index, paramsView, true);
 
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());
             layer.setParam(DefaultParamInitializer.BIAS_KEY,newB);
