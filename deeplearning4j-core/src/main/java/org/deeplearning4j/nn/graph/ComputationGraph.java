@@ -21,7 +21,10 @@ package org.deeplearning4j.nn.graph;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -557,9 +560,15 @@ public class ComputationGraph implements Serializable, Model {
     /** Fit the ComputationGraph using a DataSetIterator.
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
-    public void fit(DataSetIterator dataSetIterator){
+    public void fit(DataSetIterator iterator){
         if(numInputArrays != 1 || numOutputArrays != 1) throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                 + " multiple inputs or outputs using a DataSetIterator");
+
+        DataSetIterator dataSetIterator;
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+            dataSetIterator = new AsyncDataSetIterator(iterator, 10);
+        } else dataSetIterator = iterator;
 
         if(configuration.isPretrain()){
             pretrain(dataSetIterator);
@@ -613,7 +622,13 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Fit the ComputationGraph using a MultiDataSetIterator */
-    public void fit(MultiDataSetIterator multiDataSetIterator){
+    public void fit(MultiDataSetIterator multic){
+
+        MultiDataSetIterator multiDataSetIterator;
+        if (!(multic instanceof AsyncMultiDataSetIterator)) {
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multic, 8);
+        } else multiDataSetIterator = multic;
+
         if(configuration.isPretrain()){
             pretrain(multiDataSetIterator);
         }
