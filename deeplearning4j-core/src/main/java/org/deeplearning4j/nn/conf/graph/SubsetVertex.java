@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -35,7 +36,7 @@ import java.util.Arrays;
  * In the case of convolutional (4d) activations, this is done along depth.
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class SubsetVertex extends GraphVertex {
 
     private int from;
