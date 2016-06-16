@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -905,6 +907,30 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder workers(int numWorkers) {
             super.workers(numWorkers);
+            return this;
+        }
+
+        @Override
+        public Builder sequenceLearningAlgorithm(SequenceLearningAlgorithm<VocabWord> algorithm) {
+            super.sequenceLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder sequenceLearningAlgorithm(String algorithm) {
+            super.sequenceLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder elementsLearningAlgorithm(ElementsLearningAlgorithm<VocabWord> algorithm) {
+            super.elementsLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder elementsLearningAlgorithm(String algorithm) {
+            super.elementsLearningAlgorithm(algorithm);
             return this;
         }
 

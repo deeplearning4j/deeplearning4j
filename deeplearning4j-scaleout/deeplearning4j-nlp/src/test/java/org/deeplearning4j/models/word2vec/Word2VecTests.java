@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.canova.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -143,6 +144,46 @@ public class Word2VecTests {
         assertTrue(lst.contains("week"));
         assertTrue(lst.contains("night"));
         assertTrue(lst.contains("year"));
+    }
+
+    @Test
+    public void testWord2VecCBOW() throws Exception {
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(1)
+                .iterations(2)
+                .learningRate(0.025)
+                .layerSize(150)
+                .seed(42)
+                .sampling(0)
+                .negativeSample(5)
+                .windowSize(5)
+                .modelUtils(new BasicModelUtils<VocabWord>())
+                .useAdaGrad(true)
+                .iterate(iter)
+                .workers(8)
+                .tokenizerFactory(t)
+                .elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .build();
+
+        vec.fit();
+
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        log.info(Arrays.toString(lst.toArray()));
+
+        //   assertEquals(10, lst.size());
+
+        double sim = vec.similarity("day", "night");
+        log.info("Day/night similarity: " + sim);
+
+        assertTrue(lst.contains("week"));
+        assertTrue(lst.contains("night"));
+        assertTrue(lst.contains("year"));
+        assertTrue(sim > 0.65f);
     }
 
 

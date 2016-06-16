@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.scaleout.job;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
  * Created by agibsonccc on 11/27/14.

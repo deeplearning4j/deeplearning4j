@@ -84,18 +84,15 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
 
         //final T word = sequence.getElements().get(i);
-        List<T> sentence = sequence.getElements();
+        List<T> sentence = skipGram.applySubsampling(sequence,nextRandom).getElements();
 
-        List<T> labels = new ArrayList<>(); //(List<T>) sequence.getSequenceLabel();
+        List<T> labels = new ArrayList<>();
         labels.addAll(sequence.getSequenceLabels());
-        //    final VocabWord word = labels.get(0);
 
         if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if(sentence.isEmpty() || labels.isEmpty())
             return;
-
-        //   log.info("Training word: " + word.getLabel() +  " against label: " + labels.get(0).getLabel());
 
         for (T lastWord: labels) {
             for (T word:  sentence) {
@@ -104,18 +101,5 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 skipGram.iterateSample(word, lastWord,nextRandom,alpha);
             }
         }
-
-        /*
-        int end =  window * 2 + 1 - b;
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < labels.size()) {
-                    T lastWord = labels.get(c);
-                    skipGram.iterateSample(word, lastWord,nextRandom,alpha);
-                }
-            }
-        }
-        */
     }
 }
