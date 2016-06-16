@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.impl.vanilla;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
@@ -9,6 +8,7 @@ import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -27,7 +27,7 @@ import java.util.Iterator;
  * VanillaTrainingMaster: A {@link TrainingMaster} implementation for spark-only training.
  * This is standard parameter averaging, using no
  */
-@AllArgsConstructor @Data
+@Data
 public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResult, VanillaTrainingWorker> {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaTrainingMaster.class);
@@ -37,6 +37,8 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     private int batchSizePerWorker;
     private int averagingFrequency;
     private int prefetchNumBatches;
+    private boolean collectTrainingStats;
+
 
     private VanillaTrainingMaster(Builder builder){
         this.saveUpdater = builder.saveUpdater;
@@ -44,6 +46,19 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         this.batchSizePerWorker = builder.batchSizePerWorker;
         this.averagingFrequency = builder.averagingFrequency;
         this.prefetchNumBatches = builder.prefetchNumBatches;
+    }
+
+    public VanillaTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
+        this(saveUpdater, numWorkers, batchSizePerWorker, averagingFrequency, prefetchNumBatches, false);
+    }
+
+    public VanillaTrainingMaster(boolean saveUpdater, int numWorkers, int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches, boolean collectTrainingStats) {
+        this.saveUpdater = saveUpdater;
+        this.numWorkers = numWorkers;
+        this.batchSizePerWorker = batchSizePerWorker;
+        this.averagingFrequency = averagingFrequency;
+        this.prefetchNumBatches = prefetchNumBatches;
+        this.collectTrainingStats = collectTrainingStats;
     }
 
     @Override
@@ -54,7 +69,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
 
-        WorkerConfiguration configuration = new WorkerConfiguration(batchSizePerWorker, averagingFrequency, prefetchNumBatches);
+        WorkerConfiguration configuration = new WorkerConfiguration(batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new VanillaTrainingWorker(broadcast, saveUpdater, configuration);
     }
 
@@ -92,6 +107,21 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
             splitNum++;
         }
+    }
+
+    @Override
+    public void setCollectTrainingStats(boolean collectTrainingStats) {
+        this.collectTrainingStats = collectTrainingStats;
+    }
+
+    @Override
+    public boolean getIsCollectTrainingStats() {
+        return collectTrainingStats;
+    }
+
+    @Override
+    public SparkTrainingStats getTrainingStats() {
+        return null;
     }
 
 

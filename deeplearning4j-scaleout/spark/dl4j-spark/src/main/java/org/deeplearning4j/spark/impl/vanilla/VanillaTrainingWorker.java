@@ -2,9 +2,11 @@ package org.deeplearning4j.spark.impl.vanilla;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.nd4j.linalg.dataset.api.DataSet;
 
@@ -26,7 +28,7 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
         net.init(tuple.getParameters(), true);
 
         if(tuple.getUpdater() != null){
-            net.setUpdater(tuple.getUpdater().clone()); //Again: can'h have shared updaters
+            net.setUpdater(tuple.getUpdater().clone()); //Again: can't have shared updaters
         }
 
         return net;
@@ -42,9 +44,19 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     }
 
     @Override
+    public Pair<VanillaTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+        return new Pair<>(processMinibatch(dataSet,network,isLast), null);
+    }
+
+    @Override
     public VanillaTrainingResult getFinalResult(MultiLayerNetwork network) {
         //TODO: don't want to use java serialization for updater, in case worker is using cuda and master is using native, etc
         return new VanillaTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
+    }
+
+    @Override
+    public Pair<VanillaTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
+        return new Pair<>(getFinalResult(network),null);
     }
 
     @Override
