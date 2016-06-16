@@ -190,8 +190,7 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
-            network.init();
-            network.setParameters(params);
+            network.init(params, false);
 
 
             if (gotUpdater && updater != null) {
@@ -258,9 +257,7 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
-            network.init();
-            network.setParameters(params);
-
+            network.init(params, false);
 
             if (gotUpdater && updater != null) {
                 network.setUpdater(updater);
@@ -345,14 +342,11 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
             ComputationGraph cg = new ComputationGraph(confFromJson);
-            cg.init();
-            cg.setParams(params);
-
+            cg.init(params, false);
 
             if (gotUpdater && updater != null) {
                 cg.setUpdater(updater);
             }
-
 
             zis.close();
 
@@ -433,8 +427,7 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
             ComputationGraph cg = new ComputationGraph(confFromJson);
-            cg.init();
-            cg.setParams(params);
+            cg.init(params, false);
 
 
             if (gotUpdater && updater != null) {

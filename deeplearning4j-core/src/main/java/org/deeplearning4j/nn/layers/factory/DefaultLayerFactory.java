@@ -49,12 +49,12 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index,
-                                      INDArray layerParamsView) {
+                                      INDArray layerParamsView, boolean initializeParams) {
         Layer ret = getInstance(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(index);
         ret.setParamsViewArray(layerParamsView);
-        ret.setParamTable(getParams(conf, layerParamsView));
+        ret.setParamTable(getParams(conf, layerParamsView, initializeParams));
         ret.setConf(conf);
         return (E) ret;
     }
@@ -92,10 +92,10 @@ public class DefaultLayerFactory implements LayerFactory {
     }
 
 
-    protected Map<String, INDArray> getParams(NeuralNetConfiguration conf, INDArray paramsView) {
+    protected Map<String, INDArray> getParams(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         ParamInitializer init = initializer();
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        init.init(params, conf, paramsView);
+        init.init(params, conf, paramsView, initializeParams);
         return params;
     }
 
