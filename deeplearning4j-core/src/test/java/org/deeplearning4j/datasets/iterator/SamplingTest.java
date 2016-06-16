@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import static org.junit.Assert.*;
 
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 

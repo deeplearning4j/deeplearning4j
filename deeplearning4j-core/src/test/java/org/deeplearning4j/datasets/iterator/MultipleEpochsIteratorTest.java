@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.records.reader.impl.CSVRecordReader;
 import org.canova.api.records.reader.impl.FileRecordReader;

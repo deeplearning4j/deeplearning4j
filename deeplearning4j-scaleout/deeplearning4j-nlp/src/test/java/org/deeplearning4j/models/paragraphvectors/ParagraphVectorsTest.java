@@ -21,6 +21,8 @@ package org.deeplearning4j.models.paragraphvectors;
 
 import lombok.NonNull;
 import org.canova.api.util.ClassPathResource;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -287,6 +289,66 @@ public class ParagraphVectorsTest {
 
         assertEquals(labelsOriginal.size(), labelsBinary.size());
     }
+
+
+    @Test
+    public void testParagraphVectorsDM() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+        File file = resource.getFile();
+        SentenceIterator iter = new BasicLineIterator(file);
+
+//        InMemoryLookupCache cache = new InMemoryLookupCache(false);
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        LabelsSource source = new LabelsSource("DOC_");
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1)
+                .iterations(3)
+                .epochs(1)
+                .layerSize(100)
+                .learningRate(0.025)
+                .labelsSource(source)
+                .windowSize(5)
+                .iterate(iter)
+                .trainWordVectors(true)
+                .vocabCache(cache)
+                .tokenizerFactory(t)
+                .sampling(0)
+                .sequenceLearningAlgorithm(new DM<VocabWord>())
+                .build();
+
+        vec.fit();
+
+
+        int cnt1 = cache.wordFrequency("day");
+        int cnt2 = cache.wordFrequency("me");
+
+        assertNotEquals(1, cnt1);
+        assertNotEquals(1, cnt2);
+        assertNotEquals(cnt1, cnt2);
+
+        double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
+        log.info("9835/12492 similarity: " + similarity1);
+//        assertTrue(similarity1 > 0.2d);
+
+        double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
+        log.info("3720/16392 similarity: " + similarity2);
+  //      assertTrue(similarity2 > 0.2d);
+
+        double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
+        log.info("6347/3720 similarity: " + similarity3);
+//        assertTrue(similarity3 > 0.6d);
+
+        double similarityX = vec.similarity("DOC_3720", "DOC_9852");
+        log.info("3720/9852 similarity: " + similarityX);
+        assertTrue(similarityX < 0.5d);
+
+    }
+
 
     @Test
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {

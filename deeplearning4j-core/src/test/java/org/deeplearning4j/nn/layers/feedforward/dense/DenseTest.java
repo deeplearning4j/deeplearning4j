@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.layers.feedforward.dense;
 
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
