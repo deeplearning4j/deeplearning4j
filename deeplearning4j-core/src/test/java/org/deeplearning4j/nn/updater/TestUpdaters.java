@@ -72,7 +72,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		Gradient gradientDup = new DefaultGradient();
@@ -127,7 +127,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
@@ -161,7 +161,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, iteration, 1);
@@ -205,7 +205,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
@@ -244,7 +244,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
@@ -282,7 +282,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 
 		updater.update(layer, gradient, -1, 1);
@@ -312,7 +312,7 @@ public class TestUpdaters {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params);
+		Layer layer =  LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
 		Updater updater = UpdaterCreator.getUpdater(layer);
 		
 		for( int i=0; i<weightGradient.length(); i++ ) weightGradient.putScalar(i, r.nextDouble());

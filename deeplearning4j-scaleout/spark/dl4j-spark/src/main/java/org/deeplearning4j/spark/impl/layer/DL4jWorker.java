@@ -50,7 +50,7 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
             throw new IllegalStateException("Please specify a layer factory");
         int numParams = layerFactory.initializer().numParams(conf,true);
         INDArray thisParams = Nd4j.create(1, numParams);
-        this.network = layerFactory.create(conf, null, 0, thisParams);
+        this.network = layerFactory.create(conf, null, 0, thisParams, true);
         if(numParams != params.length())
             throw new IllegalStateException("Number of params for configured network was " + numParams + " while the specified parameter vector length was " + params.length());
         Layer network = (Layer) this.network;

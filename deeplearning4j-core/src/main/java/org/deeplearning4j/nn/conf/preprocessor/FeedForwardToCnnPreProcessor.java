@@ -82,7 +82,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             return input;
         if(input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight
-                    + " x columns " + inputWidth  + " but was instead " + Arrays.toString(input.shape()));
+                    + " x columns " + inputWidth + " x channels " + numChannels + " but was instead " + Arrays.toString(input.shape()));
 
         return input.reshape('c',input.size(0),numChannels,inputHeight,inputWidth);
     }
