@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -33,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 @NoArgsConstructor
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
