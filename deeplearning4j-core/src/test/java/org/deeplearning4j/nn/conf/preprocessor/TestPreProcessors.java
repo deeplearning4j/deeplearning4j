@@ -43,7 +43,7 @@ public class TestPreProcessors {
 
             int numParams = LayerFactories.getFactory(nnc.getLayer()).initializer().numParams(nnc,true);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params);
+            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray activations3dc = Nd4j.create(new int[]{miniBatchSize, layerSize, timeSeriesLength}, 'c');
@@ -128,7 +128,7 @@ public class TestPreProcessors {
 
             int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params);
+            DenseLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray rand = Nd4j.rand(miniBatchSize * timeSeriesLength, layerSize);
@@ -210,7 +210,7 @@ public class TestPreProcessors {
 
                             int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params);
+                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             INDArray activationsCnn = Nd4j.rand(
@@ -288,7 +288,7 @@ public class TestPreProcessors {
 
                             int numParams = LayerFactories.getFactory(nnc).initializer().numParams(nnc,true);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params);
+                            ConvolutionLayer layer = LayerFactories.getFactory(nnc.getLayer()).create(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             int[] shape_rnn = new int[]{miniBatchSize, nChannels * inputHeight * inputWidth, timeSeriesLength};

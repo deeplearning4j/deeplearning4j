@@ -99,7 +99,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -133,7 +133,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -167,7 +167,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -199,7 +199,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -234,7 +234,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0,params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0,params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -268,7 +268,7 @@ public class TestDecayPolicies {
 
             int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
             INDArray params = Nd4j.create(1, numParams);
-            Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+            Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
             Updater updater = UpdaterCreator.getUpdater(layer);
 
             Gradient gradientActual = new DefaultGradient();
@@ -444,7 +444,7 @@ public class TestDecayPolicies {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientExpected = new DefaultGradient();
