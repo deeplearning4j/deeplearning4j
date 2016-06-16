@@ -202,6 +202,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
 
     @Override
     public void reset() {
+        exampleCount = 0;
         inputStream = loader.getInputStream();
     }
 

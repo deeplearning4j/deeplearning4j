@@ -7,7 +7,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
-The most recent stable release in Maven Central is `0.4-rc3.9`, and the current master is `0.4-rc3.10-SNAPSHOT`. For more on working with snapshots, see this [page](http://deeplearning4j.org/snapshot).
+The most recent stable release in Maven Central is `0.4-rc3.10`, and the current master is `0.4-rc3.11-SNAPSHOT`. For more on working with snapshots, see this [page](http://deeplearning4j.org/snapshot).
 
 ---
 ## Using Deeplearning4j
@@ -38,11 +38,11 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ---
 ## Documentation
-Documentation is available at [deeplearning4j.org](http://deeplearning4j.org/) and [JavaDocs](http://deeplearning4j.org/doc/).
+Documentation is available at [deeplearning4j.org](http://deeplearning4j.org) and [JavaDocs](http://deeplearning4j.org/doc).
 
 ## Support
 
-We are not supporting Stackoverflow right now. Github issues should be limited to bug reports. Please join the community on [Gitter](https:://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. 
+We are not supporting Stackoverflow right now. Github issues should be limited to bug reports. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact). 
 
 ## Installation
 To install Deeplearning4J, there are a couple approaches (briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below). More information can be found on the [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).

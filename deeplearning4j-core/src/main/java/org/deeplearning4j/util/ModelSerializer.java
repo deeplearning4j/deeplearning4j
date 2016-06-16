@@ -17,6 +17,7 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -26,18 +27,40 @@ import java.util.zip.ZipOutputStream;
  */
 public class ModelSerializer {
 
+    /**
+     * Write a model to a file
+     * @param model the model to write
+     * @param file the file to write to
+     * @param saveUpdater whether to save the updater or not
+     * @throws IOException
+     */
     public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))){
             writeModel(model, stream, saveUpdater);
         }
     }
 
+    /**
+     * Write a model to a file path
+     * @param model the model to write
+     * @param path the path to write to
+     * @param saveUpdater whether to save the updater
+     *                    or not
+     * @throws IOException
+     */
     public static void writeModel(@NonNull Model model, @NonNull String path, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(path))){
             writeModel(model, stream, saveUpdater);
         }
     }
 
+    /**
+     * Write a model to an output stream
+     * @param model the model to save
+     * @param stream the output stream to write to
+     * @param saveUpdater whether to save the updater for the model or not
+     * @throws IOException
+     */
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater) throws IOException {
         ZipOutputStream zipfile = new ZipOutputStream(stream);
 
@@ -98,6 +121,13 @@ public class ModelSerializer {
         }
     }
 
+    /**
+     * Load a multi layer network
+     * from a file
+     * @param file the file to load from
+     * @return the loaded multi layer network
+     * @throws IOException
+     */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file) throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
@@ -112,7 +142,7 @@ public class ModelSerializer {
 
         ZipEntry config = zipFile.getEntry("configuration.json");
         if (config != null) {
-        //restoring configuration
+            //restoring configuration
 
             InputStream stream = zipFile.getInputStream(config);
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
@@ -137,7 +167,7 @@ public class ModelSerializer {
 
             dis.close();
             gotCoefficients = true;
-         }
+        }
 
 
         ZipEntry updaters = zipFile.getEntry("updater.bin");
@@ -160,8 +190,7 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
-            network.init();
-            network.setParameters(params);
+            network.init(params, false);
 
 
             if (gotUpdater && updater != null) {
@@ -171,14 +200,171 @@ public class ModelSerializer {
         } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
     }
 
+
+    /**
+     * Load a multi layer network
+     * from a file
+     * @param is the inputstream to load from
+     * @return the loaded multi layer network
+     * @throws IOException
+     */
+    public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
+        ZipInputStream zipFile = new ZipInputStream(is);
+
+        boolean gotConfig = false;
+        boolean gotCoefficients = false;
+        boolean gotUpdater = false;
+
+        String json = "";
+        INDArray params = null;
+        Updater updater = null;
+
+
+        ZipEntry entry;
+        while((entry = zipFile.getNextEntry()) != null) {
+            switch (entry.getName()) {
+                case "configuration.json":
+                    DataInputStream dis = new DataInputStream(zipFile);
+                    params = Nd4j.read(dis);
+                    gotCoefficients = true;
+                    break;
+                case "coefficients.bin":
+                    DataInputStream dis2 = new DataInputStream(zipFile);
+                    params = Nd4j.read(dis2);
+                    gotCoefficients = true;
+                    break;
+                case "updater.bin":
+                    ObjectInputStream ois = new ObjectInputStream(zipFile);
+
+                    try {
+                        updater = (Updater) ois.readObject();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    gotUpdater = true;
+                    break;
+
+            }
+
+            zipFile.closeEntry();
+
+        }
+
+
+        zipFile.close();
+
+        if (gotConfig && gotCoefficients) {
+            MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
+            MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
+            network.init(params, false);
+
+            if (gotUpdater && updater != null) {
+                network.setUpdater(updater);
+            }
+            return network;
+        } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
+    }
+
+    /**
+     *
+     * @param path
+     * @return
+     * @throws IOException
+     */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path) throws IOException {
         return restoreMultiLayerNetwork(new File(path));
     }
 
+    /**
+     *
+     * @param path
+     * @return
+     * @throws IOException
+     */
     public static ComputationGraph restoreComputationGraph(@NonNull String path) throws IOException {
         return restoreComputationGraph(new File(path));
     }
 
+
+    /**
+     * Load a computation graph from a file
+     * @param is the inputstream to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
+    public static ComputationGraph restoreComputationGraph(@NonNull InputStream is) throws IOException {
+        ZipInputStream zis = new ZipInputStream(is);
+        boolean gotConfig = false;
+        boolean gotCoefficients = false;
+        boolean gotUpdater = false;
+
+        String json = "";
+        INDArray params = null;
+        ComputationGraphUpdater updater = null;
+        BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
+
+        ZipEntry entry;
+        while((entry = zis.getNextEntry()) != null) {
+            switch(entry.getName()) {
+                case "configuration.json":
+                    String line;
+                    StringBuilder js = new StringBuilder();
+                    while ((line = reader.readLine()) != null) {
+                        js.append(line).append("\n");
+                    }
+                    json = js.toString();
+
+                    gotConfig = true;
+                    break;
+                case "coefficients.bin":
+                    DataInputStream dis = new DataInputStream(zis);
+                    params = Nd4j.read(dis);
+
+                    gotCoefficients = true;
+                    break;
+                case "updater.bin":
+                    ObjectInputStream ois = new ObjectInputStream(zis);
+
+                    try {
+                        updater = (ComputationGraphUpdater) ois.readObject();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    gotUpdater = true;
+            }
+
+            zis.closeEntry();
+        }
+
+        if (gotConfig && gotCoefficients) {
+            ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
+            ComputationGraph cg = new ComputationGraph(confFromJson);
+            cg.init(params, false);
+
+            if (gotUpdater && updater != null) {
+                cg.setUpdater(updater);
+            }
+
+            zis.close();
+
+            return cg;
+        }
+        else {
+            zis.close();
+            throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdater + "]");
+        }
+    }
+
+    /**
+     * Load a computation graph from a file
+     * @param file the file to get the computation graph from
+     * @return the loaded computation graph
+     *
+     * @throws IOException
+     */
     public static ComputationGraph restoreComputationGraph(@NonNull File file) throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
@@ -241,17 +427,22 @@ public class ModelSerializer {
         if (gotConfig && gotCoefficients) {
             ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
             ComputationGraph cg = new ComputationGraph(confFromJson);
-            cg.init();
-            cg.setParams(params);
+            cg.init(params, false);
 
 
             if (gotUpdater && updater != null) {
                 cg.setUpdater(updater);
             }
             return cg;
-        } else throw new IllegalStateException("Model wasnt found within file: gotConfig: ["+ gotConfig+"], gotCoefficients: ["+ gotCoefficients+"], gotUpdater: ["+gotUpdater+"]");
+        }
+        else throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdater+  "]");
     }
 
+    /**
+     *
+     * @param model
+     * @return
+     */
     public static Task taskByModel(Model model) {
         Task task = new Task();
         try {

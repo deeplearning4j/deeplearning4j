@@ -45,7 +45,7 @@ public class GRUTest {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
+		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
 		
 		//Data: has shape [miniBatchSize,nIn,timeSeriesLength];
 		//Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -95,7 +95,7 @@ public class GRUTest {
 
 		int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
 		INDArray params = Nd4j.create(1, numParams);
-		GRU gru = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params);
+		GRU gru = LayerFactories.getFactory(conf.getLayer()).create(conf,null,0,params,true);
 		//Set input, do a forward pass:
 		gru.activate(inputData);
 		assertNotNull(gru.input());
