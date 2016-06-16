@@ -21,7 +21,12 @@ package org.nd4j.linalg.jcublas;
 
 
 
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -30,6 +35,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.List;
 
@@ -362,7 +368,23 @@ public class JCublasNDArray extends BaseNDArray {
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
 
-            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context ), this.data.length() * this.data().getElementSize(), 0, context);
+            Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
+            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE && configuration.getFirstMemory() == AllocationStatus.DEVICE) {
+                allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context), this.data.length() * this.data().getElementSize(), 0, context);
+            } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED || configuration.getFirstMemory() == AllocationStatus.HOST) {
+                AllocationPoint pointSrc = allocator.getAllocationPoint(this);
+                AllocationPoint pointDst = allocator.getAllocationPoint(array);
+
+                if (pointSrc.getAllocationStatus() == AllocationStatus.HOST) {
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
+                } else {
+                    // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
+                    allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+                }
+            }
 
             allocator.getFlowController().registerAction(context, array, this);
             return array;
@@ -378,7 +400,23 @@ public class JCublasNDArray extends BaseNDArray {
 
             CudaContext context = allocator.getFlowController().prepareAction(array, this);
 
-            allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context ), this.data.length() * this.data().getElementSize(), 0, context);
+            Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+
+            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE && configuration.getFirstMemory() == AllocationStatus.DEVICE) {
+                allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context), this.data.length() * this.data().getElementSize(), 0, context);
+            } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED || configuration.getFirstMemory() == AllocationStatus.HOST) {
+                AllocationPoint pointSrc = allocator.getAllocationPoint(this);
+                AllocationPoint pointDst = allocator.getAllocationPoint(array);
+
+                if (pointSrc.getAllocationStatus() == AllocationStatus.HOST) {
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
+                } else {
+                    // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
+                    allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
+
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+                }
+            }
 
             allocator.getFlowController().registerAction(context, array, this);
 

@@ -17,14 +17,15 @@ import org.nd4j.jita.allocator.time.rings.LockedRing;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.constant.ConstantProtector;
 import org.nd4j.linalg.cache.ConstantHandler;
-import org.nd4j.jita.constant.CudaConstantHandler;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -89,8 +90,6 @@ public class AtomicAllocator implements Allocator {
         here we have handles for garbage collector threads
         ThreadId, GarbageCollector
      */
-    private Map<Long, ZeroGarbageCollectorThread> collectorsZero = new ConcurrentHashMap<>();
-    private Map<Integer, DeviceGarbageCollectorThread> collectorsDevice = new ConcurrentHashMap<>();
     private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
@@ -105,18 +104,24 @@ public class AtomicAllocator implements Allocator {
 
     private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
 
-    private ConstantHandler constantHandler = new CudaConstantHandler();
+    private ConstantHandler constantHandler = Nd4j.getConstantHandler();
 
     public static AtomicAllocator getInstance() {
+        if (INSTANCE == null)
+            throw new RuntimeException("AtomicAllocator is NULL");
         return INSTANCE;
     }
 
-    protected AtomicAllocator() {
+    protected static ConstantProtector protector;
+
+    private AtomicAllocator() {
         this.memoryHandler = new CudaZeroHandler();
         this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
+        this.protector = ConstantProtector.getInstance();
+
     }
 
     /**
@@ -327,8 +332,13 @@ public class AtomicAllocator implements Allocator {
         // by default we allocate on initial location
         AllocationPoint point = null;
 
-        // TODO: size limitation should be rised in final release to something more sensible
-        point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
+        if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+            point = allocateMemory(buffer, requiredMemory, memoryHandler.getInitialLocation(), initialize);
+        } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
+            // for DELAYED memory model we allocate only host memory, regardless of firstMemory configuration value
+
+            point = allocateMemory(buffer, requiredMemory, AllocationStatus.HOST, initialize);
+        }
 
         return point;
     }
@@ -350,12 +360,12 @@ public class AtomicAllocator implements Allocator {
         //point.attachBuffer(buffer);
         point.setObjectId(allocId);
         point.setShape(requiredMemory);
-
+/*
         if (buffer instanceof CudaIntDataBuffer) {
             buffer.setConstant(true);
             point.setConstant(true);
         }
-
+*/
         int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
@@ -864,22 +874,22 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
-        return constantHandler.getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array);
     }
 
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
-        return constantHandler.getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array);
     }
 
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        return constantHandler.getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array);
     }
 
     @Override
     public DataBuffer moveToConstant(DataBuffer dataBuffer) {
-        constantHandler.moveToConstantSpace(dataBuffer);
+        Nd4j.getConstantHandler().moveToConstantSpace(dataBuffer);
         return dataBuffer;
     }
 }

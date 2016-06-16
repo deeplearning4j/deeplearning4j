@@ -543,6 +543,36 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(exp,var,1e-7f);
     }
 
+    @Test
+    public void testDropout() {
+        INDArray array = Nd4j.linspace(1, 100, 100);
+        INDArray result = Nd4j.create(100);
+
+        DropOut dropOut = new DropOut(array, result, 0.05);
+        Nd4j.getExecutioner().exec(dropOut);
+
+        System.out.println("Src array: " + array);
+        System.out.println("Res array: " + result);
+
+        assertNotEquals(array, result);
+    }
+
+    @Test
+    public void testDropoutInverted() {
+        INDArray array = Nd4j.linspace(1, 100, 100);
+        INDArray result = Nd4j.create(100);
+
+        DropOutInverted dropOut = new DropOutInverted(array, result, 0.65);
+        Nd4j.getExecutioner().exec(dropOut);
+
+        System.out.println("Src array: " + array);
+        System.out.println("Res array: " + result);
+
+        assertNotEquals(array, result);
+    }
+
+
+
     @Override
     public char ordering() {
         return 'f';

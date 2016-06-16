@@ -3,6 +3,8 @@ package org.nd4j.linalg.cache;
 import java.util.Arrays;
 
 /**
+ * This is utility class, made to compare java arrays for caching purposes.
+ *
  * @author raver119@gmail.com
  */
 public class ArrayDescriptor {

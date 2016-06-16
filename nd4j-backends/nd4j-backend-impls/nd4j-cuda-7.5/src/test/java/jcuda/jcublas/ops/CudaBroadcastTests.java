@@ -25,7 +25,7 @@ public class CudaBroadcastTests {
         CudaEnvironment.getInstance().getConfiguration()
                 .setExecutionModel(Configuration.ExecutionModel.SEQUENTIAL)
                 .setFirstMemory(AllocationStatus.DEVICE)
-                .setMaximumBlockSize(128)
+                .setMaximumBlockSize(64)
                 .setMaximumGridSize(128)
                 .enableDebug(false);
 
