@@ -58,7 +58,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
@@ -81,23 +81,26 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         INDArray inputWeightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn));
         INDArray recurrentWeightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nParamsIn+nParamsRecurrent, nParamsIn+nParamsRecurrent+nBias));
-        
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist,inputWeightView));
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, recurrentWeightView));
-        biasView.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));   //Order: input, forget, output, input modulation, i.e., IFOG
-        /*The above line initializes the forget gate biases to specified value.
-         * See Sutskever PhD thesis, pg19:
-         * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
-         *  which is accomplished by initializing [the forget gate biases] to a large value (such as 5). If it is
-         *  not done, it will be harder to learn long range dependencies because the smaller values of the forget
-         *  gates will create a vanishing gradients problem."
-         *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
-         */
-        params.put(BIAS_KEY, biasView);
 
-        params.get(INPUT_WEIGHT_KEY).data().persist();
-        params.get(RECURRENT_WEIGHT_KEY).data().persist();
-        params.get(BIAS_KEY).data().persist();
+        if(initializeParams) {
+            params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, inputWeightView));
+            params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, recurrentWeightView));
+            biasView.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)}, Nd4j.ones(1, nL).muli(forgetGateInit));   //Order: input, forget, output, input modulation, i.e., IFOG}
+            /*The above line initializes the forget gate biases to specified value.
+             * See Sutskever PhD thesis, pg19:
+             * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
+             *  which is accomplished by initializing [the forget gate biases] to a large value (such as 5). If it is
+             *  not done, it will be harder to learn long range dependencies because the smaller values of the forget
+             *  gates will create a vanishing gradients problem."
+             *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+             */
+            params.put(BIAS_KEY, biasView);
+        } else {
+            params.put(INPUT_WEIGHT_KEY, WeightInitUtil.reshapeWeights(new int[]{nLast, 4 * nL}, inputWeightView));
+            params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.reshapeWeights(new int[]{nL, 4 * nL + 3}, recurrentWeightView));
+            params.put(BIAS_KEY, biasView);
+        }
+
     }
 
     @Override

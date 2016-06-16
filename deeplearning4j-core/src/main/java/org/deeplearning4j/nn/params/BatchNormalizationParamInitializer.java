@@ -24,7 +24,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramView) {
+    public void init(Map<String, INDArray> params, NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
         // gamma & beta per activation for DNN and per per feature matrix for CNN layers
         // TODO setup for CNN & RNN
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
@@ -33,9 +33,9 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nOut));
         INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut,2*nOut));
 
-        params.put(GAMMA,createGamma(conf, gammaView));
+        params.put(GAMMA,createGamma(conf, gammaView, initializeParams));
         conf.addVariable(GAMMA);
-        params.put(BETA, createBeta(conf, betaView));
+        params.put(BETA, createBeta(conf, betaView, initializeParams));
         conf.addVariable(BETA);
     }
 
@@ -54,16 +54,15 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         return out;
     }
 
-    protected INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView) {
+    protected INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView, boolean initializeParams) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        betaView.assign(layer.getBeta());
+        if(initializeParams) betaView.assign(layer.getBeta());
         return betaView;
     }
 
-    protected INDArray createGamma(NeuralNetConfiguration conf, INDArray gammaView) {
+    protected INDArray createGamma(NeuralNetConfiguration conf, INDArray gammaView, boolean initializeParams) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        gammaView.assign(layer.getGamma());
+        if(initializeParams) gammaView.assign(layer.getGamma());
         return gammaView;
     }
-
 }
