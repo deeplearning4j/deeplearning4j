@@ -79,7 +79,9 @@
         (39,simdOps::SoftMaxDerivative), \
         (40,simdOps::LogSoftMax), \
         (41,simdOps::IsMax), \
-        (42,simdOps::SpecialDerivative)
+        (42,simdOps::SpecialDerivative), \
+        (43,simdOps::DropOut), \
+        (44,simdOps::DropOutInverted)
 
 
 namespace functions {

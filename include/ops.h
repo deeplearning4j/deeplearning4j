@@ -6,6 +6,7 @@
 #define MIN 1e-12
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
+#define MIN_CUTFOFF -3.79297773665f
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams) {}
 #ifdef __CUDACC__
@@ -16,7 +17,7 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __host__  __device__
+#define op_def inline __device__
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
 #elif __clang__
@@ -712,14 +713,14 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			const double realMin = 1.1755e-38f;
-			const double cutOff = nd4j::math::nd4j_log(realMin);
+			//const double realMin = 1.1755e-38f;
+			//const double cutOff = nd4j::math::nd4j_log(realMin);
 
 			T k = params[0];
-			if (d1 * k > -cutOff)
-				return (T)(-cutOff / k);
-			else if (d1 * k < cutOff)
-				return (T)(cutOff / k);
+			if (d1 * k > - MIN_CUTFOFF)
+				return (T)(- MIN_CUTFOFF / k);
+			else if (d1 * k < MIN_CUTFOFF)
+				return (T)(MIN_CUTFOFF / k);
 			return d1;
 		}
 	};
@@ -1029,44 +1030,37 @@ namespace simdOps {
 	public:
 		static const int extraParamsLen = 2;
 
-		op_def static T * generateExtraParams() {
-			T *extraParams = new T[2];
-			return extraParams;
+		op_def static T *generateExtraParams() {
+			//T *extraParams = new T[2];
+			return nullptr;
 		}
 
-		op_def static void finalizeExtraParams(T **extraParams) {
-			delete[] * extraParams;
+		op_def static void finalizeExtraParams(T *extraParams) {
+			//delete[] extraParams;
 		}
 
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
-		op_def static  T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
-			T *extraParams = *extraParamsRef;
+		op_def static  T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
 			return reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1]));
 		}
 
-		op_def static T op(T d1, T d2, T **extraParamsRef) {
-			T *extraParams = *extraParamsRef;
+		op_def static T op(T d1, T d2, T *extraParams) {
 			extraParams[0] += d1 * d1;
 			extraParams[1] += d2 * d2;
 			return (d1 * d2);
 		}
 
-		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
-			T *extraParamsTotalRef = *extraParamsTotal;
-			T *extraParamsLocalRef = *extraParamsLocal;
-			extraParamsTotalRef[0] += extraParamsLocalRef[0];
-			extraParamsTotalRef[1] += extraParamsLocalRef[1];
-
+		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
+			extraParamsTotal[0] += extraParamsLocal[0];
+			extraParamsTotal[1] += extraParamsLocal[1];
 		}
 
 #ifdef __CUDACC__
 		__device__
-		static inline T opAtomic(T d1, T d2, T **extraParamsRef) {
-			T *extraParams = *extraParamsRef;
-
+		static inline T opAtomic(T d1, T d2, T *extraParams) {
 			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], d1 * d1);
 			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], d2 * d2);
 
@@ -1074,13 +1068,13 @@ namespace simdOps {
 		}
 #endif
 
-		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
+		op_def static  T update(T old, T opOutput, T *extraParams) {
 			return old + opOutput;
 		}
 
 
-		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
-			return update(old, opOutput, extraParamsRef);
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return update(old, opOutput, extraParams);
 		}
 	};
 
@@ -1097,40 +1091,40 @@ namespace simdOps {
 			return nullptr;
 		}
 		
-		op_def static void finalizeExtraParams(T **extraParamsRef) {
+		op_def static void finalizeExtraParams(T *extraParamsRef) {
 			//no-op
-			delete[] * extraParamsRef;
+			//delete[] * extraParamsRef;
 		}
 		
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
-		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
 			return reduction;
 		}
 
-		op_def static T op(T d1, T d2, T **extraParamsRef) {
+		op_def static T op(T d1, T d2, T *extraParamsRef) {
 			return d1 * d2;
 		}
 
 	
 #ifdef __CUDACC__
 		__device__
-		static inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
 
-		op_def static T update(T old, T opOutput, T **extraParamsRef) {
+		op_def static T update(T old, T opOutput, T *extraParamsRef) {
 			return opOutput + old;
 		}
 
-		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+		op_def static T merge(T old, T opOutput, T *extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
 
-		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
+		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
 	};
 
 
@@ -1144,20 +1138,19 @@ namespace simdOps {
 			return nullptr;
 		}
 
-		op_def static void finalizeExtraParams(T **extraParamsRef) {
+		op_def static void finalizeExtraParams(T *extraParamsRef) {
 			//no-op
-			delete[] * extraParamsRef;
 		}
 
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
-		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
 			return nd4j::math::nd4j_sqrt<T>(reduction);
 		}
 		
-		op_def static T op(T d1, T d2, T **extraParamsRef) {
+		op_def static T op(T d1, T d2, T *extraParamsRef) {
 			T ret = d1 - d2;
 			return ret * ret;
 		}
@@ -1165,19 +1158,19 @@ namespace simdOps {
 		
 #ifdef __CUDACC__
 			__device__
-			static  inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+			static  inline T opAtomic(T d1, T d2, T *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
 
-		op_def static T update(T old, T opOutput, T **extraParamsRef) {
+		op_def static T update(T old, T opOutput, T *extraParamsRef) {
 			return opOutput + old;
 		}
 
-		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+		op_def static T merge(T old, T opOutput, T *extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
-		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {}
+		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
 
 	};
 
@@ -1191,34 +1184,32 @@ namespace simdOps {
 			return nullptr;
 	}
 
-		op_def static void finalizeExtraParams(T **extraParamsRef) {
+		op_def static void finalizeExtraParams(T *extraParamsRef) {
 			//no-op
-			delete[] * extraParamsRef;
 		}
 
 		op_def static T startingValue(T *input) {
 			return 0.0;
 		}
 
-		op_def static T postProcess(T reduction, Nd4jIndex n, T **extraParamsRef) {
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
 			return reduction;
 		}
 
-		op_def static T op(T d1, T d2, T **extraParamsRef) {
+		op_def static T op(T d1, T d2, T *extraParamsRef) {
 			return nd4j::math::nd4j_abs<T>(d1 - d2);
 		}
 
-		op_def static  T update(T old, T opOutput, T **extraParamsRef) {
+		op_def static  T update(T old, T opOutput, T *extraParamsRef) {
 			return old + opOutput;
 		}
 
-		op_def static void aggregateExtraParams(T **extraParamsTotal, T **extraParamsLocal) {
-
-		}
+		op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {}
 		
+
 #ifdef __CUDACC__
 		__device__
-		static inline T opAtomic(T d1, T d2, T **extraParamsRef) {
+		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
@@ -1226,7 +1217,7 @@ namespace simdOps {
 #ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
 #endif
-		op_def static T merge(T old, T opOutput, T **extraParamsRef) {
+		op_def static T merge(T old, T opOutput, T *extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
 	};
@@ -1362,6 +1353,44 @@ namespace simdOps {
 
 		op_def static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
 			return d1;
+		}
+	};
+
+template<typename T>
+	class DropOut {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T prob = params[0];
+			T length = params[1];
+#ifdef __CUDACC__
+            int tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+#else
+			T rnd = (T) rand() / (T) RAND_MAX;
+#endif
+			return rnd <= prob ? (T) 0.0 : d1;
+		}
+	};
+
+template<typename T>
+	class DropOutInverted {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T prob = params[0];
+			T length = params[1];
+#ifdef __CUDACC__
+			int tid = gridDim.x * blockDim.x + threadIdx.x;
+            T rnd = nd4j::math::nd4j_abs<T>(nd4j::math::nd4j_cos<T>(clock64() * tid + length * tid));
+#else
+			T rnd = (T) rand() / (T) RAND_MAX;
+#endif
+			return rnd >= prob ? 0 : d1 / prob;
 		}
 	};
 }
