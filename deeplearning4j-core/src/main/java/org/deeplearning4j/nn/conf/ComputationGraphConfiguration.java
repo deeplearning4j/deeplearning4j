@@ -213,10 +213,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     public void validate() {
         if (networkInputs == null || networkInputs.size() < 1) {
-            throw new IllegalStateException("Invalid configuration: network has no inputs");
+            throw new IllegalStateException("Invalid configuration: network has no inputs. Use .addInputs(String...) to label (and give an ordering to) the network inputs");
         }
         if (networkOutputs == null || networkOutputs.size() < 1) {
-            throw new IllegalStateException("Invalid configuration: network has no outputs");
+            throw new IllegalStateException("Invalid configuration: network has no outputs. Use .setOutput(String...) to specify (and give an ordering to) the output vertices");
         }
 
         //Check uniqueness of names for inputs, layers, GraphNodes
