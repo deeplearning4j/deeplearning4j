@@ -382,7 +382,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Create parameters array, if required
             boolean initializeParams;
             if(parameters != null ){
-                if(parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+                if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
                 if(parameters.length() != backpropParamLength) throw new IllegalArgumentException("Invalid parameters: expected length " + backpropParamLength + ", got length " + parameters.length());
 
                 if(cloneParametersArray) flattenedParams = parameters.dup();
