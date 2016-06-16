@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
@@ -60,7 +61,7 @@ import java.util.List;
  */
 public class SparkDl4jMultiLayer implements Serializable {
 
-    public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 50;
+    public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     private transient JavaSparkContext sc;
     private TrainingMaster trainingMaster;
     private MultiLayerConfiguration conf;
@@ -124,6 +125,14 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     public void setNetwork(MultiLayerNetwork network) {
         this.network = network;
+    }
+
+    public void setCollectTrainingStats(boolean collectTrainingStats){
+        trainingMaster.setCollectTrainingStats(collectTrainingStats);
+    }
+
+    public SparkTrainingStats getSparkTrainingStats(){
+        return trainingMaster.getTrainingStats();
     }
 
     /**

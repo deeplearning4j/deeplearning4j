@@ -14,5 +14,6 @@ public class WorkerConfiguration implements Serializable {
     protected final int batchSizePerWorker;
     protected final int maxBatchesPerWorker;
     protected final int prefetchNumBatches;
+    protected final boolean collectTrainingStats;
 
 }
