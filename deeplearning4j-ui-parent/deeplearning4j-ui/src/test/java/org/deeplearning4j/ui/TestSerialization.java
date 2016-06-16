@@ -49,7 +49,7 @@ public class TestSerialization {
         INDArray input = d2.getFeatureMatrix();
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1), new HistogramIterationListener(1)),0, params);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1), new HistogramIterationListener(1)),0, params, true);
         da.setInput(input);
         ModelAndGradient g = new ModelAndGradient(da);
         String json = mapper.writeValueAsString(g);

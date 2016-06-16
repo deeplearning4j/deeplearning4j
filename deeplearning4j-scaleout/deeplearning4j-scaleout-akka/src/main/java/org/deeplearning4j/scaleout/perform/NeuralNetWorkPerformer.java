@@ -70,6 +70,6 @@ public class NeuralNetWorkPerformer implements WorkerPerformer {
         LayerFactory layerFactory = LayerFactories.getFactory(conf2.getLayer());
         int numParams = layerFactory.initializer().numParams(conf2,true);
         INDArray params = Nd4j.create(1, numParams);
-        this.neuralNetwork = LayerFactories.getFactory(conf2.getLayer()).create(conf2, null, 0, params);
+        this.neuralNetwork = LayerFactories.getFactory(conf2.getLayer()).create(conf2, null, 0, params, true);
     }
 }

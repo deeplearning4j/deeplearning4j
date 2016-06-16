@@ -63,7 +63,8 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView) {
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+                                                                      INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;
         switch(this.op){
             case Add:
