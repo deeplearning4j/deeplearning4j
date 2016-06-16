@@ -268,7 +268,7 @@ public class ComputationGraph implements Serializable, Model {
 
         boolean initializeParams;
         if(parameters != null){
-            if(parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+            if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
             if(parameters.length() != numParams) throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length " + parameters.length());
 
             if(cloneParametersArray) flattenedParams = parameters.dup();
