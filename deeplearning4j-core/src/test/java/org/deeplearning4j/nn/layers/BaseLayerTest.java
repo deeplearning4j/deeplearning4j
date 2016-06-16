@@ -72,7 +72,7 @@ public class BaseLayerTest {
 
         int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
         INDArray params = Nd4j.create(1, numParams);
-        return LayerFactories.getFactory(conf).create(conf, null, 0, params);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, params, true);
     }
 
 
