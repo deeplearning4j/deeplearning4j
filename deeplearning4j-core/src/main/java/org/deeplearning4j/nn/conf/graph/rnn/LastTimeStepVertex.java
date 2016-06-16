@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph.rnn;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -35,7 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * step of the last non-zero entry in the mask array (for each example separately) will be used.
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;

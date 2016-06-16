@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -30,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * @author Alex Black
  */
-@Data
+@Data @EqualsAndHashCode(callSuper=false)
 public class ElementWiseVertex extends GraphVertex {
 
     public ElementWiseVertex(@JsonProperty("op") Op op) {
