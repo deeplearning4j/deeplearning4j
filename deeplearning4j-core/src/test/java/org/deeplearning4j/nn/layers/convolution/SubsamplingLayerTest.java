@@ -214,7 +214,7 @@ public class SubsamplingLayerTest {
                         .build())
                 .build();
 
-        return LayerFactories.getFactory(conf).create(conf, null, 0, null);
+        return LayerFactories.getFactory(conf).create(conf, null, 0, null, true);
     }
 
     public INDArray getData() throws Exception {

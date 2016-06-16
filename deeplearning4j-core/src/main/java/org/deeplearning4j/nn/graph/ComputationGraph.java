@@ -213,7 +213,19 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /** Initialize the ComputationGraph network */
-    public void init(){
+    public void init() {
+        init(null, false);
+    }
+
+    /**
+     * Initialize the ComputationGraph, optionally with an existing parameters array.
+     * If an existing parameters array is specified, it will be used (and the values will not be modified) in the network;
+     * if no parameters array is specified, parameters will be initialized randomly according to the network configuration.
+     *
+     * @param parameters              Network parameter. May be null. If null: randomly initialize.
+     * @param cloneParametersArray    Whether the parameter array (if any) should be cloned, or used directly
+     */
+    public void init(INDArray parameters, boolean cloneParametersArray){
         if(initCalled) return;
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
@@ -253,7 +265,21 @@ public class ComputationGraph implements Serializable, Model {
             numParams += numParamsForVertex[i];
             i++;
         }
-        flattenedParams = Nd4j.create(1,numParams);
+
+        boolean initializeParams;
+        if(parameters != null){
+            if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
+            if(parameters.length() != numParams) throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length " + parameters.length());
+
+            if(cloneParametersArray) flattenedParams = parameters.dup();
+            else flattenedParams = parameters;
+
+            initializeParams = false;
+        } else {
+            flattenedParams = Nd4j.create(1,numParams);
+            initializeParams = true;
+        }
+
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -275,7 +301,7 @@ public class ComputationGraph implements Serializable, Model {
         for( Map.Entry<String,org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet() ){
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = n.instantiate(this,name,vertexNumber,paramsViewForVertex[vertexNumber]);
+            GraphVertex gv = n.instantiate(this,name,vertexNumber,paramsViewForVertex[vertexNumber], initializeParams);
 
             if(gv.hasLayer()){
                 numLayers++;

@@ -197,7 +197,7 @@ public class Train extends BaseSubCommand {
                 LayerFactory factory = LayerFactories.getFactory(conf);
                 int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
                 INDArray params = Nd4j.create(1, numParams);
-                Layer l = factory.create(conf, null, 0, params);
+                Layer l = factory.create(conf, null, 0, params, true);
                 DataSetIterator iter = new RecordReaderDataSetIterator( reader , 1);
                 while(iter.hasNext()) {
                     l.fit(iter.next().getFeatureMatrix());
