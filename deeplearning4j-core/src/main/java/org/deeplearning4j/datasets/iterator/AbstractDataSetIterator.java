@@ -15,17 +15,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- *  This is simple DataSetIterator implementation, that builds DataSetIterator out of INDArray pairs.
+ *  This is simple DataSetIterator implementation, that builds DataSetIterator out of INDArray/float[]/double[] pairs.
  *  Suitable for model feeding with externally originated data.
  *
  *  PLEASE NOTE: If total number of input elements % batchSize != 0, reminder will be ignored
  *
  * @author raver119@gmail.com
  */
-public class JavaDataSetIterator implements DataSetIterator {
+public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
     private DataSetPreProcessor preProcessor;
-    private transient Iterable<?> iterable;
-    private transient Iterator<?> iterator;
+    private transient Iterable<Pair<T, T>> iterable;
+    private transient Iterator<Pair<T, T>> iterator;
 
     private final int batchSize;
     private final Queue<DataSet> queue = new LinkedBlockingQueue<>(1);
@@ -33,11 +33,12 @@ public class JavaDataSetIterator implements DataSetIterator {
     private int numFeatures = -1;
     private int numLabels = -1;
 
-    public JavaDataSetIterator(@NonNull Iterable<Pair<INDArray, INDArray>> iterable, int batchSize) {
+    protected AbstractDataSetIterator(@NonNull Iterable<Pair<T, T>> iterable, int batchSize) {
         if (batchSize < 1)
             throw new IllegalStateException("batchSize can't be < 1");
 
         this.iterable = iterable;
+        this.iterator = this.iterable.iterator();
         this.batchSize = batchSize;
 
         fillQueue();
@@ -166,11 +167,17 @@ public class JavaDataSetIterator implements DataSetIterator {
 
             for (int cnt = 0; cnt < batchSize; cnt++) {
                 if (iterator.hasNext()) {
-                        Pair<?, ?> pair =(Pair<?, ?>) iterator.next();
+                        Pair<T, T> pair = iterator.next();
                         if (numFeatures < 1) {
                             if (pair.getFirst() instanceof INDArray) {
                                 numFeatures = ((INDArray) pair.getFirst()).length();
                                 numLabels = ((INDArray) pair.getSecond()).length();
+                            } else if (pair.getFirst() instanceof float[]) {
+                                numFeatures = ((float[]) pair.getFirst()).length;
+                                numLabels = ((float[]) pair.getSecond()).length;
+                            } else if (pair.getFirst() instanceof double[]) {
+                                numFeatures = ((double[]) pair.getFirst()).length;
+                                numLabels = ((double[]) pair.getSecond()).length;
                             }
                         }
 
