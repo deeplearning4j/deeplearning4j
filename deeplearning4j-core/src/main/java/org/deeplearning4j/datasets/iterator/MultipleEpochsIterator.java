@@ -20,6 +20,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected DataSet ds;
     protected List<DataSet> batchedDS = Lists.newArrayList();
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
-    protected DataSetPreProcessor preProcessor;
+    @Getter protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;
 
     public MultipleEpochsIterator(int numEpochs,DataSetIterator iter) {
