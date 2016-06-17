@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
@@ -56,10 +57,21 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
+    protected transient AtomicDouble scoreElements;
+    protected transient AtomicDouble scoreSequences;
 
 
 
     @Setter protected transient Set<VectorsListener<T>> eventListeners;
+
+
+    public double getElementsScore() {
+        return scoreElements.get();
+    }
+
+    public double getSequencesScore() {
+        return scoreSequences.get();
+    }
 
     /**
      * Builds vocabulary from provided SequenceIterator instance
@@ -215,14 +227,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (trainElementsVectors) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
 
         if (trainSequenceVectors)  {
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            //dbow(i, sequence, (int) nextRandom.get() % window, nextRandom, alpha);
-            if (!sequenceLearningAlgorithm.isEarlyTerminationHit()) sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha);
+            if (!sequenceLearningAlgorithm.isEarlyTerminationHit()) scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
     }
 
@@ -930,6 +941,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                     if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
                                         listener.processEvent(ListenerEvent.LINE, SequenceVectors.this, totalLines.get());
                                 }
+                            }
+                        }
+
+                        if (eventListeners != null && eventListeners.size() > 0) {
+                            for (VectorsListener listener: eventListeners) {
+                                if (listener.validateEvent(ListenerEvent.ITERATION, i))
+                                    listener.processEvent(ListenerEvent.ITERATION, SequenceVectors.this, i);
                             }
                         }
                     }
