@@ -13,7 +13,6 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
-import org.nd4j.linalg.cpu.nativecpu.cache.ConstantBuffersCache;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -31,7 +30,7 @@ import java.util.Arrays;
 
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = new NativeOps();
-    private ConstantHandler constantHandler = new ConstantBuffersCache();
+    private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     private CpuTADManager tadManager = new CpuTADManager();
 
     public NativeOpExecutioner() {

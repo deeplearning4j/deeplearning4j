@@ -32,17 +32,24 @@ public class Configuration implements Serializable {
         CACHE_ALL,
     }
 
+    public enum MemoryModel {
+        IMMEDIATE,
+        DELAYED
+    }
+
     @Getter private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
     @Getter private AllocationModel allocationModel = AllocationModel.CACHE_ALL;
 
     @Getter private AllocationStatus firstMemory = AllocationStatus.DEVICE;
 
+    @Getter private MemoryModel memoryModel = MemoryModel.IMMEDIATE;
+
     @Getter private boolean debug = false;
 
     @Getter private boolean verbose = false;
 
-    private boolean forceSingleGPU = true;
+    private boolean forceSingleGPU = false;
 
     /**
      * Keep this value between 0.01 and 0.95 please
@@ -173,18 +180,45 @@ public class Configuration implements Serializable {
 
         nativeOps.setOmpNumThreads(maximumBlockSize);
         nativeOps.setGridLimit(maximumGridSize);
+
+        // if we have multi-gpu system - force DELAYED memory model by default
+        if (cnt > 1)
+            this.memoryModel = MemoryModel.DELAYED;
     }
 
     /**
      * This method allows you to ban specific device.
      *
+     * PLEASE NOTE: This method
+     *
      * @param deviceId
      * @return
      */
     public Configuration banDevice(@NonNull Integer deviceId) {
+        if (!availableDevices.contains(deviceId))
+            return this;
+
         if (!bannedDevices.contains(deviceId)) {
             bannedDevices.add(deviceId);
         }
+
+        availableDevices.remove(deviceId);
+
+        return this;
+    }
+
+    /**
+     * This method forces one specific device to be used. All other devices present in system will be ignored.
+     *
+     * @param deviceId
+     * @return
+     */
+    public Configuration useDevice(@NonNull Integer deviceId) {
+        if (!availableDevices.contains(deviceId))
+            throw new IllegalStateException("Non-existent device request: ["+deviceId+"]");
+
+        availableDevices.clear();
+        availableDevices.add(0, deviceId);
 
         return this;
     }
@@ -362,6 +396,7 @@ public class Configuration implements Serializable {
      * This method allows to specify initial memory to be used within system.
      * HOST: all data is located on host memory initially, and gets into DEVICE, if used frequent enough
      * DEVICE: all memory is located on device.
+     * DELAYED: memory allocated on HOST first, and on first use gets moved to DEVICE
      *
      * PLEASE NOTE: For device memory all data still retains on host side as well.
      *
@@ -370,8 +405,8 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setFirstMemory(@NonNull AllocationStatus initialMemory) {
-        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST)
-            throw new IllegalStateException("First memory should be either [HOST] or [DEVICE]");
+        if (initialMemory != AllocationStatus.DEVICE && initialMemory != AllocationStatus.HOST && initialMemory != AllocationStatus.DELAYED)
+            throw new IllegalStateException("First memory should be either [HOST], [DEVICE] or [DELAYED]");
 
         this.firstMemory = initialMemory;
 
@@ -512,6 +547,11 @@ public class Configuration implements Serializable {
      */
     public Configuration allowMultiGPU(boolean reallyAllow) {
         forceSingleGPU = reallyAllow;
+        return this;
+    }
+
+    public Configuration setMemoryModel(@NonNull MemoryModel model) {
+        memoryModel = model;
         return this;
     }
 }

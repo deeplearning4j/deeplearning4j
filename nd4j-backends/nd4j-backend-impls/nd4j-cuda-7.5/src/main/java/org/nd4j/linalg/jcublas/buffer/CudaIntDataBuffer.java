@@ -38,89 +38,72 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
      */
     public CudaIntDataBuffer(long length) {
         super(length, 4);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(long length, boolean initialize){
         super(length, 4, initialize);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(long length, int elementSize) {
         super(length, elementSize);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(long length, int elementSize, int offset) {
         super(length, elementSize, offset);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(int[] data) {
         this(data.length);
         setData(data);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(int[] data, boolean copy) {
         super(data, copy);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(int[] data, boolean copy, int offset) {
         super(data, copy, offset);
-        this.constant = true;
     }
 
 
     public CudaIntDataBuffer(byte[] data, int length) {
         super(data, length);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(double[] data) {
         super(data);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(double[] data, boolean copy) {
         super(data, copy);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(double[] data, boolean copy, int offset) {
         super(data, copy, offset);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(float[] data) {
         super(data);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(float[] data, boolean copy) {
         super(data, copy);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(float[] data, boolean copy, int offset) {
         super(data, copy, offset);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
-        this.constant = true;
     }
 
     public CudaIntDataBuffer(ByteBuffer buffer, int length, int offset) {
         super(buffer, length, offset);
-        this.constant = true;
     }
 
     @Override

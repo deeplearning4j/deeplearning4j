@@ -5,6 +5,13 @@ import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.conf.Configuration;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
@@ -27,13 +34,13 @@ public class CudaDirectProviderTest {
         point.setPointers(provider.malloc(shape, point, AllocationStatus.HOST));
 
         System.out.println("Allocated...");
-        Thread.sleep(10000);
+        Thread.sleep(1000);
 
 
         provider.free(point);
 
         System.out.println("Deallocated...");
-        Thread.sleep(10000);
+        Thread.sleep(1000);
     }
 
     @Test
@@ -48,7 +55,7 @@ public class CudaDirectProviderTest {
         point.setPointers(provider.malloc(shape, point, AllocationStatus.DEVICE));
 
         System.out.println("Allocated...");
-        Thread.sleep(10000);
+        Thread.sleep(1000);
 
 
         point.setAllocationStatus(AllocationStatus.DEVICE);
@@ -56,6 +63,7 @@ public class CudaDirectProviderTest {
         provider.free(point);
 
         System.out.println("Deallocated...");
-        Thread.sleep(10000);
+        Thread.sleep(1000);
     }
+
 }
