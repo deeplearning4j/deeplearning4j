@@ -27,6 +27,7 @@ import org.hibernate.validator.constraints.NotEmpty;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class ApiConfiguration extends Configuration {
 
 

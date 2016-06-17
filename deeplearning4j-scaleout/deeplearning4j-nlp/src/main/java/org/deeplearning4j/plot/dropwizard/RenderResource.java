@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 /**
  * Created by agibsonccc on 10/8/14.
  */
+@Deprecated
 @Path("/render")
 @Produces(MediaType.TEXT_HTML)
 public class RenderResource {
