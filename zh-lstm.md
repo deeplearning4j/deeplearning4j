@@ -183,6 +183,16 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 * 更新器：RMSProp、AdaGrad或momentum（Nesterovs）通常都是较好的选择。AdaGrad还能衰减学习速率，有时会有帮助。
 * 最后，记住数据标准化、MSE损失函数 + 恒等激活函数用于回归、[Xavier权重初始化](./glossary.html#xavier)
 
+## <a name="beginner">其他基础教程</a>
+* [通过DL4J使用递归神经网络](./zh-usingrnns)
+* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
+* [本征向量、协方差、主成分分析（PCA）和熵](./zh-eigenvector)
+* [Word2vec](./zh-word2vec)
+* [深度神经网络简介](./zh-neuralnet-overview)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络教程](./zh-convolutionalnets)
+* [深度学习应用案例](./zh-use_cases)
+
 ## <a name="resources">资源</a>
 * [DRAW:A Recurrent Neural Network For Image Generation](http://arxiv.org/pdf/1502.04623v2.pdf); (attention models)
 * [Gated Feedback Recurrent Neural Networks](http://arxiv.org/pdf/1502.02367v4.pdf)
@@ -196,16 +206,6 @@ LSTM将信息存放在递归网络正常信息流之外的门控单元中。这�
 * [Supervised Sequence Labelling with Recurrent Neural Networks](http://www.cs.toronto.edu/~graves/phd.pdf); Alex Graves
 * [Long Short-Term Memory in Recurrent Neural Networks](http://www.felixgers.de/papers/phd.pdf); Felix Gers
 * [LSTM:A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
-
-## <a name="beginner">其他基础教程</a>
-* [通过DL4J使用递归神经网络](./zh-usingrnns)
-* [受限玻尔兹曼机](./zh-restrictedboltzmannmachine)
-* [本征向量、协方差、主成分分析（PCA）和熵](./zh-eigenvector)
-* [Word2vec](./zh-word2vec)
-* [深度神经网络简介](./zh-neuralnet-overview)
-* [神经网络与回归分析](./linear-regression)
-* [卷积网络教程](./zh-convolutionalnets)
-* [深度学习应用案例](./zh-use_cases)
 
 ### 注
 
