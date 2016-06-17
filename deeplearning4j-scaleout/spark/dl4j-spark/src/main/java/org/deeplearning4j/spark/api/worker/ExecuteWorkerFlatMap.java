@@ -37,11 +37,9 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
         StatsCalculationHelper s = (stats ? new StatsCalculationHelper() : null);
         if(stats) s.logMethodStartTime();
 
-
         if(!dataSetIterator.hasNext()){
             if(stats) s.logReturnTime();
-
-
+            //TODO return the results...
             return Collections.emptyList();  //Sometimes: no data
         }
 
@@ -62,14 +60,13 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
             int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
 
             while (batchedIterator.hasNext() && miniBatchCount++ < maxMinibatches) {
-                System.out.println(Thread.currentThread().getId() + "\t" + miniBatchCount);
                 if(stats) s.logNextDataSetBefore();
                 DataSet next = batchedIterator.next();
                 if(stats) s.logNextDataSetAfter(next.numExamples());
 
                 if(stats){
                     s.logProcessMinibatchBefore();
-                    Pair<R,SparkTrainingStats> result = worker.processMinibatchWithStats(next, net, batchedIterator.hasNext());
+                    Pair<R,SparkTrainingStats> result = worker.processMinibatchWithStats(next, net, !batchedIterator.hasNext());
                     s.logProcessMinibatchAfter();
                     if(result != null){
                         //Terminate training immediately
@@ -81,7 +78,7 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                         return Collections.singletonList(result.getFirst());
                     }
                 } else {
-                    R result = worker.processMinibatch(next, net, batchedIterator.hasNext());
+                    R result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
                     if(result != null){
                         //Terminate training immediately
                         return Collections.singletonList(result);
