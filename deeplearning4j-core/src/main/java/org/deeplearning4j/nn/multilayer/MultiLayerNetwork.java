@@ -22,6 +22,8 @@ package org.deeplearning4j.nn.multilayer;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -1010,7 +1012,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public void fit(DataSetIterator iter) {
+    public void fit(DataSetIterator iterator) {
+        DataSetIterator iter;
+        // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch
+        if (!(iterator instanceof AsyncDataSetIterator || iterator instanceof ListDataSetIterator)) {
+            iter = new AsyncDataSetIterator(iterator, 10);
+        } else iter = iterator;
+
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();

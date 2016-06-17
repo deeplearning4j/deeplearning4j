@@ -399,7 +399,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     @Override
     public INDArray activate(boolean training) {
         if(training && conf.getLayer().getDropOut() > 0.0) {
-            input = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
+            Dropout.applyDropout(input,conf.getLayer().getDropOut());
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);

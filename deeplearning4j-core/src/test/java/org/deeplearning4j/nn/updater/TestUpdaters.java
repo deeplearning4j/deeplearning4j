@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;

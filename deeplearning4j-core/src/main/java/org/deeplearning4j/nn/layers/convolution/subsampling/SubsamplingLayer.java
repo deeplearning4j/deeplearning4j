@@ -174,7 +174,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public INDArray activate(boolean training) {
         if(training && conf.getLayer().getDropOut() > 0) {
-            this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
+            Dropout.applyDropout(input,conf.getLayer().getDropOut());
         }
 
         int miniBatch = input.size(0);

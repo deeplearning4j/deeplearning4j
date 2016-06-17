@@ -23,6 +23,7 @@ import io.dropwizard.views.View;
 /**
  * Created by agibsonccc on 10/8/14.
  */
+@Deprecated
 public class RenderView extends View {
     public RenderView() {
         super("render.ftl");
