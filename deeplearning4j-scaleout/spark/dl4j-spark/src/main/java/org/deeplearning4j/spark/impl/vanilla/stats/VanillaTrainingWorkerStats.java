@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.vanilla.stats;
 
+import lombok.Data;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -9,6 +10,7 @@ import java.util.*;
 /**
  * Created by Alex on 17/06/2016.
  */
+@Data
 public class VanillaTrainingWorkerStats implements SparkTrainingStats {
 
     private int[] vanillaWorkerBroadcastGetValueTimeMs;
@@ -59,10 +61,29 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
 
     }
 
+    @Override
+    public String statsAsString() {
+        StringBuilder sb = new StringBuilder();
+        String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
+
+        sb.append(String.format(f,"VanillaWorkerBroadcastGetValueTimeMs"));
+        if(vanillaWorkerBroadcastGetValueTimeMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(vanillaWorkerBroadcastGetValueTimeMs)).append("\n");
+
+        sb.append(String.format(f,"VanillaWorkerInitTimeMs"));
+        if(vanillaWorkerInitTimeMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(vanillaWorkerInitTimeMs)).append("\n");
+
+        sb.append(String.format(f,"VanillaWorkerFitTimesMs"));
+        if(vanillaWorkerFitTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(vanillaWorkerFitTimesMs)).append("\n");
+
+        return sb.toString();
+    }
+
     public static class VanillaTrainingWorkerStatsHelper {
         private long broadcastStartTime;
         private long broadcastEndTime;
-        private long initStartTime;
         private long initEndTime;
         private long lastFitStartTime;
         //TODO replace with fast int collection (no boxing)
@@ -78,7 +99,7 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
         }
 
         public void logInitEnd(){
-            initStartTime = System.currentTimeMillis();
+            initEndTime = System.currentTimeMillis();
         }
 
         public void logFitStart(){
@@ -92,7 +113,7 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
 
         public VanillaTrainingWorkerStats build(){
             int bcast = (int)(broadcastEndTime - broadcastStartTime);
-            int init = (int)(initEndTime - initStartTime);
+            int init = (int)(initEndTime - broadcastEndTime);   //Init starts at same time that broadcast ends
             int[] fitTimesArr = new int[fitTimes.size()];
             for( int i=0; i<fitTimesArr.length; i++ ) fitTimesArr[i] = fitTimes.get(i);
             return new VanillaTrainingWorkerStats(bcast, init, fitTimesArr);

@@ -72,7 +72,9 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
                 network.getNetwork().params(),
                 network.getNetwork().getUpdater());
 
+        if(collectTrainingStats) stats.logBroadcastStart();
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
+        if(collectTrainingStats) stats.logBroadcastEnd();
 
         WorkerConfiguration configuration = new WorkerConfiguration(batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new VanillaTrainingWorker(broadcast, saveUpdater, configuration);
@@ -152,6 +154,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
         UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
+        SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
         if(collectTrainingStats) stats.logAggregationEndTime();
 
         MultiLayerNetwork net = network.getNetwork();
@@ -161,7 +164,10 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         Updater updater = updaterAg.getUpdater();
         net.setParameters(params);
         net.setUpdater(updater);
-        if(collectTrainingStats) stats.logProcessParamsUpdaterEnd();
+        if(collectTrainingStats){
+            stats.logProcessParamsUpdaterEnd();
+            stats.addWorkerStats(aggregatedStats);
+        }
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
     }

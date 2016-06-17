@@ -61,7 +61,11 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
 
     @Override
     public Pair<VanillaTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        return new Pair<>(processMinibatch(dataSet,network,isLast), null);
+        VanillaTrainingResult result = processMinibatch(dataSet,network,isLast);
+        if(result == null) return null;
+
+        SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
+        return new Pair<>(result, statsToReturn);
     }
 
     @Override
@@ -72,7 +76,11 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
 
     @Override
     public Pair<VanillaTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
-        return new Pair<>(getFinalResult(network),null);
+        VanillaTrainingResult result = getFinalResult(network);
+        if(result == null) return null;
+
+        SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
+        return new Pair<>(getFinalResult(network),statsToReturn);
     }
 
     @Override

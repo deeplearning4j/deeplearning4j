@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -16,5 +17,6 @@ public class VanillaAggregationTuple implements Serializable {
     private final INDArray parametersSum;
     private final UpdaterAggregator updaterAggregator;
     private final double scoreSum;
-    private int aggregationsCount;
+    private final int aggregationsCount;
+    private final SparkTrainingStats sparkTrainingStats;
 }

@@ -71,10 +71,10 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                     s.logProcessMinibatchAfter();
                     if(result != null){
                         //Terminate training immediately
-                        if(stats){
-                            s.logReturnTime();
-                            result.getFirst().setStats(s.build(result.getSecond()));
-                        }
+                        s.logReturnTime();
+                        SparkTrainingStats workerStats = result.getSecond();
+                        SparkTrainingStats returnStats = s.build(workerStats);
+                        result.getFirst().setStats(returnStats);
 
                         return Collections.singletonList(result.getFirst());
                     }
