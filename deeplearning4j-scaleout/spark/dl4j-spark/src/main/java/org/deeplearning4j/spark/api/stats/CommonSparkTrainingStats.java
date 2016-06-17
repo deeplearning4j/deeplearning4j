@@ -90,6 +90,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         workerFlatMapTotalTimeMs = ArrayUtil.combine(workerFlatMapTotalTimeMs, o.workerFlatMapTotalTimeMs);
         workerFlatMapTotalExampleCount = ArrayUtil.combine(workerFlatMapTotalExampleCount, o.workerFlatMapTotalExampleCount);
         workerFlatMapGetInitialModelTimeMs = ArrayUtil.combine(workerFlatMapGetInitialModelTimeMs, o.workerFlatMapGetInitialModelTimeMs);
+        workerFlatMapDataSetGetTimesMs = ArrayUtil.combine(workerFlatMapDataSetGetTimesMs, o.workerFlatMapDataSetGetTimesMs);
         workerFlatMapProcessMiniBatchTimesMs = ArrayUtil.combine(workerFlatMapProcessMiniBatchTimesMs, o.workerFlatMapProcessMiniBatchTimesMs);
 
         if(trainingWorkerSpecificStats != null) trainingWorkerSpecificStats.addOtherTrainingStats(o.trainingWorkerSpecificStats);
