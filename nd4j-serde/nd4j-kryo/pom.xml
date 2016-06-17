@@ -10,7 +10,6 @@
     <packaging>jar</packaging>
 
     <name>nd4j-kryo</name>
-    <url>http://maven.apache.org</url>
 
     <properties>
         <kryo.version>2.21</kryo.version>

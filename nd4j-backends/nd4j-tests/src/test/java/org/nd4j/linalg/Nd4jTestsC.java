@@ -213,7 +213,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testWriteTxt() throws Exception {
         INDArray row = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Nd4j.write(bos, row);
+        Nd4j.write(row,new DataOutputStream(bos));
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         INDArray ret = Nd4j.read(bis);
         assertEquals(row, ret);
