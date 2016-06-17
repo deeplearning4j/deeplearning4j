@@ -17,14 +17,25 @@ import java.util.Set;
  */
 public interface SparkTrainingStats extends Serializable {
 
+    public static final int PRINT_INDENT = 45;
+    public static final String DEFAULT_PRINT_FORMAT = "%-" + PRINT_INDENT + "s";
+
     Set<String> getKeySet();
 
     Object getValue(String key);
 
     /**
-     * Combine the two training stats instances
-     * @param other
+     * Combine the two training stats instances. Usually, the two objects must be of the same type
+     * @param other    Other training stats to return
      */
     void addOtherTrainingStats(SparkTrainingStats other);
+
+    /**
+     * Get a String representation of the stats. This functionality is implemented as a separate method (as opposed to toString())
+     * as the resulting String can be very large.
+     *
+     * @return  A String represetation of the training statistics
+     */
+    String statsAsString();
 
 }
