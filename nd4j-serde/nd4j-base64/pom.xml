@@ -18,10 +18,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
@@ -31,11 +27,6 @@
             <artifactId>commons-net</artifactId>
             <version>3.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
+
     </dependencies>
 </project>

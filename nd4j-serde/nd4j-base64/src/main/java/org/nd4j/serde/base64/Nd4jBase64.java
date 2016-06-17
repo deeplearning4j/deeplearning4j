@@ -22,8 +22,13 @@ public class Nd4jBase64 {
     public static INDArray[] arraysFromBase64(String base64) throws IOException {
         String[] base64Arr = base64.split("\t");
         INDArray[] ret = new INDArray[base64Arr.length];
-        for(int i = 0; i < base64Arr.length; i++)
-            ret[i] = fromBase64(base64Arr[i]);
+        for(int i = 0; i < base64Arr.length; i++) {
+            byte[] decode = Base64.decodeBase64(base64Arr[i]);
+            ByteArrayInputStream bis = new ByteArrayInputStream(decode);
+            DataInputStream dis = new DataInputStream(bis);
+            INDArray predict = Nd4j.read(dis);
+            ret[i] = predict;
+        }
         return ret;
     }
 
@@ -42,8 +47,8 @@ public class Nd4jBase64 {
             DataOutputStream dos = new DataOutputStream(bos);
             Nd4j.write(outputArr,dos);
             String base64 = Base64.encodeBase64String(bos.toByteArray());
-            sb.append("\t");
             sb.append(base64);
+            sb.append("\t");
         }
 
         return sb.toString();
