@@ -38,7 +38,7 @@ public class TestTrainingStatsCollection {
     @Test
     public void testStatsCollection() throws Exception {
 
-        int nWorkers = 4;
+        int nWorkers = 1;
 
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + nWorkers + "]");
@@ -155,12 +155,12 @@ public class TestTrainingStatsCollection {
         assertGreaterZero(workerFlatMapGetInitialModelTimeMs);
 
         int[] workerFlatMapDataSetGetTimesMs = cStats.getWorkerFlatMapDataSetGetTimesMs();
-        assertEquals(numberOfAveragings*nWorkers*averagingFrequency, workerFlatMapDataSetGetTimesMs.length);
+        assertEquals(numberOfAveragings*nWorkers*averagingFrequency, workerFlatMapDataSetGetTimesMs.length);    //1 for every time we get a data set
         assertGreaterEqZero(workerFlatMapDataSetGetTimesMs);
 
         int[] workerFlatMapProcessMiniBatchTimesMs = cStats.getWorkerFlatMapProcessMiniBatchTimesMs();
         assertEquals(numberOfAveragings*nWorkers*averagingFrequency, workerFlatMapProcessMiniBatchTimesMs.length);
-        assertGreaterZero(workerFlatMapProcessMiniBatchTimesMs);
+        assertGreaterEqZero(workerFlatMapProcessMiniBatchTimesMs);
 
         int workerFlatMapCountNoDataInstances = cStats.getWorkerFlatMapCountNoDataInstances();
         assertEquals(0, workerFlatMapCountNoDataInstances);

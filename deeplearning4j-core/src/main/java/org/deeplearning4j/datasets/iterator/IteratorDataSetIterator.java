@@ -34,7 +34,9 @@ public class IteratorDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return !queued.isEmpty() || iterator.hasNext();
+//        return !queued.isEmpty() || iterator.hasNext();
+        boolean temp = !queued.isEmpty() || iterator.hasNext();
+        return temp;
     }
 
     @Override
