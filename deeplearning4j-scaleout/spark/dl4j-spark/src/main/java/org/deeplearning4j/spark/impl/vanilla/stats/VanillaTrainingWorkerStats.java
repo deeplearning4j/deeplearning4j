@@ -58,7 +58,11 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
         this.vanillaWorkerBroadcastGetValueTimeMs = ArrayUtil.combine(vanillaWorkerBroadcastGetValueTimeMs,o.vanillaWorkerBroadcastGetValueTimeMs);
         this.vanillaWorkerInitTimeMs = ArrayUtil.combine(vanillaWorkerInitTimeMs, o.vanillaWorkerInitTimeMs);
         this.vanillaWorkerFitTimesMs = ArrayUtil.combine(vanillaWorkerFitTimesMs, o.vanillaWorkerFitTimesMs);
+    }
 
+    @Override
+    public SparkTrainingStats getNestedTrainingStats(){
+        return null;
     }
 
     @Override

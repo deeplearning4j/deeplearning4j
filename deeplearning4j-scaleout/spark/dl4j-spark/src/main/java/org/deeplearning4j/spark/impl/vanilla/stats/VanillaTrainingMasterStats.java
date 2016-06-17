@@ -84,6 +84,11 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
     }
 
     @Override
+    public SparkTrainingStats getNestedTrainingStats(){
+        return workerStats;
+    }
+
+    @Override
     public String statsAsString() {
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
