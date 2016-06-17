@@ -48,6 +48,7 @@ sudo ln -s /usr/bin/g++-4.9 /usr/bin/g++
 sudo apt install libopenblas-dev
 sudo apt install cmake
 sudo apt install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-361
+export TRICK_NVCC=YES
 ./buildnativeoperations.sh
 ./buildnativeoperations.sh -c cuda
 
