@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.api.stats;
 
+import lombok.Data;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -10,16 +11,17 @@ import java.util.Set;
 /**
  * Created by Alex on 16/06/2016.
  */
+@Data
 public class CommonSparkTrainingStats implements SparkTrainingStats {
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
-                    "workerFlatMapTotalTimeMs",
-                    "workerFlatMapTotalExampleCount",
-                    "workerFlatMapGetInitialModelTimeMs",
-                    "workerFlatMapDataSetGetTimesMs",
-                    "workerFlatMapProcessMiniBatchTimesMs",
-                    "workerFlatMapCountNoDataInstances"
+                    "WorkerFlatMapTotalTimeMs",
+                    "WorkerFlatMapTotalExampleCount",
+                    "WorkerFlatMapGetInitialModelTimeMs",
+                    "WorkerFlatMapDataSetGetTimesMs",
+                    "WorkerFlatMapProcessMiniBatchTimesMs",
+                    "WorkerFlatMapCountNoDataInstances"
 
             )));
 
@@ -60,17 +62,17 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public Object getValue(String key) {
         switch (key){
-            case "workerFlatMapTotalTimeMs":
+            case "WorkerFlatMapTotalTimeMs":
                 return workerFlatMapTotalTimeMs;
-            case "workerFlatMapTotalExampleCount":
+            case "WorkerFlatMapTotalExampleCount":
                 return workerFlatMapTotalExampleCount;
-            case "workerFlatMapGetInitialModelTimeMs":
+            case "WorkerFlatMapGetInitialModelTimeMs":
                 return workerFlatMapGetInitialModelTimeMs;
-            case "workerFlatMapDataSetGetTimesMs":
+            case "WorkerFlatMapDataSetGetTimesMs":
                 return workerFlatMapDataSetGetTimesMs;
-            case "workerFlatMapProcessMiniBatchTimesMs":
+            case "WorkerFlatMapProcessMiniBatchTimesMs":
                 return workerFlatMapProcessMiniBatchTimesMs;
-            case "workerFlatMapCountNoDataInstances":
+            case "WorkerFlatMapCountNoDataInstances":
                 return workerFlatMapCountNoDataInstances;
 
             default:
@@ -94,6 +96,38 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         else if(o.trainingMasterSpecificStats != null) throw new IllegalStateException("Cannot merge: training master specific stats is null in one, but not the other");
 
 
+    }
+
+    @Override
+    public String statsAsString() {
+        StringBuilder sb = new StringBuilder();
+        String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
+
+        sb.append(String.format(f,"WorkerFlatMapTotalTimeMs"));
+        if(workerFlatMapTotalTimeMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(workerFlatMapTotalTimeMs)).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapTotalExampleCount"));
+        if(workerFlatMapTotalExampleCount == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(workerFlatMapTotalExampleCount)).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapGetInitialModelTimeMs"));
+        if(workerFlatMapGetInitialModelTimeMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(workerFlatMapGetInitialModelTimeMs)).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapDataSetGetTimesMs"));
+        if(workerFlatMapDataSetGetTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(workerFlatMapDataSetGetTimesMs)).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapProcessMiniBatchTimesMs"));
+        if(workerFlatMapProcessMiniBatchTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(workerFlatMapProcessMiniBatchTimesMs)).append("\n");
+
+        sb.append(String.format(f,"WorkerFlatMapCountNoDataInstances")).append(workerFlatMapCountNoDataInstances).append("\n");
+
+        if(trainingMasterSpecificStats != null) sb.append(trainingMasterSpecificStats.statsAsString()).append("\n");
+
+        return sb.toString();
     }
 
     public static class Builder {

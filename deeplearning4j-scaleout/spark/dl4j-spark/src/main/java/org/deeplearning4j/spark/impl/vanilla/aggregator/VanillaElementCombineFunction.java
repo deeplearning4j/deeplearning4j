@@ -2,6 +2,7 @@ package org.deeplearning4j.spark.impl.vanilla.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
+import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -28,6 +29,12 @@ public class VanillaElementCombineFunction implements Function2<VanillaAggregati
         double scoreSum = v1.getScoreSum() + v2.getScoreSum();
         int aggregationCount = v1.getAggregationsCount() + v2.getAggregationsCount();
 
-        return new VanillaAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount);
+        SparkTrainingStats stats = v1.getSparkTrainingStats();
+        if(v2.getSparkTrainingStats() != null){
+            if(stats == null) stats = v2.getSparkTrainingStats();
+            else stats.addOtherTrainingStats(v2.getSparkTrainingStats());
+        }
+
+        return new VanillaAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount, stats);
     }
 }
