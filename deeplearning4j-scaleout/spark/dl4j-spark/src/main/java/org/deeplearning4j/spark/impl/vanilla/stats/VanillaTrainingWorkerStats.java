@@ -16,10 +16,10 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
     private int[] vanillaWorkerFitTimesMs;
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
-            new LinkedHashSet<String>(Arrays.asList(
-                    "vanillaWorkerBroadcastGetValueTimeMs",
-                    "vanillaWorkerInitTimeMs",
-                    "vanillaWorkerFitTimesMs"
+            new LinkedHashSet<>(Arrays.asList(
+                    "VanillaWorkerBroadcastGetValueTimeMs",
+                    "VanillaWorkerInitTimeMs",
+                    "VanillaWorkerFitTimesMs"
             )));
 
     public VanillaTrainingWorkerStats(int vanillaWorkerBroadcastGetValueTimeMs, int vanillaWorkerInitTimeMs, int[] vanillaWorkerFitTimesMs){
@@ -36,11 +36,11 @@ public class VanillaTrainingWorkerStats implements SparkTrainingStats {
     @Override
     public Object getValue(String key) {
         switch(key){
-            case "vanillaWorkerBroadcastGetValueTimeMs":
+            case "VanillaWorkerBroadcastGetValueTimeMs":
                 return vanillaWorkerBroadcastGetValueTimeMs;
-            case "vanillaWorkerInitTimeMs":
+            case "VanillaWorkerInitTimeMs":
                 return vanillaWorkerInitTimeMs;
-            case "vanillaWorkerFitTimesMs":
+            case "VanillaWorkerFitTimesMs":
                 return vanillaWorkerFitTimesMs;
             default:
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
