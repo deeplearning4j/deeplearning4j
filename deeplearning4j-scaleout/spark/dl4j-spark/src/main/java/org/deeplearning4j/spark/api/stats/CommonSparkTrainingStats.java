@@ -13,7 +13,7 @@ import java.util.Set;
 public class CommonSparkTrainingStats implements SparkTrainingStats {
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
-            new LinkedHashSet<String>(Arrays.asList(
+            new LinkedHashSet<>(Arrays.asList(
                     "workerFlatMapTotalTimeMs",
                     "workerFlatMapTotalExampleCount",
                     "workerFlatMapGetInitialModelTimeMs",

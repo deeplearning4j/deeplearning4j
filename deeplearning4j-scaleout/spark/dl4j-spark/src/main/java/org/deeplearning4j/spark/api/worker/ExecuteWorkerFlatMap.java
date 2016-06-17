@@ -37,7 +37,12 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
         if(stats) s.logMethodStartTime();
 
 
-        if(!dataSetIterator.hasNext()) return Collections.emptyList();  //Sometimes: no data
+        if(!dataSetIterator.hasNext()){
+            if(stats) s.logReturnTime();
+
+
+            return Collections.emptyList();  //Sometimes: no data
+        }
 
         int batchSize = dataConfig.getBatchSizePerWorker();
         final int prefetchCount = dataConfig.getPrefetchNumBatches();
@@ -60,10 +65,6 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                 DataSet next = batchedIterator.next();
                 if(stats) s.logNextDataSetAfter(next.numExamples());
 
-//                if(stats) s.logProcessMinibatchBefore();
-//                R result = worker.processMinibatch(next, net, batchedIterator.hasNext());
-//                if(stats) s.logProcessMinibatchAfter();
-
                 if(stats){
                     s.logProcessMinibatchBefore();
                     Pair<R,SparkTrainingStats> result = worker.processMinibatchWithStats(next, net, batchedIterator.hasNext());
@@ -72,7 +73,7 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                         //Terminate training immediately
                         if(stats){
                             s.logReturnTime();
-                            result.getFirst().setStats(result.getSecond());
+                            result.getFirst().setStats(s.build(result.getSecond()));
                         }
 
                         return Collections.singletonList(result.getFirst());
@@ -80,13 +81,21 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
                 } else {
                     R result = worker.processMinibatch(next, net, batchedIterator.hasNext());
                     if(result != null){
+                        //Terminate training immediately
                         return Collections.singletonList(result);
                     }
                 }
             }
 
             //For some reason, we didn't return already. Normally this shouldn't happen
-            return Collections.singletonList(worker.getFinalResult(net));
+            if(stats){
+                s.logReturnTime();
+                Pair<R,SparkTrainingStats> pair = worker.getFinalResultWithStats(net);
+                pair.getFirst().setStats(s.build(pair.getSecond()));
+                return Collections.singletonList(pair.getFirst());
+            } else {
+                return Collections.singletonList(worker.getFinalResult(net));
+            }
         } finally {
             //Make sure we shut down the async thread properly...
             if(batchedIterator instanceof AsyncDataSetIterator){
