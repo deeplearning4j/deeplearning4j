@@ -72,7 +72,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     }
 
     @Override
-    public void learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
         List<T> labels = new ArrayList<>();
@@ -81,12 +81,14 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if(seq.isEmpty() || labels.isEmpty())
-            return;
+            return 0;
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
+
+        return 0;
     }
 
     public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
@@ -125,6 +127,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             INDArray syn0row = syn0.getRow(label.getIndex());
             Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, syn0row);
         }
+
     }
 
     @Override
