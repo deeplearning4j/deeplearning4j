@@ -24,6 +24,10 @@ DL4J目前支持一种主要的递归网络，即LSTM（长短期记忆）模型
 #### RNN的数据
 在标准的前馈网络中（多层感知器或DL4J的“DenseLayer”）输入和输出数据具有二维结构，或者说数据的“形状”可以描述为[numExamples,inputSize]，即输入前馈网络的数据的行／样例数为“numExamples”，而每一行中的列数位“inputSize”。单个样例的形状应为[1,inputSize]，但在实际应用中，为了保证运算和优化的效率，通常会使用多个样例。与此类似，标准前馈网络的输出数据同样具有二维结构，形状为[numExamples,outputSize]。
 
+<p align="center">
+<a href="./zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">快速入门指南</a>
+</p>
+
 而RNN的数据则是时间序列。这些数据具备三个维度，增加了一个时间维度。因此，输入数据的形状为[numExamples,inputSize,timeSeriesLength]，而输出数据的形状为[numExamples,outputSize,timeSeriesLength]。就INDArray中的数据布局而言，位于(i,j,k)的值即是一批数据中第i例的第k个时间步的第j个值。数据布局如下图所示。
 
 ![Data: Feed Forward vs. RNN](./img/rnn_data.png)
