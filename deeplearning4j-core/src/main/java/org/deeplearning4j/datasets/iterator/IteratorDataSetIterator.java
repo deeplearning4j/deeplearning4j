@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.api.worker;
+package org.deeplearning4j.datasets.iterator;
 
 
 import org.nd4j.linalg.dataset.DataSet;
@@ -66,6 +66,8 @@ public class IteratorDataSetIterator implements DataSetIterator {
                 list.add(toKeep);
                 queued.add(toCache);
             }
+
+            countSoFar += nExamples;
         }
 
         if(inputColumns == -1){
