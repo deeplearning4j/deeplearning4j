@@ -5,7 +5,9 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -15,6 +17,7 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaAggregationTuple;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementAddFunction;
 import org.deeplearning4j.spark.impl.vanilla.aggregator.VanillaElementCombineFunction;
+import org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingMasterStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
@@ -38,6 +41,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
     private int averagingFrequency;
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
+    private VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper stats;
 
 
     private VanillaTrainingMaster(Builder builder){
@@ -59,6 +63,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         this.averagingFrequency = averagingFrequency;
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
+        if(collectTrainingStats) stats = new VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper();
     }
 
     @Override
@@ -75,7 +80,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-
+        if(collectTrainingStats) stats.logFitStart();
         //For vanilla training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
         //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
@@ -86,6 +91,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         int examplesPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
 
         JavaRDD<DataSet>[] splits;
+        if(collectTrainingStats) stats.logSplitStart();
         if(totalCount <= examplesPerSplit){
             splits = (JavaRDD<DataSet>[])Array.newInstance(JavaRDD.class,1);
             splits[0] = trainingData;
@@ -95,6 +101,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
             for( int i=0; i<weights.length; i++ ) weights[i] = 1.0 / numSplits;
             splits = trainingData.randomSplit(weights);
         }
+        if(collectTrainingStats) stats.logSplitEnd();
 
         int splitNum = 1;
         for(JavaRDD<DataSet> split : splits) {
@@ -107,11 +114,18 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
             splitNum++;
         }
+
+        if(collectTrainingStats) stats.logFitEnd();
     }
 
     @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {
         this.collectTrainingStats = collectTrainingStats;
+        if(collectTrainingStats){
+            if(this.stats == null) this.stats = new VanillaTrainingMasterStats.VanillaTrainingMasterStatsHelper();
+        } else {
+            this.stats = null;
+        }
     }
 
     @Override
@@ -121,6 +135,7 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
     @Override
     public SparkTrainingStats getTrainingStats() {
+        if(stats != null) return stats.build();
         return null;
     }
 
@@ -130,15 +145,23 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
 
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
 
+        if(collectTrainingStats) stats.logAggregateStartTime();
         VanillaAggregationTuple tuple = results.aggregate(null,
                 new VanillaElementAddFunction(),
                 new VanillaElementCombineFunction());
+        INDArray params = tuple.getParametersSum();
+        int aggCount = tuple.getAggregationsCount();
+        UpdaterAggregator updaterAg = tuple.getUpdaterAggregator();
+        if(collectTrainingStats) stats.logAggregationEndTime();
 
         MultiLayerNetwork net = network.getNetwork();
 
-        INDArray params = tuple.getParametersSum().divi(tuple.getAggregationsCount());
+        if(collectTrainingStats) stats.logProcessParamsUpdaterStart();
+        params.divi(aggCount);
+        Updater updater = updaterAg.getUpdater();
         net.setParameters(params);
-        net.setUpdater(tuple.getUpdaterAggregator().getUpdater());
+        net.setUpdater(updater);
+        if(collectTrainingStats) stats.logProcessParamsUpdaterEnd();
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
     }
@@ -218,4 +241,9 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
             return new VanillaTrainingMaster(this);
         }
     }
+
+
+
+
+
 }
