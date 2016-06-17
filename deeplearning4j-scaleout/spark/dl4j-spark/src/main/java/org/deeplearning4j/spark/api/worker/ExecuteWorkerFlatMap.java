@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.api.worker;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
@@ -61,6 +62,7 @@ public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFu
             int maxMinibatches = (dataConfig.getMaxBatchesPerWorker() > 0 ? dataConfig.getMaxBatchesPerWorker() : Integer.MAX_VALUE);
 
             while (batchedIterator.hasNext() && miniBatchCount++ < maxMinibatches) {
+                System.out.println(Thread.currentThread().getId() + "\t" + miniBatchCount);
                 if(stats) s.logNextDataSetBefore();
                 DataSet next = batchedIterator.next();
                 if(stats) s.logNextDataSetAfter(next.numExamples());

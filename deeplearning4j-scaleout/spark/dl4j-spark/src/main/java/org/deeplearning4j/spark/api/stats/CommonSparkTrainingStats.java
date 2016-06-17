@@ -25,7 +25,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
             )));
 
-    private SparkTrainingStats trainingMasterSpecificStats;
+    private SparkTrainingStats trainingWorkerSpecificStats;
     private int[] workerFlatMapTotalTimeMs;
     private int[] workerFlatMapTotalExampleCount;
     private int[] workerFlatMapGetInitialModelTimeMs;
@@ -41,7 +41,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     }
 
     private CommonSparkTrainingStats(Builder builder){
-        this.trainingMasterSpecificStats = builder.trainingMasterSpecificStats;
+        this.trainingWorkerSpecificStats = builder.trainingMasterSpecificStats;
         this.workerFlatMapTotalTimeMs = builder.workerFlatMapTotalTimeMs;
         this.workerFlatMapTotalExampleCount = builder.workerFlatMapTotalExampleCount;
         this.workerFlatMapGetInitialModelTimeMs = builder.workerFlatMapGetInitialModelTimeMs;
@@ -54,7 +54,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
     @Override
     public Set<String> getKeySet() {
         Set<String> set = new LinkedHashSet<>(columnNames);
-        if(trainingMasterSpecificStats != null) set.addAll(trainingMasterSpecificStats.getKeySet());
+        if(trainingWorkerSpecificStats != null) set.addAll(trainingWorkerSpecificStats.getKeySet());
 
         return set;
     }
@@ -76,7 +76,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
                 return workerFlatMapCountNoDataInstances;
 
             default:
-                if(trainingMasterSpecificStats != null) return trainingMasterSpecificStats.getValue(key);
+                if(trainingWorkerSpecificStats != null) return trainingWorkerSpecificStats.getValue(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
         }
     }
@@ -92,10 +92,13 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
         workerFlatMapGetInitialModelTimeMs = ArrayUtil.combine(workerFlatMapGetInitialModelTimeMs, o.workerFlatMapGetInitialModelTimeMs);
         workerFlatMapProcessMiniBatchTimesMs = ArrayUtil.combine(workerFlatMapProcessMiniBatchTimesMs, o.workerFlatMapProcessMiniBatchTimesMs);
 
-        if(trainingMasterSpecificStats != null) trainingMasterSpecificStats.addOtherTrainingStats(o.trainingMasterSpecificStats);
-        else if(o.trainingMasterSpecificStats != null) throw new IllegalStateException("Cannot merge: training master specific stats is null in one, but not the other");
+        if(trainingWorkerSpecificStats != null) trainingWorkerSpecificStats.addOtherTrainingStats(o.trainingWorkerSpecificStats);
+        else if(o.trainingWorkerSpecificStats != null) throw new IllegalStateException("Cannot merge: training master specific stats is null in one, but not the other");
+    }
 
-
+    @Override
+    public SparkTrainingStats getNestedTrainingStats(){
+        return trainingWorkerSpecificStats;
     }
 
     @Override
@@ -125,7 +128,7 @@ public class CommonSparkTrainingStats implements SparkTrainingStats {
 
         sb.append(String.format(f,"WorkerFlatMapCountNoDataInstances")).append(workerFlatMapCountNoDataInstances).append("\n");
 
-        if(trainingMasterSpecificStats != null) sb.append(trainingMasterSpecificStats.statsAsString()).append("\n");
+        if(trainingWorkerSpecificStats != null) sb.append(trainingWorkerSpecificStats.statsAsString()).append("\n");
 
         return sb.toString();
     }
