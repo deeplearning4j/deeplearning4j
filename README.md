@@ -39,15 +39,18 @@ sudo rm /usr/bin/gcc
 sudo rm /usr/bin/g++
 sudo ln -s /usr/bin/gcc-4.9 /usr/bin/gcc
 sudo ln -s /usr/bin/g++-4.9 /usr/bin/g++
-./buildnativeoperations.sh blas cpu Debug
-./buildnativeoperations.sh blas cuda Debug
+./buildnativeoperations.sh
+./buildnativeoperations.sh -c cuda
 ```
 #### Ubuntu Linux 16.04
 
 ```bash
 sudo apt install libopenblas-dev
 sudo apt install cmake
-Installation of CUDA currently not supported by NVIDIA, working on a fix... 
+sudo apt install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-361
+./buildnativeoperations.sh
+./buildnativeoperations.sh -c cuda
+
 ```
 
 The standard development headers are needed.
