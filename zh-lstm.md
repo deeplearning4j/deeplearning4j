@@ -24,6 +24,10 @@ layout: zh-default
 
 由于递归网络拥有一种特定的记忆模式，而记忆也是人类的基本能力之一，所以下文会时常将递归网络与人脑的记忆活动进行类比。<sup>[1](#one)</sup>
 
+<p align="center">
+<a href="./zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">快速入门指南</a>
+</p>
+
 ## <a name="feedforward">前馈网络回顾</a>
 
 要理解递归网络，首先需要了解[前馈网络](./zh-restrictedboltzmannmachine.html)的基础知识。这两种网络的名字都来自于它们通过一系列网络节点数学运算来传递信息的方式。前馈网络将信息径直向前递送（从不返回已经过的节点），而递归网络则将信息循环传递。
