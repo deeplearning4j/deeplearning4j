@@ -43,12 +43,20 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected static final Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
     protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;
+    protected int queueSize = 1;
+    protected boolean async = false;
 
     public MultipleEpochsIterator(int numEpochs,DataSetIterator iter) {
         this.numEpochs = numEpochs;
         this.iter = iter;
     }
 
+    public MultipleEpochsIterator(int numEpochs,DataSetIterator iter, int queueSize) {
+        this.numEpochs = numEpochs;
+        this.iter = iter;
+        this.queueSize = queueSize;
+        this.async = true;
+    }
 
     public MultipleEpochsIterator(int numEpochs,DataSet ds) {
         this.numEpochs = numEpochs;
@@ -85,6 +93,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
                 }
             }
         } else {
+            iter = async? new AsyncDataSetIterator(iter, queueSize): iter;
             next = num == -1? iter.next(): iter.next(num);
             if(!iter.hasNext()) {
                 trackEpochs();
