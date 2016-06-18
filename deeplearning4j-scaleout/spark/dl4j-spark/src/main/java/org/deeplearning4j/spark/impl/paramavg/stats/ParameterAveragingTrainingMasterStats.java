@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla.stats;
+package org.deeplearning4j.spark.impl.paramavg.stats;
 
 import lombok.Data;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -10,34 +10,34 @@ import java.util.*;
  * Created by Alex on 17/06/2016.
  */
 @Data
-public class VanillaTrainingMasterStats implements SparkTrainingStats {
+public class ParameterAveragingTrainingMasterStats implements SparkTrainingStats {
 
     private static Set<String> columnNames = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(
-                    "VanillaMasterBroadcastCreateTimesMs",
-                    "VanillaMasterFitTimesMs",
-                    "VanillaMasterSplitTimesMs",
-                    "VanillaMasterAggregateTimesMs",
-                    "VanillaMasterProcessParamsUpdaterTimesMs"
+                    "ParameterAveragingMasterBroadcastCreateTimesMs",
+                    "ParameterAveragingMasterFitTimesMs",
+                    "ParameterAveragingMasterSplitTimesMs",
+                    "ParameterAveragingMasterAggregateTimesMs",
+                    "ParameterAveragingMasterProcessParamsUpdaterTimesMs"
             )));
 
     private SparkTrainingStats workerStats;
-    private int[] vanillaMasterBroadcastCreateTimesMs;
-    private int[] vanillaMasterFitTimesMs;
-    private int[] vanillaMasterSplitTimesMs;
-    private int[] vanillaMasterAggregateTimesMs;
-    private int[] vanillaMasterProcessParamsUpdaterTimesMs;
+    private int[] parameterAveragingMasterBroadcastCreateTimesMs;
+    private int[] parameterAveragingMasterFitTimesMs;
+    private int[] parameterAveragingMasterSplitTimesMs;
+    private int[] paramaterAveragingMasterAggregateTimesMs;
+    private int[] parameterAveragingMasterProcessParamsUpdaterTimesMs;
 
 
-    public VanillaTrainingMasterStats(SparkTrainingStats workerStats, int[] vanillaMasterBroadcastCreateTimeMs,
-                                      int[] vanillaMasterFitTimeMs, int[] vanillaMasterSplitTimeMs,
-                                      int[] vanillaMasterAggregateTimesMs, int[] vanillaMasterProcessParamsUpdaterTimesMs){
+    public ParameterAveragingTrainingMasterStats(SparkTrainingStats workerStats, int[] parameterAveragingMasterBroadcastCreateTimeMs,
+                                                 int[] parameterAveragingMasterFitTimeMs, int[] parameterAveragingMasterSplitTimeMs,
+                                                 int[] parameterAveragingMasterAggregateTimesMs, int[] parameterAveragingMasterProcessParamsUpdaterTimesMs){
         this.workerStats = workerStats;
-        this.vanillaMasterBroadcastCreateTimesMs = vanillaMasterBroadcastCreateTimeMs;
-        this.vanillaMasterFitTimesMs = vanillaMasterFitTimeMs;
-        this.vanillaMasterSplitTimesMs = vanillaMasterSplitTimeMs;
-        this.vanillaMasterAggregateTimesMs = vanillaMasterAggregateTimesMs;
-        this.vanillaMasterProcessParamsUpdaterTimesMs = vanillaMasterProcessParamsUpdaterTimesMs;
+        this.parameterAveragingMasterBroadcastCreateTimesMs = parameterAveragingMasterBroadcastCreateTimeMs;
+        this.parameterAveragingMasterFitTimesMs = parameterAveragingMasterFitTimeMs;
+        this.parameterAveragingMasterSplitTimesMs = parameterAveragingMasterSplitTimeMs;
+        this.paramaterAveragingMasterAggregateTimesMs = parameterAveragingMasterAggregateTimesMs;
+        this.parameterAveragingMasterProcessParamsUpdaterTimesMs = parameterAveragingMasterProcessParamsUpdaterTimesMs;
     }
 
 
@@ -51,16 +51,16 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
     @Override
     public Object getValue(String key) {
         switch(key){
-            case "VanillaMasterBroadcastCreateTimesMs":
-                return vanillaMasterBroadcastCreateTimesMs;
-            case "VanillaMasterFitTimesMs":
-                return vanillaMasterFitTimesMs;
-            case "VanillaMasterSplitTimesMs":
-                return vanillaMasterSplitTimesMs;
-            case "VanillaMasterAggregateTimesMs":
-                return vanillaMasterAggregateTimesMs;
-            case "VanillaMasterProcessParamsUpdaterTimesMs":
-                return vanillaMasterProcessParamsUpdaterTimesMs;
+            case "ParameterAveragingMasterBroadcastCreateTimesMs":
+                return parameterAveragingMasterBroadcastCreateTimesMs;
+            case "ParameterAveragingMasterFitTimesMs":
+                return parameterAveragingMasterFitTimesMs;
+            case "ParameterAveragingMasterSplitTimesMs":
+                return parameterAveragingMasterSplitTimesMs;
+            case "ParameterAveragingMasterAggregateTimesMs":
+                return paramaterAveragingMasterAggregateTimesMs;
+            case "ParameterAveragingMasterProcessParamsUpdaterTimesMs":
+                return parameterAveragingMasterProcessParamsUpdaterTimesMs;
             default:
                 if(workerStats != null) return workerStats.getValue(key);
                 throw new IllegalArgumentException("Unknown key: \"" + key + "\"");
@@ -69,9 +69,9 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
 
     @Override
     public void addOtherTrainingStats(SparkTrainingStats other) {
-        if(!(other instanceof VanillaTrainingMasterStats)) throw new IllegalArgumentException("Expected VanillaTrainingMasterStats, got " + (other != null ? other.getClass() : null));
+        if(!(other instanceof ParameterAveragingTrainingMasterStats)) throw new IllegalArgumentException("Expected ParameterAveragingTrainingMasterStats, got " + (other != null ? other.getClass() : null));
 
-        VanillaTrainingMasterStats o = (VanillaTrainingMasterStats) other;
+        ParameterAveragingTrainingMasterStats o = (ParameterAveragingTrainingMasterStats) other;
 
         if(workerStats != null){
             if(o.workerStats != null ) workerStats.addOtherTrainingStats(o.workerStats);
@@ -79,8 +79,8 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
             if(o.workerStats != null) workerStats = o.workerStats;
         }
 
-        this.vanillaMasterBroadcastCreateTimesMs = ArrayUtil.combine(vanillaMasterBroadcastCreateTimesMs, o.vanillaMasterBroadcastCreateTimesMs);
-        this.vanillaMasterFitTimesMs = ArrayUtil.combine(vanillaMasterFitTimesMs, o.vanillaMasterFitTimesMs);
+        this.parameterAveragingMasterBroadcastCreateTimesMs = ArrayUtil.combine(parameterAveragingMasterBroadcastCreateTimesMs, o.parameterAveragingMasterBroadcastCreateTimesMs);
+        this.parameterAveragingMasterFitTimesMs = ArrayUtil.combine(parameterAveragingMasterFitTimesMs, o.parameterAveragingMasterFitTimesMs);
     }
 
     @Override
@@ -93,25 +93,25 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
         StringBuilder sb = new StringBuilder();
         String f = SparkTrainingStats.DEFAULT_PRINT_FORMAT;
 
-        sb.append(String.format(f,"VanillaMasterBroadcastCreateTimesMs"));
-        if(vanillaMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(vanillaMasterBroadcastCreateTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterBroadcastCreateTimesMs"));
+        if(parameterAveragingMasterBroadcastCreateTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(parameterAveragingMasterBroadcastCreateTimesMs)).append("\n");
 
-        sb.append(String.format(f,"VanillaMasterFitTimesMs"));
-        if(vanillaMasterFitTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(vanillaMasterFitTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterFitTimesMs"));
+        if(parameterAveragingMasterFitTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(parameterAveragingMasterFitTimesMs)).append("\n");
 
-        sb.append(String.format(f,"VanillaMasterSplitTimesMs"));
-        if(vanillaMasterSplitTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(vanillaMasterSplitTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterSplitTimesMs"));
+        if(parameterAveragingMasterSplitTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(parameterAveragingMasterSplitTimesMs)).append("\n");
 
-        sb.append(String.format(f,"VanillaMasterAggregateTimesMs"));
-        if(vanillaMasterAggregateTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(vanillaMasterAggregateTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterAggregateTimesMs"));
+        if(paramaterAveragingMasterAggregateTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(paramaterAveragingMasterAggregateTimesMs)).append("\n");
 
-        sb.append(String.format(f,"VanillaMasterProcessParamsUpdaterTimesMs"));
-        if(vanillaMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
-        else sb.append(Arrays.toString(vanillaMasterProcessParamsUpdaterTimesMs)).append("\n");
+        sb.append(String.format(f,"ParameterAveragingMasterProcessParamsUpdaterTimesMs"));
+        if(parameterAveragingMasterProcessParamsUpdaterTimesMs == null ) sb.append("-\n");
+        else sb.append(Arrays.toString(parameterAveragingMasterProcessParamsUpdaterTimesMs)).append("\n");
 
 
         if(workerStats != null) sb.append(workerStats.statsAsString());
@@ -119,7 +119,7 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
         return sb.toString();
     }
 
-    public static class VanillaTrainingMasterStatsHelper {
+    public static class parameterAveragingTrainingMasterStatsHelper {
 
         private long lastBroadcastStartTime;
         private long lastFitStartTime;
@@ -186,7 +186,7 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
             else if(workerStats != null) this.workerStats.addOtherTrainingStats(workerStats);
         }
 
-        public VanillaTrainingMasterStats build(){
+        public ParameterAveragingTrainingMasterStats build(){
             int[] bcast = new int[broadcastTimes.size()];
             for( int i=0; i<bcast.length; i++ ) bcast[i] = broadcastTimes.get(i);
             int[] fit = new int[fitTimes.size()];
@@ -198,7 +198,7 @@ public class VanillaTrainingMasterStats implements SparkTrainingStats {
             int[] proc = new int[processParamsUpdaterTimes.size()];
             for( int i=0; i<proc.length; i++ ) proc[i] = processParamsUpdaterTimes.get(i);
 
-            return new VanillaTrainingMasterStats(workerStats,bcast,fit,split,agg, proc);
+            return new ParameterAveragingTrainingMasterStats(workerStats,bcast,fit,split,agg, proc);
         }
 
     }

@@ -1,5 +1,8 @@
 package org.deeplearning4j.spark.api.stats;
 
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
+
 import java.io.Serializable;
 import java.util.Set;
 
@@ -12,15 +15,15 @@ import java.util.Set;
  * and their actual values (types/classes) can vary.
  * <p>
  * The interface here operates essentially as a {@code Map<String,Object>}. Note however that SparkTrainingStats instances
- * may be nested: for example a {@link org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingMasterStats} may have a
- * {@link CommonSparkTrainingStats} instance which may in turn have a {@link org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingWorkerStats}
+ * may be nested: for example a {@link ParameterAveragingTrainingMasterStats} may have a
+ * {@link CommonSparkTrainingStats} instance which may in turn have a {@link ParameterAveragingTrainingWorkerStats}
  * instance.
  *
  * @author Alex Black
  */
 public interface SparkTrainingStats extends Serializable {
 
-    int PRINT_INDENT = 45;
+    int PRINT_INDENT = 55;
     String DEFAULT_PRINT_FORMAT = "%-" + PRINT_INDENT + "s";
 
     Set<String> getKeySet();

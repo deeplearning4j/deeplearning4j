@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla.aggregator;
+package org.deeplearning4j.spark.impl.paramavg.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.nn.updater.aggregate.UpdaterAggregator;
@@ -8,9 +8,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * Created by Alex on 15/06/2016.
  */
-public class VanillaElementCombineFunction implements Function2<VanillaAggregationTuple, VanillaAggregationTuple, VanillaAggregationTuple> {
+public class ParameterAveragingElementCombineFunction implements Function2<ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple> {
     @Override
-    public VanillaAggregationTuple call(VanillaAggregationTuple v1, VanillaAggregationTuple v2) throws Exception {
+    public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple v1, ParameterAveragingAggregationTuple v2) throws Exception {
         if(v1 == null) return v2;
         else if(v2 == null) return v1;
 
@@ -35,6 +35,6 @@ public class VanillaElementCombineFunction implements Function2<VanillaAggregati
             else stats.addOtherTrainingStats(v2.getSparkTrainingStats());
         }
 
-        return new VanillaAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount, stats);
+        return new ParameterAveragingAggregationTuple(newParams, combinedAggregator, scoreSum, aggregationCount, stats);
     }
 }

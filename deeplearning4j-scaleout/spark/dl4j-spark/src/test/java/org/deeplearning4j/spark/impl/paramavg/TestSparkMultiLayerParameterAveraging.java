@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.spark.impl.vanilla;
+package org.deeplearning4j.spark.impl.paramavg;
 
 
 
@@ -39,8 +39,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.impl.vanilla.VanillaTrainingMaster;
-import org.deeplearning4j.spark.util.MLLibUtil;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -49,8 +47,6 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 1/18/15.
  */
-public class TestSparkMultiLayerVanilla extends BaseSparkTest {
+public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
     @Test
@@ -97,7 +93,7 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
         network.init();
         System.out.println("Initializing network");
 
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -142,7 +138,7 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         System.out.println("Initializing network");
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
 
         MultiLayerNetwork network2 = master.fitLabeledPoint(data);
         Evaluation evaluation = new Evaluation();
@@ -157,7 +153,7 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
 
-        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
+        SparkDl4jMultiLayer sparkNetCopy = new SparkDl4jMultiLayer(sc,getBasicConf(),new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),5,1,0));
         MultiLayerNetwork networkCopy = sparkNetCopy.fit(data);
 
         INDArray expectedParams = networkCopy.params();
@@ -240,7 +236,7 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
                         .build())
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
 
         Nd4j.getRandom().setSeed(12345);
         DataSet d1 = new DataSet(Nd4j.rand(1,nIn),Nd4j.rand(1,nOut));
@@ -273,7 +269,7 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
                 .pretrain(false)
                 .build();
 
-        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,new ParameterAveragingTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         int nRows = 100;

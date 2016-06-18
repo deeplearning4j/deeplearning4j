@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla;
+package org.deeplearning4j.spark.impl.paramavg;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -12,8 +12,6 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -30,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 18/06/2016.
  */
-public class TestCompareVanillaSparkVsSingleMachine {
+public class TestCompareParameterAveragingSparkVsSingleMachine {
 
     private static MultiLayerConfiguration getConf(int seed, Updater updater){
         Nd4j.getRandom().setSeed(seed);
@@ -85,7 +83,7 @@ public class TestCompareVanillaSparkVsSingleMachine {
 
         try {
 
-            VanillaTrainingMaster tm = new VanillaTrainingMaster.Builder(nWorkers)
+            ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers)
                     .averagingFrequency(1)
                     .batchSizePerWorker(miniBatchSize)
                     .saveUpdater(true)
@@ -143,7 +141,7 @@ public class TestCompareVanillaSparkVsSingleMachine {
 
         try {
 
-            VanillaTrainingMaster tm = new VanillaTrainingMaster.Builder(nWorkers)
+            ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(nWorkers)
                     .averagingFrequency(1)
                     .batchSizePerWorker(miniBatchSizePerWorker)
                     .saveUpdater(true)
