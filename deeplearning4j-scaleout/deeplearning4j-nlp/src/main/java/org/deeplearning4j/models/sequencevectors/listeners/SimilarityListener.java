@@ -1,6 +1,5 @@
 package org.deeplearning4j.models.sequencevectors.listeners;
 
-import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -11,27 +10,28 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Simple VectorsListener implementation that prints out model score.
+ * Simple listener, to monitor simialiry between selected elements during training
  *
  * @author raver119@gmail.com
  */
-public class ScoreListener<T extends SequenceElement> implements VectorsListener<T> {
-    protected static final Logger logger = LoggerFactory.getLogger(ScoreListener.class);
+public class SimilarityListener<T extends SequenceElement> implements VectorsListener<T> {
+    protected static final Logger logger = LoggerFactory.getLogger(SimilarityListener.class);
     private final ListenerEvent targetEvent;
-    private final AtomicLong callsCount = new AtomicLong(0);
     private final int frequency;
+    private final String element1;
+    private final String element2;
+    private final AtomicLong counter = new AtomicLong(0);
 
-    public ScoreListener(@NonNull ListenerEvent targetEvent, int frequency) {
+    public SimilarityListener(ListenerEvent targetEvent, int frequency, String label1, String label2) {
         this.targetEvent = targetEvent;
         this.frequency = frequency;
+        this.element1 = label1;
+        this.element2 = label2;
     }
 
     @Override
     public boolean validateEvent(ListenerEvent event, long argument) {
-        if (event == targetEvent)
-            return true;
-
-        return false;
+        return event == targetEvent;
     }
 
     @Override
@@ -39,9 +39,13 @@ public class ScoreListener<T extends SequenceElement> implements VectorsListener
         if (event != targetEvent)
             return;
 
-        callsCount.incrementAndGet();
+        long cnt = counter.getAndIncrement();
 
-        if (callsCount.get() % frequency == 0)
-            logger.info("Average score for last batch: {}", sequenceVectors.getElementsScore());
+        if (cnt % frequency != 0)
+            return;
+
+        double similarity = sequenceVectors.similarity(element1, element2);
+
+        logger.info("Invocation: {}, similarity: {}", cnt, similarity );
     }
 }

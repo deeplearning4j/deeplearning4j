@@ -27,6 +27,10 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
+import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
+import org.deeplearning4j.models.sequencevectors.listeners.ScoreListener;
+import org.deeplearning4j.models.sequencevectors.listeners.SimilarityListener;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -42,10 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -195,28 +196,24 @@ public class Word2VecTests {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        InMemoryLookupCache cache = new InMemoryLookupCache();
-        WeightLookupTable table = new InMemoryLookupTable.Builder()
-                .vectorLength(100)
-                .useAdaGrad(false)
-                .cache(cache)
-                .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(5)
-                .iterations(1)
+                .minWordFrequency(1)
+                .iterations(5)
                 .batchSize(250)
-                .layerSize(100)
-                .lookupTable(table)
+                .layerSize(150)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache)
                 .seed(42)
                 .learningRate(0.025)
                 .minLearningRate(0.001)
                 .sampling(0)
+                .negativeSample(10)
+                .epochs(1)
                 .windowSize(5)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
+                .setVectorsListeners(new ArrayList<VectorsListener<VocabWord>>(Collections.singletonList(new ScoreListener<VocabWord>(ListenerEvent.ITERATION, 10))))
+                //  .setVectorsListeners(new ArrayList<VectorsListener<VocabWord>>(Collections.singletonList(new SimilarityListener<VocabWord>(ListenerEvent.ITERATION, 50, "day", "night"))))
                 .tokenizerFactory(t)
                 .build();
 

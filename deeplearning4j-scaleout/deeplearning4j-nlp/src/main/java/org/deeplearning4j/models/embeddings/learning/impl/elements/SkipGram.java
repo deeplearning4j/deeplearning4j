@@ -128,11 +128,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         for(int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            score += skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
+            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % window ,nextRandom, learningRate);
         }
 
-        if (tempSequence.getElements().size() > 0)
-            score /= tempSequence.getElements().size();
+//        if (tempSequence.getElements().size() > 0)
+//            score /= tempSequence.getElements().size();
 
         return score;
     }
@@ -161,13 +161,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int c = i - window + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
-                    score += iterateSample(word,lastWord,nextRandom,alpha);
-                    cnt++;
+                    score = iterateSample(word,lastWord,nextRandom,alpha);
+//                    cnt++;
                 }
             }
         }
-        if (cnt > 0)
-            score /= cnt;
+//        if (cnt > 0)
+//            score /= cnt;
 
         return score;
     }
@@ -195,7 +195,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
             double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
-            score += dot;
 
             if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
@@ -206,7 +205,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 continue;
 
             //score
-            double f =  expTable[idx];
+            double f = expTable[idx];
+
+
             //gradient
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f), alpha) : (1 - code - f) * alpha;
 
@@ -214,13 +215,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
         }
 
-        score /= w1.getCodeLength();
 
+        score /= w1.getCodeLength();
 
         int target = w1.getIndex();
         int label;
         //negative sampling
-        if(negative > 0)
+        if(negative > 0) {
             for (int d = 0; d < negative + 1; d++) {
                 if (d == 0)
                     label = 1;
@@ -237,15 +238,16 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     label = 0;
                 }
 
-                if(target >= syn1Neg.rows() || target < 0)
+                if (target >= syn1Neg.rows() || target < 0)
                     continue;
 
-                double f = Nd4j.getBlasWrapper().dot(l1,syn1Neg.slice(target));
+                double f = Nd4j.getBlasWrapper().dot(l1, syn1Neg.slice(target));
+
                 double g;
                 if (f > MAX_EXP)
-                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) *  alpha;
+                    g = useAdaGrad ? lookupTable.getGradient(target, (label - 1)) : (label - 1) * alpha;
                 else if (f < -MAX_EXP)
-                    g = label * (useAdaGrad ?  lookupTable.getGradient(target, alpha) : alpha);
+                    g = label * (useAdaGrad ? lookupTable.getGradient(target, alpha) : alpha);
                 else {
                     int idx = (int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2));
                     if (idx >= expTable.length)
@@ -254,11 +256,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     g = useAdaGrad ? lookupTable.getGradient(target, label - expTable[idx]) : (label - expTable[idx]) * alpha;
                 }
 
-               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,syn1Neg.slice(target),neu1e);
-               Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g,l1,syn1Neg.slice(target));
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, syn1Neg.slice(target), neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), g, l1, syn1Neg.slice(target));
             }
 
-            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0,neu1e,l1);
+        }
 
         return score;
     }

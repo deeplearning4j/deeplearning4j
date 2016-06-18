@@ -61,16 +61,16 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
     @Override
     public double similarity( String label1, String label2) {
         if (label1 == null || label2 == null) {
-            System.out.println("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
+            log.debug("LABELS: " + label1 + ": " + (label1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (label2 == null ? "null": "exists"));
             return Double.NaN;
         }
 
-        INDArray vec1 = lookupTable.vector(label1);
-        INDArray vec2 = lookupTable.vector(label2);
+        INDArray vec1 = lookupTable.vector(label1).dup();
+        INDArray vec2 = lookupTable.vector(label2).dup();
 
 
         if (vec1 == null || vec2 == null) {
-            System.out.println(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
+            log.debug(label1 + ": " + (vec1 == null ? "null": "exists")+ ";" + label2 +" vec2:" + (vec2 == null ? "null": "exists"));
             return Double.NaN;
         }
 
