@@ -57,8 +57,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected transient WordVectors existingModel;
     protected transient T unknownElement;
-    protected transient AtomicDouble scoreElements;
-    protected transient AtomicDouble scoreSequences;
+    protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
+    protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
 
 
 
