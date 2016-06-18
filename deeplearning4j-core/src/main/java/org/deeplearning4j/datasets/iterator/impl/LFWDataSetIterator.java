@@ -20,6 +20,7 @@ package org.deeplearning4j.datasets.iterator.impl;
 
 import org.canova.api.io.labels.PathLabelGenerator;
 import org.canova.image.loader.LFWLoader;
+import org.canova.image.transform.ImageTransform;
 import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
 
 import java.util.Random;
@@ -27,100 +28,62 @@ import java.util.Random;
 
 public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
-	protected static int height = 250;
-	protected static int width = 250;
-	protected static int channels = 3;
+	/** Loads subset of images with given imgDim returned by the generator. */
+	public LFWDataSetIterator(int[] imgDim) {
+		this(LFWLoader.SUB_NUM_IMAGES, LFWLoader.SUB_NUM_IMAGES, imgDim, LFWLoader.SUB_NUM_LABELS, false, null, true, 1, null, 0, new Random(System.currentTimeMillis()));
+	}
 
-    /**
-     * Create LFW data specific iterator
-     * @param imgDim shape of input
-     * */
-    public LFWDataSetIterator(int[] imgDim) {
-        super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2]), 0, 1, 0);
-    }
-
-
-    /**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param numExamples the overall number of examples
-	 * */
+	/** Loads images with given  batchSize, numExamples returned by the generator. */
 	public LFWDataSetIterator(int batchSize, int numExamples) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, true, 1), batchSize, 1, LFWLoader.NUM_LABELS);
+        this(batchSize, numExamples, new int[] {LFWLoader.HEIGHT, LFWLoader.WIDTH, LFWLoader.CHANNELS}, LFWLoader.NUM_LABELS, false, LFWLoader.LABEL_PATTERN, true, 1, null, 0, new Random(System.currentTimeMillis()));
 	}
 
-	/**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param numExamples the overall number of examples
-	 * */
+	/** Loads images with given  batchSize, numExamples, imgDim returned by the generator. */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], true, 1, new Random(123)), batchSize, 1, LFWLoader.NUM_LABELS);
+        this(batchSize, numExamples, imgDim, LFWLoader.NUM_LABELS, false, LFWLoader.LABEL_PATTERN, true, 1, null, 0, new Random(System.currentTimeMillis()));
 	}
 
+    /** Loads images with given  batchSize, imgDim, useSubset, returned by the generator. */
+    public LFWDataSetIterator(int batchSize, int[] imgDim, boolean useSubset)  {
+        this(batchSize, useSubset ? LFWLoader.SUB_NUM_IMAGES :LFWLoader.NUM_IMAGES, imgDim, useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS, useSubset, LFWLoader.LABEL_PATTERN, true, 1, null, 0, new Random(System.currentTimeMillis()));
+    }
 
-	/**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param imgDim an array of height, width and channels
-	 * @param numExamples the overall number of examples
-	 * */
+    /** Loads images with given  batchSize, numExamples, imgDim, train, & splitTrainTest returned by the generator. */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train, double splitTrainTest) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, splitTrainTest, new Random(123)), batchSize, 1, LFWLoader.NUM_LABELS);
+        this(batchSize, numExamples, imgDim, LFWLoader.NUM_LABELS, false, LFWLoader.LABEL_PATTERN, train, splitTrainTest, null, 0, new Random(System.currentTimeMillis()));
 	}
 
-	/**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param numExamples the overall number of examples
-	 * @param numCategories the overall number of labels
-     * @param train true if use train value
-	 * */
-	public LFWDataSetIterator(int batchSize, int numExamples, int numCategories, boolean train, double splitTrainTest) {
-		super(new LFWLoader().getRecordReader(numExamples, batchSize, train, splitTrainTest), batchSize, 1, numCategories);
+	/** Loads images with given  batchSize, numExamples, numLabels, train, & splitTrainTest returned by the generator. */
+	public LFWDataSetIterator(int batchSize, int numExamples, int numLabels, boolean train, double splitTrainTest) {
+        this(batchSize, numExamples, new int[] {LFWLoader.HEIGHT, LFWLoader.WIDTH, LFWLoader.CHANNELS}, numLabels, false, null, train, splitTrainTest, null, 0, new Random(System.currentTimeMillis()));
 	}
 
-	/**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param imgDim an array of height, width and channels
-	 */
-	public LFWDataSetIterator(int batchSize, int[] imgDim)  {
-		super(new LFWLoader().getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, LFWLoader.NUM_LABELS);
-	}
+	/** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */
+    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, boolean train,  double splitTrainTest,  Random rng) {
+        this(batchSize, numExamples, imgDim, numLabels, useSubset, LFWLoader.LABEL_PATTERN, train, splitTrainTest, null, 0, rng);
+    }
 
-	/**
-	 * Create LFW data specific iterator
-	 * @param batchSize the batch size of the examples
-	 * @param imgDim an array of height, width and channels
-	 */
-	public LFWDataSetIterator(int batchSize, int[] imgDim, boolean useSubset)  {
-		super(new LFWLoader(useSubset).getRecordReader(imgDim[0], imgDim[1], imgDim[2]), batchSize, 1, useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS);
-	}
-
-    /**
-     * Create LFW data specific iterator
-     * @param batchSize the batch size of the examples
-     * @param imgDim an array of height, width and channels
-     * @param numExamples the overall number of examples
-     * @param useSubset use a subset of the LFWDataSet
-     * @param train true if use train value
-     * */
-    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, boolean train,  double splitTrainTest,  Random rng) {
-        super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], train, splitTrainTest, rng), batchSize, 1, numCategories);
+    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */
+    public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest,  Random rng) {
+        this(batchSize, numExamples, imgDim, numLabels, useSubset, labelGenerator, train, splitTrainTest, null, 0, rng);
     }
 
 	/**
 	 * Create LFW data specific iterator
 	 * @param batchSize the batch size of the examples
+     * @param numExamples the overall number of examples
 	 * @param imgDim an array of height, width and channels
-	 * @param numExamples the overall number of examples
+	 * @param numLabels the overall number of examples
      * @param useSubset use a subset of the LFWDataSet
-     * @param train true if use train value
      * @param labelGenerator path label generator to use
+     * @param train true if use train value
+     * @param splitTrainTest the percentage to split data for train and remainder goes to test
+     * @param imageTransform how to transform the image
+     * @param normalizeValue value to divide pixels by to normalize
+     * @param rng random number to lock in batch shuffling
 	 * */
-	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numCategories, boolean useSubset, PathLabelGenerator labelGenerator,boolean train, double splitTrainTest,  Random rng) {
-		super(new LFWLoader(useSubset).getRecordReader(numExamples, batchSize, imgDim[0], imgDim[1], imgDim[2], numCategories, labelGenerator, train, splitTrainTest, rng), batchSize, 1, numCategories);
+	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest, ImageTransform imageTransform, int normalizeValue, Random rng) {
+		super(new LFWLoader(imgDim, imageTransform, normalizeValue, useSubset).getRecordReader(numExamples, batchSize, imgDim, numLabels, labelGenerator, train, splitTrainTest, rng), batchSize, 1, numLabels);
 	}
 
 }

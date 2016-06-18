@@ -104,7 +104,7 @@ public class DataSetIteratorTest {
 		int row = 28;
 		int col = 28;
 		int channels = 1;
-		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, numExamples, new int[] {row,col,channels}, true, 1.0);
+		LFWDataSetIterator iter = new LFWDataSetIterator(numExamples, new int[] {row,col,channels}, true);
 		assertTrue(iter.hasNext());
 		DataSet data = iter.next();
 		assertEquals(numExamples, data.getLabels().size(0));
@@ -189,7 +189,7 @@ public class DataSetIteratorTest {
 		int seed = 123;
 		int listenerFreq = iterations;
 
-		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, "TRAIN");
+		CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples, true);
 
 		MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
 				.seed(seed)
@@ -220,7 +220,7 @@ public class DataSetIteratorTest {
 
 		model.fit(cifar);
 
-		cifar = new CifarDataSetIterator(batchSize, numSamples, "TEST");
+		cifar = new CifarDataSetIterator(batchSize, numSamples, false);
 		Evaluation eval = new Evaluation(cifar.getLabels());
 		while(cifar.hasNext()) {
 			DataSet testDS = cifar.next(batchSize);
