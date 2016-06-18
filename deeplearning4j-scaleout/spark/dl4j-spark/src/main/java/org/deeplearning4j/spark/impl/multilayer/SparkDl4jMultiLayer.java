@@ -212,7 +212,9 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
     }
 
-    /** Gets the last (average) minibatch score from calling fit */
+    /** Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
+     * last minibatch executed in each worker
+     */
     public double getScore(){
         return lastScore;
     }

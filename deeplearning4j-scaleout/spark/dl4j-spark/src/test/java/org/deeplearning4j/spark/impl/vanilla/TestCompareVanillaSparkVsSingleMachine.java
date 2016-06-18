@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 18/06/2016.
@@ -182,6 +183,11 @@ public class TestCompareVanillaSparkVsSingleMachine {
             assertEquals(initialParams, initialSparkParams);
             assertNotEquals(initialParams, finalParams);
             assertEquals(finalParams, finalSparkParams);
+
+            double sparkScore = sparkNet.getScore();
+            assertTrue(sparkScore > 0.0);
+
+            assertEquals(net.score(), sparkScore, 1e-3);
         } finally {
             sc.stop();
         }

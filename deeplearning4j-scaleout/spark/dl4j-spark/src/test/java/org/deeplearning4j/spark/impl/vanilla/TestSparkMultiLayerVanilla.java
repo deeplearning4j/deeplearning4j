@@ -150,59 +150,6 @@ public class TestSparkMultiLayerVanilla extends BaseSparkTest {
         System.out.println(evaluation.stats());
     }
 
-
-    @Test
-    public void testIris2() throws Exception {
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(0.9).seed(123)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(100)
-                .maxNumLineSearchIterations(10)
-                .list()
-                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(4).nOut(3)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation("relu")
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(3).nOut(3)
-                        .activation("softmax")
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .backprop(false)
-                .build();
-
-
-
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        System.out.println("Initializing network");
-
-        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf,new VanillaTrainingMaster(true,Runtime.getRuntime().availableProcessors(),10,1,0));
-        DataSet d = new IrisDataSetIterator(150,150).next();
-        d.normalizeZeroMeanZeroUnitVariance();
-        d.shuffle();
-        List<DataSet> next = d.asList();
-
-
-        JavaRDD<DataSet> data = sc.parallelize(next);
-
-
-
-        MultiLayerNetwork network2 = master.fit(data);
-
-        INDArray params = network2.params();
-        File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(params, writeTo.getAbsolutePath(), ",");
-        INDArray load = Nd4j.read(new FileInputStream(writeTo.getAbsolutePath()));
-        assertEquals(params,load);
-        writeTo.delete();
-        Evaluation evaluation = new Evaluation();
-        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
-        System.out.println(evaluation.stats());
-    }
-
     @Test
     public void testRunIteration() {
 
