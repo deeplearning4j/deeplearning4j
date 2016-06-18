@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla;
+package org.deeplearning4j.spark.impl.paramavg;
 
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
@@ -7,20 +7,20 @@ import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
-import org.deeplearning4j.spark.impl.vanilla.stats.VanillaTrainingWorkerStats;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.nd4j.linalg.dataset.api.DataSet;
 
 /**
  * Created by Alex on 14/06/2016.
  */
-public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResult> {
+public class ParameterAveragingTrainingWorker implements TrainingWorker<ParameterAveragingTrainingResult> {
 
     private final Broadcast<NetBroadcastTuple> broadcast;
     private final boolean saveUpdater;
     private final WorkerConfiguration configuration;
-    private VanillaTrainingWorkerStats.VanillaTrainingWorkerStatsHelper stats = null;
+    private ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper stats = null;
 
-    public VanillaTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration) {
+    public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater, WorkerConfiguration configuration) {
         this.broadcast = broadcast;
         this.saveUpdater = saveUpdater;
         this.configuration = configuration;
@@ -28,7 +28,7 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
 
     @Override
     public MultiLayerNetwork getInitialModel() {
-        if(configuration.isCollectTrainingStats()) stats = new VanillaTrainingWorkerStats.VanillaTrainingWorkerStatsHelper();
+        if(configuration.isCollectTrainingStats()) stats = new ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper();
 
         if(configuration.isCollectTrainingStats()) stats.logBroadcastGetValueStart();
         NetBroadcastTuple tuple = broadcast.getValue();
@@ -48,7 +48,7 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     }
 
     @Override
-    public VanillaTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+    public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
 
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
         network.fit(dataSet);
@@ -60,8 +60,8 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     }
 
     @Override
-    public Pair<VanillaTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        VanillaTrainingResult result = processMinibatch(dataSet,network,isLast);
+    public Pair<ParameterAveragingTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+        ParameterAveragingTrainingResult result = processMinibatch(dataSet,network,isLast);
         if(result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);
@@ -69,14 +69,14 @@ public class VanillaTrainingWorker implements TrainingWorker<VanillaTrainingResu
     }
 
     @Override
-    public VanillaTrainingResult getFinalResult(MultiLayerNetwork network) {
+    public ParameterAveragingTrainingResult getFinalResult(MultiLayerNetwork network) {
         //TODO: don't want to use java serialization for updater, in case worker is using cuda and master is using native, etc
-        return new VanillaTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
+        return new ParameterAveragingTrainingResult(network.params(), (saveUpdater ? network.getUpdater() : null), network.score());
     }
 
     @Override
-    public Pair<VanillaTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
-        VanillaTrainingResult result = getFinalResult(network);
+    public Pair<ParameterAveragingTrainingResult,SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
+        ParameterAveragingTrainingResult result = getFinalResult(network);
         if(result == null) return null;
 
         SparkTrainingStats statsToReturn = (stats != null ? stats.build() : null);

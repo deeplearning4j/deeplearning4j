@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.impl.vanilla;
+package org.deeplearning4j.spark.impl.paramavg;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.Updater;
@@ -10,18 +10,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Created by Alex on 14/06/2016.
  */
 @Data
-public class VanillaTrainingResult implements TrainingResult {
+public class ParameterAveragingTrainingResult implements TrainingResult {
 
     private final INDArray parameters;
     private final Updater updater;
     private final double score;
     private SparkTrainingStats sparkTrainingStats;
 
-    public VanillaTrainingResult(INDArray parameters, Updater updater, double score) {
+    public ParameterAveragingTrainingResult(INDArray parameters, Updater updater, double score) {
         this(parameters, updater, score, null);
     }
 
-    public VanillaTrainingResult(INDArray parameters, Updater updater, double score, SparkTrainingStats sparkTrainingStats) {
+    public ParameterAveragingTrainingResult(INDArray parameters, Updater updater, double score, SparkTrainingStats sparkTrainingStats) {
         this.parameters = parameters;
         this.updater = updater;
         this.score = score;
