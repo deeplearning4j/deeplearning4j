@@ -206,6 +206,10 @@ public class SparkDl4jMultiLayer implements Serializable {
         return lastScore;
     }
 
+    public void setScore(double lastScore){
+        this.lastScore = lastScore;
+    }
+
     public double calculateScore(JavaRDD<DataSet> data, boolean average){
         long n = data.count();
         JavaRDD<Double> scores = data.mapPartitions(new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false))));

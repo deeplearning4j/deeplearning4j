@@ -170,6 +170,8 @@ public class VanillaTrainingMaster implements TrainingMaster<VanillaTrainingResu
         }
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
+
+        network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
     }
 
 
